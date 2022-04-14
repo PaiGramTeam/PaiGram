@@ -1,0 +1,78 @@
+import os
+
+from telegram import Update
+from telegram.constants import ChatAction
+from telegram.ext import CallbackContext, ConversationHandler
+
+from logger import Log
+from plugins.base import BasePlugins
+from service import BaseService
+from pyppeteer import launch
+from metadata.metadata import metadat
+from service.wich import WishCountInfo, get_one
+
+
+class Gacha(BasePlugins):
+    def __init__(self, service: BaseService):
+        super().__init__(service)
+        self.browser: launch = None
+        self.current_dir = os.getcwd()
+        self.resources_dir = os.path.join(self.current_dir, "resources")
+        self.character_gacha_card = {}
+        for character in metadat.characters:
+            name = character["Name"]
+            self.character_gacha_card[name] = character["GachaCard"]
+
+    CHECK_SERVER, COMMAND_RESULT = range(10600, 10602)
+
+    async def command_start(self, update: Update, context: CallbackContext) -> None:
+        message = update.message
+        user = update.effective_user
+        Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求")
+        args = message.text.split(" ")
+        if len(args) == 1:
+            gacha_info = await self.service.gacha.gacha_info()
+        else:
+            gacha_info = await self.service.gacha.gacha_info(args[1])
+        # 用户数据储存和处理
+        if gacha_info.get("gacha_id") is None:
+            await message.reply_text(f"没有找到 {args[1]} 卡池名称")
+            return ConversationHandler.END
+        gacha_id: str = gacha_info["gacha_id"]
+        user_gacha: dict[str, WishCountInfo] = context.user_data.get("gacha")
+        if user_gacha is None:
+            user_gacha = context.user_data["gacha"] = {}
+        user_gacha_count: WishCountInfo = user_gacha.get(gacha_id)
+        if user_gacha_count is None:
+            user_gacha_count = user_gacha[gacha_id] = WishCountInfo(user_id=user.id)
+        # 用户数据储存和处理
+        await message.reply_chat_action(ChatAction.FIND_LOCATION)
+        data = {
+            "_res_path": f"file://{self.resources_dir}",
+            "name": "洛水居室",
+            "info": "卡池测试",
+            "poolName": gacha_info["title"],
+            "items": [],
+
+        }
+        for a in range(10):
+            item = get_one(user_gacha_count, gacha_info)
+            # item_name = item["item_name"]
+            # item_type = item["item_type"]
+            # if item_type == "角色":
+            #     gacha_card = self.character_gacha_card.get(item_name)
+            #     if gacha_card is None:
+            #         await message.reply_text(f"获取角色 {item_name} GachaCard信息失败")
+            #         return
+            #     item["item_character_img"] = await url_to_file(gacha_card)
+            data["items"].append(item)
+
+        def take_rang(elem: dict):
+            return elem["rank"]
+
+        data["items"].sort(key=take_rang, reverse=True)
+        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        png_data = await self.service.template.render('genshin/gacha', "gacha.html", data,
+                                                      {"width": 1157, "height": 603}, False)
+
+        await message.reply_photo(png_data)

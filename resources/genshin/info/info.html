@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8"/>
+    <title>Title</title>
+    <link type="text/css" href="../../styles/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url({{background_image}});
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        #container {
+
+        }
+
+        .account-center-header {
+            padding: 10px 8px;
+            background-color: rgba(225, 225, 225, 0.5);
+            /*background-image: url("./0.jpg");
+            background-size: cover;*/
+        }
+
+        .user-avatar {
+            width: 100%;
+            height: 100%;
+        }
+
+        .user-info-1 {
+            padding: 10px 8px;
+            background-color: rgba(225, 225, 225, 0.5);
+        }
+
+        .world-exploration {
+            padding: 10px 8px;
+            background-color: rgba(225, 225, 225, 0.5);
+        }
+
+        .teapot {
+            padding: 10px 8px;
+            background-color: rgba(225, 225, 225, 0.5);
+        }
+
+        .account-center-header-avatar {
+            width: 120px;
+            height: 120px;
+        }
+
+        .teapot-info-icon {
+            height: 96px;
+            overflow: hidden;
+        }
+
+        .teapot-info-img {
+            width: 100%;
+        }
+
+        .world-exploration-info {
+            border: 2px solid rgb(0, 0, 0, 0.2);
+        }
+
+        .world-exploration-info-icon {
+            height: 96px;
+            overflow: hidden;
+        }
+
+        .world-exploration-info-img {
+            filter: brightness(0);
+            height: 100%;
+        }
+
+        .world-exploration-info-hr-1 {
+            width: 95%;
+        }
+
+        .world-exploration-info-pointer-bar-body {
+            width: 95%;
+            height: 4px;
+            display: inline-block;
+            border-radius: 2px;
+            background-color: rgb(0, 0, 0, 0.3);
+        }
+
+        .world-exploration-info-pointer-progress-bar {
+            height: 100%;
+            background-color: #000000;
+            border-radius: 2px;
+        }
+
+        .background-color {
+            background-color: rgb(225, 225, 225, 0.75);
+        }
+
+        .teapot-info-name{
+            background-color: rgba(225, 225, 225, 0.5);
+        }
+    </style>
+</head>
+<body>
+<div class="background-color">
+    <div class="container mx-auto px-4 py-4" id="container">
+        <div class="account-center-header flex rounded-xl mb-4">
+            <div class="account-center-user p-4 flex-grow">
+                <div class="account-center-user-title pb-4">
+                    <span class="account-center-user-name text-4xl">{{name}}</span>
+                </div>
+                <div class="account-center-user-uid pb-4">
+                    <span class="account-center-user-name text-2xl">{{uid}}</span>
+                </div>
+            </div>
+            <div class="account-center-header-avatar mr-8 mt-2 flex-shrink">
+                <img class="user-avatar rounded-full " src="{{user_avatar}}">
+            </div>
+        </div>
+        <div class="user-info-1 rounded-xl text-center mb-4">
+            <div class="base-user-info-1 flex flex-wrap text-center">
+                <div class="user-base-info ml-4 p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">活跃天数</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{action_day_number}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">成就达成数</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{achievement_number}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">获取角色数</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{avatar_number}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">深境螺旋</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{spiral_abyss}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">解锁传送点</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{way_point_number}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">解锁秘境</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{domain_number}}</div>
+                </div>
+            </div>
+            <div class="base-user-info-2 flex flex-wrap text-center">
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">奇馈宝箱数</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{magic_chest_number}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">华丽宝箱数</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{luxurious_number}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">珍贵宝箱数</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{precious_chest_number}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">精致宝箱数</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{exquisite_chest_number}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">普通宝箱数</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{common_chest_number}}</div>
+                </div>
+            </div>
+            <div class="base-user-info-1 flex flex-wrap text-center">
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">风神瞳</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{anemoculus_number}}</div>
+                </div>
+                <div class="user-base-info ml-4 p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">岩神瞳</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{geoculus_number}}</div>
+                </div>
+                <div class="user-base-info ml-4  p-2 rounded-xl flex-1">
+                    <div class="user-base-info-title-name text-xl p-1">雷神瞳</div>
+                    <div class="user-base-info-value text-4xl p-1 ">{{electroculus_number}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="user-info-2 flex ">
+            <div class="world-exploration rounded-xl float-left flex-1 mr-4">
+                <div class="world-exploration-title pl-2 ">
+                    <h1 class="text-2xl">世界探索</h1>
+                </div>
+                <div class="world-exploration-list pt-2 px-4">
+                    {% for world_exploration in world_exploration_list %}
+                    <div class="world-exploration-info mt-2 flex rounded-xl">
+                        <div class="world-exploration-info-icon flex-shrink">
+                            <img class="world-exploration-info-img" src="{{world_exploration.icon}}">
+                        </div>
+                        <div class="world-exploration-info-info flex-grow pt-1 pl-2 pb-1">
+                            <div class="world-exploration-info-name pb-1">
+                                <p>{{world_exploration.name}}</p>
+                            </div>
+                            <div class="world-exploration-info-hr pb-1">
+                                <HR class="world-exploration-info-hr-1" color=#000000 style="height: 2px">
+                            </div>
+                            <div class="world-exploration-info-s">
+                                <p>探索度：{{world_exploration.exploration_percentage}}%</p>
+                            </div>
+                            <div class="world-exploration-info-pointer">
+                                <div class="world-exploration-info-pointer-bar-body">
+                                    <div class="world-exploration-info-pointer-progress-bar"
+                                         style="width: {{world_exploration.exploration_percentage}}%"></div>
+                                </div>
+                            </div>
+                            <div class="world-exploration-info-offerings-list flex">
+                                {% for offering in world_exploration.offerings %}
+                                <div class="world-exploration-info-other-1 flex-1">
+                                    <p>{{offering.data}}</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="teapot rounded-xl float-right flex-1">
+                <div class="teapot-title pl-2">
+                    <h1 class="text-2xl">尘歌壶</h1>
+                </div>
+                <div class="teapot-info-base flex  rounded-xl text-center pt-2">
+                    <div class="user-base-info py-2 rounded-xl flex-1">
+                        <div class="user-base-info-title-name text-base p-1">信任等阶级</div>
+                        <div class="user-base-info-value text-4xl p-1">{{teapot_level}}</div>
+                    </div>
+                    <div class="user-base-info py-2 rounded-xl flex-1">
+                        <div class="user-base-info-title-name text-base p-1">最高洞天仙力</div>
+                        <div class="user-base-info-value text-4xl p-1">{{teapot_comfort_num}}</div>
+                    </div>
+                    <div class="user-base-info py-2 rounded-xl flex-1">
+                        <div class="user-base-info-title-name text-base p-1">获得摆设数</div>
+                        <div class="user-base-info-value text-4xl p-1">{{teapot_item_num}}</div>
+                    </div>
+                    <div class="user-base-info py-2 rounded-xl flex-1">
+                        <div class="user-base-info-title-name text-base p-1">历史访问数</div>
+                        <div class="user-base-info-value text-4xl p-1">{{teapot_visit_num}}</div>
+                    </div>
+
+                </div>
+                <div class="teapot-info-title text-center pt-2">
+                    <h1 class="text-base">已解锁的洞天</h1>
+                </div>
+                <div class="teapot-info-list flex-col px-4">
+                    {% for teapot in teapot_list %}
+                    <div class="teapot-info pt-4">
+                        <div class="teapot-info-icon rounded-xl relative">
+                            <div class="teapot-info-icon">
+                                <img class="teapot-info-img" src="{{teapot.icon}}">
+                            </div>
+                            <div class="teapot-info-name absolute right-0 top-0 px-2 text-base rounded-bl-lg">
+                                {{teapot.name}}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

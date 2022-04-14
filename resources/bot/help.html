@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href="../styles/tailwind.min.css" rel="stylesheet">
+    <link href="../styles/font-awesome.min.css" rel="stylesheet">
+    <style>
+        body {
+            color: #1e1f20;
+        }
+
+        #container {
+            background-color: #ececec;
+            max-width: 768px;
+        }
+
+        .command-title {
+            border-left: 5px solid #51aded;
+        }
+
+        .command {
+            background-color: burlywood;
+        }
+    </style>
+</head>
+<body>
+<div class="container mx-auto px-20 py-10" id="container">
+    <div class="info p-6 flex flex-wrap">
+        <div class="info-name text-4xl ">
+            <h1>PaimoeBot帮助文档</h1>
+        </div>
+        <div class="info-name text-1xl pl-10">
+            <p><i class="fa fa-address-card-o"></i>需要绑定Cookie</p>
+            <p><i class="fa fa-at"></i>可回复对应群友查询</p>
+        </div>
+    </div>
+    <div class="base-command pt-4">
+        <div class="command-type">
+            <div class="command-title text-2xl pl-2">
+                基础命令
+            </div>
+        </div>
+        <div class="command-list py-8 flex flex-wrap">
+            <div class="command ml-8 p-2 rounded-xl">
+                <div class="name-title text-xl p-1">
+                    /uid
+                    <i class="fa fa-address-card-o pl-2"></i>
+                    <i class="fa fa-at"></i>
+                </div>
+                <div class="name text-base p-1">查询玩家信息</div>
+            </div>
+            <div class="command ml-8  p-2 rounded-xl">
+                <div class="name-title text-xl p-1">/cookie</div>
+                <div class="name text-base p-1">绑定玩家信息</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

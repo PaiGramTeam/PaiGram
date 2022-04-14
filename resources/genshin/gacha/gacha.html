@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8"/>
+    <link rel="shortcut icon" href="#"/>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            transform: scale(0.9);
+            transform-origin: 0 0;
+            position: absolute;
+        }
+
+        .container {
+            width: 1286px;
+            height: 670px;
+            background-image: url(./items/background.jpg);
+            background-size: 100% 100%;
+            overflow: hidden;
+        }
+
+        .info-bg {
+            background-color: rgba(5, 5, 5, 0.6);
+            font-size: 46px;
+            color: rgb(255, 255, 255);
+            padding: 8px 10px;
+            border-radius: 5px;
+
+        }
+
+        .info-name {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            max-width: 400px;
+            position: fixed;
+            top: 8px;
+            left: 65px;
+            z-index: 9999;
+        }
+
+        .info-count {
+            position: fixed;
+            top: 85px;
+            left: 65px;
+            z-index: 9999;
+        }
+
+        .poor-info {
+            position: fixed;
+            top: 8px;
+            right: 55px;
+            z-index: 9999;
+        }
+
+        .poor-bing {
+            position: fixed;
+            top: 85px;
+            right: 55px;
+            z-index: 9999;
+        }
+
+        .list-box {
+            display: flex;
+            padding-top: 130px;
+            padding-left: 85px;
+        }
+
+        .list-box .item {
+            position: relative;
+        }
+
+        .list-box .item .item-bg-box {
+            width: 112px;
+            height: 450px;
+        }
+
+        .list-box .item .item-bg {
+            position: absolute;
+            width: 100%;
+            z-index: 100;
+        }
+
+        .list-box .item .item-bg-weapon {
+            position: absolute;
+            width: 100%;
+            z-index: 100;
+            top: 40px;
+            height: 370px;
+            opacity: 0.7;
+        }
+
+        .list-box .item .item-shadow {
+            position: absolute;
+            width: 225px;
+            height: 711px;
+            top: -151px;
+            left: -58px;
+            z-index: 50;
+        }
+
+        .list-box .item .item-shadow2 {
+            position: absolute;
+            top: 7px;
+            left: 7px;
+            height: 436px;
+            z-index: 110;
+            width: 99px;
+        }
+
+        .item-img-box {
+            position: absolute;
+            top: 1px;
+            left: 3px;
+            width: 106px;
+            height: 448px;
+            clip-path: url(#wishframe);
+            z-index: 100;
+        }
+
+        .item-character-img {
+            height: 100%;
+            position: absolute;
+            left: -15%;
+            filter: drop-shadow(3px 9px 0px #333);
+        }
+
+        .item-weapon-box {
+            position: absolute;
+            width: 106px;
+            height: 366px;
+            top: 45px;
+            left: 2px;
+            z-index: 101;
+            overflow: hidden;
+        }
+
+        .item-weapon-img {
+            width: 110px;
+            filter: drop-shadow(3px 9px 0px #333);
+        }
+
+        .item-weapon-img-4 {
+            top: 48px;
+        }
+
+        .item-element {
+            position: absolute;
+            width: 65px;
+            left: 23px;
+            top: 320px;
+            z-index: 120;
+        }
+
+        .item-star {
+            position: absolute;
+            width: 82px;
+            left: 16px;
+            top: 389px;
+            z-index: 120;
+        }
+
+        .logo {
+            position: absolute;
+            right: 55px;
+            bottom: 35px;
+            color: rgb(157 189 237 / 75%);
+            font-size: 24px;
+            z-index: 1000;
+        }
+
+        .times {
+            position: absolute;
+            z-index: 9999;
+            width: 109px;
+            text-align: center;
+            font-size: 26px;
+            left: 2px;
+            top: 275px;
+            color: rgb(255, 255, 255);
+            padding: 2px 0;
+            background-color: rgba(5, 5, 5, 0.5);
+            border-radius: 5px;
+            white-space: nowrap;
+        }
+    </style>
+    <link rel="preload" href="{{_res_path}}/genshin/gacha/items/background.jpg" as="image">
+</head>
+<body>
+<div class="container" id="container">
+    <div class="info-bg info-name">{{name}}</div>
+    <div class="info-bg info-count">{{info}}</div>
+    <div class="info-bg poor-info">{{poolName}}</div>
+    <div class="list-box">
+        {% for item in items %}
+        <div class="item">
+            <div class="item-bg-box">
+                <img class="item-bg" src="{{_res_path}}/genshin/gacha/items/bg.png"/>
+            </div>
+            <img class="item-shadow" src="{{_res_path}}/genshin/gacha/items/shadow-{{item.rank}}.png"/>
+            <img class="item-shadow2" src="{{_res_path}}/genshin/gacha/items/bg2.png"/>
+            {% if item.item_type=='武器' %}
+            <div class="item-weapon-box">
+                <img class="item-weapon-img" src="{{_res_path}}/genshin/gacha/weapon/{{item.item_name}}.png"/>
+            </div>
+            {% else %}
+            <div class="item-img-box">
+                <img class="item-character-img" src="{{_res_path}}/genshin/gacha/character/{{item.item_name}}.png"/>
+            </div>
+            {% endif %}
+            <img class="item-star" src="{{_res_path}}/genshin/gacha/items/s-{{item.rank}}.png"/>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</body>
+<svg viewBox="0 0 302.22 1333.94" height="0" width="0">
+    <clipPath id="wishframe" transform="scale(0.003308 0.00074965)" clipPathUnits="objectBoundingBox">
+        <path
+                d="M0.01 168.12l0 -9.64c4.32,-21.34 12,-32.33 25.46,-25.58 -2.35,-10.3 -1.53,-26.06 5.79,-25.96 19.18,0.25 29.95,-3.14 40.24,-13.16 -4.5,-66.43 51.39,-54.26 79.61,-93.78l0 0c28.22,39.52 84.1,27.34 79.61,93.78 10.29,10.02 21.06,13.41 40.24,13.16 7.32,-0.1 8.13,15.66 5.79,25.96 13.46,-6.75 21.14,4.24 25.46,25.58l0 9.64 0.01 0 0 1004.21 -0.01 0 0 3.13c-4.32,21.34 -12,32.33 -25.46,25.58 2.35,10.3 1.53,26.06 -5.79,25.96 -19.18,-0.25 -29.95,3.14 -40.24,13.16 4.5,66.43 -51.39,54.26 -79.61,93.78l0 0c-28.22,-39.52 -84.1,-27.34 -79.61,-93.78 -10.29,-10.02 -21.06,-13.41 -40.24,-13.16 -7.32,0.1 -8.13,-15.66 -5.79,-25.96 -13.46,6.75 -21.14,-4.24 -25.46,-25.58l0 -3.13 -0.01 0 0 -1004.21 0.01 0z"
+        />
+    </clipPath>
+</svg>
+</html>

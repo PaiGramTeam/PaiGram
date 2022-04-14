@@ -1,0 +1,12 @@
+redis>=4.2.0
+ujson>=5.1.0
+genshin>=0.4.0
+aiomysql>=0.0.22
+colorlog>=6.6.0
+numpy>=1.22.3
+httpx>=0.22.0
+asyncio>=3.4.3
+Jinja2>=3.1.1
+aiofiles>=0.8.0
+playwright>=1.20.1
+PyMySQL>=0.9.3

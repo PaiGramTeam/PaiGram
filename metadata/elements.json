@@ -1,0 +1,30 @@
+[
+  {
+    "Key": "Dendro",
+    "Source": "https://genshin.honeyhunterworld.com/img/icons/element/dendro.png"
+  },
+  {
+    "Key": "Anemo",
+    "Source": "https://genshin.honeyhunterworld.com/img/icons/element/anemo.png"
+  },
+  {
+    "Key": "Pryo",
+    "Source": "https://genshin.honeyhunterworld.com/img/icons/element/pyro.png"
+  },
+  {
+    "Key": "Cryo",
+    "Source": "https://genshin.honeyhunterworld.com/img/icons/element/cryo.png"
+  },
+  {
+    "Key": "Hydro",
+    "Source": "https://genshin.honeyhunterworld.com/img/icons/element/hydro.png"
+  },
+  {
+    "Key": "Electro",
+    "Source": "https://genshin.honeyhunterworld.com/img/icons/element/electro.png"
+  },
+  {
+    "Key": "Geo",
+    "Source": "https://genshin.honeyhunterworld.com/img/icons/element/geo.png"
+  }
+]
