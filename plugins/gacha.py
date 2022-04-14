@@ -9,7 +9,7 @@ from plugins.base import BasePlugins
 from service import BaseService
 from pyppeteer import launch
 from metadata.metadata import metadat
-from service.wich import WishCountInfo, get_one
+from service.wish import WishCountInfo, get_one
 
 
 class Gacha(BasePlugins):
