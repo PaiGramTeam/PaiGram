@@ -45,9 +45,9 @@ def main() -> None:
         entry_points=[CommandHandler('set_cookies', cookies.command_start),
                       MessageHandler(filters.Regex(r"^绑定账号(.*)"), cookies.command_start)],
         states={
-            cookies.CHECK_SERVER: [MessageHandler(filters.TEXT, cookies.check_server)],
-            cookies.CHECK_COOKIES: [MessageHandler(filters.TEXT, cookies.check_cookies)],
-            cookies.COMMAND_RESULT: [MessageHandler(filters.TEXT, cookies.command_result)],
+            cookies.CHECK_SERVER: [MessageHandler(filters.TEXT & ~filters.COMMAND, cookies.check_server)],
+            cookies.CHECK_COOKIES: [MessageHandler(filters.TEXT & ~filters.COMMAND, cookies.check_cookies)],
+            cookies.COMMAND_RESULT: [MessageHandler(filters.TEXT & ~filters.COMMAND, cookies.command_result)],
         },
         fallbacks=[CommandHandler('cancel', cookies.cancel)],
     )
@@ -74,13 +74,13 @@ def main() -> None:
     quiz_handler = ConversationHandler(
         entry_points=[CommandHandler('quiz', quiz.command_start)],
         states={
-            quiz.CHECK_COMMAND: [MessageHandler(filters.TEXT, quiz.check_command)],
-            quiz.CHECK_QUESTION: [MessageHandler(filters.TEXT, quiz.check_question)],
-            quiz.GET_NEW_QUESTION: [MessageHandler(filters.TEXT, quiz.get_new_question)],
-            quiz.GET_NEW_CORRECT_ANSWER: [MessageHandler(filters.TEXT, quiz.get_new_correct_answer)],
+            quiz.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.check_command)],
+            quiz.CHECK_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.check_question)],
+            quiz.GET_NEW_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.get_new_question)],
+            quiz.GET_NEW_CORRECT_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.get_new_correct_answer)],
             quiz.GET_NEW_WRONG_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.get_new_wrong_answer),
                                         CommandHandler("finish", quiz.finish_edit)],
-            quiz.SAVE_QUESTION: [MessageHandler(filters.TEXT, quiz.save_question)],
+            quiz.SAVE_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.save_question)],
         },
         fallbacks=[CommandHandler('cancel', quiz.cancel)]
     )

@@ -139,7 +139,7 @@ class Quiz:
         quiz_command_data.new_question = ""
         quiz_command_data.new_correct_answer = ""
         quiz_command_data.status = 1
-        await update.message.reply_text("请回复你要添加的问题", reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text("请回复你要添加的问题，或发送/cancel取消操作", reply_markup=ReplyKeyboardRemove())
         return self.GET_NEW_QUESTION
 
     async def get_new_question(self, update: Update, context: CallbackContext) -> int:
@@ -178,7 +178,7 @@ class Quiz:
 
     async def save_question(self, update: Update, context: CallbackContext):
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
-        if update.message.text == "退出":
+        if update.message.text == "抛弃修改并退出":
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         elif update.message.text == "保存并重载配置":
