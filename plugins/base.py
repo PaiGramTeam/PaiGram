@@ -23,7 +23,7 @@ class BasePlugins:
             return False
 
     def _add_delete_message_job(self, context: CallbackContext, chat_id: int, message_id: int,
-                                delete_seconds: int = 30):
+                                delete_seconds: int = 60):
         context.job_queue.scheduler.add_job(self._clean, "date",
                                             id=f"{chat_id}|{message_id}|auto_clean_message",
                                             name=f"{chat_id}|{message_id}|auto_clean_message",

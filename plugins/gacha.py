@@ -76,6 +76,6 @@ class Gacha(BasePlugins):
                                                       {"width": 1157, "height": 603}, False)
 
         reply_message = await message.reply_photo(png_data)
-        if filters.ChatType.GROUPS.filter(update.callback_query.message):
-            self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-            self._add_delete_message_job(context, message.chat_id, message.message_id)
+        if filters.ChatType.GROUPS.filter(message):
+            self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
+            self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
