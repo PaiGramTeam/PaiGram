@@ -49,7 +49,7 @@ class Gacha(BasePlugins):
         await message.reply_chat_action(ChatAction.FIND_LOCATION)
         data = {
             "_res_path": f"file://{self.resources_dir}",
-            "name": "洛水居室",
+            "name": f"{user.full_name}",
             "info": "卡池测试",
             "poolName": gacha_info["title"],
             "items": [],
