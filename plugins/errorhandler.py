@@ -11,7 +11,7 @@ from logger import Log
 from config import config
 
 try:
-    notice_chat_id = config.TELEGRAM["notice"]["ERROR"]
+    notice_chat_id = config.TELEGRAM["notice"]["ERROR"]["char_id"]
 except KeyError:
     Log.warning("错误通知Chat_id获取失败或未配置，BOT发生致命错误时不会收到通知")
     notice_chat_id = None
