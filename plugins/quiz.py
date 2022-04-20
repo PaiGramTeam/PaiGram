@@ -173,7 +173,7 @@ class Quiz:
                      f"正确答案：`{escape_markdown(quiz_command_data.new_correct_answer, version=2)}`\n" \
                      f"错误答案：`{escape_markdown(' '.join(quiz_command_data.new_wrong_answer), version=2)}`"
         await update.message.reply_markdown_v2(reply_text)
-        reply_keyboard = [["保存并重载配置", "保存并重载配置"]]
+        reply_keyboard = [["保存并重载配置", "抛弃修改并退出"]]
         await update.message.reply_text("请核对问题，并选择下一步操作。", reply_markup=ReplyKeyboardMarkup(reply_keyboard))
         return self.SAVE_QUESTION
 
@@ -198,6 +198,7 @@ class Quiz:
                     Log.error("重载问题失败 /n", error)
                     await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
                                                     reply_markup=ReplyKeyboardRemove())
+                    return ConversationHandler.END
                 await update.message.reply_text("重载配置成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         else:
@@ -216,14 +217,20 @@ class Quiz:
     async def delete_question(self, update: Update, context: CallbackContext) -> int:
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
         # 再问题重载Redis 以免redis数据为空时出现奔溃
-        await self.service.quiz_service.refresh_quiz()
-        question = await self.service.quiz_service.get_question(quiz_command_data.question_id)
-        # 因为外键的存在，先删除答案
-        for answer_id in question["answer_id"]:
-            await self.service.repository.delete_answer(answer_id)
-        await self.service.repository.delete_question(question["question_id"])
-        await update.message.reply_text("删除问题成功", reply_markup=ReplyKeyboardRemove())
-        await self.service.quiz_service.refresh_quiz()
+        try:
+            await self.service.quiz_service.refresh_quiz()
+            question = await self.service.quiz_service.get_question(quiz_command_data.question_id)
+            # 因为外键的存在，先删除答案
+            for answer_id in question["answer_id"]:
+                await self.service.repository.delete_answer(answer_id)
+            await self.service.repository.delete_question(question["question_id"])
+            await update.message.reply_text("删除问题成功", reply_markup=ReplyKeyboardRemove())
+            await self.service.quiz_service.refresh_quiz()
+        except ResponseError as error:
+            Log.error("重载问题失败 /n", error)
+            await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
+                                            reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
         await update.message.reply_text("重载配置成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
