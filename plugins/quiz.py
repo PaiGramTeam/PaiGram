@@ -4,11 +4,12 @@ import time
 from typing import List
 
 from numpy.random import MT19937, Generator
-from redis import DataError
+from redis import DataError, ResponseError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, Poll, ReplyKeyboardRemove
 from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
+from logger import Log
 from service import BaseService
 from service.base import QuestionData, AnswerData
 
@@ -139,7 +140,7 @@ class Quiz:
         quiz_command_data.new_question = ""
         quiz_command_data.new_correct_answer = ""
         quiz_command_data.status = 1
-        await update.message.reply_text("请回复你要添加的问题，或发送/cancel取消操作", reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text("请回复你要添加的问题，或发送 /cancel 取消操作", reply_markup=ReplyKeyboardRemove())
         return self.GET_NEW_QUESTION
 
     async def get_new_question(self, update: Update, context: CallbackContext) -> int:
@@ -172,7 +173,7 @@ class Quiz:
                      f"正确答案：`{escape_markdown(quiz_command_data.new_correct_answer, version=2)}`\n" \
                      f"错误答案：`{escape_markdown(' '.join(quiz_command_data.new_wrong_answer), version=2)}`"
         await update.message.reply_markdown_v2(reply_text)
-        reply_keyboard = [["保存并重载配置", "退出"]]
+        reply_keyboard = [["保存并重载配置", "保存并重载配置"]]
         await update.message.reply_text("请核对问题，并选择下一步操作。", reply_markup=ReplyKeyboardMarkup(reply_keyboard))
         return self.SAVE_QUESTION
 
@@ -191,7 +192,12 @@ class Quiz:
                 await self.service.quiz_service.save_quiz(
                     QuestionData(question=quiz_command_data.new_question, answer=answer))
                 await update.message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
-                await self.service.quiz_service.refresh_quiz()
+                try:
+                    await self.service.quiz_service.refresh_quiz()
+                except ResponseError as error:
+                    Log.error("重载问题失败 /n", error)
+                    await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
+                                                    reply_markup=ReplyKeyboardRemove())
                 await update.message.reply_text("重载配置成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         else:
