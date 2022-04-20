@@ -2,7 +2,7 @@ import os
 
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from logger import Log
 from plugins.base import BasePlugins
@@ -75,4 +75,7 @@ class Gacha(BasePlugins):
         png_data = await self.service.template.render('genshin/gacha', "gacha.html", data,
                                                       {"width": 1157, "height": 603}, False)
 
-        await message.reply_photo(png_data)
+        reply_message = await message.reply_photo(png_data)
+        if filters.ChatType.GROUPS.filter(update.callback_query.message):
+            self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+            self._add_delete_message_job(context, message.chat_id, message.message_id)
