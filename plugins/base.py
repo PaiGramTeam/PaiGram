@@ -1,8 +1,10 @@
 import datetime
 
 from telegram import Update
+from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler
 
+from logger import Log
 from service import BaseService
 
 
@@ -17,10 +19,14 @@ class BasePlugins:
 
     @staticmethod
     async def _clean(context: CallbackContext, chat_id: int, message_id: int) -> bool:
-        if await context.bot.delete_message(chat_id=chat_id, message_id=message_id):
-            return True
-        else:
-            return False
+        try:
+            if await context.bot.delete_message(chat_id=chat_id, message_id=message_id):
+                return True
+            else:
+                return False
+        except BadRequest as error:
+            Log.error(f"定时删除消息[chat_id→{chat_id}|message_id→{message_id}]失败 \n", error)
+        return False
 
     def _add_delete_message_job(self, context: CallbackContext, chat_id: int, message_id: int,
                                 delete_seconds: int = 60):
