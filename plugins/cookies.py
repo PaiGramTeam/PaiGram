@@ -50,7 +50,7 @@ class Cookies(BasePlugins):
         user_info = await self.service.user_service_db.get_user_info(user.id)
         cookies_command_data.user_info = user_info
         if update.message.text == "退出":
-            await update.message.reply_text("退出任务")
+            await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         elif update.message.text == "miHoYo":
             cookies_command_data.service = ServiceEnum.MIHOYO

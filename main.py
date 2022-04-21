@@ -42,8 +42,8 @@ def main() -> None:
 
     cookies = Cookies(service)
     cookies_handler = ConversationHandler(
-        entry_points=[CommandHandler('set_cookies', cookies.command_start),
-                      MessageHandler(filters.Regex(r"^绑定账号(.*)"), cookies.command_start)],
+        entry_points=[CommandHandler('set_cookies', cookies.command_start, filters.ChatType.PRIVATE),
+                      MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE, cookies.command_start)],
         states={
             cookies.CHECK_SERVER: [MessageHandler(filters.TEXT & ~filters.COMMAND, cookies.check_server)],
             cookies.CHECK_COOKIES: [MessageHandler(filters.TEXT & ~filters.COMMAND, cookies.check_cookies)],
