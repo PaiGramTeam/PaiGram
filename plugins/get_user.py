@@ -33,6 +33,9 @@ class GetUser(BasePlugins):
             get_user_command_data = GetUserCommandData()
             context.chat_data["get_user_command_data"] = get_user_command_data
         user_info = await self.service.user_service_db.get_user_info(user.id)
+        if user_info.user_id == 0:
+            await update.message.reply_text("未查询到账号信息")
+            return ConversationHandler.END
         if user_info.service == ServiceEnum.NULL:
             message = "请选择你要查询的类别"
             keyboard = [

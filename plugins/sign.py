@@ -61,6 +61,9 @@ class Sign(BasePlugins):
             sign_command_data = SignCommandData()
             context.chat_data["sign_command_data"] = sign_command_data
         user_info = await self.service.user_service_db.get_user_info(user.id)
+        if user_info.user_id == 0:
+            await update.message.reply_text("未查询到账号信息")
+            return ConversationHandler.END
         if user_info.service == ServiceEnum.NULL:
             message = "请选择你要签到的服务器"
             keyboard = [
