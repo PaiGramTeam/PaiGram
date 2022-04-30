@@ -25,48 +25,15 @@ class GetUser(BasePlugins):
         super().__init__(service)
         self.current_dir = os.getcwd()
 
-    async def command_start(self, update: Update, context: CallbackContext) -> int:
-        user = update.effective_user
-        Log.info(f"用户 {user.full_name}[{user.id}] 查询游戏用户命令请求")
-        get_user_command_data: GetUserCommandData = context.chat_data.get("get_user_command_data")
-        if get_user_command_data is None:
-            get_user_command_data = GetUserCommandData()
-            context.chat_data["get_user_command_data"] = get_user_command_data
-        user_info = await self.service.user_service_db.get_user_info(user.id)
-        if user_info.user_id == 0:
-            await update.message.reply_text("未查询到账号信息")
-            return ConversationHandler.END
-        if user_info.service == ServiceEnum.NULL:
-            message = "请选择你要查询的类别"
-            keyboard = [
-                [
-                    InlineKeyboardButton("米游社", callback_data="米游社"),
-                    InlineKeyboardButton("HoYoLab", callback_data="HoYoLab")
-                ]
-            ]
-            get_user_command_data.user_info = user_info
-            await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
-            return self.COMMAND_RESULT
-        return ConversationHandler.END
-
-    async def command_result(self, update: Update, context: CallbackContext) -> int:
-        user = update.effective_user
-        get_user_command_data: GetUserCommandData = context.chat_data["get_user_command_data"]
-        query = update.callback_query
-        await query.answer()
-        await query.delete_message()
-        if query.data == "米游社":
-            client = genshin.ChineseClient(cookies=get_user_command_data.user_info.mihoyo_cookie)
-            uid = get_user_command_data.user_info.mihoyo_game_uid
-        elif query.data == "HoYoLab":
-            client = genshin.GenshinClient(cookies=get_user_command_data.user_info.hoyoverse_cookie, lang="zh-cn")
-            uid = get_user_command_data.user_info.hoyoverse_game_uid
+    async def _start_get_user_info(self, user_info: UserInfoData, service: ServiceEnum) -> bytes:
+        if service == ServiceEnum.MIHOYOBBS:
+            client = genshin.ChineseClient(cookies=user_info.mihoyo_cookie)
+            uid = user_info.mihoyo_game_uid
         else:
-            return ConversationHandler.END
-        Log.info(f"用户 {user.full_name}[{user.id}] 查询武器命令请求 || 参数 UID {uid}")
+            client = genshin.GenshinClient(cookies=user_info.hoyoverse_cookie, lang="zh-cn")
+            uid = user_info.hoyoverse_game_uid
         user_info = await client.get_user(int(uid))
         record_card_info = await client.get_record_card()
-        await query.message.reply_chat_action(ChatAction.FIND_LOCATION)
         user_avatar = user_info.characters[0].icon
         user_data = {
             "name": record_card_info.nickname,
@@ -116,8 +83,55 @@ class GetUser(BasePlugins):
         user_data["background_image"] = f"file://{self.current_dir}/resources/background/vertical/{background_image}"
         png_data = await self.service.template.render('genshin/info', "info.html", user_data,
                                                       {"width": 1024, "height": 1024})
-        await query.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await query.message.reply_photo(png_data, filename=f"{record_card_info.uid}.png",
-                                        allow_sending_without_reply=True)
         await client.close()
+        return png_data
+
+    async def command_start(self, update: Update, context: CallbackContext) -> int:
+        user = update.effective_user
+        Log.info(f"用户 {user.full_name}[{user.id}] 查询游戏用户命令请求")
+        get_user_command_data: GetUserCommandData = context.chat_data.get("get_user_command_data")
+        if get_user_command_data is None:
+            get_user_command_data = GetUserCommandData()
+            context.chat_data["get_user_command_data"] = get_user_command_data
+        user_info = await self.service.user_service_db.get_user_info(user.id)
+        if user_info.user_id == 0:
+            await update.message.reply_text("未查询到账号信息")
+            return ConversationHandler.END
+        if user_info.service == ServiceEnum.NULL:
+            reply_text = "请选择你要查询的类别"
+            keyboard = [
+                [
+                    InlineKeyboardButton("米游社", callback_data="米游社"),
+                    InlineKeyboardButton("HoYoLab", callback_data="HoYoLab")
+                ]
+            ]
+            get_user_command_data.user_info = user_info
+            await update.message.reply_text(reply_text, reply_markup=InlineKeyboardMarkup(keyboard))
+            return self.COMMAND_RESULT
+        else:
+            await update.message.reply_chat_action(ChatAction.FIND_LOCATION)
+            png_data = await self._start_get_user_info(user_info, user_info.service)
+            await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+            await update.message.reply_photo(png_data, filename=f"{user_info.user_id}.png",
+                                             allow_sending_without_reply=True)
+
+        return ConversationHandler.END
+
+    async def command_result(self, update: Update, context: CallbackContext) -> int:
+        user = update.effective_user
+        get_user_command_data: GetUserCommandData = context.chat_data["get_user_command_data"]
+        query = update.callback_query
+        await query.answer()
+        await query.delete_message()
+        if query.data == "米游社":
+            service = ServiceEnum.MIHOYOBBS
+        elif query.data == "HoYoLab":
+            service = ServiceEnum.HOYOLAB
+        else:
+            return ConversationHandler.END
+        # Log.info(f"用户 {user.full_name}[{user.id}] 查询角色命令请求 || 参数 UID {uid}")
+        png_data = await self._start_get_user_info(get_user_command_data.user_info, service)
+        await query.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        await query.message.reply_photo(png_data, filename=f"{get_user_command_data.user_info.user_id}.png",
+                                        allow_sending_without_reply=True)
         return ConversationHandler.END
