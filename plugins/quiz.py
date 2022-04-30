@@ -131,6 +131,11 @@ class Quiz:
         except DataError:
             await update.message.reply_text("Redis数据错误，重载失败", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
+        except ResponseError as error:
+            Log.error("重载问题失败 /n", error)
+            await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
+                                            reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
         await update.message.reply_text("重载成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 

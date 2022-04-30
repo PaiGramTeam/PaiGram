@@ -14,7 +14,7 @@ from service.base import UserInfoData
 
 
 class CookiesCommandData:
-    service = ServiceEnum.MIHOYO
+    service = ServiceEnum.MIHOYOBBS
     cookies: dict = {}
     game_uid: int = 0
     user_info: UserInfoData = UserInfoData()
@@ -38,7 +38,7 @@ class Cookies(BasePlugins):
         #    message = f'你好 {user.mention_markdown_v2()} ' \
         #              f'{escape_markdown("！你已经绑定Cookies！如果继续进行绑定会覆盖Cookie，可回复退出取消操作！")}'
         # await update.message.reply_markdown_v2(message, reply_markup=ReplyKeyboardRemove())
-        reply_keyboard = [['miHoYo', 'HoYoLab'], ["退出"]]
+        reply_keyboard = [['米游社', 'HoYoLab'], ["退出"]]
         await update.message.reply_markdown_v2(message,
                                                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
@@ -52,8 +52,8 @@ class Cookies(BasePlugins):
         if update.message.text == "退出":
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif update.message.text == "miHoYo":
-            cookies_command_data.service = ServiceEnum.MIHOYO
+        elif update.message.text == "米游社":
+            cookies_command_data.service = ServiceEnum.MIHOYOBBS
             bbs_url = "https://bbs.mihoyo.com/ys/"
             bbs_name = "米游社"
             if len(user_info.mihoyo_cookie) > 1:
@@ -97,7 +97,7 @@ class Cookies(BasePlugins):
         if len(cookies) == 0:
             await update.message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        if cookies_command_data.service == ServiceEnum.MIHOYO:
+        if cookies_command_data.service == ServiceEnum.MIHOYOBBS:
             client = genshin.ChineseClient(cookies=cookies)
         elif cookies_command_data.service == ServiceEnum.HOYOLAB:
             client = genshin.GenshinClient(cookies=cookies)
@@ -136,12 +136,12 @@ class Cookies(BasePlugins):
             data = ujson.dumps(cookies_command_data.cookies)
             user_info = cookies_command_data.user_info
             service = ServiceEnum.NULL.value
-            if cookies_command_data.service == ServiceEnum.MIHOYO:
+            if cookies_command_data.service == ServiceEnum.MIHOYOBBS:
                 user_info.mihoyo_game_uid = cookies_command_data.game_uid
-                service = ServiceEnum.MIHOYO.value
+                service = ServiceEnum.MIHOYOBBS.value
             elif cookies_command_data.service == ServiceEnum.HOYOLAB:
                 user_info.hoyoverse_game_uid = cookies_command_data.game_uid
-                service = ServiceEnum.MIHOYO.value
+                service = ServiceEnum.HOYOLAB.value
             await self.service.user_service_db.set_user_info(user.id, user_info.mihoyo_game_uid,
                                                              user_info.hoyoverse_game_uid,
                                                              service)

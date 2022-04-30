@@ -40,7 +40,7 @@ class GetUser(BasePlugins):
             message = "请选择你要查询的类别"
             keyboard = [
                 [
-                    InlineKeyboardButton("miHoYo", callback_data="miHoYo"),
+                    InlineKeyboardButton("米游社", callback_data="米游社"),
                     InlineKeyboardButton("HoYoLab", callback_data="HoYoLab")
                 ]
             ]
@@ -55,7 +55,7 @@ class GetUser(BasePlugins):
         query = update.callback_query
         await query.answer()
         await query.delete_message()
-        if query.data == "miHoYo":
+        if query.data == "米游社":
             client = genshin.ChineseClient(cookies=get_user_command_data.user_info.mihoyo_cookie)
             uid = get_user_command_data.user_info.mihoyo_game_uid
         elif query.data == "HoYoLab":

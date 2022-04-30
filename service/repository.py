@@ -55,7 +55,7 @@ class AsyncRepository:
         return result
 
     async def update_cookie(self, user_id: int, cookie: str, service: ServiceEnum):
-        if service == ServiceEnum.MIHOYO:
+        if service == ServiceEnum.MIHOYOBBS:
             query = f"""
                                 UPDATE `mihoyo_cookie`
                                 SET cookie=%s
@@ -73,7 +73,7 @@ class AsyncRepository:
         await self._execute_and_fetchall(query, query_args)
 
     async def set_cookie(self, user_id: int, cookie: str, service: ServiceEnum):
-        if service == ServiceEnum.MIHOYO:
+        if service == ServiceEnum.MIHOYOBBS:
             query = f"""
                                 INSERT INTO  `mihoyo_cookie`
                                 (user_id,cookie)

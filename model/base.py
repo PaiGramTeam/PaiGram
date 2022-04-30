@@ -40,5 +40,5 @@ class ArtworkImage:
 
 class ServiceEnum(Enum):
     NULL = None
-    MIHOYO = 1
+    MIHOYOBBS = 1
     HOYOLAB = 2

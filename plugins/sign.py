@@ -23,7 +23,7 @@ class Sign(BasePlugins):
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
 
     async def _start_sign(self, uid: int, cookies: dict, service: ServiceEnum) -> str:
-        if service == ServiceEnum.MIHOYO:
+        if service == ServiceEnum.MIHOYOBBS:
             sign_api = self._sign_y
         else:
             sign_api = self._sing_g
@@ -91,7 +91,7 @@ class Sign(BasePlugins):
         await query.answer()
         message = "签到失败"
         if query.data == "miHoYo":
-            message = await self._start_sign(user_info.mihoyo_game_uid, user_info.mihoyo_cookie, ServiceEnum.MIHOYO)
+            message = await self._start_sign(user_info.mihoyo_game_uid, user_info.mihoyo_cookie, ServiceEnum.MIHOYOBBS)
         if query.data == "HoYoLab":
             message = await self._start_sign(user_info.hoyoverse_game_uid, user_info.hoyoverse_cookie,
                                              ServiceEnum.HOYOLAB)
