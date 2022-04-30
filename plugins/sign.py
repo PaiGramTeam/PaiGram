@@ -96,6 +96,7 @@ class Sign(BasePlugins):
             message = await self._start_sign(user_info.hoyoverse_game_uid, user_info.hoyoverse_cookie,
                                              ServiceEnum.HOYOLAB)
         await query.edit_message_text(message)
-        if filters.ChatType.GROUPS.filter(update.callback_query.message):
-            self._add_delete_message_job(context, query.message.chat_id, query.message.message_id)
+        if query.message is not None:
+            if filters.ChatType.GROUPS.filter(query.message):
+                self._add_delete_message_job(context, query.message.chat_id, query.message.message_id)
         return ConversationHandler.END
