@@ -34,8 +34,8 @@ class Sign(BasePlugins):
         if is_sign.error:
             return f"获取签到状态失败，API返回信息为 {is_sign.message}"
         total_sign_day = is_sign.data["total_sign_day"]
-        award_name = sign_give.data["awards"][total_sign_day]["name"]
-        award_cnt = sign_give.data["awards"][total_sign_day]["cnt"]
+        award_name = sign_give.data["awards"][total_sign_day - 1]["name"]
+        award_cnt = sign_give.data["awards"][total_sign_day - 1]["cnt"]
         today = is_sign.data["today"]
         if not is_sign.data["is_sign"]:
             sign = await sign_api.sign(uid, cookies=cookies)
