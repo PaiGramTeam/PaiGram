@@ -60,6 +60,8 @@ class Sign(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
+        if filters.ChatType.GROUPS.filter(message):
+            self._add_delete_message_job(context, message.chat_id, message.message_id)
         sign_command_data: SignCommandData = context.chat_data.get("sign_command_data")
         if sign_command_data is None:
             sign_command_data = SignCommandData()
@@ -72,7 +74,7 @@ class Sign(BasePlugins):
             message = "请选择你要签到的服务器"
             keyboard = [
                 [
-                    InlineKeyboardButton("miHoYo", callback_data="miHoYo"),
+                    InlineKeyboardButton("米游社", callback_data="米游社"),
                     InlineKeyboardButton("HoYoLab", callback_data="HoYoLab")
                 ]
             ]
@@ -86,8 +88,6 @@ class Sign(BasePlugins):
             reply_message = await message.reply_text(sign)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-            if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, message.chat_id, message.message_id)
         return ConversationHandler.END
 
     async def command_result(self, update: Update, context: CallbackContext) -> int:
@@ -96,12 +96,12 @@ class Sign(BasePlugins):
         query = update.callback_query
         await query.answer()
         message = "签到失败"
-        if query.data == "miHoYo":
+        if query.data == "米游社":
             message = await self._start_sign(user_info, ServiceEnum.MIHOYOBBS)
         if query.data == "HoYoLab":
             message = await self._start_sign(user_info, ServiceEnum.HOYOLAB)
         await query.edit_message_text(message)
-        if query.message is not None:
-            if filters.ChatType.GROUPS.filter(query.message):
-                self._add_delete_message_job(context, query.message.chat_id, query.message.message_id)
+        if query_message := query.message:
+            if filters.ChatType.GROUPS.filter(query_message):
+                self._add_delete_message_job(context, query_message.chat_id, query_message.message_id)
         return ConversationHandler.END
