@@ -10,6 +10,7 @@ from telegram.ext import CallbackContext
 from numpy.random import Generator, MT19937
 from telegram.helpers import escape_markdown
 
+from logger import Log
 from model.helpers import get_admin_list
 from service import BaseService
 
@@ -143,14 +144,20 @@ class Auth:
             text = f"{user.mention_markdown_v2()} 验证成功，向着星辰与深渊！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
-            await message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2)
         else:
             await callback_query.answer(text=f"验证失败，请在 {self.time_out} 秒后重试", show_alert=True)
             await self.kick(context, chat.id, user_id)
             text = f"{user.mention_markdown_v2()} 验证失败，已经赶出提瓦特大陆！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
+        try:
             await message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2)
+        except BadRequest as exc:
+            if 'are exactly the same as ' in str(exc):
+                Log.warning("编辑消息发生异常，可能为chul1，错误信息为 \n", exc)
+                pass
+            else:
+                raise exc
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
             schedule.remove()
 
