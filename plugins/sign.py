@@ -17,16 +17,20 @@ class SignCommandData:
 class Sign(BasePlugins):
     def __init__(self, service: BaseService):
         super().__init__(service)
-        self._sign_y = YuanShen()
-        self._sing_g = Genshin()
+        self._sign_yuanshen = YuanShen()
+        self._sing_genshin = Genshin()
 
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
 
-    async def _start_sign(self, uid: int, cookies: dict, service: ServiceEnum) -> str:
+    async def _start_sign(self, user_info: UserInfoData, service: ServiceEnum) -> str:
         if service == ServiceEnum.MIHOYOBBS:
-            sign_api = self._sign_y
+            sign_api = self._sign_yuanshen
+            uid = user_info.mihoyo_game_uid
+            cookies = user_info.mihoyo_cookie
         else:
-            sign_api = self._sing_g
+            sign_api = self._sing_genshin
+            uid = user_info.hoyoverse_game_uid
+            cookies = user_info.hoyoverse_cookie
         sign_give = await sign_api.get_sign_give(cookies=cookies)
         if sign_give.error:
             return f"获取签到信息失败，API返回信息为 {sign_give.message}"
@@ -78,7 +82,7 @@ class Sign(BasePlugins):
             sign_command_data.reply_to_message_id = update.message.message_id
             return self.COMMAND_RESULT
         else:
-            sign = await self._start_sign(user_info.mihoyo_game_uid, user_info.mihoyo_cookie, user_info.service)
+            sign = await self._start_sign(user_info, user_info.service)
             reply_message = await message.reply_text(sign)
             if filters.ChatType.GROUPS.filter(update.callback_query.message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
@@ -91,10 +95,9 @@ class Sign(BasePlugins):
         await query.answer()
         message = "签到失败"
         if query.data == "miHoYo":
-            message = await self._start_sign(user_info.mihoyo_game_uid, user_info.mihoyo_cookie, ServiceEnum.MIHOYOBBS)
+            message = await self._start_sign(user_info, ServiceEnum.MIHOYOBBS)
         if query.data == "HoYoLab":
-            message = await self._start_sign(user_info.hoyoverse_game_uid, user_info.hoyoverse_cookie,
-                                             ServiceEnum.HOYOLAB)
+            message = await self._start_sign(user_info, ServiceEnum.HOYOLAB)
         await query.edit_message_text(message)
         if query.message is not None:
             if filters.ChatType.GROUPS.filter(query.message):
