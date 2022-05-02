@@ -84,8 +84,10 @@ class Sign(BasePlugins):
         else:
             sign = await self._start_sign(user_info, user_info.service)
             reply_message = await message.reply_text(sign)
-            if filters.ChatType.GROUPS.filter(update.callback_query.message):
+            if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, message.chat_id, message.message_id)
         return ConversationHandler.END
 
     async def command_result(self, update: Update, context: CallbackContext) -> int:
