@@ -20,10 +20,8 @@ class BasePlugins:
     @staticmethod
     async def _clean(context: CallbackContext, chat_id: int, message_id: int) -> bool:
         try:
-            if await context.bot.delete_message(chat_id=chat_id, message_id=message_id):
-                return True
-            else:
-                return False
+            await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+            return True
         except BadRequest as error:
             Log.error(f"定时删除消息[chat_id→{chat_id}|message_id→{message_id}]失败 \n", error)
         return False

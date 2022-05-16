@@ -2,7 +2,10 @@ import hashlib
 import os
 from typing import List
 import httpx
+from httpx import UnsupportedProtocol
 from telegram import Bot
+
+from logger import Log
 from service.cache import RedisCache
 import aiofiles
 
@@ -39,10 +42,14 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
     file_dir = os.path.join(cache_dir, temp_file_name)
     if not os.path.exists(file_dir):
         async with httpx.AsyncClient(headers=headers) as client:
-            data = await client.get(url)
+            try:
+                data = await client.get(url)
+            except UnsupportedProtocol as error:
+                Log.error(f"url连接不支持 url[{url}]")
+                Log.error("错误信息为", error)
+                return ""
         if data.is_error:
             return ""
         async with aiofiles.open(file_dir, mode='wb') as f:
             await f.write(data.content)
     return prefix + file_dir
-

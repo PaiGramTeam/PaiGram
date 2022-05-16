@@ -175,11 +175,17 @@ class Auth:
         for user in message.new_chat_members:
             if user.is_bot:
                 continue
-            if not await context.bot.restrict_chat_member(chat_id=message.chat.id, user_id=user.id,
-                                                          permissions=ChatPermissions(can_send_messages=False)):
-                await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
-                                                f"请检查是否给派蒙授权管理了")
-                return
+            try:
+                await context.bot.restrict_chat_member(chat_id=message.chat.id, user_id=user.id,
+                                                       permissions=ChatPermissions(can_send_messages=False))
+            except BadRequest as err:
+                if "Not enough rights" in str(err):
+                    Log.warning(f"权限不够 char_id[{message.chat_id}]", err)
+                    await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
+                                                    f"请检查是否给派蒙授权管理了")
+                    return
+                else:
+                    raise err
             question_id_list = await self.service.quiz_service.get_question_id_list()
             if len(question_id_list) == 0:
                 await message.reply_text(f"旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
