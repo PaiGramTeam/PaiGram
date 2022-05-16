@@ -45,10 +45,11 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
             try:
                 data = await client.get(url)
             except UnsupportedProtocol as error:
-                Log.error(f"url连接不支持 url[{url}]")
+                Log.error(f"连接不支持 url[{url}]")
                 Log.error("错误信息为", error)
                 return ""
         if data.is_error:
+            Log.error(f"请求出现错误 url[{url}] status_code[{data.status_code}]")
             return ""
         async with aiofiles.open(file_dir, mode='wb') as f:
             await f.write(data.content)
