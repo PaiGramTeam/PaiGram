@@ -196,6 +196,7 @@ class Auth:
             for answer_id in question["answer_id"]:
                 answer = await self.service.quiz_service.get_answer(answer_id)
                 options.append(answer)
+            random.shuffle(options)
             buttons = [
                 [
                     InlineKeyboardButton(

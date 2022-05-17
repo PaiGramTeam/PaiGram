@@ -72,6 +72,7 @@ class Quiz:
                 options.append(answer["answer"])
                 if answer["is_correct"] == 1:
                     correct_option = answer["answer"]
+            random.shuffle(options)
             index = options.index(correct_option)
             await update.effective_message.reply_poll(question["question"], options, correct_option_id=index,
                                                       is_anonymous=False, open_period=self.time_out, type=Poll.QUIZ)
