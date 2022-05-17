@@ -10,6 +10,7 @@ from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
 from logger import Log
+from plugins.base import BasePlugins
 from service import BaseService
 from service.base import QuestionData, AnswerData
 
@@ -22,12 +23,13 @@ class QuizCommandData:
     status: int = 0
 
 
-class Quiz:
+class Quiz(BasePlugins):
     CHECK_COMMAND, VIEW_COMMAND, CHECK_QUESTION, \
     GET_NEW_QUESTION, GET_NEW_CORRECT_ANSWER, GET_NEW_WRONG_ANSWER, \
     QUESTION_EDIT, SAVE_QUESTION = range(10300, 10308)
 
     def __init__(self, service: BaseService):
+        super().__init__(service)
         self.send_time = time.time()
         self.generator = Generator(MT19937(int(self.send_time)))
         self.service = service
@@ -74,8 +76,11 @@ class Quiz:
                     correct_option = answer["answer"]
             random.shuffle(options)
             index = options.index(correct_option)
-            await update.effective_message.reply_poll(question["question"], options, correct_option_id=index,
-                                                      is_anonymous=False, open_period=self.time_out, type=Poll.QUIZ)
+            poll_message = await update.effective_message.reply_poll(question["question"], options,
+                                                                     correct_option_id=index, is_anonymous=False,
+                                                                     open_period=self.time_out, type=Poll.QUIZ)
+            await self._add_delete_message_job(context, update.message.chat_id, update.message.message_id, 300)
+            await self._add_delete_message_job(context, poll_message.chat_id, poll_message.message_id, 300)
             return ConversationHandler.END
         return ConversationHandler.END
 
@@ -238,9 +243,4 @@ class Quiz:
                                             reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await update.message.reply_text("重载配置成功", reply_markup=ReplyKeyboardRemove())
-        return ConversationHandler.END
-
-    @staticmethod
-    async def cancel(update: Update, _: CallbackContext) -> int:
-        await update.message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
