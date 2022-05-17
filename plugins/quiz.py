@@ -79,8 +79,8 @@ class Quiz(BasePlugins):
             poll_message = await update.effective_message.reply_poll(question["question"], options,
                                                                      correct_option_id=index, is_anonymous=False,
                                                                      open_period=self.time_out, type=Poll.QUIZ)
-            await self._add_delete_message_job(context, update.message.chat_id, update.message.message_id, 300)
-            await self._add_delete_message_job(context, poll_message.chat_id, poll_message.message_id, 300)
+            self._add_delete_message_job(context, update.message.chat_id, update.message.message_id, 300)
+            self._add_delete_message_job(context, poll_message.chat_id, poll_message.message_id, 300)
             return ConversationHandler.END
         return ConversationHandler.END
 
