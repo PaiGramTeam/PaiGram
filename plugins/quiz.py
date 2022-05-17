@@ -44,6 +44,7 @@ class Quiz(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         if filters.ChatType.PRIVATE.filter(update.message):
+            Log.info(f"用户 {user.full_name}[{user.id}] quiz命令请求")
             admin_list = await self.service.admin.get_admin_list()
             if user.id in admin_list:
                 quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
@@ -61,6 +62,8 @@ class Quiz(BasePlugins):
                                                                                         one_time_keyboard=True))
                 return self.CHECK_COMMAND
         if filters.ChatType.GROUPS.filter(update.message):
+            chat = update.message.chat
+            Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 发送挑战问题命令请求")
             question_id_list = await self.service.quiz_service.get_question_id_list()
             if len(question_id_list) == 0:
                 await update.message.reply_text(f"旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
