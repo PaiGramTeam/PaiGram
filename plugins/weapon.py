@@ -65,7 +65,7 @@ class Weapon(BasePlugins):
                 "progression_base_atk": _weapon_data["ATK"],
                 "weapon_info_source_list": [],
                 "special_ability_name": _weapon_data["Passive"],
-                "special_ability_info": _weapon_data["PassiveDescription"],
+                "special_ability_info": _weapon_data["PassiveDescription"]["Lv1"],
             }
             _template_data["weapon_info_source_list"].append(
                 await url_to_file(_weapon_data["Ascension"]["Source"])
