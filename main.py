@@ -12,7 +12,7 @@ from plugins.inline import Inline
 from plugins.job_queue import JobQueue
 from plugins.quiz import Quiz
 from plugins.sign import Sign
-from plugins.start import start, help_command, new_chat_members, emergency_food, ping, reply_keyboard_remove
+from plugins.start import start, help_command, emergency_food, ping, reply_keyboard_remove
 from plugins.weapon import Weapon
 from service import StartService
 from service.repository import AsyncRepository
