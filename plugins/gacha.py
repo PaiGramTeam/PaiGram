@@ -30,13 +30,13 @@ class Gacha(BasePlugins):
         user = update.effective_user
         Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求")
         args = message.text.split(" ")
-        if len(args) == 1:
-            gacha_info = await self.service.gacha.gacha_info()
-        else:
-            gacha_info = await self.service.gacha.gacha_info(args[1])
+        gacha_name = "角色活动"
+        if len(args) > 1:
+            gacha_name = args[1]
+        gacha_info = await self.service.gacha.gacha_info(gacha_name)
         # 用户数据储存和处理
         if gacha_info.get("gacha_id") is None:
-            await message.reply_text(f"没有找到 {args[1]} 卡池名称")
+            await message.reply_text(f"没有找到名为 {gacha_name} 的卡池")
             return ConversationHandler.END
         gacha_id: str = gacha_info["gacha_id"]
         user_gacha: dict[str, WishCountInfo] = context.user_data.get("gacha")
@@ -50,10 +50,9 @@ class Gacha(BasePlugins):
         data = {
             "_res_path": f"file://{self.resources_dir}",
             "name": f"{user.full_name}",
-            "info": "卡池测试",
+            "info": gacha_name,
             "poolName": gacha_info["title"],
             "items": [],
-
         }
         for a in range(10):
             item = get_one(user_gacha_count, gacha_info)
