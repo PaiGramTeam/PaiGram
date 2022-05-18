@@ -7,6 +7,7 @@ from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler
 from telegram.helpers import escape_markdown
 
+from logger import Log
 from model.base import ServiceEnum
 from plugins.base import BasePlugins
 from service import BaseService
@@ -27,17 +28,14 @@ class Cookies(BasePlugins):
         super().__init__(service)
 
     async def command_start(self, update: Update, context: CallbackContext) -> int:
+        user = update.effective_user
+        Log.info(f"用户 {user.full_name}[{user.id}] 绑定账号命令请求")
         cookies_command_data: CookiesCommandData = context.chat_data.get("cookies_command_data")
         if cookies_command_data is None:
             cookies_command_data = CookiesCommandData()
             context.chat_data["cookies_command_data"] = cookies_command_data
-        user = update.effective_user
+
         message = f'你好 {user.mention_markdown_v2()} {escape_markdown("！请选择要绑定的服务器！或回复退出取消操作")}'
-        # cookie = await self.repository.read_cookie(user.id)
-        # if cookie != "":
-        #    message = f'你好 {user.mention_markdown_v2()} ' \
-        #              f'{escape_markdown("！你已经绑定Cookies！如果继续进行绑定会覆盖Cookie，可回复退出取消操作！")}'
-        # await update.message.reply_markdown_v2(message, reply_markup=ReplyKeyboardRemove())
         reply_keyboard = [['米游社', 'HoYoLab'], ["退出"]]
         await update.message.reply_markdown_v2(message,
                                                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
@@ -81,6 +79,7 @@ class Cookies(BasePlugins):
         return self.CHECK_COOKIES
 
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
+        user = update.effective_user
         cookies_command_data: CookiesCommandData = context.chat_data.get("cookies_command_data")
         if update.message.text == "退出":
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
@@ -117,6 +116,7 @@ class Cookies(BasePlugins):
         cookies_command_data.game_uid = user_info.uid
         reply_keyboard = [['确认', '退出']]
         await update.message.reply_text("获取角色基础信息成功，请检查是否正确！")
+        Log.info(f"用户 {user.full_name}[{user.id}] 获取账号 {user_info.nickname}[{user_info.uid}] 信息成功")
         message = f"*角色信息*\n" \
                   f"角色名称：{user_info.nickname}\n" \
                   f"角色等级：{user_info.level}\n" \
@@ -127,12 +127,12 @@ class Cookies(BasePlugins):
         return self.COMMAND_RESULT
 
     async def command_result(self, update: Update, context: CallbackContext) -> int:
+        user = update.effective_user
         cookies_command_data: CookiesCommandData = context.chat_data.get("cookies_command_data")
         if update.message.text == "退出":
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         elif update.message.text == "确认":
-            user = update.effective_user
             data = ujson.dumps(cookies_command_data.cookies)
             user_info = cookies_command_data.user_info
             service = ServiceEnum.NULL.value
@@ -146,6 +146,7 @@ class Cookies(BasePlugins):
                                                              user_info.hoyoverse_game_uid,
                                                              service)
             await self.service.user_service_db.set_cookie(user.id, data, cookies_command_data.service)
+            Log.info(f"用户 {user.full_name}[{user.id}] 绑定账号成功")
             await update.message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         else:
