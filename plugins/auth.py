@@ -164,6 +164,9 @@ class Auth:
     async def new_mem(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         chat = message.chat
+        for user in message.new_chat_members:
+            if user.id == context.bot.id:
+                return
         if message.from_user.id in await get_admin_list(
                 bot=context.bot,
                 cache=self.service.cache,

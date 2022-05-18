@@ -12,13 +12,6 @@ async def help_command(update: Update, _: CallbackContext) -> None:
     await update.message.reply_text('前面的区域，以后再来探索吧！')
 
 
-async def new_chat_members(update: Update, context: CallbackContext) -> None:
-    for new_chat_members_data in update.message.new_chat_members:
-        if new_chat_members_data.id == context.bot.id:  # 判断是否是机器人第一次入群
-            await update.message.reply_text('感谢邀请小派蒙到本群！'
-                                            '请使用 /help 查看咱已经学会的功能。')
-
-
 async def unknown_command(update: Update, _: CallbackContext) -> None:
     await update.message.reply_text('前面的区域，以后再来探索吧！')
 

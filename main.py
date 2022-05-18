@@ -3,6 +3,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 
 from plugins.admin import Admin
 from plugins.auth import Auth
+from plugins.base import NewChatMembersHandler
 from plugins.cookies import Cookies
 from plugins.errorhandler import error_handler
 from plugins.gacha import Gacha
@@ -34,7 +35,9 @@ def main() -> None:
     application.add_handler(CommandHandler("ping", ping, block=False))
     # application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_chat_members))
     auth = Auth(service)
-    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, auth.new_mem, block=False))
+    new_chat_members_handler = NewChatMembersHandler(service,auth.new_mem)
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS,
+                                           new_chat_members_handler.new_member, block=False))
     application.add_handler(CallbackQueryHandler(auth.query, pattern=r"^auth_challenge\|", block=False))
     application.add_handler(CallbackQueryHandler(auth.admin, pattern=r"^auth_admin\|", block=False))
 
