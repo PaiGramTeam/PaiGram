@@ -138,7 +138,7 @@ class Auth:
             await callback_query.answer(text=f"这不是你的验证！\n"
                                              f"再瞎几把点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
-        Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {result}")
+        Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
         if result:
             await callback_query.answer(text="验证成功", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
