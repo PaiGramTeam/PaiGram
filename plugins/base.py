@@ -56,11 +56,13 @@ class NewChatMembersHandler:
             for user in message.new_chat_members:
                 if user.id == context.bot.id:
                     if from_user is not None:
+                        Log.info(f"用户 {from_user.full_name}[{from_user.id}] 在群 {chat.title}[{chat.id}] 邀请BOT")
                         admin_list = await self.service.admin.get_admin_list()
                         if from_user.id in admin_list:
                             await context.bot.send_message(message.chat_id,
                                                            '感谢邀请小派蒙到本群！请使用 /help 查看咱已经学会的功能。')
                         else:
+                            Log.warning("不是管理员邀请！退出群聊。")
                             await context.bot.send_message(message.chat_id, "派蒙不想进去！不是旅行者的邀请！")
                             await context.bot.leave_chat(chat.id)
         await self.auth_callback(update, context)
