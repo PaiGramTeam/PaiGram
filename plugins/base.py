@@ -52,7 +52,6 @@ class NewChatMembersHandler:
         message = update.message
         chat = message.chat
         from_user = message.from_user
-        self.service.admin.get_admin_list()
         if filters.ChatType.GROUPS.filter(message):
             for user in message.new_chat_members:
                 if user.id == context.bot.id:
