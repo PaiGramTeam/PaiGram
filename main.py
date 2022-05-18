@@ -42,7 +42,7 @@ def main() -> None:
 
     cookies = Cookies(service)
     cookies_handler = ConversationHandler(
-        entry_points=[CommandHandler('set_cookies', cookies.command_start, filters.ChatType.PRIVATE),
+        entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE),
                       MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE, cookies.command_start)],
         states={
             cookies.CHECK_SERVER: [MessageHandler(filters.TEXT & ~filters.COMMAND, cookies.check_server)],
@@ -53,7 +53,7 @@ def main() -> None:
     )
     get_user = GetUser(service)
     get_user_handler = ConversationHandler(
-        entry_points=[CommandHandler('get_user', get_user.command_start),
+        entry_points=[CommandHandler('getuser', get_user.command_start),
                       MessageHandler(filters.Regex(r"^玩家查询(.*)"), get_user.command_start)],
         states={
             get_user.COMMAND_RESULT: [CallbackQueryHandler(get_user.command_result)]
