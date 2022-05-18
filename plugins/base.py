@@ -24,7 +24,7 @@ class BasePlugins:
             return True
         except BadRequest as error:
             if "not found" in str(error):
-                Log.warning(f"定时删除消息[chat_id→{chat_id}|message_id→{message_id}]失败 消息不存在 \n")
+                Log.warning(f"定时删除消息[chat_id→{chat_id}|message_id→{message_id}]失败 消息不存在")
             else:
                 Log.warning(f"定时删除消息[chat_id→{chat_id}|message_id→{message_id}]失败 \n", error)
         return False
