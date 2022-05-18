@@ -157,8 +157,7 @@ class Auth:
             await message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2)
         except BadRequest as exc:
             if 'are exactly the same as ' in str(exc):
-                Log.warning("编辑消息发生异常，可能为用户点按多次键盘导致，错误信息为 \n", exc)
-                pass
+                Log.warning("编辑消息发生异常，可能为用户点按多次键盘导致\n")
             else:
                 raise exc
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
