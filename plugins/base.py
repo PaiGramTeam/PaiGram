@@ -6,7 +6,6 @@ from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.ext._utils.types import HandlerCallback, CCT, RT
 
 from logger import Log
-from model.helpers import get_admin_list
 from service import BaseService
 
 
@@ -52,6 +51,7 @@ class NewChatMembersHandler:
         message = update.message
         chat = message.chat
         from_user = message.from_user
+        quit_status = False
         if filters.ChatType.GROUPS.filter(message):
             for user in message.new_chat_members:
                 if user.id == context.bot.id:
@@ -62,7 +62,12 @@ class NewChatMembersHandler:
                             await context.bot.send_message(message.chat_id,
                                                            '感谢邀请小派蒙到本群！请使用 /help 查看咱已经学会的功能。')
                         else:
-                            Log.warning("不是管理员邀请！退出群聊。")
-                            await context.bot.send_message(message.chat_id, "派蒙不想进去！不是旅行者的邀请！")
-                            await context.bot.leave_chat(chat.id)
+                            quit_status = True
+                    else:
+                        Log.info(f"未知用户 在群 {chat.title}[{chat.id}] 邀请BOT")
+                        quit_status = True
+        if quit_status:
+            Log.warning("不是管理员邀请！退出群聊。")
+            await context.bot.send_message(message.chat_id, "派蒙不想进去！不是旅行者的邀请！")
+            await context.bot.leave_chat(chat.id)
         await self.auth_callback(update, context)
