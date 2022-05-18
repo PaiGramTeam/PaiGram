@@ -81,6 +81,7 @@ class Auth:
         user = callback_query.from_user
         message = callback_query.message
         chat = message.chat
+        Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth管理员命令")
         if user.id not in await get_admin_list(
                 bot=context.bot,
                 cache=self.service.cache,
@@ -93,7 +94,8 @@ class Auth:
         result, user_id = await admin_callback(callback_query.data)
         try:
             member_info = await context.bot.get_chat_member(chat.id, user_id)
-        except BadRequest:
+        except BadRequest as error:
+            Log.warning(f"获取用户 {user_id} 在群 {chat.title}[{chat.id}] 信息失败 \n", error)
             user_info = f"{user_id}"
         else:
             user_info = member_info.user.mention_markdown_v2()
@@ -132,10 +134,12 @@ class Auth:
         message = callback_query.message
         chat = message.chat
         user_id, result, question, answer = await query_callback(callback_query.data)
+        Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth认证命令 ")
         if user.id != user_id:
             await callback_query.answer(text=f"这不是你的验证！\n"
                                              f"再瞎几把点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
+        Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {result}")
         if result:
             await callback_query.answer(text="验证成功", show_alert=False)
             await self.restore(context, chat.id, user_id)
@@ -167,6 +171,7 @@ class Auth:
         for user in message.new_chat_members:
             if user.id == context.bot.id:
                 return
+            Log.info(f"用户 {user.full_name}[{user.id}] 尝试加入群 {chat.title}[{chat.id}]")
         if message.from_user.id in await get_admin_list(
                 bot=context.bot,
                 cache=self.service.cache,
