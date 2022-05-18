@@ -1,6 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
+from logger import Log
 from model.base import ServiceEnum
 from model.genshinhelper import YuanShen, Genshin
 from plugins.base import BasePlugins
@@ -33,9 +34,11 @@ class Sign(BasePlugins):
             cookies = user_info.hoyoverse_cookie
         sign_give = await sign_api.get_sign_give(cookies=cookies)
         if sign_give.error:
+            Log.error(f"UID {uid} 获取签到信息失败，API返回信息为 {sign_give.message}")
             return f"获取签到信息失败，API返回信息为 {sign_give.message}"
         is_sign = await sign_api.is_sign(uid, cookies=cookies)
         if is_sign.error:
+            Log.error(f"UID {uid} 获取签到信息失败，API返回信息为 {is_sign.message}")
             return f"获取签到状态失败，API返回信息为 {is_sign.message}"
         total_sign_day = is_sign.data["total_sign_day"]
         award_name = sign_give.data["awards"][total_sign_day - 1]["name"]
@@ -48,9 +51,11 @@ class Sign(BasePlugins):
             elif sign.code == -5003:
                 result = "今天旅行者已经签到过了~"
             else:
-                result = f"签到失败 返回错误代码为 {sign.code}"
+                Log.error(f"UID {uid} 签到失败 返回 错误代码 {sign.code} 错误信息 {sign.message}")
+                result = f"签到失败 返回 错误代码 {sign.code} 错误信息 {sign.message}"
         else:
             result = "今天旅行者已经签到过了~"
+        Log.info(f"UID {uid} 签到结果 {result}")
         message = f"###### {today} ######\n" \
                   f"UID: {uid}\n" \
                   f"今日奖励: {award_name} × {award_cnt}\n" \
@@ -60,6 +65,7 @@ class Sign(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
+        Log.info(f"用户 {user.full_name}[{user.id}] 每日签到命令请求")
         if filters.ChatType.GROUPS.filter(message):
             self._add_delete_message_job(context, message.chat_id, message.message_id)
         sign_command_data: SignCommandData = context.chat_data.get("sign_command_data")
