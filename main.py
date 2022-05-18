@@ -29,79 +29,89 @@ def main() -> None:
     cache = RedisCache(db=6)
     service = StartService(repository, cache)
     application = Application.builder().token(config.TELEGRAM["token"]).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("ping", ping))
+    application.add_handler(CommandHandler("start", start, block=False))
+    application.add_handler(CommandHandler("help", help_command, block=False))
+    application.add_handler(CommandHandler("ping", ping, block=False))
     # application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_chat_members))
     auth = Auth(service)
-    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, auth.new_mem))
-    application.add_handler(CallbackQueryHandler(auth.query, pattern=r"^auth_challenge\|"))
-    application.add_handler(CallbackQueryHandler(auth.admin, pattern=r"^auth_admin\|"))
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, auth.new_mem, block=False))
+    application.add_handler(CallbackQueryHandler(auth.query, pattern=r"^auth_challenge\|", block=False))
+    application.add_handler(CallbackQueryHandler(auth.admin, pattern=r"^auth_admin\|", block=False))
 
     # application.add_handler(MessageHandler((filters.Regex(r'.派蒙是应急食品') & filters.ChatType.PRIVATE), emergency_food))
 
     cookies = Cookies(service)
     cookies_handler = ConversationHandler(
-        entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE),
-                      MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE, cookies.command_start)],
+        entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE, block=False),
+                      MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE,
+                                     cookies.command_start, block=False)],
         states={
-            cookies.CHECK_SERVER: [MessageHandler(filters.TEXT & ~filters.COMMAND, cookies.check_server)],
-            cookies.CHECK_COOKIES: [MessageHandler(filters.TEXT & ~filters.COMMAND, cookies.check_cookies)],
-            cookies.COMMAND_RESULT: [MessageHandler(filters.TEXT & ~filters.COMMAND, cookies.command_result)],
+            cookies.CHECK_SERVER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                  cookies.check_server, block=False)],
+            cookies.CHECK_COOKIES: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                   cookies.check_cookies, block=False)],
+            cookies.COMMAND_RESULT: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                    cookies.command_result, block=False)],
         },
-        fallbacks=[CommandHandler('cancel', cookies.cancel)],
+        fallbacks=[CommandHandler('cancel', cookies.cancel, block=False)],
     )
     get_user = GetUser(service)
     get_user_handler = ConversationHandler(
-        entry_points=[CommandHandler('getuser', get_user.command_start),
-                      MessageHandler(filters.Regex(r"^玩家查询(.*)"), get_user.command_start)],
+        entry_points=[CommandHandler('getuser', get_user.command_start, block=False),
+                      MessageHandler(filters.Regex(r"^玩家查询(.*)"), get_user.command_start, block=False)],
         states={
-            get_user.COMMAND_RESULT: [CallbackQueryHandler(get_user.command_result)]
+            get_user.COMMAND_RESULT: [CallbackQueryHandler(get_user.command_result, block=False)]
         },
-        fallbacks=[CommandHandler('cancel', get_user.cancel)],
+        fallbacks=[CommandHandler('cancel', get_user.cancel, block=False)],
     )
     sign = Sign(service)
     sign_handler = ConversationHandler(
-        entry_points=[CommandHandler('sign', sign.command_start),
-                      MessageHandler(filters.Regex(r"^每日签到(.*)"), sign.command_start)],
+        entry_points=[CommandHandler('sign', sign.command_start, block=False),
+                      MessageHandler(filters.Regex(r"^每日签到(.*)"), sign.command_start, block=False)],
         states={
-            sign.COMMAND_RESULT: [CallbackQueryHandler(sign.command_result)]
+            sign.COMMAND_RESULT: [CallbackQueryHandler(sign.command_result, block=False)]
         },
-        fallbacks=[CommandHandler('cancel', sign.cancel)],
+        fallbacks=[CommandHandler('cancel', sign.cancel, block=False)],
     )
     application.add_handler(sign_handler)
     quiz = Quiz(service)
     quiz_handler = ConversationHandler(
-        entry_points=[CommandHandler('quiz', quiz.command_start)],
+        entry_points=[CommandHandler('quiz', quiz.command_start, block=False)],
         states={
-            quiz.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.check_command)],
-            quiz.CHECK_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.check_question)],
-            quiz.GET_NEW_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.get_new_question)],
-            quiz.GET_NEW_CORRECT_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.get_new_correct_answer)],
-            quiz.GET_NEW_WRONG_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.get_new_wrong_answer),
+            quiz.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                quiz.check_command, block=False)],
+            quiz.CHECK_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                 quiz.check_question, block=False)],
+            quiz.GET_NEW_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                   quiz.get_new_question, block=False)],
+            quiz.GET_NEW_CORRECT_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                         quiz.get_new_correct_answer, block=False)],
+            quiz.GET_NEW_WRONG_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                       quiz.get_new_wrong_answer, block=False),
                                         CommandHandler("finish", quiz.finish_edit)],
-            quiz.SAVE_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, quiz.save_question)],
+            quiz.SAVE_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                quiz.save_question, block=False)],
         },
-        fallbacks=[CommandHandler('cancel', quiz.cancel)]
+        fallbacks=[CommandHandler('cancel', quiz.cancel, block=False)]
     )
     gacha = Gacha(service)
-    application.add_handler(CommandHandler("gacha", gacha.command_start))
+    application.add_handler(CommandHandler("gacha", gacha.command_start, block=False))
     admin = Admin(service)
-    application.add_handler(CommandHandler("add_admin", admin.add_admin))
-    application.add_handler(CommandHandler("del_admin", admin.del_admin))
+    application.add_handler(CommandHandler("add_admin", admin.add_admin, block=False))
+    application.add_handler(CommandHandler("del_admin", admin.del_admin, block=False))
     weapon = Weapon(service)
-    application.add_handler(CommandHandler("weapon", weapon.command_start))
-    application.add_handler(CommandHandler("reply_keyboard_remove", reply_keyboard_remove))
-    application.add_handler(MessageHandler(filters.Regex(r"^武器查询(.*)"), weapon.command_start))
+    application.add_handler(CommandHandler("weapon", weapon.command_start, block=False))
+    application.add_handler(CommandHandler("reply_keyboard_remove", reply_keyboard_remove, block=False))
+    application.add_handler(MessageHandler(filters.Regex(r"^武器查询(.*)"), weapon.command_start, block=False))
     application.add_handler(quiz_handler)
     application.add_handler(cookies_handler)
     application.add_handler(get_user_handler)
     inline = Inline(service)
-    application.add_handler(InlineQueryHandler(inline.inline_query))
+    application.add_handler(InlineQueryHandler(inline.inline_query, block=False))
     job_queue = JobQueue(service)
     application.job_queue.run_once(job_queue.start_job, when=3, name="start_job")
     # application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
-    application.add_error_handler(error_handler)
+    application.add_error_handler(error_handler, block=False)
     application.run_polling()
 
 
