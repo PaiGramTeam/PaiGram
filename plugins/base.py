@@ -63,6 +63,4 @@ class NewChatMembersHandler:
                         else:
                             await context.bot.send_message(message.chat_id, "派蒙不想进去！不是旅行者的邀请！")
                             await context.bot.leave_chat(chat.id)
-                    else:
-                        await context.bot.leave_chat(chat.id)
         await self.auth_callback(update, context)
