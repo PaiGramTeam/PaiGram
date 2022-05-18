@@ -40,31 +40,30 @@ class Auth:
             self.generator = Generator(MT19937(int(self.send_time)))
         return int(self.generator.uniform(low, high))
 
-    async def kick(self, context: CallbackContext, chat_id: int, user_id: int) -> bool:
-        if await context.bot.ban_chat_member(
-                chat_id=chat_id,
-                user_id=user_id,
-                until_date=int(time.time()) + self.kick_time,
-        ):
+    async def kick_member(self, context: CallbackContext, chat_id: int, user_id: int) -> bool:
+        try:
+            await context.bot.ban_chat_member(chat_id=chat_id, user_id=user_id,
+                                              until_date=int(time.time()) + self.kick_time)
             return True
-        else:
+        except BadRequest as error:
+            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行kick失败 \n", error)
             return False
 
-    async def clean(self, context: CallbackContext, chat_id: int, user_id: int, message_id: int) -> bool:
-        if await context.bot.delete_message(chat_id=chat_id, message_id=message_id):
+    @staticmethod
+    async def clean_message(context: CallbackContext, chat_id: int, user_id: int, message_id: int) -> bool:
+        try:
+            await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
             return True
-        else:
+        except BadRequest as error:
+            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行clean失败 \n", error)
             return False
 
-    async def restore(self, context: CallbackContext, chat_id: int, user_id: int) -> bool:
-        if await context.bot.restrict_chat_member(
-                chat_id=chat_id,
-                user_id=user_id,
-                permissions=FullChatPermissions,
-
-        ):
-            return True
-        else:
+    @staticmethod
+    async def restore_member(context: CallbackContext, chat_id: int, user_id: int) -> bool:
+        try:
+            await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=FullChatPermissions)
+        except BadRequest as error:
+            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败 \n", error)
             return False
 
     async def admin(self, update: Update, context: CallbackContext) -> None:
@@ -102,14 +101,14 @@ class Auth:
 
         if result:
             await callback_query.answer(text="放行", show_alert=False)
-            await self.restore(context, chat.id, user_id)
+            await self.restore_member(context, chat.id, user_id)
             if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|clean_join"):
                 schedule.remove()
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 放行",
                                     parse_mode=ParseMode.MARKDOWN_V2)
         else:
             await callback_query.answer(text="驱离", show_alert=False)
-            await self.kick(context, chat.id, user_id)
+            await self.kick_member(context, chat.id, user_id)
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 驱离",
                                     parse_mode=ParseMode.MARKDOWN_V2)
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
@@ -142,7 +141,7 @@ class Auth:
         Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {result}")
         if result:
             await callback_query.answer(text="验证成功", show_alert=False)
-            await self.restore(context, chat.id, user_id)
+            await self.restore_member(context, chat.id, user_id)
             if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|clean_join"):
                 schedule.remove()
             text = f"{user.mention_markdown_v2()} 验证成功，向着星辰与深渊！\n" \
@@ -150,7 +149,7 @@ class Auth:
                    f"回答：{escape_markdown(answer, version=2)}"
         else:
             await callback_query.answer(text=f"验证失败，请在 {self.time_out} 秒后重试", show_alert=True)
-            await self.kick(context, chat.id, user_id)
+            await self.kick_member(context, chat.id, user_id)
             text = f"{user.mention_markdown_v2()} 验证失败，已经赶出提瓦特大陆！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
@@ -237,16 +236,17 @@ class Auth:
                 await message.reply_text("派蒙分心了一下，不小心忘记你了，你只能先退出群再进来吧。")
                 raise er
 
-            context.job_queue.scheduler.add_job(self.kick, "date", id=f"{chat.id}|{user.id}|auth_kick",
+            context.job_queue.scheduler.add_job(self.kick_member, "date", id=f"{chat.id}|{user.id}|auth_kick",
                                                 name=f"{chat.id}|{user.id}|auth_kick", args=[context, chat.id, user.id],
                                                 run_date=context.job_queue._tz_now() + datetime.timedelta(
                                                     seconds=self.time_out), replace_existing=True)
-            context.job_queue.scheduler.add_job(self.clean, "date", id=f"{message.chat.id}|{user.id}|auth_clean_join",
+            context.job_queue.scheduler.add_job(self.clean_message, "date",
+                                                id=f"{message.chat.id}|{user.id}|auth_clean_join",
                                                 name=f"{message.chat.id}|{user.id}|auth_clean_join",
                                                 args=[context, message.chat.id, user.id, message.message_id],
                                                 run_date=context.job_queue._tz_now() + datetime.timedelta(
                                                     seconds=self.time_out), replace_existing=True)
-            context.job_queue.scheduler.add_job(self.clean, "date",
+            context.job_queue.scheduler.add_job(self.clean_message, "date",
                                                 id=f"{message.chat.id}|{user.id}|auth_clean_question",
                                                 name=f"{message.chat.id}|{user.id}|auth_clean_question",
                                                 args=[context, message.chat.id, user.id, question_message.message_id],
