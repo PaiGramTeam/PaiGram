@@ -24,9 +24,11 @@ class BasePlugins:
             return True
         except BadRequest as error:
             if "not found" in str(error):
-                Log.warning(f"定时删除消息[chat_id→{chat_id}|message_id→{message_id}]失败 消息不存在")
+                Log.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息不存在")
+            elif "Message can't be deleted" in str(error):
+                Log.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息无法删除 可能是没有授权")
             else:
-                Log.warning(f"定时删除消息[chat_id→{chat_id}|message_id→{message_id}]失败 \n", error)
+                Log.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 \n", error)
         return False
 
     def _add_delete_message_job(self, context: CallbackContext, chat_id: int, message_id: int,
