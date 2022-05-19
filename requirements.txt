@@ -1,6 +1,6 @@
 redis>=4.2.0
 ujson>=5.1.0
-genshin>=0.4.0
+genshin>=1.1.0
 aiomysql>=0.0.22
 colorlog>=6.6.0
 numpy>=1.22.3

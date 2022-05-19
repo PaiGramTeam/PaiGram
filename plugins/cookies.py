@@ -111,7 +111,6 @@ class Cookies(BasePlugins):
         except AttributeError:
             await update.message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        await client.close()
         cookies_command_data.cookies = cookies
         cookies_command_data.game_uid = user_info.uid
         reply_keyboard = [['确认', '退出']]

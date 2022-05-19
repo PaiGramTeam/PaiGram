@@ -25,13 +25,15 @@ class GetUser(BasePlugins):
         super().__init__(service)
         self.current_dir = os.getcwd()
 
-    async def _start_get_user_info(self, user_info: UserInfoData, service: ServiceEnum) -> bytes:
+    async def _start_get_user_info(self, user_info: UserInfoData, service: ServiceEnum, uid: int = -1) -> bytes:
         if service == ServiceEnum.MIHOYOBBS:
             client = genshin.ChineseClient(cookies=user_info.mihoyo_cookie)
-            uid = user_info.mihoyo_game_uid
+            if uid <= 0:
+                uid = user_info.mihoyo_game_uid
         else:
             client = genshin.GenshinClient(cookies=user_info.hoyoverse_cookie, lang="zh-cn")
-            uid = user_info.hoyoverse_game_uid
+            if uid <= 0:
+                uid = user_info.hoyoverse_game_uid
         user_info = await client.get_user(int(uid))
         record_card_info = await client.get_record_card()
         user_avatar = user_info.characters[0].icon
@@ -63,7 +65,7 @@ class GetUser(BasePlugins):
         for exploration in user_info.explorations:
             exploration_data = {
                 "name": exploration.name,
-                "exploration_percentage": exploration.percentage,
+                "exploration_percentage": exploration.explored,
                 "offerings": [],
                 "icon": await url_to_file(exploration.icon)
             }
@@ -83,11 +85,11 @@ class GetUser(BasePlugins):
         user_data["background_image"] = f"file://{self.current_dir}/resources/background/vertical/{background_image}"
         png_data = await self.service.template.render('genshin/info', "info.html", user_data,
                                                       {"width": 1024, "height": 1024})
-        await client.close()
         return png_data
 
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
+        message = update.message
         Log.info(f"用户 {user.full_name}[{user.id}] 查询游戏用户命令请求")
         get_user_command_data: GetUserCommandData = context.chat_data.get("get_user_command_data")
         if get_user_command_data is None:
@@ -95,7 +97,19 @@ class GetUser(BasePlugins):
             context.chat_data["get_user_command_data"] = get_user_command_data
         user_info = await self.service.user_service_db.get_user_info(user.id)
         if user_info.user_id == 0:
-            await update.message.reply_text("未查询到账号信息")
+            await message.reply_text("未查询到账号信息")
+            return ConversationHandler.END
+        uid: int = -1
+        try:
+            args = message.text.split()
+            if len(args) >= 2:
+                uid = int(args[1])
+            else:
+                await message.reply_text("输入错误")
+                return ConversationHandler.END
+        except ValueError as error:
+            Log.error(f"获取 char_id 发生错误！ 错误信息为 \n", error)
+            await message.reply_text("输入错误")
             return ConversationHandler.END
         if user_info.service == ServiceEnum.NULL:
             reply_text = "请选择你要查询的类别"
@@ -110,7 +124,7 @@ class GetUser(BasePlugins):
             return self.COMMAND_RESULT
         else:
             await update.message.reply_chat_action(ChatAction.FIND_LOCATION)
-            png_data = await self._start_get_user_info(user_info, user_info.service)
+            png_data = await self._start_get_user_info(user_info, user_info.service, uid)
             await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             await update.message.reply_photo(png_data, filename=f"{user_info.user_id}.png",
                                              allow_sending_without_reply=True)
