@@ -2,6 +2,7 @@ import os
 import random
 
 import genshin
+from genshin import DataNotPublic, GenshinException, TooManyRequests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler
@@ -28,18 +29,30 @@ class GetUser(BasePlugins):
     async def _start_get_user_info(self, user_info: UserInfoData, service: ServiceEnum, uid: int = -1) -> bytes:
         if service == ServiceEnum.MIHOYOBBS:
             client = genshin.ChineseClient(cookies=user_info.mihoyo_cookie)
-            if uid <= 0:
-                uid = user_info.mihoyo_game_uid
+            uid = user_info.mihoyo_game_uid
         else:
             client = genshin.GenshinClient(cookies=user_info.hoyoverse_cookie, lang="zh-cn")
-            if uid <= 0:
-                uid = user_info.hoyoverse_game_uid
-        user_info = await client.get_user(int(uid))
-        record_card_info = await client.get_record_card()
+            uid = user_info.mihoyo_game_uid
+        try:
+            user_info = await client.get_user(uid)
+        except TooManyRequests as error:
+            raise Exception("查询次数大于30次") from error
+        except GenshinException as error:
+            raise error
+        try:
+            record_card_info = await client.get_record_card(uid)
+        except DataNotPublic:
+            nickname = uid
+            user_uid = ""
+        except GenshinException as error:
+            raise error
+        else:
+            nickname = record_card_info.nickname
+            user_uid = record_card_info.uid
         user_avatar = user_info.characters[0].icon
         user_data = {
-            "name": record_card_info.nickname,
-            "uid": record_card_info.uid,
+            "name": nickname,
+            "uid": user_uid,
             "user_avatar": await url_to_file(user_avatar),
             "action_day_number": user_info.stats.days_active,
             "achievement_number": user_info.stats.achievements,
