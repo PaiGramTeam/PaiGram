@@ -104,7 +104,6 @@ class Mihoyo:
             return BaseResponseData(error_message="请求错误")
         return BaseResponseData(response.json())
 
-
     async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
         artwork_info = await self.get_artwork_info(gids, post_id)
         if artwork_info.error:

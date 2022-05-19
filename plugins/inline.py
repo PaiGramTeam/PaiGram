@@ -64,18 +64,16 @@ class Inline:
                                     await append_quiz(results_list, quiz)
                 else:
                     if len(quiz_info) >= 50:
-                        if len(args) <= 1:
-                            results_list.append(
-                                InlineQueryResultArticle(
-                                    id=str(uuid4()),
-                                    title="问题数量已经大于50无法完全展示，请在命令后添加题目名称即可指定搜索",
-                                    description=f"警告",
-                                    input_message_content=InputTextMessageContent("问题数量已经大于40无法完全展示"
-                                                                                  "请在命令后添加题目名称即可指定搜索")
-                                ))
-                    else:
-                        for quiz in quiz_info:
-                            await append_quiz(results_list, quiz)
+                        results_list.append(
+                            InlineQueryResultArticle(
+                                id=str(uuid4()),
+                                title="警告！问题数量过度可能无法完全展示",
+                                description=f"请在命令后添加空格输入要搜索的题目即可指定搜索",
+                                input_message_content=InputTextMessageContent("警告！问题数量过度可能无法完全展示\n"
+                                                                              "请在命令后添加空格输入要搜索的题目即可指定搜索")
+                            ))
+                    for quiz in quiz_info:
+                        await append_quiz(results_list, quiz)
             for character_name in metadat.characters_name_list:
                 if args[0] in character_name:
                     url = await self.service.get_game_info.get_characters_cultivation_atlas(character_name)
@@ -95,7 +93,7 @@ class Inline:
                         results_list.append(
                             InlineQueryResultPhoto(
                                 id=str(uuid4()),
-                                photo_url=url+"?x-oss-process=format,jpg",
+                                photo_url=url + "?x-oss-process=format,jpg",
                                 thumb_url=url_add_params(url, self.service.get_game_info.mihoyo.get_images_params(
                                     resize=300)),
                                 title=title,
@@ -114,7 +112,6 @@ class Inline:
                             input_message_content=InputTextMessageContent(f"武器查询{weapons_name}",
                                                                           parse_mode=ParseMode.MARKDOWN_V2)
                         ))
-
 
         if len(results_list) == 0:
             results_list.append(
