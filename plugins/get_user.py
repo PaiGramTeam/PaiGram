@@ -29,10 +29,12 @@ class GetUser(BasePlugins):
     async def _start_get_user_info(self, user_info: UserInfoData, service: ServiceEnum, uid: int = -1) -> bytes:
         if service == ServiceEnum.MIHOYOBBS:
             client = genshin.ChineseClient(cookies=user_info.mihoyo_cookie)
-            uid = user_info.mihoyo_game_uid
+            if uid <= 0:
+                uid = user_info.mihoyo_game_uid
         else:
             client = genshin.GenshinClient(cookies=user_info.hoyoverse_cookie, lang="zh-cn")
-            uid = user_info.mihoyo_game_uid
+            if uid <= 0:
+                uid = user_info.mihoyo_game_uid
         try:
             user_info = await client.get_user(uid)
         except TooManyRequests as error:
