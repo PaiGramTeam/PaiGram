@@ -2,7 +2,7 @@ import html
 import traceback
 import ujson
 
-from telegram import Update
+from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
@@ -12,9 +12,13 @@ from config import config
 
 try:
     notice_chat_id = config.TELEGRAM["notice"]["ERROR"]["char_id"]
-except KeyError:
-    Log.warning("错误通知Chat_id获取失败或未配置，BOT发生致命错误时不会收到通知")
+    admin_list = []
+    for admin in config.ADMINISTRATORS:
+        admin_list.append(admin["user_id"])
+except KeyError as error:
+    Log.warning("错误通知Chat_id获取失败或未配置，BOT发生致命错误时不会收到通知 错误信息为\n", error)
     notice_chat_id = None
+    admin_list = []
 
 
 async def error_handler(update: object, context: CallbackContext) -> None:
@@ -54,6 +58,25 @@ async def error_handler(update: object, context: CallbackContext) -> None:
                 f'<b>处理函数时发生异常，traceback太长导致无法发送，但已写入日志</b> \n'
                 f'<code>{html.escape(str(context.error))}</code>'
             )
-            await context.bot.send_message(chat_id=notice_chat_id, text=message, parse_mode=ParseMode.HTML)
-        else:
-            raise exc
+            try:
+                await context.bot.send_message(chat_id=notice_chat_id, text=message, parse_mode=ParseMode.HTML)
+            except BadRequest:
+                message = (
+                    f'<b>处理函数时发生异常，traceback太长导致无法发送，但已写入日志</b> \n')
+                try:
+                    await context.bot.send_message(chat_id=notice_chat_id, text=message, parse_mode=ParseMode.HTML)
+                except BadRequest as exc:
+                    Log.error("处理函数时发生异常 \n", exc)
+    try:
+        message = update.message
+        user = update.effective_user
+        if message is not None:
+            text = "派蒙这边发生了点问题！如果有任务请尽量退出任务。"
+            if user is not None:
+                if user.id in admin_list:
+                    error_test = str(context.error)
+                    if len(error_test) <= 50:
+                        text += f"\n错误信息为 {str(context.error)}"
+            await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove())
+    except BadRequest:
+        pass
