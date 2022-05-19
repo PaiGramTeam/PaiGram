@@ -55,8 +55,13 @@ class Auth:
             await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
             return True
         except BadRequest as error:
-            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行clean失败 \n", error)
-            return False
+            if "not found" in str(error):
+                Log.warning(f"Auth模块删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息不存在")
+            elif "Message can't be deleted" in str(error):
+                Log.warning(f"Auth模块删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息无法删除 可能是没有授权")
+            else:
+                Log.error(f"Auth模块删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 \n", error)
+        return False
 
     @staticmethod
     async def restore_member(context: CallbackContext, chat_id: int, user_id: int) -> bool:
