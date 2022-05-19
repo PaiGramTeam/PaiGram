@@ -13,17 +13,28 @@
   },
   "telegram": {
     "token": "",
+    "notice": {
+      "INFO": {
+        "name": "",
+        "char_id":
+      },
+      "ERROR": {
+        "name": "",
+        "char_id":
+      }
+    },
+    "channel": {
+      "POST": {
+        "name": "",
+        "char_id":
+      }
+    }
+    }
   "administrators":
     [
       {
         "username": "",
-        "userid": ,
-        "type": 0
-      },
-      {
-        "username": "",
-        "userid": ,
-        "type": 1
+        "userid":
       }
     ]
 }

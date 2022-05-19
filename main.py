@@ -10,6 +10,7 @@ from plugins.gacha import Gacha
 from plugins.get_user import GetUser
 from plugins.inline import Inline
 from plugins.job_queue import JobQueue
+from plugins.post import Post
 from plugins.quiz import Quiz
 from plugins.sign import Sign
 from plugins.start import start, help_command, emergency_food, ping, reply_keyboard_remove
@@ -35,7 +36,7 @@ def main() -> None:
     application.add_handler(CommandHandler("ping", ping, block=False))
     # application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_chat_members))
     auth = Auth(service)
-    new_chat_members_handler = NewChatMembersHandler(service,auth.new_mem)
+    new_chat_members_handler = NewChatMembersHandler(service, auth.new_mem)
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS,
                                            new_chat_members_handler.new_member, block=False))
     application.add_handler(CallbackQueryHandler(auth.query, pattern=r"^auth_challenge\|", block=False))
@@ -97,6 +98,15 @@ def main() -> None:
         },
         fallbacks=[CommandHandler('cancel', quiz.cancel, block=False)]
     )
+    _post = Post(service)
+    post_handler = ConversationHandler(
+        entry_points=[CommandHandler('post', _post.command_start, block=False)],
+        states={
+            _post.CHECK_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.check_post, block=False)],
+            _post.SEND_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.send_post, block=False)],
+        },
+        fallbacks=[CommandHandler('cancel', _post.cancel, block=False)]
+    )
     gacha = Gacha(service)
     application.add_handler(CommandHandler("gacha", gacha.command_start, block=False))
     admin = Admin(service)
@@ -109,6 +119,7 @@ def main() -> None:
     application.add_handler(quiz_handler)
     application.add_handler(cookies_handler)
     application.add_handler(get_user_handler)
+    application.add_handler(post_handler)
     inline = Inline(service)
     application.add_handler(InlineQueryHandler(inline.inline_query, block=False))
     job_queue = JobQueue(service)

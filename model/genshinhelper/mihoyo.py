@@ -1,4 +1,5 @@
 import asyncio
+import re
 from typing import List
 import httpx
 from httpx import AsyncClient
@@ -9,14 +10,30 @@ from .helpers import get_ds, get_device_id
 class Mihoyo:
     POST_FULL_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFull"
     POST_FULL_IN_COLLECTION_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection"
+    GET_NEW_LIST_URL = "https://bbs-api.mihoyo.com/post/wapi/getNewsList"
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
                  "Chrome/90.0.4430.72 Safari/537.36"
 
     def __init__(self):
         self.client = httpx.AsyncClient(headers=self.get_headers())
 
-    def get_info_url(self, post_id: int) -> str:
-        return f"{self.POST_FULL_URL}?gids=2&post_id={post_id}&read=1"
+    @staticmethod
+    def extract_post_id(text: str) -> int:
+        """
+        :param text:
+            # https://bbs.mihoyo.com/ys/article/8808224
+            # https://m.bbs.mihoyo.com/ys/article/8808224
+        :return: post_id
+        """
+        rgx = re.compile(r"(?:bbs\.)?mihoyo\.com/[^.]+/article/(\d+)")
+        args = rgx.split(text)
+        if args is None:
+            return -1
+        try:
+            art_id = int(args[1])
+        except (IndexError, ValueError):
+            return -1
+        return art_id
 
     def get_headers(self, referer: str = "https://bbs.mihoyo.com/"):
         return {
@@ -65,16 +82,31 @@ class Mihoyo:
             return BaseResponseData(error_message="请求错误")
         return BaseResponseData(response.json())
 
-    async def get_artwork_info(self, post_id: int) -> MiHoYoBBSResponse:
-        url = self.get_info_url(post_id)
-        headers = self.get_headers()
-        response = await self.client.get(url=url, headers=headers)
+    async def get_artwork_info(self, gids: int, post_id: int, read: int = 1) -> MiHoYoBBSResponse:
+        params = {
+            "gids": gids,
+            "post_id": post_id,
+            "read": read
+        }
+        response = await self.client.get(self.POST_FULL_URL, params=params)
         if response.is_error:
             return MiHoYoBBSResponse(error_message="请求错误")
         return MiHoYoBBSResponse(response.json())
 
-    async def get_images_by_post_id(self, post_id: int) -> List[ArtworkImage]:
-        artwork_info = await self.get_artwork_info(post_id)
+    async def get_post_full_info(self, gids: int, post_id: int, read: int = 1) -> BaseResponseData:
+        params = {
+            "gids": gids,
+            "post_id": post_id,
+            "read": read
+        }
+        response = await self.client.get(self.POST_FULL_URL, params=params)
+        if response.is_error:
+            return BaseResponseData(error_message="请求错误")
+        return BaseResponseData(response.json())
+
+
+    async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
+        artwork_info = await self.get_artwork_info(gids, post_id)
         if artwork_info.error:
             return []
         urls = artwork_info.results.image_url_list
@@ -98,6 +130,21 @@ class Mihoyo:
         if response.is_error:
             return ArtworkImage(art_id, page, True)
         return ArtworkImage(art_id, page, data=response.content)
+
+    async def get_new_list(self, gids: int, type_id: int, page_size: int = 20):
+        """
+        ?gids=2&page_size=20&type=3
+        :return:
+        """
+        params = {
+            "gids": gids,
+            "page_size": page_size,
+            "type": type_id
+        }
+        response = await self.client.get(url=self.GET_NEW_LIST_URL, params=params)
+        if response.is_error:
+            return BaseResponseData(error_message="请求错误")
+        return BaseResponseData(response.json())
 
     async def close(self):
         await self.client.aclose()

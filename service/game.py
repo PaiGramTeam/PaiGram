@@ -37,6 +37,6 @@ class GetGameInfo:
         if post_id == -1:
             await self.cache.set_str_list(qname, [""], 3600)
             return ""
-        artwork_info = await self.mihoyo.get_artwork_info(post_id)
+        artwork_info = await self.mihoyo.get_artwork_info(2, post_id)
         await self.cache.set_str_list(qname, artwork_info.results.image_url_list, 3600)
         return artwork_info.results.image_url_list[0]
