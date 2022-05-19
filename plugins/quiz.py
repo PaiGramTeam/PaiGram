@@ -1,11 +1,12 @@
 import random
 import re
 import time
-from typing import List
+from typing import List, Optional
 
 from numpy.random import MT19937, Generator
 from redis import DataError, ResponseError
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, Poll, ReplyKeyboardRemove
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, Poll, \
+    ReplyKeyboardRemove, Message
 from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
@@ -41,6 +42,31 @@ class Quiz(BasePlugins):
             self.generator = Generator(MT19937(int(self.send_time)))
         return int(self.generator.uniform(low, high))
 
+    async def send_poll(self, update: Update) -> Optional[Message]:
+        chat = update.message.chat
+        user = update.effective_user
+        question_id_list = await self.service.quiz_service.get_question_id_list()
+        if filters.ChatType.GROUPS.filter(update.message):
+            Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 发送挑战问题命令请求")
+            if len(question_id_list) == 0:
+                await update.message.reply_text(f"旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
+        if len(question_id_list) == 0:
+            return None
+        index = self.random(0, len(question_id_list))
+        question = await self.service.quiz_service.get_question(question_id_list[index])
+        options = []
+        correct_option = ""
+        for answer_id in question["answer_id"]:
+            answer = await self.service.quiz_service.get_answer(answer_id)
+            options.append(answer["answer"])
+            if answer["is_correct"] == 1:
+                correct_option = answer["answer"]
+        random.shuffle(options)
+        index = options.index(correct_option)
+        return await update.effective_message.reply_poll(question["question"], options,
+                                                         correct_option_id=index, is_anonymous=False,
+                                                         open_period=self.time_out, type=Poll.QUIZ)
+
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         if filters.ChatType.PRIVATE.filter(update.message):
@@ -61,30 +87,14 @@ class Quiz(BasePlugins):
                                                        reply_markup=ReplyKeyboardMarkup(reply_keyboard,
                                                                                         one_time_keyboard=True))
                 return self.CHECK_COMMAND
-        if filters.ChatType.GROUPS.filter(update.message):
-            chat = update.message.chat
-            Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 发送挑战问题命令请求")
-            question_id_list = await self.service.quiz_service.get_question_id_list()
-            if len(question_id_list) == 0:
-                await update.message.reply_text(f"旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
+            else:
+                await self.send_poll(update)
+        elif filters.ChatType.GROUPS.filter(update.message):
+            poll_message = await self.send_poll(update)
+            if poll_message is None:
                 return ConversationHandler.END
-            index = self.random(0, len(question_id_list))
-            question = await self.service.quiz_service.get_question(question_id_list[index])
-            options = []
-            correct_option = ""
-            for answer_id in question["answer_id"]:
-                answer = await self.service.quiz_service.get_answer(answer_id)
-                options.append(answer["answer"])
-                if answer["is_correct"] == 1:
-                    correct_option = answer["answer"]
-            random.shuffle(options)
-            index = options.index(correct_option)
-            poll_message = await update.effective_message.reply_poll(question["question"], options,
-                                                                     correct_option_id=index, is_anonymous=False,
-                                                                     open_period=self.time_out, type=Poll.QUIZ)
             self._add_delete_message_job(context, update.message.chat_id, update.message.message_id, 300)
             self._add_delete_message_job(context, poll_message.chat_id, poll_message.message_id, 300)
-            return ConversationHandler.END
         return ConversationHandler.END
 
     async def view_command(self, update: Update, context: CallbackContext) -> int:
