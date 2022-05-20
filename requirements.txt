@@ -11,3 +11,5 @@ aiofiles>=0.8.0
 playwright==1.22.0
 PyMySQL>=0.9.3
 beautifulsoup4>=4.11.1
+python-telegram-bot==20.0a0
+pyppeteer
