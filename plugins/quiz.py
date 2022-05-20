@@ -7,6 +7,7 @@ from numpy.random import MT19937, Generator
 from redis import DataError, ResponseError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, Poll, \
     ReplyKeyboardRemove, Message
+from telegram.error import BadRequest
 from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
@@ -31,6 +32,7 @@ class Quiz(BasePlugins):
 
     def __init__(self, service: BaseService):
         super().__init__(service)
+        self.user_time = {}
         self.send_time = time.time()
         self.generator = Generator(MT19937(int(self.send_time)))
         self.service = service
@@ -69,7 +71,8 @@ class Quiz(BasePlugins):
 
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
-        if filters.ChatType.PRIVATE.filter(update.message):
+        message = update.message
+        if filters.ChatType.PRIVATE.filter(message):
             Log.info(f"用户 {user.full_name}[{user.id}] quiz命令请求")
             admin_list = await self.service.admin.get_admin_list()
             if user.id in admin_list:
@@ -77,19 +80,35 @@ class Quiz(BasePlugins):
                 if quiz_command_data is None:
                     quiz_command_data = QuizCommandData()
                     context.chat_data["quiz_command_data"] = quiz_command_data
-                message = f'你好 {user.mention_markdown_v2()} {escape_markdown("！请选择你的操作！")}'
+                text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！请选择你的操作！")}'
                 reply_keyboard = [
                     ["查看问题", "添加问题"],
                     ["重载问题"],
                     ["退出"]
                 ]
-                await update.message.reply_markdown_v2(message,
-                                                       reply_markup=ReplyKeyboardMarkup(reply_keyboard,
-                                                                                        one_time_keyboard=True))
+                await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard,
+                                                                                       one_time_keyboard=True))
                 return self.CHECK_COMMAND
             else:
                 await self.send_poll(update)
         elif filters.ChatType.GROUPS.filter(update.message):
+            try:
+                command_time = self.user_time.get(f"{user.id}")
+                if command_time is None:
+                    self.user_time[f"{user.id}"] = time.time()
+                else:
+                    if time.time() - command_time <= 10:
+                        try:
+                            await message.delete()
+                        except BadRequest as error:
+                            Log.warning("删除消息失败", error)
+                            pass
+                        return ConversationHandler.END
+                    else:
+                        self.user_time[f"{user.id}"] = time.time()
+            except (ValueError, KeyError) as error:
+                Log.error("quiz模块 user_time 操作失败", error)
+                pass
             poll_message = await self.send_poll(update)
             if poll_message is None:
                 return ConversationHandler.END
@@ -100,7 +119,7 @@ class Quiz(BasePlugins):
     async def view_command(self, update: Update, context: CallbackContext) -> int:
         keyboard = [
             [
-                InlineKeyboardButton(text="选择问题", switch_inline_query_current_chat="查看问题")
+                InlineKeyboardButton(text="选择问题", switch_inline_query_current_chat="查看问题 ")
             ]
         ]
         await update.message.reply_text("请回复你要查看的问题",
