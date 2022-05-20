@@ -1,5 +1,6 @@
 /config/config.json
 **_test.html
+logs/
 
 .vscode/
 .idea/
