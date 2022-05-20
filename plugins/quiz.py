@@ -7,12 +7,11 @@ from numpy.random import MT19937, Generator
 from redis import DataError, ResponseError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, Poll, \
     ReplyKeyboardRemove, Message
-from telegram.error import BadRequest
 from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
 from logger import Log
-from plugins.base import BasePlugins
+from plugins.base import BasePlugins, RestrictsCalls
 from service import BaseService
 from service.base import QuestionData, AnswerData
 
@@ -69,6 +68,7 @@ class Quiz(BasePlugins):
                                                          correct_option_id=index, is_anonymous=False,
                                                          open_period=self.time_out, type=Poll.QUIZ)
 
+    @RestrictsCalls(return_data=ConversationHandler.END, try_delete_message=True)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
@@ -92,23 +92,6 @@ class Quiz(BasePlugins):
             else:
                 await self.send_poll(update)
         elif filters.ChatType.GROUPS.filter(update.message):
-            try:
-                command_time = self.user_time.get(f"{user.id}")
-                if command_time is None:
-                    self.user_time[f"{user.id}"] = time.time()
-                else:
-                    if time.time() - command_time <= 10:
-                        try:
-                            await message.delete()
-                        except BadRequest as error:
-                            Log.warning("删除消息失败", error)
-                            pass
-                        return ConversationHandler.END
-                    else:
-                        self.user_time[f"{user.id}"] = time.time()
-            except (ValueError, KeyError) as error:
-                Log.error("quiz模块 user_time 操作失败", error)
-                pass
             poll_message = await self.send_poll(update)
             if poll_message is None:
                 return ConversationHandler.END

@@ -1,12 +1,71 @@
 import datetime
+import time
+from typing import Callable, Optional
 
 from telegram import Update
+from telegram.constants import ChatType
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.ext._utils.types import HandlerCallback, CCT, RT
 
 from logger import Log
 from service import BaseService
+
+
+class RestrictsCalls(object):
+    """
+    用于装饰在指定函数防止恶意调用的类装饰器
+    """
+    _user_time = {}
+    _filters_chat = {}
+    _return_data = {}
+    _try_delete_message = {}
+
+    def __init__(self, filters_chat: ChatType = filters.ChatType.GROUPS, return_data=None,
+                 try_delete_message: bool = False):
+        self.filters_chat = filters_chat
+        self.return_data = return_data
+        self.try_delete_message = try_delete_message
+
+    def __call__(self, func: Callable):
+        self._filters_chat[func] = self.filters_chat
+        self._return_data[func] = self.return_data
+        self._try_delete_message[func] = self.try_delete_message
+
+        async def decorator(*args, **kwargs):
+            update: Optional[Update] = None
+            for arg in args:
+                if isinstance(arg, Update):
+                    update = arg
+            if update is None:
+                return await func(*args, **kwargs)
+            message = update.message
+            user = update.effective_user
+            _filters = self._filters_chat.get(func)
+            if _filters is None:
+                raise KeyError("RestrictsCalls: filters not find")
+            _return_data = self._return_data.get(func)
+            _try_delete_message = self._return_data.get(func, False)
+            if _filters.filter(message):
+                try:
+                    command_time = self._user_time.get(f"{user.id}")
+                    if command_time is None:
+                        self._user_time[f"{user.id}"] = time.time()
+                    else:
+                        if time.time() - command_time <= 10:
+                            if _try_delete_message:
+                                try:
+                                    await message.delete()
+                                except BadRequest as error:
+                                    Log.warning("删除消息失败", error)
+                            return _return_data
+                        else:
+                            self._user_time[f"{user.id}"] = time.time()
+                except (ValueError, KeyError) as error:
+                    Log.error("操作失败", error)
+            return await func(*args, **kwargs)
+
+        return decorator
 
 
 class BasePlugins:

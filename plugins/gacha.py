@@ -7,7 +7,7 @@ from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from logger import Log
-from plugins.base import BasePlugins
+from plugins.base import BasePlugins, RestrictsCalls
 from service import BaseService
 from pyppeteer import launch
 from metadata.metadata import metadat
@@ -28,28 +28,11 @@ class Gacha(BasePlugins):
 
     CHECK_SERVER, COMMAND_RESULT = range(10600, 10602)
 
+    @RestrictsCalls(return_data=ConversationHandler.END, try_delete_message=True)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
         Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求")
-        if filters.ChatType.GROUPS.filter(message):
-            try:
-                command_time = self.user_time.get(f"{user.id}")
-                if command_time is None:
-                    self.user_time[f"{user.id}"] = time.time()
-                else:
-                    if time.time() - command_time <= 10:
-                        try:
-                            await message.delete()
-                        except BadRequest as error:
-                            Log.warning("删除消息失败", error)
-                            pass
-                        return
-                    else:
-                        self.user_time[f"{user.id}"] = time.time()
-            except (ValueError, KeyError) as error:
-                Log.error("quiz模块 user_time 操作失败", error)
-                pass
         args = message.text.split(" ")
         gacha_name = "角色活动"
         if len(args) > 1:
