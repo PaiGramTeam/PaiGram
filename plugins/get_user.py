@@ -26,25 +26,34 @@ class GetUser(BasePlugins):
         super().__init__(service)
         self.current_dir = os.getcwd()
 
-    async def _start_get_user_info(self, user_info: UserInfoData, service: ServiceEnum, uid: int = -1) -> bytes:
+    async def _start_get_user_info(self, user_info_data: UserInfoData, service: ServiceEnum, uid: int = -1) -> bytes:
         if service == ServiceEnum.MIHOYOBBS:
-            client = genshin.ChineseClient(cookies=user_info.mihoyo_cookie)
+            client = genshin.ChineseClient(cookies=user_info_data.mihoyo_cookie)
             if uid <= 0:
-                uid = user_info.mihoyo_game_uid
+                _uid = user_info_data.mihoyo_game_uid
+            else:
+                _uid = uid
         else:
-            client = genshin.GenshinClient(cookies=user_info.hoyoverse_cookie, lang="zh-cn")
+            client = genshin.GenshinClient(cookies=user_info_data.hoyoverse_cookie, lang="zh-cn")
             if uid <= 0:
-                uid = user_info.mihoyo_game_uid
+                _uid = user_info_data.hoyoverse_game_uid
+            else:
+                _uid = uid
         try:
-            user_info = await client.get_user(uid)
+            user_info = await client.get_user(_uid)
         except TooManyRequests as error:
             raise Exception("查询次数大于30次") from error
         except GenshinException as error:
             raise error
         try:
-            record_card_info = await client.get_record_card(uid)
-        except DataNotPublic:
-            nickname = uid
+            # 查询的UID如果是自己的，会返回DataNotPublic，自己查不了自己可还行......
+            if uid > 0:
+                record_card_info = await client.get_record_card(uid)
+            else:
+                record_card_info = await client.get_record_card()
+        except DataNotPublic as error:
+            Log.warning("get_record_card请求失败 查询的用户数据未公开 \n", error)
+            nickname = _uid
             user_uid = ""
         except GenshinException as error:
             raise error
