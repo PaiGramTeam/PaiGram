@@ -136,8 +136,8 @@ class GetUser(BasePlugins):
             reply_text = "请选择你要查询的类别"
             keyboard = [
                 [
-                    InlineKeyboardButton("米游社", callback_data="米游社"),
-                    InlineKeyboardButton("HoYoLab", callback_data="HoYoLab")
+                    InlineKeyboardButton("米游社", callback_data="get_user|米游社"),
+                    InlineKeyboardButton("HoYoLab", callback_data="get_user|HoYoLab")
                 ]
             ]
             get_user_command_data.user_info = user_info
@@ -158,9 +158,9 @@ class GetUser(BasePlugins):
         query = update.callback_query
         await query.answer()
         await query.delete_message()
-        if query.data == "米游社":
+        if query.data == "get_user|米游社":
             service = ServiceEnum.MIHOYOBBS
-        elif query.data == "HoYoLab":
+        elif query.data == "get_user|HoYoLab":
             service = ServiceEnum.HOYOLAB
         else:
             return ConversationHandler.END

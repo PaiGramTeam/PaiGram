@@ -125,8 +125,8 @@ class Sign(BasePlugins):
             message = "请选择你要签到的服务器"
             keyboard = [
                 [
-                    InlineKeyboardButton("米游社", callback_data="米游社"),
-                    InlineKeyboardButton("HoYoLab", callback_data="HoYoLab")
+                    InlineKeyboardButton("米游社", callback_data="sign|米游社"),
+                    InlineKeyboardButton("HoYoLab", callback_data="sign|HoYoLab")
                 ]
             ]
             sign_command_data.user_info = user_info
@@ -147,9 +147,9 @@ class Sign(BasePlugins):
         query = update.callback_query
         await query.answer()
         message = "签到失败"
-        if query.data == "米游社":
+        if query.data == "sign|米游社":
             message = await self._start_sign_ex(user_info, ServiceEnum.MIHOYOBBS)
-        if query.data == "HoYoLab":
+        if query.data == "sign|HoYoLab":
             message = await self._start_sign_ex(user_info, ServiceEnum.HOYOLAB)
         await query.edit_message_text(message)
         if query_message := query.message:
