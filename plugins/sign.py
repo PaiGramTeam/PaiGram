@@ -62,7 +62,7 @@ class Sign(BasePlugins):
         Log.info(f"UID {uid} 签到结果 {result}")
         reward = rewards[daily_reward_info.claimed_rewards - 1]
         today = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        message = f"###### {today} ######\n" \
+        message = f"###### {today} (UTC+8) ######\n" \
                   f"UID: {uid}\n" \
                   f"今日奖励: {reward.name} × {reward.amount}\n" \
                   f"签到结果: {result}"
@@ -101,7 +101,7 @@ class Sign(BasePlugins):
         else:
             result = "今天旅行者已经签到过了~"
         Log.info(f"UID {uid} 签到结果 {result}")
-        message = f"###### {today} (UTC+8) ######\n" \
+        message = f"###### {today} ######\n" \
                   f"UID: {uid}\n" \
                   f"今日奖励: {award_name} × {award_cnt}\n" \
                   f"签到结果: {result}"
