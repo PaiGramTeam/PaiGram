@@ -1,5 +1,8 @@
+from warnings import filterwarnings
+
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, \
     CallbackQueryHandler, InlineQueryHandler, CallbackContext
+from telegram.warnings import PTBUserWarning
 
 from plugins.admin import Admin
 from plugins.auth import Auth
@@ -13,12 +16,15 @@ from plugins.job_queue import JobQueue
 from plugins.post import Post
 from plugins.quiz import Quiz
 from plugins.sign import Sign
-from plugins.start import start, help_command, emergency_food, ping, reply_keyboard_remove
+from plugins.start import start, help_command, emergency_food, ping, reply_keyboard_remove, unknown_command
 from plugins.weapon import Weapon
 from service import StartService
 from service.repository import AsyncRepository
 from config import config
 from service.cache import RedisCache
+
+# https://github.com/python-telegram-bot/python-telegram-bot/wiki/Frequently-Asked-Questions#what-do-the-per_-settings-in-conversationhandler-do
+filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
 
 
 def main() -> None:
@@ -66,7 +72,7 @@ def main() -> None:
         states={
             get_user.COMMAND_RESULT: [CallbackQueryHandler(get_user.command_result, block=False)]
         },
-        fallbacks=[CommandHandler('cancel', get_user.cancel, block=False)],
+        fallbacks=[CommandHandler('cancel', get_user.cancel, block=False)]
     )
     sign = Sign(service)
     sign_handler = ConversationHandler(
@@ -75,7 +81,7 @@ def main() -> None:
         states={
             sign.COMMAND_RESULT: [CallbackQueryHandler(sign.command_result, block=False)]
         },
-        fallbacks=[CommandHandler('cancel', sign.cancel, block=False)],
+        fallbacks=[CommandHandler('cancel', sign.cancel, block=False)]
     )
     application.add_handler(sign_handler)
     quiz = Quiz(service)
