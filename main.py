@@ -1,7 +1,7 @@
 from warnings import filterwarnings
 
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, \
-    CallbackQueryHandler, InlineQueryHandler, CallbackContext
+    CallbackQueryHandler, InlineQueryHandler
 from telegram.warnings import PTBUserWarning
 
 from plugins.admin import Admin
@@ -16,7 +16,7 @@ from plugins.job_queue import JobQueue
 from plugins.post import Post
 from plugins.quiz import Quiz
 from plugins.sign import Sign
-from plugins.start import start, help_command, emergency_food, ping, reply_keyboard_remove, unknown_command
+from plugins.start import start, help_command, ping, reply_keyboard_remove, unknown_command
 from plugins.weapon import Weapon
 from service import StartService
 from service.repository import AsyncRepository

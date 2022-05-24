@@ -2,7 +2,7 @@ import time
 
 import genshin
 from genshin import Game, GenshinException, AlreadyClaimed
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from logger import Log
