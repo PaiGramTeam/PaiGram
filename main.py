@@ -52,66 +52,66 @@ def main() -> None:
 
     cookies = Cookies(service)
     cookies_handler = ConversationHandler(
-        entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE, block=False),
+        entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE, block=True),
                       MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE,
-                                     cookies.command_start, block=False)],
+                                     cookies.command_start, block=True)],
         states={
             cookies.CHECK_SERVER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                  cookies.check_server, block=False)],
+                                                  cookies.check_server, block=True)],
             cookies.CHECK_COOKIES: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                   cookies.check_cookies, block=False)],
+                                                   cookies.check_cookies, block=True)],
             cookies.COMMAND_RESULT: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                    cookies.command_result, block=False)],
+                                                    cookies.command_result, block=True)],
         },
-        fallbacks=[CommandHandler('cancel', cookies.cancel, block=False)],
+        fallbacks=[CommandHandler('cancel', cookies.cancel, block=True)],
     )
     get_user = GetUser(service)
     get_user_handler = ConversationHandler(
-        entry_points=[CommandHandler('getuser', get_user.command_start, block=False),
-                      MessageHandler(filters.Regex(r"^玩家查询(.*)"), get_user.command_start, block=False)],
+        entry_points=[CommandHandler('getuser', get_user.command_start, block=True),
+                      MessageHandler(filters.Regex(r"^玩家查询(.*)"), get_user.command_start, block=True)],
         states={
-            get_user.COMMAND_RESULT: [CallbackQueryHandler(get_user.command_result, block=False)]
+            get_user.COMMAND_RESULT: [CallbackQueryHandler(get_user.command_result, block=True)]
         },
-        fallbacks=[CommandHandler('cancel', get_user.cancel, block=False)]
+        fallbacks=[CommandHandler('cancel', get_user.cancel, block=True)]
     )
     sign = Sign(service)
     sign_handler = ConversationHandler(
-        entry_points=[CommandHandler('sign', sign.command_start, block=False),
-                      MessageHandler(filters.Regex(r"^每日签到(.*)"), sign.command_start, block=False)],
+        entry_points=[CommandHandler('sign', sign.command_start, block=True),
+                      MessageHandler(filters.Regex(r"^每日签到(.*)"), sign.command_start, block=True)],
         states={
-            sign.COMMAND_RESULT: [CallbackQueryHandler(sign.command_result, block=False)]
+            sign.COMMAND_RESULT: [CallbackQueryHandler(sign.command_result, block=True)]
         },
-        fallbacks=[CommandHandler('cancel', sign.cancel, block=False)]
+        fallbacks=[CommandHandler('cancel', sign.cancel, block=True)]
     )
     application.add_handler(sign_handler)
     quiz = Quiz(service)
     quiz_handler = ConversationHandler(
-        entry_points=[CommandHandler('quiz', quiz.command_start, block=False)],
+        entry_points=[CommandHandler('quiz', quiz.command_start, block=True)],
         states={
             quiz.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                quiz.check_command, block=False)],
+                                                quiz.check_command, block=True)],
             quiz.CHECK_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                 quiz.check_question, block=False)],
+                                                 quiz.check_question, block=True)],
             quiz.GET_NEW_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                   quiz.get_new_question, block=False)],
+                                                   quiz.get_new_question, block=True)],
             quiz.GET_NEW_CORRECT_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                         quiz.get_new_correct_answer, block=False)],
+                                                         quiz.get_new_correct_answer, block=True)],
             quiz.GET_NEW_WRONG_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                       quiz.get_new_wrong_answer, block=False),
+                                                       quiz.get_new_wrong_answer, block=True),
                                         CommandHandler("finish", quiz.finish_edit)],
             quiz.SAVE_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                quiz.save_question, block=False)],
+                                                quiz.save_question, block=True)],
         },
-        fallbacks=[CommandHandler('cancel', quiz.cancel, block=False)]
+        fallbacks=[CommandHandler('cancel', quiz.cancel, block=True)]
     )
     _post = Post(service)
     post_handler = ConversationHandler(
-        entry_points=[CommandHandler('post', _post.command_start, block=False)],
+        entry_points=[CommandHandler('post', _post.command_start, block=True)],
         states={
-            _post.CHECK_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.check_post, block=False)],
-            _post.SEND_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.send_post, block=False)],
+            _post.CHECK_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.check_post, block=True)],
+            _post.SEND_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.send_post, block=True)],
         },
-        fallbacks=[CommandHandler('cancel', _post.cancel, block=False)]
+        fallbacks=[CommandHandler('cancel', _post.cancel, block=True)]
     )
     gacha = Gacha(service)
     application.add_handler(CommandHandler("gacha", gacha.command_start, block=False))
