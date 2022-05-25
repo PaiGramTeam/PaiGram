@@ -55,16 +55,18 @@ class Quiz(BasePlugins):
             return None
         index = self.random(0, len(question_id_list))
         question = await self.service.quiz_service.get_question(question_id_list[index])
-        options = []
-        correct_option = ""
+        _options = []
+        correct_option = None
         for answer_id in question["answer_id"]:
             answer = await self.service.quiz_service.get_answer(answer_id)
-            options.append(answer["answer"])
+            _options.append(answer["answer"])
             if answer["is_correct"] == 1:
                 correct_option = answer["answer"]
-        random.shuffle(options)
-        index = options.index(correct_option)
-        return await update.effective_message.reply_poll(question["question"], options,
+        if correct_option is None:
+            return None
+        random.shuffle(_options)
+        index = _options.index(correct_option)
+        return await update.effective_message.reply_poll(question["question"], _options,
                                                          correct_option_id=index, is_anonymous=False,
                                                          open_period=self.time_out, type=Poll.QUIZ)
 
