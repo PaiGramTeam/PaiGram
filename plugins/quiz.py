@@ -63,6 +63,8 @@ class Quiz(BasePlugins):
             if answer["is_correct"] == 1:
                 correct_option = answer["answer"]
         if correct_option is None:
+            question_id = question["question_id"]
+            Log.warning(f"Quiz模块 correct_option 异常 question_id[{question_id}] ")
             return None
         random.shuffle(_options)
         index = _options.index(correct_option)
