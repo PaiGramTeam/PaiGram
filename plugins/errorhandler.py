@@ -69,14 +69,9 @@ async def error_handler(update: object, context: CallbackContext) -> None:
                     Log.error("处理函数时发生异常 \n", exc)
     try:
         message = update.message
-        user = update.effective_user
         if message is not None:
-            text = "派蒙这边发生了点问题！如果有任务请尽量退出任务。"
-            if user is not None:
-                if user.id in admin_list:
-                    error_test = str(context.error)
-                    if len(error_test) <= 50:
-                        text += f"\n错误信息为 {str(context.error)}"
+            text = f"派蒙这边发生了点问题！如果有任务请尽量退出任务。"\
+                   f"\n错误信息为 {str(context.error)}"
             await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove())
     except BadRequest:
         pass
