@@ -35,7 +35,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
     tb_string = ''.join(tb_list)
 
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
-    message_1 = (
+    text_1 = (
         f'<b>处理函数时发生异常</b> \n'
         f'Exception while handling an update \n'
         f'<pre>update = {html.escape(ujson.dumps(update_str, indent=2, ensure_ascii=False))}'
@@ -43,37 +43,43 @@ async def error_handler(update: object, context: CallbackContext) -> None:
         f'<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n'
         f'<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n'
     )
-    message_2 = (
+    text_2 = (
         f'<pre>{html.escape(tb_string)}</pre>'
     )
     try:
         if 'make sure that only one bot instance is running' in tb_string:
             Log.error("其他机器人在运行，请停止！")
             return
-        await context.bot.send_message(chat_id=notice_chat_id, text=message_1, parse_mode=ParseMode.HTML)
-        await context.bot.send_message(chat_id=notice_chat_id, text=message_2, parse_mode=ParseMode.HTML)
+        await context.bot.send_message(notice_chat_id, text_1, parse_mode=ParseMode.HTML)
+        await context.bot.send_message(notice_chat_id, text_2, parse_mode=ParseMode.HTML)
     except BadRequest as exc:
         if 'too long' in str(exc):
-            message = (
+            text = (
                 f'<b>处理函数时发生异常，traceback太长导致无法发送，但已写入日志</b> \n'
                 f'<code>{html.escape(str(context.error))}</code>'
             )
             try:
-                await context.bot.send_message(chat_id=notice_chat_id, text=message, parse_mode=ParseMode.HTML)
+                await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
             except BadRequest:
-                message = (
+                text = (
                     f'<b>处理函数时发生异常，traceback太长导致无法发送，但已写入日志</b> \n')
                 try:
-                    await context.bot.send_message(chat_id=notice_chat_id, text=message, parse_mode=ParseMode.HTML)
+                    await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
                 except BadRequest as exc:
                     Log.error("处理函数时发生异常 \n", exc)
+    effective_user = update.effective_user
     try:
         message = update.message
         if message is not None:
+            chat = message.chat
+            Log.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
+                     f"在 {chat.full_name}[{chat.id}"
+                     f"的 update_id[{update.update_id}] 错误信息")
             text = f"派蒙这边发生了点问题无法处理！\n" \
-                   f"如果当前有对话请发送 /cancel 退出对话。\n"\
+                   f"如果当前有对话请发送 /cancel 退出对话。\n" \
                    f"错误信息为 <code>{html.escape(str(context.user_data))}</code>"
-            await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove()
-                                           , parse_mode=ParseMode.HTML)
-    except BadRequest:
+            await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove(),
+                                           parse_mode=ParseMode.HTML)
+    except BadRequest as exc:
+        Log.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为 {str(exc)}")
         pass
