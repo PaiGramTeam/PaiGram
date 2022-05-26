@@ -1,4 +1,5 @@
 import time
+import datetime
 
 import genshin
 from genshin import Game, GenshinException, AlreadyClaimed
@@ -59,9 +60,13 @@ class Sign(BasePlugins):
         Log.info(f"UID {uid} 签到结果 {result}")
         reward = rewards[daily_reward_info.claimed_rewards - 1]
         today = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        cn_timezone = datetime.timezone(datetime.timedelta(hours=8))
+        now = datetime.datetime.now(cn_timezone)
+        missed_days = now.day - daily_reward_info.claimed_rewards
         message = f"#### {today} (UTC+8) ####\n" \
                   f"UID: {uid}\n" \
                   f"今日奖励: {reward.name} × {reward.amount}\n" \
+                  f"本月漏签次数：{missed_days}\n" \
                   f"签到结果: {result}"
         return message
 
