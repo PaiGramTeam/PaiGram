@@ -25,13 +25,16 @@ class Mihoyo:
             # https://m.bbs.mihoyo.com/ys/article/8808224
         :return: post_id
         """
-        rgx = re.compile(r"(?:bbs\.)?mihoyo\.com/[^.]+/article/(\d+)")
-        args = rgx.split(text)
-        if args is None:
+        rgx = re.compile(r"(?:bbs\.)?mihoyo\.com/[^.]+/article/(?P<article_id>\d+)")
+        matches = rgx.search(text)
+        if matches is None:
+            return -1
+        entries = matches.groupdict()
+        if entries is None:
             return -1
         try:
-            art_id = int(args[1])
-        except (IndexError, ValueError):
+            art_id = int(entries.get('article_id'))
+        except (IndexError, ValueError, TypeError):
             return -1
         return art_id
 
