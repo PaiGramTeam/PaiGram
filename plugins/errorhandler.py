@@ -73,7 +73,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
         if message is not None:
             chat = message.chat
             Log.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
-                     f"在 {chat.full_name}[{chat.id}"
+                     f"在 {chat.full_name}[{chat.id}]"
                      f"的 update_id[{update.update_id}] 错误信息")
             text = f"派蒙这边发生了点问题无法处理！\n" \
                    f"如果当前有对话请发送 /cancel 退出对话。\n" \
