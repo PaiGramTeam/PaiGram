@@ -77,7 +77,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
                      f"的 update_id[{update.update_id}] 错误信息")
             text = f"派蒙这边发生了点问题无法处理！\n" \
                    f"如果当前有对话请发送 /cancel 退出对话。\n" \
-                   f"错误信息为 <code>{html.escape(str(context.user_data))}</code>"
+                   f"错误信息为 <code>{html.escape(str(context.error))}</code>"
             await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove(),
                                            parse_mode=ParseMode.HTML)
     except BadRequest as exc:
