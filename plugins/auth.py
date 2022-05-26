@@ -72,6 +72,7 @@ class Auth:
             return False
 
     async def admin(self, update: Update, context: CallbackContext) -> None:
+
         async def admin_callback(callback_query_data: str) -> Tuple[bool, int]:
             _data = callback_query_data.split("|")
             if _data[1] == "pass":
@@ -162,7 +163,7 @@ class Auth:
             await message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2)
         except BadRequest as exc:
             if 'are exactly the same as ' in str(exc):
-                Log.warning("编辑消息发生异常，可能为用户点按多次键盘导致\n")
+                Log.warning("编辑消息发生异常，可能为用户点按多次键盘导致")
             else:
                 raise exc
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
