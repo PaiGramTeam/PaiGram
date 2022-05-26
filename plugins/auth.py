@@ -40,7 +40,7 @@ class Auth:
             self.generator = Generator(MT19937(int(self.send_time)))
         return int(self.generator.uniform(low, high))
 
-    async def kick_member(self, context: CallbackContext, chat_id: int, user_id: int) -> bool:
+    async def kick_member(self, context: CallbackContext, chat_id: int, user_id: int, kick_time: int = -1) -> bool:
         try:
             await context.bot.ban_chat_member(chat_id=chat_id, user_id=user_id,
                                               until_date=int(time.time()) + self.kick_time)
@@ -114,7 +114,7 @@ class Auth:
                                     parse_mode=ParseMode.MARKDOWN_V2)
         else:
             await callback_query.answer(text="驱离", show_alert=False)
-            await self.kick_member(context, chat.id, user_id)
+            await context.bot.ban_chat_member(chat.id, user_id)
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 驱离",
                                     parse_mode=ParseMode.MARKDOWN_V2)
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
