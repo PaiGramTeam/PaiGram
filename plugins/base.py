@@ -14,7 +14,7 @@ from service import BaseService
 
 class RestrictsCalls(object):
     """
-    用于装饰在指定函数防止恶意调用的类装饰器
+    用于装饰在指定函数防止洪水调用的类装饰器
     """
     _user_time = {}
     _filters_chat = {}
@@ -52,7 +52,7 @@ class RestrictsCalls(object):
                     if command_time is None:
                         self._user_time[f"{user.id}"] = time.time()
                     else:
-                        if time.time() - command_time <= 10:
+                        if time.time() - command_time <= 20:
                             if _try_delete_message:
                                 try:
                                     await message.delete()
