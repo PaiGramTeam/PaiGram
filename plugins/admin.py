@@ -9,22 +9,24 @@ from plugins.base import BasePlugins
 from service import BaseService
 
 
+def bot_admins_only(func: Callable) -> Callable:  # noqa
+    async def decorator(self, update: Update, context: CallbackContext):
+        admin_list = await self.service.admin.get_admin_list()
+        if update.message.from_user.id in admin_list:
+            return await func(self, update, context)
+        else:
+            await update.message.reply_text("权限不足")
+            return None
+
+    return decorator
+
+
 class Admin(BasePlugins):
     def __init__(self, service: BaseService):
         super().__init__(service)
 
-    def bot_admins_only(func: Callable) -> Callable:  # noqa
-        async def decorator(self, update: Update, context: CallbackContext):
-            admin_list = await self.service.admin.get_admin_list()
-            if update.message.from_user.id in admin_list:
-                return await func(self, update, context)
-            else:
-                await update.message.reply_text("权限不足")
-
-        return decorator
-
-    @bot_admins_only  # noqa
-    async def add_admin(self, update: Update, context: CallbackContext):
+    @bot_admins_only
+    async def add_admin(self, update: Update, _: CallbackContext):
         message = update.message
         reply_to_message = message.reply_to_message
         admin_list = await self.service.admin.get_admin_list()
@@ -37,8 +39,8 @@ class Admin(BasePlugins):
                 await self.service.admin.add_admin(reply_to_message.from_user.id)
                 await message.reply_text("添加成功")
 
-    @bot_admins_only  # noqa
-    async def del_admin(self, update: Update, context: CallbackContext):
+    @bot_admins_only
+    async def del_admin(self, update: Update, _: CallbackContext):
         message = update.message
         reply_to_message = message.reply_to_message
         admin_list = await self.service.admin.get_admin_list()
@@ -51,7 +53,7 @@ class Admin(BasePlugins):
             else:
                 await message.reply_text("该用户不存在管理员列表")
 
-    @bot_admins_only  # noqa
+    @bot_admins_only
     async def leave_chat(self, update: Update, context: CallbackContext):
         message = update.message
         try:

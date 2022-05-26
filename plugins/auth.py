@@ -40,7 +40,7 @@ class Auth:
             self.generator = Generator(MT19937(int(self.send_time)))
         return int(self.generator.uniform(low, high))
 
-    async def kick_member(self, context: CallbackContext, chat_id: int, user_id: int, kick_time: int = -1) -> bool:
+    async def kick_member(self, context: CallbackContext, chat_id: int, user_id: int) -> bool:
         try:
             await context.bot.ban_chat_member(chat_id=chat_id, user_id=user_id,
                                               until_date=int(time.time()) + self.kick_time)
