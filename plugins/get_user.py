@@ -94,14 +94,22 @@ class GetUser(BasePlugins):
                 "icon": await url_to_file(exploration.icon)
             }
             for offering in exploration.offerings:
+                # 修复上游奇怪的问题
+                offering_name = offering.name
+                if offering_name == "Reputation":
+                    offering_name = "声望等级"
                 offering_data = {
-                    "data": f"{offering.name}：{offering.level}级"
+                    "data": f"{offering_name}：{offering.level}级"
                 }
                 exploration_data["offerings"].append(offering_data)
             user_data["world_exploration_list"].append(exploration_data)
         for teapot in user_info.teapot.realms:
+            teapot_icon = teapot.icon
+            # 修复 国际服绘绮庭 图标 地址请求 为404
+            if "UI_HomeworldModule_4_Pic.png" in teapot_icon:
+                teapot_icon = "https://upload-bbs.mihoyo.com/game_record/genshin/home/UI_HomeworldModule_4_Pic.png"
             teapot_data = {
-                "icon": await url_to_file(teapot.icon),
+                "icon": await url_to_file(teapot_icon),
                 "name": teapot.name
             }
             user_data["teapot_list"].append(teapot_data)
