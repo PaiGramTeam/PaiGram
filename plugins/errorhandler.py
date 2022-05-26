@@ -70,8 +70,10 @@ async def error_handler(update: object, context: CallbackContext) -> None:
     try:
         message = update.message
         if message is not None:
-            text = f"派蒙这边发生了点问题！如果有任务请尽量退出任务。"\
-                   f"\n错误信息为 {str(context.error)}"
-            await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove())
+            text = f"派蒙这边发生了点问题无法处理！\n" \
+                   f"如果当前有对话请发送 /cancel 退出对话。\n"\
+                   f"错误信息为 <code>{html.escape(str(context.user_data))}</code>"
+            await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove()
+                                           , parse_mode=ParseMode.HTML)
     except BadRequest:
         pass

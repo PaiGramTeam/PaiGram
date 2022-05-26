@@ -2,7 +2,7 @@ import datetime
 import time
 from typing import Callable, Optional
 
-from telegram import Update
+from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ChatType
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
@@ -74,7 +74,7 @@ class BasePlugins:
 
     @staticmethod
     async def cancel(update: Update, _: CallbackContext) -> int:
-        await update.message.reply_text("退出命令")
+        await update.message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
     @staticmethod
