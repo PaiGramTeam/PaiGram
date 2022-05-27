@@ -27,15 +27,17 @@ class Pokedex(BasePlugins):
             ]
         ]
         if search_command:
-            role_name = roleToName(search_command[1])
+            role_name = search_command[1]
             if role_name == "":
                 await message.reply_text("请回复你要查询的图鉴的角色名", reply_markup=InlineKeyboardMarkup(keyboard))
                 return
         elif len(args) >= 2:
-            role_name = roleToName(args[1])
+            role_name = args[1]
         else:
             await message.reply_text("请回复你要查询的图鉴的角色名", reply_markup=InlineKeyboardMarkup(keyboard))
             return
+        if role_name not in ["风主", "岩主", "雷主"]:
+            role_name = roleToName(role_name)
         file_path = Path(f"resources{os.sep}genshin{os.sep}pokedex{os.sep}{role_name}.png")
         if (not role_name) or (not os.path.isfile(file_path)):
             await message.reply_text(f"没有找到 {role_name} 的图鉴",
