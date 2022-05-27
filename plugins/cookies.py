@@ -1,7 +1,7 @@
 from http.cookies import SimpleCookie
 import ujson
 import genshin
-from genshin import InvalidCookies
+from genshin import InvalidCookies, GenshinException
 
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler
@@ -110,6 +110,10 @@ class Cookies(BasePlugins):
             return ConversationHandler.END
         except AttributeError:
             await update.message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        except GenshinException as error:
+            await update.message.reply_text(f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常",
+                                            reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         cookies_command_data.cookies = cookies
         cookies_command_data.game_uid = user_info.uid
