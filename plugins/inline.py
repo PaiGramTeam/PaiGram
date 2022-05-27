@@ -1,3 +1,5 @@
+import os
+
 from typing import cast
 from urllib.parse import urlparse, urlencode, ParseResult
 from uuid import uuid4
@@ -110,6 +112,26 @@ class Inline:
                             title=weapons_name,
                             description=f"查看武器列表并查询 {weapons_name}",
                             input_message_content=InputTextMessageContent(f"武器查询{weapons_name}",
+                                                                          parse_mode=ParseMode.MARKDOWN_V2)
+                        ))
+            elif "查看角色图鉴列表并查询" == args[0]:
+                for role_name in [i[:-4] for i in os.listdir(f"resources{os.sep}genshin{os.sep}pokedex")]:
+                    results_list.append(
+                        InlineQueryResultArticle(
+                            id=str(uuid4()),
+                            title=role_name,
+                            description=f"查看角色图鉴列表并查询 {role_name}",
+                            input_message_content=InputTextMessageContent(f"角色查询{role_name}",
+                                                                          parse_mode=ParseMode.MARKDOWN_V2)
+                        ))
+            elif "查看角色攻略列表并查询" == args[0]:
+                for role_name in [i[:-4] for i in os.listdir(f"resources{os.sep}genshin{os.sep}strategy")]:
+                    results_list.append(
+                        InlineQueryResultArticle(
+                            id=str(uuid4()),
+                            title=role_name,
+                            description=f"查看角色攻略列表并查询 {role_name}",
+                            input_message_content=InputTextMessageContent(f"角色查询{role_name}",
                                                                           parse_mode=ParseMode.MARKDOWN_V2)
                         ))
 
