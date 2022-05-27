@@ -136,7 +136,7 @@ weapons = {
 def roleToName(shortname: str) -> str:
     if not shortname:
         return shortname
-    for key, value in roles.items():
+    for value in roles.values():
         for i in value:
             if i == shortname:
                 return value[0]
