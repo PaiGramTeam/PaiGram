@@ -13,7 +13,9 @@ class GetGameInfo:
         qname = f"game:info:characters_cultivation_atlas:{character_name}"
         url_info = await self.cache.get_str_list(qname)
         if len(url_info) >= 1:
-            return url_info[-1]
+            url = url_info[-1]
+            if url != "":
+                return url_info[-1]
 
         async def get_post_id(collection_id: int) -> int:
             post_full_in_collection = await self.mihoyo.get_post_full_in_collection(collection_id)  # 642956
@@ -31,9 +33,11 @@ class GetGameInfo:
                     break
             return _post_id
 
-        post_id = await get_post_id(642956)
+        post_id = await get_post_id(839176)
         if post_id == -1:
-            post_id = await get_post_id(307224)
+            post_id = await get_post_id(839179)
+            if post_id == -1:
+                post_id = await get_post_id(839181)
         if post_id == -1:
             await self.cache.set_str_list(qname, [""], 3600)
             return ""

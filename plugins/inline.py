@@ -87,7 +87,7 @@ class Inline:
                             _prlist[4] = urlencode(_params)
                             return ParseResult(*_prlist).geturl()
 
-                        caption = "Form [米游社](https://bbs.mihoyo.com/ys/collection/642956) " \
+                        caption = "Form [米游社](https://bbs.mihoyo.com/ys/) 西风驿站 " \
                                   "Via [猫冬](https://bbs.mihoyo.com/ys/accountCenter/postList?id=74019947) " \
                                   f"查看 [原图]({url})"
                         results_list.append(
