@@ -7,54 +7,176 @@
     <link href="../styles/font-awesome.min.css" rel="stylesheet">
     <style>
         body {
-            color: #1e1f20;
+            background-color: rgba(253, 253, 253, .75)
         }
 
         #container {
-            background-color: #ececec;
             max-width: 768px;
         }
 
+
+        .info {
+            background: url(./background/2020021114213984258.jpg) no-repeat center;
+            box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
+            background-size: 780px 120px;
+        }
+
         .command-title {
-            border-left: 5px solid #51aded;
+            text-align: center;
+            line-height: 40px;
+            border: 1px solid #e0dad3;
+        }
+
+        .command-title h1 {
+            margin: 2px;
+            background-color: #e0dad3;
         }
 
         .command {
-            background-color: burlywood;
+            flex: 1 1 0;
+            border-radius: 0.75rem;
+            padding: 5px;
+            margin: 10px;
+            background: #f5f5f5;
+            border: 1px solid #e0dad3;
+            box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
+
+        }
+
+        .base-command {
+            border: 1px solid #e0dad3;
+            background-color: #f0ece8;
+            box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
+        }
+
+
+        .command-background {
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        .command-background img {
+            margin-left: 400px;
+            margin-top: 5px;
+            position: absolute;
+        }
+
+        .command-name {
+            margin: 4px;
+        }
+
+        .command-description {
+            margin: 4px;
+        }
+
+        .about{
+            text-align: center;
+            line-height: 40px;
+            border: 1px solid #e0dad3;
+        }
+        .about h1 {
+            margin: 2px;
+            background-color: #e0dad3;
         }
     </style>
 </head>
 <body>
-<div class="container mx-auto px-20 py-10" id="container">
-    <div class="info p-6 flex flex-wrap">
-        <div class="info-name text-4xl ">
-            <h1>PaimoeBot帮助文档</h1>
+<div class="container mx-auto px-5 py-10" id="container">
+    <div class="info p-6 flex flex-wrap mb-8 rounded-xl">
+        <div class="info-name">
+            <h1 class="text-4xl italic">TGPaimoeBot</h1>
+            <h1 class="text-2xl">使用说明</h1>
         </div>
-        <div class="info-name text-1xl pl-10">
-            <p><i class="fa fa-address-card-o"></i>需要绑定Cookie</p>
-            <p><i class="fa fa-at"></i>可回复对应群友查询</p>
+        <div class="info-name text-1xl ml-60 pt-1">
+            <p><i class="fa fa-address-card-o mr-2"></i>需要绑定Cookie</p>
         </div>
     </div>
-    <div class="base-command pt-4">
-        <div class="command-type">
-            <div class="command-title text-2xl pl-2">
-                基础命令
+    <div class="base-command pt-4 mb-8 rounded-xl">
+        <div class="command-background">
+            <img src="./background/2015.png">
+        </div>
+        <div class="command-type px-1">
+            <div class="command-title text-2xl">
+                <h1>查询命令</h1>
             </div>
         </div>
-        <div class="command-list py-8 flex flex-wrap">
-            <div class="command ml-8 p-2 rounded-xl">
-                <div class="name-title text-xl p-1">
-                    /uid
-                    <i class="fa fa-address-card-o pl-2"></i>
-                    <i class="fa fa-at"></i>
+        <div class="command-list py-4 px-2">
+            <div class="flex">
+                <div class="command">
+                    <div class="command-name text-xl">/weapon</div>
+                    <div class="command-description text-base ">查询武器</div>
                 </div>
-                <div class="name text-base p-1">查询玩家信息</div>
+                <div class="command rounded-xl flex-1">
+                    <div class="command-name text-xl">/stratepy</div>
+                    <div class="command-description text-base ">查询角色攻略</div>
+                </div>
             </div>
-            <div class="command ml-8  p-2 rounded-xl">
-                <div class="name-title text-xl p-1">/cookie</div>
-                <div class="name text-base p-1">绑定玩家信息</div>
+            <div class="flex">
+                <div class="command">
+                    <div class="command-name text-xl ">
+                        /uid
+                        <i class="fa fa-address-card-o ml-2"></i>
+                    </div>
+                    <div class="name text-base ">查询玩家信息</div>
+                </div>
+                <div class="command">
+                    <div class="command-name text-xl">
+                        /sign
+                        <i class="fa fa-address-card-o ml-2"></i></div>
+                    <div class="command-description text-base ">每日签到 | 查询</div>
+                </div>
             </div>
         </div>
+    </div>
+    <div class="base-command pt-4 mb-8 rounded-xl">
+        <div class="command-background">
+            <img src="./background/1006.png">
+        </div>
+        <div class="command-type px-1">
+            <div class="command-title text-2xl">
+                <h1>其他命令</h1>
+            </div>
+        </div>
+        <div class="command-list py-4 px-2">
+            <div class="flex">
+                <div class="command">
+                    <div class="command-name text-xl">/gacha</div>
+                    <div class="name text-base1">抽卡模拟器（非洲人模拟器）</div>
+                </div>
+                <div class="command">
+                    <div class="command-name text-x">/quiz</div>
+                    <div class="command-description text-bas">派蒙的十万个为什么</div>
+                </div>
+            </div>
+            <div class="flex">
+                <div class="command">
+                    <div class="command-name text-xl">/adduser</div>
+                    <div class="command-description text-base ">添加账号（请私聊BOT）</div>
+                </div>
+                <div class="command rounded-xl flex-1">
+                    <div class="command-name text-xl">/cancel</div>
+                    <div class="command-description text-base ">取消操作（解决一切玄学问题）</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="base-command pt-4 mb-8 rounded-xl">
+        <div class="command-type px-1">
+            <div class="command-title text-2xl">
+                <h1>inline 模式关键词</h1>
+            </div>
+        </div>
+        <div class="command-list py-4 px-2">
+            <div class="flex">
+                <div class="command">
+                    <div class="command-name text-xl">角色名</div>
+                    <div class="name text-base1">查询角色攻略</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="about">
+        <h1>更多功能，还在咕咕咕！咕咕咕！</h1>
     </div>
 </div>
 </body>

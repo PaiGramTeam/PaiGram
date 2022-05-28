@@ -11,13 +11,14 @@ from plugins.base import NewChatMembersHandler
 from plugins.cookies import Cookies
 from plugins.errorhandler import error_handler
 from plugins.gacha import Gacha
+from plugins.help import Help
 from plugins.uid import Uid
 from plugins.inline import Inline
 from plugins.job_queue import JobQueue
 from plugins.post import Post
 from plugins.quiz import Quiz
 from plugins.sign import Sign
-from plugins.start import start, help_command, ping, reply_keyboard_remove, unknown_command
+from plugins.start import start, ping, reply_keyboard_remove, unknown_command
 from plugins.strategy import Strategy
 from plugins.weapon import Weapon
 from service import StartService
@@ -50,7 +51,8 @@ def main() -> None:
             application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
 
     add_handler(start, command="start")
-    add_handler(help_command, command="help")
+    _help = Help(service)
+    add_handler(_help.command_start, command="help")
     add_handler(ping, command="ping")
     # application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_chat_members))
     auth = Auth(service)
