@@ -4,8 +4,12 @@ from telegram.helpers import escape_markdown
 
 
 async def start(update: Update, _: CallbackContext) -> None:
-    user = update.effective_user
-    await update.message.reply_markdown_v2(f'你好 {user.mention_markdown_v2()} {escape_markdown("！我是派蒙 ！")}')
+    payload = update.message.text.split(' ')[1]
+    if payload and payload == "inline_message":
+        await update.message.reply_markdown_v2(f'Hello!')
+    else:
+        user = update.effective_user
+        await update.message.reply_markdown_v2(f'你好 {user.mention_markdown_v2()} {escape_markdown("！我是派蒙 ！")}')
 
 
 async def help_command(update: Update, _: CallbackContext) -> None:
