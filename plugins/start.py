@@ -11,8 +11,8 @@ async def start(update: Update, _: CallbackContext) -> None:
         if args[1] == "inline_message":
             await update.message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
                                                    f"{escape_markdown('发送 /help 命令即可查看命令帮助')}")
-    else:
-        await update.message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
+            return
+    await update.message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
 
 
 async def help_command(update: Update, _: CallbackContext) -> None:
