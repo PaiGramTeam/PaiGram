@@ -90,7 +90,8 @@ class Post(BasePlugins):
         await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return self.SEND_POST
 
-    async def send_post(self, update: Update, context: CallbackContext) -> int:
+    @staticmethod
+    async def send_post(update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.message
         if update.message.text == "退出":
