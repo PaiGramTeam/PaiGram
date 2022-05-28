@@ -64,7 +64,7 @@ class Admin(BasePlugins):
                 await message.reply_text("输入错误")
                 return
         except ValueError as error:
-            Log.error(f"获取 char_id 发生错误！ 错误信息为 \n", error)
+            Log.error("获取 char_id 发生错误！ 错误信息为 \n", error)
             await message.reply_text("输入错误")
             return
         try:

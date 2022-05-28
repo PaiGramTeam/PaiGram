@@ -66,7 +66,7 @@ class Inline:
                             InlineQueryResultArticle(
                                 id=str(uuid4()),
                                 title="警告！问题数量过度可能无法完全展示",
-                                description=f"请在命令后添加空格输入要搜索的题目即可指定搜索",
+                                description="请在命令后添加空格输入要搜索的题目即可指定搜索",
                                 input_message_content=InputTextMessageContent("警告！问题数量过度可能无法完全展示\n"
                                                                               "请在命令后添加空格输入要搜索的题目即可指定搜索")
                             ))
@@ -115,8 +115,8 @@ class Inline:
             results_list.append(
                 InlineQueryResultArticle(
                     id=str(uuid4()),
-                    title=f"好像找不到问题呢",
-                    description=f"这个问题我也不知道，因为我就是个应急食品。",
+                    title="好像找不到问题呢",
+                    description="这个问题我也不知道，因为我就是个应急食品。",
                     input_message_content=InputTextMessageContent("这个问题我也不知道，因为我就是个应急食品。"),
                 ))
         try:

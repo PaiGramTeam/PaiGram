@@ -50,7 +50,7 @@ class Quiz(BasePlugins):
         if filters.ChatType.GROUPS.filter(update.message):
             Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 发送挑战问题命令请求")
             if len(question_id_list) == 0:
-                await update.message.reply_text(f"旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
+                await update.message.reply_text("旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
         if len(question_id_list) == 0:
             return None
         index = self.random(0, len(question_id_list))

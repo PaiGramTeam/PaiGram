@@ -62,7 +62,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
                 await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
             except BadRequest:
                 text = (
-                    f'<b>处理函数时发生异常，traceback太长导致无法发送，但已写入日志</b> \n')
+                    '<b>处理函数时发生异常，traceback太长导致无法发送，但已写入日志</b> \n')
                 try:
                     await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
                 except BadRequest as exc:
