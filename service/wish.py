@@ -67,7 +67,7 @@ def get_is_up(rank: int, count: WishCountInfo, gacha_type: GACHA_TYPE):
 
 def get_rank(count: WishCountInfo, gacha_type: GACHA_TYPE):
     value = random_int()
-    probability_fn = is_character_gacha(gacha_type) and character_probability or weapon_probability
+    probability_fn = character_probability if is_character_gacha(gacha_type) else weapon_probability
     index_5 = probability_fn(5, count.five_stars_count)
     index_4 = probability_fn(4, count.four_stars_count) + index_5
     if value <= index_5:
