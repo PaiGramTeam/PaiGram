@@ -4,24 +4,27 @@ from telegram.helpers import escape_markdown
 
 
 async def start(update: Update, _: CallbackContext) -> None:
-    payload = update.message.text.split(' ')[1]
-    if payload and payload == "inline_message":
-        await update.message.reply_markdown_v2(f'Hello!')
+    user = update.effective_user
+    message = update.message
+    args = message.text.split(" ")
+    if len(args) >= 2:
+        if args[1] == "inline_message":
+            await update.message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
+                                                   f"{escape_markdown('发送 /help 命令即可查看命令帮助')}")
     else:
-        user = update.effective_user
-        await update.message.reply_markdown_v2(f'你好 {user.mention_markdown_v2()} {escape_markdown("！我是派蒙 ！")}')
+        await update.message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
 
 
 async def help_command(update: Update, _: CallbackContext) -> None:
-    await update.message.reply_text('前面的区域，以后再来探索吧！')
+    await update.message.reply_text("前面的区域，以后再来探索吧！")
 
 
 async def unknown_command(update: Update, _: CallbackContext) -> None:
-    await update.message.reply_text('前面的区域，以后再来探索吧！')
+    await update.message.reply_text("前面的区域，以后再来探索吧！")
 
 
 async def emergency_food(update: Update, _: CallbackContext) -> None:
-    await update.message.reply_text('派蒙才不是应急食品！')
+    await update.message.reply_text("派蒙才不是应急食品！")
 
 
 async def ping(update: Update, _: CallbackContext) -> None:
