@@ -45,7 +45,7 @@ class Strategy(BasePlugins):
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         file_path = await url_to_file(url, "")
-        caption = "Form [米游社](https://bbs.mihoyo.com/ys/) 西风驿站 || " \
+        caption = "Form [米游社](https://bbs.mihoyo.com/ys/) 西风驿站  " \
                   f"查看 [原图]({url})"
         await message.reply_photo(photo=open(file_path, "rb"), caption=caption, filename=f"{role_name}.png",
                                   allow_sending_without_reply=True, parse_mode=ParseMode.MARKDOWN_V2)
