@@ -11,7 +11,7 @@ from plugins.base import NewChatMembersHandler
 from plugins.cookies import Cookies
 from plugins.errorhandler import error_handler
 from plugins.gacha import Gacha
-from plugins.get_user import GetUser
+from plugins.uid import Uid
 from plugins.inline import Inline
 from plugins.job_queue import JobQueue
 from plugins.post import Post
@@ -77,14 +77,14 @@ def main() -> None:
         },
         fallbacks=[CommandHandler('cancel', cookies.cancel, block=True)],
     )
-    get_user = GetUser(service)
-    get_user_handler = ConversationHandler(
-        entry_points=[CommandHandler('getuser', get_user.command_start, block=True),
-                      MessageHandler(filters.Regex(r"^玩家查询(.*)"), get_user.command_start, block=True)],
+    uid = Uid(service)
+    uid_handler = ConversationHandler(
+        entry_points=[CommandHandler('uid', uid.command_start, block=True),
+                      MessageHandler(filters.Regex(r"^玩家查询(.*)"), uid.command_start, block=True)],
         states={
-            get_user.COMMAND_RESULT: [CallbackQueryHandler(get_user.command_result, block=True)]
+            uid.COMMAND_RESULT: [CallbackQueryHandler(uid.command_result, block=True)]
         },
-        fallbacks=[CommandHandler('cancel', get_user.cancel, block=True)]
+        fallbacks=[CommandHandler('cancel', uid.cancel, block=True)]
     )
     sign = Sign(service)
     sign_handler = ConversationHandler(
@@ -139,7 +139,7 @@ def main() -> None:
     application.add_handler(sign_handler)
     application.add_handler(quiz_handler)
     application.add_handler(cookies_handler)
-    application.add_handler(get_user_handler)
+    application.add_handler(uid_handler)
     application.add_handler(post_handler)
     inline = Inline(service)
     application.add_handler(InlineQueryHandler(inline.inline_query, block=False))

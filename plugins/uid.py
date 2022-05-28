@@ -15,11 +15,11 @@ from service import BaseService
 from service.base import UserInfoData
 
 
-class GetUserCommandData:
+class UidCommandData:
     user_info: UserInfoData = UserInfoData()
 
 
-class GetUser(BasePlugins):
+class Uid(BasePlugins):
     COMMAND_RESULT, = range(10200, 10201)
 
     def __init__(self, service: BaseService):
@@ -123,10 +123,10 @@ class GetUser(BasePlugins):
         user = update.effective_user
         message = update.message
         Log.info(f"用户 {user.full_name}[{user.id}] 查询游戏用户命令请求")
-        get_user_command_data: GetUserCommandData = context.chat_data.get("get_user_command_data")
-        if get_user_command_data is None:
-            get_user_command_data = GetUserCommandData()
-            context.chat_data["get_user_command_data"] = get_user_command_data
+        uid_command_data: UidCommandData = context.chat_data.get("uid_command_data")
+        if uid_command_data is None:
+            uid_command_data = UidCommandData()
+            context.chat_data["uid_command_data"] = uid_command_data
         user_info = await self.service.user_service_db.get_user_info(user.id)
         if user_info.user_id == 0:
             await message.reply_text("未查询到账号信息")
@@ -144,11 +144,11 @@ class GetUser(BasePlugins):
             reply_text = "请选择你要查询的类别"
             keyboard = [
                 [
-                    InlineKeyboardButton("米游社", callback_data="get_user|米游社"),
-                    InlineKeyboardButton("HoYoLab", callback_data="get_user|HoYoLab")
+                    InlineKeyboardButton("米游社", callback_data="uid|米游社"),
+                    InlineKeyboardButton("HoYoLab", callback_data="uid|HoYoLab")
                 ]
             ]
-            get_user_command_data.user_info = user_info
+            uid_command_data.user_info = user_info
             await update.message.reply_text(reply_text, reply_markup=InlineKeyboardMarkup(keyboard))
             return self.COMMAND_RESULT
         else:
@@ -161,14 +161,13 @@ class GetUser(BasePlugins):
         return ConversationHandler.END
 
     async def command_result(self, update: Update, context: CallbackContext) -> int:
-        user = update.effective_user
-        get_user_command_data: GetUserCommandData = context.chat_data["get_user_command_data"]
+        get_user_command_data: UidCommandData = context.chat_data["uid_command_data"]
         query = update.callback_query
         await query.answer()
         await query.delete_message()
-        if query.data == "get_user|米游社":
+        if query.data == "uid|米游社":
             service = ServiceEnum.MIHOYOBBS
-        elif query.data == "get_user|HoYoLab":
+        elif query.data == "uid|HoYoLab":
             service = ServiceEnum.HOYOLAB
         else:
             return ConversationHandler.END
