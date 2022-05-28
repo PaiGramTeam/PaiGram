@@ -93,7 +93,7 @@ class Auth:
                 chat_id=chat.id,
                 extra_user=[]
         ):
-            await callback_query.answer(text=f"你不是管理！\n"
+            await callback_query.answer(text="你不是管理！\n"
                                              f"再瞎几把点我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
         result, user_id = await admin_callback(callback_query.data)
@@ -141,7 +141,7 @@ class Auth:
         user_id, result, question, answer = await query_callback(callback_query.data)
         Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth认证命令 ")
         if user.id != user_id:
-            await callback_query.answer(text=f"这不是你的验证！\n"
+            await callback_query.answer(text="这不是你的验证！\n"
                                              f"再瞎几把点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
         Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
@@ -200,7 +200,7 @@ class Auth:
                     raise err
             question_id_list = await self.service.quiz_service.get_question_id_list()
             if len(question_id_list) == 0:
-                await message.reply_text(f"旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
+                await message.reply_text("旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
                 return
             index = self.random(0, len(question_id_list))
             question = await self.service.quiz_service.get_question(question_id_list[index])

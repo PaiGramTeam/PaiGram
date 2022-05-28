@@ -57,7 +57,7 @@ class RedisCache:
             await self.rdb.set(qname + f":{question.question_id}", json_dumps(question))
 
         question_id_list = [question.question_id for question in question_list]
-        await self.rdb.lpush(qname + f":id_list", *question_id_list)
+        await self.rdb.lpush(qname + ":id_list", *question_id_list)
         return await self.rdb.llen(qname + ":id_list")
 
     async def del_all_question(self, answer_list: List[AnswerData] = None):
