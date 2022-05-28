@@ -67,7 +67,7 @@ class Uid(BasePlugins):
             "user_avatar": await url_to_file(user_avatar),
             "action_day_number": user_info.stats.days_active,
             "achievement_number": user_info.stats.achievements,
-            "avatar_number": user_info.stats.anemoculi,
+            "avatar_number": user_info.stats.characters,
             "spiral_abyss": user_info.stats.spiral_abyss,
             "way_point_number": user_info.stats.unlocked_waypoints,
             "domain_number": user_info.stats.unlocked_domains,
