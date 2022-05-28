@@ -75,10 +75,7 @@ class Auth:
 
         async def admin_callback(callback_query_data: str) -> Tuple[bool, int]:
             _data = callback_query_data.split("|")
-            if _data[1] == "pass":
-                _result = True
-            else:
-                _result = False
+            _result = _data[1] == "pass"
             _user_id = int(_data[2])
             return _result, _user_id
 
