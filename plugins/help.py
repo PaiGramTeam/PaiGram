@@ -20,7 +20,7 @@ class Help(BasePlugins):
         Log.info(f"用户 {user.full_name}[{user.id}] 帮助命令")
         if self.file_id is None or config.DEBUG:
             help_png = await self.service.template.render('bot', "help.html", {}, {"width": 768, "height": 768})
-            reply_photo = await message.reply_photo(help_png, filename=f"help.png", allow_sending_without_reply=True)
+            reply_photo = await message.reply_photo(help_png, filename="help.png", allow_sending_without_reply=True)
             photo = reply_photo.photo[0]
             self.file_id = photo.file_id
         else:
