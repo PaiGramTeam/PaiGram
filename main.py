@@ -1,3 +1,4 @@
+from typing import Optional
 from warnings import filterwarnings
 
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, \
@@ -38,16 +39,26 @@ def main() -> None:
     cache = RedisCache(db=6)
     service = StartService(repository, cache)
     application = Application.builder().token(config.TELEGRAM["token"]).build()
-    application.add_handler(CommandHandler("start", start, block=False))
-    application.add_handler(CommandHandler("help", help_command, block=False))
-    application.add_handler(CommandHandler("ping", ping, block=False))
+
+    def add_handler(handler, command: Optional[str] = None, regex: Optional[str] = None, query: Optional[str] = None,
+                    block: bool = False) -> None:
+        if command:
+            application.add_handler(CommandHandler(command, handler, block=block))
+        if regex:
+            application.add_handler(MessageHandler(filters.Regex(regex), handler, block=block))
+        if query:
+            application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
+
+    add_handler(start, command="start")
+    add_handler(help_command, command="help")
+    add_handler(ping, command="ping")
     # application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_chat_members))
     auth = Auth(service)
     new_chat_members_handler = NewChatMembersHandler(service, auth.new_mem)
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS,
                                            new_chat_members_handler.new_member, block=False))
-    application.add_handler(CallbackQueryHandler(auth.query, pattern=r"^auth_challenge\|", block=False))
-    application.add_handler(CallbackQueryHandler(auth.admin, pattern=r"^auth_admin\|", block=False))
+    add_handler(auth.query, query=r"^auth_challenge\|")
+    add_handler(auth.admin, query=r"^auth_admin\|")
 
     # application.add_handler(MessageHandler((filters.Regex(r'.派蒙是应急食品') & filters.ChatType.PRIVATE), emergency_food))
 
@@ -84,7 +95,6 @@ def main() -> None:
         },
         fallbacks=[CommandHandler('cancel', sign.cancel, block=True)]
     )
-    application.add_handler(sign_handler)
     quiz = Quiz(service)
     quiz_handler = ConversationHandler(
         entry_points=[CommandHandler('quiz', quiz.command_start, block=True)],
@@ -115,19 +125,18 @@ def main() -> None:
         fallbacks=[CommandHandler('cancel', _post.cancel, block=True)]
     )
     gacha = Gacha(service)
-    application.add_handler(CommandHandler("gacha", gacha.command_start, block=False))
+    add_handler(gacha.command_start, command="gacha", regex=r"^抽卡(.*)")
     admin = Admin(service)
-    application.add_handler(CommandHandler("add_admin", admin.add_admin, block=False))
-    application.add_handler(CommandHandler("del_admin", admin.del_admin, block=False))
+    add_handler(admin.add_admin, command="add_admin")
+    add_handler(admin.del_admin, command="del_admin")
     weapon = Weapon(service)
-    application.add_handler(CommandHandler("weapon", weapon.command_start, block=False))
-    application.add_handler(MessageHandler(filters.Regex(r"^武器查询(.*)"), weapon.command_start, block=False))
+    add_handler(weapon.command_start, command="weapon", regex=r"^武器查询(.*)")
     strategy = Strategy(service)
-    application.add_handler(CommandHandler("strategy", strategy.command_start, block=False))
-    application.add_handler(MessageHandler(filters.Regex(r"^角色攻略查询(.*)"), strategy.command_start, block=False))
+    add_handler(strategy.command_start, command="strategy", regex=r"^角色攻略查询(.*)")
     # 调试功能
-    application.add_handler(CommandHandler("reply_keyboard_remove", reply_keyboard_remove, block=False))
-    application.add_handler(CommandHandler("leave_chat", admin.leave_chat, block=False))
+    add_handler(reply_keyboard_remove, command="reply_keyboard_remove")
+    add_handler(admin.leave_chat, command="leave_chat")
+    application.add_handler(sign_handler)
     application.add_handler(quiz_handler)
     application.add_handler(cookies_handler)
     application.add_handler(get_user_handler)
