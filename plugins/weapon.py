@@ -1,11 +1,4 @@
-import os
-import time
-from uuid import uuid4
 import re
-import aiofiles
-
-from jinja2 import Environment, PackageLoader
-from playwright.async_api import async_playwright, ViewportSize
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -22,7 +15,7 @@ class Weapon(BasePlugins):
     def __init__(self, service: BaseService):
         super().__init__(service)
 
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, _: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
         args = message.text.split(" ")
