@@ -110,6 +110,16 @@ class Inline:
                             input_message_content=InputTextMessageContent(f"武器查询{weapons_name}",
                                                                           parse_mode=ParseMode.MARKDOWN_V2)
                         ))
+            elif "查看角色攻略列表并查询" == args[0]:
+                for role_name in metadat.characters_name_list:
+                    results_list.append(
+                        InlineQueryResultArticle(
+                            id=str(uuid4()),
+                            title=role_name,
+                            description=f"查看角色攻略列表并查询 {role_name}",
+                            input_message_content=InputTextMessageContent(f"角色攻略查询{role_name}",
+                                                                          parse_mode=ParseMode.MARKDOWN_V2)
+                        ))
 
         if len(results_list) == 0:
             results_list.append(

@@ -17,6 +17,7 @@ from plugins.post import Post
 from plugins.quiz import Quiz
 from plugins.sign import Sign
 from plugins.start import start, help_command, ping, reply_keyboard_remove, unknown_command
+from plugins.strategy import Strategy
 from plugins.weapon import Weapon
 from service import StartService
 from service.repository import AsyncRepository
@@ -121,6 +122,10 @@ def main() -> None:
     weapon = Weapon(service)
     application.add_handler(CommandHandler("weapon", weapon.command_start, block=False))
     application.add_handler(MessageHandler(filters.Regex(r"^武器查询(.*)"), weapon.command_start, block=False))
+    strategy = Strategy(service)
+    application.add_handler(CommandHandler("strategy", strategy.command_start, block=False))
+    application.add_handler(MessageHandler(filters.Regex(r"^角色攻略查询(.*)"), strategy.command_start, block=False))
+    # 调试功能
     application.add_handler(CommandHandler("reply_keyboard_remove", reply_keyboard_remove, block=False))
     application.add_handler(CommandHandler("leave_chat", admin.leave_chat, block=False))
     application.add_handler(quiz_handler)
