@@ -49,7 +49,7 @@ def weapon_probability(rank, count):
 
 
 def is_character_gacha(gacha_type: GACHA_TYPE) -> bool:
-    return gacha_type == GACHA_TYPE.activity or gacha_type == GACHA_TYPE.activity2 or gacha_type == GACHA_TYPE.permanent
+    return gacha_type in (GACHA_TYPE.activity, GACHA_TYPE.activity2, GACHA_TYPE.permanent)
 
 
 def random_int():
@@ -99,7 +99,7 @@ def get_one(count: WishCountInfo, gacha_info: dict, weapon_name: str = "") -> di
                         break
             else:
                 count.maximum_fate_points += 1
-        if gacha_type == GACHA_TYPE.activity or gacha_type == GACHA_TYPE.activity2 or gacha_type == GACHA_TYPE.weapon:
+        if gacha_type in (GACHA_TYPE.activity, GACHA_TYPE.activity2, GACHA_TYPE.weapon):
             count.is_up = not is_up
         return {
             "item_type": data["item_type"],
