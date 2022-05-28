@@ -16,7 +16,7 @@
 
 
         .info {
-            background: url(./background/2020021114213984258.jpg) no-repeat center;
+            background: url(./background/2020021114213984258.png) no-repeat center;
             box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
             background-size: 780px 120px;
         }
@@ -61,6 +61,17 @@
             position: absolute;
         }
 
+        .genshin-background {
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        .genshin-background img {
+            margin-left: 140px;
+            margin-top: 75px;
+            position: absolute;
+        }
+
         .command-name {
             margin: 4px;
         }
@@ -94,6 +105,9 @@
     <div class="base-command pt-4 mb-8 rounded-xl">
         <div class="command-background">
             <img src="./background/2015.png">
+        </div>
+        <div class="genshin-background">
+            <img src="./background/genshin.png">
         </div>
         <div class="command-type px-1">
             <div class="command-title text-2xl">
