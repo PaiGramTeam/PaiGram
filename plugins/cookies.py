@@ -69,12 +69,18 @@ class Cookies(BasePlugins):
         javascript = "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a[" \
                      "0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的Cookie,请重新登录!');c&&confirm(" \
                      "'将Cookie复制到剪贴板?')&&copy(document.cookie)})(); "
-        help_message = f"*关于如何获取Cookies*\n" \
+        javascript_android = "javascript:(()=>{prompt('',document.cookie)})();"
+        help_message = f"*关于如何获取Cookies*\n\n" \
+                       f"PC：\n" \
                        f"[1、打开{bbs_name}并登录]({bbs_url})\n" \
                        f"2、按F12打开开发者工具\n" \
                        f"3、{escape_markdown('将开发者工具切换至控制台(Console)页签', version=2)}\n" \
                        f"4、复制下方的代码，并将其粘贴在控制台中，按下回车\n" \
-                       f"`{escape_markdown(javascript, version=2, entity_type='code')}`"
+                       f"`{escape_markdown(javascript, version=2, entity_type='code')}`\n\n" \
+                       f"Android：\n" \
+                       f"[1、通过 Vim 浏览器打开{bbs_name}并登录]({bbs_url})\n" \
+                       f"2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n" \
+                       f"`{escape_markdown(javascript_android, version=2, entity_type='code')}`"
         await update.message.reply_markdown_v2(help_message, disable_web_page_preview=True)
         return self.CHECK_COOKIES
 
