@@ -14,19 +14,15 @@
   "telegram": {
     "token": "",
     "notice": {
-      "INFO": {
-        "name": "",
-        "char_id":
-      },
       "ERROR": {
         "name": "",
-        "char_id":
+        "chat_id":
       }
     },
     "channel": {
       "POST": {
         "name": "",
-        "char_id":
+        "chat_id":
       }
     }
   },

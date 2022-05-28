@@ -100,7 +100,7 @@ class Post(BasePlugins):
         await message.reply_text("正在推送", reply_markup=ReplyKeyboardRemove())
         try:
             channel_name = config.TELEGRAM["channel"]["POST"]["name"]
-            channel_id = config.TELEGRAM["channel"]["POST"]["char_id"]
+            channel_id = config.TELEGRAM["channel"]["POST"]["chat_id"]
         except KeyError as error:
             Log.error("从配置文件获取频道信息发生错误，退出任务 \n", error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
