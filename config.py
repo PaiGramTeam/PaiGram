@@ -12,14 +12,16 @@ class Config(object):
         with open(config_file, 'r', encoding='utf-8') as f:
             self._config_json: dict = ujson.load(f)
 
-        self.DEBUG: bool = self.get_config("debug")
-        self.ADMINISTRATORS = self.get_config('administrators')
-        self.MYSQL = self.get_config('mysql')
-        self.TELEGRAM = self.get_config('telegram')
-        self.FUNCTION = self.get_config('function')
+        self.DEBUG = self.get_config("debug")
+        if self.DEBUG == "":
+            self.DEBUG = False
+        self.ADMINISTRATORS = self.get_config("administrators")
+        self.MYSQL = self.get_config("mysql")
+        self.TELEGRAM = self.get_config("telegram")
+        self.FUNCTION = self.get_config("function")
 
     def get_config(self, name: str):
-        return self._config_json.get(name, '')
+        return self._config_json.get(name, "")
 
 
 config = Config()
