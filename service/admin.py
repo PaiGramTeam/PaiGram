@@ -1,4 +1,3 @@
-import logging
 from typing import List
 
 from pymysql import IntegrityError

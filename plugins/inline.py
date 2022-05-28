@@ -1,8 +1,6 @@
 from typing import cast
 from urllib.parse import urlparse, urlencode, ParseResult
 from uuid import uuid4
-
-import httpx
 from telegram import InlineQueryResultArticle, InputTextMessageContent, Update, InlineQuery, InlineQueryResultPhoto
 from telegram.constants import ParseMode
 from telegram.error import BadRequest

@@ -1,9 +1,6 @@
 import os
 import time
 from typing import Optional
-from uuid import uuid4
-
-import aiofiles
 from jinja2 import PackageLoader, Environment, Template
 from playwright.async_api import async_playwright, Browser, ViewportSize
 
