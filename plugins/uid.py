@@ -5,7 +5,7 @@ import genshin
 from genshin import DataNotPublic, GenshinException, TooManyRequests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from logger import Log
 from model.base import ServiceEnum
@@ -129,7 +129,10 @@ class Uid(BasePlugins):
             context.chat_data["uid_command_data"] = uid_command_data
         user_info = await self.service.user_service_db.get_user_info(user.id)
         if user_info.user_id == 0:
-            await message.reply_text("未查询到账号信息")
+            reply_message = await message.reply_text("未查询到账号信息")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
             return ConversationHandler.END
         uid: int = -1
         try:
