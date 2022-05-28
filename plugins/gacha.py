@@ -1,9 +1,7 @@
 import os
-import time
 
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from logger import Log
