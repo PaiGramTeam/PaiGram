@@ -123,6 +123,13 @@ def main() -> None:
         states={
             _post.CHECK_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.check_post, block=True)],
             _post.SEND_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.send_post, block=True)],
+            _post.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.check_command, block=True)],
+            _post.GTE_DELETE_PHOTO: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_delete_photo, block=True)],
+            _post.GET_POST_CHANNEL: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_post_channel, block=True)],
+            _post.GET_TAGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_tags, block=True)],
+            _post.GET_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_edit_text, block=True)]
         },
         fallbacks=[CommandHandler('cancel', _post.cancel, block=True)]
     )

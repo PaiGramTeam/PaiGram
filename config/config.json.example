@@ -20,10 +20,12 @@
       }
     },
     "channel": {
-      "POST": {
-        "name": "",
-        "chat_id":
-      }
+      "POST": [
+        {
+            "name": "",
+            "chat_id":
+        }
+      ]
     }
   },
   "administrators":
