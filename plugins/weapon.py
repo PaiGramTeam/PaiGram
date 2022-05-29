@@ -8,6 +8,7 @@ from logger import Log
 from model.helpers import url_to_file
 from plugins.base import BasePlugins
 from service import BaseService
+from metadata.shortname import weaponToName
 from metadata.metadata import metadat
 
 
@@ -35,6 +36,7 @@ class Weapon(BasePlugins):
         else:
             await message.reply_text("请回复你要查询的武器", reply_markup=InlineKeyboardMarkup(keyboard))
             return
+        weapon_name = weaponToName(weapon_name)
         weapon_data = None
         for weapon in metadat.weapons:
             if weapon["Name"] == weapon_name:
