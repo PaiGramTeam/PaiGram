@@ -85,7 +85,6 @@ class Sign(BasePlugins):
             await update.message.reply_text("未查询到账号信息")
             return ConversationHandler.END
         if user_info.service == ServiceEnum.NULL:
-            message = "请选择你要签到的服务器"
             keyboard = [
                 [
                     InlineKeyboardButton("米游社", callback_data="sign|米游社"),
@@ -93,7 +92,7 @@ class Sign(BasePlugins):
                 ]
             ]
             sign_command_data.user_info = user_info
-            await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
+            await update.message.reply_text("请选择你要签到的服务器", reply_markup=InlineKeyboardMarkup(keyboard))
             sign_command_data.chat_id = update.message.chat_id
             sign_command_data.reply_to_message_id = update.message.message_id
             return self.COMMAND_RESULT
