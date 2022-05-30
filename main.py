@@ -1,6 +1,7 @@
 from typing import Optional
 from warnings import filterwarnings
 
+from telegram import BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, \
     CallbackQueryHandler, InlineQueryHandler
 from telegram.warnings import PTBUserWarning
@@ -13,6 +14,7 @@ from plugins.errorhandler import error_handler
 from plugins.gacha import Gacha
 from plugins.help import Help
 from plugins.uid import Uid
+from plugins.daily_note import DailyNote
 from plugins.inline import Inline
 from plugins.job_queue import JobQueue
 from plugins.post import Post
@@ -88,6 +90,15 @@ def main() -> None:
         },
         fallbacks=[CommandHandler('cancel', uid.cancel, block=True)]
     )
+    daily_note = DailyNote(service)
+    daily_note_handler = ConversationHandler(
+        entry_points=[CommandHandler('dailynote', daily_note.command_start, block=True),
+                      MessageHandler(filters.Regex(r"^当前状态(.*)"), daily_note.command_start, block=True)],
+        states={
+            daily_note.COMMAND_RESULT: [CallbackQueryHandler(daily_note.command_result, block=True)]
+        },
+        fallbacks=[CommandHandler('cancel', daily_note.cancel, block=True)]
+    )
     sign = Sign(service)
     sign_handler = ConversationHandler(
         entry_points=[CommandHandler('sign', sign.command_start, block=True),
@@ -149,6 +160,7 @@ def main() -> None:
     application.add_handler(quiz_handler)
     application.add_handler(cookies_handler)
     application.add_handler(uid_handler)
+    application.add_handler(daily_note_handler)
     application.add_handler(post_handler)
     inline = Inline(service)
     application.add_handler(InlineQueryHandler(inline.inline_query, block=False))
