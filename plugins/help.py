@@ -1,6 +1,6 @@
-from pyrogram.errors import BadRequest
 from telegram import Update
 from telegram.constants import ChatAction
+from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 
 from config import config
