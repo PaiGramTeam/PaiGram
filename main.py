@@ -134,7 +134,7 @@ def main() -> None:
         fallbacks=[CommandHandler('cancel', _post.cancel, block=True)]
     )
     gacha = Gacha(service)
-    add_handler(gacha.command_start, command="gacha", regex=r"^抽卡(.*)")
+    add_handler(gacha.command_start, command="gacha", regex=r"^抽卡模拟器(.*)")
     admin = Admin(service)
     add_handler(admin.add_admin, command="add_admin")
     add_handler(admin.del_admin, command="del_admin")
