@@ -2,7 +2,7 @@ import os
 import datetime
 
 import genshin
-from genshin import GenshinException
+from genshin import GenshinException, DataNotPublic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
@@ -110,7 +110,14 @@ class DailyNote(BasePlugins):
             return self.COMMAND_RESULT
         else:
             await update.message.reply_chat_action(ChatAction.TYPING)
-            png_data = await self._start_get_daily_note(user_info, user_info.service)
+            try:
+                png_data = await self._start_get_daily_note(user_info, user_info.service)
+            except DataNotPublic:
+                reply_message = await update.message.reply_text("查询失败惹，可能是便签功能被禁用了？")
+                if filters.ChatType.GROUPS.filter(message):
+                    self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
+                    self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
+                return ConversationHandler.END
             await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             await update.message.reply_photo(png_data, filename=f"{user_info.user_id}.png",
                                              allow_sending_without_reply=True)
