@@ -56,8 +56,7 @@ class Weapon(BasePlugins):
             return
 
         Log.info(f"用户 {user.full_name}[{user.id}] 查询武器命令请求 || 参数 {weapon_name}")
-
-        await message.reply_chat_action(ChatAction.FIND_LOCATION)
+        await message.reply_chat_action(ChatAction.TYPING)
 
         async def input_template_data(_weapon_data):
             _template_data = {

@@ -155,7 +155,7 @@ class Uid(BasePlugins):
             await update.message.reply_text(reply_text, reply_markup=InlineKeyboardMarkup(keyboard))
             return self.COMMAND_RESULT
         else:
-            await update.message.reply_chat_action(ChatAction.FIND_LOCATION)
+            await update.message.reply_chat_action(ChatAction.TYPING)
             png_data = await self._start_get_user_info(user_info, user_info.service, uid)
             await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             await update.message.reply_photo(png_data, filename=f"{user_info.user_id}.png",

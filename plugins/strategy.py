@@ -25,6 +25,7 @@ class Strategy(BasePlugins):
                 InlineKeyboardButton(text="查看角色攻略列表并查询", switch_inline_query_current_chat="查看角色攻略列表并查询")
             ]
         ]
+        await update.message.reply_chat_action(ChatAction.TYPING)
         if search_command:
             role_name = roleToName(search_command[1])
             if role_name == "":

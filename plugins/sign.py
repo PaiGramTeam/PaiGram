@@ -4,6 +4,7 @@ import datetime
 import genshin
 from genshin import Game, GenshinException, AlreadyClaimed
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from logger import Log
@@ -97,6 +98,7 @@ class Sign(BasePlugins):
             sign_command_data.reply_to_message_id = update.message.message_id
             return self.COMMAND_RESULT
         else:
+            await message.reply_chat_action(ChatAction.TYPING)
             sign = await self._start_sign(user_info, user_info.service)
             reply_message = await message.reply_text(sign)
             if filters.ChatType.GROUPS.filter(reply_message):
@@ -109,6 +111,7 @@ class Sign(BasePlugins):
         query = update.callback_query
         await query.answer()
         message = "签到失败"
+        await query.message.reply_chat_action(ChatAction.TYPING)
         if query.data == "sign|米游社":
             message = await self._start_sign(user_info, ServiceEnum.MIHOYOBBS)
         if query.data == "sign|HoYoLab":

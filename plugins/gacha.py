@@ -48,7 +48,7 @@ class Gacha(BasePlugins):
         if user_gacha_count is None:
             user_gacha_count = user_gacha[gacha_id] = WishCountInfo(user_id=user.id)
         # 用户数据储存和处理
-        await message.reply_chat_action(ChatAction.FIND_LOCATION)
+        await message.reply_chat_action(ChatAction.TYPING)
         data = {
             "_res_path": f"file://{self.resources_dir}",
             "name": f"{user.full_name}",

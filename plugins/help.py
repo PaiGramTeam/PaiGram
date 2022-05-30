@@ -1,5 +1,6 @@
 from pyrogram.errors import BadRequest
 from telegram import Update
+from telegram.constants import ChatAction
 from telegram.ext import CallbackContext
 
 from config import config
@@ -17,14 +18,17 @@ class Help(BasePlugins):
     async def command_start(self, update: Update, _: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
-        Log.info(f"用户 {user.full_name}[{user.id}] 帮助命令")
+        Log.info(f"用户 {user.full_name}[{user.id}] 发出help命令")
         if self.file_id is None or config.DEBUG:
+            await message.reply_chat_action(ChatAction.TYPING)
             help_png = await self.service.template.render('bot', "help.html", {}, {"width": 768, "height": 768})
+            await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             reply_photo = await message.reply_photo(help_png, filename="help.png", allow_sending_without_reply=True)
             photo = reply_photo.photo[0]
             self.file_id = photo.file_id
         else:
             try:
+                await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                 await message.reply_photo(self.file_id, allow_sending_without_reply=True)
             except BadRequest as error:
                 self.file_id = None

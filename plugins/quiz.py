@@ -7,6 +7,7 @@ from numpy.random import MT19937, Generator
 from redis import DataError, ResponseError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, Poll, \
     ReplyKeyboardRemove, Message
+from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
@@ -96,6 +97,7 @@ class Quiz(BasePlugins):
             else:
                 await self.send_poll(update)
         elif filters.ChatType.GROUPS.filter(update.message):
+            await update.message.reply_chat_action(ChatAction.TYPING)
             poll_message = await self.send_poll(update)
             if poll_message is None:
                 return ConversationHandler.END
