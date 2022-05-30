@@ -34,4 +34,4 @@ class TestGame(IsolatedAsyncioTestCase):
 
 
 if __name__ == "__main__":
-    unittest.main("TestGame")
+    unittest.main()
