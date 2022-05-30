@@ -18,7 +18,7 @@ class GetGameInfo:
                 return url_info[-1]
 
         async def get_post_id(collection_id: int) -> int:
-            post_full_in_collection = await self.mihoyo.get_post_full_in_collection(collection_id)  # 642956
+            post_full_in_collection = await self.mihoyo.get_post_full_in_collection(collection_id)
             if post_full_in_collection.error:
                 await self.cache.set_str_list(qname, [""], 3600)
                 return -1
