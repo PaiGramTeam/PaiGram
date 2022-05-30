@@ -1,7 +1,6 @@
 from typing import Optional
 from warnings import filterwarnings
 
-from telegram import BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, \
     CallbackQueryHandler, InlineQueryHandler
 from telegram.warnings import PTBUserWarning
