@@ -50,7 +50,7 @@
           </div>
         </div>
         <div class="right">
-          <span class="{% if current_realm_currency/max_realm_currency > 0.9 %}red{% endif %}">
+          <span class="{% if current_realm_currency/(max_realm_currency or 1) > 0.9 %}red{% endif %}">
             {{ current_realm_currency }}/{{ max_realm_currency }}
           </span>
         </div>
