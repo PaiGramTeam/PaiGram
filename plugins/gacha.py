@@ -35,6 +35,10 @@ class Gacha(BasePlugins):
         gacha_name = "角色活动"
         if len(args) > 1:
             gacha_name = args[1]
+            for key, value in {"2": "角色活动-2", "武器": "武器活动", "普通": "常驻"}.items():
+                if key == gacha_name:
+                    gacha_name = value
+                    break
         gacha_info = await self.service.gacha.gacha_info(gacha_name)
         # 用户数据储存和处理
         if gacha_info.get("gacha_id") is None:
