@@ -50,7 +50,9 @@
           </div>
         </div>
         <div class="right">
-          <span>{{ current_realm_currency }}/{{ max_realm_currency }}</span>
+          <span class="{% if current_realm_currency/max_realm_currency > 0.9 %}red{% endif %}">
+            {{ current_realm_currency }}/{{ max_realm_currency }}
+          </span>
         </div>
       </div>
       <div class="item">
@@ -116,7 +118,9 @@
           </div>
         </div>
         <div class="right">
-          <span>{% if transformer %}{% if transformer_ready %}可使用{% else %}冷却中{% endif %}{% else %}尚未获得{% endif %}</span>
+          <span class="{% if (transformer and transformer_ready) %}red{% endif %}">
+            {% if transformer %}{% if transformer_ready %}可使用{% else %}冷却中{% endif %}{% else %}尚未获得{% endif %}
+          </span>
         </div>
       </div>
     </div>
