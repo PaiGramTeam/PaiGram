@@ -1,6 +1,7 @@
 import re
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from httpx import ConnectTimeout
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -44,7 +45,16 @@ class Strategy(BasePlugins):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
-        url = await self.service.get_game_info.get_characters_cultivation_atlas(role_name)
+        try:
+            url = await self.service.get_game_info.get_characters_cultivation_atlas(role_name)
+        except ConnectTimeout as error:
+            reply_message = await message.reply_text("出错了呜呜呜 ~ 服务器请求ConnectTimeout",
+                                                     reply_markup=ReplyKeyboardRemove())
+            Log.error("服务器请求ConnectTimeout \n", error)
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self._add_delete_message_job(context, message.chat_id, message.message_id)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+            return
         if url == "":
             reply_message = await message.reply_text(f"没有找到 {role_name} 的攻略",
                                                      reply_markup=InlineKeyboardMarkup(keyboard))
