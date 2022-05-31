@@ -48,7 +48,6 @@ class Sign(BasePlugins):
             try:
                 request_daily_reward = await client.request_daily_reward("sign", method="POST",
                                                                          game=Game.GENSHIN, lang="zh-cn")
-                daily_reward_info.claimed_rewards += 1
                 Log.info(f"UID {uid} 签到请求 {request_daily_reward}")
             except AlreadyClaimed:
                 result = "今天旅行者已经签到过了~"
@@ -65,6 +64,8 @@ class Sign(BasePlugins):
         cn_timezone = datetime.timezone(datetime.timedelta(hours=8))
         now = datetime.datetime.now(cn_timezone)
         missed_days = now.day - daily_reward_info.claimed_rewards
+        if not daily_reward_info.signed_in:
+            missed_days -= 1
         message = f"#### {today} (UTC+8) ####\n" \
                   f"UID: {uid}\n" \
                   f"今日奖励: {reward.name} × {reward.amount}\n" \
