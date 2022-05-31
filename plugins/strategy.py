@@ -48,7 +48,7 @@ class Strategy(BasePlugins):
         try:
             url = await self.service.get_game_info.get_characters_cultivation_atlas(role_name)
         except ConnectTimeout as error:
-            reply_message = await message.reply_text("出错了呜呜呜 ~ 服务器请求ConnectTimeout",
+            reply_message = await message.reply_text("出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ",
                                                      reply_markup=ReplyKeyboardRemove())
             Log.error("服务器请求ConnectTimeout \n", error)
             if filters.ChatType.GROUPS.filter(reply_message):

@@ -106,7 +106,7 @@ class Sign(BasePlugins):
                 sign = await self._start_sign(user_info, user_info.service)
             except ClientConnectorError as error:
                 Log.error("服务器请求ConnectTimeout \n", error)
-                reply_message = await message.reply_text("出错了呜呜呜 ~ 服务器请求ConnectTimeout",
+                reply_message = await message.reply_text("出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ",
                                                          reply_markup=ReplyKeyboardRemove())
                 if filters.ChatType.GROUPS.filter(reply_message):
                     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
@@ -130,7 +130,7 @@ class Sign(BasePlugins):
                 message = await self._start_sign(user_info, ServiceEnum.HOYOLAB)
         except ClientConnectorError as error:
             Log.error("服务器请求ConnectTimeout \n", error)
-            reply_message = await query.edit_message_text("出错了呜呜呜 ~ 服务器请求ConnectTimeout")
+            reply_message = await query.edit_message_text("出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return ConversationHandler.END
