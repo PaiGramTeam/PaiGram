@@ -111,18 +111,18 @@ class Cookies(BasePlugins):
             return ConversationHandler.END
         try:
             user_info = await client.get_record_card()
-        except GenshinException as error:
-            await update.message.reply_text(f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常",
-                                            reply_markup=ReplyKeyboardRemove())
+        except DataNotPublic:
+            await update.message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except InvalidCookies:
             await update.message.reply_text("Cookies已经过期，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        except DataNotPublic:
-            await update.message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
         except AttributeError:
             await update.message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        except GenshinException as error:
+            await update.message.reply_text(f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常",
+                                            reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         cookies_command_data.cookies = cookies
         cookies_command_data.game_uid = user_info.uid
