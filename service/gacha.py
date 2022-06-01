@@ -1,4 +1,4 @@
-from model.genshinhelper import GachaInfo
+from model.apihelper import GachaInfo
 from service.repository import AsyncRepository
 from service.cache import RedisCache
 

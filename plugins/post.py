@@ -9,7 +9,7 @@ from telegram.helpers import escape_markdown
 
 from config import config
 from logger import Log
-from model.genshinhelper import Mihoyo, ArtworkImage
+from model.apihelper import Hyperion, ArtworkImage
 from plugins.base import BasePlugins
 from service import BaseService
 
@@ -29,7 +29,7 @@ class Post(BasePlugins):
 
     def __init__(self, service: BaseService):
         super().__init__(service)
-        self.bbs = Mihoyo()
+        self.bbs = Hyperion()
 
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user

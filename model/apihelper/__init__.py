@@ -1,3 +1,3 @@
-from .mihoyo import *
+from .hyperion import *
 from .hoyolab import *
 from .gacha import *

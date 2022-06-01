@@ -92,7 +92,7 @@ class Inline:
                             InlineQueryResultPhoto(
                                 id=str(uuid4()),
                                 photo_url=url + "?x-oss-process=format,jpg",
-                                thumb_url=url_add_params(url, self.service.get_game_info.mihoyo.get_images_params(
+                                thumb_url=url_add_params(url, self.service.get_game_info.hyperion.get_images_params(
                                     resize=300)),
                                 title=title,
                                 caption=caption,

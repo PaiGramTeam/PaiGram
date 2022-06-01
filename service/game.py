@@ -1,4 +1,4 @@
-from model.genshinhelper import Mihoyo
+from model.apihelper import Hyperion
 from service.repository import AsyncRepository
 from service.cache import RedisCache
 
@@ -7,7 +7,7 @@ class GetGameInfo:
     def __init__(self, repository: AsyncRepository, cache: RedisCache):
         self.repository = repository
         self.cache = cache
-        self.mihoyo = Mihoyo()
+        self.hyperion = Hyperion()
 
     async def get_characters_cultivation_atlas(self, character_name: str) -> str:
         qname = f"game:info:characters_cultivation_atlas:{character_name}"
@@ -18,7 +18,7 @@ class GetGameInfo:
                 return url_info[-1]
 
         async def get_post_id(collection_id: int) -> int:
-            post_full_in_collection = await self.mihoyo.get_post_full_in_collection(collection_id)
+            post_full_in_collection = await self.hyperion.get_post_full_in_collection(collection_id)
             if post_full_in_collection.error:
                 await self.cache.set_str_list(qname, [""], 3600)
                 return -1
@@ -41,6 +41,6 @@ class GetGameInfo:
         if post_id == -1:
             await self.cache.set_str_list(qname, [""], 3600)
             return ""
-        artwork_info = await self.mihoyo.get_artwork_info(2, post_id)
+        artwork_info = await self.hyperion.get_artwork_info(2, post_id)
         await self.cache.set_str_list(qname, artwork_info.results.image_url_list, 3600)
         return artwork_info.results.image_url_list[0]

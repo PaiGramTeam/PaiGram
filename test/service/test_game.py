@@ -1,20 +1,20 @@
 import unittest
 from unittest import IsolatedAsyncioTestCase
 
-from model.genshinhelper import Mihoyo
+from model.apihelper import Hyperion
 
 
 class TestGame(IsolatedAsyncioTestCase):
 
     def setUp(self):
-        self.mihoyo = Mihoyo()
+        self.hyperion = Hyperion()
 
     async def test_get_strategy(self):
         test_collection_id_list = [839176, 839179, 839181]
         test_result = ["温迪", "胡桃", "雷电将军"]
 
         async def get_post_id(_collection_id: int, character_name: str) -> str:
-            post_full_in_collection = await self.mihoyo.get_post_full_in_collection(_collection_id)
+            post_full_in_collection = await self.hyperion.get_post_full_in_collection(_collection_id)
             if post_full_in_collection.error:
                 raise RuntimeError(f"获取收藏信息错误，错误信息为：{post_full_in_collection.message}")
             for post_data in post_full_in_collection.data["posts"]:
@@ -30,7 +30,7 @@ class TestGame(IsolatedAsyncioTestCase):
             self.assertEqual(first, second)
 
     async def asyncTearDown(self) -> None:
-        await self.mihoyo.close()
+        await self.hyperion.close()
 
 
 if __name__ == "__main__":

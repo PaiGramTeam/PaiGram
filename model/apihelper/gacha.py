@@ -1,6 +1,6 @@
 import httpx
 
-from model.genshinhelper import BaseResponseData
+from model.apihelper import BaseResponseData
 
 
 class GachaInfo:

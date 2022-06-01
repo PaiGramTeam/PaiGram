@@ -3,11 +3,16 @@ import re
 from typing import List
 import httpx
 from httpx import AsyncClient
-from .base import MiHoYoBBSResponse, ArtworkImage, BaseResponseData
+from .base import HyperionResponse, ArtworkImage, BaseResponseData
 from .helpers import get_ds, get_device_id
 
 
-class Mihoyo:
+class Hyperion:
+    """
+    米忽悠bbs相关API请求
+    该名称来源于米忽悠的米游社包名结尾，考虑到大部分重要的功能都能是在移动端实现了
+    """
+
     POST_FULL_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFull"
     POST_FULL_IN_COLLECTION_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection"
     GET_NEW_LIST_URL = "https://bbs-api.mihoyo.com/post/wapi/getNewsList"
@@ -85,7 +90,7 @@ class Mihoyo:
             return BaseResponseData(error_message="请求错误")
         return BaseResponseData(response.json())
 
-    async def get_artwork_info(self, gids: int, post_id: int, read: int = 1) -> MiHoYoBBSResponse:
+    async def get_artwork_info(self, gids: int, post_id: int, read: int = 1) -> HyperionResponse:
         params = {
             "gids": gids,
             "post_id": post_id,
@@ -93,8 +98,8 @@ class Mihoyo:
         }
         response = await self.client.get(self.POST_FULL_URL, params=params)
         if response.is_error:
-            return MiHoYoBBSResponse(error_message="请求错误")
-        return MiHoYoBBSResponse(response.json())
+            return HyperionResponse(error_message="请求错误")
+        return HyperionResponse(response.json())
 
     async def get_post_full_info(self, gids: int, post_id: int, read: int = 1) -> BaseResponseData:
         params = {
@@ -161,7 +166,7 @@ class YuanShen:
     USER_AGENT = "Mozilla/5.0 (Linux; Android 9; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) " \
                  "Version/4.0 Chrome/39.0.0.0 Mobile Safari/537.36 miHoYoBBS/2.3.0"
     REFERER = "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?" \
-              "bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
+              "bbs_auth_required=true&act_id=e202009291139501&utm_source=hyperion&utm_medium=mys&utm_campaign=icon"
     ORIGIN = "https://webstatic.mihoyo.com"
 
     ACT_ID = "e202009291139501"

@@ -57,7 +57,7 @@ class ArtworkInfo:
         self.post_id = post_id
 
 
-class MiHoYoBBSResponse:
+class HyperionResponse:
     def __init__(self, response=None, error_message: str = ""):
         if response is None:
             self.error: bool = True
@@ -124,5 +124,5 @@ class MiHoYoBBSResponse:
 
 
 class ServiceEnum(Enum):
-    MIHOYO = 1
+    HYPERION = 1
     HOYOLAB = 2
