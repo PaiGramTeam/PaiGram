@@ -2,7 +2,7 @@ import os
 import datetime
 
 import genshin
-from genshin import GenshinException, DataNotPublic
+from genshin import GenshinException, DataNotPublic, InvalidCookies
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
@@ -10,6 +10,7 @@ from telegram.ext import CallbackContext, ConversationHandler, filters
 from logger import Log
 from model.base import ServiceEnum
 from plugins.base import BasePlugins
+from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from service.base import UserInfoData
 
@@ -82,6 +83,7 @@ class DailyNote(BasePlugins):
                                                       {"width": 600, "height": 548}, full_page=False)
         return png_data
 
+    @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
@@ -124,6 +126,7 @@ class DailyNote(BasePlugins):
 
         return ConversationHandler.END
 
+    @conversation_error_handler
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         get_user_command_data: UidCommandData = context.chat_data["daily_note_command_data"]
         query = update.callback_query
