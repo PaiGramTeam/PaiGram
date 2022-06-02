@@ -4,7 +4,6 @@ from typing import List
 from telegram.ext import CallbackContext
 
 from logger import Log
-from model.genshinhelper import Mihoyo
 from plugins.base import BasePlugins
 from service import BaseService
 
@@ -13,7 +12,6 @@ class JobQueue(BasePlugins):
 
     def __init__(self, service: BaseService):
         super().__init__(service)
-        self.mihoyo = Mihoyo()
         self.new_post_id_list_cache: List[int] = []
 
     async def start_job(self, _: CallbackContext) -> None:
