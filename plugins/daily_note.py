@@ -2,7 +2,7 @@ import os
 import datetime
 
 import genshin
-from genshin import GenshinException, DataNotPublic, InvalidCookies
+from genshin import GenshinException, DataNotPublic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
