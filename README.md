@@ -1,4 +1,11 @@
-# TGPaimonBot
+<h1 align="center">TGPaimonBot</h1>
+
+<div align="center">
+<img src="https://img.shields.io/badge/python-3.8%2B-blue">
+<img src="https://img.shields.io/badge/works%20on-my%20machine-brightgreen">
+<img src="https://img.shields.io/badge/status-%E5%92%95%E5%92%95%E5%92%95-blue">
+</div>
+
 
 ## 简介
 
