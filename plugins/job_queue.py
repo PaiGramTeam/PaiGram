@@ -27,20 +27,5 @@ class JobQueue(BasePlugins):
             Log.info("初始化浏览器成功")
         Log.info("初始化Job成功")
 
-    async def post_job(self, _: CallbackContext) -> None:
-        while True:
-            new_post_id_list_cache: List[int] = []
-            new_list = await self.mihoyo.get_new_list(2, 2)
-            if new_list.code == 0:
-                for post in new_list.data["list"]:
-                    post_id = post["post"]["post_id"]
-                    new_post_id_list_cache.append(post_id)
-            new_list = await self.mihoyo.get_new_list(2, 3)
-            if new_list.code == 0:
-                for post in new_list.data["list"]:
-                    post_id = post["post"]["post_id"]
-                    new_post_id_list_cache.append(post_id)
-            if len(self.new_post_id_list_cache) == 0:
-                return
-
-            await asyncio.sleep(60)
+    async def check_cookie(self, _: CallbackContext):
+        pass
