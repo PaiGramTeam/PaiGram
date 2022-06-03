@@ -3,7 +3,7 @@ import datetime
 
 import genshin
 from genshin import Game, GenshinException, AlreadyClaimed
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
 

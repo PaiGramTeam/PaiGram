@@ -1,5 +1,4 @@
 import html
-import sys
 import traceback
 from typing import Callable, Optional
 
@@ -8,14 +7,13 @@ from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, GenshinException, TooManyRequests
 from httpx import ConnectTimeout
 
-from telegram import Update, ReplyKeyboardRemove, Message
+from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.ext import CallbackContext, ConversationHandler
 
 from logger import Log
 from config import config
-from plugins.base import add_delete_message_job
 
 try:
     notice_chat_id = config.TELEGRAM["notice"]["ERROR"]["chat_id"]
