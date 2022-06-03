@@ -5,16 +5,17 @@ from typing import Callable, Optional
 
 import ujson
 from aiohttp import ClientConnectorError
-from genshin import InvalidCookies, GenshinException
+from genshin import InvalidCookies, GenshinException, TooManyRequests
 from httpx import ConnectTimeout
 
 from telegram import Update, ReplyKeyboardRemove, Message
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from logger import Log
 from config import config
+from plugins.base import add_delete_message_job
 
 try:
     notice_chat_id = config.TELEGRAM["notice"]["ERROR"]["chat_id"]
@@ -23,14 +24,17 @@ except KeyError as error:
     notice_chat_id = None
 
 
-async def send_user_notification(chat_id: int, context: CallbackContext, text: str):
+async def send_user_notification(update: Update, _: CallbackContext, text: str):
+    if update.callback_query is None:
+        message = update.message
+    else:
+        message = update.callback_query.message
     try:
-        await context.bot.send_message(chat_id, text, reply_markup=ReplyKeyboardRemove())
+        await message.reply_text(text, reply_markup=ReplyKeyboardRemove(), allow_sending_without_reply=True)
     except BadRequest as exc:
-        Log.error(f"发送 update_id[{chat_id}] 错误信息失败 错误信息为 {str(exc)}")
+        Log.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为 {str(exc)}")
     finally:
         pass
-    return ConversationHandler.END
 
 
 def conversation_error_handler(func: Callable) -> Callable:
@@ -45,25 +49,29 @@ def conversation_error_handler(func: Callable) -> Callable:
                 context = arg
         if update is None or context is None:
             return await func(*args, **kwargs)
-        if update.callback_query is None:
-            message = update.message
-        else:
-            message = update.callback_query.message
         try:
             return await func(*args, **kwargs)
         except ClientConnectorError as exc:
             Log.error("服务器请求ConnectTimeout \n", exc)
-            return await send_user_notification(message.chat_id, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
+            return ConversationHandler.END
         except ConnectTimeout as exc:
             Log.error("服务器请求ConnectTimeout \n", exc)
-            return await send_user_notification(message.chat_id, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
+            return ConversationHandler.END
         except InvalidCookies as exc:
             Log.error("Cookie错误 \n", exc)
-            return await send_user_notification(message.chat_id, context, "Cookies已经过期，请尝试重新绑定账户")
+            await send_user_notification(update, context, "Cookies已经过期，请尝试重新绑定账户")
+            return ConversationHandler.END
+        except TooManyRequests as exc:
+            Log.error("Cookie错误 \n", exc)
+            await send_user_notification(update, context, "Cookies已经过期，请尝试重新绑定账户")
+            return ConversationHandler.END
         except GenshinException as exc:
             Log.error("GenshinException \n", exc)
-            return await send_user_notification(message.chat_id, context,
-                                                f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常")
+            await send_user_notification(update, context,
+                                         f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常")
+            return ConversationHandler.END
 
     return decorator
 

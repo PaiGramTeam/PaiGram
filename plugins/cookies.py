@@ -10,6 +10,7 @@ from telegram.helpers import escape_markdown
 from logger import Log
 from model.base import ServiceEnum
 from plugins.base import BasePlugins
+from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from service.base import UserInfoData
 
@@ -84,6 +85,7 @@ class Cookies(BasePlugins):
         await update.message.reply_markdown_v2(help_message, disable_web_page_preview=True)
         return self.CHECK_COOKIES
 
+    @conversation_error_handler
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         cookies_command_data: CookiesCommandData = context.chat_data.get("cookies_command_data")

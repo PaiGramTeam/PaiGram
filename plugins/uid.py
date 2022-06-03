@@ -2,7 +2,7 @@ import os
 import random
 
 import genshin
-from genshin import DataNotPublic, GenshinException, TooManyRequests
+from genshin import DataNotPublic, GenshinException
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
@@ -11,6 +11,7 @@ from logger import Log
 from model.base import ServiceEnum
 from model.helpers import url_to_file
 from plugins.base import BasePlugins
+from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from service.base import UserInfoData
 
@@ -41,9 +42,8 @@ class Uid(BasePlugins):
                 _uid = uid
         try:
             user_info = await client.get_user(_uid)
-        except TooManyRequests as error:
-            raise Exception("查询次数大于30次") from error
         except GenshinException as error:
+            Log.warning("get_record_card请求失败 \n", error)
             raise error
         try:
             # 查询的UID如果是自己的，会返回DataNotPublic，自己查不了自己可还行......
@@ -56,6 +56,7 @@ class Uid(BasePlugins):
             nickname = _uid
             user_uid = ""
         except GenshinException as error:
+            Log.warning("get_record_card请求失败 \n", error)
             raise error
         else:
             nickname = record_card_info.nickname
@@ -119,6 +120,7 @@ class Uid(BasePlugins):
                                                       {"width": 1024, "height": 1024})
         return png_data
 
+    @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
@@ -163,6 +165,7 @@ class Uid(BasePlugins):
 
         return ConversationHandler.END
 
+    @conversation_error_handler
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         get_user_command_data: UidCommandData = context.chat_data["uid_command_data"]
         query = update.callback_query
@@ -174,7 +177,6 @@ class Uid(BasePlugins):
             service = ServiceEnum.HOYOLAB
         else:
             return ConversationHandler.END
-        # Log.info(f"用户 {user.full_name}[{user.id}] 查询角色命令请求 || 参数 UID {uid}")
         png_data = await self._start_get_user_info(get_user_command_data.user_info, service)
         await query.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await query.message.reply_photo(png_data, filename=f"{get_user_command_data.user_info.user_id}.png",

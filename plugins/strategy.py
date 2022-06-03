@@ -1,6 +1,5 @@
 import re
 
-from httpx import ConnectTimeout
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
@@ -8,6 +7,7 @@ from telegram.ext import CallbackContext, filters
 from logger import Log
 from model.helpers import url_to_file
 from plugins.base import BasePlugins
+from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from metadata.shortname import roleToName
 
@@ -16,6 +16,7 @@ class Strategy(BasePlugins):
     def __init__(self, service: BaseService):
         super().__init__(service)
 
+    @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
@@ -45,16 +46,7 @@ class Strategy(BasePlugins):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
-        try:
-            url = await self.service.get_game_info.get_characters_cultivation_atlas(role_name)
-        except ConnectTimeout as error:
-            reply_message = await message.reply_text("出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ",
-                                                     reply_markup=ReplyKeyboardRemove())
-            Log.error("服务器请求ConnectTimeout \n", error)
-            if filters.ChatType.GROUPS.filter(reply_message):
-                self._add_delete_message_job(context, message.chat_id, message.message_id)
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-            return
+        url = await self.service.get_game_info.get_characters_cultivation_atlas(role_name)
         if url == "":
             reply_message = await message.reply_text(f"没有找到 {role_name} 的攻略",
                                                      reply_markup=InlineKeyboardMarkup(keyboard))

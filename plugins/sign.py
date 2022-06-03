@@ -2,7 +2,6 @@ import time
 import datetime
 
 import genshin
-from aiohttp import ClientConnectorError
 from genshin import Game, GenshinException, AlreadyClaimed
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.constants import ChatAction
@@ -11,6 +10,7 @@ from telegram.ext import CallbackContext, ConversationHandler, filters
 from logger import Log
 from model.base import ServiceEnum
 from plugins.base import BasePlugins
+from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from service.base import UserInfoData
 
@@ -74,6 +74,7 @@ class Sign(BasePlugins):
                   f"签到结果: {result}"
         return message
 
+    @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
@@ -102,20 +103,13 @@ class Sign(BasePlugins):
             return self.COMMAND_RESULT
         else:
             await message.reply_chat_action(ChatAction.TYPING)
-            try:
-                sign = await self._start_sign(user_info, user_info.service)
-            except ClientConnectorError as error:
-                Log.error("服务器请求ConnectTimeout \n", error)
-                reply_message = await message.reply_text("出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ",
-                                                         reply_markup=ReplyKeyboardRemove())
-                if filters.ChatType.GROUPS.filter(reply_message):
-                    self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-                return ConversationHandler.END
+            sign = await self._start_sign(user_info, user_info.service)
             reply_message = await message.reply_text(sign)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
         return ConversationHandler.END
 
+    @conversation_error_handler
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         sign_command_data: SignCommandData = context.chat_data["sign_command_data"]
         user_info = sign_command_data.user_info
@@ -123,17 +117,10 @@ class Sign(BasePlugins):
         await query.answer()
         message = "签到失败"
         await query.message.reply_chat_action(ChatAction.TYPING)
-        try:
-            if query.data == "sign|米游社":
-                message = await self._start_sign(user_info, ServiceEnum.MIHOYOBBS)
-            if query.data == "sign|HoYoLab":
-                message = await self._start_sign(user_info, ServiceEnum.HOYOLAB)
-        except ClientConnectorError as error:
-            Log.error("服务器请求ConnectTimeout \n", error)
-            reply_message = await query.edit_message_text("出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
-            if filters.ChatType.GROUPS.filter(reply_message):
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-            return ConversationHandler.END
+        if query.data == "sign|米游社":
+            message = await self._start_sign(user_info, ServiceEnum.MIHOYOBBS)
+        if query.data == "sign|HoYoLab":
+            message = await self._start_sign(user_info, ServiceEnum.HOYOLAB)
         await query.edit_message_text(message)
         if query_message := query.message:
             if filters.ChatType.GROUPS.filter(query_message):

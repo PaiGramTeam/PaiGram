@@ -7,6 +7,7 @@ from telegram.ext import CallbackContext, filters
 from logger import Log
 from model.helpers import url_to_file
 from plugins.base import BasePlugins
+from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from metadata.shortname import weaponToName
 from metadata.metadata import metadat
@@ -16,6 +17,7 @@ class Weapon(BasePlugins):
     def __init__(self, service: BaseService):
         super().__init__(service)
 
+    @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
