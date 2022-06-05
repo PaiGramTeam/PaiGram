@@ -58,15 +58,15 @@ def conversation_error_handler(func: Callable) -> Callable:
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
         except InvalidCookies as exc:
-            Log.error("Cookie错误 \n", exc)
+            Log.warning("Cookie错误 \n", exc)
             await send_user_notification(update, context, "Cookies已经过期，请尝试重新绑定账户")
             return ConversationHandler.END
         except TooManyRequests as exc:
-            Log.error("Cookie错误 \n", exc)
+            Log.warning("Cookie错误 \n", exc)
             await send_user_notification(update, context, "Cookies已经过期，请尝试重新绑定账户")
             return ConversationHandler.END
         except GenshinException as exc:
-            Log.error("GenshinException \n", exc)
+            Log.warning("GenshinException \n", exc)
             await send_user_notification(update, context,
                                          f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常")
             return ConversationHandler.END
