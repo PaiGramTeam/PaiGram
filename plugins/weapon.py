@@ -21,7 +21,7 @@ class Weapon(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
-        args = message.text.split(" ")
+        args = context.args
         search_command = re.search(r'^武器查询(.*)', message.text)
         keyboard = [
             [

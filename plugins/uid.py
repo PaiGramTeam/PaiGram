@@ -138,7 +138,7 @@ class Uid(BasePlugins):
             return ConversationHandler.END
         uid: int = -1
         try:
-            args = message.text.split()
+            args = context.args
             if len(args) >= 2:
                 uid = int(args[1])
         except ValueError as error:

@@ -31,7 +31,7 @@ class Gacha(BasePlugins):
         message = update.message
         user = update.effective_user
         Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求")
-        args = message.text.split(" ")
+        args = context.args
         gacha_name = "角色活动"
         if len(args) > 1:
             gacha_name = args[1]
