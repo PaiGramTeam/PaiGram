@@ -132,7 +132,7 @@ class Cookies(BasePlugins):
         await update.message.reply_text("获取角色基础信息成功，请检查是否正确！")
         Log.info(f"用户 {user.full_name}[{user.id}] 获取账号 {user_info.nickname}[{user_info.uid}] 信息成功")
         message = f"*角色信息*\n" \
-                  f"角色名称：{user_info.nickname}\n" \
+                  f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n" \
                   f"角色等级：{user_info.level}\n" \
                   f"UID：`{user_info.uid}`\n" \
                   f"服务器名称：`{user_info.server_name}`\n"
