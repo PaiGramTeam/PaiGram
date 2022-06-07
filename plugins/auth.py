@@ -7,8 +7,9 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPer
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
-from numpy.random import Generator, MT19937
 from telegram.helpers import escape_markdown
+
+from numpy.random import Generator, MT19937
 
 from logger import Log
 from model.helpers import get_admin_list
@@ -73,9 +74,9 @@ class Auth:
 
     async def admin(self, update: Update, context: CallbackContext) -> None:
 
-        async def admin_callback(callback_query_data: str) -> Tuple[bool, int]:
+        async def admin_callback(callback_query_data: str) -> Tuple[str, int]:
             _data = callback_query_data.split("|")
-            _result = _data[1] == "pass"
+            _result = _data[1]
             _user_id = int(_data[2])
             return _result, _user_id
 
@@ -102,18 +103,28 @@ class Auth:
         else:
             user_info = member_info.user.mention_markdown_v2()
 
-        if result:
+        if result == "pass":
             await callback_query.answer(text="放行", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
             if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|clean_join"):
                 schedule.remove()
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 放行",
                                     parse_mode=ParseMode.MARKDOWN_V2)
-        else:
+        elif result == "kick":
             await callback_query.answer(text="驱离", show_alert=False)
             await context.bot.ban_chat_member(chat.id, user_id)
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 驱离",
                                     parse_mode=ParseMode.MARKDOWN_V2)
+        elif result == "unban":
+            await callback_query.answer(text="解除驱离", show_alert=False)
+            await self.restore_member(context, chat.id, user_id)
+            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|clean_join"):
+                schedule.remove()
+            await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 解除驱离",
+                                    parse_mode=ParseMode.MARKDOWN_V2)
+        else:
+            Log.warning(f"auth 模块 admin 函数 发现未知命令 result[{result}]")
+            await context.bot.send_message(chat.id, "派蒙这边收到了错误的消息！请检查详细日记！")
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
             schedule.remove()
 
@@ -143,6 +154,7 @@ class Auth:
             return
         Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
         if result:
+            buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kill|{user.id}")]]
             await callback_query.answer(text="验证成功", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
             if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|clean_join"):
@@ -151,13 +163,15 @@ class Auth:
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
         else:
+            buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kill|{user.id}"),
+                        InlineKeyboardButton("撤回驱离", callback_data=f"auth_admin|unban|{user.id}")]]
             await callback_query.answer(text=f"验证失败，请在 {self.time_out} 秒后重试", show_alert=True)
             await self.kick_member(context, chat.id, user_id)
             text = f"{user.mention_markdown_v2()} 验证失败，已经赶出提瓦特大陆！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
         try:
-            await message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2)
+            await message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)
         except BadRequest as exc:
             if 'are exactly the same as ' in str(exc):
                 Log.warning("编辑消息发生异常，可能为用户点按多次键盘导致")
