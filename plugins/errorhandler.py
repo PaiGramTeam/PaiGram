@@ -9,7 +9,7 @@ from httpx import ConnectTimeout
 
 from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ParseMode
-from telegram.error import BadRequest
+from telegram.error import BadRequest, TimedOut
 from telegram.ext import CallbackContext, ConversationHandler
 
 from logger import Log
@@ -54,6 +54,10 @@ def conversation_error_handler(func: Callable) -> Callable:
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
         except ConnectTimeout as exc:
+            Log.error("服务器请求ConnectTimeout \n", exc)
+            await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
+            return ConversationHandler.END
+        except TimedOut as exc:
             Log.error("服务器请求ConnectTimeout \n", exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
