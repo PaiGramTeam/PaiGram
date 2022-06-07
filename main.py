@@ -1,3 +1,5 @@
+import asyncio
+import time
 from typing import Optional
 from warnings import filterwarnings
 
@@ -5,6 +7,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
     CallbackQueryHandler, InlineQueryHandler
 from telegram.warnings import PTBUserWarning
 
+from logger import Log
 from plugins.admin import Admin
 from plugins.auth import Auth
 from plugins.base import NewChatMembersHandler
@@ -27,21 +30,35 @@ from service.repository import AsyncRepository
 from config import config
 from service.cache import RedisCache
 
-# https://github.com/python-telegram-bot/python-telegram-bot/wiki/Frequently-Asked-Questions#what-do-the-per_-settings-in-conversationhandler-do
+# 无视相关警告
+# 该警告说明在官方GITHUB的WIKI中Frequently Asked Questions里的What do the per_* settings in ConversationHandler do?
 filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
 
 
 def main() -> None:
+    Log.info("正在启动项目")
+    # 初始化数据库
     repository = AsyncRepository(mysql_host=config.MYSQL["host"],
                                  mysql_user=config.MYSQL["user"],
                                  mysql_password=config.MYSQL["password"],
                                  mysql_port=config.MYSQL["port"],
                                  mysql_database=config.MYSQL["database"]
                                  )
-    cache = RedisCache(db=6)
-    service = StartService(repository, cache)
-    application = Application.builder().token(config.TELEGRAM["token"]).build()
+    Log.info("初始化数据库")
 
+    # 初始化Redis缓存
+    cache = RedisCache(db=6)
+    Log.info("初始化Redis缓存")
+
+    # 传入服务并启动
+    service = StartService(repository, cache)
+    Log.info("传入服务并启动")
+
+    # 构建BOT
+    application = Application.builder().token(config.TELEGRAM["token"]).build()
+    Log.info("构建BOT")
+
+    # 添加相关命令处理过程
     def add_handler(handler, command: Optional[str] = None, regex: Optional[str] = None, query: Optional[str] = None,
                     block: bool = False) -> None:
         if command:
@@ -51,11 +68,13 @@ def main() -> None:
         if query:
             application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
 
+    # 基础命令
     add_handler(start, command="start")
     _help = Help(service)
     add_handler(_help.command_start, command="help")
     add_handler(ping, command="ping")
-    # application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_chat_members))
+
+    # 有关群验证和监听
     auth = Auth(service)
     new_chat_members_handler = NewChatMembersHandler(service, auth.new_mem)
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS,
@@ -63,8 +82,7 @@ def main() -> None:
     add_handler(auth.query, query=r"^auth_challenge\|")
     add_handler(auth.admin, query=r"^auth_admin\|")
 
-    # application.add_handler(MessageHandler((filters.Regex(r'.派蒙是应急食品') & filters.ChatType.PRIVATE), emergency_food))
-
+    # cookie绑定
     cookies = Cookies(service)
     cookies_handler = ConversationHandler(
         entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE, block=True),
@@ -167,7 +185,30 @@ def main() -> None:
     application.job_queue.run_once(job_queue.start_job, when=3, name="start_job")
     application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
     application.add_error_handler(error_handler, block=False)
-    application.run_polling()
+
+    # 启动BOT
+    try:
+        Log.info("BOT已经启动 开始处理命令")
+        application.run_polling(close_loop=False)
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    except Exception as exc:
+        Log.info("BOT执行过程中出现错误")
+        raise exc
+    finally:
+        Log.info("项目收到退出命令 BOT停止处理并退出")
+        loop = asyncio.get_event_loop()
+        try:
+            Log.info("正在关闭数据库连接")
+            # 需要关闭数据库连接 再关闭LOOP 否则出现 RuntimeError: Event loop is closed
+            loop.run_until_complete(repository.wait_closed())
+        except (KeyboardInterrupt, SystemExit):
+            pass
+        except Exception as exc:
+            Log.info("关闭必要连接时出现错误 \n", exc)
+        Log.info("正在关闭loop")
+        loop.close()
+        Log.info("项目已经关闭")
 
 
 if __name__ == '__main__':

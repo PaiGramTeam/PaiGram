@@ -18,12 +18,11 @@ class AsyncRepository:
         self._loop = loop
         self._sql_pool = None
 
-    async def close(self):
+    async def wait_closed(self):
         if self._sql_pool is None:
             return
         pool = self._sql_pool
         pool.close()
-        self._sql_pool = None
         await pool.wait_closed()
 
     async def _get_pool(self):
