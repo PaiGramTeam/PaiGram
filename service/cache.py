@@ -30,7 +30,6 @@ class RedisCache:
         except Exception as exc:
             Log.error("尝试连接Redis失败 \n")
             raise exc
-        Log.info("连接Redis成功")
 
     async def ping(self):
         if await self.rdb.ping():
