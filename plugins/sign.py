@@ -60,7 +60,7 @@ class Sign(BasePlugins):
         else:
             result = "今天旅行者已经签到过了~"
         Log.info(f"UID {uid} 签到结果 {result}")
-        reward = rewards[daily_reward_info.claimed_rewards - 1]
+        reward = rewards[daily_reward_info.claimed_rewards - (1 if daily_reward_info.signed_in else 0)]
         today = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         cn_timezone = datetime.timezone(datetime.timedelta(hours=8))
         now = datetime.datetime.now(cn_timezone)
