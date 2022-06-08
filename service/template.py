@@ -1,24 +1,37 @@
+import asyncio
 import os
 import time
 from typing import Optional
 from jinja2 import PackageLoader, Environment, Template
-from playwright.async_api import async_playwright, Browser, ViewportSize
+from playwright.async_api import async_playwright, Browser, ViewportSize, Playwright
 
 from config import config
 from logger import Log
 
 
 class TemplateService:
-    def __init__(self, template_package_name: str = "resources", cache_dir_name: str = "cache"):
+    def __init__(self, template_package_name: str = "resources", cache_dir_name: str = "cache",loop=None):
         self._template_package_name = template_package_name
         self._browser: Optional[Browser] = None
-        self._playwright = None
+        self._playwright: Optional[Playwright] = None
         self._current_dir = os.getcwd()
         self._output_dir = os.path.join(self._current_dir, cache_dir_name)
         if not os.path.exists(self._output_dir):
             os.mkdir(self._output_dir)
         self._jinja2_env = {}
         self._jinja2_template = {}
+        self._loop = loop
+        if self._loop is None:
+            self._loop = asyncio.get_event_loop()
+        try:
+            Log.info("正在尝试启动Playwright")
+            self._loop.run_until_complete(self._browser_init())
+            Log.info("启动Playwright成功")
+        except (KeyboardInterrupt, SystemExit):
+            pass
+        except Exception as exc:
+            Log.error("启动浏览器失败 \n")
+            raise exc
 
     async def _browser_init(self) -> Browser:
         if self._playwright is None:
@@ -34,6 +47,12 @@ class TemplateService:
                 except TimeoutError as err:
                     raise err
         return self._browser
+
+    async def close(self):
+        if self._browser is not None:
+            await self._browser.close()
+        if self._playwright is not None:
+            await self._playwright.stop()
 
     async def get_browser(self) -> Browser:
         if self._browser is None:

@@ -1,7 +1,9 @@
+import asyncio
 from typing import List
 
 import aiomysql
 
+from logger import Log
 from model.base import ServiceEnum
 from service.base import CreateUserInfoDBDataFromSQLData, UserInfoData, CreatCookieDictFromSQLData, \
     CreatQuestionFromSQLData, QuestionData, AnswerData, CreatAnswerFromSQLData
@@ -17,6 +19,28 @@ class AsyncRepository:
         self._mysql_host = mysql_host
         self._loop = loop
         self._sql_pool = None
+        Log.debug(f'获取数据库配置 [host]: {self._mysql_host}')
+        Log.debug(f'获取数据库配置 [port]: {self._mysql_port}')
+        Log.debug(f'获取数据库配置 [user]: {self._mysql_user}')
+        Log.debug(f'获取数据库配置 [password][len]: {len(self._mysql_password)}')
+        Log.debug(f'获取数据库配置 [db]: {self._mysql_database}')
+        if self._loop is None:
+            self._loop = asyncio.get_event_loop()
+        try:
+            Log.info("正在创建数据库LOOP")
+            self._loop.run_until_complete(self.create_pool())
+            Log.info("创建数据库LOOP成功")
+        except (KeyboardInterrupt, SystemExit):
+            pass
+        except Exception as exc:
+            Log.error("创建数据库LOOP发生严重错误")
+            raise exc
+
+    async def create_pool(self):
+        self._sql_pool = await aiomysql.create_pool(
+            host=self._mysql_host, port=self._mysql_port,
+            user=self._mysql_user, password=self._mysql_password,
+            db=self._mysql_database, loop=self._loop)
 
     async def wait_closed(self):
         if self._sql_pool is None:
@@ -27,10 +51,7 @@ class AsyncRepository:
 
     async def _get_pool(self):
         if self._sql_pool is None:
-            self._sql_pool = await aiomysql.create_pool(
-                host=self._mysql_host, port=self._mysql_port,
-                user=self._mysql_user, password=self._mysql_password,
-                db=self._mysql_database, loop=self._loop)
+            raise RuntimeError("mysql pool is none")
         return self._sql_pool
 
     async def _executemany(self, query, query_args):
