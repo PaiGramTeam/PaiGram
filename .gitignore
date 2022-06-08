@@ -6,6 +6,7 @@ logs/
 .vscode/
 .idea/
 venv/
+cache/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
