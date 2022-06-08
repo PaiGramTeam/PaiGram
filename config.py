@@ -13,7 +13,7 @@ class Config(object):
             self._config_json: dict = ujson.load(f)
 
         self.DEBUG = self.get_config("debug")
-        if self.DEBUG == "":
+        if type(self.DEBUG) != bool:
             self.DEBUG = False
         self.ADMINISTRATORS = self.get_config("administrators")
         self.MYSQL = self.get_config("mysql")
@@ -21,7 +21,7 @@ class Config(object):
         self.FUNCTION = self.get_config("function")
 
     def get_config(self, name: str):
-        return self._config_json.get(name, "")
+        return self._config_json.get(name, {})
 
 
 config = Config()
