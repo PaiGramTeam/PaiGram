@@ -3,6 +3,8 @@ from logging.handlers import RotatingFileHandler
 import colorlog
 import os
 
+from config import config
+
 current_path = os.path.realpath(os.getcwd())
 log_path = os.path.join(current_path, "logs")
 if not os.path.exists(log_path):
@@ -23,7 +25,10 @@ class Logger:
         self.logger = logging.getLogger("TGPaimonBot")
         root_logger = logging.getLogger()
         root_logger.setLevel(logging.CRITICAL)
-        self.logger.setLevel(logging.INFO)
+        if config.DEBUG:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.INFO)
         self.formatter = colorlog.ColoredFormatter(
             "%(log_color)s[%(asctime)s] [%(levelname)s] - %(message)s", log_colors=log_colors_config)
         self.formatter2 = logging.Formatter("[%(asctime)s] [%(levelname)s] - %(message)s")
