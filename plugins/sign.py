@@ -87,7 +87,7 @@ class Sign(BasePlugins):
             context.chat_data["sign_command_data"] = sign_command_data
         user_info = await self.service.user_service_db.get_user_info(user.id)
         if user_info.user_id == 0:
-            await update.message.reply_text("未查询到账号信息派蒙，请先私聊派蒙绑定账号")
+            await update.message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             return ConversationHandler.END
         if user_info.service == ServiceEnum.NULL:
             keyboard = [
