@@ -18,6 +18,7 @@ class Config:
             self.DEBUG = False
         self.ADMINISTRATORS = self.get_config("administrators")
         self.MYSQL = self.get_config("mysql")
+        self.REDIS = self.get_config("redis")
         self.TELEGRAM = self.get_config("telegram")
         self.FUNCTION = self.get_config("function")
 
