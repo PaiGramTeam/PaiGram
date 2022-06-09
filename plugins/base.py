@@ -86,7 +86,7 @@ class NewChatMembersHandler:
         await self.auth_callback(update, context)
 
 
-class RestrictsCalls(object):
+class RestrictsCalls:
     """
     用于装饰在指定函数防止洪水调用的类装饰器
     """

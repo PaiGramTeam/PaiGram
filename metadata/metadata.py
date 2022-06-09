@@ -3,7 +3,7 @@ from typing import List
 import ujson
 
 
-class Metadata(object):
+class Metadata:
     def __init__(self):
         project_path = os.path.dirname(__file__)
         characters_file = os.path.join(project_path, 'characters.json')
