@@ -5,7 +5,8 @@ import genshin
 from genshin import Game, GenshinException, AlreadyClaimed
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters, \
+    CallbackQueryHandler
 
 from logger import Log
 from model.base import ServiceEnum
@@ -26,6 +27,19 @@ class Sign(BasePlugins):
         super().__init__(service)
 
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
+
+    @staticmethod
+    def create_conversation_handler(service: BaseService):
+        sign = Sign(service)
+        sign_handler = ConversationHandler(
+            entry_points=[CommandHandler('sign', sign.command_start, block=True),
+                        MessageHandler(filters.Regex(r"^每日签到(.*)"), sign.command_start, block=True)],
+            states={
+                sign.COMMAND_RESULT: [CallbackQueryHandler(sign.command_result, block=True)]
+            },
+            fallbacks=[CommandHandler('cancel', sign.cancel, block=True)]
+        )
+        return sign_handler
 
     @staticmethod
     async def _start_sign(user_info: UserInfoData, service: ServiceEnum) -> str:

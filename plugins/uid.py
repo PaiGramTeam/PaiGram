@@ -5,7 +5,8 @@ import genshin
 from genshin import DataNotPublic, GenshinException
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters, \
+    CallbackQueryHandler
 
 from logger import Log
 from model.base import ServiceEnum
@@ -26,6 +27,19 @@ class Uid(BasePlugins):
     def __init__(self, service: BaseService):
         super().__init__(service)
         self.current_dir = os.getcwd()
+
+    @staticmethod
+    def create_conversation_handler(service: BaseService):
+        uid = Uid(service)
+        uid_handler = ConversationHandler(
+            entry_points=[CommandHandler('uid', uid.command_start, block=True),
+                        MessageHandler(filters.Regex(r"^玩家查询(.*)"), uid.command_start, block=True)],
+            states={
+                uid.COMMAND_RESULT: [CallbackQueryHandler(uid.command_result, block=True)]
+            },
+            fallbacks=[CommandHandler('cancel', uid.cancel, block=True)]
+        )
+        return uid_handler
 
     async def _start_get_user_info(self, user_info_data: UserInfoData, service: ServiceEnum, uid: int = -1) -> bytes:
         if service == ServiceEnum.MIHOYOBBS:
