@@ -10,6 +10,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKe
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
+from telegram.ext import CommandHandler, MessageHandler, filters, ConversationHandler
 
 from logger import Log
 from plugins.base import BasePlugins, RestrictsCalls
@@ -37,6 +38,30 @@ class Quiz(BasePlugins):
         self.generator = Generator(MT19937(int(self.send_time)))
         self.service = service
         self.time_out = 120
+    
+    @staticmethod
+    def create_conversation_handler(service: BaseService):
+        quiz = Quiz(service)
+        quiz_handler = ConversationHandler(
+            entry_points=[CommandHandler('quiz', quiz.command_start, block=True)],
+            states={
+                quiz.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                    quiz.check_command, block=True)],
+                quiz.CHECK_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                    quiz.check_question, block=True)],
+                quiz.GET_NEW_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                    quiz.get_new_question, block=True)],
+                quiz.GET_NEW_CORRECT_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                            quiz.get_new_correct_answer, block=True)],
+                quiz.GET_NEW_WRONG_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                        quiz.get_new_wrong_answer, block=True),
+                                            CommandHandler("finish", quiz.finish_edit)],
+                quiz.SAVE_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                    quiz.save_question, block=True)],
+            },
+            fallbacks=[CommandHandler('cancel', quiz.cancel, block=True)]
+        )
+        return quiz_handler
 
     def random(self, low: int, high: int) -> int:
         if self.send_time + 24 * 60 * 60 >= time.time():
