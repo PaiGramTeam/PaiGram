@@ -83,7 +83,7 @@ class DailyNote(BasePlugins):
             "claimed_commission_reward": daily_info.claimed_commission_reward,
             "completed_commissions": daily_info.completed_commissions,
             "max_commissions": daily_info.max_commissions,
-            "expeditions": True if daily_info.expeditions else False,
+            "expeditions": bool(daily_info.expeditions),
             "remained_time": remained_time,
             "current_expeditions": len(daily_info.expeditions),
             "max_expeditions": daily_info.max_expeditions,
