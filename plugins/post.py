@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InputMediaPhoto
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, MessageHandler, filters
 from telegram.helpers import escape_markdown
 
 from config import config
@@ -30,6 +30,26 @@ class Post(BasePlugins):
     def __init__(self, service: BaseService):
         super().__init__(service)
         self.bbs = Hyperion()
+
+    @staticmethod
+    def create_conversation_handler(service: BaseService):
+        _post = Post(service)
+        post_handler = ConversationHandler(
+            entry_points=[CommandHandler('post', _post.command_start, block=True)],
+            states={
+                _post.CHECK_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.check_post, block=True)],
+                _post.SEND_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.send_post, block=True)],
+                _post.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.check_command, block=True)],
+                _post.GTE_DELETE_PHOTO: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_delete_photo, block=True)],
+                _post.GET_POST_CHANNEL: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_post_channel, block=True)],
+                _post.GET_TAGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_tags, block=True)],
+                _post.GET_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_edit_text, block=True)]
+            },
+            fallbacks=[CommandHandler('cancel', _post.cancel, block=True)]
+        )
+        return post_handler
 
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
