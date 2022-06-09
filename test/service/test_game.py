@@ -24,7 +24,7 @@ class TestGame(IsolatedAsyncioTestCase):
                         return topic["name"]
             return ""
 
-        for index in range(len(test_collection_id_list)):
+        for index, _ in enumerate(test_collection_id_list):
             second = test_result[index]
             first = await get_post_id(test_collection_id_list[index], second)
             self.assertEqual(first, second)

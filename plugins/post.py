@@ -248,7 +248,7 @@ class Post(BasePlugins):
             return ConversationHandler.END
         post_text = post_handler_data.post_text
         post_images = []
-        for index in range(len(post_handler_data.post_images)):
+        for index, _ in enumerate(post_handler_data.post_images):
             if index + 1 not in post_handler_data.delete_photo:
                 post_images.append(post_handler_data.post_images[index])
         post_text += f" @{channel_name}"
