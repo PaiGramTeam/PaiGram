@@ -161,7 +161,7 @@ class Post(BasePlugins):
         await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return self.CHECK_COMMAND
 
-    async def get_channel(self, update: Update, context: CallbackContext) -> int:
+    async def get_channel(self, update: Update, _: CallbackContext) -> int:
         message = update.message
         reply_keyboard = []
         try:
@@ -197,7 +197,7 @@ class Post(BasePlugins):
                                  reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return self.SEND_POST
 
-    async def add_tags(self, update: Update, context: CallbackContext) -> int:
+    async def add_tags(self, update: Update, _: CallbackContext) -> int:
         message = update.message
         await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符")
         return self.GET_TAGS

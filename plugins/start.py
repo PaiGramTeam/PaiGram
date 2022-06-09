@@ -30,6 +30,5 @@ async def ping(update: Update, _: CallbackContext) -> None:
     await update.message.reply_text("online! ヾ(✿ﾟ▽ﾟ)ノ")
 
 
-async def reply_keyboard_remove(update: Update, context: CallbackContext) -> None:
+async def reply_keyboard_remove(update: Update, _: CallbackContext) -> None:
     await update.message.reply_text("移除远程键盘成功", reply_markup=ReplyKeyboardRemove())
-    # await context.bot.delete_message(chat_id=update.message.chat_id, message_id=update.message.message_id)

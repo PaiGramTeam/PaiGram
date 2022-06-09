@@ -59,14 +59,14 @@ class RedisCache:
         await self.client.lpush(qname + ":id_list", *question_id_list)
         return await self.client.llen(qname + ":id_list")
 
-    async def del_all_question(self, answer_list: List[AnswerData] = None):
+    async def del_all_question(self):
         qname = "quiz:question"
         keys = await self.client.keys(qname + "*")
         if keys is not None:
             for key in keys:
                 await self.client.delete(key)
 
-    async def del_all_answer(self, answer_list: List[AnswerData] = None):
+    async def del_all_answer(self):
         qname = "quiz:answer"
         keys = await self.client.keys(qname + "*")
         if keys is not None:

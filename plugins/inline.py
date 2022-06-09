@@ -18,7 +18,7 @@ class Inline:
     def __init__(self, service: BaseService):
         self.service = service
 
-    async def inline_query(self, update: Update, context: CallbackContext) -> None:
+    async def inline_query(self, update: Update, _: CallbackContext) -> None:
         user = update.effective_user
         ilq = cast(InlineQuery, update.inline_query)
         query = ilq.query

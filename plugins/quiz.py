@@ -129,7 +129,7 @@ class Quiz(BasePlugins):
             self._add_delete_message_job(context, poll_message.chat_id, poll_message.message_id, 300)
         return ConversationHandler.END
 
-    async def view_command(self, update: Update, context: CallbackContext) -> int:
+    async def view_command(self, update: Update, _: CallbackContext) -> int:
         keyboard = [
             [
                 InlineKeyboardButton(text="选择问题", switch_inline_query_current_chat="查看问题 ")
@@ -139,7 +139,7 @@ class Quiz(BasePlugins):
                                         reply_markup=InlineKeyboardMarkup(keyboard))
         return self.CHECK_COMMAND
 
-    async def check_question(self, update: Update, context: CallbackContext) -> int:
+    async def check_question(self, update: Update, _: CallbackContext) -> int:
         reply_keyboard = [
             ["删除问题"],
             ["退出"]
@@ -176,7 +176,7 @@ class Quiz(BasePlugins):
             await update.message.reply_text("命令错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
 
-    async def refresh_question(self, update: Update, context: CallbackContext) -> int:
+    async def refresh_question(self, update: Update, _: CallbackContext) -> int:
         try:
             await self.service.quiz_service.refresh_quiz()
         except DataError:

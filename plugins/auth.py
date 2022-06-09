@@ -56,11 +56,12 @@ class Auth:
             return True
         except BadRequest as error:
             if "not found" in str(error):
-                Log.warning(f"Auth模块删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息不存在")
+                Log.warning(f"Auth模块删除消息 chat_id[{chat_id}] user_id[{user_id}] message_id[{message_id}]失败 消息不存在")
             elif "Message can't be deleted" in str(error):
-                Log.warning(f"Auth模块删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息无法删除 可能是没有授权")
+                Log.warning(
+                    f"Auth模块删除消息 chat_id[{chat_id}] user_id[{user_id}] message_id[{message_id}]失败 消息无法删除 可能是没有授权")
             else:
-                Log.error(f"Auth模块删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 \n", error)
+                Log.error(f"Auth模块删除消息 chat_id[{chat_id}] user_id[{user_id}] message_id[{message_id}]失败 \n", error)
         return False
 
     @staticmethod
