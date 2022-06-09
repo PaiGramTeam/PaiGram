@@ -60,7 +60,7 @@ class Gacha(BasePlugins):
             "poolName": gacha_info["title"],
             "items": [],
         }
-        for a in range(10):
+        for _ in range(10):
             item = get_one(user_gacha_count, gacha_info)
             # item_name = item["item_name"]
             # item_type = item["item_type"]
