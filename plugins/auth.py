@@ -91,7 +91,7 @@ class Auth:
                 extra_user=[]
         ):
             await callback_query.answer(text="你不是管理！\n"
-                                             f"再瞎几把点我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
+                                             "再瞎几把点我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
         result, user_id = await admin_callback(callback_query.data)
         try:
@@ -149,7 +149,7 @@ class Auth:
         Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth认证命令 ")
         if user.id != user_id:
             await callback_query.answer(text="这不是你的验证！\n"
-                                             f"再瞎几把点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
+                                             "再瞎几把点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
         Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
         if result:
