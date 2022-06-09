@@ -8,9 +8,8 @@ from redis import DataError, ResponseError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, Poll, \
     ReplyKeyboardRemove, Message
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, filters, ConversationHandler
+from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, MessageHandler, filters
 from telegram.helpers import escape_markdown
-from telegram.ext import CommandHandler, MessageHandler, filters, ConversationHandler
 
 from logger import Log
 from plugins.base import BasePlugins, RestrictsCalls
