@@ -25,9 +25,6 @@ class CookiesCommandData:
 class Cookies(BasePlugins):
     CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
 
-    def __init__(self, service: BaseService):
-        super().__init__(service)
-
     @staticmethod
     def create_conversation_handler(service: BaseService):
         cookies = Cookies(service)
