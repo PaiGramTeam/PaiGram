@@ -3,7 +3,7 @@ import os
 import ujson
 
 
-class Config(object):
+class Config:
     def __init__(self):
         project_path = os.path.dirname(__file__)
         config_file = os.path.join(project_path, './config', 'config.json')
