@@ -1,9 +1,9 @@
 from service.admin import AdminService
+from service.cache import RedisCache
 from service.gacha import GachaService
 from service.game import GetGameInfo
 from service.quiz import QuizService
 from service.repository import AsyncRepository
-from service.cache import RedisCache
 from service.template import TemplateService
 from service.user import UserInfoFormDB
 

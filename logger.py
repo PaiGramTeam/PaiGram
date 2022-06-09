@@ -1,7 +1,8 @@
 import logging
-from logging.handlers import RotatingFileHandler
-import colorlog
 import os
+from logging.handlers import RotatingFileHandler
+
+import colorlog
 
 from config import config
 

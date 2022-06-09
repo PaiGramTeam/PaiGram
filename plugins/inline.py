@@ -1,6 +1,7 @@
 from typing import cast
 from urllib.parse import urlparse, urlencode, ParseResult
 from uuid import uuid4
+
 from telegram import InlineQueryResultArticle, InputTextMessageContent, Update, InlineQuery, InlineQueryResultPhoto
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
@@ -8,9 +9,9 @@ from telegram.ext import CallbackContext
 from telegram.helpers import escape_markdown
 
 from logger import Log
+from metadata.metadata import metadat
 from service import BaseService
 from service.base import QuestionData
-from metadata.metadata import metadat
 
 
 class Inline:

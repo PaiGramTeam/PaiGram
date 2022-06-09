@@ -1,8 +1,8 @@
 from http.cookies import SimpleCookie
-import ujson
-import genshin
-from genshin import InvalidCookies, GenshinException, DataNotPublic
 
+import genshin
+import ujson
+from genshin import InvalidCookies, GenshinException, DataNotPublic
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
 from telegram.helpers import escape_markdown
@@ -33,13 +33,13 @@ class Cookies(BasePlugins):
         cookies = Cookies(service)
         cookies_handler = ConversationHandler(
             entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE, block=True),
-                        MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE,
-                                        cookies.command_start, block=True)],
+                          MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE,
+                                         cookies.command_start, block=True)],
             states={
                 cookies.CHECK_SERVER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                    cookies.check_server, block=True)],
+                                                      cookies.check_server, block=True)],
                 cookies.CHECK_COOKIES: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                    cookies.check_cookies, block=True)],
+                                                       cookies.check_cookies, block=True)],
                 cookies.COMMAND_RESULT: [MessageHandler(filters.TEXT & ~filters.COMMAND,
                                                         cookies.command_result, block=True)],
             },

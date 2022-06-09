@@ -4,8 +4,8 @@ from pymysql import IntegrityError
 
 from config import config
 from logger import Log
-from service.repository import AsyncRepository
 from service.cache import RedisCache
+from service.repository import AsyncRepository
 
 
 class AdminService:

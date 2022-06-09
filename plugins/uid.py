@@ -33,7 +33,7 @@ class Uid(BasePlugins):
         uid = Uid(service)
         uid_handler = ConversationHandler(
             entry_points=[CommandHandler('uid', uid.command_start, block=True),
-                        MessageHandler(filters.Regex(r"^玩家查询(.*)"), uid.command_start, block=True)],
+                          MessageHandler(filters.Regex(r"^玩家查询(.*)"), uid.command_start, block=True)],
             states={
                 uid.COMMAND_RESULT: [CallbackQueryHandler(uid.command_result, block=True)]
             },

@@ -1,6 +1,6 @@
 from model.apihelper import Hyperion
-from service.repository import AsyncRepository
 from service.cache import RedisCache
+from service.repository import AsyncRepository
 
 
 class GetGameInfo:

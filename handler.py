@@ -1,17 +1,15 @@
 from typing import Optional
 
-from telegram.ext import CommandHandler, MessageHandler, filters, ConversationHandler, \
-    CallbackQueryHandler, InlineQueryHandler
+from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, InlineQueryHandler
 
 from plugins.admin import Admin
 from plugins.auth import Auth
 from plugins.base import NewChatMembersHandler
 from plugins.cookies import Cookies
+from plugins.daily_note import DailyNote
 from plugins.errorhandler import error_handler
 from plugins.gacha import Gacha
 from plugins.help import Help
-from plugins.uid import Uid
-from plugins.daily_note import DailyNote
 from plugins.inline import Inline
 from plugins.job_queue import JobQueue
 from plugins.post import Post
@@ -19,6 +17,7 @@ from plugins.quiz import Quiz
 from plugins.sign import Sign
 from plugins.start import start, ping, reply_keyboard_remove, unknown_command
 from plugins.strategy import Strategy
+from plugins.uid import Uid
 from plugins.weapon import Weapon
 from service import BaseService
 
@@ -33,7 +32,7 @@ def register_handlers(application, service: BaseService = None):
             application.add_handler(MessageHandler(filters.Regex(regex), handler, block=block))
         if query:
             application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
-    
+
     if service is None:
         return
 
@@ -82,4 +81,3 @@ def register_handlers(application, service: BaseService = None):
     application.job_queue.run_once(job_queue.start_job, when=3, name="start_job")
     application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
     application.add_error_handler(error_handler, block=False)
-

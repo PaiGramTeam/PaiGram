@@ -10,7 +10,7 @@ from service.base import QuestionData, AnswerData
 
 class RedisCache:
 
-    def __init__(self, host="127.0.0.1", port=6379, db=0,loop=None):
+    def __init__(self, host="127.0.0.1", port=6379, db=0, loop=None):
         self._loop = asyncio.get_event_loop()
         # Redis 官方文档显示 默认创建POOL连接池
         Log.debug(f'获取Redis配置 [host]: {host}')

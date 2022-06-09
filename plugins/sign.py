@@ -1,5 +1,5 @@
-import time
 import datetime
+import time
 
 import genshin
 from genshin import Game, GenshinException, AlreadyClaimed
@@ -33,7 +33,7 @@ class Sign(BasePlugins):
         sign = Sign(service)
         sign_handler = ConversationHandler(
             entry_points=[CommandHandler('sign', sign.command_start, block=True),
-                        MessageHandler(filters.Regex(r"^每日签到(.*)"), sign.command_start, block=True)],
+                          MessageHandler(filters.Regex(r"^每日签到(.*)"), sign.command_start, block=True)],
             states={
                 sign.COMMAND_RESULT: [CallbackQueryHandler(sign.command_result, block=True)]
             },
