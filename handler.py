@@ -34,7 +34,7 @@ def register_handlers(application, service: BaseService = None):
             application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
 
     if service is None:
-        return
+        raise RuntimeError("Service is not none")
 
     # 基础命令
     add_handler(start, command="start")
