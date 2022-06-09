@@ -8,8 +8,9 @@ from config import config
 from handler import register_handlers
 from logger import Log
 from service import StartService
-from service.cache import RedisCache
-from service.repository import AsyncRepository
+from utils.aiobrowser import AioBrowser
+from utils.mysql import MySQL
+from utils.redisdb import RedisDB
 
 # 无视相关警告
 # 该警告说明在官方GITHUB的WIKI中Frequently Asked Questions里的What do the per_* settings in ConversationHandler do?
@@ -21,20 +22,20 @@ def main() -> None:
 
     # 初始化数据库
     Log.info("初始化数据库")
-    repository = AsyncRepository(mysql_host=config.MYSQL["host"],
-                                 mysql_user=config.MYSQL["user"],
-                                 mysql_password=config.MYSQL["password"],
-                                 mysql_port=config.MYSQL["port"],
-                                 mysql_database=config.MYSQL["database"]
-                                 )
+    mysql = MySQL(host=config.MYSQL["host"], user=config.MYSQL["user"], password=config.MYSQL["password"],
+                  port=config.MYSQL["port"], database=config.MYSQL["database"])
 
     # 初始化Redis缓存
     Log.info("初始化Redis缓存")
-    cache = RedisCache(db=6)
+    redis = RedisDB(host=config.REDIS["host"], port=config.REDIS["port"], db=config.REDIS["database"])
+
+    # 初始化Playwright
+    Log.info("初始化Playwright")
+    browser = AioBrowser()
 
     # 传入服务并启动
     Log.info("传入服务并启动")
-    service = StartService(repository, cache)
+    service = StartService(mysql, redis, browser)
 
     # 构建BOT
     application = Application.builder().token(config.TELEGRAM["token"]).build()
@@ -58,13 +59,13 @@ def main() -> None:
         try:
             # 需要关闭数据库连接
             Log.info("正在关闭数据库连接")
-            loop.run_until_complete(repository.wait_closed())
+            loop.run_until_complete(mysql.wait_closed())
             # 关闭Redis连接
             Log.info("正在关闭Redis连接")
-            loop.run_until_complete(cache.close())
+            loop.run_until_complete(redis.close())
             # 关闭playwright
             Log.info("正在关闭Playwright")
-            loop.run_until_complete(service.template.close())
+            loop.run_until_complete(browser.close())
         except (KeyboardInterrupt, SystemExit):
             pass
         except Exception as exc:

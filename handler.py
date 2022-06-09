@@ -11,7 +11,6 @@ from plugins.errorhandler import error_handler
 from plugins.gacha import Gacha
 from plugins.help import Help
 from plugins.inline import Inline
-from plugins.job_queue import JobQueue
 from plugins.post import Post
 from plugins.quiz import Quiz
 from plugins.sign import Sign
@@ -77,7 +76,5 @@ def register_handlers(application, service: BaseService = None):
     application.add_handler(post_handler)
     inline = Inline(service)
     application.add_handler(InlineQueryHandler(inline.inline_query, block=False))
-    job_queue = JobQueue(service)
-    application.job_queue.run_once(job_queue.start_job, when=3, name="start_job")
     application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
     application.add_error_handler(error_handler, block=False)
