@@ -59,23 +59,23 @@ class Admin(BasePlugins):
         try:
             args = message.text.split()
             if len(args) >= 2:
-                char_id = int(args[1])
+                chat_id = int(args[1])
             else:
                 await message.reply_text("输入错误")
                 return
         except ValueError as error:
-            Log.error("获取 char_id 发生错误！ 错误信息为 \n", error)
+            Log.error("获取 chat_id 发生错误！ 错误信息为 \n", error)
             await message.reply_text("输入错误")
             return
         try:
             try:
-                char = await context.bot.get_chat(char_id)
+                char = await context.bot.get_chat(chat_id)
                 await message.reply_text(f"正在尝试退出群 {char.title}[{char.id}]")
             except (BadRequest, Forbidden):
                 pass
-            await context.bot.leave_chat(char_id)
+            await context.bot.leave_chat(chat_id)
         except (BadRequest, Forbidden) as error:
-            Log.error(f"退出 char_id[{char_id}] 发生错误！ 错误信息为 \n", error)
-            await message.reply_text(f"退出 char_id[{char_id}] 发生错误！ 错误信息为 {str(error)}")
+            Log.error(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 \n", error)
+            await message.reply_text(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 {str(error)}")
             return
-        await message.reply_text(f"退出 char_id[{char_id}] 成功！")
+        await message.reply_text(f"退出 chat_id[{chat_id}] 成功！")

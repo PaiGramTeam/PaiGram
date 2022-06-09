@@ -207,7 +207,7 @@ class Auth:
                                                        permissions=ChatPermissions(can_send_messages=False))
             except BadRequest as err:
                 if "Not enough rights" in str(err):
-                    Log.warning(f"权限不够 char_id[{message.chat_id}]", err)
+                    Log.warning(f"权限不够 chat_id[{message.chat_id}]", err)
                     await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
                                                     f"请检查是否给派蒙授权管理了")
                     return

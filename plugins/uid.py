@@ -160,7 +160,7 @@ class Uid(BasePlugins):
             if len(args) >= 2:
                 uid = int(args[1])
         except ValueError as error:
-            Log.error("获取 char_id 发生错误！ 错误信息为 \n", error)
+            Log.error("获取 chat_id 发生错误！ 错误信息为 \n", error)
             await message.reply_text("输入错误")
             return ConversationHandler.END
         if user_info.service == ServiceEnum.NULL:

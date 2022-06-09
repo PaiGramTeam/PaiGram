@@ -27,15 +27,15 @@ CREATE TABLE `answer`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 355 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for char
+-- Table structure for chat
 -- ----------------------------
-DROP TABLE IF EXISTS `char`;
+DROP TABLE IF EXISTS `chat`;
 CREATE TABLE `char`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `char_id` bigint(20) UNSIGNED NOT NULL,
+  `chat_id` bigint(20) UNSIGNED NOT NULL,
   `is_authorize` int(10) UNSIGNED NULL DEFAULT NULL,
   `auth` int(10) NULL DEFAULT NULL,
-  PRIMARY KEY (`id`, `char_id`) USING BTREE
+  PRIMARY KEY (`id`, `chat_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------

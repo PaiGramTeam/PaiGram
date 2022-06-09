@@ -11,12 +11,12 @@ class RedisCache:
     def __init__(self, redis: RedisDB):
         self.client = redis.client
 
-    async def get_chat_admin(self, char_id: int):
-        qname = f"group:admin_list:{char_id}"
+    async def get_chat_admin(self, chat_id: int):
+        qname = f"group:admin_list:{chat_id}"
         return [int(str_id) for str_id in await self.client.lrange(qname, 0, -1)]
 
-    async def set_chat_admin(self, char_id: int, admin_list: List[int]):
-        qname = f"group:admin_list:{char_id}"
+    async def set_chat_admin(self, chat_id: int, admin_list: List[int]):
+        qname = f"group:admin_list:{chat_id}"
         await self.client.ltrim(qname, 1, 0)
         await self.client.lpush(qname, *admin_list)
         await self.client.expire(qname, 60)
