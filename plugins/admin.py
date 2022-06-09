@@ -6,7 +6,6 @@ from telegram.ext import CallbackContext
 
 from logger import Log
 from plugins.base import BasePlugins
-from service import BaseService
 
 
 def bot_admins_only(func: Callable) -> Callable:  # noqa

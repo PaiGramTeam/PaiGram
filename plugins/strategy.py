@@ -9,7 +9,6 @@ from metadata.shortname import roleToName
 from model.helpers import url_to_file
 from plugins.base import BasePlugins
 from plugins.errorhandler import conversation_error_handler
-from service import BaseService
 
 
 class Strategy(BasePlugins):
