@@ -23,6 +23,9 @@ class SignCommandData:
 
 
 class Sign(BasePlugins):
+    """
+    每日签到
+    """
 
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
 

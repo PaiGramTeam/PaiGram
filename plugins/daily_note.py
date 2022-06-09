@@ -21,6 +21,10 @@ class UidCommandData:
 
 
 class DailyNote(BasePlugins):
+    """
+    每日便签
+    """
+
     COMMAND_RESULT, = range(10200, 10201)
 
     def __init__(self, service: BaseService):

@@ -13,6 +13,10 @@ from service.wish import WishCountInfo, get_one
 
 
 class Gacha(BasePlugins):
+    """
+    抽卡模拟器（非首模拟器/减寿模拟器）
+    """
+
     def __init__(self, service: BaseService):
         super().__init__(service)
         self.browser: launch = None
@@ -62,6 +66,7 @@ class Gacha(BasePlugins):
         }
         for _ in range(10):
             item = get_one(user_gacha_count, gacha_info)
+            # 下面为忽略的代码，因为metadata未完善，具体武器和角色类型无法显示
             # item_name = item["item_name"]
             # item_type = item["item_type"]
             # if item_type == "角色":

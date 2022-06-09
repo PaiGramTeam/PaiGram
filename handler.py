@@ -1,6 +1,6 @@
 from typing import Optional
 
-from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, InlineQueryHandler
+from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, InlineQueryHandler, Application
 
 from plugins.admin import Admin
 from plugins.auth import Auth
@@ -21,7 +21,14 @@ from plugins.weapon import Weapon
 from service import BaseService
 
 
-def register_handlers(application, service: BaseService = None):
+def register_handlers(application: Application, service: BaseService):
+    """
+    注册相关处理程序
+    :param application:
+    :param service:
+    :return:
+    """
+
     # 添加相关命令处理过程
     def add_handler(handler, command: Optional[str] = None, regex: Optional[str] = None, query: Optional[str] = None,
                     block: bool = False) -> None:
@@ -32,16 +39,11 @@ def register_handlers(application, service: BaseService = None):
         if query:
             application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
 
-    if service is None:
-        raise RuntimeError("Service is not none")
-
-    # 基础命令
     add_handler(start, command="start")
     _help = Help(service)
     add_handler(_help.command_start, command="help")
     add_handler(ping, command="ping")
 
-    # 有关群验证和监听
     auth = Auth(service)
     new_chat_members_handler = NewChatMembersHandler(service, auth.new_mem)
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS,
@@ -49,7 +51,6 @@ def register_handlers(application, service: BaseService = None):
     add_handler(auth.query, query=r"^auth_challenge\|")
     add_handler(auth.admin, query=r"^auth_admin\|")
 
-    # cookie绑定
     cookies_handler = Cookies.create_conversation_handler(service)
     uid_handler = Uid.create_conversation_handler(service)
     daily_note_handler = DailyNote.create_conversation_handler(service)

@@ -27,6 +27,10 @@ FullChatPermissions = ChatPermissions(
 
 
 class Auth:
+    """
+    群验证模块
+    """
+
     def __init__(self, service: BaseService):
         self.service = service
         self.send_time = time.time()

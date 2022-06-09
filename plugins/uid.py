@@ -22,6 +22,10 @@ class UidCommandData:
 
 
 class Uid(BasePlugins):
+    """
+    玩家查询
+    """
+
     COMMAND_RESULT, = range(10200, 10201)
 
     def __init__(self, service: BaseService):

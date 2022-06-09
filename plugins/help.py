@@ -10,6 +10,10 @@ from service import BaseService
 
 
 class Help(BasePlugins):
+    """
+    帮助
+    """
+
     def __init__(self, service: BaseService):
         super().__init__(service)
         self.help_png = None

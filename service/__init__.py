@@ -12,6 +12,9 @@ from utils.redisdb import RedisDB
 
 
 class BaseService:
+    """
+    基础服务初始化
+    """
     def __init__(self, mysql: MySQL, redis: RedisDB, browser: AioBrowser):
         self.repository = AsyncRepository(mysql)
         self.cache = RedisCache(redis)

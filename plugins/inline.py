@@ -15,6 +15,9 @@ from service.base import QuestionData
 
 
 class Inline:
+    """
+    Inline模块
+    """
     def __init__(self, service: BaseService):
         self.service = service
 
@@ -86,9 +89,7 @@ class Inline:
                             _prlist[4] = urlencode(_params)
                             return ParseResult(*_prlist).geturl()
 
-                        caption = "Form [米游社](https://bbs.mihoyo.com/ys/) 西风驿站 " \
-                                  "Via [猫冬](https://bbs.mihoyo.com/ys/accountCenter/postList?id=74019947) " \
-                                  f"查看 [原图]({url})"
+                        caption = f"Form 米游社 西风驿站 查看 [原图]({url})"
                         results_list.append(
                             InlineQueryResultPhoto(
                                 id=str(uuid4()),

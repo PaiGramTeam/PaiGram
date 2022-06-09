@@ -15,6 +15,9 @@ from service import BaseService
 
 
 class PostHandlerData:
+    """
+    文章推送
+    """
     def __init__(self):
         self.post_text: str = ""
         self.post_images: Optional[List[ArtworkImage]] = None

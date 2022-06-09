@@ -38,8 +38,8 @@ def main() -> None:
     service = StartService(mysql, redis, browser)
 
     # 构建BOT
-    application = Application.builder().token(config.TELEGRAM["token"]).build()
     Log.info("构建BOT")
+    application = Application.builder().token(config.TELEGRAM["token"]).build()
 
     register_handlers(application, service)
 

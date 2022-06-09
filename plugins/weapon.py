@@ -13,6 +13,9 @@ from plugins.errorhandler import conversation_error_handler
 
 
 class Weapon(BasePlugins):
+    """
+    武器查询
+    """
 
     @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> None:

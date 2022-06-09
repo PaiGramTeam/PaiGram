@@ -21,6 +21,9 @@ def bot_admins_only(func: Callable) -> Callable:  # noqa
 
 
 class Admin(BasePlugins):
+    """
+    有关BOT ADMIN处理
+    """
 
     @bot_admins_only
     async def add_admin(self, update: Update, _: CallbackContext):

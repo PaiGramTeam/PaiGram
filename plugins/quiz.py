@@ -26,6 +26,11 @@ class QuizCommandData:
 
 
 class Quiz(BasePlugins):
+    """
+    派蒙的十万个为什么
+    合并了香港问题修改/添加/删除
+    """
+
     CHECK_COMMAND, VIEW_COMMAND, CHECK_QUESTION, \
     GET_NEW_QUESTION, GET_NEW_CORRECT_ANSWER, GET_NEW_WRONG_ANSWER, \
     QUESTION_EDIT, SAVE_QUESTION = range(10300, 10308)

@@ -23,6 +23,10 @@ class CookiesCommandData:
 
 
 class Cookies(BasePlugins):
+    """
+    Cookie绑定
+    """
+
     CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
 
     @staticmethod

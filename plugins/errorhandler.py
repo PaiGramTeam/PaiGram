@@ -35,6 +35,11 @@ async def send_user_notification(update: Update, _: CallbackContext, text: str):
 
 
 def conversation_error_handler(func: Callable) -> Callable:
+    """
+    Conversation的错误处理修饰器
+    非常感谢 @Bibo-Joshi 提出的建议
+    """
+
     async def decorator(*args, **kwargs):
         update: Optional[Update] = None
         context: Optional[CallbackContext] = None

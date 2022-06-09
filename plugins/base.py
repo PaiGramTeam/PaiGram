@@ -6,7 +6,7 @@ from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ChatType
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
-from telegram.ext._utils.types import HandlerCallback, CCT, RT
+from telegram.ext._utils.types import HandlerCallback
 
 from logger import Log
 from service import BaseService
@@ -56,7 +56,7 @@ class BasePlugins:
 
 
 class NewChatMembersHandler:
-    def __init__(self, service: BaseService, auth_callback: HandlerCallback[Update, CCT, RT]):
+    def __init__(self, service: BaseService, auth_callback: HandlerCallback):
         self.service = service
         self.auth_callback = auth_callback
 
