@@ -24,5 +24,4 @@ class BaseService:
 
 
 class StartService(BaseService):
-    def __init__(self, mysql: MySQL, redis: RedisDB, browser: AioBrowser):
-        super().__init__(mysql, redis, browser)
+    pass

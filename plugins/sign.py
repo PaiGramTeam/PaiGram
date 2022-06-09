@@ -23,8 +23,6 @@ class SignCommandData:
 
 
 class Sign(BasePlugins):
-    def __init__(self, service: BaseService):
-        super().__init__(service)
 
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
 
