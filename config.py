@@ -1,5 +1,6 @@
-import ujson
 import os
+
+import ujson
 
 
 class Config(object):

@@ -1,16 +1,15 @@
 import asyncio
-from typing import Optional
 from warnings import filterwarnings
 
 from telegram.ext import Application
 from telegram.warnings import PTBUserWarning
 
+from config import config
 from handler import register_handlers
 from logger import Log
 from service import StartService
-from service.repository import AsyncRepository
-from config import config
 from service.cache import RedisCache
+from service.repository import AsyncRepository
 
 # 无视相关警告
 # 该警告说明在官方GITHUB的WIKI中Frequently Asked Questions里的What do the per_* settings in ConversationHandler do?

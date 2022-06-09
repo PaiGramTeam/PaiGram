@@ -2,6 +2,7 @@ import asyncio
 import os
 import time
 from typing import Optional
+
 from jinja2 import PackageLoader, Environment, Template
 from playwright.async_api import async_playwright, Browser, ViewportSize, Playwright
 
@@ -10,7 +11,7 @@ from logger import Log
 
 
 class TemplateService:
-    def __init__(self, template_package_name: str = "resources", cache_dir_name: str = "cache",loop=None):
+    def __init__(self, template_package_name: str = "resources", cache_dir_name: str = "cache", loop=None):
         self._template_package_name = template_package_name
         self._browser: Optional[Browser] = None
         self._playwright: Optional[Playwright] = None

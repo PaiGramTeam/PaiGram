@@ -2,9 +2,9 @@ from typing import List
 
 import ujson
 
-from service.repository import AsyncRepository
-from service.cache import RedisCache
 from service.base import QuestionData
+from service.cache import RedisCache
+from service.repository import AsyncRepository
 
 
 class QuizService:
