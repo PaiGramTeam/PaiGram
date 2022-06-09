@@ -7,11 +7,10 @@ async def start(update: Update, _: CallbackContext) -> None:
     user = update.effective_user
     message = update.message
     args = message.text.split(" ")
-    if len(args) >= 2:
-        if args[1] == "inline_message":
-            await update.message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
-                                                   f"{escape_markdown('发送 /help 命令即可查看命令帮助')}")
-            return
+    if len(args) >= 2 and args[1] == "inline_message":
+        await update.message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
+                                               f"{escape_markdown('发送 /help 命令即可查看命令帮助')}")
+        return
     await update.message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
 
 
