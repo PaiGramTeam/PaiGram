@@ -5,7 +5,8 @@ import genshin
 from genshin import GenshinException, DataNotPublic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters, \
+    CallbackQueryHandler
 
 from logger import Log
 from model.base import ServiceEnum
@@ -25,6 +26,19 @@ class DailyNote(BasePlugins):
     def __init__(self, service: BaseService):
         super().__init__(service)
         self.current_dir = os.getcwd()
+
+    @staticmethod
+    def create_conversation_handler(service: BaseService):
+        daily_note = DailyNote(service)
+        daily_note_handler = ConversationHandler(
+            entry_points=[CommandHandler('dailynote', daily_note.command_start, block=True),
+                        MessageHandler(filters.Regex(r"^当前状态(.*)"), daily_note.command_start, block=True)],
+            states={
+                daily_note.COMMAND_RESULT: [CallbackQueryHandler(daily_note.command_result, block=True)]
+            },
+            fallbacks=[CommandHandler('cancel', daily_note.cancel, block=True)]
+        )
+        return daily_note_handler
 
     async def _start_get_daily_note(self, user_info_data: UserInfoData, service: ServiceEnum) -> bytes:
         if service == ServiceEnum.MIHOYOBBS:

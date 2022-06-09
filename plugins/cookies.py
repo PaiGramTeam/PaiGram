@@ -4,7 +4,7 @@ import genshin
 from genshin import InvalidCookies, GenshinException, DataNotPublic
 
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
 from logger import Log
@@ -27,6 +27,25 @@ class Cookies(BasePlugins):
 
     def __init__(self, service: BaseService):
         super().__init__(service)
+
+    @staticmethod
+    def create_conversation_handler(service: BaseService):
+        cookies = Cookies(service)
+        cookies_handler = ConversationHandler(
+            entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE, block=True),
+                        MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE,
+                                        cookies.command_start, block=True)],
+            states={
+                cookies.CHECK_SERVER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                    cookies.check_server, block=True)],
+                cookies.CHECK_COOKIES: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                    cookies.check_cookies, block=True)],
+                cookies.COMMAND_RESULT: [MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                                        cookies.command_result, block=True)],
+            },
+            fallbacks=[CommandHandler('cancel', cookies.cancel, block=True)],
+        )
+        return cookies_handler
 
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
