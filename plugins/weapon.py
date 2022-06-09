@@ -14,8 +14,6 @@ from service import BaseService
 
 
 class Weapon(BasePlugins):
-    def __init__(self, service: BaseService):
-        super().__init__(service)
 
     @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> None:

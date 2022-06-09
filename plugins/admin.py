@@ -22,8 +22,6 @@ def bot_admins_only(func: Callable) -> Callable:  # noqa
 
 
 class Admin(BasePlugins):
-    def __init__(self, service: BaseService):
-        super().__init__(service)
 
     @bot_admins_only
     async def add_admin(self, update: Update, _: CallbackContext):
