@@ -1,5 +1,5 @@
-import os
 import datetime
+import os
 
 import genshin
 from genshin import GenshinException, DataNotPublic
@@ -32,7 +32,7 @@ class DailyNote(BasePlugins):
         daily_note = DailyNote(service)
         daily_note_handler = ConversationHandler(
             entry_points=[CommandHandler('dailynote', daily_note.command_start, block=True),
-                        MessageHandler(filters.Regex(r"^当前状态(.*)"), daily_note.command_start, block=True)],
+                          MessageHandler(filters.Regex(r"^当前状态(.*)"), daily_note.command_start, block=True)],
             states={
                 daily_note.COMMAND_RESULT: [CallbackQueryHandler(daily_note.command_result, block=True)]
             },

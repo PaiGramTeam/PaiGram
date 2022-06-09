@@ -6,14 +6,13 @@ import ujson
 from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, GenshinException, TooManyRequests
 from httpx import ConnectTimeout
-
 from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, TimedOut
 from telegram.ext import CallbackContext, ConversationHandler
 
-from logger import Log
 from config import config
+from logger import Log
 
 try:
     notice_chat_id = config.TELEGRAM["notice"]["ERROR"]["chat_id"]
@@ -36,7 +35,6 @@ async def send_user_notification(update: Update, _: CallbackContext, text: str):
 
 
 def conversation_error_handler(func: Callable) -> Callable:
-
     async def decorator(*args, **kwargs):
         update: Optional[Update] = None
         context: Optional[CallbackContext] = None

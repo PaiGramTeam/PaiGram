@@ -37,7 +37,7 @@ class Quiz(BasePlugins):
         self.generator = Generator(MT19937(int(self.send_time)))
         self.service = service
         self.time_out = 120
-    
+
     @staticmethod
     def create_conversation_handler(service: BaseService):
         quiz = Quiz(service)
@@ -47,13 +47,13 @@ class Quiz(BasePlugins):
                 quiz.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND,
                                                     quiz.check_command, block=True)],
                 quiz.CHECK_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                    quiz.check_question, block=True)],
+                                                     quiz.check_question, block=True)],
                 quiz.GET_NEW_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                    quiz.get_new_question, block=True)],
+                                                       quiz.get_new_question, block=True)],
                 quiz.GET_NEW_CORRECT_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                            quiz.get_new_correct_answer, block=True)],
+                                                             quiz.get_new_correct_answer, block=True)],
                 quiz.GET_NEW_WRONG_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                        quiz.get_new_wrong_answer, block=True),
+                                                           quiz.get_new_wrong_answer, block=True),
                                             CommandHandler("finish", quiz.finish_edit)],
                 quiz.SAVE_QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND,
                                                     quiz.save_question, block=True)],
