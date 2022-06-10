@@ -45,6 +45,7 @@ class Auth:
         return int(self.generator.uniform(low, high))
 
     async def kick_member(self, context: CallbackContext, chat_id: int, user_id: int) -> bool:
+        Log.debug(f"踢出用户 user_id[{user_id}] 在 chat_id[{chat_id}]")
         try:
             await context.bot.ban_chat_member(chat_id=chat_id, user_id=user_id,
                                               until_date=int(time.time()) + self.kick_time)
@@ -55,6 +56,7 @@ class Auth:
 
     @staticmethod
     async def clean_message(context: CallbackContext, chat_id: int, user_id: int, message_id: int) -> bool:
+        Log.debug(f"删除消息 user_id[{user_id}] 在 chat_id[{chat_id}] 的 message_id[{message_id}]")
         try:
             await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
             return True
@@ -70,6 +72,7 @@ class Auth:
 
     @staticmethod
     async def restore_member(context: CallbackContext, chat_id: int, user_id: int) -> bool:
+        Log.debug(f"重置用户权限 user_id[{user_id}] 在 chat_id[{chat_id}]")
         try:
             await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=FullChatPermissions)
         except BadRequest as error:
@@ -82,6 +85,7 @@ class Auth:
             _data = callback_query_data.split("|")
             _result = _data[1]
             _user_id = int(_data[2])
+            Log.debug(f"admin_callback函数返回 result[{_result}] user_id[{_user_id}]")
             return _result, _user_id
 
         callback_query = update.callback_query
@@ -95,8 +99,9 @@ class Auth:
                 chat_id=chat.id,
                 extra_user=[]
         ):
+            Log.debug(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 非群管理")
             await callback_query.answer(text="你不是管理！\n"
-                                             "再瞎几把点我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
+                                             "再乱点我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
         result, user_id = await admin_callback(callback_query.data)
         try:
@@ -114,11 +119,13 @@ class Auth:
                 schedule.remove()
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 放行",
                                     parse_mode=ParseMode.MARKDOWN_V2)
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理放行")
         elif result == "kick":
             await callback_query.answer(text="驱离", show_alert=False)
             await context.bot.ban_chat_member(chat.id, user_id)
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 驱离",
                                     parse_mode=ParseMode.MARKDOWN_V2)
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理踢出")
         elif result == "unban":
             await callback_query.answer(text="解除驱离", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
@@ -126,6 +133,7 @@ class Auth:
                 schedule.remove()
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 解除驱离",
                                     parse_mode=ParseMode.MARKDOWN_V2)
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理解除封禁")
         else:
             Log.warning(f"auth 模块 admin 函数 发现未知命令 result[{result}]")
             await context.bot.send_message(chat.id, "派蒙这边收到了错误的消息！请检查详细日记！")
@@ -144,6 +152,8 @@ class Auth:
             _result = _answer["is_correct"]
             _answer_encode = _answer["answer"]
             _question_encode = _question["question"]
+            Log.debug(f"query_callback函数返回 user_id[{_user_id}] result[{_result}] "
+                      f"question_encode[{_question_encode}] answer_encode[{_answer_encode}]")
             return _user_id, _result, _question_encode, _answer_encode
 
         callback_query = update.callback_query
@@ -154,11 +164,11 @@ class Auth:
         Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth认证命令 ")
         if user.id != user_id:
             await callback_query.answer(text="这不是你的验证！\n"
-                                             "再瞎几把点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
+                                             "再乱点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
         Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
         if result:
-            buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kill|{user.id}")]]
+            buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}")]]
             await callback_query.answer(text="验证成功", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
             if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|clean_join"):
@@ -166,14 +176,16 @@ class Auth:
             text = f"{user.mention_markdown_v2()} 验证成功，向着星辰与深渊！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 验证成功")
         else:
-            buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kill|{user.id}"),
+            buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}"),
                         InlineKeyboardButton("撤回驱离", callback_data=f"auth_admin|unban|{user.id}")]]
             await callback_query.answer(text=f"验证失败，请在 {self.time_out} 秒后重试", show_alert=True)
             await self.kick_member(context, chat.id, user_id)
             text = f"{user.mention_markdown_v2()} 验证失败，已经赶出提瓦特大陆！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 验证失败")
         try:
             await message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)
         except BadRequest as exc:
@@ -189,7 +201,7 @@ class Auth:
         chat = message.chat
         for user in message.new_chat_members:
             if user.id == context.bot.id:
-                return
+                continue
             Log.info(f"用户 {user.full_name}[{user.id}] 尝试加入群 {chat.title}[{chat.id}]")
         if message.from_user.id in await get_admin_list(
                 bot=context.bot,
@@ -200,8 +212,14 @@ class Auth:
             await message.reply_text("派蒙检测到管理员邀请，自动放行了！")
             return
         for user in message.new_chat_members:
+            if user.id == context.bot.id:
+                continue
             if user.is_bot:
                 continue
+            question_id_list = await self.service.quiz_service.get_question_id_list()
+            if len(question_id_list) == 0:
+                await message.reply_text("旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
+                return
             try:
                 await context.bot.restrict_chat_member(chat_id=message.chat.id, user_id=user.id,
                                                        permissions=ChatPermissions(can_send_messages=False))
@@ -213,10 +231,6 @@ class Auth:
                     return
                 else:
                     raise err
-            question_id_list = await self.service.quiz_service.get_question_id_list()
-            if len(question_id_list) == 0:
-                await message.reply_text("旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
-                return
             index = self.random(0, len(question_id_list))
             question = await self.service.quiz_service.get_question(question_id_list[index])
             options = []
@@ -249,13 +263,14 @@ class Auth:
             reply_message = f"*欢迎来到「提瓦特」世界！* \n" \
                             f"问题: {escape_markdown(question['question'], version=2)} \n" \
                             f"请在 {self.time_out} 内回答问题"
+            Log.debug(f"发送入群验证问题 question_id[{question['question_id']}] question[{question['question']}] \n"
+                      f"给{user.full_name}[{user.id}] 在 {chat.title}[{chat.id}]")
             try:
                 question_message = await message.reply_markdown_v2(reply_message,
                                                                    reply_markup=InlineKeyboardMarkup(buttons))
-            except BadRequest as er:
-                await message.reply_text("派蒙分心了一下，不小心忘记你了，你只能先退出群再进来吧。")
-                raise er
-
+            except BadRequest as error:
+                await message.reply_text("派蒙分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
+                raise error
             context.job_queue.scheduler.add_job(self.kick_member, "date", id=f"{chat.id}|{user.id}|auth_kick",
                                                 name=f"{chat.id}|{user.id}|auth_kick", args=[context, chat.id, user.id],
                                                 run_date=context.job_queue._tz_now() + datetime.timedelta(
