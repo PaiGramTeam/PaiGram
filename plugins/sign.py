@@ -119,7 +119,7 @@ class Sign(BasePlugins):
         else:
             await message.reply_chat_action(ChatAction.TYPING)
             sign = await self._start_sign(user_info, user_info.service)
-            reply_message = await message.reply_text(sign)
+            reply_message = await message.reply_text(sign, allow_sending_without_reply=True)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
         return ConversationHandler.END
