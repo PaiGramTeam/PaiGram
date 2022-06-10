@@ -1,0 +1,39 @@
+body {
+    background-color: #f5f6fb;
+}
+
+.base-weapon-info {
+    background-color: coral;
+}
+
+.base-weapon-info-type {
+}
+
+.stat-progression-1 {
+    background-color: coral;
+}
+
+.base-weapon-info-source {
+    overflow: hidden;
+    border: 4px solid #ebebeb;
+}
+
+.base-weapon-info-source-img {
+
+}
+
+.stat-progression-2 {
+    background-color: coral;
+}
+
+.ascension-materials {
+    background-color: coral;
+}
+
+.special-ability {
+    background-color: coral;
+}
+
+.ascension-materials-info {
+    overflow: hidden;
+}
