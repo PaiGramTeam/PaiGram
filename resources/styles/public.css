@@ -1,0 +1,10 @@
+@font-face {
+    font-family: "seguiemj";
+    src: url("../fonts/seguiemj.ttf");
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+    font-family: "seguiemj", emoji;
+}
