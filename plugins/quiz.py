@@ -188,7 +188,7 @@ class Quiz(BasePlugins):
             await update.message.reply_text("Redis数据错误，重载失败", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except ResponseError as error:
-            Log.error("重载问题失败 /n", error)
+            Log.error("重载问题失败", error)
             await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
                                             reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -256,7 +256,7 @@ class Quiz(BasePlugins):
                 try:
                     await self.service.quiz_service.refresh_quiz()
                 except ResponseError as error:
-                    Log.error("重载问题失败 /n", error)
+                    Log.error("重载问题失败", error)
                     await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
                                                     reply_markup=ReplyKeyboardRemove())
                     return ConversationHandler.END
@@ -288,7 +288,7 @@ class Quiz(BasePlugins):
             await update.message.reply_text("删除问题成功", reply_markup=ReplyKeyboardRemove())
             await self.service.quiz_service.refresh_quiz()
         except ResponseError as error:
-            Log.error("重载问题失败 /n", error)
+            Log.error("重载问题失败", error)
             await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
                                             reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END

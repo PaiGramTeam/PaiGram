@@ -4,7 +4,7 @@ import time
 from typing import Tuple
 
 from numpy.random import Generator, MT19937
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, User
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
@@ -36,7 +36,7 @@ class Auth:
         self.send_time = time.time()
         self.generator = Generator(MT19937(int(self.send_time)))
         self.time_out = 120
-        self.kick_time = 120
+        self.kick_time = 1200
 
     def random(self, low: int, high: int) -> int:
         if self.send_time + 24 * 60 * 60 >= time.time():
@@ -51,7 +51,7 @@ class Auth:
                                               until_date=int(time.time()) + self.kick_time)
             return True
         except BadRequest as error:
-            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行kick失败 \n", error)
+            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行kick失败", error)
             return False
 
     @staticmethod
@@ -67,7 +67,7 @@ class Auth:
                 Log.warning(
                     f"Auth模块删除消息 chat_id[{chat_id}] user_id[{user_id}] message_id[{message_id}]失败 消息无法删除 可能是没有授权")
             else:
-                Log.error(f"Auth模块删除消息 chat_id[{chat_id}] user_id[{user_id}] message_id[{message_id}]失败 \n", error)
+                Log.error(f"Auth模块删除消息 chat_id[{chat_id}] user_id[{user_id}] message_id[{message_id}]失败", error)
         return False
 
     @staticmethod
@@ -76,7 +76,7 @@ class Auth:
         try:
             await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=FullChatPermissions)
         except BadRequest as error:
-            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败 \n", error)
+            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败", error)
             return False
 
     async def admin(self, update: Update, context: CallbackContext) -> None:
@@ -152,7 +152,7 @@ class Auth:
             _result = _answer["is_correct"]
             _answer_encode = _answer["answer"]
             _question_encode = _question["question"]
-            Log.debug(f"query_callback函数返回 user_id[{_user_id}] result[{_result}] "
+            Log.debug(f"query_callback函数返回 user_id[{_user_id}] result[{_result}] \n"
                       f"question_encode[{_question_encode}] answer_encode[{_answer_encode}]")
             return _user_id, _result, _question_encode, _answer_encode
 

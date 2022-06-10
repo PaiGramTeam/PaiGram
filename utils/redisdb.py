@@ -22,7 +22,7 @@ class RedisDB:
         except (KeyboardInterrupt, SystemExit):
             pass
         except Exception as exc:
-            Log.error("尝试连接Redis失败 \n")
+            Log.error("尝试连接Redis失败")
             raise exc
 
     async def ping(self):

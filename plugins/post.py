@@ -108,7 +108,7 @@ class Post(BasePlugins):
                 return ConversationHandler.END
         except (BadRequest, TypeError) as error:
             await message.reply_text("图片获取错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
-            Log.error("Post模块图片获取错误 \n", error)
+            Log.error("Post模块图片获取错误", error)
             return ConversationHandler.END
         post_handler_data.post_text = post_text
         post_handler_data.post_images = post_images
@@ -172,7 +172,7 @@ class Post(BasePlugins):
                 name = channel_info["name"]
                 reply_keyboard.append([f"{name}"])
         except KeyError as error:
-            Log.error("从配置文件获取频道信息发生错误，退出任务 \n", error)
+            Log.error("从配置文件获取频道信息发生错误，退出任务", error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("请选择你要推送的频道",
@@ -188,7 +188,7 @@ class Post(BasePlugins):
                 if message.text == channel_info["name"]:
                     channel_id = channel_info["chat_id"]
         except KeyError as error:
-            Log.error("从配置文件获取频道信息发生错误，退出任务 \n", error)
+            Log.error("从配置文件获取频道信息发生错误，退出任务", error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if channel_id == -1:
@@ -246,7 +246,7 @@ class Post(BasePlugins):
                 if post_handler_data.channel_id == channel_info["chat_id"]:
                     channel_name = channel_info["name"]
         except KeyError as error:
-            Log.error("从配置文件获取频道信息发生错误，退出任务 \n", error)
+            Log.error("从配置文件获取频道信息发生错误，退出任务", error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         post_text = post_handler_data.post_text
@@ -273,7 +273,7 @@ class Post(BasePlugins):
                 return ConversationHandler.END
         except (BadRequest, TypeError) as error:
             await message.reply_text("图片获取错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
-            Log.error("Post模块图片获取错误 \n", error)
+            Log.error("Post模块图片获取错误", error)
             return ConversationHandler.END
         await message.reply_text("推送成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END

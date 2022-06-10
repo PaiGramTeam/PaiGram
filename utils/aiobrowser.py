@@ -20,7 +20,7 @@ class AioBrowser:
         except (KeyboardInterrupt, SystemExit):
             pass
         except Exception as exc:
-            Log.error("启动浏览器失败 \n")
+            Log.error("启动浏览器失败")
             raise exc
 
     async def _browser_init(self) -> Browser:

@@ -36,5 +36,5 @@ class Help(BasePlugins):
                 await message.reply_photo(self.file_id, allow_sending_without_reply=True)
             except BadRequest as error:
                 self.file_id = None
-                Log.error("发送图片失败，尝试清空已经保存的file_id，错误信息为 \n", error)
+                Log.error("发送图片失败，尝试清空已经保存的file_id，错误信息为", error)
                 await message.reply_text("发送图片失败", allow_sending_without_reply=True)

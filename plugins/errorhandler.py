@@ -22,10 +22,15 @@ except KeyError as error:
 
 
 async def send_user_notification(update: Update, _: CallbackContext, text: str):
+    effective_user = update.effective_user
     if update.callback_query is None:
         message = update.message
     else:
         message = update.callback_query.message
+    chat = message.chat
+    Log.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
+             f"在 {chat.full_name}[{chat.id}]"
+             f"的 错误信息[{text}]")
     try:
         await message.reply_text(text, reply_markup=ReplyKeyboardRemove(), allow_sending_without_reply=True)
     except BadRequest as exc:
@@ -53,27 +58,27 @@ def conversation_error_handler(func: Callable) -> Callable:
         try:
             return await func(*args, **kwargs)
         except ClientConnectorError as exc:
-            Log.error("服务器请求ConnectTimeout \n", exc)
+            Log.error("服务器请求ConnectTimeout", exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
         except ConnectTimeout as exc:
-            Log.error("服务器请求ConnectTimeout \n", exc)
+            Log.error("服务器请求ConnectTimeout", exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
         except TimedOut as exc:
-            Log.error("服务器请求ConnectTimeout \n", exc)
+            Log.error("服务器请求ConnectTimeout", exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
         except InvalidCookies as exc:
-            Log.warning("Cookie错误 \n", exc)
+            Log.warning("Cookie错误", exc)
             await send_user_notification(update, context, "Cookies已经过期，请尝试重新绑定账户")
             return ConversationHandler.END
         except TooManyRequests as exc:
-            Log.warning("Cookie错误 \n", exc)
+            Log.warning("Cookie错误", exc)
             await send_user_notification(update, context, "Cookies已经过期，请尝试重新绑定账户")
             return ConversationHandler.END
         except GenshinException as exc:
-            Log.warning("GenshinException \n", exc)
+            Log.warning("GenshinException", exc)
             await send_user_notification(update, context,
                                          f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常")
             return ConversationHandler.END
@@ -126,7 +131,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
                 try:
                     await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
                 except BadRequest as exc_1:
-                    Log.error("处理函数时发生异常 \n", exc_1)
+                    Log.error("处理函数时发生异常", exc_1)
     effective_user = update.effective_user
     try:
         message = update.message
