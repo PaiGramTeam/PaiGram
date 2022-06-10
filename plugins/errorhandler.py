@@ -74,8 +74,8 @@ def conversation_error_handler(func: Callable) -> Callable:
             await send_user_notification(update, context, "Cookies已经过期，请尝试重新绑定账户")
             return ConversationHandler.END
         except TooManyRequests as exc:
-            Log.warning("Cookie错误", exc)
-            await send_user_notification(update, context, "Cookies已经过期，请尝试重新绑定账户")
+            Log.warning("查询次数太多（操作频繁）", exc)
+            await send_user_notification(update, context, "当天查询次数已经超过30次，请次日再进行查询")
             return ConversationHandler.END
         except GenshinException as exc:
             Log.warning("GenshinException", exc)
