@@ -36,7 +36,7 @@ class Auth:
         self.send_time = time.time()
         self.generator = Generator(MT19937(int(self.send_time)))
         self.time_out = 120
-        self.kick_time = 1200
+        self.kick_time = 120
 
     def random(self, low: int, high: int) -> int:
         if self.send_time + 24 * 60 * 60 >= time.time():
