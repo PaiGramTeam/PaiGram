@@ -2,20 +2,24 @@ body {
     background-color: #f5f6fb;
 }
 
+.page-container {
+    border: 1px solid #e0dad3;
+    background-color: #f0ece8;
+    box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
+}
+
 .base-weapon-info {
-    background-color: coral;
 }
 
 .base-weapon-info-type {
 }
 
 .stat-progression-1 {
-    background-color: coral;
 }
 
 .base-weapon-info-source {
     overflow: hidden;
-    border: 4px solid #ebebeb;
+    border: 4px solid #e0dad3;
 }
 
 .base-weapon-info-source-img {
@@ -23,17 +27,15 @@ body {
 }
 
 .stat-progression-2 {
-    background-color: coral;
 }
 
 .ascension-materials {
-    background-color: coral;
 }
 
 .special-ability {
-    background-color: coral;
 }
 
 .ascension-materials-info {
     overflow: hidden;
+    border: 1px solid #e0dad3;
 }

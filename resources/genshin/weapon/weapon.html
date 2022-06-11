@@ -7,21 +7,21 @@
     <link type="text/css" href="./weapon.css" rel="stylesheet">
 </head>
 <body>
-<div class="container mx-auto px-6 py-6 max-w-lg" id="container">
-    <div class="base-weapon-info rounded-xl flex mb-4">
-        <div class="base-weapon-info-name flex-grow m-5 ml-2 text-4xl text-white">
+<div class="page-container container mx-auto my-6 rounded-xl px-6 py-6 max-w-lg flex flex-col divide-y divide-inherit" id="container">
+    <div class="base-weapon-info flex py-2">
+        <div class="base-weapon-info-name flex-grow m-5 ml-2 font-thin text-4xl">
             <h1>{{weapon_name}}</h1>
         </div>
         <div class="base-weapon-info-type-img m-2 mr-8 flex-shrink h-16 w-16">
             <img src="{{weapon_info_type_img}}">
         </div>
     </div>
-    <div class="stat-progression-1 rounded-xl flex mb-4">
-        <div class="flex-grow m-2 text-white">
-            <div class="stat-progression-secondary-stat-value mt-2 text-4xl text-white">
+    <div class="stat-progression-1 flex py-2">
+        <div class="flex-grow m-2">
+            <div class="stat-progression-secondary-stat-value mt-2 font-thin text-4xl">
                 <h1>{{progression_secondary_stat_value}}</h1>
             </div>
-            <div class="stat-progression-secondary-stat-name mt-2 text-1xl text-white">
+            <div class="stat-progression-secondary-stat-name mt-2 text-1xl">
                 <h2>{{progression_secondary_stat_name}}</h2>
             </div>
         </div>
@@ -29,31 +29,31 @@
             <img class="base-weapon-info-source-img object-contain w-full h-full" src="{{weapon_info_source_img}}">
         </div>
     </div>
-    <div class="stat-progression-2 rounded-xl flex mb-4">
-        <div class="flex-grow m-2 text-white">
-            <div class="stat-progression-level  text-base font-bold text-white">
+    <div class="stat-progression-2 flex py-2">
+        <div class="flex-grow m-2">
+            <div class="stat-progression-level text-base font-semibold">
                 <h1>Lv.90</h1>
             </div>
-            <div class="stat-progression-base-atk text-base text-white">
+            <div class="stat-progression-base-atk text-base">
                 <h2>攻击力 {{progression_base_atk}}</h2>
             </div>
         </div>
     </div>
-    <div class="ascension-materials rounded-xl mb-4">
+    <div class="ascension-materials py-2">
         <div class="flex">
             {% for weapon_info_source in weapon_info_source_list %}
-            <div class="ascension-materials-info m-2 rounded-full flex-shrink w-16 h-16">
+            <div class="ascension-materials-info m-2 p-1 rounded-full flex-shrink w-16 h-16">
                 <img class="base-weapon-info-source-img object-contain w-full h-full" src="{{weapon_info_source}}">
             </div>
             {% endfor %}
         </div>
     </div>
-    <div class="special-ability rounded-xl flex mb-4">
-        <div class="special-ability-box flex-grow m-2 text-white">
-            <div class="special-ability-name  text-base font-bold text-white">
+    <div class="special-ability flex py-2">
+        <div class="special-ability-box flex-grow m-2">
+            <div class="special-ability-name pb-2 text-base font-semibold text-gray-700">
                 <h1>{{special_ability_name}}</h1>
             </div>
-            <div class="special-ability-info text-base text-white">
+            <div class="special-ability-info text-base">
                 <samp>{{special_ability_info}}</samp>
             </div>
         </div>
