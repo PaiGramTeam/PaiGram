@@ -5,6 +5,13 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: "hywh";
+    src: url("../fonts/汉仪文黑-85W.ttf");
+    font-weight: normal;
+    font-style: normal;
+}
+
 body {
-    font-family: "seguiemj", emoji;
+    font-family: "hywh", "seguiemj", emoji;
 }
