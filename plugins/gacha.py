@@ -39,8 +39,8 @@ class Gacha(BasePlugins):
         Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求")
         args = context.args
         gacha_name = "角色活动"
-        if len(args) > 1:
-            gacha_name = args[1]
+        if len(args) >= 1:
+            gacha_name = args[0]
             for key, value in {"2": "角色活动-2", "武器": "武器活动", "普通": "常驻"}.items():
                 if key == gacha_name:
                     gacha_name = value

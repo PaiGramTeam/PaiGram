@@ -36,8 +36,8 @@ class Weapon(BasePlugins):
                     self._add_delete_message_job(context, message.chat_id, message.message_id)
                     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
                 return
-        elif len(args) >= 2:
-            weapon_name = args[1]
+        elif len(args) >= 1:
+            weapon_name = args[0]
         else:
             reply_message = await message.reply_text("请回复你要查询的武器", reply_markup=InlineKeyboardMarkup(keyboard))
             if filters.ChatType.GROUPS.filter(reply_message):
