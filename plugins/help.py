@@ -25,7 +25,7 @@ class Help(BasePlugins):
         Log.info(f"用户 {user.full_name}[{user.id}] 发出help命令")
         if self.file_id is None or config.DEBUG:
             await message.reply_chat_action(ChatAction.TYPING)
-            help_png = await self.service.template.render('bot', "help.html", {}, {"width": 768, "height": 768})
+            help_png = await self.service.template.render('bot/help', "help.html", {}, {"width": 768, "height": 768})
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             reply_photo = await message.reply_photo(help_png, filename="help.png", allow_sending_without_reply=True)
             photo = reply_photo.photo[0]
