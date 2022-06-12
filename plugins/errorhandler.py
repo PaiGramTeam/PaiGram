@@ -84,7 +84,7 @@ def conversation_error_handler(func: Callable) -> Callable:
             return ConversationHandler.END
         except BadRequest as exc:
             Log.warning("python-telegram-bot请求错误", exc)
-            await send_user_notification(update, context, f"telegram-bot-api请求错误 错误信息为 {str(error)}")
+            await send_user_notification(update, context, f"telegram-bot-api请求错误 错误信息为 {str(exc)}")
             return ConversationHandler.END
 
     return decorator
