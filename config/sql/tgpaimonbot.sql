@@ -10,7 +10,7 @@ CREATE TABLE `admin`  (
   `user_id` bigint(20) UNSIGNED NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for answer
@@ -24,13 +24,13 @@ CREATE TABLE `answer`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `question_id`(`question_id`) USING BTREE,
   CONSTRAINT `answer_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 355 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 360 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for chat
 -- ----------------------------
 DROP TABLE IF EXISTS `chat`;
-CREATE TABLE `char`  (
+CREATE TABLE `chat`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `chat_id` bigint(20) UNSIGNED NOT NULL,
   `is_authorize` int(10) UNSIGNED NULL DEFAULT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE `hoyoverse_cookie`  (
   `cookie` varchar(2000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`, `user_id`) USING BTREE,
   UNIQUE INDEX `user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for job
@@ -56,9 +56,10 @@ CREATE TABLE `hoyoverse_cookie`  (
 DROP TABLE IF EXISTS `job`;
 CREATE TABLE `job`  (
   `id` int(11) NOT NULL,
-  `job` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `job_status` int(11) NULL DEFAULT NULL,
-  `last_time` datetime(0) NULL DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `time` date NULL DEFAULT NULL,
+  `last_time` date NULL DEFAULT NULL,
+  `status` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
@@ -72,7 +73,7 @@ CREATE TABLE `mihoyo_cookie`  (
   `cookie` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`, `user_id`) USING BTREE,
   UNIQUE INDEX `user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 30 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for question
@@ -82,7 +83,20 @@ CREATE TABLE `question`  (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `question` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 88 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Redundant;
+) ENGINE = InnoDB AUTO_INCREMENT = 89 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Redundant;
+
+-- ----------------------------
+-- Table structure for sign
+-- ----------------------------
+DROP TABLE IF EXISTS `sign`;
+CREATE TABLE `sign`  (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NULL DEFAULT NULL,
+  `time` datetime(0) NULL DEFAULT NULL,
+  `last_time` datetime(0) NULL DEFAULT NULL,
+  `status` int(11) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for user
@@ -96,7 +110,7 @@ CREATE TABLE `user`  (
   `service` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id`, `user_id`) USING BTREE,
   UNIQUE INDEX `user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 51 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- View structure for quiz
