@@ -176,7 +176,11 @@ class Uid(BasePlugins):
             return self.COMMAND_RESULT
         else:
             await update.message.reply_chat_action(ChatAction.TYPING)
-            png_data = await self._start_get_user_info(user_info, user_info.service, uid)
+            try:
+                png_data = await self._start_get_user_info(user_info, user_info.service, uid)
+            except AttributeError:
+                await update.message.reply_text("角色数据异常，请登录官方查看【我的角色】是否显示正常")
+                return ConversationHandler.END
             await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             await update.message.reply_photo(png_data, filename=f"{user_info.user_id}.png",
                                              allow_sending_without_reply=True)
@@ -195,7 +199,11 @@ class Uid(BasePlugins):
             service = ServiceEnum.HOYOLAB
         else:
             return ConversationHandler.END
-        png_data = await self._start_get_user_info(get_user_command_data.user_info, service)
+        try:
+            png_data = await self._start_get_user_info(get_user_command_data.user_info, service)
+        except AttributeError:
+            await update.message.reply_text("角色数据异常，请登录官方查看【我的角色】是否显示正常")
+            return ConversationHandler.END
         await query.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await query.message.reply_photo(png_data, filename=f"{get_user_command_data.user_info.user_id}.png",
                                         allow_sending_without_reply=True)
