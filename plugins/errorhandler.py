@@ -71,7 +71,12 @@ def conversation_error_handler(func: Callable) -> Callable:
             return ConversationHandler.END
         except InvalidCookies as exc:
             Log.warning("Cookie错误", exc)
-            await send_user_notification(update, context, "Cookies已经过期，请尝试重新绑定账户")
+            if "10001" in str(exc):
+                await send_user_notification(update, context, "Cookies无效，请尝试重新绑定账户")
+            elif "10103" in str(exc):
+                await send_user_notification(update, context, "Cookie有效，但没有绑定到游戏帐户。")
+            else:
+                await send_user_notification(update, context, "Cookies无效，具体原因未知")
             return ConversationHandler.END
         except TooManyRequests as exc:
             Log.warning("查询次数太多（操作频繁）", exc)
