@@ -23,6 +23,9 @@ class Characters:
         soup = await self._get_soup(self.CHARACTERS_LIST_URL)
         character_list = soup.find_all('div', {'class': 'char_sea_cont'})
         for character in character_list:
+            name = character.find("span", {"class": "sea_charname"}).text
+            if "旅行者" in name:
+                continue
             character_link = self.ROOT_URL + character.a['href']
             url_list.append(character_link)
         return url_list
@@ -178,8 +181,8 @@ class Characters:
         char_pic_area = main_content.find('span', string='Character Gallery').find_next_sibling()
         all_char_pic = char_pic_area.find("div", {"class": "gallery_cont"})
 
-        gacha_splash_rext = all_char_pic.find("span", {"class": "gallery_cont_span"}, string="Gacha Splash")
-        gacha_splash_pic_url = self.ROOT_URL + gacha_splash_rext.previous_element.previous_element["data-src"].replace(
+        gacha_splash_text = all_char_pic.find("span", {"class": "gallery_cont_span"}, string="Gacha Splash")
+        gacha_splash_pic_url = self.ROOT_URL + gacha_splash_text.previous_element.previous_element["data-src"].replace(
             "_70", "")
         characters_info_dict["gacha_splash"] = gacha_splash_pic_url
 
