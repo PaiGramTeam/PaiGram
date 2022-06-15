@@ -28,17 +28,21 @@ class Weapons:
         "5001", "5101", "5201", "5404", "5404", "5405",
     ]  # 忽略的武器包括一星、二星武器，beta表格内无名武器，未上架到正服的武器
 
-    # 地址
+    # 根地址
     ROOT_URL = "https://genshin.honeyhunterworld.com"
-
-    # 正则表达式
-    # /db/weapon/w_3203/?lang=CHS
-    _GET_WEAPON_ID_BY_URL_RGX = re.compile(r"/db/[^.]+_(?P<weapon_id>\d+)")
 
     TEXT_MAPPING = {
         "Type": "类型",
         "Rarity": "Rarity",
         "Base Attack": "基础攻击力"
+    }
+
+    WEAPON_TYPE_MAPPING = {
+        "Sword": "https://genshin.honeyhunterworld.com/img/skills/s_33101.png",  # 单手剑
+        "Claymore": "https://genshin.honeyhunterworld.com/img/skills/s_163101.png",  # 双手剑
+        "Polearm": "https://genshin.honeyhunterworld.com/img/skills/s_233101.png",  # 长枪
+        "Bow": "https://genshin.honeyhunterworld.com/img/skills/s_213101.png",  # 弓箭
+        "Catalyst": "https://genshin.honeyhunterworld.com/img/skills/s_43101.png",  # 法器
     }
 
     def __init__(self):
@@ -53,19 +57,6 @@ class Weapons:
             self._monster_json: dict = ujson.load(f)
         with open(elite_file, "r", encoding="utf-8") as f:
             self._elite_json: dict = ujson.load(f)
-
-    def _get_weapon_id_by_url(self, url: str) -> int:
-        matches = self._GET_WEAPON_ID_BY_URL_RGX.search(url)
-        if matches is None:
-            return -1
-        entries = matches.groupdict()
-        if entries is None:
-            return -1
-        try:
-            art_id = int(entries.get('weapon_id'))
-        except (IndexError, ValueError, TypeError):
-            return -1
-        return art_id
 
     async def _get_soup(self, url: str) -> Optional[BeautifulSoup]:
         request = await self.client.get(url)
@@ -82,7 +73,7 @@ class Weapons:
             content = weapon_table_row.find_all("td")[2]
             if content.find("a") is not None:
                 weapon_url = self.ROOT_URL + content.find("a")["href"]
-                weapon_id = self._get_weapon_id_by_url(weapon_url)
+                weapon_id = str(get_id_form_url(weapon_url))
                 if weapon_id not in self.IGNORE_WEAPONS_ID:
                     weapon_url_list.append(weapon_url)
         return weapon_url_list
@@ -106,6 +97,7 @@ class Weapons:
         weapon_info_dict = {
             "name": "",
             "description": "",
+            "source_img": "",
             "atk":
                 {
                     "min": 0,
@@ -162,8 +154,10 @@ class Weapons:
         for weapon_info_ in weapon_info_row:
             content = weapon_info_.find_all("td")
             if len(content) == 3:  # 第一行会有三个td，其中一个td是武器图片
-                weapon_info_dict["source_img"] = content[0].find("img", {"class": "itempic lazy"})["data-src"]
+                weapon_info_dict["source_img"] = self.ROOT_URL + content[0].find("img",
+                                                                                 {"class": "itempic lazy"})["data-src"]
                 weapon_info_dict["type"]["name"] = content[2].text
+                weapon_info_dict["type"]["icon"] = self.get_weapon_type(content[2].text)
             elif len(content) == 2:
                 if content[0].text == "Rarity":
                     weapon_info_dict["star"]["value"] = len(
@@ -213,3 +207,6 @@ class Weapons:
 
     def get_elite(self, item_id: str):
         return self._elite_json.get(item_id, {})
+
+    def get_weapon_type(self, weapon_type: str):
+        return self.WEAPON_TYPE_MAPPING.get(weapon_type, "")
