@@ -6,7 +6,6 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from logger import Log
-from metadata.metadata import metadat
 from plugins.base import BasePlugins, RestrictsCalls
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService
@@ -24,9 +23,6 @@ class Gacha(BasePlugins):
         self.current_dir = os.getcwd()
         self.resources_dir = os.path.join(self.current_dir, "resources")
         self.character_gacha_card = {}
-        for character in metadat.characters:
-            name = character["Name"]
-            self.character_gacha_card[name] = character["GachaCard"]
         self.user_time = {}
 
     CHECK_SERVER, COMMAND_RESULT = range(10600, 10602)

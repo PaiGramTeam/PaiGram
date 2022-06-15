@@ -8,7 +8,6 @@ from telegram.ext import CallbackContext
 from telegram.helpers import escape_markdown
 
 from logger import Log
-from metadata.metadata import metadat
 from service import BaseService
 from service.base import QuestionData
 
@@ -87,7 +86,8 @@ class Inline:
                                                                           parse_mode=ParseMode.MARKDOWN_V2)
                         ))
             elif "查看角色攻略列表并查询" == args[0]:
-                for role_name in metadat.characters_name_list:
+                characters_list = await self.service.wiki.get_characters_name_list()
+                for role_name in characters_list:
                     results_list.append(
                         InlineQueryResultArticle(
                             id=str(uuid4()),
