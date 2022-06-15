@@ -5,7 +5,6 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, filters
 
 from logger import Log
-from metadata.metadata import metadat
 from metadata.shortname import weaponToName
 from model.helpers import url_to_file
 from plugins.base import BasePlugins
@@ -46,8 +45,9 @@ class Weapon(BasePlugins):
             return
         weapon_name = weaponToName(weapon_name)
         weapon_data = None
-        for weapon in metadat.weapons:
-            if weapon["Name"] == weapon_name:
+        weapons_list = await self.service.wiki.get_weapons_list()
+        for weapon in weapons_list:
+            if weapon["name"] == weapon_name:
                 weapon_data = weapon
         if weapon_data is None:
             reply_message = await message.reply_text(f"没有找到 {weapon_name}",
@@ -62,24 +62,24 @@ class Weapon(BasePlugins):
 
         async def input_template_data(_weapon_data):
             _template_data = {
-                "weapon_name": _weapon_data["Name"],
-                "weapon_info_type_img": await url_to_file(_weapon_data["Type"]),
-                "progression_secondary_stat_value": _weapon_data["SubStatValue"],
-                "progression_secondary_stat_name": _weapon_data["SubStat"],
-                "weapon_info_source_img": await url_to_file(_weapon_data["Source"]),
-                "progression_base_atk": _weapon_data["ATK"],
+                "weapon_name": _weapon_data["name"],
+                "weapon_info_type_img": await url_to_file(_weapon_data["type"]["icon"]),
+                "progression_secondary_stat_value": _weapon_data["secondary"]["max"],
+                "progression_secondary_stat_name": _weapon_data["secondary"]["name"],
+                "weapon_info_source_img": await url_to_file(_weapon_data["source_img"]),
+                "progression_base_atk": _weapon_data["atk"]["max"],
                 "weapon_info_source_list": [],
-                "special_ability_name": _weapon_data["Passive"],
-                "special_ability_info": _weapon_data["PassiveDescription"]["Lv1"],
+                "special_ability_name": _weapon_data["passive_ability"]["name"],
+                "special_ability_info": _weapon_data["passive_ability"]["description"],
             }
             _template_data["weapon_info_source_list"].append(
-                await url_to_file(_weapon_data["Ascension"]["Source"])
+                await url_to_file(_weapon_data["materials"]["ascension"]["icon"])
             )
             _template_data["weapon_info_source_list"].append(
-                await url_to_file(_weapon_data["Elite"]["Source"])
+                await url_to_file(_weapon_data["materials"]["elite"]["icon"])
             )
             _template_data["weapon_info_source_list"].append(
-                await url_to_file(_weapon_data["Monster"]["Source"])
+                await url_to_file(_weapon_data["materials"]["monster"]["icon"])
             )
             return _template_data
 

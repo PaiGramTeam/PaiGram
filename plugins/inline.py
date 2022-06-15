@@ -76,7 +76,8 @@ class Inline:
                     for quiz in quiz_info:
                         await append_quiz(results_list, quiz)
             if "查看武器列表并查询" == args[0]:
-                for weapons_name in metadat.weapons_name_list:
+                weapons_list = await self.service.wiki.get_weapons_name_list()
+                for weapons_name in weapons_list:
                     results_list.append(
                         InlineQueryResultArticle(
                             id=str(uuid4()),
