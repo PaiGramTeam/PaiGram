@@ -35,7 +35,7 @@ class TestWiki(IsolatedAsyncioTestCase):
 
     async def test_get_all_weapon_url(self):
         url_list = await self.weapons.get_all_weapon_url()
-        self.assertEqual(True, len(url_list) >= 135)
+        self.assertEqual(True, len(url_list) >= 123)
 
     async def test_get_characters(self):
         characters_info = await self.characters.get_characters(self.TEST_CHARACTERS_URL)
@@ -44,6 +44,10 @@ class TestWiki(IsolatedAsyncioTestCase):
         self.assertEqual(characters_info["rarity"], 5)
         self.assertEqual(characters_info["description"], "「往生堂」七十七代堂主，年纪轻轻就已主掌璃月的葬仪事务。")
         self.assertEqual(characters_info["allegiance"], "往生堂")
+
+    async def test_get_all_characters_url(self):
+        url_list = await self.characters.get_all_characters_url()
+        self.assertEqual(True, len(url_list) >= 49)
 
 
 if __name__ == "__main__":
