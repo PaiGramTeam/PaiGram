@@ -1,0 +1,85 @@
+{
+  "504": {
+    "city": "Mondstadt",
+    "name": "高塔孤王",
+    "star": {
+      "value": 5,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/5star.png"
+    },
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/weapon/i_504.png"
+  },
+  "524": {
+    "city": "Mondstadt",
+    "name": "凛风奔狼",
+    "star": {
+      "value": 5,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/5star.png"
+    },
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/weapon/i_524.png"
+  },
+  "544": {
+    "city": "Mondstadt",
+    "name": "狮牙斗士",
+    "star": {
+      "value": 5,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/5star.png"
+    },
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/weapon/i_544.png"
+  },
+  "514": {
+    "city": "Liyue",
+    "name": "孤云寒林",
+    "star": {
+      "value": 5,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/5star.png"
+    },
+    "Key": "Weapon_Guyun",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/weapon/i_514.png"
+  },
+  "534": {
+    "city": "Liyue",
+    "name": "雾海云间",
+    "star": {
+      "value": 5,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/5star.png"
+    },
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/weapon/i_534.png"
+  },
+  "554": {
+    "city": "Liyue",
+    "name": "漆黑陨铁",
+    "star": {
+      "value": 5,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/5star.png"
+    },
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/weapon/i_554.png"
+  },
+  "564": {
+    "city": "Inazuma",
+    "name": "远海夷地",
+    "star": {
+      "value": 5,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/5star.png"
+    },
+    "Key": "Weapon_DistantSea",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/weapon/i_564.png"
+  },
+  "574": {
+    "city": "Inazuma",
+    "name": "鸣神御灵",
+    "star": {
+      "value": 5,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/5star.png"
+    },
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/weapon/i_574.png"
+  },
+  "584": {
+    "city": "Inazuma",
+    "name": "今昔剧画",
+    "star": {
+      "value": 5,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/5star.png"
+    },
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/weapon/i_584.png"
+  }
+}

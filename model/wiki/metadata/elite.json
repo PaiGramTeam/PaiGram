@@ -1,0 +1,92 @@
+{
+  "63": {
+    "name": "号角",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_Horn",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_63.png"
+  },
+  "73": {
+    "name": "地脉",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_LeyLine",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_73.png"
+  },
+  "83": {
+    "name": "混沌",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_Chaos",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_83.png"
+  },
+  "93": {
+    "name": "雾虚",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_MistGrass",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_93.png"
+  },
+  "103": {
+    "name": "祭刀",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_SacrificialKnife",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_103.png"
+  },
+  "143": {
+    "name": "骨片",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_BoneShard",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_143.png"
+  },
+  "153": {
+    "name": "刻像",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_Statuette",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_153.png"
+  },
+  "173": {
+    "name": "混沌2",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_Chaos2",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_173.png"
+  },
+  "176": {
+    "name": "隐兽",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_Concealed",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_176.png"
+  },
+  "183": {
+    "name": "棱镜",
+    "star": {
+      "value": 4,
+      "icon": "https://genshin.honeyhunterworld.com/img/back/item/4star.png"
+    },
+    "key": "Elite_Prism",
+    "icon": "https://genshin.honeyhunterworld.com/img/upgrade/material/i_183.png"
+  }
+}
