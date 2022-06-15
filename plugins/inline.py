@@ -1,5 +1,4 @@
 from typing import cast
-from urllib.parse import urlparse, urlencode, ParseResult
 from uuid import uuid4
 
 from telegram import InlineQueryResultArticle, InputTextMessageContent, Update, InlineQuery, InlineQueryResultPhoto
@@ -76,32 +75,6 @@ class Inline:
                             ))
                     for quiz in quiz_info:
                         await append_quiz(results_list, quiz)
-            for character_name in metadat.characters_name_list:
-                if args[0] in character_name:
-                    url = await self.service.get_game_info.get_characters_cultivation_atlas(character_name)
-                    if url != "":
-                        title = f"{character_name}角色攻略"
-                        description = f"{character_name}角色攻略"
-
-                        def url_add_params(_url: str, _params: dict):
-                            _pr = urlparse(_url)
-                            _prlist = list(_pr)
-                            _prlist[4] = urlencode(_params)
-                            return ParseResult(*_prlist).geturl()
-
-                        caption = f"Form 米游社 西风驿站 查看 [原图]({url})"
-                        results_list.append(
-                            InlineQueryResultPhoto(
-                                id=str(uuid4()),
-                                photo_url=url + "?x-oss-process=format,jpg",
-                                thumb_url=url_add_params(url, self.service.get_game_info.hyperion.get_images_params(
-                                    resize=300)),
-                                title=title,
-                                caption=caption,
-                                parse_mode=ParseMode.MARKDOWN_V2,
-                                description=description
-                            )
-                        )
             if "查看武器列表并查询" == args[0]:
                 for weapons_name in metadat.weapons_name_list:
                     results_list.append(
