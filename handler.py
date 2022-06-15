@@ -18,6 +18,7 @@ from plugins.start import start, ping, reply_keyboard_remove, unknown_command
 from plugins.strategy import Strategy
 from plugins.uid import Uid
 from plugins.weapon import Weapon
+from plugins.wiki import Wiki
 from service import BaseService
 
 
@@ -66,6 +67,8 @@ def register_handlers(application: Application, service: BaseService):
     add_handler(weapon.command_start, command="weapon", regex=r"^武器查询(.*)")
     strategy = Strategy(service)
     add_handler(strategy.command_start, command="strategy", regex=r"^角色攻略查询(.*)")
+    wiki = Wiki(service)
+    add_handler(wiki.refresh_wiki, command="wiki_refresh")
     # 调试功能
     add_handler(reply_keyboard_remove, command="reply_keyboard_remove")
     add_handler(admin.leave_chat, command="leave_chat")

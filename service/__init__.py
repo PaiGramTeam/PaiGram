@@ -6,6 +6,7 @@ from service.quiz import QuizService
 from service.repository import AsyncRepository
 from service.template import TemplateService
 from service.user import UserInfoFormDB
+from service.wiki import Wiki
 from utils.aiobrowser import AioBrowser
 from utils.mysql import MySQL
 from utils.redisdb import RedisDB
@@ -24,6 +25,7 @@ class BaseService:
         self.gacha = GachaService(self.repository, self.cache)
         self.admin = AdminService(self.repository, self.cache)
         self.template = TemplateService(browser)
+        self.wiki = Wiki(redis)
 
 
 class StartService(BaseService):
