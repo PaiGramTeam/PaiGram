@@ -2,7 +2,6 @@ from base64 import b64encode
 from random import choice
 
 import httpx
-import ujson
 
 
 class ArtifactORCRate:
