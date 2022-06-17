@@ -144,7 +144,7 @@ class Characters:
         # skillE_table = skillE_table_area.find_all('tr')
 
         load_another_talent_q: bool = False
-        if char_name == "神里绫华" or char_name == "莫娜":
+        if char_name in ("神里绫华", "莫娜"):
             load_another_talent_q = True
 
         skill_q_area = skill_e_table_area.find_next_sibling()
