@@ -11,7 +11,7 @@ head = {
 }
 
 class Artifact:
-    async def get_artifact_attr(b64_str):
+    async def get_artifact_attr(self, b64_str):
         upload_json = json.dumps(
             {
                 "image": b64_str
