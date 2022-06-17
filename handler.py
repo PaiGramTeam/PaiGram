@@ -3,6 +3,7 @@ from typing import Optional
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, InlineQueryHandler, Application
 
 from plugins.admin import Admin
+from plugins.artifact_rate import ArtifactRate
 from plugins.auth import Auth
 from plugins.base import NewChatMembersHandler
 from plugins.cookies import Cookies
@@ -69,6 +70,8 @@ def register_handlers(application: Application, service: BaseService):
     add_handler(strategy.command_start, command="strategy", regex=r"^角色攻略查询(.*)")
     wiki = Wiki(service)
     add_handler(wiki.refresh_wiki, command="wiki_refresh")
+    artifact_rate_handler = ArtifactRate.create_conversation_handler(service)
+    application.add_handler(artifact_rate_handler)
     # 调试功能
     add_handler(reply_keyboard_remove, command="reply_keyboard_remove")
     add_handler(admin.leave_chat, command="leave_chat")
