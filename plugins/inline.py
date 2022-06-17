@@ -1,7 +1,7 @@
 from typing import cast
 from uuid import uuid4
 
-from telegram import InlineQueryResultArticle, InputTextMessageContent, Update, InlineQuery, InlineQueryResultPhoto
+from telegram import InlineQueryResultArticle, InputTextMessageContent, Update, InlineQuery
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext

@@ -4,7 +4,7 @@ import time
 from typing import Tuple
 
 from numpy.random import Generator, MT19937
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, User
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
