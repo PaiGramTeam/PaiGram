@@ -11,6 +11,7 @@ head = {
 }
 
 class Artifact:
+    @staticmethod
     async def get_artifact_attr(self, b64_str):
         upload_json = json.dumps(
             {
@@ -26,7 +27,7 @@ class Artifact:
             return {"err": "未知错误", "full": data}
         return data
 
-
+    @staticmethod
     async def rate_artifact(artifact_attr: dict):
         upload_json_str = json.dumps(artifact_attr, ensure_ascii=False).encode('utf-8')
         try:
