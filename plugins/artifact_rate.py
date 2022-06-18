@@ -25,7 +25,7 @@ class ArtifactRate(BasePlugins):
     LEVEL_KEYBOARD = [[
         InlineKeyboardButton(
             f"{i * 5 + j}", callback_data=f"artifact_orc_rate_data|level|{i * 5 + j}") for j in range(1, 6)
-    ] for i in range(0, 5)]
+    ] for i in range(0, 4)]
 
     def __init__(self, service: BaseService):
         super().__init__(service)
@@ -89,11 +89,11 @@ class ArtifactRate(BasePlugins):
         artifact_attr = artifact_attr_req.json()
         context.user_data["artifact_attr"] = artifact_attr
         if artifact_attr.get("star") is None:
-            await message.reply_text("无法识别圣遗物星级，请点击数字",
+            await message.reply_text("无法识别圣遗物星级，请选择圣遗物星级",
                                      reply_markup=InlineKeyboardMarkup(self.STAR_KEYBOARD))
             return self.COMMAND_RESULT
         if artifact_attr.get("level") is None:
-            await message.reply_text("无法识别圣遗物等级，请点击数字",
+            await message.reply_text("无法识别圣遗物等级，请选择圣遗物等级",
                                      reply_markup=InlineKeyboardMarkup(self.LEVEL_KEYBOARD))
             return self.COMMAND_RESULT
         reply_message = await message.reply_text("识图成功！\n"
@@ -131,11 +131,11 @@ class ArtifactRate(BasePlugins):
             await query.edit_message_text("数据错误")
             return ConversationHandler.END
         if artifact_attr.get("level") is None:
-            await query.edit_message_text("无法识别圣遗物等级，请点击数字",
+            await query.edit_message_text("无法识别圣遗物等级，请选择圣遗物等级",
                                           reply_markup=InlineKeyboardMarkup(self.LEVEL_KEYBOARD))
             return self.COMMAND_RESULT
         if artifact_attr.get("star") is None:
-            await query.edit_message_text("无法识别圣遗物星级，请点击数字",
+            await query.edit_message_text("无法识别圣遗物星级，请选择圣遗物星级",
                                           reply_markup=InlineKeyboardMarkup(self.STAR_KEYBOARD))
             return self.COMMAND_RESULT
         await query.edit_message_text("正在评分中...")
