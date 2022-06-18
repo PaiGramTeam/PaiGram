@@ -3,7 +3,6 @@ import random
 import time
 from typing import Tuple
 
-from numpy.random import Generator, MT19937
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
@@ -12,6 +11,7 @@ from telegram.helpers import escape_markdown
 
 from logger import Log
 from model.helpers import get_admin_list
+from model.random import MT19937_Random
 from service import BaseService
 
 FullChatPermissions = ChatPermissions(
@@ -33,16 +33,9 @@ class Auth:
 
     def __init__(self, service: BaseService):
         self.service = service
-        self.send_time = time.time()
-        self.generator = Generator(MT19937(int(self.send_time)))
         self.time_out = 120
         self.kick_time = 120
-
-    def random(self, low: int, high: int) -> int:
-        if self.send_time + 24 * 60 * 60 >= time.time():
-            self.send_time = time.time()
-            self.generator = Generator(MT19937(int(self.send_time)))
-        return int(self.generator.uniform(low, high))
+        self.random = MT19937_Random()
 
     async def kick_member(self, context: CallbackContext, chat_id: int, user_id: int) -> bool:
         Log.debug(f"踢出用户 user_id[{user_id}] 在 chat_id[{chat_id}]")
@@ -229,7 +222,7 @@ class Auth:
                     return
                 else:
                     raise err
-            index = self.random(0, len(question_id_list))
+            index = self.random.random(0, len(question_id_list))
             question = await self.service.quiz_service.get_question(question_id_list[index])
             options = []
             for answer_id in question["answer_id"]:

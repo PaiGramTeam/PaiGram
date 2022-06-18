@@ -1,9 +1,7 @@
 import random
 import re
-import time
 from typing import List, Optional
 
-from numpy.random import MT19937, Generator
 from redis import DataError, ResponseError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, Poll, \
     ReplyKeyboardRemove, Message
@@ -12,6 +10,7 @@ from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, M
 from telegram.helpers import escape_markdown
 
 from logger import Log
+from model.random import MT19937_Random
 from plugins.base import BasePlugins, RestrictsCalls
 from service import BaseService
 from service.base import QuestionData, AnswerData
@@ -38,10 +37,9 @@ class Quiz(BasePlugins):
     def __init__(self, service: BaseService):
         super().__init__(service)
         self.user_time = {}
-        self.send_time = time.time()
-        self.generator = Generator(MT19937(int(self.send_time)))
         self.service = service
         self.time_out = 120
+        self.random = MT19937_Random()
 
     @staticmethod
     def create_conversation_handler(service: BaseService):
@@ -67,12 +65,6 @@ class Quiz(BasePlugins):
         )
         return quiz_handler
 
-    def random(self, low: int, high: int) -> int:
-        if self.send_time + 24 * 60 * 60 >= time.time():
-            self.send_time = time.time()
-            self.generator = Generator(MT19937(int(self.send_time)))
-        return int(self.generator.uniform(low, high))
-
     async def send_poll(self, update: Update) -> Optional[Message]:
         chat = update.message.chat
         user = update.effective_user
@@ -83,7 +75,7 @@ class Quiz(BasePlugins):
                 await update.message.reply_text("旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
         if len(question_id_list) == 0:
             return None
-        index = self.random(0, len(question_id_list))
+        index = self.random.random(0, len(question_id_list))
         question = await self.service.quiz_service.get_question(question_id_list[index])
         _options = []
         correct_option = None
