@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from bs4 import BeautifulSoup
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InputMediaPhoto
-from telegram.constants import ParseMode
+from telegram.constants import ParseMode, MessageLimit
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, MessageHandler, filters
 from telegram.helpers import escape_markdown
@@ -11,6 +11,7 @@ from config import config
 from logger import Log
 from model.apihelper import Hyperion, ArtworkImage
 from plugins.base import BasePlugins
+from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 
 
@@ -18,6 +19,7 @@ class PostHandlerData:
     """
     文章推送
     """
+
     def __init__(self):
         self.post_text: str = ""
         self.post_images: Optional[List[ArtworkImage]] = None
@@ -54,6 +56,7 @@ class Post(BasePlugins):
         )
         return post_handler
 
+    @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
@@ -73,6 +76,7 @@ class Post(BasePlugins):
         await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return self.CHECK_POST
 
+    @conversation_error_handler
     async def check_post(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.message
@@ -120,6 +124,7 @@ class Post(BasePlugins):
         await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return self.CHECK_COMMAND
 
+    @conversation_error_handler
     async def check_command(self, update: Update, context: CallbackContext) -> int:
         message = update.message
         if message.text == "退出":
@@ -143,6 +148,7 @@ class Post(BasePlugins):
                                  f"当前一共有 {photo_len} 张图片")
         return self.GTE_DELETE_PHOTO
 
+    @conversation_error_handler
     async def get_delete_photo(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         photo_len = len(post_handler_data.post_images)
@@ -179,6 +185,7 @@ class Post(BasePlugins):
                                  reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return self.GET_POST_CHANNEL
 
+    @conversation_error_handler
     async def get_post_channel(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.message
@@ -205,6 +212,7 @@ class Post(BasePlugins):
         await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符")
         return self.GET_TAGS
 
+    @conversation_error_handler
     async def get_tags(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.message
@@ -221,6 +229,7 @@ class Post(BasePlugins):
         await message.reply_text("请回复替换的文本")
         return self.GET_TEXT
 
+    @conversation_error_handler
     async def get_edit_text(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.message
@@ -232,6 +241,7 @@ class Post(BasePlugins):
         return self.CHECK_COMMAND
 
     @staticmethod
+    @conversation_error_handler
     async def send_post(update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.message

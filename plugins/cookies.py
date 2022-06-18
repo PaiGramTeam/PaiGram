@@ -48,6 +48,7 @@ class Cookies(BasePlugins):
         )
         return cookies_handler
 
+    @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         Log.info(f"用户 {user.full_name}[{user.id}] 绑定账号命令请求")
@@ -63,6 +64,7 @@ class Cookies(BasePlugins):
 
         return self.CHECK_SERVER
 
+    @conversation_error_handler
     async def check_server(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         cookies_command_data: CookiesCommandData = context.chat_data.get("cookies_command_data")
@@ -163,6 +165,7 @@ class Cookies(BasePlugins):
                                                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return self.COMMAND_RESULT
 
+    @conversation_error_handler
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         cookies_command_data: CookiesCommandData = context.chat_data.get("cookies_command_data")
