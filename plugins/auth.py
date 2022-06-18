@@ -201,14 +201,14 @@ class Auth:
         chat = message.chat
         for user in message.new_chat_members:
             if user.id == context.bot.id:
-                message.new_chat_members.remove(user)
+                return
             Log.info(f"用户 {user.full_name}[{user.id}] 尝试加入群 {chat.title}[{chat.id}]")
         if message.from_user.id in await get_admin_list(
                 bot=context.bot,
                 cache=self.service.cache,
                 chat_id=chat.id,
                 extra_user=[]
-        ) and len(message.new_chat_members) >= 1:
+        ):
             await message.reply_text("派蒙检测到管理员邀请，自动放行了！")
             return
         for user in message.new_chat_members:
