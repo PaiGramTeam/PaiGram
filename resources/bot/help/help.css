@@ -7,7 +7,7 @@ body {
 }
 
 .info {
-    background: url(background/2020021114213984258.jpg) no-repeat center;
+    background: url(background/2020021114213984258.png) no-repeat center;
     box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
     background-size: 780px 120px;
 }
@@ -62,8 +62,8 @@ body {
 }
 
 .genshin-background img {
-    margin-left: 10px;
-    margin-top: -10px;
+    margin-left: 150px;
+    margin-top: 100px;
     position: absolute;
 }
 
