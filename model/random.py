@@ -1,4 +1,4 @@
-from datetime import time
+import time
 from numpy.random import Generator, MT19937
 
 
