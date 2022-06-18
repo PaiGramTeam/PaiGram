@@ -99,7 +99,7 @@ class Cookies(BasePlugins):
                        f"4、复制下方的代码，并将其粘贴在控制台中，按下回车\n" \
                        f"`{escape_markdown(javascript, version=2, entity_type='code')}`\n\n" \
                        f"Android：\n" \
-                       f"[1、通过 Vim 浏览器打开{bbs_name}并登录]({bbs_url})\n" \
+                       f"[1、通过 Via 浏览器打开{bbs_name}并登录]({bbs_url})\n" \
                        f"2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n" \
                        f"`{escape_markdown(javascript_android, version=2, entity_type='code')}`"
         await update.message.reply_markdown_v2(help_message, disable_web_page_preview=True)
