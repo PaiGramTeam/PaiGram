@@ -28,7 +28,6 @@ class AdminService:
             await self.repository.add_admin(user_id)
         except IntegrityError as error:
             Log.warning(f"{user_id} 已经存在数据库 \n", error)
-            pass
         admin_list = await self.repository.get_admin()
         for config_admin in config.ADMINISTRATORS:
             admin_list.append(config_admin["user_id"])

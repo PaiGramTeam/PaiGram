@@ -51,13 +51,13 @@ class TemplateService:
         """
         start_time = time.time()
         template = self.get_template(template_path, template_name, auto_escape)
-        template_data["res_path"] = "file://" + self._current_dir
+        template_data["res_path"] = f"file://{self._current_dir}"
         html = await template.render_async(**template_data)
         Log.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
         browser = await self.browser.get_browser()
         start_time = time.time()
         page = await browser.new_page(viewport=viewport)
-        await page.goto("file://" + template.filename)
+        await page.goto(f"file://{template.filename}")
         await page.set_content(html, wait_until="networkidle")
         png_data = await page.screenshot(full_page=full_page)
         await page.close()

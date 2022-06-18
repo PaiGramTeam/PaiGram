@@ -5,13 +5,10 @@ import httpx
 
 
 def get_format_sub_item(artifact_attr: dict):
-    msg = ""
-    for i in artifact_attr["sub_item"]:
-        msg += f'{i["name"]:\u3000<6}{i["value"]}\n'
-    return msg
+    return "".join(f'{i["name"]:\u3000<6} | {i["value"]}\n' for i in artifact_attr["sub_item"])
 
 
-def get_yiyan(get_yiyan_num):
+def get_comment(get_rate_num):
     data = {"1": ["破玩意谁能用啊，谁都用不了吧", "喂了吧，这东西做狗粮还能有点用", "抽卡有保底，圣遗物没有下限",
                   "未来可期呢（笑）", "你出门一定很安全", "你是不是得罪米哈游了？", "……宁就是班尼特本特？",
                   "丢人！你给我退出提瓦特(", "不能说很糟糕，只能说特别不好"],
@@ -27,7 +24,7 @@ def get_yiyan(get_yiyan_num):
                   "怕不是以后开宝箱只能开出卷心菜", "吃了吗？没吃的话，吃我一拳", "我觉得这个游戏有问题", "这合理吗",
                   "这东西没啥用，给我吧（柠檬）", "？？？ ？？？？"]}
     try:
-        data_ = int(float(get_yiyan_num))
+        data_ = int(float(get_rate_num))
     except ValueError:
         data_ = 0
     if data_ == 100:
