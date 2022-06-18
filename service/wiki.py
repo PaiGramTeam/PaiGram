@@ -35,16 +35,13 @@ class Wiki:
             # weapon_info = await self.weapons.get_weapon_info(weapon_url)
             if index % 5 == 0:
                 result_list = await asyncio.gather(*task_list)
-                for result in result_list:
-                    if isinstance(result, dict):
-                        weapons_list.append(result)
+                weapons_list.extend(result for result in result_list if isinstance(result, dict))
                 task_list.clear()
             if index % 10 == 0 and index != 0:
                 Log.info(f"现在已经获取到 {index} 把武器信息")
         result_list = await asyncio.gather(*task_list)
-        for result in result_list:
-            if isinstance(result, dict):
-                weapons_list.append(result)
+        weapons_list.extend(result for result in result_list if isinstance(result, dict))
+
         Log.info("写入武器信息到Redis")
         self._weapons_list = weapons_list
         await self._del_one("weapon")
@@ -59,16 +56,13 @@ class Wiki:
             task_list.append(self.characters.get_characters(characters_url))
             if index % 5 == 0:
                 result_list = await asyncio.gather(*task_list)
-                for result in result_list:
-                    if isinstance(result, dict):
-                        characters_list.append(result)
+                characters_list.extend(result for result in result_list if isinstance(result, dict))
                 task_list.clear()
             if index % 10 == 0 and index != 0:
                 Log.info(f"现在已经获取到 {index} 个角色信息")
         result_list = await asyncio.gather(*task_list)
-        for result in result_list:
-            if isinstance(result, dict):
-                characters_list.append(result)
+        characters_list.extend(result for result in result_list if isinstance(result, dict))
+
         Log.info("写入角色信息到Redis")
         self._characters_list = characters_list
         await self._del_one("characters")
@@ -106,10 +100,7 @@ class Wiki:
         await self.init()
         if len(self._weapons_list) == 0:
             return {}
-        for weapon in self._weapons_list:
-            if weapon["name"] == name:
-                return weapon
-        return {}
+        return next((weapon for weapon in self._weapons_list if weapon["name"] == name), {})
 
     async def get_weapons_name_list(self) -> list:
         await self.init()

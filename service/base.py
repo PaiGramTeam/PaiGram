@@ -49,10 +49,7 @@ class QuestionData:
     def __init__(self, question_id: int = 0, question: str = "", answer: List[AnswerData] = None):
         self.question_id = question_id
         self.question = question
-        if answer is None:
-            self.answer = []
-        else:
-            self.answer = answer
+        self.answer = [] if answer is None else answer
 
     def json_dumps(self):
         data = {

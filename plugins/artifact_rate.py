@@ -1,10 +1,11 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, CallbackQueryHandler
+from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, \
+    filters
 from telegram.helpers import escape_markdown
 
 from logger import Log
-from model.apihelper.artifact import ArtifactORCRate, get_yiyan, get_format_sub_item
+from model.apihelper.artifact import ArtifactORCRate, get_comment, get_format_sub_item
 from plugins.base import BasePlugins
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService
@@ -16,33 +17,15 @@ class ArtifactRate(BasePlugins):
     """
     圣遗物评分
     """
-    STAR_KEYBOARD = [[InlineKeyboardButton("1", callback_data="artifact_orc_rate_data|star|1"),
-                      InlineKeyboardButton("2", callback_data="artifact_orc_rate_data|star|2"),
-                      InlineKeyboardButton("3", callback_data="artifact_orc_rate_data|star|3"),
-                      InlineKeyboardButton("4", callback_data="artifact_orc_rate_data|star|4"),
-                      InlineKeyboardButton("5", callback_data="artifact_orc_rate_data|star|5")]]
+    STAR_KEYBOARD = [[
+        InlineKeyboardButton(
+            f"{i}", callback_data=f"artifact_orc_rate_data|star|{i}") for i in range(1, 6)
+    ]]
 
-    LEVEL_KEYBOARD = [[InlineKeyboardButton("1", callback_data="artifact_orc_rate_data|level|1"),
-                       InlineKeyboardButton("2", callback_data="artifact_orc_rate_data|level|2"),
-                       InlineKeyboardButton("3", callback_data="artifact_orc_rate_data|level|3"),
-                       InlineKeyboardButton("4", callback_data="artifact_orc_rate_data|level|4"),
-                       InlineKeyboardButton("5", callback_data="artifact_orc_rate_data|level|5")],
-                      [InlineKeyboardButton("6", callback_data="artifact_orc_rate_data|level|6"),
-                       InlineKeyboardButton("7", callback_data="artifact_orc_rate_data|level|7"),
-                       InlineKeyboardButton("8", callback_data="artifact_orc_rate_data|level|8"),
-                       InlineKeyboardButton("9", callback_data="artifact_orc_rate_data|level|9"),
-                       InlineKeyboardButton("10", callback_data="artifact_orc_rate_data|level|0")],
-                      [InlineKeyboardButton("11", callback_data="artifact_orc_rate_data|level|11"),
-                       InlineKeyboardButton("12", callback_data="artifact_orc_rate_data|level|12"),
-                       InlineKeyboardButton("13", callback_data="artifact_orc_rate_data|level|13"),
-                       InlineKeyboardButton("14", callback_data="artifact_orc_rate_data|level|14"),
-                       InlineKeyboardButton("15", callback_data="artifact_orc_rate_data|level|15")],
-                      [InlineKeyboardButton("16", callback_data="artifact_orc_rate_data|level|16"),
-                       InlineKeyboardButton("17", callback_data="artifact_orc_rate_data|level|17"),
-                       InlineKeyboardButton("18", callback_data="artifact_orc_rate_data|level|18"),
-                       InlineKeyboardButton("19", callback_data="artifact_orc_rate_data|level|19"),
-                       InlineKeyboardButton("20", callback_data="artifact_orc_rate_data|level|20")]
-                      ]
+    LEVEL_KEYBOARD = [[
+        InlineKeyboardButton(
+            f"{i * 5 + j}", callback_data=f"artifact_orc_rate_data|level|{i * 5 + j}") for j in range(1, 6)
+    ] for i in range(0, 5)]
 
     def __init__(self, service: BaseService):
         super().__init__(service)
@@ -51,14 +34,15 @@ class ArtifactRate(BasePlugins):
     @staticmethod
     def create_conversation_handler(service: BaseService):
         artifact_rate = ArtifactRate(service)
-        artifact_rate_handler = ConversationHandler(
-            entry_points=[CommandHandler('artifact_rate', artifact_rate.command_start)],
+        return ConversationHandler(
+            entry_points=[CommandHandler('artifact_rate', artifact_rate.command_start),
+                          MessageHandler(filters.Regex(r"^圣遗物评分(.*)"), artifact_rate.command_start),
+                          MessageHandler(filters.CaptionRegex(r"^圣遗物评分(.*)"), artifact_rate.command_start)],
             states={
                 artifact_rate.COMMAND_RESULT: [CallbackQueryHandler(artifact_rate.command_result)]
             },
             fallbacks=[CommandHandler('cancel', artifact_rate.cancel)]
         )
-        return artifact_rate_handler
 
     async def get_rate(self, artifact_attr: dict) -> str:
         rate_result_req = await self.artifact_rate.rate_artifact(artifact_attr)
@@ -68,15 +52,16 @@ class ArtifactRate(BasePlugins):
                 return artifact_attr.get("message", "API请求错误")
             return "API请求错误"
         rate_result = rate_result_req.json()
-        format_result = "*圣遗物评分结果*\n" \
-                        f"主属性：{escape_markdown(artifact_attr['main_item']['name'], version=2)}\n" \
-                        f"{escape_markdown(get_format_sub_item(artifact_attr), version=2)}" \
-                        f"总分：{escape_markdown(rate_result['total_percent'], version=2)}\n" \
-                        f"主词条：{escape_markdown(rate_result['main_percent'], version=2)}\n" \
-                        f"副词条：{escape_markdown(rate_result['sub_percent'], version=2)}\n" \
-                        f"{escape_markdown(get_yiyan(rate_result['total_percent']), version=2)}\n" \
-                        "_评分、识图均来自 genshin\\.pub_"
-        return format_result
+        return "*圣遗物评分结果*\n" \
+               f"主属性：{escape_markdown(artifact_attr['main_item']['name'], version=2)}\n" \
+               f"{escape_markdown(get_format_sub_item(artifact_attr), version=2)}" \
+               f'`--------------------`\n' \
+               f"总分：{escape_markdown(rate_result['total_percent'], version=2)}\n" \
+               f"主词条：{escape_markdown(rate_result['main_percent'], version=2)}\n" \
+               f"副词条：{escape_markdown(rate_result['sub_percent'], version=2)}\n" \
+               f'`--------------------`\n' \
+               f"{escape_markdown(get_comment(rate_result['total_percent']), version=2)}\n" \
+               "_评分、识图均来自 genshin\\.pub_"
 
     @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> int:
@@ -85,13 +70,13 @@ class ArtifactRate(BasePlugins):
         Log.info(f"用户 {user.full_name}[{user.id}] 圣遗物评分命令请求")
         context.user_data["artifact_attr"] = None
         reply_to_message = message.reply_to_message
-        if reply_to_message is None:
+        if message.photo:
+            photo_file = await message.photo[-1].get_file()  # 草 居然第一张是预览图我人都麻了
+        elif reply_to_message is None or not reply_to_message.photo:
             await message.reply_text("图呢？")
             return ConversationHandler.END
-        if len(reply_to_message.photo) == 0:
-            await message.reply_text("图呢？")
-            return ConversationHandler.END
-        photo_file = await reply_to_message.photo[-1].get_file()  # 草 居然第一张是预览图我人都麻了
+        else:
+            photo_file = await reply_to_message.photo[-1].get_file()
         photo_byte = await photo_file.download_as_bytearray()
         artifact_attr_req = await self.artifact_rate.get_artifact_attr(photo_byte)
         if artifact_attr_req.status_code != 200:

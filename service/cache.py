@@ -61,14 +61,14 @@ class RedisCache:
 
     async def del_all_question(self):
         qname = "quiz:question"
-        keys = await self.client.keys(qname + "*")
+        keys = await self.client.keys(f"{qname}*")
         if keys is not None:
             for key in keys:
                 await self.client.delete(key)
 
     async def del_all_answer(self):
         qname = "quiz:answer"
-        keys = await self.client.keys(qname + "*")
+        keys = await self.client.keys(f"{qname}*")
         if keys is not None:
             for key in keys:
                 await self.client.delete(key)
