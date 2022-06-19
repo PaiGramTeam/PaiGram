@@ -1,5 +1,6 @@
 import os
 import time
+from typing import Optional
 
 from jinja2 import PackageLoader, Environment, Template
 from playwright.async_api import ViewportSize
@@ -38,7 +39,8 @@ class TemplateService:
         return jinja2_template
 
     async def render(self, template_path: str, template_name: str, template_data: dict,
-                     viewport: ViewportSize, full_page: bool = True, auto_escape: bool = True) -> bytes:
+                     viewport: ViewportSize, full_page: bool = True, auto_escape: bool = True,
+                     evaluate: Optional[str] = None) -> bytes:
         """
         模板渲染成图片
         :param template_path: 模板目录
@@ -47,6 +49,7 @@ class TemplateService:
         :param viewport: 截图大小
         :param full_page: 是否长截图
         :param auto_escape: 是否自动转义
+        :param evaluate: 页面加载后运行的 js
         :return:
         """
         start_time = time.time()
@@ -59,6 +62,8 @@ class TemplateService:
         page = await browser.new_page(viewport=viewport)
         await page.goto(f"file://{template.filename}")
         await page.set_content(html, wait_until="networkidle")
+        if evaluate:
+            await page.evaluate(evaluate)
         png_data = await page.screenshot(full_page=full_page)
         await page.close()
         Log.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
