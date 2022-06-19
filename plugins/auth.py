@@ -11,7 +11,7 @@ from telegram.helpers import escape_markdown
 
 from logger import Log
 from model.helpers import get_admin_list
-from model.random import MT19937_Random
+from utils.random import MT19937_Random
 from service import BaseService
 
 FullChatPermissions = ChatPermissions(

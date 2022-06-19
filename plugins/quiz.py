@@ -10,7 +10,7 @@ from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, M
 from telegram.helpers import escape_markdown
 
 from logger import Log
-from model.random import MT19937_Random
+from utils.random import MT19937_Random
 from plugins.base import BasePlugins, RestrictsCalls
 from service import BaseService
 from service.base import QuestionData, AnswerData
