@@ -16,9 +16,6 @@ from service import BaseService
 
 
 class PostHandlerData:
-    """
-    文章推送
-    """
 
     def __init__(self):
         self.post_text: str = ""
@@ -29,8 +26,14 @@ class PostHandlerData:
 
 
 class Post(BasePlugins):
+    """
+    文章推送
+    """
+
     CHECK_POST, SEND_POST, CHECK_COMMAND, GTE_DELETE_PHOTO = range(10900, 10904)
     GET_POST_CHANNEL, GET_TAGS, GET_TEXT = range(10904, 10907)
+
+    MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]], True, True)
 
     def __init__(self, service: BaseService):
         super().__init__(service)
@@ -73,7 +76,7 @@ class Post(BasePlugins):
                "只需复制URL回复即可 \n" \
                "退出投稿只需回复退出" % (user["username"])
         reply_keyboard = [['退出']]
-        await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return self.CHECK_POST
 
     @conversation_error_handler
@@ -102,7 +105,7 @@ class Post(BasePlugins):
         if len(post_text) >= MessageLimit.CAPTION_LENGTH:
             await message.reply_markdown_v2(post_text)
             post_text = post_text[0:MessageLimit.CAPTION_LENGTH]
-            await message.reply_text(f"警告！图片字符描述已经超过{MessageLimit.CAPTION_LENGTH}个字，已经切割并发送原文本")
+            await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割并发送原文本")
         try:
             if len(post_images) > 1:
                 media = [InputMediaPhoto(img_info.data) for img_info in post_images]
@@ -123,9 +126,7 @@ class Post(BasePlugins):
         post_handler_data.delete_photo = []
         post_handler_data.tags = []
         post_handler_data.channel_id = -1
-        text = "请选择你的操作"
-        reply_keyboard = [["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]]
-        await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return self.CHECK_COMMAND
 
     @conversation_error_handler
@@ -169,9 +170,7 @@ class Post(BasePlugins):
             return self.GTE_DELETE_PHOTO
         post_handler_data.delete_photo = index
         await message.reply_text("删除成功")
-        text = "请选择你的操作"
-        reply_keyboard = [["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]]
-        await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return self.CHECK_COMMAND
 
     async def get_channel(self, update: Update, _: CallbackContext) -> int:
@@ -186,7 +185,7 @@ class Post(BasePlugins):
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("请选择你要推送的频道",
-                                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+                                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return self.GET_POST_CHANNEL
 
     @conversation_error_handler
@@ -208,12 +207,12 @@ class Post(BasePlugins):
         post_handler_data.channel_id = channel_id
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("请核对你修改的信息",
-                                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+                                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return self.SEND_POST
 
     async def add_tags(self, update: Update, _: CallbackContext) -> int:
         message = update.message
-        await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符")
+        await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符，不用添加 # 作为开头，推送时程序会自动添加")
         return self.GET_TAGS
 
     @conversation_error_handler
@@ -223,9 +222,7 @@ class Post(BasePlugins):
         args = message.text.split(" ")
         post_handler_data.tags = args
         await message.reply_text("添加成功")
-        text = "请选择你的操作"
-        reply_keyboard = [["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]]
-        await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return self.CHECK_COMMAND
 
     async def edit_text(self, update: Update, _: CallbackContext) -> int:
@@ -239,9 +236,7 @@ class Post(BasePlugins):
         message = update.message
         post_handler_data.post_text = message.text_markdown_v2
         await message.reply_text("替换成功")
-        text = "请选择你的操作"
-        reply_keyboard = [["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]]
-        await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return self.CHECK_COMMAND
 
     @staticmethod
