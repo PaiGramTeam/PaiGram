@@ -20,6 +20,7 @@ from plugins.strategy import Strategy
 from plugins.uid import Uid
 from plugins.weapon import Weapon
 from plugins.wiki import Wiki
+from plugins.ledger import Ledger
 from service import BaseService
 
 
@@ -72,6 +73,7 @@ def register_handlers(application: Application, service: BaseService):
     add_handler(wiki.refresh_wiki, command="wiki_refresh")
     artifact_rate_handler = ArtifactRate.create_conversation_handler(service)
     application.add_handler(artifact_rate_handler)
+    ledger_handler = Ledger.create_conversation_handler(service)
     # 调试功能
     add_handler(reply_keyboard_remove, command="reply_keyboard_remove")
     add_handler(admin.leave_chat, command="leave_chat")
@@ -81,6 +83,7 @@ def register_handlers(application: Application, service: BaseService):
     application.add_handler(uid_handler)
     application.add_handler(daily_note_handler)
     application.add_handler(post_handler)
+    application.add_handler(ledger_handler)
     inline = Inline(service)
     application.add_handler(InlineQueryHandler(inline.inline_query, block=False))
     application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
