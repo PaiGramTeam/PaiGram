@@ -9,14 +9,12 @@ class MT19937_Random:
     笑死，不然你猜猜为啥 requirements.txt 有 numpy ？
                             ——洛水居室
     笑死，虽然说我是写的 ）
-    不得不说让我想到一个事情，万一以用户的UID做随机数种子呢？
+    不得不说让我想到一个事情，万一以用户的ID做随机数种子呢，这样就可以决定某个账户一开始就是非洲或者欧洲 )
     """
 
     def __init__(self):
         self.send_time = time.time()
         self.generator = Generator(MT19937(int(self.send_time)))
-        self.time_out = 120
-        self.kick_time = 120
 
     def random(self, low: int, high: int) -> int:
         if self.send_time + 24 * 60 * 60 >= time.time():  # 86400秒后刷新随机数种子
