@@ -99,10 +99,10 @@ class Post(BasePlugins):
         for p in post_p:
             post_text += f"{escape_markdown(p.get_text(), version=2)}\n"
         post_text += f"[source](https://bbs.mihoyo.com/ys/article/{post_id})"
-        if len(post_text) >= MessageLimit.MESSAGE_ENTITIES:
+        if len(post_text) >= MessageLimit.CAPTION_LENGTH:
             await message.reply_markdown_v2(post_text)
-            post_text = post_text[0:MessageLimit.MESSAGE_ENTITIES]
-            await message.reply_text(f"警告！图片字符描述已经超过{MessageLimit.MESSAGE_ENTITIES}个字，已经切割并发送原文本")
+            post_text = post_text[0:MessageLimit.CAPTION_LENGTH]
+            await message.reply_text(f"警告！图片字符描述已经超过{MessageLimit.CAPTION_LENGTH}个字，已经切割并发送原文本")
         try:
             if len(post_images) > 1:
                 media = [InputMediaPhoto(img_info.data) for img_info in post_images]
