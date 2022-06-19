@@ -99,7 +99,7 @@ class Post(BasePlugins):
         for p in post_p:
             post_text += f"{escape_markdown(p.get_text(), version=2)}\n"
         post_text += f"[source](https://bbs.mihoyo.com/ys/article/{post_id})"
-        if post_text >= MessageLimit.MESSAGE_ENTITIES:
+        if len(post_text) >= MessageLimit.MESSAGE_ENTITIES:
             await message.reply_markdown_v2(post_text)
             post_text = post_text[0:MessageLimit.MESSAGE_ENTITIES]
             await message.reply_text(f"警告！图片字符描述已经超过{MessageLimit.MESSAGE_ENTITIES}个字，已经切割并发送原文本")
