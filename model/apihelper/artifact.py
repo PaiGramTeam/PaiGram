@@ -32,7 +32,7 @@ def get_comment(get_rate_num):
     return choice(data[str(data_ // 20 + 1)])
 
 
-class ArtifactORCRate:
+class ArtifactOcrRate:
     OCR_URL = "https://api.genshin.pub/api/v1/app/ocr"
     RATE_URL = "https://api.genshin.pub/api/v1/relic/rate"
     HEADERS = {
