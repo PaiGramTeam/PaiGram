@@ -42,17 +42,30 @@ def register_handlers(application: Application, service: BaseService):
         if query:
             application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
 
-    add_handler(start, command="start")
-    _help = Help(service)
-    add_handler(_help.command_start, command="help")
-    add_handler(ping, command="ping")
-
+    # 初始化
+    plugins_help = Help(service)
+    inline = Inline(service)
     auth = Auth(service)
-    new_chat_members_handler = NewChatMembersHandler(service, auth.new_mem)
-    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS,
-                                           new_chat_members_handler.new_member, block=False))
+    gacha = Gacha(service)
+    admin = Admin(service)
+    weapon = Weapon(service)
+    strategy = Strategy(service)
+    wiki = Wiki(service)
+
+    add_handler(start, command="start")
+    add_handler(plugins_help.command_start, command="help")
+    add_handler(ping, command="ping")
+    add_handler(wiki.refresh_wiki, command="wiki_refresh")
     add_handler(auth.query, query=r"^auth_challenge\|")
     add_handler(auth.admin, query=r"^auth_admin\|")
+    add_handler(admin.add_admin, command="add_admin")
+    add_handler(admin.del_admin, command="del_admin")
+    add_handler(gacha.command_start, command="gacha", regex=r"^抽卡模拟器(.*)")
+    add_handler(weapon.command_start, command="weapon", regex=r"^武器查询(.*)")
+    add_handler(strategy.command_start, command="strategy", regex=r"^角色攻略查询(.*)")
+    # 调试功能
+    add_handler(reply_keyboard_remove, command="reply_keyboard_remove")
+    add_handler(admin.leave_chat, command="leave_chat")
 
     cookies_handler = Cookies.create_conversation_handler(service)
     uid_handler = Uid.create_conversation_handler(service)
@@ -60,23 +73,13 @@ def register_handlers(application: Application, service: BaseService):
     sign_handler = Sign.create_conversation_handler(service)
     quiz_handler = Quiz.create_conversation_handler(service)
     post_handler = Post.create_conversation_handler(service)
-    gacha = Gacha(service)
-    add_handler(gacha.command_start, command="gacha", regex=r"^抽卡模拟器(.*)")
-    admin = Admin(service)
-    add_handler(admin.add_admin, command="add_admin")
-    add_handler(admin.del_admin, command="del_admin")
-    weapon = Weapon(service)
-    add_handler(weapon.command_start, command="weapon", regex=r"^武器查询(.*)")
-    strategy = Strategy(service)
-    add_handler(strategy.command_start, command="strategy", regex=r"^角色攻略查询(.*)")
-    wiki = Wiki(service)
-    add_handler(wiki.refresh_wiki, command="wiki_refresh")
     artifact_rate_handler = ArtifactRate.create_conversation_handler(service)
-    application.add_handler(artifact_rate_handler)
     ledger_handler = Ledger.create_conversation_handler(service)
-    # 调试功能
-    add_handler(reply_keyboard_remove, command="reply_keyboard_remove")
-    add_handler(admin.leave_chat, command="leave_chat")
+
+    new_chat_members_handler = NewChatMembersHandler(service, auth.new_mem)
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS,
+                                           new_chat_members_handler.new_member, block=False))
+
     application.add_handler(sign_handler)
     application.add_handler(quiz_handler)
     application.add_handler(cookies_handler)
@@ -84,7 +87,7 @@ def register_handlers(application: Application, service: BaseService):
     application.add_handler(daily_note_handler)
     application.add_handler(post_handler)
     application.add_handler(ledger_handler)
-    inline = Inline(service)
+    application.add_handler(artifact_rate_handler)
     application.add_handler(InlineQueryHandler(inline.inline_query, block=False))
     application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
     application.add_error_handler(error_handler, block=False)

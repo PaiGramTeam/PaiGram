@@ -106,9 +106,9 @@ class ArtifactRate(BasePlugins):
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         query = update.callback_query
         artifact_attr = context.user_data.get("artifact_attr")
+        await query.answer()
         if artifact_attr is None:
             await query.edit_message_text("数据错误")
-            await query.answer()
             return ConversationHandler.END
 
         def get_callback_data(callback_query_data: str) -> tuple[str, int]:
@@ -120,7 +120,6 @@ class ArtifactRate(BasePlugins):
                 _value = -1
             return _key_name, _value
 
-        await query.answer()
         await query.message.reply_chat_action(ChatAction.TYPING)
         key_name, value = get_callback_data(query.data)
         if key_name == "level":
