@@ -16,7 +16,7 @@ from service.base import UserInfoData
 
 
 class CookiesCommandData:
-    service = ServiceEnum.MIHOYOBBS
+    service = ServiceEnum.HYPERION
     cookies: dict = {}
     game_uid: int = 0
     user_info: UserInfoData = UserInfoData()
@@ -74,7 +74,7 @@ class Cookies(BasePlugins):
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         elif update.message.text == "米游社":
-            cookies_command_data.service = ServiceEnum.MIHOYOBBS
+            cookies_command_data.service = ServiceEnum.HYPERION
             bbs_url = "https://bbs.mihoyo.com/ys/"
             bbs_name = "米游社"
             if len(user_info.mihoyo_cookie) > 1:
@@ -126,7 +126,7 @@ class Cookies(BasePlugins):
         if len(cookies) == 0:
             await update.message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        if cookies_command_data.service == ServiceEnum.MIHOYOBBS:
+        if cookies_command_data.service == ServiceEnum.HYPERION:
             client = genshin.ChineseClient(cookies=cookies)
         elif cookies_command_data.service == ServiceEnum.HOYOLAB:
             client = genshin.GenshinClient(cookies=cookies)
@@ -176,9 +176,9 @@ class Cookies(BasePlugins):
             data = ujson.dumps(cookies_command_data.cookies)
             user_info = cookies_command_data.user_info
             service = ServiceEnum.NULL.value
-            if cookies_command_data.service == ServiceEnum.MIHOYOBBS:
+            if cookies_command_data.service == ServiceEnum.HYPERION:
                 user_info.mihoyo_game_uid = cookies_command_data.game_uid
-                service = ServiceEnum.MIHOYOBBS.value
+                service = ServiceEnum.HYPERION.value
             elif cookies_command_data.service == ServiceEnum.HOYOLAB:
                 user_info.hoyoverse_game_uid = cookies_command_data.game_uid
                 service = ServiceEnum.HOYOLAB.value

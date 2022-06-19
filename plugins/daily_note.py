@@ -45,7 +45,7 @@ class DailyNote(BasePlugins):
         return daily_note_handler
 
     async def _start_get_daily_note(self, user_info_data: UserInfoData, service: ServiceEnum) -> bytes:
-        if service == ServiceEnum.MIHOYOBBS:
+        if service == ServiceEnum.HYPERION:
             client = genshin.ChineseClient(cookies=user_info_data.mihoyo_cookie)
             uid = user_info_data.mihoyo_game_uid
         else:
@@ -151,7 +151,7 @@ class DailyNote(BasePlugins):
         await query.answer()
         await query.delete_message()
         if query.data == "daily_note|米游社":
-            service = ServiceEnum.MIHOYOBBS
+            service = ServiceEnum.HYPERION
         elif query.data == "daily_note|HoYoLab":
             service = ServiceEnum.HOYOLAB
         else:

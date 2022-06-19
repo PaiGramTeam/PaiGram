@@ -46,7 +46,7 @@ class Uid(BasePlugins):
         return uid_handler
 
     async def _start_get_user_info(self, user_info_data: UserInfoData, service: ServiceEnum, uid: int = -1) -> bytes:
-        if service == ServiceEnum.MIHOYOBBS:
+        if service == ServiceEnum.HYPERION:
             client = genshin.ChineseClient(cookies=user_info_data.mihoyo_cookie)
             if uid <= 0:
                 _uid = user_info_data.mihoyo_game_uid
@@ -194,7 +194,7 @@ class Uid(BasePlugins):
         await query.answer()
         await query.delete_message()
         if query.data == "uid|米游社":
-            service = ServiceEnum.MIHOYOBBS
+            service = ServiceEnum.HYPERION
         elif query.data == "uid|HoYoLab":
             service = ServiceEnum.HOYOLAB
         else:

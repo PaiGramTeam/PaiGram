@@ -44,7 +44,7 @@ class Sign(BasePlugins):
 
     @staticmethod
     async def _start_sign(user_info: UserInfoData, service: ServiceEnum) -> str:
-        if service == ServiceEnum.MIHOYOBBS:
+        if service == ServiceEnum.HYPERION:
             client = genshin.ChineseClient(cookies=user_info.mihoyo_cookie)
             uid = user_info.mihoyo_game_uid
         else:
@@ -133,7 +133,7 @@ class Sign(BasePlugins):
         message = "签到失败"
         await query.message.reply_chat_action(ChatAction.TYPING)
         if query.data == "sign|米游社":
-            message = await self._start_sign(user_info, ServiceEnum.MIHOYOBBS)
+            message = await self._start_sign(user_info, ServiceEnum.HYPERION)
         if query.data == "sign|HoYoLab":
             message = await self._start_sign(user_info, ServiceEnum.HOYOLAB)
         await query.edit_message_text(message)

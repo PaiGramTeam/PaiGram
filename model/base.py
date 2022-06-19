@@ -39,6 +39,9 @@ class ArtworkImage:
 
 
 class ServiceEnum(Enum):
+    """
+    该名称来源于米忽悠的安卓BBS包名结尾，考虑到大部分重要的功能确实是在移动端实现了
+    """
     NULL = None
-    MIHOYOBBS = 1
-    HOYOLAB = 2
+    HYPERION = 1  # 米忽悠国服
+    HOYOLAB = 2  # 米忽悠国际服

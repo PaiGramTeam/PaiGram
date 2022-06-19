@@ -8,6 +8,7 @@ from httpx import UnsupportedProtocol
 from telegram import Bot
 
 from logger import Log
+from model.base import ServiceEnum
 from service.cache import RedisCache
 
 USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
@@ -17,6 +18,16 @@ current_dir = os.getcwd()
 cache_dir = os.path.join(current_dir, "cache")
 if not os.path.exists(cache_dir):
     os.mkdir(cache_dir)
+
+SERVICE_MAP = {
+    "1": ServiceEnum.HYPERION,
+    "2": ServiceEnum.HYPERION,
+    "5": ServiceEnum.HYPERION,
+    "6": ServiceEnum.HOYOLAB,
+    "7": ServiceEnum.HOYOLAB,
+    "8": ServiceEnum.HOYOLAB,
+    "9": ServiceEnum.HOYOLAB,
+}
 
 
 async def get_admin_list(bot: Bot, cache: RedisCache, chat_id: int, extra_user: List[int]) -> List[int]:
@@ -55,3 +66,11 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
         async with aiofiles.open(file_dir, mode='wb') as f:
             await f.write(data.content)
     return prefix + file_dir
+
+
+def get_server(uid: int) -> ServiceEnum:
+    server = SERVICE_MAP.get(str(uid)[0])
+    if server:
+        return server
+    else:
+        raise TypeError(f"UID {uid} isn't associated with any server")
