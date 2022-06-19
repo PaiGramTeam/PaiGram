@@ -4,6 +4,16 @@ import string
 import time
 import uuid
 
+RECOGNIZE_SERVER = {
+    "1": "cn_gf01",
+    "2": "cn_gf01",
+    "5": "cn_qd01",
+    "6": "os_usa",
+    "7": "os_euro",
+    "8": "os_asia",
+    "9": "os_cht",
+}
+
 
 def get_device_id(name: str) -> str:
     return str(uuid.uuid3(uuid.NAMESPACE_URL, name)).replace('-', '').upper()
@@ -37,17 +47,17 @@ def get_ds(salt: str = "", web: int = 1) -> str:
     return f"{i},{r},{c}"
 
 
-def recognize_server(uid: int) -> str:
-    server = {
-        "1": "cn_gf01",
-        "2": "cn_gf01",
-        "5": "cn_qd01",
-        "6": "os_usa",
-        "7": "os_euro",
-        "8": "os_asia",
-        "9": "os_cht",
-    }.get(str(uid)[0])
+def get_recognize_server(uid: int) -> str:
+    server = RECOGNIZE_SERVER.get(str(uid)[0])
     if server:
         return server
     else:
-        raise TypeError(f"UID {uid} isn't associated with any server")
+        raise TypeError(f"UID {uid} isn't associated with any recognize server")
+
+
+def get_headers():
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36",
+    }
+    return headers

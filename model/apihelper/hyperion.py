@@ -12,7 +12,7 @@ from .helpers import get_ds, get_device_id
 class Hyperion:
     """
     米忽悠bbs相关API请求
-    该名称来源于米忽悠的米游社包名结尾，考虑到大部分重要的功能都能是在移动端实现了
+    该名称来源于米忽悠的安卓BBS包名结尾，考虑到大部分重要的功能确实是在移动端实现了
     """
 
     POST_FULL_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFull"

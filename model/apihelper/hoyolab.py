@@ -1,7 +1,7 @@
 from httpx import AsyncClient
 
 from .base import BaseResponseData
-from .helpers import get_ds, get_device_id, recognize_server
+from .helpers import get_ds, get_device_id, get_recognize_server
 
 
 class Genshin:
@@ -39,7 +39,7 @@ class Genshin:
         :return:
         """
         if region == "":
-            region = recognize_server(uid)
+            region = get_recognize_server(uid)
         params = {
             "act_id": self.ACT_ID,
             "region": region,
@@ -61,7 +61,7 @@ class Genshin:
         :return:
         """
         if region == "":
-            region = recognize_server(uid)
+            region = get_recognize_server(uid)
         data = {
             "act_id": self.ACT_ID,
             "region": region,
