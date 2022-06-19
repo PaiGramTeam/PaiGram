@@ -1,4 +1,5 @@
 import asyncio
+import fakeredis.aioredis
 
 from logger import Log
 from redis import asyncio as aioredis
@@ -22,8 +23,9 @@ class RedisDB:
         except (KeyboardInterrupt, SystemExit):
             pass
         except Exception as exc:
-            Log.error("尝试连接Redis失败")
-            raise exc
+            Log.warning("尝试连接Redis失败，使用 fakeredis 模拟")
+            self.client = fakeredis.aioredis.FakeRedis()
+            self._loop.run_until_complete(self.ping())
 
     async def ping(self):
         if await self.client.ping():

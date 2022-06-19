@@ -5,7 +5,7 @@ from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, C
 from telegram.helpers import escape_markdown
 
 from logger import Log
-from model.apihelper.artifact import ArtifactORCRate, get_comment, get_format_sub_item
+from model.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
 from plugins.base import BasePlugins
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService
@@ -19,17 +19,17 @@ class ArtifactRate(BasePlugins):
     """
     STAR_KEYBOARD = [[
         InlineKeyboardButton(
-            f"{i}", callback_data=f"artifact_orc_rate_data|star|{i}") for i in range(1, 6)
+            f"{i}", callback_data=f"artifact_ocr_rate_data|star|{i}") for i in range(1, 6)
     ]]
 
     LEVEL_KEYBOARD = [[
         InlineKeyboardButton(
-            f"{i * 5 + j}", callback_data=f"artifact_orc_rate_data|level|{i * 5 + j}") for j in range(1, 6)
+            f"{i * 5 + j}", callback_data=f"artifact_ocr_rate_data|level|{i * 5 + j}") for j in range(1, 6)
     ] for i in range(0, 4)]
 
     def __init__(self, service: BaseService):
         super().__init__(service)
-        self.artifact_rate = ArtifactORCRate()
+        self.artifact_rate = ArtifactOcrRate()
 
     @staticmethod
     def create_conversation_handler(service: BaseService):
