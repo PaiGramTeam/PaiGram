@@ -194,4 +194,4 @@ class AsyncRepository:
         data = await self.mysql.execute_and_fetchall(query, query_args)
         if len(data) == 0:
             return []
-        return list(data[0])
+        return [i[0] for i in data]
