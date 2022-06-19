@@ -85,7 +85,7 @@ def conversation_error_handler(func: Callable) -> Callable:
         except GenshinException as exc:
             Log.warning("GenshinException", exc)
             await send_user_notification(update, context,
-                                         f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常")
+                                         f"获取账号信息发生错误，错误信息为 {str(exc)}，请检查Cookie或者账号是否正常")
             return ConversationHandler.END
         except BadRequest as exc:
             Log.warning("python-telegram-bot请求错误", exc)
