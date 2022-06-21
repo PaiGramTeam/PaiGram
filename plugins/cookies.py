@@ -1,4 +1,4 @@
-from http.cookies import SimpleCookie
+from http.cookies import SimpleCookie, CookieError
 
 import genshin
 import ujson
@@ -116,7 +116,11 @@ class Cookies(BasePlugins):
             return ConversationHandler.END
         str_cookies = update.message.text
         cookie = SimpleCookie()
-        cookie.load(str_cookies)
+        try:
+            cookie.load(str_cookies)
+        except CookieError:
+            await update.message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
         if len(cookie) == 0:
             await update.message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
