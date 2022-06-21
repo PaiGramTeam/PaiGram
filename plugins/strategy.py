@@ -20,7 +20,7 @@ class Strategy(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
-        args = message.text.split(" ")
+        args = context.args
         search_command = re.search(r"^角色攻略查询(.*)", message.text)
         keyboard = [
             [
@@ -28,6 +28,7 @@ class Strategy(BasePlugins):
             ]
         ]
         await update.message.reply_chat_action(ChatAction.TYPING)
+        role_name = ""
         if search_command:
             role_name = roleToName(search_command[1])
             if role_name == "":
@@ -37,8 +38,9 @@ class Strategy(BasePlugins):
                     self._add_delete_message_job(context, message.chat_id, message.message_id)
                     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
                 return
-        elif len(args) >= 2:
-            role_name = roleToName(args[1])
+        elif args is not None:
+            if len(args) >= 1:
+                role_name = roleToName(args[0])
         else:
             reply_message = await message.reply_text("请回复你要查询的攻略的角色名",
                                                      reply_markup=InlineKeyboardMarkup(keyboard))

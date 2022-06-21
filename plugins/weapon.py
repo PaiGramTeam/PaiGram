@@ -27,6 +27,7 @@ class Weapon(BasePlugins):
                 InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")
             ]
         ]
+        weapon_name: str = ""
         if search_command:
             weapon_name = search_command[1]
             if weapon_name == "":
@@ -35,8 +36,10 @@ class Weapon(BasePlugins):
                     self._add_delete_message_job(context, message.chat_id, message.message_id)
                     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
                 return
-        elif len(args) >= 1:
-            weapon_name = args[0]
+        elif args is not None:
+            if len(args) >= 1:
+                weapon_name = args[0]
+
         else:
             reply_message = await message.reply_text("请回复你要查询的武器", reply_markup=InlineKeyboardMarkup(keyboard))
             if filters.ChatType.GROUPS.filter(reply_message):

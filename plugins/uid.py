@@ -157,8 +157,9 @@ class Uid(BasePlugins):
         uid: int = -1
         try:
             args = context.args
-            if len(args) >= 1:
-                uid = int(args[0])
+            if args is not None:
+                if len(args) >= 1:
+                    uid = int(args[0])
         except ValueError as error:
             Log.error("获取 chat_id 发生错误！ 错误信息为", error)
             await message.reply_text("输入错误")
