@@ -1,6 +1,5 @@
 import datetime
 import time
-from functools import wraps
 from typing import Callable, Optional
 
 from telegram import Update, ReplyKeyboardRemove
@@ -107,7 +106,7 @@ def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete
     """
 
     def decorator(func: Callable):
-        @wraps(func)
+
         async def restricts_func(*args, **kwargs):
             update: Optional[Update] = None
             context: Optional[CallbackContext] = None
