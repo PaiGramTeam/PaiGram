@@ -135,7 +135,7 @@ def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete
                 else:
                     if count == 5:
                         context.user_data["restrict_since"] = time.time()
-                        await update.effective_message.reply_text("已经触发洪水防御，请等待5分钟")
+                        await update.effective_message.reply_text("你已经触发洪水防御，请等待5分钟")
                         Log.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制5分钟")
                         return return_data
                 # 单次使用限制
