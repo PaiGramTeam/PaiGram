@@ -6,7 +6,7 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from logger import Log
-from plugins.base import BasePlugins, RestrictsCalls
+from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from service.wish import WishCountInfo, get_one
@@ -27,8 +27,9 @@ class Gacha(BasePlugins):
 
     CHECK_SERVER, COMMAND_RESULT = range(10600, 10602)
 
-    @RestrictsCalls(filters_chat=filters.ALL, return_data=ConversationHandler.END, try_delete_message=True)
     @conversation_error_handler
+    @restricts(filters.ChatType.GROUPS, ConversationHandler.END, restricts_time=20)
+    @restricts(filters.ChatType.PRIVATE, ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user

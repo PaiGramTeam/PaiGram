@@ -5,7 +5,7 @@ from telegram.ext import CallbackContext
 
 from config import config
 from logger import Log
-from plugins.base import BasePlugins
+from plugins.base import BasePlugins, restricts
 from service import BaseService
 
 
@@ -19,6 +19,7 @@ class Help(BasePlugins):
         self.help_png = None
         self.file_id = None
 
+    @restricts
     async def command_start(self, update: Update, _: CallbackContext) -> None:
         message = update.message
         user = update.effective_user

@@ -86,58 +86,78 @@ class NewChatMembersHandler:
         await self.auth_callback(update, context)
 
 
-class RestrictsCalls:
+
+def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete_message: bool = True,
+              restricts_time: int = 5):
     """
-    用于装饰在指定函数防止洪水调用的类装饰器
+        用于装饰在指定函数防止洪水调用的装饰器
+
+        被修饰的函数传入参数必须为
+        async def command_func(update, context)
+        或
+        async def command_func(self, update, context)
+
+        我真™是服了某些闲着没事干的群友了
+
+        如果修饰的函数属于
+        ConversationHandler
+        参数
+        return_data
+        必须传入
+        ConversationHandler.END
     """
-    _user_time = {}
-    _filters_chat = {}
-    _return_data = {}
-    _try_delete_message = {}
 
-    def __init__(self, filters_chat: ChatType = filters.ChatType.GROUPS, return_data=None,
-                 try_delete_message: bool = False):
-        self.filters_chat = filters_chat
-        self.return_data = return_data
-        self.try_delete_message = try_delete_message
-
-    def __call__(self, func: Callable):
-        self._filters_chat[func] = self.filters_chat
-        self._return_data[func] = self.return_data
-        self._try_delete_message[func] = self.try_delete_message
-
-        async def decorator(*args, **kwargs):
+    def decorator(func: Callable):
+        @wraps(func)
+        async def restricts_func(*args, **kwargs):
             update: Optional[Update] = None
-            for arg in args:
-                if isinstance(arg, Update):
-                    update = arg
-            if update is None:
+            context: Optional[CallbackContext] = None
+            if len(args) == 3:
+                # self update context
+                _, update, context = args
+            elif len(args) == 2:
+                # update context
+                update, context = args
+            else:
                 return await func(*args, **kwargs)
             message = update.message
             user = update.effective_user
-            _filters = self._filters_chat.get(func)
-            if _filters is None:
-                raise KeyError("RestrictsCalls: filters not find")
-            _return_data = self._return_data.get(func)
-            _try_delete_message = self._return_data.get(func, False)
-            if _filters.filter(message):
-                try:
-                    command_time = self._user_time.get(f"{user.id}")
-                    if command_time is None:
-                        self._user_time[f"{user.id}"] = time.time()
+            if filters_chat.filter(message):
+                command_time = context.user_data.get("command_time", 0)
+                count = context.user_data.get("usage_count", 0)
+                restrict_since = context.user_data.get("restrict_since", 0)
+                # 洪水防御
+                if restrict_since:
+                    if (time.time() - restrict_since) >= 60 * 5:
+                        del context.user_data["restrict_since"]
+                        del context.user_data["usage_count"]
                     else:
-                        if time.time() - command_time <= 20:
-                            if _try_delete_message:
-                                try:
-                                    if filters.ChatType.GROUPS.filter(message):
-                                        await message.delete()
-                                except BadRequest as error:
-                                    Log.warning("删除消息失败", error)
-                            return _return_data
-                        else:
-                            self._user_time[f"{user.id}"] = time.time()
-                except (ValueError, KeyError) as error:
-                    Log.error("操作失败", error)
+                        return return_data
+                else:
+                    if count == MAX_USAGE:
+                        context.user_data["restrict_since"] = time.time()
+                        await update.effective_message.reply_text("已经触发洪水防御，请等待5分钟")
+                        Log.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制5分钟")
+                        return return_data
+                # 单次使用限制
+                if command_time:
+                    if time.time() - command_time <= restricts_time:
+                        context.user_data["usage_count"] = count + 1
+                        if try_delete_message:
+                            try:
+                                if filters.ChatType.GROUPS.filter(message):
+                                    await message.delete()
+                            except BadRequest as error:
+                                Log.warning("删除消息失败", error)
+                        return return_data
+                else:
+                    if count >= 1:
+                        context.user_data["usage_count"] = count - 1
+
+                context.user_data["command_time"] = time.time()
+
             return await func(*args, **kwargs)
 
-        return decorator
+        return restricts_func
+
+    return decorator
