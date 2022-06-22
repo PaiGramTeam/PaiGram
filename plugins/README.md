@@ -25,7 +25,7 @@ class Example(BasePlugins):
         return CommandHandler('example', example.command_start)
 
     @conversation_error_handler
-    @restricts
+    @restricts()
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         await message.reply_text("Example")
 
@@ -41,4 +41,7 @@ plugins 模块下的类必须提供 `create_conversation_handler` 静态函数�
 
 必要的函数必须捕获异常后通知用户或者直接抛出异常
 
-入口函数必须使用 `@restricts` 修饰器  防止洪水攻击
+入口函数必须使用 `@restricts()` 修饰器  防止洪水攻击 
+
+**注意：`@restricts()` 修饰器带参，必须带括号，否则会出现调用错误**
+
