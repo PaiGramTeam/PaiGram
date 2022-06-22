@@ -129,7 +129,8 @@ class RestrictsCalls:
                         if time.time() - command_time <= 20:
                             if _try_delete_message:
                                 try:
-                                    await message.delete()
+                                    if filters.ChatType.GROUPS.filter(message):
+                                        await message.delete()
                                 except BadRequest as error:
                                     Log.warning("删除消息失败", error)
                             return _return_data

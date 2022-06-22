@@ -9,7 +9,7 @@ from telegram.helpers import escape_markdown
 
 from logger import Log
 from model.base import ServiceEnum
-from plugins.base import BasePlugins
+from plugins.base import BasePlugins, RestrictsCalls
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from service.base import UserInfoData
@@ -65,6 +65,7 @@ class Cookies(BasePlugins):
         return self.CHECK_SERVER
 
     @conversation_error_handler
+    @RestrictsCalls(filters_chat=filters.ALL, return_data=ConversationHandler.END, try_delete_message=True)
     async def check_server(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         cookies_command_data: CookiesCommandData = context.chat_data.get("cookies_command_data")

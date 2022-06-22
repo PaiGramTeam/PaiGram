@@ -2,12 +2,12 @@ import re
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, filters
+from telegram.ext import CallbackContext, filters, ConversationHandler
 
 from logger import Log
 from metadata.shortname import roleToName
 from model.helpers import url_to_file
-from plugins.base import BasePlugins
+from plugins.base import BasePlugins, RestrictsCalls
 from plugins.errorhandler import conversation_error_handler
 
 
@@ -17,6 +17,7 @@ class Strategy(BasePlugins):
     """
 
     @conversation_error_handler
+    @RestrictsCalls(filters_chat=filters.ALL, try_delete_message=True)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user

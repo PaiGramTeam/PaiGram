@@ -27,7 +27,7 @@ class Gacha(BasePlugins):
 
     CHECK_SERVER, COMMAND_RESULT = range(10600, 10602)
 
-    @RestrictsCalls(return_data=ConversationHandler.END, try_delete_message=True)
+    @RestrictsCalls(filters_chat=filters.ALL, return_data=ConversationHandler.END, try_delete_message=True)
     @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
