@@ -142,13 +142,13 @@ def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete
                 if command_time:
                     if (time.time() - command_time) <= restricts_time:
                         context.user_data["usage_count"] = count + 1
-                        if try_delete_message:
-                            try:
-                                if filters.ChatType.GROUPS.filter(message):
+                        if filters.ChatType.GROUPS.filter(message):
+                            if try_delete_message:
+                                try:
                                     await message.delete()
-                            except BadRequest as error:
-                                Log.warning("删除消息失败", error)
-                        return return_data
+                                except BadRequest as error:
+                                    Log.warning("删除消息失败", error)
+                            return return_data
 
                 if count >= 1:
                     context.user_data["usage_count"] = count - 1
