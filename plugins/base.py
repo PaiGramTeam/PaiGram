@@ -1,5 +1,6 @@
 import datetime
 import time
+from functools import wraps
 from typing import Callable, Optional
 
 from telegram import Update, ReplyKeyboardRemove
@@ -106,7 +107,7 @@ def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete
     """
 
     def decorator(func: Callable):
-
+        @wraps(func)
         async def restricts_func(*args, **kwargs):
             update: Optional[Update] = None
             context: Optional[CallbackContext] = None
@@ -139,7 +140,7 @@ def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete
                         return return_data
                 # 单次使用限制
                 if command_time:
-                    if time.time() - command_time <= restricts_time:
+                    if (time.time() - command_time) <= restricts_time:
                         context.user_data["usage_count"] = count + 1
                         if try_delete_message:
                             try:
@@ -148,9 +149,9 @@ def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete
                             except BadRequest as error:
                                 Log.warning("删除消息失败", error)
                         return return_data
-                else:
-                    if count >= 1:
-                        context.user_data["usage_count"] = count - 1
+
+                if count >= 1:
+                    context.user_data["usage_count"] = count - 1
 
                 context.user_data["command_time"] = time.time()
 

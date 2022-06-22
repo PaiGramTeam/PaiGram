@@ -17,7 +17,7 @@ class Weapon(BasePlugins):
     """
 
     @conversation_error_handler
-    @restricts
+    @restricts()
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user

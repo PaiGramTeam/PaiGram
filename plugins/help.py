@@ -19,7 +19,7 @@ class Help(BasePlugins):
         self.help_png = None
         self.file_id = None
 
-    @restricts
+    @restricts()
     async def command_start(self, update: Update, _: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
