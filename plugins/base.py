@@ -149,9 +149,9 @@ def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete
                                 except BadRequest as error:
                                     Log.warning("删除消息失败", error)
                             return return_data
-
-                if count >= 1:
-                    context.user_data["usage_count"] = count - 1
+                    else:
+                        if count >= 1:
+                            context.user_data["usage_count"] = count - 1
 
                 context.user_data["command_time"] = time.time()
 
