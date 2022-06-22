@@ -1,5 +1,5 @@
 from telegram import Update, ReplyKeyboardRemove
-from telegram.ext import CallbackContext, filters
+from telegram.ext import CallbackContext
 from telegram.helpers import escape_markdown
 
 from plugins.base import restricts

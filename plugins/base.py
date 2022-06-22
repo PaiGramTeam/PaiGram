@@ -1,12 +1,12 @@
 import datetime
 import time
+from functools import wraps
 from typing import Callable, Optional
 
 from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ChatType
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
-from telegram.ext._utils.types import HandlerCallback
 
 from logger import Log
 from service import BaseService
@@ -56,7 +56,7 @@ class BasePlugins:
 
 
 class NewChatMembersHandler:
-    def __init__(self, service: BaseService, auth_callback: HandlerCallback):
+    def __init__(self, service: BaseService, auth_callback: Callable):
         self.service = service
         self.auth_callback = auth_callback
 
@@ -86,7 +86,6 @@ class NewChatMembersHandler:
         await self.auth_callback(update, context)
 
 
-
 def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete_message: bool = True,
               restricts_time: int = 5):
     """
@@ -97,14 +96,14 @@ def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete
         或
         async def command_func(self, update, context)
 
-        我真™是服了某些闲着没事干的群友了
-
         如果修饰的函数属于
         ConversationHandler
         参数
         return_data
         必须传入
         ConversationHandler.END
+
+        我真™是服了某些闲着没事干的群友了
     """
 
     def decorator(func: Callable):
@@ -134,7 +133,7 @@ def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete
                     else:
                         return return_data
                 else:
-                    if count == MAX_USAGE:
+                    if count == 5:
                         context.user_data["restrict_since"] = time.time()
                         await update.effective_message.reply_text("已经触发洪水防御，请等待5分钟")
                         Log.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制5分钟")
