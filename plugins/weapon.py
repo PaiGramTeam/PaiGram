@@ -7,7 +7,7 @@ from telegram.ext import CallbackContext, filters, ConversationHandler
 from logger import Log
 from metadata.shortname import weaponToName
 from model.helpers import url_to_file
-from plugins.base import BasePlugins, RestrictsCalls
+from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
 
 
@@ -17,7 +17,7 @@ class Weapon(BasePlugins):
     """
 
     @conversation_error_handler
-    @RestrictsCalls(filters_chat=filters.ALL, try_delete_message=True)
+    @restricts()
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user

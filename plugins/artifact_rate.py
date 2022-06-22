@@ -6,7 +6,7 @@ from telegram.helpers import escape_markdown
 
 from logger import Log
 from model.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
-from plugins.base import BasePlugins, RestrictsCalls
+from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 
@@ -64,7 +64,7 @@ class ArtifactRate(BasePlugins):
                "_评分、识图均来自 genshin\\.pub_"
 
     @conversation_error_handler
-    @RestrictsCalls(filters_chat=filters.ALL, return_data=ConversationHandler.END, try_delete_message=True)
+    @restricts(return_data=ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         message = update.message
         user = update.effective_user

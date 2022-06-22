@@ -11,7 +11,7 @@ from telegram.helpers import escape_markdown
 
 from logger import Log
 from utils.random import MT19937_Random
-from plugins.base import BasePlugins, RestrictsCalls
+from plugins.base import BasePlugins, restricts
 from service import BaseService
 from service.base import QuestionData, AnswerData
 
@@ -94,7 +94,8 @@ class Quiz(BasePlugins):
                                                          correct_option_id=index, is_anonymous=False,
                                                          open_period=self.time_out, type=Poll.QUIZ)
 
-    @RestrictsCalls(return_data=ConversationHandler.END, try_delete_message=True)
+    @restricts(filters.ChatType.GROUPS, ConversationHandler.END, restricts_time=20)
+    @restricts(filters.ChatType.PRIVATE, ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message

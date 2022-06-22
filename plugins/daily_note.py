@@ -10,7 +10,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Conver
 
 from logger import Log
 from model.base import ServiceEnum
-from plugins.base import BasePlugins, RestrictsCalls
+from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from service.base import UserInfoData
@@ -102,7 +102,7 @@ class DailyNote(BasePlugins):
         return png_data
 
     @conversation_error_handler
-    @RestrictsCalls(filters_chat=filters.ALL, return_data=ConversationHandler.END, try_delete_message=True)
+    @restricts(return_data=ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
