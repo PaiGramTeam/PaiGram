@@ -63,6 +63,8 @@ class Uid(BasePlugins):
         except GenshinException as error:
             Log.warning("get_record_card请求失败 \n", error)
             raise error
+        if user_info.teapot is None:
+            raise ValueError("洞庭湖未解锁")
         try:
             # 查询的UID如果是自己的，会返回DataNotPublic，自己查不了自己可还行......
             if uid > 0:
@@ -174,18 +176,24 @@ class Uid(BasePlugins):
                 ]
             ]
             uid_command_data.user_info = user_info
-            await update.message.reply_text(reply_text, reply_markup=InlineKeyboardMarkup(keyboard))
+            await message.reply_text(reply_text, reply_markup=InlineKeyboardMarkup(keyboard))
             return self.COMMAND_RESULT
         else:
-            await update.message.reply_chat_action(ChatAction.TYPING)
+            await message.reply_chat_action(ChatAction.TYPING)
             try:
                 png_data = await self._start_get_user_info(user_info, user_info.service, uid)
-            except AttributeError:
-                await update.message.reply_text("角色数据异常，请登录官方查看【我的角色】是否显示正常")
+            except ValueError as exc:
+                if "洞庭湖未解锁" in str(exc):
+                    await message.reply_text("角色洞庭湖未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
+                    return ConversationHandler.END
+                else:
+                    raise exc
+            except AttributeError as exc:
+                Log.warning("角色数据有误", exc)
+                await message.reply_text("角色数据有误 估计是派蒙晕了")
                 return ConversationHandler.END
-            await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-            await update.message.reply_photo(png_data, filename=f"{user_info.user_id}.png",
-                                             allow_sending_without_reply=True)
+            await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+            await message.reply_photo(png_data, filename=f"{user_info.user_id}.png", allow_sending_without_reply=True)
 
         return ConversationHandler.END
 
@@ -193,6 +201,7 @@ class Uid(BasePlugins):
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         get_user_command_data: UidCommandData = context.chat_data["uid_command_data"]
         query = update.callback_query
+        message = query.message
         await query.answer()
         await query.delete_message()
         if query.data == "uid|米游社":
@@ -203,10 +212,17 @@ class Uid(BasePlugins):
             return ConversationHandler.END
         try:
             png_data = await self._start_get_user_info(get_user_command_data.user_info, service)
-        except AttributeError:
-            await update.message.reply_text("角色数据异常，请登录官方查看【我的角色】是否显示正常")
+        except ValueError as exc:
+            if "洞庭湖未解锁" in str(exc):
+                await message.reply_text("角色洞庭湖未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
+                return ConversationHandler.END
+            else:
+                raise exc
+        except AttributeError as exc:
+            Log.warning("角色数据有误", exc)
+            await message.reply_text("角色数据有误 估计是派蒙晕了")
             return ConversationHandler.END
-        await query.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await query.message.reply_photo(png_data, filename=f"{get_user_command_data.user_info.user_id}.png",
-                                        allow_sending_without_reply=True)
+        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        await message.reply_photo(png_data, filename=f"{get_user_command_data.user_info.user_id}.png",
+                                  allow_sending_without_reply=True)
         return ConversationHandler.END
