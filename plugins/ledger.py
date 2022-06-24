@@ -202,7 +202,7 @@ class Ledger(BasePlugins):
             try:
                 png_data = await self._start_get_ledger(user_info, user_info.service, month)
             except DataNotPublic:
-                reply_message = await update.message.reply_text("查询失败惹，可能是手扎功能被禁用了？")
+                reply_message = await update.message.reply_text("查询失败惹，可能是旅行札记功能被禁用了？")
                 if filters.ChatType.GROUPS.filter(message):
                     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
                     self._add_delete_message_job(context, message.chat_id, message.message_id, 300)

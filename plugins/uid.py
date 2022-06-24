@@ -184,7 +184,7 @@ class Uid(BasePlugins):
                 png_data = await self._start_get_user_info(user_info, user_info.service, uid)
             except ValueError as exc:
                 if "洞庭湖未解锁" in str(exc):
-                    await message.reply_text("角色洞庭湖未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
+                    await message.reply_text("角色尘歌壶未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
                     return ConversationHandler.END
                 else:
                     raise exc
@@ -214,7 +214,7 @@ class Uid(BasePlugins):
             png_data = await self._start_get_user_info(get_user_command_data.user_info, service)
         except ValueError as exc:
             if "洞庭湖未解锁" in str(exc):
-                await message.reply_text("角色洞庭湖未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
+                await message.reply_text("角色尘歌壶未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
                 return ConversationHandler.END
             else:
                 raise exc
