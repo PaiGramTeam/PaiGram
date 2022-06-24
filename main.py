@@ -1,9 +1,10 @@
 import asyncio
 from warnings import filterwarnings
 
-from telegram.ext import Application
+from telegram.ext import Application, ContextTypes
 from telegram.warnings import PTBUserWarning
 
+from utils.base import PaimonContext
 from config import config
 from handler import register_handlers
 from logger import Log
@@ -39,7 +40,16 @@ def main() -> None:
 
     # 构建BOT
     Log.info("构建BOT")
-    application = Application.builder().token(config.TELEGRAM["token"]).build()
+
+    # 自定义 context 类型
+    context_types = ContextTypes(context=PaimonContext)
+
+    application = Application.builder().token(config.TELEGRAM["token"]).context_types(context_types).build()
+
+    # 保存实例化的类到 bot_data
+    # 这样在每个实例去获取 service 时
+    # 通过 PaimonContext 就能获取
+    application.bot_data.setdefault("service", service)
 
     register_handlers(application, service)
 
