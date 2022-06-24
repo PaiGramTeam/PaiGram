@@ -34,7 +34,9 @@ class BaseObject:
         for key, val in state.items():
             setattr(self, key, val)
 
-    def __deepcopy__(self, memodict: dict = {}):
+    def __deepcopy__(self, memodict: dict = None):
+        if memodict is None:
+            memodict = {}
         cls = self.__class__
         result = cls.__new__(cls)  # 创建新实例
         attrs = self._get_attrs(include_private=True)  # 获取其所有属性
