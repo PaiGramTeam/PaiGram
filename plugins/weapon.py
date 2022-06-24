@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, filters, ConversationHandler
+from telegram.ext import CallbackContext, filters
 
 from logger import Log
 from metadata.shortname import weaponToName
