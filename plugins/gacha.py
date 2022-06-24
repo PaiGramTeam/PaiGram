@@ -30,7 +30,7 @@ class Gacha(BasePlugins):
     @conversation_error_handler
     @restricts(filters.ChatType.GROUPS, ConversationHandler.END, restricts_time=20)
     @restricts(filters.ChatType.PRIVATE, ConversationHandler.END)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: CallbackContext) -> int:
         message = update.message
         user = update.effective_user
         args = context.args
