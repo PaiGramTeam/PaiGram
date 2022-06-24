@@ -44,7 +44,7 @@ class Gacha(BasePlugins):
         else:
             if len(args) >= 1:
                 gacha_name = args[0]
-        if gacha_name not in ("角色活动-2", "武器活动", "常驻"):
+        if gacha_name not in ("角色活动-2", "武器活动", "常驻", "角色活动"):
             for key, value in {"2": "角色活动-2", "武器": "武器活动", "普通": "常驻"}.items():
                 if key == gacha_name:
                     gacha_name = value
