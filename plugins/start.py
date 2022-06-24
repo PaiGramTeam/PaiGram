@@ -1,11 +1,7 @@
-from pyrogram.methods.messages.send_chat_action import ChatAction
 from telegram import Update, ReplyKeyboardRemove
-from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 from telegram.helpers import escape_markdown
 
-from config import config
-from logger import Log
 from utils.base import PaimonContext
 from plugins.base import restricts
 

@@ -1,7 +1,9 @@
 import os
 import json
-
 import genshin
+import re
+
+from datetime import datetime, timedelta
 from genshin import GenshinException, DataNotPublic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -17,12 +19,48 @@ from service.base import UserInfoData
 
 
 class UidCommandData:
+    month: int = None
     user_info: UserInfoData = UserInfoData()
+
+
+def process_ledger_month(context: CallbackContext) -> int:
+    # process month
+    args = context.args
+    match = context.match
+    month = datetime.now().month
+    if args is None:
+        if match is not None:
+            match_data = match.group(1)
+            if match_data != "":
+                month = match_data
+    elif len(args) >= 1:
+        month = args[0]
+    if isinstance(month, int):
+        pass
+    elif re_data := re.findall(r"\d+", month):
+        month = int(re_data[0])
+    else:
+        num_dict = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
+                    "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+        month = sum(num_dict.get(i, 0) for i in month)
+    # check right
+    now_time = datetime.now()
+    allow_month = [datetime.now().month]
+    last_month = now_time.replace(day=1) - timedelta(days=1)
+    allow_month.append(last_month.month)
+    last_month = last_month.replace(day=1) - timedelta(days=1)
+    allow_month.append(last_month.month)
+
+    if month in allow_month:
+        return month
+    elif isinstance(month, int):
+        raise IndexError
+    return now_time.month
 
 
 class Ledger(BasePlugins):
     """
-    旅行扎记
+    旅行札记
     """
 
     COMMAND_RESULT, = range(10200, 10201)
@@ -35,15 +73,15 @@ class Ledger(BasePlugins):
     def create_conversation_handler(service: BaseService):
         ledger = Ledger(service)
         return ConversationHandler(
-            entry_points=[CommandHandler('ledger', ledger.command_start, block=True),
+            entry_points=[CommandHandler("ledger", ledger.command_start, block=True),
                           MessageHandler(filters.Regex(r"^旅行扎记(.*)"), ledger.command_start, block=True)],
             states={
                 ledger.COMMAND_RESULT: [CallbackQueryHandler(ledger.command_result, block=True)]
             },
-            fallbacks=[CommandHandler('cancel', ledger.cancel, block=True)]
+            fallbacks=[CommandHandler("cancel", ledger.cancel, block=True)]
         )
 
-    async def _start_get_ledger(self, user_info_data: UserInfoData, service: ServiceEnum) -> bytes:
+    async def _start_get_ledger(self, user_info_data: UserInfoData, service: ServiceEnum, month=None) -> bytes:
         if service == ServiceEnum.HYPERION:
             client = genshin.ChineseClient(cookies=user_info_data.mihoyo_cookie)
             uid = user_info_data.mihoyo_game_uid
@@ -51,7 +89,7 @@ class Ledger(BasePlugins):
             client = genshin.GenshinClient(cookies=user_info_data.hoyoverse_cookie, lang="zh-cn")
             uid = user_info_data.hoyoverse_game_uid
         try:
-            diary_info = await client.get_diary(uid)
+            diary_info = await client.get_diary(uid, month=month)
         except GenshinException as error:
             raise error
         color = ["#73a9c6", "#d56565", "#70b2b4", "#bd9a5a", "#739970", "#7a6da7", "#597ea0"]
@@ -127,10 +165,19 @@ class Ledger(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
+        try:
+            month = process_ledger_month(context)
+        except IndexError:
+            reply_message = await message.reply_text("仅可查询最新三月的数据，请重新输入")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
+            return ConversationHandler.END
         Log.info(f"用户 {user.full_name}[{user.id}] 查询原石手扎")
         ledger_command_data: UidCommandData = context.chat_data.get("ledger_command_data")
         if ledger_command_data is None:
             ledger_command_data = UidCommandData()
+            ledger_command_data.month = month
             context.chat_data["ledger_command_data"] = ledger_command_data
         user_info = await self.service.user_service_db.get_user_info(user.id)
         if user_info.user_id == 0:
@@ -153,7 +200,7 @@ class Ledger(BasePlugins):
         else:
             await update.message.reply_chat_action(ChatAction.TYPING)
             try:
-                png_data = await self._start_get_ledger(user_info, user_info.service)
+                png_data = await self._start_get_ledger(user_info, user_info.service, month)
             except DataNotPublic:
                 reply_message = await update.message.reply_text("查询失败惹，可能是手扎功能被禁用了？")
                 if filters.ChatType.GROUPS.filter(message):
@@ -178,7 +225,9 @@ class Ledger(BasePlugins):
             service = ServiceEnum.HOYOLAB
         else:
             return ConversationHandler.END
-        png_data = await self._start_get_ledger(get_user_command_data.user_info, service)
+        png_data = await self._start_get_ledger(get_user_command_data.user_info,
+                                                service,
+                                                get_user_command_data.month)
         await query.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await query.message.reply_photo(png_data, filename=f"{get_user_command_data.user_info.user_id}.png",
                                         allow_sending_without_reply=True)
