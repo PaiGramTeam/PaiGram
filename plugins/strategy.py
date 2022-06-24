@@ -26,7 +26,9 @@ class Strategy(BasePlugins):
         role_name: str = ""
         if args is None:
             if match is not None:
-                role_name = match.group(1)
+                match_data = match.group(1)
+                if match_data != "":
+                    role_name = match_data
         else:
             if len(args) >= 1:
                 role_name = args[0]
