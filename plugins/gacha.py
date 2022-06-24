@@ -38,7 +38,9 @@ class Gacha(BasePlugins):
         gacha_name = "角色活动"
         if args is None:
             if match is not None:
-                gacha_name = match.group(1)
+                match_data = match.group(1)
+                if match_data != "":
+                    gacha_name = match_data
         else:
             if len(args) >= 1:
                 gacha_name = args[0]
