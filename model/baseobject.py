@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Dict, Union, Optional, List
 
 import json
@@ -33,9 +34,13 @@ class BaseObject:
         for key, val in state.items():
             setattr(self, key, val)
 
-    def __deepcopy__(self):
+    def __deepcopy__(self, memodict: dict = {}):
         cls = self.__class__
         result = cls.__new__(cls)  # 创建新实例
+        attrs = self._get_attrs(include_private=True)  # 获取其所有属性
+
+        for k in attrs:  # 在DeepCopy对象中设置属性
+            setattr(result, k, deepcopy(getattr(self, k), memodict))
         return result
 
     # 添加插槽可减少内存使用，并允许更快的属性访问
