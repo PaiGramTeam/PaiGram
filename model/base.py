@@ -1,5 +1,8 @@
 import imghdr
 from enum import Enum
+from typing import Union
+
+from model.baseobject import BaseObject
 
 
 class Stat:
@@ -45,3 +48,15 @@ class ServiceEnum(Enum):
     NULL = None
     HYPERION = 1  # 米忽悠国服
     HOYOLAB = 2  # 米忽悠国际服
+
+
+class GameItem(BaseObject):
+    def __init__(self, item_id: int = 0, name: str = "", item_type: Union[Enum, str, int] = "",
+                 value: Union[Enum, str, int, bool, float] = 0):
+        self.item_id = item_id
+        self.name = name  # 名称
+        self.type = item_type  # 类型
+        self.value = value  # 数值
+
+    __slots__ = ("name", "type", "value", "item_id")
+
