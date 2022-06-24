@@ -33,16 +33,24 @@ class Gacha(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
-        Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求")
         args = context.args
+        match = context.match
         gacha_name = "角色活动"
-        if args is not None:
+        if args is None:
+            if match is not None:
+                gacha_name = match.group(1)
+        else:
             if len(args) >= 1:
                 gacha_name = args[0]
-                for key, value in {"2": "角色活动-2", "武器": "武器活动", "普通": "常驻"}.items():
-                    if key == gacha_name:
-                        gacha_name = value
-                        break
+        if gacha_name not in ("角色活动-2", "武器活动", "常驻"):
+            for key, value in {"2": "角色活动-2", "武器": "武器活动", "普通": "常驻"}.items():
+                if key == gacha_name:
+                    gacha_name = value
+                    break
+            else:
+                await message.reply_text(f"没有找到名为 {gacha_name} 的卡池")
+                return ConversationHandler.END
+        Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
         gacha_info = await self.service.gacha.gacha_info(gacha_name)
         # 用户数据储存和处理
         if gacha_info.get("gacha_id") is None:

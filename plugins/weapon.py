@@ -1,5 +1,3 @@
-import re
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, filters, ConversationHandler
@@ -16,51 +14,42 @@ class Weapon(BasePlugins):
     武器查询
     """
 
+    KEYBOARD = [[InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")]]
+
     @conversation_error_handler
     @restricts()
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
         args = context.args
-        search_command = re.search(r'^武器查询(.*)', message.text)
-        keyboard = [
-            [
-                InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")
-            ]
-        ]
+        match = context.match
         weapon_name: str = ""
-        if search_command:
-            weapon_name = search_command[1]
-            if weapon_name == "":
-                reply_message = await message.reply_text("请回复你要查询的武器", reply_markup=InlineKeyboardMarkup(keyboard))
-                if filters.ChatType.GROUPS.filter(reply_message):
-                    self._add_delete_message_job(context, message.chat_id, message.message_id)
-                    self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-                return
-        elif args is not None:
+        if args is None:
+            if match is not None:
+                weapon_name = match.group(1)
+        else:
             if len(args) >= 1:
                 weapon_name = args[0]
-
-        else:
-            reply_message = await message.reply_text("请回复你要查询的武器", reply_markup=InlineKeyboardMarkup(keyboard))
+        if weapon_name == "":
+            reply_message = await message.reply_text("请回复你要查询的武器",
+                                                     reply_markup=InlineKeyboardMarkup(self.KEYBOARD))
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
         weapon_name = weaponToName(weapon_name)
-        weapon_data = None
         weapons_list = await self.service.wiki.get_weapons_list()
         for weapon in weapons_list:
             if weapon["name"] == weapon_name:
                 weapon_data = weapon
-        if weapon_data is None:
+                break
+        else:
             reply_message = await message.reply_text(f"没有找到 {weapon_name}",
-                                                     reply_markup=InlineKeyboardMarkup(keyboard))
+                                                     reply_markup=InlineKeyboardMarkup(self.KEYBOARD))
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
-
         Log.info(f"用户 {user.full_name}[{user.id}] 查询武器命令请求 || 参数 {weapon_name}")
         await message.reply_chat_action(ChatAction.TYPING)
 

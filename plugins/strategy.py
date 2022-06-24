@@ -1,5 +1,3 @@
-import re
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters, ConversationHandler
@@ -16,43 +14,35 @@ class Strategy(BasePlugins):
     角色攻略查询
     """
 
+    KEYBOARD = [[InlineKeyboardButton(text="查看角色攻略列表并查询", switch_inline_query_current_chat="查看角色攻略列表并查询")]]
+
     @conversation_error_handler
     @restricts(return_data=ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
         args = context.args
-        search_command = re.search(r"^角色攻略查询(.*)", message.text)
-        keyboard = [
-            [
-                InlineKeyboardButton(text="查看角色攻略列表并查询", switch_inline_query_current_chat="查看角色攻略列表并查询")
-            ]
-        ]
-        await update.message.reply_chat_action(ChatAction.TYPING)
-        role_name = ""
-        if search_command:
-            role_name = roleToName(search_command[1])
-            if role_name == "":
-                reply_message = await message.reply_text("请回复你要查询的攻略的角色名",
-                                                         reply_markup=InlineKeyboardMarkup(keyboard))
-                if filters.ChatType.GROUPS.filter(reply_message):
-                    self._add_delete_message_job(context, message.chat_id, message.message_id)
-                    self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-                return
-        elif args is not None:
-            if len(args) >= 1:
-                role_name = roleToName(args[0])
+        match = context.match
+        role_name: str = ""
+        if args is None:
+            if match is not None:
+                role_name = match.group(1)
         else:
+            if len(args) >= 1:
+                role_name = args[0]
+        await update.message.reply_chat_action(ChatAction.TYPING)
+        if role_name == "":
             reply_message = await message.reply_text("请回复你要查询的攻略的角色名",
-                                                     reply_markup=InlineKeyboardMarkup(keyboard))
+                                                     reply_markup=InlineKeyboardMarkup(self.KEYBOARD))
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
+        role_name = roleToName(role_name)
         url = await self.service.get_game_info.get_characters_cultivation_atlas(role_name)
         if url == "":
             reply_message = await message.reply_text(f"没有找到 {role_name} 的攻略",
-                                                     reply_markup=InlineKeyboardMarkup(keyboard))
+                                                     reply_markup=InlineKeyboardMarkup(self.KEYBOARD))
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
