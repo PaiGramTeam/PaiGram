@@ -1,32 +1,31 @@
 from telegram import Update
 from telegram.constants import ChatAction
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext
 
 from config import config
 from logger import Log
-from plugins.base import BasePlugins, restricts
-from service import BaseService
+from plugins.base import restricts
+from utils.base import PaimonContext
 
 
-class Help(BasePlugins):
+class Help:
     """
     帮助
     """
 
-    def __init__(self, service: BaseService):
-        super().__init__(service)
+    def __init__(self):
         self.help_png = None
         self.file_id = None
 
     @restricts()
-    async def command_start(self, update: Update, _: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: PaimonContext) -> None:
         message = update.message
         user = update.effective_user
+        service = context.service
         Log.info(f"用户 {user.full_name}[{user.id}] 发出help命令")
         if self.file_id is None or config.DEBUG:
             await message.reply_chat_action(ChatAction.TYPING)
-            help_png = await self.service.template.render('bot/help', "help.html", {}, {"width": 768, "height": 768})
+            help_png = await service.template.render('bot/help', "help.html", {}, {"width": 768, "height": 768})
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             reply_photo = await message.reply_photo(help_png, filename="help.png", allow_sending_without_reply=True)
             photo = reply_photo.photo[0]

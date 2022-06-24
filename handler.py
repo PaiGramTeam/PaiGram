@@ -43,7 +43,7 @@ def register_handlers(application: Application, service: BaseService):
             application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
 
     # 初始化
-    plugins_help = Help(service)
+    plugins_help = Help()
     inline = Inline(service)
     auth = Auth(service)
     gacha = Gacha(service)
