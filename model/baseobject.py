@@ -102,6 +102,3 @@ class BaseObject:
 
     def to_dict(self) -> JSONDict:
         return self._get_attrs(recursive=True)
-
-    def __hash__(self) -> int:
-        return super().__hash__()
