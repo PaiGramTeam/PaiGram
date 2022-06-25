@@ -2,7 +2,7 @@ import os
 from glob import glob
 from importlib import import_module
 from os import path
-from typing import Callable, List, Union
+from typing import Callable, List, Optional
 
 from telegram.ext import Application
 
@@ -37,7 +37,7 @@ class PluginsManager:
             if ext == ".py":
                 self.plugin_list.append(root)
 
-    def add_exclude(self, exclude: Union[List[str], str]):
+    def add_exclude(self, exclude: Optional[str, list[str]]):
         if type(exclude) == str:
             self.exclude_list.append(exclude)
         elif type(exclude) == list:
