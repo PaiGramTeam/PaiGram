@@ -1,4 +1,6 @@
 from http.cookies import SimpleCookie, CookieError
+from typing import List
+from urllib.request import BaseHandler
 
 import genshin
 import ujson
@@ -8,6 +10,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 from telegram.helpers import escape_markdown
 
 from logger import Log
+from manager import listener_plugins_class
 from model.base import ServiceEnum
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
@@ -22,6 +25,7 @@ class CookiesCommandData:
     user_info: UserInfoData = UserInfoData()
 
 
+@listener_plugins_class()
 class Cookies(BasePlugins):
     """
     Cookie绑定
@@ -30,7 +34,7 @@ class Cookies(BasePlugins):
     CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
 
     @staticmethod
-    def create_conversation_handler(service: BaseService):
+    def create_handlers(service: BaseService):
         cookies = Cookies(service)
         cookies_handler = ConversationHandler(
             entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE, block=True),
@@ -46,7 +50,7 @@ class Cookies(BasePlugins):
             },
             fallbacks=[CommandHandler('cancel', cookies.cancel, block=True)],
         )
-        return cookies_handler
+        return [cookies_handler]
 
     @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> int:

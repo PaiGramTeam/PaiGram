@@ -10,6 +10,7 @@ from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, M
 from telegram.helpers import escape_markdown
 
 from logger import Log
+from manager import listener_plugins_class
 from utils.random import MT19937_Random
 from plugins.base import BasePlugins, restricts
 from service import BaseService
@@ -24,6 +25,7 @@ class QuizCommandData:
     status: int = 0
 
 
+@listener_plugins_class()
 class Quiz(BasePlugins):
     """
     派蒙的十万个为什么
@@ -42,7 +44,7 @@ class Quiz(BasePlugins):
         self.random = MT19937_Random()
 
     @staticmethod
-    def create_conversation_handler(service: BaseService):
+    def create_handlers(service: BaseService):
         quiz = Quiz(service)
         quiz_handler = ConversationHandler(
             entry_points=[CommandHandler('quiz', quiz.command_start, block=True)],
@@ -63,7 +65,7 @@ class Quiz(BasePlugins):
             },
             fallbacks=[CommandHandler('cancel', quiz.cancel, block=True)]
         )
-        return quiz_handler
+        return [quiz_handler]
 
     async def send_poll(self, update: Update) -> Optional[Message]:
         chat = update.message.chat

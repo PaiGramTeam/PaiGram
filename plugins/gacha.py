@@ -1,21 +1,33 @@
 import os
+from typing import List
 
 from pyppeteer import launch
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.ext import CallbackContext, ConversationHandler, filters, CommandHandler, MessageHandler, BaseHandler
 
 from logger import Log
+from manager import listener_plugins_class
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 from service.wish import WishCountInfo, get_one
 
 
+@listener_plugins_class()
 class Gacha(BasePlugins):
     """
     抽卡模拟器（非首模拟器/减寿模拟器）
     """
+
+    @staticmethod
+    def create_handlers(service: BaseService) -> List[BaseHandler]:
+        gacha = Gacha(service)
+        return [
+            CommandHandler("gacha", gacha.command_start, block=False),
+            MessageHandler(filters.Regex("^抽卡模拟器(.*)"), gacha.command_start, block=False),
+            MessageHandler(filters.Regex("^非首模拟器(.*)"), gacha.command_start, block=False),
+        ]
 
     def __init__(self, service: BaseService):
         super().__init__(service)

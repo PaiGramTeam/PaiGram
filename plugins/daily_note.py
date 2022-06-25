@@ -1,14 +1,16 @@
 import datetime
 import os
+from typing import List
 
 import genshin
 from genshin import GenshinException, DataNotPublic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters, \
-    CallbackQueryHandler
+    CallbackQueryHandler, BaseHandler
 
 from logger import Log
+from manager import listener_plugins_class
 from model.base import ServiceEnum
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
@@ -20,6 +22,7 @@ class UidCommandData:
     user_info: UserInfoData = UserInfoData()
 
 
+@listener_plugins_class()
 class DailyNote(BasePlugins):
     """
     每日便签
@@ -32,7 +35,7 @@ class DailyNote(BasePlugins):
         self.current_dir = os.getcwd()
 
     @staticmethod
-    def create_conversation_handler(service: BaseService):
+    def create_handlers(service: BaseService) -> List[BaseHandler]:
         daily_note = DailyNote(service)
         daily_note_handler = ConversationHandler(
             entry_points=[CommandHandler('dailynote', daily_note.command_start, block=True),
@@ -42,7 +45,7 @@ class DailyNote(BasePlugins):
             },
             fallbacks=[CommandHandler('cancel', daily_note.cancel, block=True)]
         )
-        return daily_note_handler
+        return [daily_note_handler]
 
     async def _start_get_daily_note(self, user_info_data: UserInfoData, service: ServiceEnum) -> bytes:
         if service == ServiceEnum.HYPERION:

@@ -1,20 +1,33 @@
+from typing import List
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, filters, ConversationHandler
+from telegram.ext import CallbackContext, filters, ConversationHandler, BaseHandler, CommandHandler, MessageHandler
 
 from logger import Log
+from manager import listener_plugins_class
 from metadata.shortname import roleToName
 from model.helpers import url_to_file
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
+from service import BaseService
 
 
+@listener_plugins_class()
 class Strategy(BasePlugins):
     """
     角色攻略查询
     """
 
     KEYBOARD = [[InlineKeyboardButton(text="查看角色攻略列表并查询", switch_inline_query_current_chat="查看角色攻略列表并查询")]]
+
+    @staticmethod
+    def create_handlers(service: BaseService) -> List[BaseHandler]:
+        strategy = Strategy(service)
+        return [
+            CommandHandler("strategy", strategy.command_start, block=False),
+            MessageHandler(filters.Regex("^角色攻略查询(.*)"), strategy.command_start, block=False),
+        ]
 
     @conversation_error_handler
     @restricts(return_data=ConversationHandler.END)

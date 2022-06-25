@@ -9,6 +9,7 @@ from telegram.helpers import escape_markdown
 
 from config import config
 from logger import Log
+from manager import listener_plugins_class
 from model.apihelper import Hyperion, ArtworkImage
 from plugins.base import BasePlugins
 from plugins.errorhandler import conversation_error_handler
@@ -25,6 +26,7 @@ class PostHandlerData:
         self.tags: Optional[List[str]] = []
 
 
+@listener_plugins_class()
 class Post(BasePlugins):
     """
     文章推送
@@ -40,7 +42,7 @@ class Post(BasePlugins):
         self.bbs = Hyperion()
 
     @staticmethod
-    def create_conversation_handler(service: BaseService):
+    def create_handlers(service: BaseService):
         _post = Post(service)
         post_handler = ConversationHandler(
             entry_points=[CommandHandler('post', _post.command_start, block=True)],
@@ -57,7 +59,7 @@ class Post(BasePlugins):
             },
             fallbacks=[CommandHandler('cancel', _post.cancel, block=True)]
         )
-        return post_handler
+        return [post_handler]
 
     @conversation_error_handler
     async def command_start(self, update: Update, context: CallbackContext) -> int:
