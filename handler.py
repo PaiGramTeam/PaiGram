@@ -38,13 +38,8 @@ def register_handlers(application: Application, service: BaseService):
 
     plugins_manager.refresh_list("./plugins/*")
 
-    # 排除掉的模块
-    plugins_manager.add_exclude("help")
-    plugins_manager.add_exclude("start")
-    plugins_manager.add_exclude("base")
-    plugins_manager.add_exclude("auth")
-    plugins_manager.add_exclude("inline")
-    plugins_manager.add_exclude("errorhandler")
+    # 忽略内置模块模块
+    plugins_manager.add_exclude(["help", "start", "base", "auth", "inline", "errorhandler"])
 
     Log.info("加载插件管理器正在加载插件")
     plugins_manager.import_module()
