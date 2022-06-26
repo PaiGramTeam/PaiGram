@@ -3,7 +3,7 @@ from typing import List
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, \
-    filters, BaseHandler
+    filters
 from telegram.helpers import escape_markdown
 
 from logger import Log
@@ -36,7 +36,7 @@ class ArtifactRate(BasePlugins):
         self.artifact_rate = ArtifactOcrRate()
 
     @staticmethod
-    def create_handlers(service: BaseService) -> List[BaseHandler]:
+    def create_handlers(service: BaseService) -> list:
         artifact_rate = ArtifactRate(service)
         return [
             ConversationHandler(

@@ -1,8 +1,6 @@
-from typing import List
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, filters, BaseHandler, CommandHandler, MessageHandler
+from telegram.ext import CallbackContext, filters, CommandHandler, MessageHandler
 
 from logger import Log
 from manager import listener_plugins_class
@@ -22,7 +20,7 @@ class Weapon(BasePlugins):
     KEYBOARD = [[InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")]]
 
     @staticmethod
-    def create_handlers(service: BaseService) -> List[BaseHandler]:
+    def create_handlers(service: BaseService) -> list:
         weapon = Weapon(service)
         return [
             CommandHandler("weapon", weapon.command_start, block=False),

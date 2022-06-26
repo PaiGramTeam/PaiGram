@@ -1,7 +1,5 @@
-from typing import List
-
 from telegram import Update
-from telegram.ext import CallbackContext, CommandHandler, BaseHandler
+from telegram.ext import CallbackContext, CommandHandler
 
 from manager import listener_plugins_class
 from plugins.admin import bot_admins_only
@@ -16,7 +14,7 @@ class Wiki(BasePlugins):
     """
 
     @staticmethod
-    def create_handlers(service: BaseService) -> List[BaseHandler]:
+    def create_handlers(service: BaseService) -> list:
         wiki = Wiki(service)
         return [
             CommandHandler("refresh_wiki", wiki.refresh_wiki, block=False),

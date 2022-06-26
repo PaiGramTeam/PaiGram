@@ -1,13 +1,12 @@
 import datetime
 import os
-from typing import List
 
 import genshin
 from genshin import GenshinException, DataNotPublic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters, \
-    CallbackQueryHandler, BaseHandler
+    CallbackQueryHandler
 
 from logger import Log
 from manager import listener_plugins_class
@@ -35,7 +34,7 @@ class DailyNote(BasePlugins):
         self.current_dir = os.getcwd()
 
     @staticmethod
-    def create_handlers(service: BaseService) -> List[BaseHandler]:
+    def create_handlers(service: BaseService) -> list:
         daily_note = DailyNote(service)
         daily_note_handler = ConversationHandler(
             entry_points=[CommandHandler('dailynote', daily_note.command_start, block=True),

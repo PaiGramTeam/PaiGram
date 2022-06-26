@@ -1,8 +1,8 @@
-from typing import Callable, List
+from typing import Callable
 
 from telegram import Update
 from telegram.error import BadRequest, Forbidden
-from telegram.ext import CallbackContext, BaseHandler, CommandHandler
+from telegram.ext import CallbackContext, CommandHandler
 
 from logger import Log
 from manager import listener_plugins_class
@@ -29,7 +29,7 @@ class Admin(BasePlugins):
     """
 
     @staticmethod
-    def create_handlers(service: BaseService) -> List[BaseHandler]:
+    def create_handlers(service: BaseService) -> list:
         admin = Admin(service)
         return [
             CommandHandler("add_admin", admin.add_admin, block=False),

@@ -1,8 +1,6 @@
-from typing import List
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, filters, ConversationHandler, BaseHandler, CommandHandler, MessageHandler
+from telegram.ext import CallbackContext, filters, ConversationHandler, CommandHandler, MessageHandler
 
 from logger import Log
 from manager import listener_plugins_class
@@ -22,7 +20,7 @@ class Strategy(BasePlugins):
     KEYBOARD = [[InlineKeyboardButton(text="查看角色攻略列表并查询", switch_inline_query_current_chat="查看角色攻略列表并查询")]]
 
     @staticmethod
-    def create_handlers(service: BaseService) -> List[BaseHandler]:
+    def create_handlers(service: BaseService) -> list:
         strategy = Strategy(service)
         return [
             CommandHandler("strategy", strategy.command_start, block=False),
