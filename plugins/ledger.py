@@ -11,6 +11,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Conver
     CallbackQueryHandler
 
 from logger import Log
+from manager import listener_plugins_class
 from model.base import ServiceEnum
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
@@ -58,6 +59,7 @@ def process_ledger_month(context: CallbackContext) -> int:
     return now_time.month
 
 
+@listener_plugins_class()
 class Ledger(BasePlugins):
     """
     旅行札记
@@ -70,16 +72,16 @@ class Ledger(BasePlugins):
         self.current_dir = os.getcwd()
 
     @staticmethod
-    def create_conversation_handler(service: BaseService):
+    def create_handlers(service: BaseService):
         ledger = Ledger(service)
-        return ConversationHandler(
+        return [ConversationHandler(
             entry_points=[CommandHandler("ledger", ledger.command_start, block=True),
                           MessageHandler(filters.Regex(r"^旅行扎记(.*)"), ledger.command_start, block=True)],
             states={
                 ledger.COMMAND_RESULT: [CallbackQueryHandler(ledger.command_result, block=True)]
             },
             fallbacks=[CommandHandler("cancel", ledger.cancel, block=True)]
-        )
+        )]
 
     async def _start_get_ledger(self, user_info_data: UserInfoData, service: ServiceEnum, month=None) -> bytes:
         if service == ServiceEnum.HYPERION:

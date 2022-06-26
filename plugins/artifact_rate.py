@@ -1,3 +1,5 @@
+from typing import List
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, \
@@ -5,12 +7,14 @@ from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, C
 from telegram.helpers import escape_markdown
 
 from logger import Log
+from manager import listener_plugins_class
 from model.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService
 
 
+@listener_plugins_class()
 class ArtifactRate(BasePlugins):
     COMMAND_RESULT = 1
 
@@ -32,17 +36,19 @@ class ArtifactRate(BasePlugins):
         self.artifact_rate = ArtifactOcrRate()
 
     @staticmethod
-    def create_conversation_handler(service: BaseService):
+    def create_handlers(service: BaseService) -> list:
         artifact_rate = ArtifactRate(service)
-        return ConversationHandler(
-            entry_points=[CommandHandler('artifact_rate', artifact_rate.command_start),
-                          MessageHandler(filters.Regex(r"^圣遗物评分(.*)"), artifact_rate.command_start),
-                          MessageHandler(filters.CaptionRegex(r"^圣遗物评分(.*)"), artifact_rate.command_start)],
-            states={
-                artifact_rate.COMMAND_RESULT: [CallbackQueryHandler(artifact_rate.command_result)]
-            },
-            fallbacks=[CommandHandler('cancel', artifact_rate.cancel)]
-        )
+        return [
+            ConversationHandler(
+                entry_points=[CommandHandler('artifact_rate', artifact_rate.command_start),
+                              MessageHandler(filters.Regex(r"^圣遗物评分(.*)"), artifact_rate.command_start),
+                              MessageHandler(filters.CaptionRegex(r"^圣遗物评分(.*)"), artifact_rate.command_start)],
+                states={
+                    artifact_rate.COMMAND_RESULT: [CallbackQueryHandler(artifact_rate.command_result)]
+                },
+                fallbacks=[CommandHandler('cancel', artifact_rate.cancel)]
+            )
+        ]
 
     async def get_rate(self, artifact_attr: dict) -> str:
         rate_result_req = await self.artifact_rate.rate_artifact(artifact_attr)

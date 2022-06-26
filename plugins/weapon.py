@@ -1,20 +1,31 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, filters
+from telegram.ext import CallbackContext, filters, CommandHandler, MessageHandler
 
 from logger import Log
+from manager import listener_plugins_class
 from metadata.shortname import weaponToName
 from model.helpers import url_to_file
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
+from service import BaseService
 
 
+@listener_plugins_class()
 class Weapon(BasePlugins):
     """
     武器查询
     """
 
     KEYBOARD = [[InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")]]
+
+    @staticmethod
+    def create_handlers(service: BaseService) -> list:
+        weapon = Weapon(service)
+        return [
+            CommandHandler("weapon", weapon.command_start, block=False),
+            MessageHandler(filters.Regex("^武器查询(.*)"), weapon.command_start, block=False)
+        ]
 
     @conversation_error_handler
     @restricts()

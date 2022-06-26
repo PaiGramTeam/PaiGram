@@ -2,10 +2,12 @@ from typing import Callable
 
 from telegram import Update
 from telegram.error import BadRequest, Forbidden
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, CommandHandler
 
 from logger import Log
+from manager import listener_plugins_class
 from plugins.base import BasePlugins
+from service import BaseService
 
 
 def bot_admins_only(func: Callable) -> Callable:  # noqa
@@ -20,10 +22,20 @@ def bot_admins_only(func: Callable) -> Callable:  # noqa
     return decorator
 
 
+@listener_plugins_class()
 class Admin(BasePlugins):
     """
     有关BOT ADMIN处理
     """
+
+    @staticmethod
+    def create_handlers(service: BaseService) -> list:
+        admin = Admin(service)
+        return [
+            CommandHandler("add_admin", admin.add_admin, block=False),
+            CommandHandler("del_admin", admin.del_admin, block=False),
+            CommandHandler("leave_chat", admin.leave_chat, block=False),
+        ]
 
     @bot_admins_only
     async def add_admin(self, update: Update, _: CallbackContext):

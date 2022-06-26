@@ -9,6 +9,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Conver
     CallbackQueryHandler
 
 from logger import Log
+from manager import listener_plugins_class
 from model.base import ServiceEnum
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
@@ -22,6 +23,7 @@ class SignCommandData:
     reply_to_message_id: int = 0
 
 
+@listener_plugins_class()
 class Sign(BasePlugins):
     """
     每日签到
@@ -30,7 +32,7 @@ class Sign(BasePlugins):
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
 
     @staticmethod
-    def create_conversation_handler(service: BaseService):
+    def create_handlers(service: BaseService):
         sign = Sign(service)
         sign_handler = ConversationHandler(
             entry_points=[CommandHandler('sign', sign.command_start, block=True),
@@ -40,7 +42,7 @@ class Sign(BasePlugins):
             },
             fallbacks=[CommandHandler('cancel', sign.cancel, block=True)]
         )
-        return sign_handler
+        return [sign_handler]
 
     @staticmethod
     async def _start_sign(user_info: UserInfoData, service: ServiceEnum) -> str:

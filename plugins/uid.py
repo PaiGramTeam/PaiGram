@@ -9,6 +9,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Conver
     CallbackQueryHandler
 
 from logger import Log
+from manager import listener_plugins_class
 from model.base import ServiceEnum
 from model.helpers import url_to_file
 from plugins.base import BasePlugins, restricts
@@ -21,6 +22,7 @@ class UidCommandData:
     user_info: UserInfoData = UserInfoData()
 
 
+@listener_plugins_class()
 class Uid(BasePlugins):
     """
     玩家查询
@@ -33,7 +35,7 @@ class Uid(BasePlugins):
         self.current_dir = os.getcwd()
 
     @staticmethod
-    def create_conversation_handler(service: BaseService):
+    def create_handlers(service: BaseService):
         uid = Uid(service)
         uid_handler = ConversationHandler(
             entry_points=[CommandHandler('uid', uid.command_start, block=True),
@@ -43,7 +45,7 @@ class Uid(BasePlugins):
             },
             fallbacks=[CommandHandler('cancel', uid.cancel, block=True)]
         )
-        return uid_handler
+        return [uid_handler]
 
     async def _start_get_user_info(self, user_info_data: UserInfoData, service: ServiceEnum, uid: int = -1) -> bytes:
         if service == ServiceEnum.HYPERION:
