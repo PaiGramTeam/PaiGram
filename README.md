@@ -11,7 +11,7 @@
 
 基于 
 [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) 
-的BOT
+的 Paimon BOT
 
 ## 需求
 
@@ -21,9 +21,13 @@
 - MySQL
 - Redis
 
+#### 注意
+
+因为上游 `genshin.py` 的原因 本项目 python 最低版本为 3.8
+
 ### 模块需求
 
-因为上游 `genshin.py` 的原因 python 最低版本为 3.8
+#### 注意
 
 `python-telegram-bot` 需要预览版本 即 `20.0a0`
 
@@ -36,8 +40,10 @@
 
 解决上面版本冲突导致的错误需要你手动执行 `pip install aiohttp==3.8.1`
 
+如果出现模块导入错误请打开 issue 联系开发者 这可能由于上游为预览版本 部分类名称改变导致的问题
 
-### 其他说明
+
+## 其他说明
 
 这个项目目前正在扩展，加入更多原神相关娱乐和信息查询功能，敬请期待。
 
