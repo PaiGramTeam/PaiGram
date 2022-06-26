@@ -6,6 +6,7 @@ import ujson
 from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, GenshinException, TooManyRequests
 from httpx import ConnectTimeout
+from pyrogram.errors import Forbidden
 from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, TimedOut
@@ -35,6 +36,10 @@ async def send_user_notification(update: Update, _: CallbackContext, text: str):
         await message.reply_text(text, reply_markup=ReplyKeyboardRemove(), allow_sending_without_reply=True)
     except BadRequest as exc:
         Log.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为 {str(exc)}")
+    except Forbidden as exc:
+        Log.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为 {str(exc)}")
+    except BaseException as exc:
+        Log.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为 {str(exc)}")
     finally:
         pass
 
@@ -48,12 +53,13 @@ def conversation_error_handler(func: Callable) -> Callable:
     async def decorator(*args, **kwargs):
         update: Optional[Update] = None
         context: Optional[CallbackContext] = None
-        for arg in args:
-            if isinstance(arg, Update):
-                update = arg
-            if isinstance(arg, CallbackContext):
-                context = arg
-        if update is None or context is None:
+        if len(args) == 3:
+            # self update context
+            _, update, context = args
+        elif len(args) == 2:
+            # update context
+            update, context = args
+        else:
             return await func(*args, **kwargs)
         try:
             return await func(*args, **kwargs)
@@ -94,6 +100,9 @@ def conversation_error_handler(func: Callable) -> Callable:
         except BadRequest as exc:
             Log.warning("python-telegram-bot请求错误", exc)
             await send_user_notification(update, context, f"telegram-bot-api请求错误 错误信息为 {str(exc)}")
+            return ConversationHandler.END
+        except Forbidden as exc:
+            Log.warning("python-telegram-bot 返回 Forbidden", exc)
             return ConversationHandler.END
 
     return decorator
