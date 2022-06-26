@@ -86,7 +86,7 @@ class NewChatMembersHandler:
         await self.auth_callback(update, context)
 
 
-def restricts(filters_chat: ChatType = filters.ALL, return_data=None, try_delete_message: bool = True,
+def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_message: bool = False,
               restricts_time: int = 5):
     """
         用于装饰在指定函数防止洪水调用的装饰器

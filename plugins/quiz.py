@@ -94,7 +94,7 @@ class Quiz(BasePlugins):
                                                          correct_option_id=index, is_anonymous=False,
                                                          open_period=self.time_out, type=Poll.QUIZ)
 
-    @restricts(filters.ChatType.GROUPS, ConversationHandler.END, restricts_time=20)
+    @restricts(filters.ChatType.GROUPS, ConversationHandler.END, restricts_time=20, try_delete_message=True)
     @restricts(filters.ChatType.PRIVATE, ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user

@@ -28,7 +28,7 @@ class Gacha(BasePlugins):
     CHECK_SERVER, COMMAND_RESULT = range(10600, 10602)
 
     @conversation_error_handler
-    @restricts(filters.ChatType.GROUPS, restricts_time=20)
+    @restricts(filters.ChatType.GROUPS, restricts_time=20, try_delete_message=True)
     @restricts(filters.ChatType.PRIVATE)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
