@@ -83,6 +83,10 @@ def conversation_error_handler(func: Callable) -> Callable:
             await send_user_notification(update, context, "当天查询次数已经超过30次，请次日再进行查询")
             return ConversationHandler.END
         except GenshinException as exc:
+            if "[-130]" in str(exc):
+                await send_user_notification(update, context,
+                                             f"未设置默认角色，请尝试重新绑定默认角色")
+                return ConversationHandler.END
             Log.warning("GenshinException", exc)
             await send_user_notification(update, context,
                                          f"获取账号信息发生错误，错误信息为 {str(exc)}")
