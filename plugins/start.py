@@ -13,7 +13,7 @@ async def start(update: Update, context: PaimonContext) -> None:
     args = context.args
     if args is not None:
         if len(args) >= 1:
-            if args[1] == "inline_message":
+            if args[0] == "inline_message":
                 await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
                                                 f"{escape_markdown('发送 /help 命令即可查看命令帮助')}")
                 return
