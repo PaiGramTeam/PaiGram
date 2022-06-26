@@ -54,13 +54,13 @@ roles = {
     10000050: ["托马", "Thoma", "thoma", "家政官", "太郎丸", "地头蛇", "男仆", "拖马"],
     10000055: ["五郎", "Gorou", "gorou", "柴犬", "土狗", "希娜", "希娜小姐"],
     10000057: ["荒泷一斗", "Arataki Itto", "Itto", "itto", "荒龙一斗", "荒泷天下第一斗", "一斗", "一抖", "荒泷", "1斗", "牛牛", "斗子哥", "牛子哥",
-               "牛子", "孩子王", "斗虫", "巧乐兹"],
+               "牛子", "孩子王", "斗虫", "巧乐兹", "放牛的"],
     10000058: ["八重神子", "Yae Miko", "Miko", "miko", "八重", "神子", "狐狸", "想得美哦", "巫女", "屑狐狸", "骚狐狸", "八重宫司", "婶子", "小八"],
     10000059: ["鹿野院平藏", "shikanoin heizou", "Heizou", "heizou", "heizo", "鹿野苑", "鹿野院", "平藏", "鹿野苑平藏"],
     10000060: ["夜兰", "Yelan", "yelan", "夜阑", "叶澜", "腋兰", "夜天后"],
     10000063: ["申鹤", "Shenhe", "shenhe", "神鹤", "小姨", "小姨子", "审鹤"],
     10000064: ["云堇", "Yun Jin", "yunjin", "yun jin", "云瑾", "云先生", "云锦", "神女劈观"],
-    10000065: ["久岐忍", "Kuki Shinobu", "Kuki", "kuki", "Shinobu", "shinobu", "97忍", "小忍", "久歧忍", "97", "茄忍", "阿忍"],
+    10000065: ["久岐忍", "Kuki Shinobu", "Kuki", "kuki", "Shinobu", "shinobu", "97忍", "小忍", "久歧忍", "97", "茄忍", "阿忍", "忍姐"],
     10000066: ["神里绫人", "Kamisato Ayato", "Ayato", "ayato", "绫人", "神里凌人", "凌人", "0人", "神人", "零人", "大舅哥"],
 }
 weapons = {
@@ -155,7 +155,4 @@ def roleToName(shortname: str) -> str:
 
 
 def weaponToName(shortname: str) -> str:
-    for key, value in weapons.items():
-        if shortname == key or shortname in value:
-            return key
-    return shortname
+    return next((key for key, value in weapons.items() if shortname == key or shortname in value), shortname)
