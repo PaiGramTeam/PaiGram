@@ -1,5 +1,5 @@
 body {
-    background-color: rgba(253, 253, 253, .75)
+    background-color: rgba(253, 253, 253, 0.75);
 }
 
 #container {
@@ -43,7 +43,6 @@ body {
     background-color: #f0ece8;
     box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
 }
-
 
 .command-background {
     opacity: 0.1;
