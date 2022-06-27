@@ -12,7 +12,7 @@
 }
 body {
   font-size: 16px;
-  font-family: "tttgbnumber";
+  font-family: "tttgbnumber", system-ui;
   transform: scale(1.5);
   transform-origin: 0 0;
   color: #1e1f20;

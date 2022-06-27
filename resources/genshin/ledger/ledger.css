@@ -15,7 +15,7 @@
 body {
   transform: scale(1);
   transform-origin: 0 0;
-  font-family: "tttgbnumber";
+  font-family: "tttgbnumber", system-ui;
   color: #28384d;
   font-size: 20px;
 }
