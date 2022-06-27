@@ -74,6 +74,8 @@ body {
 }
 
 .command-description {
+    font-size: 1rem;
+    line-height: 1.5rem;
     margin: 4px;
 }
 
@@ -86,9 +88,4 @@ body {
 .about h1 {
     margin: 2px;
     background-color: #e0dad3;
-}
-
-.command-description {
-    font-size: 1rem;
-    line-height: 1.5rem;
 }
