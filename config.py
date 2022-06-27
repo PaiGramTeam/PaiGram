@@ -14,7 +14,7 @@ class Config:
             self._config_json: dict = ujson.load(f)
 
         self.DEBUG = self.get_config("debug")
-        if type(self.DEBUG) != bool:
+        if not isinstance(self.DEBUG, bool):
             self.DEBUG = False
         self.ADMINISTRATORS = self.get_config("administrators")
         self.MYSQL = self.get_config("mysql")

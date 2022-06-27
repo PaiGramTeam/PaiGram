@@ -38,9 +38,9 @@ class PluginsManager:
                 self.plugin_list.append(root)
 
     def add_exclude(self, exclude: Union[str, List[str]]):
-        if type(exclude) == str:
+        if isinstance(exclude, str):
             self.exclude_list.append(exclude)
-        elif type(exclude) == list:
+        elif isinstance(exclude, list):
             self.exclude_list.extend(exclude)
         else:
             raise TypeError
