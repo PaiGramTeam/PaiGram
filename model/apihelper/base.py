@@ -5,6 +5,12 @@ from enum import Enum
 class ArtworkImage:
 
     def __init__(self, art_id: int, page: int = 0, is_error: bool = False, data: bytes = b""):
+        """
+        :param art_id: 插画ID
+        :param page: 页数
+        :param is_error: 插画是否有问题
+        :param data: 插画数据
+        """
         self.art_id = art_id
         self.data = data
         self.is_error = is_error
@@ -15,6 +21,10 @@ class ArtworkImage:
 
 class BaseResponseData:
     def __init__(self, response=None, error_message: str = ""):
+        """
+        :param response: 相应
+        :param error_message: 错误信息
+        """
         if response is None:
             self.error: bool = True
             self.message: str = error_message
@@ -42,6 +52,15 @@ class Stat:
 class ArtworkInfo:
     def __init__(self, post_id: int = 0, subject: str = "", tags=None,
                  image_url_list=None, stat: Stat = None, uid: int = 0, created_at: int = 0):
+        """
+        :param post_id: post_id
+        :param subject: 标题
+        :param tags: 标签
+        :param image_url_list: 图片URL列表
+        :param stat: 统计
+        :param uid: 用户UID
+        :param created_at: 创建时间
+        """
         if tags is None:
             self.tags = []
         else:
@@ -58,6 +77,11 @@ class ArtworkInfo:
 
 
 class HyperionResponse:
+    """
+    :param response: 相应
+    :param error_message: 错误信息
+    """
+
     def __init__(self, response=None, error_message: str = ""):
         if response is None:
             self.error: bool = True
@@ -117,9 +141,15 @@ class HyperionResponse:
         )
 
     def __bool__(self):
+        """
+        :return: 是否错误
+        """
         return self.error
 
     def __len__(self):
+        """
+        :return: 插画连接数量
+        """
         return len(self.results.image_url_list)
 
 

@@ -13,6 +13,9 @@ class MT19937_Random:
     """
 
     def __init__(self):
+        """
+        创建随机数生成器
+        """
         self.send_time = time.time()
         self.generator = Generator(MT19937(int(self.send_time)))
 

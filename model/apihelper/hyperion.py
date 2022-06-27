@@ -236,7 +236,16 @@ class YuanShen:
         return BaseResponseData(req.json())
 
     async def __aenter__(self):
+        """
+        :return:
+        """
         pass
 
     async def __aexit__(self, exc_type, exc, tb):
+        """
+        :param exc_type:
+        :param exc:
+        :param tb:
+        :return:
+        """
         await self.client.aclose()
