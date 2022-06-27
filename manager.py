@@ -2,17 +2,18 @@ import os
 from glob import glob
 from importlib import import_module
 from os import path
-from typing import Callable, List, Union
+from typing import List, Union
 
 from telegram.ext import Application
 
 from logger import Log
+from plugins.base import BasePlugins
 
-PluginsClass: List[Callable] = []
+PluginsClass: List[BasePlugins] = []
 
 
 def listener_plugins_class():
-    def decorator(func: Callable):
+    def decorator(func: BasePlugins):
         PluginsClass.append(
             func
         )
@@ -64,7 +65,7 @@ class PluginsManager:
         for pc in PluginsClass:
             if callable(pc):
                 try:
-                    ist = pc(*args)
+                    ist: BasePlugins = pc(*args)
                     handlers_list = ist.create_handlers(*args)
                     for handler in handlers_list:
                         application.add_handler(handler)
