@@ -9,6 +9,8 @@
 
 ## 简介
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/8a7531d2cd1346698b55b05b962dd535)](https://app.codacy.com/gh/luoshuijs/TGPaimonBot?utm_source=github.com&utm_medium=referral&utm_content=luoshuijs/TGPaimonBot&utm_campaign=Badge_Grade_Settings)
+
 基于 
 [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) 
 的 Paimon BOT
