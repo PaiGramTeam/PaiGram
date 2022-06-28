@@ -1,7 +1,7 @@
 import unittest
 import json
 
-from model.artifact import ArtifactInfo
+from model.game.artifact import ArtifactInfo
 from model.base import GameItem
 
 

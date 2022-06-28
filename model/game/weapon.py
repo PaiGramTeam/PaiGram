@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Union, Optional, List
+from typing import Union, Optional
 
 from model.base import GameItem
 from model.baseobject import BaseObject
