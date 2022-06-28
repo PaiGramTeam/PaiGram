@@ -10,8 +10,7 @@ from model.types import JSONDict
 
 
 class CharacterValueInfo(BaseObject):
-    """
-    角色数值信息
+    """角色数值信息
     """
 
     def __init__(self, hp: float = 0, base_hp: float = 0, atk: float = 0, base_atk: float = 0,
@@ -70,24 +69,27 @@ class CharacterValueInfo(BaseObject):
 
 
 class CharacterInfo(BaseObject):
-    """
-    角色信息
+    """角色信息
     """
 
-    def __init__(self, name: str = "", level: int = 0, fetter: Optional[FetterInfo] = None,
+    def __init__(self, name: str = "", elementl: str = 0, level: int = 0, fetter: Optional[FetterInfo] = None,
                  base_value: Optional[CharacterValueInfo] = None, weapon: Optional[WeaponInfo] = None,
                  artifact: Optional[List[ArtifactInfo]] = None, skill: Optional[List[Skill]] = None,
-                 talent: Optional[List[Talent]] = None):
+                 talent: Optional[List[Talent]] = None, icon: str = ""):
         """
         :param name: 角色名字
         :param level: 角色等级
+        :param elementl: 属性
         :param fetter: 好感度
         :param base_value: 基础数值
         :param weapon: 武器
         :param artifact: 圣遗物
         :param skill: 技能
         :param talent: 命座
+        :param icon: 角色图片
         """
+        self.icon = icon
+        self.elementl = elementl
         self.talent = talent
         self.skill = skill
         self.artifact = artifact
@@ -117,4 +119,5 @@ class CharacterInfo(BaseObject):
         data["talent"] = Talent.de_list(data.get("sub_item"))
         return cls(**data)
 
-    __slots__ = ("name", "level", "level", "fetter", "base_value", "weapon", "artifact", "skill", "talent")
+    __slots__ = (
+        "name", "level", "level", "fetter", "base_value", "weapon", "artifact", "skill", "talent", "elementl", "icon")
