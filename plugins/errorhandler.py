@@ -1,5 +1,6 @@
 import html
 import traceback
+from functools import wraps
 from typing import Callable, Optional
 
 import ujson
@@ -45,11 +46,11 @@ async def send_user_notification(update: Update, _: CallbackContext, text: str):
 
 
 def conversation_error_handler(func: Callable) -> Callable:
-    """
-    Conversation的错误处理修饰器
+    """Conversation的错误处理修饰器
     非常感谢 @Bibo-Joshi 提出的建议
     """
 
+    @wraps(func)
     async def decorator(*args, **kwargs):
         update: Optional[Update] = None
         context: Optional[CallbackContext] = None
@@ -63,16 +64,16 @@ def conversation_error_handler(func: Callable) -> Callable:
             return await func(*args, **kwargs)
         try:
             return await func(*args, **kwargs)
-        except ClientConnectorError as exc:
-            Log.error("服务器请求ConnectTimeout", exc)
+        except ClientConnectorError:
+            Log.error("aiohttp模块连接服务器ClientConnectorError")
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
-        except ConnectTimeout as exc:
-            Log.error("服务器请求ConnectTimeout", exc)
+        except ConnectTimeout:
+            Log.error("httpx模块连接服务器ConnectTimeout")
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
-        except TimedOut as exc:
-            Log.error("服务器请求ConnectTimeout", exc)
+        except TimedOut:
+            Log.error("python-telegram-TimedOut模块连接服务器TimedOut")
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
         except InvalidCookies as exc:
