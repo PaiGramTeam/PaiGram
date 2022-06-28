@@ -10,7 +10,8 @@ from telegram.helpers import escape_markdown
 from config import config
 from logger import Log
 from manager import listener_plugins_class
-from model.apihelper import Hyperion, ArtworkImage
+from model.apihelper.base import ArtworkImage
+from model.apihelper.hyperion import Hyperion
 from plugins.base import BasePlugins
 from plugins.errorhandler import conversation_error_handler
 from service import BaseService

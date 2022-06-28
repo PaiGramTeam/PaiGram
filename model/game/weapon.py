@@ -6,8 +6,7 @@ from model.baseobject import BaseObject
 
 
 class WeaponInfo(BaseObject):
-    """
-    武器信息
+    """武器信息
     """
 
     def __init__(self, item_id: int = 0, name: str = "", level: int = 0, main_item: Optional[GameItem] = None,

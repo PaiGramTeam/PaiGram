@@ -1,4 +1,4 @@
-from model.apihelper import Hyperion
+from model.apihelper.hyperion import Hyperion
 from service.cache import RedisCache
 from service.repository import AsyncRepository
 

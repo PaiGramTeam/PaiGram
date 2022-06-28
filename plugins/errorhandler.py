@@ -7,10 +7,9 @@ import ujson
 from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, GenshinException, TooManyRequests
 from httpx import ConnectTimeout
-from pyrogram.errors import Forbidden
 from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ParseMode
-from telegram.error import BadRequest, TimedOut
+from telegram.error import BadRequest, TimedOut, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
 
 from config import config
@@ -47,6 +46,7 @@ async def send_user_notification(update: Update, _: CallbackContext, text: str):
 
 def conversation_error_handler(func: Callable) -> Callable:
     """Conversation的错误处理修饰器
+
     非常感谢 @Bibo-Joshi 提出的建议
     """
 

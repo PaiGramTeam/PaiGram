@@ -1,7 +1,7 @@
 import unittest
 from unittest import IsolatedAsyncioTestCase
 
-from model.apihelper import Hyperion
+from model.apihelper.hyperion import Hyperion
 
 
 class TestGame(IsolatedAsyncioTestCase):
