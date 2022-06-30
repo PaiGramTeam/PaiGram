@@ -14,7 +14,6 @@ class Abyss:
 
     def __init__(self, *args):
         """Abyss插件入口"""
-
         pass
 
     @staticmethod
