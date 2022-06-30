@@ -1,14 +1,17 @@
 import hashlib
 import os
-from typing import List
+from typing import List, Optional, Tuple
 
 import aiofiles
+import genshin
 import httpx
+from genshin import GenshinClient
 from httpx import UnsupportedProtocol
 from telegram import Bot
 
 from logger import Log
 from model.base import ServiceEnum
+from service.base import UserInfoData
 from service.cache import RedisCache
 
 USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
@@ -66,6 +69,19 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
         async with aiofiles.open(file_dir, mode='wb') as f:
             await f.write(data.content)
     return prefix + file_dir
+
+
+async def get_genshin_client(user_info_data: UserInfoData, game_service: Optional[ServiceEnum] = None) \
+        -> Tuple[GenshinClient, int]:
+    if game_service is None:
+        game_service = user_info_data.service
+    if game_service == ServiceEnum.HYPERION:
+        client = genshin.ChineseClient(cookies=user_info_data.mihoyo_cookie)
+        uid = user_info_data.mihoyo_game_uid
+    else:
+        client = genshin.GenshinClient(cookies=user_info_data.hoyoverse_cookie, lang="zh-cn")
+        uid = user_info_data.hoyoverse_game_uid
+    return client, uid
 
 
 def get_server(uid: int) -> ServiceEnum:
