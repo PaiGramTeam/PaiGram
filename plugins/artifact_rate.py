@@ -87,7 +87,14 @@ class ArtifactRate(BasePlugins):
             if message_data.photo is not None and len(message_data.photo) >= 1:
                 photo_file = await message_data.photo[-1].get_file()  # 草 居然第一张是预览图我人都麻了
             elif message_data.document is not None:
-                photo_file = await message_data.document.get_file()
+                document = message_data.document
+                if "image" not in document.mime_type:
+                    await message.reply_text("错误的图片类型")
+                    return ConversationHandler.END
+                if document.file_size / 1024 / 1024 >= 5:
+                    await message.reply_text("图片太大啦")
+                    return ConversationHandler.END
+                photo_file = await document.get_file()
         if photo_file is None:
             await message.reply_text("图呢？")
             return ConversationHandler.END
