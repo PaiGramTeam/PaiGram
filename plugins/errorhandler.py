@@ -7,7 +7,7 @@ import ujson
 from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, GenshinException, TooManyRequests
 from httpx import ConnectTimeout
-from telegram import Update, ReplyKeyboardRemove
+from telegram import Update, ReplyKeyboardRemove, Message
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, TimedOut, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
@@ -24,10 +24,17 @@ except KeyError as error:
 
 async def send_user_notification(update: Update, _: CallbackContext, text: str):
     effective_user = update.effective_user
-    if update.callback_query is None:
-        message = update.message
-    else:
+    message: Optional[Message] = None
+    if update.callback_query is not None:
         message = update.callback_query.message
+    if update.message is not None:
+        message = update.message
+    if update.edited_message is not None:
+        message = update.edited_message
+    if message is None:
+        update_str = update.to_dict() if isinstance(update, Update) else str(update)
+        Log.warning("错误的消息类型\n" + ujson.dumps(update_str, indent=2, ensure_ascii=False))
+        return
     chat = message.chat
     Log.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
              f"在 {chat.full_name}[{chat.id}]"
@@ -104,6 +111,7 @@ def conversation_error_handler(func: Callable) -> Callable:
             return ConversationHandler.END
         except Forbidden as exc:
             Log.warning("python-telegram-bot 返回 Forbidden", exc)
+            await send_user_notification(update, context, f"telegram-bot-api请求错误")
             return ConversationHandler.END
 
     return decorator
@@ -157,7 +165,13 @@ async def error_handler(update: object, context: CallbackContext) -> None:
                     Log.error("处理函数时发生异常", exc_1)
     effective_user = update.effective_user
     try:
-        message = update.message
+        message: Optional[Message] = None
+        if update.callback_query is not None:
+            message = update.callback_query.message
+        if update.message is not None:
+            message = update.message
+        if update.edited_message is not None:
+            message = update.edited_message
         if message is not None:
             chat = message.chat
             Log.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
