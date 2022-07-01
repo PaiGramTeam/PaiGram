@@ -1,6 +1,6 @@
-from typing import List
+from typing import Optional
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, File
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, \
     filters
@@ -76,14 +76,21 @@ class ArtifactRate(BasePlugins):
         user = update.effective_user
         Log.info(f"用户 {user.full_name}[{user.id}] 圣遗物评分命令请求")
         context.user_data["artifact_attr"] = None
-        reply_to_message = message.reply_to_message
-        if message.photo:
-            photo_file = await message.photo[-1].get_file()  # 草 居然第一张是预览图我人都麻了
-        elif reply_to_message is None or not reply_to_message.photo:
-            await message.reply_text("图呢？")
+        photo_file: Optional[File] = None
+        if message is None:
             return ConversationHandler.END
         else:
-            photo_file = await reply_to_message.photo[-1].get_file()
+            if message.reply_to_message is None:
+                message_data = message
+            else:
+                message_data = message.reply_to_message
+            if message_data.photo is not None and len(message_data.photo) >= 1:
+                photo_file = await message_data.photo[-1].get_file()  # 草 居然第一张是预览图我人都麻了
+            elif message_data.document is not None:
+                photo_file = await message_data.document.get_file()
+        if photo_file is None:
+            await message.reply_text("图呢？")
+            return ConversationHandler.END
         photo_byte = await photo_file.download_as_bytearray()
         artifact_attr_req = await self.artifact_rate.get_artifact_attr(photo_byte)
         if artifact_attr_req.status_code != 200:
