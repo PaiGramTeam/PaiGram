@@ -72,22 +72,24 @@ def conversation_error_handler(func: Callable) -> Callable:
         try:
             return await func(*args, **kwargs)
         except ClientConnectorError:
-            Log.error("aiohttp模块连接服务器ClientConnectorError")
+            Log.error("aiohttp 模块连接服务器 ClientConnectorError")
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
         except ConnectTimeout:
-            Log.error("httpx模块连接服务器ConnectTimeout")
+            Log.error("httpx 模块连接服务器 ConnectTimeout")
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
         except TimedOut:
-            Log.error("python-telegram-TimedOut模块连接服务器TimedOut")
+            Log.error("python-telegram-bot 模块连接服务器 TimedOut")
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
         except InvalidCookies as exc:
             Log.warning("Cookie错误", exc)
-            if "10001" in str(exc):
+            if "[10001]" in str(exc):
                 await send_user_notification(update, context, "Cookies无效，请尝试重新绑定账户")
-            elif "10103" in str(exc):
+            elif "[-100]" in str(exc):
+                await send_user_notification(update, context, "Cookies无效，请尝试重新绑定账户")
+            elif "[10103]" in str(exc):
                 await send_user_notification(update, context, "Cookie有效，但没有绑定到游戏帐户，请尝试重新绑定邮游戏账户")
             else:
                 await send_user_notification(update, context, "Cookies无效，具体原因未知")
@@ -106,11 +108,11 @@ def conversation_error_handler(func: Callable) -> Callable:
                                          f"获取账号信息发生错误，错误信息为 {str(exc)}")
             return ConversationHandler.END
         except BadRequest as exc:
-            Log.warning("python-telegram-bot请求错误", exc)
+            Log.warning("python-telegram-bot 请求错误", exc)
             await send_user_notification(update, context, f"telegram-bot-api请求错误 错误信息为 {str(exc)}")
             return ConversationHandler.END
         except Forbidden as exc:
-            Log.warning("python-telegram-bot 返回 Forbidden", exc)
+            Log.warning("python-telegram-bot返回 Forbidden", exc)
             await send_user_notification(update, context, f"telegram-bot-api请求错误")
             return ConversationHandler.END
 
