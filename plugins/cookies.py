@@ -1,6 +1,4 @@
 from http.cookies import SimpleCookie, CookieError
-from typing import List
-from urllib.request import BaseHandler
 
 import genshin
 import ujson
@@ -12,10 +10,10 @@ from telegram.helpers import escape_markdown
 from logger import Log
 from manager import listener_plugins_class
 from model.base import ServiceEnum
-from plugins.base import BasePlugins, restricts
+from plugins.base import restricts, BasePlugins
 from plugins.errorhandler import conversation_error_handler
-from service import BaseService
 from service.base import UserInfoData
+from utils.base import PaimonContext
 
 
 class CookiesCommandData:
@@ -33,9 +31,9 @@ class Cookies(BasePlugins):
 
     CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
 
-    @staticmethod
-    def create_handlers(service: BaseService):
-        cookies = Cookies(service)
+    @classmethod
+    def create_handlers(cls):
+        cookies = cls()
         cookies_handler = ConversationHandler(
             entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE, block=True),
                           MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE,
@@ -70,10 +68,11 @@ class Cookies(BasePlugins):
 
     @conversation_error_handler
     @restricts(return_data=ConversationHandler.END)
-    async def check_server(self, update: Update, context: CallbackContext) -> int:
+    async def check_server(self, update: Update, context: PaimonContext) -> int:
         user = update.effective_user
+        service = context.service
         cookies_command_data: CookiesCommandData = context.chat_data.get("cookies_command_data")
-        user_info = await self.service.user_service_db.get_user_info(user.id)
+        user_info = await service.user_service_db.get_user_info(user.id)
         cookies_command_data.user_info = user_info
         if update.message.text == "退出":
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
@@ -175,8 +174,9 @@ class Cookies(BasePlugins):
         return self.COMMAND_RESULT
 
     @conversation_error_handler
-    async def command_result(self, update: Update, context: CallbackContext) -> int:
+    async def command_result(self, update: Update, context: PaimonContext) -> int:
         user = update.effective_user
+        service = context.service
         cookies_command_data: CookiesCommandData = context.chat_data.get("cookies_command_data")
         if update.message.text == "退出":
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
@@ -184,17 +184,17 @@ class Cookies(BasePlugins):
         elif update.message.text == "确认":
             data = ujson.dumps(cookies_command_data.cookies)
             user_info = cookies_command_data.user_info
-            service = ServiceEnum.NULL.value
+            game_service = ServiceEnum.NULL.value
             if cookies_command_data.service == ServiceEnum.HYPERION:
                 user_info.mihoyo_game_uid = cookies_command_data.game_uid
-                service = ServiceEnum.HYPERION.value
+                game_service = ServiceEnum.HYPERION.value
             elif cookies_command_data.service == ServiceEnum.HOYOLAB:
                 user_info.hoyoverse_game_uid = cookies_command_data.game_uid
-                service = ServiceEnum.HOYOLAB.value
-            await self.service.user_service_db.set_user_info(user.id, user_info.mihoyo_game_uid,
-                                                             user_info.hoyoverse_game_uid,
-                                                             service)
-            await self.service.user_service_db.set_cookie(user.id, data, cookies_command_data.service)
+                game_service = ServiceEnum.HOYOLAB.value
+            await service.user_service_db.set_user_info(user.id, user_info.mihoyo_game_uid,
+                                                        user_info.hoyoverse_game_uid,
+                                                        game_service)
+            await service.user_service_db.set_cookie(user.id, data, cookies_command_data.service)
             Log.info(f"用户 {user.full_name}[{user.id}] 绑定账号成功")
             await update.message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END

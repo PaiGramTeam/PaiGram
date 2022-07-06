@@ -6,13 +6,13 @@ from telegram.ext import CallbackContext, CommandHandler
 
 from logger import Log
 from manager import listener_plugins_class
-from plugins.base import BasePlugins
-from service import BaseService
+from utils.base import PaimonContext
 
 
 def bot_admins_only(func: Callable) -> Callable:  # noqa
-    async def decorator(self, update: Update, context: CallbackContext):
-        admin_list = await self.service.admin.get_admin_list()
+    async def decorator(self, update: Update, context: PaimonContext):
+        service = context.service
+        admin_list = await service.admin.get_admin_list()
         if update.message.from_user.id in admin_list:
             return await func(self, update, context)
         else:
@@ -23,14 +23,13 @@ def bot_admins_only(func: Callable) -> Callable:  # noqa
 
 
 @listener_plugins_class()
-class Admin(BasePlugins):
-    """
-    有关BOT ADMIN处理
+class Admin:
+    """有关BOT ADMIN处理
     """
 
-    @staticmethod
-    def create_handlers(service: BaseService) -> list:
-        admin = Admin(service)
+    @classmethod
+    def create_handlers(cls) -> list:
+        admin = cls()
         return [
             CommandHandler("add_admin", admin.add_admin, block=False),
             CommandHandler("del_admin", admin.del_admin, block=False),
@@ -38,29 +37,31 @@ class Admin(BasePlugins):
         ]
 
     @bot_admins_only
-    async def add_admin(self, update: Update, _: CallbackContext):
+    async def add_admin(self, update: Update, context: PaimonContext):
         message = update.message
         reply_to_message = message.reply_to_message
-        admin_list = await self.service.admin.get_admin_list()
+        service = context.service
+        admin_list = await service.admin.get_admin_list()
         if reply_to_message is None:
             await message.reply_text("请回复对应消息")
         else:
             if reply_to_message.from_user.id in admin_list:
                 await message.reply_text("该用户已经存在管理员列表")
             else:
-                await self.service.admin.add_admin(reply_to_message.from_user.id)
+                await service.admin.add_admin(reply_to_message.from_user.id)
                 await message.reply_text("添加成功")
 
     @bot_admins_only
-    async def del_admin(self, update: Update, _: CallbackContext):
+    async def del_admin(self, update: Update, context: PaimonContext):
         message = update.message
         reply_to_message = message.reply_to_message
-        admin_list = await self.service.admin.get_admin_list()
+        service = context.service
+        admin_list = await service.admin.get_admin_list()
         if reply_to_message is None:
             await message.reply_text("请回复对应消息")
         else:
             if reply_to_message.from_user.id in admin_list:
-                await self.service.admin.delete_admin(reply_to_message.from_user.id)
+                await service.admin.delete_admin(reply_to_message.from_user.id)
                 await message.reply_text("删除成功")
             else:
                 await message.reply_text("该用户不存在管理员列表")

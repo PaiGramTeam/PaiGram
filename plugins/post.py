@@ -27,7 +27,7 @@ class PostHandlerData:
         self.tags: Optional[List[str]] = []
 
 
-@listener_plugins_class()
+@listener_plugins_class(need_service=True)
 class Post(BasePlugins):
     """
     文章推送
@@ -39,26 +39,26 @@ class Post(BasePlugins):
     MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]], True, True)
 
     def __init__(self, service: BaseService):
-        super().__init__(service)
+        self.service = service
         self.bbs = Hyperion()
 
-    @staticmethod
-    def create_handlers(service: BaseService):
-        _post = Post(service)
+    @classmethod
+    def create_handlers(cls, service: BaseService):
+        post = cls(service)
         post_handler = ConversationHandler(
-            entry_points=[CommandHandler('post', _post.command_start, block=True)],
+            entry_points=[CommandHandler('post', post.command_start, block=True)],
             states={
-                _post.CHECK_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.check_post, block=True)],
-                _post.SEND_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.send_post, block=True)],
-                _post.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.check_command, block=True)],
-                _post.GTE_DELETE_PHOTO: [
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_delete_photo, block=True)],
-                _post.GET_POST_CHANNEL: [
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_post_channel, block=True)],
-                _post.GET_TAGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_tags, block=True)],
-                _post.GET_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, _post.get_edit_text, block=True)]
+                post.CHECK_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.check_post, block=True)],
+                post.SEND_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.send_post, block=True)],
+                post.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.check_command, block=True)],
+                post.GTE_DELETE_PHOTO: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, post.get_delete_photo, block=True)],
+                post.GET_POST_CHANNEL: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, post.get_post_channel, block=True)],
+                post.GET_TAGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.get_tags, block=True)],
+                post.GET_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.get_edit_text, block=True)]
             },
-            fallbacks=[CommandHandler('cancel', _post.cancel, block=True)]
+            fallbacks=[CommandHandler('cancel', post.cancel, block=True)]
         )
         return [post_handler]
 

@@ -13,14 +13,9 @@ from utils.base import PaimonContext
 @listener_plugins_class()
 class Abyss(BasePlugins):
 
-    def __init__(self, *args):
-        """Abyss插件入口"""
-        pass
-
-    @staticmethod
-    def create_handlers(*args) -> list:
-        _ = args
-        abyss = Abyss()
+    @classmethod
+    def create_handlers(cls) -> list:
+        abyss = cls()
         return [
             CommandHandler("abyss", abyss.command_start, block=False),
             MessageHandler(filters.Regex(r"^深渊数据查询(.*)"), abyss.command_start, block=True)

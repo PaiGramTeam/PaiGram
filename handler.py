@@ -7,7 +7,6 @@ from manager import PluginsManager
 from plugins.auth import Auth
 from plugins.base import NewChatMembersHandler
 from plugins.errorhandler import error_handler
-from plugins.help import Help
 from plugins.inline import Inline
 from plugins.start import start, ping, reply_keyboard_remove, unknown_command
 from service import BaseService
@@ -39,20 +38,18 @@ def register_handlers(application: Application, service: BaseService):
     plugins_manager.refresh_list("./plugins/*")
 
     # 忽略内置模块
-    plugins_manager.add_exclude(["help", "start", "base", "auth", "inline", "errorhandler"])
+    plugins_manager.add_exclude(["start", "base", "auth", "inline", "errorhandler"])
 
     Log.info("加载插件管理器正在加载插件")
     plugins_manager.import_module()
-    plugins_manager.add_handler(application, (service,))
+    plugins_manager.add_handler(application, service)
 
     Log.info("正在加载内置插件")
 
-    plugins_help = Help()
     inline = Inline(service)
     auth = Auth(service)
 
     add_handler(start, command="start")
-    add_handler(plugins_help.command_start, command="help")
     add_handler(ping, command="ping")
     add_handler(auth.query, query=r"^auth_challenge\|")
     add_handler(auth.admin, query=r"^auth_admin\|")

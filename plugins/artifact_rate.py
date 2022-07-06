@@ -9,9 +9,8 @@ from telegram.helpers import escape_markdown
 from logger import Log
 from manager import listener_plugins_class
 from model.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
-from plugins.base import BasePlugins, restricts
+from plugins.base import restricts, BasePlugins
 from plugins.errorhandler import conversation_error_handler
-from service import BaseService
 
 
 @listener_plugins_class()
@@ -31,13 +30,12 @@ class ArtifactRate(BasePlugins):
             f"{i * 5 + j}", callback_data=f"artifact_ocr_rate_data|level|{i * 5 + j}") for j in range(1, 6)
     ] for i in range(0, 4)]
 
-    def __init__(self, service: BaseService):
-        super().__init__(service)
+    def __init__(self):
         self.artifact_rate = ArtifactOcrRate()
 
-    @staticmethod
-    def create_handlers(service: BaseService) -> list:
-        artifact_rate = ArtifactRate(service)
+    @classmethod
+    def create_handlers(cls) -> list:
+        artifact_rate = cls()
         return [
             ConversationHandler(
                 entry_points=[CommandHandler('artifact_rate', artifact_rate.command_start),

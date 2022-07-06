@@ -22,7 +22,7 @@ class UidCommandData:
     user_info: UserInfoData = UserInfoData()
 
 
-@listener_plugins_class()
+@listener_plugins_class(need_service=True)
 class Uid(BasePlugins):
     """
     玩家查询
@@ -31,12 +31,12 @@ class Uid(BasePlugins):
     COMMAND_RESULT, = range(10200, 10201)
 
     def __init__(self, service: BaseService):
-        super().__init__(service)
+        self.service = service
         self.current_dir = os.getcwd()
 
-    @staticmethod
-    def create_handlers(service: BaseService):
-        uid = Uid(service)
+    @classmethod
+    def create_handlers(cls, service: BaseService):
+        uid = cls(service)
         uid_handler = ConversationHandler(
             entry_points=[CommandHandler('uid', uid.command_start, block=True),
                           MessageHandler(filters.Regex(r"^玩家查询(.*)"), uid.command_start, block=True)],

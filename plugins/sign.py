@@ -13,8 +13,8 @@ from manager import listener_plugins_class
 from model.base import ServiceEnum
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
-from service import BaseService
 from service.base import UserInfoData
+from utils.base import PaimonContext
 
 
 class SignCommandData:
@@ -31,9 +31,9 @@ class Sign(BasePlugins):
 
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
 
-    @staticmethod
-    def create_handlers(service: BaseService):
-        sign = Sign(service)
+    @classmethod
+    def create_handlers(cls):
+        sign = cls()
         sign_handler = ConversationHandler(
             entry_points=[CommandHandler('sign', sign.command_start, block=True),
                           MessageHandler(filters.Regex(r"^每日签到(.*)"), sign.command_start, block=True)],
@@ -45,8 +45,8 @@ class Sign(BasePlugins):
         return [sign_handler]
 
     @staticmethod
-    async def _start_sign(user_info: UserInfoData, service: ServiceEnum) -> str:
-        if service == ServiceEnum.HYPERION:
+    async def _start_sign(user_info: UserInfoData, game_service: ServiceEnum) -> str:
+        if game_service == ServiceEnum.HYPERION:
             client = genshin.ChineseClient(cookies=user_info.mihoyo_cookie)
             uid = user_info.mihoyo_game_uid
         else:
@@ -93,9 +93,10 @@ class Sign(BasePlugins):
 
     @conversation_error_handler
     @restricts(return_data=ConversationHandler.END)
-    async def command_start(self, update: Update, context: CallbackContext) -> int:
+    async def command_start(self, update: Update, context: PaimonContext) -> int:
         user = update.effective_user
         message = update.message
+        service = context.service
         Log.info(f"用户 {user.full_name}[{user.id}] 每日签到命令请求")
         if filters.ChatType.GROUPS.filter(message):
             self._add_delete_message_job(context, message.chat_id, message.message_id)
@@ -103,7 +104,7 @@ class Sign(BasePlugins):
         if sign_command_data is None:
             sign_command_data = SignCommandData()
             context.chat_data["sign_command_data"] = sign_command_data
-        user_info = await self.service.user_service_db.get_user_info(user.id)
+        user_info = await service.user_service_db.get_user_info(user.id)
         if user_info.user_id == 0:
             await update.message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             return ConversationHandler.END

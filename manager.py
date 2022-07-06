@@ -2,20 +2,29 @@ import os
 from glob import glob
 from importlib import import_module
 from os import path
-from typing import List, Union
+from typing import List, Union, Tuple, Callable
 
 from telegram.ext import Application
 
 from logger import Log
-from plugins.base import BasePlugins
+from service import BaseService
 
-PluginsClass: List[BasePlugins] = []
+PluginsClass: List[Tuple[any, dict]] = []
 
 
-def listener_plugins_class():
-    def decorator(func: BasePlugins):
+def listener_plugins_class(need_service: bool = False):
+    """
+    监听插件
+    :param need_service: 插件类中 create_handlers 函数是否传入 service
+    :return: None
+    """
+    plugin_info = {
+        "need_service": need_service
+    }
+
+    def decorator(func: Callable):
         PluginsClass.append(
-            func
+            (func, plugin_info)
         )
         return func
 
@@ -61,12 +70,17 @@ class PluginsManager:
                     Log.debug(f"插件 {plugin_name} 加载成功")
 
     @staticmethod
-    def add_handler(application: Application, args=None):
+    def add_handler(application: Application, service: BaseService):
         for pc in PluginsClass:
-            if callable(pc):
+            func = pc[0]
+            plugin_info = pc[1]
+            # 构建 args
+            kwargs = {}
+            if plugin_info.get("need_service", False):
+                kwargs["service"] = service
+            if callable(func):
                 try:
-                    ist: BasePlugins = pc(*args)
-                    handlers_list = ist.create_handlers(*args)
+                    handlers_list = func.create_handlers(**kwargs)
                     for handler in handlers_list:
                         application.add_handler(handler)
                 except AttributeError as exc:

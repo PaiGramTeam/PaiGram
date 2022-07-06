@@ -12,23 +12,23 @@
 
 ``` python
 from telegram import Update
-from telegram.ext import CallbackContext
 
 from manager import listener_plugins_class
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
+from utils.base import PaimonContext
 
 @listener_plugins_class()
 class Example(BasePlugins):
 
-    @staticmethod
-    def create_handlers(service: BaseService):
-        example = Example(service)
+    @classmethod
+    def create_handlers(cls):
+        example = cls()
         return [CommandHandler('example', example.command_start)]
 
     @conversation_error_handler
     @restricts()
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: PaimonContext) -> None:
         await message.reply_text("Example")
 
 ```
@@ -50,4 +50,6 @@ plugins 模块下的类必须提供 `create_handlers` 静态函数作为构建�
 只需在构建的类前加上 `@listener_plugins_class()` 修饰器即可
 
 **注意：`@restricts()` 修饰器带参，必须带括号，否则会出现调用错误**
+
+如果 `service` 需要全局共用，可以参考 `daily_note.py` 代码
 
