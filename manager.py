@@ -74,7 +74,7 @@ class PluginsManager:
         for pc in PluginsClass:
             func = pc[0]
             plugin_info = pc[1]
-            # 构建 args
+            # 构建 kwargs
             kwargs = {}
             if plugin_info.get("need_service", False):
                 kwargs["service"] = service
