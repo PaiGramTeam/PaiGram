@@ -46,7 +46,7 @@ class DailyNote(BasePlugins):
         )
         return [daily_note_handler]
 
-    async def _get_daily_note_data(self, user_info_data: UserInfoData, game_service: ServiceEnum) -> bytes:
+    async def _get_daily_note(self, user_info_data: UserInfoData, game_service: ServiceEnum) -> bytes:
         if game_service == ServiceEnum.HYPERION:
             client = genshin.ChineseClient(cookies=user_info_data.mihoyo_cookie)
             uid = user_info_data.mihoyo_game_uid
@@ -134,7 +134,7 @@ class DailyNote(BasePlugins):
         else:
             await update.message.reply_chat_action(ChatAction.TYPING)
             try:
-                png_data = await self._start_get_daily_note(user_info, user_info.service)
+                png_data = await self._get_daily_note(user_info, user_info.service)
             except DataNotPublic:
                 reply_message = await update.message.reply_text("查询失败惹，可能是便签功能被禁用了？")
                 if filters.ChatType.GROUPS.filter(message):
@@ -159,7 +159,7 @@ class DailyNote(BasePlugins):
             service = ServiceEnum.HOYOLAB
         else:
             return ConversationHandler.END
-        png_data = await self._start_get_daily_note(get_user_command_data.user_info, service)
+        png_data = await self._get_daily_note(get_user_command_data.user_info, service)
         await query.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await query.message.reply_photo(png_data, filename=f"{get_user_command_data.user_info.user_id}.png",
                                         allow_sending_without_reply=True)
