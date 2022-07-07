@@ -86,6 +86,7 @@ class NewChatMembersHandler:
 def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_message: bool = False,
               restricts_time: int = 5):
     """用于装饰在指定函数防止洪水调用的装饰器
+
     被修饰的函数生声明必须为
 
     async def command_func(update, context)
@@ -101,6 +102,11 @@ def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_
 
     我真™是服了某些闲着没事干的群友了
 
+    :param filters_chat: 要限制的群
+    :param return_data:
+    :param try_delete_message:
+    :param restricts_time:
+    :return: return_data
     """
 
     def decorator(func: Callable):
