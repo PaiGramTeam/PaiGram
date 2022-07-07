@@ -5,8 +5,8 @@ import genshin
 from genshin import GenshinException, DataNotPublic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters, \
-    CallbackQueryHandler
+from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, \
+    CallbackQueryHandler, CallbackContext
 
 from logger import Log
 from manager import listener_plugins_class
@@ -21,7 +21,7 @@ class UidCommandData:
     user_info: UserInfoData = UserInfoData()
 
 
-@listener_plugins_class()
+@listener_plugins_class(need_service=True)
 class DailyNote(BasePlugins):
     """
     每日便签
@@ -30,12 +30,12 @@ class DailyNote(BasePlugins):
     COMMAND_RESULT, = range(10200, 10201)
 
     def __init__(self, service: BaseService):
-        super().__init__(service)
+        self.service = service
         self.current_dir = os.getcwd()
 
-    @staticmethod
-    def create_handlers(service: BaseService) -> list:
-        daily_note = DailyNote(service)
+    @classmethod
+    def create_handlers(cls, service: BaseService) -> list:
+        daily_note = cls(service)
         daily_note_handler = ConversationHandler(
             entry_points=[CommandHandler('dailynote', daily_note.command_start, block=True),
                           MessageHandler(filters.Regex(r"^当前状态(.*)"), daily_note.command_start, block=True)],
@@ -46,8 +46,8 @@ class DailyNote(BasePlugins):
         )
         return [daily_note_handler]
 
-    async def _start_get_daily_note(self, user_info_data: UserInfoData, service: ServiceEnum) -> bytes:
-        if service == ServiceEnum.HYPERION:
+    async def _get_daily_note_data(self, user_info_data: UserInfoData, game_service: ServiceEnum) -> bytes:
+        if game_service == ServiceEnum.HYPERION:
             client = genshin.ChineseClient(cookies=user_info_data.mihoyo_cookie)
             uid = user_info_data.mihoyo_game_uid
         else:

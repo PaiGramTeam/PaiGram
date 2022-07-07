@@ -2,12 +2,11 @@ from telegram import Update, ReplyKeyboardRemove
 from telegram.ext import CallbackContext
 from telegram.helpers import escape_markdown
 
-from utils.base import PaimonContext
 from plugins.base import restricts
 
 
 @restricts()
-async def start(update: Update, context: PaimonContext) -> None:
+async def start(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
     message = update.message
     args = context.args

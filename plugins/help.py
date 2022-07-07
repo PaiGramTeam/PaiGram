@@ -1,13 +1,16 @@
 from telegram import Update
 from telegram.constants import ChatAction
 from telegram.error import BadRequest
+from telegram.ext import CommandHandler
 
 from config import config
 from logger import Log
+from manager import listener_plugins_class
 from plugins.base import restricts
 from utils.base import PaimonContext
 
 
+@listener_plugins_class()
 class Help:
     """
     帮助
@@ -16,6 +19,13 @@ class Help:
     def __init__(self):
         self.help_png = None
         self.file_id = None
+
+    @classmethod
+    def create_handlers(cls) -> list:
+        _help = cls()
+        return [
+            CommandHandler("help", _help.command_start, block=False),
+        ]
 
     @restricts()
     async def command_start(self, update: Update, context: PaimonContext) -> None:

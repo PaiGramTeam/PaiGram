@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, filters, CommandHandler, MessageHandler
+from telegram.ext import filters, CommandHandler, MessageHandler
 
 from logger import Log
 from manager import listener_plugins_class
@@ -8,7 +8,7 @@ from metadata.shortname import weaponToName
 from model.helpers import url_to_file
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
-from service import BaseService
+from utils.base import PaimonContext
 
 
 @listener_plugins_class()
@@ -19,9 +19,9 @@ class Weapon(BasePlugins):
 
     KEYBOARD = [[InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")]]
 
-    @staticmethod
-    def create_handlers(service: BaseService) -> list:
-        weapon = Weapon(service)
+    @classmethod
+    def create_handlers(cls) -> list:
+        weapon = cls()
         return [
             CommandHandler("weapon", weapon.command_start, block=False),
             MessageHandler(filters.Regex("^武器查询(.*)"), weapon.command_start, block=False)
@@ -29,11 +29,12 @@ class Weapon(BasePlugins):
 
     @conversation_error_handler
     @restricts()
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: PaimonContext) -> None:
         message = update.message
         user = update.effective_user
         args = context.args
         match = context.match
+        service = context.service
         weapon_name: str = ""
         if args is None:
             if match is not None:
@@ -90,8 +91,8 @@ class Weapon(BasePlugins):
             return _template_data
 
         template_data = await input_template_data(weapon_data)
-        png_data = await self.service.template.render('genshin/weapon', "weapon.html", template_data,
-                                                      {"width": 540, "height": 540})
+        png_data = await service.template.render('genshin/weapon', "weapon.html", template_data,
+                                                 {"width": 540, "height": 540})
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await message.reply_photo(png_data, filename=f"{template_data['weapon_name']}.png",
                                   allow_sending_without_reply=True)

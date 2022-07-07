@@ -3,14 +3,14 @@ import os
 from pyppeteer import launch
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, ConversationHandler, filters, CommandHandler, MessageHandler
+from telegram.ext import ConversationHandler, filters, CommandHandler, MessageHandler
 
 from logger import Log
 from manager import listener_plugins_class
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
-from service import BaseService
 from service.wish import WishCountInfo, get_one
+from utils.base import PaimonContext
 
 
 @listener_plugins_class()
@@ -19,17 +19,16 @@ class Gacha(BasePlugins):
     抽卡模拟器（非首模拟器/减寿模拟器）
     """
 
-    @staticmethod
-    def create_handlers(service: BaseService) -> list:
-        gacha = Gacha(service)
+    @classmethod
+    def create_handlers(cls) -> list:
+        gacha = cls()
         return [
             CommandHandler("gacha", gacha.command_start, block=False),
             MessageHandler(filters.Regex("^抽卡模拟器(.*)"), gacha.command_start, block=False),
             MessageHandler(filters.Regex("^非首模拟器(.*)"), gacha.command_start, block=False),
         ]
 
-    def __init__(self, service: BaseService):
-        super().__init__(service)
+    def __init__(self):
         self.browser: launch = None
         self.current_dir = os.getcwd()
         self.resources_dir = os.path.join(self.current_dir, "resources")
@@ -41,11 +40,12 @@ class Gacha(BasePlugins):
     @conversation_error_handler
     @restricts(filters.ChatType.GROUPS, restricts_time=20, try_delete_message=True)
     @restricts(filters.ChatType.PRIVATE)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: PaimonContext) -> None:
         message = update.message
         user = update.effective_user
         args = context.args
         match = context.match
+        service = context.service
         gacha_name = "角色活动"
         if args is None:
             if match is not None:
@@ -64,7 +64,7 @@ class Gacha(BasePlugins):
                 await message.reply_text(f"没有找到名为 {gacha_name} 的卡池")
                 return ConversationHandler.END
         Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
-        gacha_info = await self.service.gacha.gacha_info(gacha_name)
+        gacha_info = await service.gacha.gacha_info(gacha_name)
         # 用户数据储存和处理
         if gacha_info.get("gacha_id") is None:
             await message.reply_text(f"没有找到名为 {gacha_name} 的卡池")
@@ -104,8 +104,8 @@ class Gacha(BasePlugins):
         data["items"].sort(key=take_rang, reverse=True)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         # 因为 gacha_info["title"] 返回的是 HTML 标签 尝试关闭自动转义
-        png_data = await self.service.template.render('genshin/gacha', "gacha.html", data,
-                                                      {"width": 1157, "height": 603}, False, False)
+        png_data = await service.template.render('genshin/gacha', "gacha.html", data,
+                                                 {"width": 1157, "height": 603}, False, False)
 
         reply_message = await message.reply_photo(png_data)
         if filters.ChatType.GROUPS.filter(message):

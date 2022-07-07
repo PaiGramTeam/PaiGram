@@ -4,7 +4,6 @@ from functools import wraps
 from typing import Callable, Optional
 
 from telegram import Update, ReplyKeyboardRemove
-from telegram.constants import ChatType
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
@@ -37,8 +36,6 @@ def add_delete_message_job(context: CallbackContext, chat_id: int, message_id: i
 
 
 class BasePlugins:
-    def __init__(self, service: BaseService):
-        self.service = service
 
     @staticmethod
     async def cancel(update: Update, _: CallbackContext) -> int:
@@ -88,22 +85,28 @@ class NewChatMembersHandler:
 
 def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_message: bool = False,
               restricts_time: int = 5):
-    """
-        用于装饰在指定函数防止洪水调用的装饰器
+    """用于装饰在指定函数防止洪水调用的装饰器
 
-        被修饰的函数传入参数必须为
-        async def command_func(update, context)
-        或
-        async def command_func(self, update, context)
+    被修饰的函数生声明必须为
 
-        如果修饰的函数属于
-        ConversationHandler
-        参数
-        return_data
-        必须传入
-        ConversationHandler.END
+    async def command_func(update, context)
+    或
+    async def command_func(self, update, context
 
-        我真™是服了某些闲着没事干的群友了
+    如果修饰的函数属于
+    ConversationHandler
+    参数
+    return_data
+    必须传入
+    ConversationHandler.END
+
+    我真™是服了某些闲着没事干的群友了
+
+    :param filters_chat: 要限制的群
+    :param return_data:
+    :param try_delete_message:
+    :param restricts_time:
+    :return: return_data
     """
 
     def decorator(func: Callable):

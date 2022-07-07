@@ -1,9 +1,9 @@
-import os
 import json
-import genshin
+import os
 import re
-
 from datetime import datetime, timedelta
+
+import genshin
 from genshin import GenshinException, DataNotPublic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -59,7 +59,7 @@ def process_ledger_month(context: CallbackContext) -> int:
     return now_time.month
 
 
-@listener_plugins_class()
+@listener_plugins_class(need_service=True)
 class Ledger(BasePlugins):
     """
     旅行札记
@@ -68,12 +68,12 @@ class Ledger(BasePlugins):
     COMMAND_RESULT, = range(10200, 10201)
 
     def __init__(self, service: BaseService):
-        super().__init__(service)
+        self.service = service
         self.current_dir = os.getcwd()
 
-    @staticmethod
-    def create_handlers(service: BaseService):
-        ledger = Ledger(service)
+    @classmethod
+    def create_handlers(cls, service: BaseService):
+        ledger = cls(service)
         return [ConversationHandler(
             entry_points=[CommandHandler("ledger", ledger.command_start, block=True),
                           MessageHandler(filters.Regex(r"^旅行扎记(.*)"), ledger.command_start, block=True)],
@@ -83,8 +83,8 @@ class Ledger(BasePlugins):
             fallbacks=[CommandHandler("cancel", ledger.cancel, block=True)]
         )]
 
-    async def _start_get_ledger(self, user_info_data: UserInfoData, service: ServiceEnum, month=None) -> bytes:
-        if service == ServiceEnum.HYPERION:
+    async def _start_get_ledger(self, user_info_data: UserInfoData, game_service: ServiceEnum, month=None) -> bytes:
+        if game_service == ServiceEnum.HYPERION:
             client = genshin.ChineseClient(cookies=user_info_data.mihoyo_cookie)
             uid = user_info_data.mihoyo_game_uid
         else:

@@ -11,10 +11,10 @@ from telegram.helpers import escape_markdown
 
 from logger import Log
 from manager import listener_plugins_class
-from utils.random import MT19937_Random
 from plugins.base import BasePlugins, restricts
 from service import BaseService
 from service.base import QuestionData, AnswerData
+from utils.random import MT19937_Random
 
 
 class QuizCommandData:
@@ -25,7 +25,7 @@ class QuizCommandData:
     status: int = 0
 
 
-@listener_plugins_class()
+@listener_plugins_class(need_service=True)
 class Quiz(BasePlugins):
     """
     派蒙的十万个为什么
@@ -37,15 +37,14 @@ class Quiz(BasePlugins):
     QUESTION_EDIT, SAVE_QUESTION = range(10300, 10308)
 
     def __init__(self, service: BaseService):
-        super().__init__(service)
         self.user_time = {}
         self.service = service
         self.time_out = 120
         self.random = MT19937_Random()
 
-    @staticmethod
-    def create_handlers(service: BaseService):
-        quiz = Quiz(service)
+    @classmethod
+    def create_handlers(cls, service: BaseService):
+        quiz = cls(service)
         quiz_handler = ConversationHandler(
             entry_points=[CommandHandler('quiz', quiz.command_start, block=True)],
             states={

@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, filters, ConversationHandler, CommandHandler, MessageHandler
+from telegram.ext import filters, ConversationHandler, CommandHandler, MessageHandler
 
 from logger import Log
 from manager import listener_plugins_class
@@ -8,7 +8,7 @@ from metadata.shortname import roleToName
 from model.helpers import url_to_file
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
-from service import BaseService
+from utils.base import PaimonContext
 
 
 @listener_plugins_class()
@@ -19,9 +19,9 @@ class Strategy(BasePlugins):
 
     KEYBOARD = [[InlineKeyboardButton(text="查看角色攻略列表并查询", switch_inline_query_current_chat="查看角色攻略列表并查询")]]
 
-    @staticmethod
-    def create_handlers(service: BaseService) -> list:
-        strategy = Strategy(service)
+    @classmethod
+    def create_handlers(cls) -> list:
+        strategy = cls()
         return [
             CommandHandler("strategy", strategy.command_start, block=False),
             MessageHandler(filters.Regex("^角色攻略查询(.*)"), strategy.command_start, block=False),
@@ -29,11 +29,12 @@ class Strategy(BasePlugins):
 
     @conversation_error_handler
     @restricts(return_data=ConversationHandler.END)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: PaimonContext) -> None:
         message = update.message
         user = update.effective_user
         args = context.args
         match = context.match
+        service = context.service
         role_name: str = ""
         if args is None:
             if match is not None:
@@ -52,7 +53,7 @@ class Strategy(BasePlugins):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
         role_name = roleToName(role_name)
-        url = await self.service.get_game_info.get_characters_cultivation_atlas(role_name)
+        url = await service.get_game_info.get_characters_cultivation_atlas(role_name)
         if url == "":
             reply_message = await message.reply_text(f"没有找到 {role_name} 的攻略",
                                                      reply_markup=InlineKeyboardMarkup(self.KEYBOARD))
