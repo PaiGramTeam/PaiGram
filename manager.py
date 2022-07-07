@@ -14,9 +14,9 @@ PluginsClass: List[Tuple[any, dict]] = []
 
 def listener_plugins_class(need_service: bool = False):
     """监听插件
-
     :param need_service: 插件类中 create_handlers 函数是否传入 service
     :return: None
+
     """
     plugin_info = {
         "need_service": need_service

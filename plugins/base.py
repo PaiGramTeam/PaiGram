@@ -86,20 +86,21 @@ class NewChatMembersHandler:
 def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_message: bool = False,
               restricts_time: int = 5):
     """用于装饰在指定函数防止洪水调用的装饰器
+    被修饰的函数生声明必须为
 
-        被修饰的函数生声明必须为
-        async def command_func(update, context)
-        或
-        async def command_func(self, update, context)
+    async def command_func(update, context)
+    或
+    async def command_func(self, update, context
 
-        如果修饰的函数属于
-        ConversationHandler
-        参数
-        return_data
-        必须传入
-        ConversationHandler.END
+    如果修饰的函数属于
+    ConversationHandler
+    参数
+    return_data
+    必须传入
+    ConversationHandler.END
 
-        我真™是服了某些闲着没事干的群友了
+    我真™是服了某些闲着没事干的群友了
+
     """
 
     def decorator(func: Callable):
