@@ -52,4 +52,3 @@ plugins 模块下的类必须提供 `create_handlers` 静态函数作为构建�
 **注意：`@restricts()` 修饰器带参，必须带括号，否则会出现调用错误**
 
 如果 `service` 需要全局共用，可以参考 `daily_note.py` 代码
-
