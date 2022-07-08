@@ -100,8 +100,7 @@ def conversation_error_handler(func: Callable) -> Callable:
             return ConversationHandler.END
         except GenshinException as exc:
             if "[-130]" in str(exc):
-                await send_user_notification(update, context,
-                                             f"未设置默认角色，请尝试重新绑定默认角色")
+                await send_user_notification(update, context, "未设置默认角色，请尝试重新绑定默认角色")
                 return ConversationHandler.END
             Log.warning("GenshinException", exc)
             await send_user_notification(update, context,
@@ -113,7 +112,7 @@ def conversation_error_handler(func: Callable) -> Callable:
             return ConversationHandler.END
         except Forbidden as exc:
             Log.warning("python-telegram-bot返回 Forbidden", exc)
-            await send_user_notification(update, context, f"telegram-bot-api请求错误")
+            await send_user_notification(update, context, "telegram-bot-api请求错误")
             return ConversationHandler.END
 
     return decorator
