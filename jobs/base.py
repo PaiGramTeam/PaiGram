@@ -96,15 +96,6 @@ class RunRepeatingHandler:
                  last: Union[float, datetime.timedelta, datetime.datetime, datetime.time] = None,
                  context: object = None, name: str = None, chat_id: int = None, user_id: int = None,
                  job_kwargs: JSONDict = None):
-        self.callback = callback
-        self.interval = interval
-        self.first = first
-        self.last = last
-        self.context = context
-        self.name = name
-        self.chat_id = chat_id
-        self.user_id = user_id
-        self.job_kwargs = job_kwargs
         """Creates a new :class:`Job` instance that runs at specified intervals and adds it to the
         queue.
 
@@ -179,6 +170,15 @@ class RunRepeatingHandler:
             queue.
 
         """
+        self.callback = callback
+        self.interval = interval
+        self.first = first
+        self.last = last
+        self.context = context
+        self.name = name
+        self.chat_id = chat_id
+        self.user_id = user_id
+        self.job_kwargs = job_kwargs
 
     @property
     def get_kwargs(self) -> dict:
