@@ -60,11 +60,8 @@ class RunDailyHandler:
             job_kwargs (:obj:`dict`, optional): Arbitrary keyword arguments to pass to the
                 :meth:`apscheduler.schedulers.base.BaseScheduler.add_job()`.
 
-        Returns:
-            :class:`telegram.ext.Job`: The new :class:`Job` instance that has been added to the job
-            queue.
-
         """
+        # 复制文档
         self.job_kwargs = job_kwargs
         self.user_id = user_id
         self.chat_id = chat_id
@@ -165,11 +162,8 @@ class RunRepeatingHandler:
             job_kwargs (:obj:`dict`, optional): Arbitrary keyword arguments to pass to the
                 :meth:`apscheduler.schedulers.base.BaseScheduler.add_job()`.
 
-        Returns:
-            :class:`telegram.ext.Job`: The new :class:`Job` instance that has been added to the job
-            queue.
-
         """
+        # 复制文档
         self.callback = callback
         self.interval = interval
         self.first = first
