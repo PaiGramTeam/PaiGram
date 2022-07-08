@@ -3,7 +3,7 @@ from typing import Optional
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, InlineQueryHandler, Application
 
 from logger import Log
-from manager import PluginsManager
+from manager import PluginsManager, JobsManager
 from plugins.auth import Auth
 from plugins.base import NewChatMembersHandler
 from plugins.errorhandler import error_handler
@@ -65,3 +65,19 @@ def register_handlers(application: Application, service: BaseService):
     application.add_error_handler(error_handler, block=False)
 
     Log.info("插件加载成功")
+
+
+def register_job(application: Application, service: BaseService):
+    Log.info("正在加载Job管理器")
+    jobs_manager = JobsManager()
+
+    jobs_manager.refresh_list("./jobs/*")
+
+    # 忽略内置模块
+    jobs_manager.add_exclude(["base"])
+
+    Log.info("Job管理器正在加载插件")
+    jobs_manager.import_module()
+    jobs_manager.add_handler(application, service)
+
+    Log.info("Job加载成功")
