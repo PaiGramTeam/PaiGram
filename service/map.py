@@ -28,7 +28,7 @@ class MapHelper:
         self.client = httpx.AsyncClient(headers=REQUEST_HEADERS, timeout=10.0)
         self.all_resource_type: dict = {}
         """这个字典保存所有资源类型
-        
+
         "1": {
             "id": 1,
             "name": "传送点",
@@ -44,7 +44,7 @@ class MapHelper:
         """
         self.can_query_type_list: dict = {}
         """这个字典保存所有可以查询的资源类型名称和ID，这个字典只有名称和ID
-        
+
         上边字典里"depth": 2的类型才可以查询，"depth": 1的是1级目录，不能查询
         
         "七天神像":"2"
@@ -53,7 +53,7 @@ class MapHelper:
         """
         self.all_resource_point_list: list = []
         """这个列表保存所有资源点的数据
-        
+
         {
             "id": 2740,
             "label_id": 68,
@@ -65,13 +65,16 @@ class MapHelper:
         }
         """
         self.date: str = ""
-        """记录上次更新"all_resource_point_list"的日期"""
+        """记录上次更新"all_resource_point_list"的日期
+        """
 
         self.center: Optional[List[float]] = None
-        """center"""
+        """center
+        """
 
         self.map_icon: Optional[Image] = None
-        """map_icon"""
+        """map_icon
+        """
 
     async def download_icon(self, url):
         """下载图片 返回Image对象
