@@ -16,7 +16,6 @@ init_resource_map = False
 
 
 async def inquire_resource_list(message):
-    """ 资源列表 """
     global init_resource_map
     if not init_resource_map:
         await init_point_list_and_map()
@@ -29,16 +28,15 @@ async def inquire_resource_list(message):
 class Map(BasePlugins):
     @classmethod
     def create_handlers(cls) -> list:
-        map = cls()
+        map_res = cls()
         return [
-            CommandHandler("map", map.command_start, block=False),
-            MessageHandler(filters.Regex(r"^资源点查询(.*)"), map.command_start, block=True)
+            CommandHandler("map", map_res.command_start, block=False),
+            MessageHandler(filters.Regex(r"^资源点查询(.*)"), map_res.command_start, block=True)
         ]
 
     @conversation_error_handler
     @restricts()
-    async def command_start(self, update: Update, context: PaimonContext) -> None:
-        """ 资源点查询 """
+    async def command_start(self, update: Update, context: PaimonContext):
         message = update.message
         args = context.args
         user = update.effective_user

@@ -12,10 +12,8 @@ MAP_URL = 'https://api-static.mihoyo.com/common/map_user/ys_obc/v1/map/info?map_
 
 header = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
          "Chrome/84.0.4147.105 Safari/537.36"
-FILE_PATH = "resources"
 
-MAP_PATH = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                        FILE_PATH, "icon", "map_icon.jpg")
+MAP_PATH = os.path.join(os.path.dirname(__file__), os.path.pardir, "resources", "icon", "map_icon.jpg")
 Image.MAX_IMAGE_PIXELS = None
 
 CENTER = None
@@ -81,11 +79,10 @@ async def download_json(url):
     # 获取资源数据，返回 JSON
     if (
             url == POINT_LIST_URL
-            and exists(f"""{os.path.dirname(__file__), os.path.pardir,
-                            FILE_PATH, os.sep}data{os.sep}list.json""")
+            and exists(f"""{os.path.dirname(__file__), os.path.pardir, "resources", os.sep}data{os.sep}list.json""")
     ):
         with open(f"assets{os.sep}data{os.sep}list.json", "rb") as f:
-            return json.loads(f)
+            return json.loads(f.read())
     resp = await client.get(url=url)
     if resp.status_code != 200:
         raise ValueError(f"获取资源点数据失败，错误代码 {resp.status_code}")
@@ -94,8 +91,8 @@ async def download_json(url):
 
 async def up_icon_image(sublist):
     # 检查是否有图标，没有图标下载保存到本地
-    id = sublist["id"]
-    icon_path = os.path.join(os.path.dirname(__file__), os.path.pardir, FILE_PATH, "icon", f"{id}.png")
+    icon_id = sublist["id"]
+    icon_path = os.path.join(os.path.dirname(__file__), os.path.pardir, "resources", "icon", f"{icon_id}.png")
 
     if not os.path.exists(icon_path):
         icon_url = sublist["icon"]
@@ -104,8 +101,8 @@ async def up_icon_image(sublist):
 
         box_alpha = Image.open(
             os.path.join(os.path.dirname(__file__), os.path.pardir,
-                         FILE_PATH, "icon", "box_alpha.png")).getchannel("A")
-        box = Image.open(os.path.join(os.path.dirname(__file__), os.path.pardir, FILE_PATH, "icon", "box.png"))
+                         "resources", "icon", "box_alpha.png")).getchannel("A")
+        box = Image.open(os.path.join(os.path.dirname(__file__), os.path.pardir, "resources", "icon", "box.png"))
 
         try:
             icon_alpha = icon.getchannel("A")
@@ -188,7 +185,8 @@ async def init_point_list_and_map():
     await up_map()
 
 
-class Resource_map:
+class ResourceMap:
+
     def __init__(self, resource_name):
         self.resource_id = str(data["can_query_type_list"][resource_name])
 
@@ -208,10 +206,10 @@ class Resource_map:
     def get_icon_path(self):
         # 检查有没有图标，有返回正确图标，没有返回默认图标
         icon_path = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                                 FILE_PATH, "icon", f"{self.resource_id}.png")
+                                 "resources", "icon", f"{self.resource_id}.png")
         if os.path.exists(icon_path):
             return icon_path
-        return os.path.join(os.path.dirname(__file__), os.path.pardir, FILE_PATH, "icon", "0.png")
+        return os.path.join(os.path.dirname(__file__), os.path.pardir, "resources", "icon", "0.png")
 
     def get_resource_point_list(self):
         temp_list = []
@@ -280,11 +278,11 @@ async def get_resource_map_mes(name):
         await init_point_list_and_map()
     if name not in data["can_query_type_list"]:
         return f"派蒙还不知道 {name} 在哪里呢，可以发送 `/map list` 查看资源列表"
-    map = Resource_map(name)
-    count = map.get_resource_count()
+    map_res = ResourceMap(name)
+    count = map_res.get_resource_count()
     if not count:
         return f"派蒙没有找到 {name} 的位置，可能米游社wiki还没更新"
-    map.gen_jpg()
+    map_res.gen_jpg()
     mes = f"派蒙一共找到 {name} 的 {count} 个位置点\n* 数据来源于米游社wiki"
 
     return mes
@@ -292,14 +290,14 @@ async def get_resource_map_mes(name):
 
 def get_resource_list_mes():
     temp = {}
-    for id in data["all_resource_type"]:
+    for list_id in data["all_resource_type"]:
         # 先找1级目录
-        if data["all_resource_type"][id]["depth"] == 1:
-            temp[id] = []
-    for id in data["all_resource_type"]:
+        if data["all_resource_type"][list_id]["depth"] == 1:
+            temp[list_id] = []
+    for list_id in data["all_resource_type"]:
         # 再找2级目录
-        if data["all_resource_type"][id]["depth"] == 2:
-            temp[str(data["all_resource_type"][id]["parent_id"])].append(id)
+        if data["all_resource_type"][list_id]["depth"] == 2:
+            temp[str(data["all_resource_type"][list_id]["parent_id"])].append(list_id)
     mes = "当前资源列表如下：\n"
 
     for resource_type_id in temp:
