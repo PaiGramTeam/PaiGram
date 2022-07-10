@@ -79,7 +79,7 @@ async def download_json(url):
     # 获取资源数据，返回 JSON
     if (
             url == POINT_LIST_URL
-            and exists(f"""{os.path.dirname(__file__), os.path.pardir, "resources", os.sep}data{os.sep}list.json""")
+            and exists(f"""{os.path.dirname(__file__), os.path.pardir, "cache", os.sep}data{os.sep}list.json""")
     ):
         with open(f"assets{os.sep}data{os.sep}list.json", "rb") as f:
             return json.loads(f.read())

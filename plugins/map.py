@@ -35,7 +35,7 @@ class Map(BasePlugins):
         ]
 
     @conversation_error_handler
-    @restricts()
+    @restricts(restricts_time=20)
     async def command_start(self, update: Update, context: PaimonContext):
         message = update.message
         args = context.args
@@ -57,8 +57,8 @@ class Map(BasePlugins):
         text = await get_resource_map_mes(resource_name)
         if "不知道" in text:
             return await message.reply_text(text, parse_mode="Markdown")
-        img = Image.open(f"temp{sep}map.jpg")
+        img = Image.open(f"cache{sep}map.jpg")
         if img.size[0] > 2048 or img.size[1] > 2048:
-            await message.reply_document(open(f"temp{sep}map.jpg", mode='rb+'), caption=text)
+            await message.reply_document(open(f"cache{sep}map.jpg", mode='rb+'), caption=text)
         else:
-            await message.reply_photo(open(f"temp{sep}map.jpg", mode='rb+'), caption=text)
+            await message.reply_photo(open(f"cache{sep}map.jpg", mode='rb+'), caption=text)
