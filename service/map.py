@@ -196,7 +196,7 @@ class MapHelper:
         if name not in self.can_query_type_list:
             return f"派蒙还不知道 {name} 在哪里呢，可以发送 `/map list` 查看资源列表"
         resource_id = self.can_query_type_list[name]
-        map_res = ResourceMap(self.all_resource_point_list, self.map_icon, resource_id)
+        map_res = ResourceMap(self.all_resource_point_list, self.map_icon, self.center, resource_id)
         count = map_res.get_resource_count()
         if not count:
             return f"派蒙没有找到 {name} 的位置，可能米游社wiki还没更新"

@@ -18,7 +18,7 @@ class Map(BasePlugins):
 
     def __init__(self):
         self.init_resource_map = False
-        self.map = MapHelper()
+        self.map_helper = MapHelper()
 
     @classmethod
     def create_handlers(cls) -> list:
@@ -31,7 +31,7 @@ class Map(BasePlugins):
     async def init_point_list_and_map(self):
         Log.info("正在初始化地图资源节点")
         if not self.init_resource_map:
-            await self.map.init_point_list_and_map()
+            await self.map_helper.init_point_list_and_map()
             self.init_resource_map = True
 
     @conversation_error_handler
@@ -50,11 +50,11 @@ class Map(BasePlugins):
             return
         if resource_name in ("list", "列表"):
             Log.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 资源列表")
-            text = await self.map.get_resource_list_mes()
+            text = await self.map_helper.get_resource_list_mes()
             await message.reply_text(text)
             return
         Log.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 {resource_name}")
-        text = await self.map.get_resource_map_mes(resource_name)
+        text = await self.map_helper.get_resource_map_mes(resource_name)
         if "不知道" in text:
             await message.reply_text(text, parse_mode="Markdown")
             return
