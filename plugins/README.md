@@ -37,7 +37,7 @@ class Example(BasePlugins):
 
 plugins 模块下的类需要继承 `BasePlugins`
 
-plugins 模块下的类必须提供 `create_handlers` 静态函数作为构建相应处理程序给 `handle.py`
+plugins 模块下的类必须提供 `create_handlers` 类方法作为构建相应处理程序给 `handle.py`
 
 在函数注册为命令处理过程（如 `CommandHandler` ）需要添加 `conversation_error_handler` 修饰器作为错误统一处理
 
