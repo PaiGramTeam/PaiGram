@@ -40,7 +40,7 @@ class Gacha(BasePlugins):
     @conversation_error_handler
     @restricts(filters.ChatType.GROUPS, restricts_time=20, try_delete_message=True)
     @restricts(filters.ChatType.PRIVATE)
-    async def command_start(self, update: Update, context: PaimonContext) -> None:
+    async def command_start(self, update: Update, context: PaimonContext) -> int:
         message = update.message
         user = update.effective_user
         args = context.args
@@ -60,11 +60,8 @@ class Gacha(BasePlugins):
                 if key == gacha_name:
                     gacha_name = value
                     break
-            else:
-                await message.reply_text(f"没有找到名为 {gacha_name} 的卡池")
-                return ConversationHandler.END
         Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
-        gacha_info = await service.gacha.gacha_info(gacha_name)
+        gacha_info = await service.gacha.gacha_info(gacha_name, default=False if len(args) >= 1 else True)
         # 用户数据储存和处理
         if gacha_info.get("gacha_id") is None:
             await message.reply_text(f"没有找到名为 {gacha_name} 的卡池")
