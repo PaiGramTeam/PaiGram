@@ -196,6 +196,9 @@ class Auth:
             if user.id == context.bot.id:
                 return
             Log.info(f"用户 {user.full_name}[{user.id}] 尝试加入群 {chat.title}[{chat.id}]")
+        not_enough_rights = context.chat_data.get("not_enough_rights", False)
+        if not_enough_rights:
+            return
         if message.from_user.id in await get_admin_list(
                 bot=context.bot,
                 cache=self.service.cache,
@@ -216,9 +219,11 @@ class Auth:
                                                        permissions=ChatPermissions(can_send_messages=False))
             except BadRequest as err:
                 if "Not enough rights" in str(err):
-                    Log.warning(f"权限不够 chat_id[{message.chat_id}]", err)
-                    await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
-                                                    f"请检查是否给派蒙授权管理了")
+                    Log.warning(f"权限不够 chat_id[{message.chat_id}]")
+                    reply_message = await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
+                                                                    f"请检查是否给派蒙授权管理了")
+                    context.chat_data["not_enough_rights"] = True
+                    await self.clean_message(context, chat.id, context.bot.id, reply_message.message_id)
                     return
                 else:
                     raise err
