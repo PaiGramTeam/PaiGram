@@ -13,10 +13,13 @@ class GachaService:
         gacha_list_info = await self.gacha.get_gacha_list_info()
         gacha_id = ""
         for gacha in gacha_list_info.data["list"]:
-            if gacha["gacha_name"] == gacha_name or default:
+            if gacha["gacha_name"] == gacha_name:
                 gacha_id = gacha["gacha_id"]
         if gacha_id == "":
-            return {}
+            if default and len(gacha_list_info.data["list"]) > 0:
+                gacha_id = gacha_list_info.data["list"][0]["gacha_id"]
+            else:
+                return {}
         gacha_info = await self.gacha.get_gacha_info(gacha_id)
         gacha_info["gacha_id"] = gacha_id
         return gacha_info
