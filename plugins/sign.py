@@ -106,7 +106,9 @@ class Sign(BasePlugins):
             context.chat_data["sign_command_data"] = sign_command_data
         user_info = await service.user_service_db.get_user_info(user.id)
         if user_info.user_id == 0:
-            await update.message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
+            reply_message = await update.message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return ConversationHandler.END
         if user_info.service == ServiceEnum.NULL:
             keyboard = [
