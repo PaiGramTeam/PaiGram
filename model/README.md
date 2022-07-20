@@ -1,6 +1,5 @@
 # model 目录说明
 
-
 ## apihelpe 模块
 
 用于获取米忽悠BBS的数据写的请求模块
@@ -23,6 +22,6 @@
 
 ### 感谢
 
-|                          Nickname                          | Contribution |
-|:----------------------------------------------------------:|--------------|
-| [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw) | 本项目参考的爬虫代码   |
+|                          Nickname                          | Contribution         |
+| :--------------------------------------------------------: | -------------------- |
+| [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw) | 本项目参考的爬虫代码 |

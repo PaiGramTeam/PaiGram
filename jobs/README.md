@@ -2,7 +2,7 @@
 
 ## 说明
 
-改目录存放 BOT 的工作队列呸注册和具体实现
+改目录存放 BOT 的工作队列、注册和具体实现
 
 ## 基础代码
 
@@ -14,7 +14,6 @@ from telegram.ext import CallbackContext
 from jobs.base import RunDailyHandler
 from logger import Log
 from manager import listener_jobs_class
-
 
 @listener_jobs_class()
 class JobTest:
