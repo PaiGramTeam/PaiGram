@@ -1,10 +1,20 @@
-/config/config.json
-**_test.html
-test_**.html
-logs/
+### Code Editor ###
 
+# VSCode
 .vscode/
+*.code-workspace
+.history
+.ionide
+
+# Pycharm
+*.iws
 .idea/
+out/
+
+### Python ###
+
+# Environments
+env/
 venv/
 cache/
 
@@ -14,3 +24,10 @@ __pycache__/
 *$py.class
 *.pyo
 *.pyc
+
+### Customize ###
+
+config/config.json
+**_test.html
+test_**.html
+logs/
