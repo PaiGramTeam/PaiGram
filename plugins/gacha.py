@@ -61,7 +61,7 @@ class Gacha(BasePlugins):
                     gacha_name = value
                     break
         Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
-        gacha_info = await service.gacha.gacha_info(gacha_name, default=False if len(args) >= 1 else True)
+        gacha_info = await service.gacha.gacha_info(gacha_name, default=False if args and len(args) >= 1 else True)
         # 用户数据储存和处理
         if gacha_info.get("gacha_id") is None:
             await message.reply_text(f"没有找到名为 {gacha_name} 的卡池")
