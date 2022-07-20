@@ -24,6 +24,7 @@ class MapHelper:
         self._current_dir = os.getcwd()
         self._output_dir = os.path.join(self._current_dir, cache_dir_name)
         self._resources_icon_dir = os.path.join(self._current_dir, "resources", "icon")
+        self._cache_dir = os.path.join(self._current_dir, "cache")
         self._map_dir = os.path.join(self._resources_icon_dir, "map_icon.jpg")
         self.client = httpx.AsyncClient(headers=REQUEST_HEADERS, timeout=10.0)
         self.all_resource_type: dict = {}
@@ -164,7 +165,7 @@ class MapHelper:
         :return:
         """
         icon_id = sublist["id"]
-        icon_path = os.path.join(self._resources_icon_dir, f"{icon_id}.png")
+        icon_path = os.path.join(self._cache_dir, f"{icon_id}.png")
 
         if not os.path.exists(icon_path):
             icon_url = sublist["icon"]
