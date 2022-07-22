@@ -24,3 +24,4 @@ class UserRepository:
 
 class UserNotFoundError(NotFoundError):
     entity_name: str = "User"
+    entity_value_name: str = "id"
