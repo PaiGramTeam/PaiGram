@@ -24,10 +24,10 @@ class QuizService:
         return question_list
 
     async def save_quiz(self, data: Question):
-        await self._repository.get_question(data.question)
-        question = await self._repository.get_question(data.question)
+        await self._repository.get_question(data.text)
+        question = await self._repository.get_question(data.text)
         for answers in data.answers:
-            await self._repository.add_answer(question.question_id, answers.is_correct, answers.answer)
+            await self._repository.add_answer(question.question_id, answers.is_correct, answers.text)
 
     async def refresh_quiz(self) -> int:
         question_list = await self.get_quiz()

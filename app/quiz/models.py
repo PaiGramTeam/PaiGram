@@ -5,19 +5,19 @@ from model.types import JSONDict
 
 
 class Answer(BaseObject):
-    def __init__(self, answer_id: int = 0, question_id: int = 0, is_correct: bool = True, answer: str = ""):
+    def __init__(self, answer_id: int = 0, question_id: int = 0, is_correct: bool = True, text: str = ""):
         self.answer_id = answer_id
         self.question_id = question_id
-        self.answer = answer
+        self.text = text
         self.is_correct = is_correct
 
-    __slots__ = ("answer_id", "question_id", "answer", "is_correct")
+    __slots__ = ("answer_id", "question_id", "text", "is_correct")
 
 
 class Question(BaseObject):
-    def __init__(self, question_id: int = 0, question: str = "", answers: List[Answer] = None):
+    def __init__(self, question_id: int = 0, text: str = "", answers: List[Answer] = None):
         self.question_id = question_id
-        self.question = question
+        self.text = text
         self.answers = [] if answers is None else answers
 
     def to_dict(self) -> JSONDict:
@@ -34,4 +34,4 @@ class Question(BaseObject):
         data["sub_item"] = Answer.de_list(data.get("sub_item"))
         return cls(**data)
 
-    __slots__ = ("question_id", "question", "answers")
+    __slots__ = ("question_id", "text", "answers")
