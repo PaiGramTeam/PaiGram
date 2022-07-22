@@ -1,3 +1,4 @@
+from app.exception import NotFoundError
 from app.user.models import User
 from model.base import ServiceEnum
 
@@ -19,13 +20,6 @@ class UserRepository:
             raise UserNotFoundError(user_id)
         (user_id, yuanshen_game_uid, genshin_game_uid, default_service) = data
         return User(user_id, yuanshen_game_uid, genshin_game_uid, ServiceEnum(default_service))
-
-
-class NotFoundError(Exception):
-    entity_name: str
-
-    def __init__(self, entity_id):
-        super().__init__(f"{self.entity_name} not found, id: {entity_id}")
 
 
 class UserNotFoundError(NotFoundError):
