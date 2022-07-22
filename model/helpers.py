@@ -16,7 +16,7 @@ from service.cache import RedisCache
 
 USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
                   "Chrome/90.0.4430.72 Safari/537.36"
-headers: dict = {'User-Agent': USER_AGENT}
+REQUEST_HEADERS: dict = {'User-Agent': USER_AGENT}
 current_dir = os.getcwd()
 cache_dir = os.path.join(current_dir, "cache")
 if not os.path.exists(cache_dir):
@@ -56,7 +56,7 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
     temp_file_name = url_sha1 + extension
     file_dir = os.path.join(cache_dir, temp_file_name)
     if not os.path.exists(file_dir):
-        async with httpx.AsyncClient(headers=headers) as client:
+        async with httpx.AsyncClient(headers=REQUEST_HEADERS) as client:
             try:
                 data = await client.get(url)
             except UnsupportedProtocol as error:

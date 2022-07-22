@@ -17,3 +17,4 @@ fakeredis>=1.8.1
 aiohttp<=3.8.1
 python-telegram-bot==20.0a2
 pytz>=2021.3
+Pillow
