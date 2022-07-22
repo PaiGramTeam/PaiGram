@@ -40,7 +40,8 @@ class Map(BasePlugins):
         message = update.message
         args = context.args
         user = update.effective_user
-        await self.init_point_list_and_map()
+        if not self.init_resource_map:
+            await self.init_point_list_and_map()
         await message.reply_chat_action(ChatAction.TYPING)
         if len(args) >= 1:
             resource_name = args[0]
@@ -50,12 +51,12 @@ class Map(BasePlugins):
             return
         if resource_name in ("list", "列表"):
             Log.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 资源列表")
-            text = await self.map_helper.get_resource_list_mes()
+            text = self.map_helper.get_resource_list_mes()
             await message.reply_text(text)
             return
         Log.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 {resource_name}")
         text = await self.map_helper.get_resource_map_mes(resource_name)
-        if "不知道" in text:
+        if "不知道" in text or "没有找到" in text:
             await message.reply_text(text, parse_mode="Markdown")
             return
         img = Image.open(f"cache{sep}map.jpg")

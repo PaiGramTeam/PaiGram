@@ -156,7 +156,7 @@ class MapHelper:
                 await self.up_icon_image(sublist)
             label["children"] = []
         test = await self.download_json(self.POINT_LIST_URL)
-        self.all_resource_type = test["data"]["point_list"]
+        self.all_resource_point_list = test["data"]["point_list"]
         self.date = time.strftime("%d")
 
     async def up_icon_image(self, sublist: dict):
@@ -205,27 +205,23 @@ class MapHelper:
         if not count:
             return f"派蒙没有找到 {name} 的位置，可能米游社wiki还没更新"
         map_res.gen_jpg()
-        mes = f"派蒙一共找到 {name} 的 {count} 个位置点\n* 数据来源于米游社wiki"
-        return mes
+        return f"派蒙一共找到 {name} 的 {count} 个位置点\n* 数据来源于米游社wiki"
 
     def get_resource_list_mes(self):
-        temp = {}
-        for list_id in self.all_resource_type:
-            # 先找1级目录
-            if self.all_resource_type[list_id]["depth"] == 1:
-                temp[list_id] = []
+        temp = {list_id: [] for list_id in self.all_resource_type if self.all_resource_type[list_id]["depth"] == 1}
+
         for list_id in self.all_resource_type:
             # 再找2级目录
             if self.all_resource_type[list_id]["depth"] == 2:
                 temp[str(self.all_resource_type[list_id]["parent_id"])].append(list_id)
         mes = "当前资源列表如下：\n"
 
-        for resource_type_id in temp:
+        for resource_type_id, value in temp.items():
             if resource_type_id in ["1", "12", "50", "51", "95", "131"]:
                 # 在游戏里能查到的数据这里就不列举了，不然消息太长了
                 continue
             mes += f"{self.all_resource_type[resource_type_id]['name']}："
-            for resource_id in temp[resource_type_id]:
+            for resource_id in value:
                 mes += f"{self.all_resource_type[resource_id]['name']}，"
             mes += "\n"
         return mes
@@ -261,10 +257,12 @@ class ResourceMap:
         temp_list = []
         for resource_point in self.all_resource_point_list:
             if str(resource_point["label_id"]) == self.resource_id:
+                print("ok")
                 # 获取xy坐标，然后加上中心点的坐标完成坐标转换
                 x = resource_point["x_pos"] + self.center[0]
                 y = resource_point["y_pos"] + self.center[1]
                 temp_list.append((int(x), int(y)))
+        print(temp_list)
         return temp_list
 
     def paste(self):
@@ -307,13 +305,11 @@ class ResourceMap:
     def gen_jpg(self):
         if not self.resource_xy_list:
             return "没有这个资源的信息"
-        if os.path.exists("temp"):
-            pass
-        else:
-            os.mkdir("temp")  # 查找 temp 目录 (缓存目录) 是否存在，如果不存在则创建
+        if not os.path.exists("cache"):
+            os.mkdir("cache")  # 查找 cache 目录 (缓存目录) 是否存在，如果不存在则创建
         self.crop()
         self.paste()
-        self.map_image.save(f'temp{os.sep}map.jpg', format='JPEG')
+        self.map_image.save(f'cache{os.sep}map.jpg', format='JPEG')
 
     def get_resource_count(self):
         return len(self.resource_xy_list)
