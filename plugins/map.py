@@ -47,9 +47,14 @@ class Map(BasePlugins):
             resource_name = args[0]
         else:
             Log.info(f"用户: {user.full_name} [{user.id}] 使用了 map 命令")
-            await message.reply_text("请输入要查找的资源，或发送 `/map list` 查看资源列表", parse_mode="Markdown")
+            await message.reply_text("请输入要查找的资源，或私聊派蒙发送 `/map list` 查看资源列表", parse_mode="Markdown")
             return
         if resource_name in ("list", "列表"):
+            if filters.ChatType.GROUPS.filter(message):
+                reply_message = await message.reply_text("请私聊派蒙使用该命令")
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
+                return
             Log.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 资源列表")
             text = self.map_helper.get_resource_list_mes()
             await message.reply_text(text)

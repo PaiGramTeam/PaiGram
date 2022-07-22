@@ -25,7 +25,7 @@ class MapHelper:
         self._output_dir = os.path.join(self._current_dir, cache_dir_name)
         self._resources_icon_dir = os.path.join(self._current_dir, "resources", "icon")
         self._cache_dir = os.path.join(self._current_dir, "cache")
-        self._map_dir = os.path.join(self._resources_icon_dir, "map_icon.jpg")
+        self._map_dir = os.path.join(self._cache_dir, "map_icon.jpg")
         self.client = httpx.AsyncClient(headers=REQUEST_HEADERS, timeout=10.0)
         self.all_resource_type: dict = {}
         """这个字典保存所有资源类型
@@ -257,12 +257,10 @@ class ResourceMap:
         temp_list = []
         for resource_point in self.all_resource_point_list:
             if str(resource_point["label_id"]) == self.resource_id:
-                print("ok")
                 # 获取xy坐标，然后加上中心点的坐标完成坐标转换
                 x = resource_point["x_pos"] + self.center[0]
                 y = resource_point["y_pos"] + self.center[1]
                 temp_list.append((int(x), int(y)))
-        print(temp_list)
         return temp_list
 
     def paste(self):
