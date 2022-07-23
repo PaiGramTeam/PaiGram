@@ -1,17 +1,17 @@
 import asyncio
-
 from warnings import filterwarnings
 
 import pytz
 from telegram.ext import Application, ContextTypes, Defaults
 from telegram.warnings import PTBUserWarning
 
-from utils.base import PaimonContext
 from config import config
 from handler import register_handlers, register_job
 from logger import Log
 from service import StartService
 from utils.aiobrowser import AioBrowser
+from utils.app.manager import AppsManager
+from utils.base import PaimonContext
 from utils.mysql import MySQL
 from utils.redisdb import RedisDB
 
@@ -48,12 +48,21 @@ def main() -> None:
 
     defaults = Defaults(tzinfo=pytz.timezone("Asia/Shanghai"))
 
-    application = Application.builder().token(config.TELEGRAM["token"]).context_types(context_types).defaults(defaults).build()
+    application = Application.builder().token(config.TELEGRAM["token"]).context_types(context_types).defaults(
+        defaults).build()
 
     # 保存实例化的类到 bot_data
     # 这样在每个实例去获取 service 时
     # 通过 PaimonContext 就能获取
     application.bot_data.setdefault("service", service)
+
+    apps = AppsManager(mysql, redis, browser)
+
+    apps.refresh_list("./app/*")
+
+    apps.import_module()
+
+    apps.add_service()
 
     register_handlers(application, service)
 

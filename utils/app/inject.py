@@ -8,6 +8,7 @@ from utils.app.manager import ServiceDict
 
 def inject(func: Func) -> Func:
     """依赖注入"""
+
     @wraps(func)
     async def decorator(*args, **kwargs):
         try:
@@ -22,9 +23,10 @@ def inject(func: Func) -> Func:
         else:
             for parameter_name, parameter in signature.parameters.items():
                 annotation = parameter.annotation
-                class_name = annotation.__class__.__name__
+                class_name = annotation.__name__
                 param = ServiceDict.get(class_name)
-                kwargs.setdefault(class_name, param)
+                if param is not None:
+                    kwargs.setdefault(parameter_name, param)
 
         return await func(*args, **kwargs)
 
