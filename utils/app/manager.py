@@ -6,16 +6,16 @@ from typing import List, Union, Dict
 
 from logger import Log
 from model.types import Func
+from utils.aiobrowser import AioBrowser
+from utils.mysql import MySQL
+from utils.redisdb import RedisDB
 
 ServiceFunctions: List[Func] = []
 ServiceDict: Dict[str, Func] = {}
 
 
 def listener_service():
-    """监听服务
-
-    :return: None
-    """
+    """监听服务"""
 
     def decorator(func: Func):
         ServiceFunctions.append(
@@ -27,8 +27,11 @@ def listener_service():
 
 
 class AppsManager:
-    def __init__(self):
-        self.app_list: List[str] = []  # 用于存储文件名称
+    def __init__(self, mysql: MySQL, redis: RedisDB, browser: AioBrowser):
+        self.browser = browser
+        self.redis = redis
+        self.mysql = mysql
+        self.app_list: List[str] = []
         self.exclude_list: List[str] = []
 
     def refresh_list(self, app_paths):
@@ -36,6 +39,7 @@ class AppsManager:
         app_paths = glob(app_paths)
         for app_path in app_paths:
             if os.path.isdir(app_path):
+                app_path = os.path.basename(app_path)
                 self.app_list.append(app_path)
 
     def add_exclude(self, exclude: Union[str, List[str]]):
@@ -47,27 +51,46 @@ class AppsManager:
             raise TypeError
 
     def import_module(self):
-        for job_name in self.app_list:
-            if job_name not in self.exclude_list:
+        for app_name in self.app_list:
+            if app_name not in self.exclude_list:
                 try:
-                    import_module(job_name)
+                    import_module(f"app.{app_name}")
                 except ImportError as exc:
-                    Log.warning(f"Service模块 {job_name} 导入失败", exc)
+                    Log.warning(f"Service模块 {app_name} 导入失败", exc)
                 except ImportWarning as exc:
-                    Log.warning(f"Service模块 {job_name} 加载成功但有警告", exc)
+                    Log.warning(f"Service模块 {app_name} 加载成功但有警告", exc)
                 except Exception as exc:
-                    Log.warning(f"Service模块 {job_name} 加载失败", exc)
+                    Log.warning(f"Service模块 {app_name} 加载失败", exc)
                 else:
-                    Log.debug(f"Service模块 {job_name} 加载成功")
+                    Log.debug(f"Service模块 {app_name} 加载成功")
 
-    @staticmethod
-    def add_service():
+    def add_service(self):
         for func in ServiceFunctions:
             if callable(func):
+                kwargs = {}
                 try:
-                    handlers_list = func()
-                    full_args_pec = inspect.getfullargspec(handlers_list)
-                    class_name = full_args_pec.__class__.__name__
+                    signature = inspect.signature(func)
+                except ValueError as exception:
+                    if "no signature found" in str(exception):
+                        Log.warning("no signature found", exception)
+                        break
+                    elif "not supported by signature" in str(exception):
+                        Log.warning("not supported by signature", exception)
+                        break
+                    else:
+                        raise exception
+                else:
+                    for parameter_name, parameter in signature.parameters.items():
+                        annotation = parameter.annotation
+                        if issubclass(annotation, MySQL):
+                            kwargs[parameter_name] = self.mysql
+                        if issubclass(annotation, RedisDB):
+                            kwargs[parameter_name] = self.redis
+                        if issubclass(annotation, AioBrowser):
+                            kwargs[parameter_name] = self.browser
+                try:
+                    handlers_list = func(**kwargs)
+                    class_name = handlers_list.__class__.__name__
                     ServiceDict.setdefault(class_name, handlers_list)
                 except Exception as exc:
                     Log.error("初始化Service失败", exc)
