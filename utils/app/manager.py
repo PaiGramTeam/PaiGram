@@ -26,7 +26,7 @@ def listener_service():
     return decorator
 
 
-class JobsManager:
+class AppsManager:
     def __init__(self):
         self.app_list: List[str] = []  # 用于存储文件名称
         self.exclude_list: List[str] = []
@@ -52,13 +52,13 @@ class JobsManager:
                 try:
                     import_module(job_name)
                 except ImportError as exc:
-                    Log.warning(f"Job模块 {job_name} 导入失败", exc)
+                    Log.warning(f"Service模块 {job_name} 导入失败", exc)
                 except ImportWarning as exc:
-                    Log.warning(f"Job模块 {job_name} 加载成功但有警告", exc)
+                    Log.warning(f"Service模块 {job_name} 加载成功但有警告", exc)
                 except Exception as exc:
-                    Log.warning(f"Job模块 {job_name} 加载失败", exc)
+                    Log.warning(f"Service模块 {job_name} 加载失败", exc)
                 else:
-                    Log.debug(f"Job模块 {job_name} 加载成功")
+                    Log.debug(f"Service模块 {job_name} 加载成功")
 
     @staticmethod
     def add_service():
