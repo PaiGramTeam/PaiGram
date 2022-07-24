@@ -6,7 +6,7 @@ from telegram.constants import ChatAction
 from telegram.ext import ConversationHandler, filters, CommandHandler, MessageHandler
 
 from logger import Log
-from manager import listener_plugins_class
+from utils.plugins.manager import listener_plugins_class
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler
 from service.wish import WishCountInfo, get_one

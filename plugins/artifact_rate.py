@@ -7,7 +7,7 @@ from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, C
 from telegram.helpers import escape_markdown
 
 from logger import Log
-from manager import listener_plugins_class
+from utils.plugins.manager import listener_plugins_class
 from model.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
 from plugins.base import restricts, BasePlugins
 from plugins.errorhandler import conversation_error_handler

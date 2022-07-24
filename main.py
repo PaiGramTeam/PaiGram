@@ -6,7 +6,7 @@ from telegram.ext import Application, ContextTypes, Defaults
 from telegram.warnings import PTBUserWarning
 
 from config import config
-from handler import register_handlers, register_job
+from utils.plugins.handler import register_handlers, register_job
 from logger import Log
 from service import StartService
 from utils.aiobrowser import AioBrowser

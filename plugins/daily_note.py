@@ -9,7 +9,7 @@ from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, fi
     CallbackQueryHandler, CallbackContext
 
 from logger import Log
-from manager import listener_plugins_class
+from utils.plugins.manager import listener_plugins_class
 from model.base import ServiceEnum
 from plugins.base import BasePlugins, restricts
 from plugins.errorhandler import conversation_error_handler

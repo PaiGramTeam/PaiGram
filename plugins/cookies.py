@@ -8,7 +8,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 from telegram.helpers import escape_markdown
 
 from logger import Log
-from manager import listener_plugins_class
+from utils.plugins.manager import listener_plugins_class
 from model.base import ServiceEnum
 from plugins.base import restricts, BasePlugins
 from plugins.errorhandler import conversation_error_handler

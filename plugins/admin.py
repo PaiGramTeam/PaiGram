@@ -5,7 +5,7 @@ from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
 from logger import Log
-from manager import listener_plugins_class
+from utils.plugins.manager import listener_plugins_class
 from utils.base import PaimonContext
 
 

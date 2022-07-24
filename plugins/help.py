@@ -5,7 +5,7 @@ from telegram.ext import CommandHandler
 
 from config import config
 from logger import Log
-from manager import listener_plugins_class
+from utils.plugins.manager import listener_plugins_class
 from plugins.base import restricts
 from utils.base import PaimonContext
 

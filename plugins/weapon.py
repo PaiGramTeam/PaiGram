@@ -3,7 +3,7 @@ from telegram.constants import ChatAction
 from telegram.ext import filters, CommandHandler, MessageHandler
 
 from logger import Log
-from manager import listener_plugins_class
+from utils.plugins.manager import listener_plugins_class
 from metadata.shortname import weaponToName
 from model.helpers import url_to_file
 from plugins.base import BasePlugins, restricts

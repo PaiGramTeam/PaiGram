@@ -3,7 +3,7 @@ from typing import Optional
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, InlineQueryHandler, Application
 
 from logger import Log
-from manager import PluginsManager, JobsManager
+from utils.plugins.manager import PluginsManager, JobsManager
 from plugins.auth import Auth
 from plugins.base import NewChatMembersHandler
 from plugins.errorhandler import error_handler

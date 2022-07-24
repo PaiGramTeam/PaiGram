@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import CommandHandler
 
-from manager import listener_plugins_class
+from utils.plugins.manager import listener_plugins_class
 from plugins.admin import bot_admins_only
 from plugins.base import BasePlugins
 from utils.base import PaimonContext
