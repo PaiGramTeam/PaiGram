@@ -8,18 +8,18 @@ from telegram.helpers import escape_markdown
 
 from logger import Log
 from model.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
+from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.plugins.manager import listener_plugins_class
 
 
 @listener_plugins_class()
-class ArtifactRate:
+class ArtifactRate(BasePlugins):
+    """圣遗物评分"""
+
     COMMAND_RESULT = 1
 
-    """
-    圣遗物评分
-    """
     STAR_KEYBOARD = [[
         InlineKeyboardButton(
             f"{i}", callback_data=f"artifact_ocr_rate_data|star|{i}") for i in range(1, 6)
