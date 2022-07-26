@@ -92,7 +92,7 @@ class AppsManager:
                     handlers_list = func(**kwargs)
                     class_name = handlers_list.__class__.__name__
                     ServiceDict.setdefault(class_name, handlers_list)
-                except Exception as exc:
+                except BaseException as exc:
                     Log.error("初始化Service失败", exc)
                 finally:
                     pass
