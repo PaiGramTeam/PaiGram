@@ -1,0 +1,32 @@
+from telegram import Update
+from telegram.ext import CommandHandler, CallbackContext
+
+from app.wiki.service import WikiService
+from plugins.base import BasePlugins
+from utils.app.inject import inject
+from utils.decorators.admins import bot_admins_rights_check
+from utils.decorators.error import error_callable
+from utils.plugins.manager import listener_plugins_class
+
+
+@listener_plugins_class()
+class Wiki(BasePlugins):
+    """
+    有关WIKI
+    """
+
+    @classmethod
+    def create_handlers(cls) -> list:
+        wiki = cls()
+        return [
+            CommandHandler("refresh_wiki", wiki.refresh_wiki, block=False),
+        ]
+
+    @inject
+    @bot_admins_rights_check
+    @error_callable
+    async def refresh_wiki(self, update: Update, _: CallbackContext, wiki_service: WikiService = None):
+        message = update.message
+        await message.reply_text("正在刷新Wiki缓存，请稍等")
+        await wiki_service.refresh_wiki()
+        await message.reply_text("刷新Wiki缓存成功")
