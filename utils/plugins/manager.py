@@ -34,6 +34,10 @@ class PluginsManager:
         for plugin_path in plugin_paths:
             if plugin_path.startswith('__'):
                 continue
+            if os.path.isdir(plugin_path):
+                plugin_path = os.path.basename(plugin_path)
+                self.plugin_list.append(plugin_path)
+                continue
             module_name = path.basename(path.normpath(plugin_path))
             root, ext = os.path.splitext(module_name)
             if ext == ".py":
