@@ -1,0 +1,34 @@
+### Code Editor ###
+
+# VSCode
+.vscode/
+*.code-workspace
+.history
+.ionide
+
+# Pycharm
+*.iws
+.idea/
+out/
+
+### Python ###
+
+# Environments
+env/
+venv/
+cache/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyc
+
+### Customize ###
+
+config/config.json
+**_test.html
+test_**.html
+logs/
+/resources/*/*/test/

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <link rel="shortcut icon" href="#" />
+    <link rel="stylesheet" type="text/css" href="./daily_note.css" />
+  </head>
+  <body>
+    <div class="container" id="container">
+      <div class="title">
+        <div class="id">
+          <span>ID：{{ uid }}</span>
+        </div>
+        <div class="day">
+          <span>{{ day }}</span>
+        </div>
+      </div>
+      <div class="item">
+        <div class="main">
+          <div class="bg"></div>
+          <img class="icon" src="items/树脂.png" />
+          <div class="info">
+            <div class="name">原粹树脂</div>
+            <div class="time">
+              {% if resin_recovery_time %}
+                将于{{ resin_recovery_time }} 全部恢复
+              {% else %}
+                树脂已完全恢复
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="right">
+          <span>{{ current_resin }}/{{ max_resin }}</span>
+        </div>
+      </div>
+      <div class="item">
+        <div class="main">
+          <div class="bg"></div>
+          <img class="icon" src="items/洞天宝钱.png" />
+          <div class="info">
+            <div class="name">洞天宝钱</div>
+            <div class="time">
+              {% if realm_recovery_time %}
+                预计{{ realm_recovery_time }}后达到上限
+              {% else %}
+              存储已满
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="right">
+          <span class="{% if current_realm_currency/(max_realm_currency or 1) > 0.9 %}red{% endif %}">
+            {{ current_realm_currency }}/{{ max_realm_currency }}
+          </span>
+        </div>
+      </div>
+      <div class="item">
+        <div class="main">
+          <div class="bg"></div>
+          <img class="icon" src="items/委托.png" />
+          <div class="info">
+            <div class="name">每日委托任务</div>
+            <div class="time">今日委托奖励{% if claimed_commission_reward %}已{% else %}未{% endif %}领取</div>
+          </div>
+        </div>
+        <div class="right">
+          <span>{{ completed_commissions }}/{{ max_commissions }}</span>
+        </div>
+      </div>
+      <div class="item">
+        <div class="main">
+          <div class="bg"></div>
+          <img class="icon" src="items/派遣.png" />
+          <div class="info">
+            <div class="name">探索派遣</div>
+            <div class="time">
+              {% if not expeditions %}尚未进行派遣
+              {% elif remained_time %}将于{{ remained_time }}完成
+              {% else %}派遣已完成{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="right">
+          <span>{{ current_expeditions }}/{{ max_expeditions }}</span>
+        </div>
+      </div>
+      <div class="item">
+        <div class="main">
+          <div class="bg"></div>
+          <img class="icon" src="items/周本.png" />
+          <div class="info">
+            <div class="name">值得铭记的强敌</div>
+            <div class="time">
+              {% if remaining_resin_discounts<=0 %}周本已完成
+              {% else %}周本树脂减半次数已用{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="right">
+          <span>{{ remaining_resin_discounts }}/{{ max_resin_discounts }}</span>
+        </div>
+      </div>
+      <div class="item">
+        <div class="main">
+          <div class="bg"></div>
+          <img class="icon" src="items/参量质变仪.png" />
+          <div class="info">
+            <div class="name">参量质变仪</div>
+            <div class="time">
+              {% if transformer %}
+                {% if transformer_ready %}已准备完成
+                {% else %}{{ transformer_recovery_time }}后可使用{% endif %}
+              {% else %}
+                尚未获得
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="right">
+          <span class="{% if (transformer and transformer_ready) %}red{% endif %}">
+            {% if transformer %}{% if transformer_ready %}可使用{% else %}冷却中{% endif %}{% else %}尚未获得{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript"></script>
+</html>

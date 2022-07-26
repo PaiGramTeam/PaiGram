@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8"/>
+    <link rel="preload" href="./items/background.jpg" as="image">
+    <link type="text/css" href="./gacha.css" rel="stylesheet">
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet">
+</head>
+<body>
+<div class="container" id="container">
+    <div class="info-bg info-name">{{name}}</div>
+    <div class="info-bg info-count">{{info}}</div>
+    <div class="info-bg poor-info">{{poolName}}</div>
+    <div class="list-box">
+        {% for item in items %}
+        <div class="item">
+            <div class="item-bg-box">
+                <img class="item-bg" src="{{_res_path}}/genshin/gacha/items/bg.png"/>
+            </div>
+            <img class="item-shadow" src="{{_res_path}}/genshin/gacha/items/shadow-{{item.rank}}.png"/>
+            <img class="item-shadow2" src="{{_res_path}}/genshin/gacha/items/bg2.png"/>
+            {% if item.item_type=='武器' %}
+            <div class="item-weapon-box">
+                <img class="item-weapon-img" src="{{_res_path}}/genshin/gacha/weapon/{{item.item_name}}.png"/>
+            </div>
+            {% else %}
+            <div class="item-img-box">
+                <img class="item-character-img" src="{{_res_path}}/genshin/gacha/character/{{item.item_name}}.png"/>
+            </div>
+            {% endif %}
+            <img class="item-star" src="{{_res_path}}/genshin/gacha/items/s-{{item.rank}}.png"/>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</body>
+<svg viewBox="0 0 302.22 1333.94" height="0" width="0">
+    <clipPath id="wishframe" transform="scale(0.003308 0.00074965)" clipPathUnits="objectBoundingBox">
+        <path
+                d="M0.01 168.12l0 -9.64c4.32,-21.34 12,-32.33 25.46,-25.58 -2.35,-10.3 -1.53,-26.06 5.79,-25.96 19.18,0.25 29.95,-3.14 40.24,-13.16 -4.5,-66.43 51.39,-54.26 79.61,-93.78l0 0c28.22,39.52 84.1,27.34 79.61,93.78 10.29,10.02 21.06,13.41 40.24,13.16 7.32,-0.1 8.13,15.66 5.79,25.96 13.46,-6.75 21.14,4.24 25.46,25.58l0 9.64 0.01 0 0 1004.21 -0.01 0 0 3.13c-4.32,21.34 -12,32.33 -25.46,25.58 2.35,10.3 1.53,26.06 -5.79,25.96 -19.18,-0.25 -29.95,3.14 -40.24,13.16 4.5,66.43 -51.39,54.26 -79.61,93.78l0 0c-28.22,-39.52 -84.1,-27.34 -79.61,-93.78 -10.29,-10.02 -21.06,-13.41 -40.24,-13.16 -7.32,0.1 -8.13,-15.66 -5.79,-25.96 -13.46,6.75 -21.14,-4.24 -25.46,-25.58l0 -3.13 -0.01 0 0 -1004.21 0.01 0z"
+        />
+    </clipPath>
+</svg>
+</html>

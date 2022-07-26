@@ -1,0 +1,121 @@
+@font-face {
+    font-family: "tttgbnumber";
+    src: url("../../fonts/tttgbnumber.ttf");
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    font-size: 16px;
+    font-family: "tttgbnumber", system-ui;
+    transform: scale(1.5);
+    transform-origin: 0 0;
+    color: #1e1f20;
+}
+
+.container {
+    width: 400px;
+    height: 365px;
+    background: #f0eae3;
+    padding: 8px 16px;
+}
+
+.title {
+    display: flex;
+    position: relative;
+    margin-bottom: 9px;
+    color: #504c49;
+}
+
+.title .id {
+    flex: 1;
+    line-height: 18px;
+    padding-left: 10px;
+}
+
+.title .id:before {
+    content: " ";
+    position: absolute;
+    width: 5px;
+    height: 24px;
+    border-radius: 1px;
+    left: 0px;
+    top: -3px;
+    background: #d3bc8d;
+}
+
+.title .day {
+    line-height: 18px;
+}
+
+.item {
+    border: 1px solid #dfd8d1;
+    display: flex;
+    height: 49px;
+    margin-top: 5px;
+}
+
+.item .main {
+    display: flex;
+    flex: 1;
+    background-color: #f5f1eb;
+    position: relative;
+    /* font-weight: bold; */
+}
+
+.item .main .bg {
+    width: 100px;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    background-size: 100% auto;
+    background-image: url(./items/bg.png);
+}
+
+.item .main .icon {
+    width: 25px;
+    height: 25px;
+    margin: 11px 8px 0 8px;
+}
+
+.item .main .info {
+    padding-top: 7px;
+}
+
+.item .main .info .name {
+    font-size: 14px;
+    /* color: #5f5f5d; */
+    line-height: 1;
+    margin-bottom: 7px;
+}
+
+.item .main .info .time {
+    font-size: 12px;
+    /* font-weight: 400; */
+    color: #5f5f5d;
+    line-height: 1;
+}
+
+.item .right {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 100%;
+    background-color: #ece3d8;
+    font-size: 16px;
+    color: #504c49;
+    line-height: 55px;
+}
+
+.item .right .red {
+    color: #f24e4c;
+}
+
