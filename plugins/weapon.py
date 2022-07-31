@@ -21,6 +21,11 @@ class Weapon(BasePlugins):
 
     KEYBOARD = [[InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")]]
 
+    @inject
+    def __init__(self, template_service: TemplateService, wiki_service: WikiService):
+        self.wiki_service = wiki_service
+        self.template_service = template_service
+
     @classmethod
     def create_handlers(cls) -> list:
         weapon = cls()
@@ -31,8 +36,7 @@ class Weapon(BasePlugins):
 
     @error_callable
     @restricts()
-    @inject
-    async def command_start(self, update: Update, context: CallbackContext, template_service: TemplateService, wiki_service: WikiService) -> None:
+    async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
         args = get_all_args(context)
@@ -46,7 +50,7 @@ class Weapon(BasePlugins):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
         weapon_name = weaponToName(weapon_name)
-        weapons_list = await wiki_service.get_weapons_list()
+        weapons_list = await self.wiki_service.get_weapons_list()
         for weapon in weapons_list:
             if weapon["name"] == weapon_name:
                 weapon_data = weapon
@@ -85,7 +89,7 @@ class Weapon(BasePlugins):
             return _template_data
 
         template_data = await input_template_data(weapon_data)
-        png_data = await template_service.render('genshin/weapon', "weapon.html", template_data,
+        png_data = await self.template_service.render('genshin/weapon', "weapon.html", template_data,
                                                       {"width": 540, "height": 540})
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await message.reply_photo(png_data, filename=f"{template_data['weapon_name']}.png",

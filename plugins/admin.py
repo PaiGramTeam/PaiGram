@@ -13,6 +13,10 @@ from utils.plugins.manager import listener_plugins_class
 class Admin:
     """有关BOT ADMIN处理"""
 
+    @inject
+    def __init__(self, bot_admin_service: BotAdminService):
+        self.bot_admin_service = bot_admin_service
+
     @classmethod
     def create_handlers(cls) -> list:
         admin = cls()
@@ -23,31 +27,29 @@ class Admin:
         ]
 
     @bot_admins_rights_check
-    @inject
-    async def add_admin(self, update: Update, _: CallbackContext, bot_admin_service: BotAdminService):
+    async def add_admin(self, update: Update, _: CallbackContext):
         message = update.message
         reply_to_message = message.reply_to_message
         if reply_to_message is None:
             await message.reply_text("请回复对应消息")
         else:
-            admin_list = await bot_admin_service.get_admin_list()
+            admin_list = await self.bot_admin_service.get_admin_list()
             if reply_to_message.from_user.id in admin_list:
                 await message.reply_text("该用户已经存在管理员列表")
             else:
-                await bot_admin_service.add_admin(reply_to_message.from_user.id)
+                await self.bot_admin_service.add_admin(reply_to_message.from_user.id)
                 await message.reply_text("添加成功")
 
     @bot_admins_rights_check
-    @inject
-    async def del_admin(self, update: Update, _: CallbackContext, bot_admin_service: BotAdminService):
+    async def del_admin(self, update: Update, _: CallbackContext):
         message = update.message
         reply_to_message = message.reply_to_message
-        admin_list = await bot_admin_service.get_admin_list()
+        admin_list = await self.bot_admin_service.get_admin_list()
         if reply_to_message is None:
             await message.reply_text("请回复对应消息")
         else:
             if reply_to_message.from_user.id in admin_list:
-                await bot_admin_service.delete_admin(reply_to_message.from_user.id)
+                await self.bot_admin_service.delete_admin(reply_to_message.from_user.id)
                 await message.reply_text("删除成功")
             else:
                 await message.reply_text("该用户不存在管理员列表")

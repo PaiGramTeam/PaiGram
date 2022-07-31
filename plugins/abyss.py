@@ -16,6 +16,13 @@ from utils.plugins.manager import listener_plugins_class
 
 @listener_plugins_class()
 class Abyss(BasePlugins):
+    """深渊数据查询"""
+
+    @inject
+    def __init__(self, user_service: UserService, cookies_service: CookiesService, template_service: TemplateService):
+        self.template_service = template_service
+        self.cookies_service = cookies_service
+        self.user_service = user_service
 
     @classmethod
     def create_handlers(cls) -> list:
@@ -81,14 +88,13 @@ class Abyss(BasePlugins):
         return abyss_data
 
     @inject
-    async def command_start(self, update: Update, context: CallbackContext, user_service: UserService,
-                            cookies_service: CookiesService, template_service: TemplateService) -> None:
+    async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.message
         Log.info(f"用户 {user.full_name}[{user.id}] 查深渊挑战命令请求")
         await message.reply_chat_action(ChatAction.TYPING)
         try:
-            client = await get_genshin_client(user.id, user_service, cookies_service)
+            client = await get_genshin_client(user.id, self.user_service, self.cookies_service)
             abyss_data = await self._get_abyss_data(client)
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
@@ -105,7 +111,7 @@ class Abyss(BasePlugins):
                 return
             raise exc
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        png_data = await template_service.render('genshin/abyss', "abyss.html", abyss_data,
+        png_data = await self.template_service.render('genshin/abyss', "abyss.html", abyss_data,
                                                  {"width": 690, "height": 504}, full_page=False)
         await message.reply_photo(png_data, filename=f"abyss_{user.id}.png",
                                   allow_sending_without_reply=True)

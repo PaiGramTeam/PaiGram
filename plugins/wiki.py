@@ -11,9 +11,11 @@ from utils.plugins.manager import listener_plugins_class
 
 @listener_plugins_class()
 class Wiki(BasePlugins):
-    """
-    有关WIKI
-    """
+    """有关WIKI操作"""
+
+    @inject
+    def __init__(self, wiki_service: WikiService):
+        self.wiki_service = wiki_service
 
     @classmethod
     def create_handlers(cls) -> list:
@@ -22,11 +24,10 @@ class Wiki(BasePlugins):
             CommandHandler("refresh_wiki", wiki.refresh_wiki, block=False),
         ]
 
-    @inject
     @bot_admins_rights_check
     @error_callable
-    async def refresh_wiki(self, update: Update, _: CallbackContext, wiki_service: WikiService = None):
+    async def refresh_wiki(self, update: Update, _: CallbackContext):
         message = update.message
         await message.reply_text("正在刷新Wiki缓存，请稍等")
-        await wiki_service.refresh_wiki()
+        await self.wiki_service.refresh_wiki()
         await message.reply_text("刷新Wiki缓存成功")
