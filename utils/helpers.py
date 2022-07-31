@@ -68,10 +68,11 @@ async def get_genshin_client(user_id: int, user_service: UserService, cookies_se
         game_service = user.default_service
     if game_service == ServiceEnum.HYPERION:
         uid = user.yuanshen_game_uid
-        client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, uid=uid)
+        client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
     else:
         uid = user.genshin_game_uid
-        client = genshin.Client(cookies=cookies, lang="zh-cn", uid=uid)
+        client = genshin.Client(cookies=cookies,
+                                game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid)
     return client
 
 
