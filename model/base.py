@@ -41,13 +41,17 @@ class ArtworkImage:
         self.page = page
 
 
-class ServiceEnum(Enum):
-    """
-    该名称来源于米忽悠的安卓BBS包名结尾，考虑到大部分重要的功能确实是在移动端实现了
-    """
+class RegionEnum(Enum):
+    """注册服务器的列举型别
+
+    HYPERION名称来源于米忽悠BBS的安卓端包名结尾
+
+    查了一下确实有点意思 考虑到大部分重要的功能确实是在移动端实现了
+
+    干脆用这个还好听 ）"""
     NULL = None
-    HYPERION = 1  # 米忽悠国服
-    HOYOLAB = 2  # 米忽悠国际服
+    HYPERION = 1  # 米忽悠国服 hyperion
+    HOYOLAB = 2  # 米忽悠国际服 hoyolab
 
 
 class GameItem(BaseObject):

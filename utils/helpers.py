@@ -1,6 +1,6 @@
 import hashlib
 import os
-from typing import Optional
+from typing import Union
 
 import aiofiles
 import genshin
@@ -11,7 +11,7 @@ from httpx import UnsupportedProtocol
 from app.cookies.service import CookiesService
 from app.user import UserService
 from logger import Log
-from model.base import ServiceEnum
+from model.base import RegionEnum
 
 USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
                   "Chrome/90.0.4430.72 Safari/537.36"
@@ -21,14 +21,14 @@ cache_dir = os.path.join(current_dir, "cache")
 if not os.path.exists(cache_dir):
     os.mkdir(cache_dir)
 
-SERVICE_MAP = {
-    "1": ServiceEnum.HYPERION,
-    "2": ServiceEnum.HYPERION,
-    "5": ServiceEnum.HYPERION,
-    "6": ServiceEnum.HOYOLAB,
-    "7": ServiceEnum.HOYOLAB,
-    "8": ServiceEnum.HOYOLAB,
-    "9": ServiceEnum.HOYOLAB,
+REGION_MAP = {
+    "1": RegionEnum.HYPERION,
+    "2": RegionEnum.HYPERION,
+    "5": RegionEnum.HYPERION,
+    "6": RegionEnum.HOYOLAB,
+    "7": RegionEnum.HOYOLAB,
+    "8": RegionEnum.HOYOLAB,
+    "9": RegionEnum.HOYOLAB,
 }
 
 
@@ -61,24 +61,31 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
 
 
 async def get_genshin_client(user_id: int, user_service: UserService, cookies_service: CookiesService,
-                             game_service: Optional[ServiceEnum] = None) -> Client:
+                             region: RegionEnum = RegionEnum.NULL) -> Client:
     user = await user_service.get_user_by_id(user_id)
-    cookies = await cookies_service.read_cookies(user_id, game_service)
-    if game_service is None:
-        game_service = user.default_service
-    if game_service == ServiceEnum.HYPERION:
+    cookies = await cookies_service.get_cookies(user_id, region)
+    if region is None:
+        region = user.region
+    if region == RegionEnum.HYPERION:
         uid = user.yuanshen_game_uid
         client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
-    else:
+    elif region == RegionEnum.HOYOLAB:
         uid = user.genshin_game_uid
         client = genshin.Client(cookies=cookies,
                                 game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid)
+    else:
+        raise TypeError(f"region is not RegionEnum.NULL")
     return client
 
 
-def get_server(uid: int) -> ServiceEnum:
-    server = SERVICE_MAP.get(str(uid)[0])
-    if server:
-        return server
+def region_server(uid: Union[int, str]) -> RegionEnum:
+    if isinstance(uid, int):
+        region = REGION_MAP.get(str(uid)[0])
+    elif isinstance(uid, str):
+        region = REGION_MAP.get(str(uid)[0])
     else:
-        raise TypeError(f"UID {uid} isn't associated with any server")
+        raise TypeError(f"UID variable type error")
+    if region:
+        return region
+    else:
+        raise TypeError(f"UID {uid} isn't associated with any region")
