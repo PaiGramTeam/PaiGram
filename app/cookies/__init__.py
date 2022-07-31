@@ -7,5 +7,5 @@ from utils.mysql import MySQL
 @listener_service()
 def create_cookie_service(mysql: MySQL):
     _repository = CookiesRepository(mysql)
-    _service = CookiesService(_repository, _cache)
+    _service = CookiesService(_repository)
     return _service
