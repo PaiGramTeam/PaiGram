@@ -5,9 +5,12 @@ from genshin import Game, GenshinException, AlreadyClaimed, Client
 from telegram import Update
 from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, CallbackContext
 
+from app.cookies.service import CookiesService
+from app.user import UserService
 from app.user.repositories import UserNotFoundError
 from logger import Log
 from plugins.base import BasePlugins
+from utils.app.inject import inject
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -19,6 +22,11 @@ class Sign(BasePlugins):
     """每日签到"""
 
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
+
+    @inject
+    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None):
+        self.cookies_service = cookies_service
+        self.user_service = user_service
 
     @classmethod
     def create_handlers(cls):

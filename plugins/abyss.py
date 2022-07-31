@@ -10,6 +10,8 @@ from app.user.repositories import UserNotFoundError
 from logger import Log
 from plugins.base import BasePlugins
 from utils.app.inject import inject
+from utils.decorators.error import error_callable
+from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client, url_to_file
 from utils.plugins.manager import listener_plugins_class
 
@@ -19,7 +21,8 @@ class Abyss(BasePlugins):
     """深渊数据查询"""
 
     @inject
-    def __init__(self, user_service: UserService, cookies_service: CookiesService, template_service: TemplateService):
+    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
+                 template_service: TemplateService = None):
         self.template_service = template_service
         self.cookies_service = cookies_service
         self.user_service = user_service
@@ -87,7 +90,8 @@ class Abyss(BasePlugins):
             abyss_data["most_played_list"].append(temp)
         return abyss_data
 
-    @inject
+    @restricts
+    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.message
@@ -112,7 +116,7 @@ class Abyss(BasePlugins):
             raise exc
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         png_data = await self.template_service.render('genshin/abyss', "abyss.html", abyss_data,
-                                                 {"width": 690, "height": 504}, full_page=False)
+                                                      {"width": 690, "height": 504}, full_page=False)
         await message.reply_photo(png_data, filename=f"abyss_{user.id}.png",
                                   allow_sending_without_reply=True)
         return
