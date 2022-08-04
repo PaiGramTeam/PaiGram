@@ -6,7 +6,6 @@ from typing import List, Union
 
 from telegram.ext import Application
 
-from jobs.base import RunDailyHandler
 from logger import Log
 
 JobsClass: List[object] = []
@@ -67,11 +66,8 @@ class JobsManager:
         for func in JobsClass:
             if callable(func):
                 try:
-                    handlers_list = func.build_jobs()
-                    for handler in handlers_list:
-                        if isinstance(handler, RunDailyHandler):
-                            application.job_queue.run_daily(**handler.get_kwargs)
-                            Log.info(f"添加每日Job成功 Job名称[{handler.name}] Job每日执行时间[{handler.time.isoformat()}]")
+                    func.build_jobs(application.job_queue)
+                    # Log.info(f"添加每日Job成功 Job名称[{handler.name}] Job每日执行时间[{handler.time.isoformat()}]")
                 except AttributeError as exc:
                     if "build_jobs" in str(exc):
                         Log.error("build_jobs 函数未找到", exc)

@@ -11,7 +11,6 @@ import datetime
 
 from telegram.ext import CallbackContext
 
-from jobs.base import RunDailyHandler
 from logger import Log
 from utils.job.manager import listener_jobs_class
 
@@ -19,13 +18,11 @@ from utils.job.manager import listener_jobs_class
 class JobTest:
 
     @classmethod
-    def build_jobs(cls) -> list:
+    def build_jobs(cls, job_queue: JobQueue):
         test = cls()
         # 注册每日执行任务
         # 执行时间为21点45分
-        return [
-            RunDailyHandler(test.test, datetime.time(21, 45, 00), name="测试Job")
-        ]
+        job_queue.run_daily(test.test, datetime.time(21, 45, 00), name="测试Job")
 
     async def test(self, context: CallbackContext):
         Log.info("测试Job[OK]")
