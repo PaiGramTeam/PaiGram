@@ -1,5 +1,5 @@
 redis>=4.3.3
-ujson>=5.3.0
+ujson==5.4.0
 genshin>=1.2.1
 aiomysql>=0.1.1
 colorlog~=6.6.0
@@ -17,4 +17,4 @@ fakeredis>=1.8.1
 aiohttp<=3.8.1
 python-telegram-bot==20.0a2
 pytz>=2021.3
-Pillow
+Pillow>=9.0.1
