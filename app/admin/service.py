@@ -17,7 +17,7 @@ class BotAdminService:
     async def get_admin_list(self) -> List[int]:
         admin_list = await self._cache.get_list()
         if len(admin_list) == 0:
-            admin_list = await self._repository.get_by_user_id()
+            admin_list = await self._repository.get_all_user_id()
             for config_admin in config.ADMINISTRATORS:
                 admin_list.append(config_admin["user_id"])
             await self._cache.set_list(admin_list)
@@ -28,7 +28,7 @@ class BotAdminService:
             await self._repository.add_by_user_id(user_id)
         except IntegrityError as error:
             Log.warning(f"{user_id} 已经存在数据库 \n", error)
-        admin_list = await self._repository.get_by_user_id()
+        admin_list = await self._repository.get_all_user_id()
         for config_admin in config.ADMINISTRATORS:
             admin_list.append(config_admin["user_id"])
         await self._cache.set_list(admin_list)
@@ -39,7 +39,7 @@ class BotAdminService:
             await self._repository.delete_by_user_id(user_id)
         except ValueError:
             return False
-        admin_list = await self._repository.get_by_user_id()
+        admin_list = await self._repository.get_all_user_id()
         for config_admin in config.ADMINISTRATORS:
             admin_list.append(config_admin["user_id"])
         await self._cache.set_list(admin_list)

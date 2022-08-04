@@ -1,5 +1,5 @@
-from app.user.models import User
-from app.user.repositories import UserRepository
+from .models import User
+from .repositories import UserRepository
 
 
 class UserService:
@@ -10,6 +10,7 @@ class UserService:
     async def get_user_by_id(self, user_id: int) -> User:
         """从数据库获取用户信息
         :param user_id:用户ID
-        :return:
+        :return: User
         """
-        return await self._repository.get_by_user_id(user_id)
+        user = await self._repository.get_by_user_id(user_id)
+        return user

@@ -1,6 +1,10 @@
-from typing import List
+from typing import List, cast
+
+from sqlalchemy import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from utils.mysql import MySQL
+from .models import Admin
 
 
 class BotAdminRepository:
@@ -8,30 +12,21 @@ class BotAdminRepository:
         self.mysql = mysql
 
     async def delete_by_user_id(self, user_id: int):
-        query = """
-        DELETE FROM `admin`
-        WHERE user_id=%s;
-        """
-        query_args = (user_id,)
-        await self.mysql.execute_and_fetchall(query, query_args)
+        async with self.mysql.Session() as session:
+            session = cast(AsyncSession, session)
+            statement = select(Admin).where(Admin.user_id == user_id)
+            results = await session.exec(statement)
+            admin = results.one()
+            await session.delete(admin)
 
     async def add_by_user_id(self, user_id: int):
-        query = """
-        INSERT INTO `admin`
-        (user_id)
-        VALUES
-        (%s)
-        """
-        query_args = (user_id,)
-        await self.mysql.execute_and_fetchall(query, query_args)
+        async with self.mysql.Session() as session:
+            admin = Admin(user_id=user_id)
+            await session.add(admin)
 
-    async def get_by_user_id(self) -> List[int]:
-        query = """
-        SELECT user_id
-        FROM `admin`
-        """
-        query_args = ()
-        data = await self.mysql.execute_and_fetchall(query, query_args)
-        if len(data) == 0:
-            return []
-        return [i[0] for i in data]
+    async def get_all_user_id(self) -> List[int]:
+        async with self.mysql.Session() as session:
+            query = select(Admin)
+            results = await session.exec(query)
+            admins = results.all()
+            return [admin[0].user_id for admin in admins]
