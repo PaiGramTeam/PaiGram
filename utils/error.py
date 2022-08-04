@@ -7,3 +7,8 @@ class NotFoundError(Exception):
 
     def __init__(self, entity_value):
         super().__init__(f"{self.entity_name} not found, {self.entity_value_name}: {entity_value}")
+
+
+class RegionNotFoundError(NotFoundError):
+    entity_name: str = "RegionEnum"
+    entity_value_name: str = "region"
