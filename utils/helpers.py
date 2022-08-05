@@ -1,6 +1,6 @@
 import hashlib
 import os
-from typing import Union
+from typing import Union, Optional
 
 import aiofiles
 import genshin
@@ -61,17 +61,17 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
 
 
 async def get_genshin_client(user_id: int, user_service: UserService, cookies_service: CookiesService,
-                             region: RegionEnum = RegionEnum.NULL) -> Client:
+                             region: Optional[RegionEnum] = None) -> Client:
     user = await user_service.get_user_by_id(user_id)
-    cookies = await cookies_service.get_cookies(user_id, region)
     if region is None:
         region = user.region
+    cookies = await cookies_service.get_cookies(user_id, region)
     if region == RegionEnum.HYPERION:
         uid = user.yuanshen_uid
-        client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
+        client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
     elif region == RegionEnum.HOYOLAB:
         uid = user.genshin_uid
-        client = genshin.Client(cookies=cookies,
+        client = genshin.Client(cookies=cookies.cookies,
                                 game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid)
     else:
         raise TypeError(f"region is not RegionEnum.NULL")
