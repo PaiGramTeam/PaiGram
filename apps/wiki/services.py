@@ -2,10 +2,10 @@ import asyncio
 
 import ujson
 
-from app.wiki.cache import WikiCache
 from logger import Log
 from model.wiki.characters import Characters
 from model.wiki.weapons import Weapons
+from .cache import WikiCache
 
 
 class WikiService:

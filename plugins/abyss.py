@@ -3,13 +3,13 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
 
-from app.cookies.service import CookiesService
-from app.template.service import TemplateService
-from app.user import UserService
-from app.user.repositories import UserNotFoundError
+from apps.cookies.services import CookiesService
+from apps.template.services import TemplateService
+from apps.user import UserService
+from apps.user.repositories import UserNotFoundError
 from logger import Log
 from plugins.base import BasePlugins
-from utils.app.inject import inject
+from utils.apps.inject import inject
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client, url_to_file

@@ -1,6 +1,6 @@
-from app.template.service import TemplateService
 from utils.aiobrowser import AioBrowser
-from utils.app.manager import listener_service
+from utils.apps.manager import listener_service
+from .services import TemplateService
 
 
 @listener_service()

@@ -1,9 +1,9 @@
-from app.admin.cache import BotAdminCache
-from app.admin.repositories import BotAdminRepository
-from app.admin.service import BotAdminService
-from utils.app.manager import listener_service
+from utils.apps.manager import listener_service
 from utils.mysql import MySQL
 from utils.redisdb import RedisDB
+from .cache import BotAdminCache
+from .repositories import BotAdminRepository
+from .services import BotAdminService
 
 
 @listener_service()

@@ -2,10 +2,10 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import filters, ConversationHandler, CommandHandler, MessageHandler, CallbackContext
 
-from app.game import GameStrategyService
+from apps.game.services import GameStrategyService
 from logger import Log
 from plugins.base import BasePlugins
-from utils.app.inject import inject
+from utils.apps.inject import inject
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

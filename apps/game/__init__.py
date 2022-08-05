@@ -1,7 +1,7 @@
-from app.game.cache import GameStrategyCache
-from app.game.service import GameStrategyService
-from utils.app.manager import listener_service
+from utils.apps.manager import listener_service
 from utils.redisdb import RedisDB
+from .cache import GameStrategyCache
+from .services import GameStrategyService
 
 
 @listener_service()

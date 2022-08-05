@@ -2,9 +2,9 @@ from typing import List
 
 import ujson
 
-from app.quiz.cache import QuizCache
-from app.quiz.models import Question
-from app.quiz.repositories import QuizRepository
+from .cache import QuizCache
+from .models import Question
+from .repositories import QuizRepository
 
 
 class QuizService:

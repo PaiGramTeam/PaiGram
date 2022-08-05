@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from app.game.cache import GameStrategyCache
 from model.apihelper.hyperion import Hyperion
+from .cache import GameStrategyCache
 
 
 class GameStrategyService:

@@ -1,7 +1,7 @@
 from typing import List
 
-from app.quiz.models import Question, Answer
 from utils.mysql import MySQL
+from .models import Question, Answer
 
 
 class QuizRepository:

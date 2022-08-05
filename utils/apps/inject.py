@@ -1,9 +1,10 @@
 import inspect
 from functools import wraps
 
+from utils.app.manager import ServiceDict
+
 from logger import Log
 from model.types import Func
-from utils.app.manager import ServiceDict
 
 
 def get_injections(func: Func):

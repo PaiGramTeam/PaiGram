@@ -1,7 +1,7 @@
-from app.user.repositories import UserRepository
-from app.user.services import UserService
-from utils.app.manager import listener_service
+from utils.apps.manager import listener_service
 from utils.mysql import MySQL
+from .repositories import UserRepository
+from .services import UserService
 
 
 @listener_service()

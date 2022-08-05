@@ -1,9 +1,9 @@
-from utils.app.manager import listener_service
+from utils.apps.manager import listener_service
 from utils.mysql import MySQL
 from utils.redisdb import RedisDB
 from .cache import PublicCookiesCache
 from .repositories import CookiesRepository
-from .service import CookiesService, PublicCookiesService
+from .services import CookiesService, PublicCookiesService
 
 
 @listener_service()

@@ -1,6 +1,6 @@
 from typing import List
 
-from app.quiz.models import Question, Answer
+from .models import Question, Answer
 
 
 def CreatQuestionFromSQLData(data: tuple) -> List[Question]:

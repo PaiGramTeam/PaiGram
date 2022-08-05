@@ -5,12 +5,12 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import filters, CommandHandler, MessageHandler, CallbackContext
 
-from app.template import TemplateService
+from apps.template import TemplateService
 from logger import Log
 from model.apihelper.gacha import GachaInfo
 from plugins.base import BasePlugins
 from plugins.gacha.wish import WishCountInfo, get_one
-from utils.app.inject import inject
+from utils.apps.inject import inject
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

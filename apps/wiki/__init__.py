@@ -1,7 +1,7 @@
-from app.wiki.cache import WikiCache
-from app.wiki.service import WikiService
-from utils.app.manager import listener_service
+from utils.apps.manager import listener_service
 from utils.redisdb import RedisDB
+from .cache import WikiCache
+from .services import WikiService
 
 
 @listener_service()

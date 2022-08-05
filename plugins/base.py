@@ -5,9 +5,9 @@ from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
-from app.admin import BotAdminService
+from apps.admin import BotAdminService
 from logger import Log
-from utils.app.inject import inject
+from utils.apps.inject import inject
 
 
 async def clean_message(context: CallbackContext, chat_id: int, message_id: int) -> bool:
