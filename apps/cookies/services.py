@@ -35,7 +35,6 @@ class PublicCookiesService:
         """刷新公共Cookies 定时任务
         :return:
         """
-        Log.info("正在初始化公共Cookies")
         user_list: List[int] = []
         cookies_list = await self._repository.get_all_cookies(RegionEnum.HYPERION)  # 从数据库获取2
         for cookies in cookies_list:
