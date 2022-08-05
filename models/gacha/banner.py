@@ -1,6 +1,6 @@
 from enum import Enum
 
-from model.gacha.common import ItemParamData
+from models.gacha.common import ItemParamData
 
 
 class BannerType(Enum):

@@ -4,7 +4,7 @@ import genshin
 from genshin import types, InvalidCookies, TooManyRequests, GenshinException
 
 from logger import Log
-from model.base import RegionEnum
+from models.base import RegionEnum
 from .cache import PublicCookiesCache
 from .models import CookiesStatusEnum
 from .repositories import CookiesRepository, CookiesNotFoundError

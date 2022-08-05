@@ -3,8 +3,8 @@ import asyncio
 import ujson
 
 from logger import Log
-from model.wiki.characters import Characters
-from model.wiki.weapons import Weapons
+from models.wiki.characters import Characters
+from models.wiki.weapons import Weapons
 from .cache import WikiCache
 
 

@@ -1,9 +1,9 @@
 from enum import Enum
 from typing import Union, Optional, List
 
-from model.base import GameItem
-from model.baseobject import BaseObject
-from model.types import JSONDict
+from models.base import GameItem
+from models.baseobject import BaseObject
+from models.types import JSONDict
 
 
 class ArtifactInfo(BaseObject):

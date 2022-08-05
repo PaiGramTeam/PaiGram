@@ -11,7 +11,7 @@ from httpx import UnsupportedProtocol
 from apps.cookies.services import CookiesService
 from apps.user.services import UserService
 from logger import Log
-from model.base import RegionEnum
+from models.base import RegionEnum
 
 USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
                   "Chrome/90.0.4430.72 Safari/537.36"

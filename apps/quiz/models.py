@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from model.baseobject import BaseObject
-from model.types import JSONDict
+from models.baseobject import BaseObject
+from models.types import JSONDict
 
 
 class Answer(BaseObject):

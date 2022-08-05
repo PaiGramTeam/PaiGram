@@ -2,7 +2,7 @@ import imghdr
 from enum import Enum
 from typing import Union
 
-from model.baseobject import BaseObject
+from models.baseobject import BaseObject
 
 
 class Stat:

@@ -5,7 +5,7 @@ from importlib import import_module
 from typing import List, Union, Dict
 
 from logger import Log
-from model.types import Func
+from models.types import Func
 from utils.aiobrowser import AioBrowser
 from utils.mysql import MySQL
 from utils.redisdb import RedisDB

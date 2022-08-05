@@ -1,8 +1,8 @@
 import json
 import unittest
 
-from model.base import GameItem
-from model.game.artifact import ArtifactInfo
+from models.base import GameItem
+from models.game.artifact import ArtifactInfo
 
 
 class TestBase(unittest.TestCase):

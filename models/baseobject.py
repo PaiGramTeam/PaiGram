@@ -2,7 +2,7 @@ import json
 from copy import deepcopy
 from typing import Dict, Union, Optional, List
 
-from model.types import JSONDict
+from models.types import JSONDict
 
 
 class BaseObject:

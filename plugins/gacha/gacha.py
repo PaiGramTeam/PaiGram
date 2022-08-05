@@ -7,7 +7,7 @@ from telegram.ext import filters, CommandHandler, MessageHandler, CallbackContex
 
 from apps.template import TemplateService
 from logger import Log
-from model.apihelper.gacha import GachaInfo
+from models.apihelper.gacha import GachaInfo
 from plugins.base import BasePlugins
 from plugins.gacha.wish import WishCountInfo, get_one
 from utils.apps.inject import inject

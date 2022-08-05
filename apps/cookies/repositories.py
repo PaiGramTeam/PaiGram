@@ -3,7 +3,7 @@ from typing import cast, List
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from model.base import RegionEnum
+from models.base import RegionEnum
 from utils.error import NotFoundError, RegionNotFoundError
 from utils.mysql import MySQL
 from .models import HyperionCookie, HoyolabCookie, Cookies
