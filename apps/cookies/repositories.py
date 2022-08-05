@@ -17,12 +17,12 @@ class CookiesRepository:
         async with self.mysql.Session() as session:
             session = cast(AsyncSession, session)
             if region == RegionEnum.HYPERION:
-                db_data = HyperionCookie(user_id=user_id, cookie=cookies)
+                db_data = HyperionCookie(user_id=user_id, cookies=cookies)
             elif region == RegionEnum.HOYOLAB:
-                db_data = HoyolabCookie(user_id=user_id, cookie=cookies)
+                db_data = HoyolabCookie(user_id=user_id, cookies=cookies)
             else:
                 raise RegionNotFoundError(region.name)
-            await session.add(db_data)
+            session.add(db_data)
             await session.commit()
 
     async def update_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
@@ -30,26 +30,19 @@ class CookiesRepository:
             session = cast(AsyncSession, session)
             if region == RegionEnum.HYPERION:
                 statement = select(HyperionCookie).where(HyperionCookie.user_id == user_id)
-                results = await session.exec(statement)
-                db_cookies = results.one()[0]
-                if db_cookies is None:
-                    raise CookiesNotFoundError(user_id)
-                db_cookies.cookies = cookies
-                session.add(db_cookies)
-                await session.commit()
-                await session.refresh(db_cookies)
             elif region == RegionEnum.HOYOLAB:
-                statement = select(HyperionCookie).where(HyperionCookie.user_id == user_id)
-                results = await session.add(statement)
-                db_cookies = results.one()[0]
-                if db_cookies is None:
-                    raise CookiesNotFoundError(user_id)
-                db_cookies.cookie = cookies
-                session.add(db_cookies)
-                await session.commit()
-                await session.refresh(db_cookies)
+                statement = select(HoyolabCookie).where(HoyolabCookie.user_id == user_id)
             else:
                 raise RegionNotFoundError(region.name)
+            results = await session.exec(statement)
+            db_cookies = results.one()
+            if db_cookies is None:
+                raise CookiesNotFoundError(user_id)
+            db_cookies = db_cookies[0]
+            db_cookies.cookies = cookies
+            session.add(db_cookies)
+            await session.commit()
+            await session.refresh(db_cookies)
 
     async def update_cookies_ex(self, cookies: Cookies, region: RegionEnum):
         async with self.mysql.Session() as session:

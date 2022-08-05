@@ -9,6 +9,7 @@ from telegram.helpers import escape_markdown
 
 from apps.cookies.services import CookiesService
 from apps.user.models import User
+from apps.user.repositories import UserNotFoundError
 from apps.user.services import UserService
 from logger import Log
 from models.base import RegionEnum
@@ -77,7 +78,10 @@ class AddUser(BasePlugins):
     async def check_server(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
-        user_info = await self.user_service.get_user_by_id(user.id)
+        try:
+            user_info = await self.user_service.get_user_by_id(user.id)
+        except UserNotFoundError:
+            user_info = None
         add_user_command_data.user = user_info
         if update.message.text == "退出":
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
@@ -188,11 +192,11 @@ class AddUser(BasePlugins):
         elif update.message.text == "确认":
             if add_user_command_data.user is None:
                 if add_user_command_data.region == RegionEnum.HYPERION:
-                    user_db = User(user_id=user.id, yuanshen_id=add_user_command_data.game_uid,
-                                   region=add_user_command_data)
+                    user_db = User(user_id=user.id, yuanshen_uid=add_user_command_data.game_uid,
+                                   region=add_user_command_data.region)
                 elif add_user_command_data.region == RegionEnum.HOYOLAB:
-                    user_db = User(user_id=user.id, genshin_id=add_user_command_data.game_uid,
-                                   region=add_user_command_data)
+                    user_db = User(user_id=user.id, genshin_uid=add_user_command_data.game_uid,
+                                   region=add_user_command_data.region)
                 else:
                     await update.message.reply_text("数据错误")
                     return ConversationHandler.END

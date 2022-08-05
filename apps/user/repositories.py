@@ -17,8 +17,10 @@ class UserRepository:
             session = cast(AsyncSession, session)
             statement = select(User).where(User.user_id == user_id)
             results = await session.exec(statement)
-            user = results.first()
-            return user[0]
+            if user := results.first():
+                return user[0]
+            else:
+                raise UserNotFoundError(user_id)
 
     async def update_user(self, user: User):
         async with self.mysql.Session() as session:

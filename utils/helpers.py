@@ -74,7 +74,7 @@ async def get_genshin_client(user_id: int, user_service: UserService, cookies_se
         client = genshin.Client(cookies=cookies.cookies,
                                 game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid)
     else:
-        raise TypeError(f"region is not RegionEnum.NULL")
+        raise TypeError("region is not RegionEnum.NULL")
     return client
 
 

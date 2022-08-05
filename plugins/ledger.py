@@ -27,6 +27,7 @@ def check_ledger_month(context: CallbackContext) -> int:
     args = get_all_args(context)
     if len(args) >= 1:
         month = args[0]
+    elif isinstance(month, int):
         pass
     elif re_data := re.findall(r"\d+", month):
         month = int(re_data[0])

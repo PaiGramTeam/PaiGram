@@ -1,5 +1,6 @@
 import datetime
 import os
+from typing import Optional
 
 from genshin import DataNotPublic
 from telegram import Update
@@ -88,9 +89,9 @@ class DailyNote(BasePlugins):
                                                       {"width": 600, "height": 548}, full_page=False)
         return png_data
 
-    @restricts
+    @restricts()
     @error_callable
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
         message = update.message
         Log.info(f"用户 {user.full_name}[{user.id}] 查询游戏状态命令请求")

@@ -90,7 +90,7 @@ class Abyss(BasePlugins):
             abyss_data["most_played_list"].append(temp)
         return abyss_data
 
-    @restricts
+    @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
