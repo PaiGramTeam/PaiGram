@@ -13,7 +13,7 @@ class CookiesRepository:
     def __init__(self, mysql: MySQL):
         self.mysql = mysql
 
-    async def add_cookies(self, user_id: int, cookies: str, region: RegionEnum):
+    async def add_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
         async with self.mysql.Session() as session:
             session = cast(AsyncSession, session)
             if region == RegionEnum.HYPERION:
@@ -25,7 +25,7 @@ class CookiesRepository:
             await session.add(db_data)
             await session.commit()
 
-    async def update_cookies(self, user_id: int, cookies: str, region: RegionEnum):
+    async def update_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
         async with self.mysql.Session() as session:
             session = cast(AsyncSession, session)
             if region == RegionEnum.HYPERION:

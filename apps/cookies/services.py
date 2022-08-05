@@ -14,10 +14,10 @@ class CookiesService:
     def __init__(self, cookies_repository: CookiesRepository) -> None:
         self._repository: CookiesRepository = cookies_repository
 
-    async def update_cookies(self, user_id: int, cookies: str, region: RegionEnum):
+    async def update_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
         await self._repository.update_cookies(user_id, cookies, region)
 
-    async def add_cookies(self, user_id: int, cookies: str, region: RegionEnum):
+    async def add_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
         await self._repository.add_cookies(user_id, cookies, region)
 
     async def get_cookies(self, user_id: int, region: RegionEnum):
