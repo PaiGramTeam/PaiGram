@@ -67,10 +67,10 @@ async def get_genshin_client(user_id: int, user_service: UserService, cookies_se
     if region is None:
         region = user.region
     if region == RegionEnum.HYPERION:
-        uid = user.yuanshen_game_uid
+        uid = user.yuanshen_uid
         client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
     elif region == RegionEnum.HOYOLAB:
-        uid = user.genshin_game_uid
+        uid = user.genshin_uid
         client = genshin.Client(cookies=cookies,
                                 game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid)
     else:
