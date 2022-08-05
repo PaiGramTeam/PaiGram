@@ -23,6 +23,7 @@ class CookiesRepository:
             else:
                 raise RegionNotFoundError(region.name)
             await session.add(db_data)
+            await session.commit()
 
     async def update_cookies(self, user_id: int, cookies: str, region: RegionEnum):
         async with self.mysql.Session() as session:
@@ -34,7 +35,7 @@ class CookiesRepository:
                 if db_cookies is None:
                     raise CookiesNotFoundError(user_id)
                 db_cookies.cookie = cookies
-                session.add(db_cookies)
+                await session.add(db_cookies)
                 await session.commit()
                 await session.refresh(db_cookies)
             elif region == RegionEnum.HOYOLAB:
@@ -44,7 +45,7 @@ class CookiesRepository:
                 if db_cookies is None:
                     raise CookiesNotFoundError(user_id)
                 db_cookies.cookie = cookies
-                session.add(db_cookies)
+                await session.add(db_cookies)
                 await session.commit()
                 await session.refresh(db_cookies)
             else:
