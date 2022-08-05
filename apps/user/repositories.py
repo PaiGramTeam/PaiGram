@@ -18,12 +18,12 @@ class UserRepository:
             statement = select(User).where(User.user_id == user_id)
             results = await session.exec(statement)
             user = results.first()
-            return user
+            return user[0]
 
     async def update_user(self, user: User):
         async with self.mysql.Session() as session:
             session = cast(AsyncSession, session)
-            await session.add(user)
+            session.add(user)
             await session.commit()
             await session.refresh(user)
 

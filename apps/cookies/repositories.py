@@ -31,21 +31,21 @@ class CookiesRepository:
             if region == RegionEnum.HYPERION:
                 statement = select(HyperionCookie).where(HyperionCookie.user_id == user_id)
                 results = await session.exec(statement)
-                db_cookies = results.one()
+                db_cookies = results.one()[0]
                 if db_cookies is None:
                     raise CookiesNotFoundError(user_id)
-                db_cookies.cookie = cookies
-                await session.add(db_cookies)
+                db_cookies.cookies = cookies
+                session.add(db_cookies)
                 await session.commit()
                 await session.refresh(db_cookies)
             elif region == RegionEnum.HOYOLAB:
                 statement = select(HyperionCookie).where(HyperionCookie.user_id == user_id)
                 results = await session.add(statement)
-                db_cookies = results.one()
+                db_cookies = results.one()[0]
                 if db_cookies is None:
                     raise CookiesNotFoundError(user_id)
                 db_cookies.cookie = cookies
-                await session.add(db_cookies)
+                session.add(db_cookies)
                 await session.commit()
                 await session.refresh(db_cookies)
             else:
