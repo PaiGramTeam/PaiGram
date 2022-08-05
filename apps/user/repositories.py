@@ -20,6 +20,19 @@ class UserRepository:
             user = results.first()
             return user
 
+    async def update_user(self, user: User):
+        async with self.mysql.Session() as session:
+            session = cast(AsyncSession, session)
+            await session.add(user)
+            await session.commit()
+            await session.refresh(user)
+
+    async def add_user(self, user: User):
+        async with self.mysql.Session() as session:
+            session = cast(AsyncSession, session)
+            await session.add(user)
+            await session.commit()
+
 
 class UserNotFoundError(NotFoundError):
     entity_name: str = "User"

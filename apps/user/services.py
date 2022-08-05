@@ -12,5 +12,10 @@ class UserService:
         :param user_id:用户ID
         :return: User
         """
-        user = await self._repository.get_by_user_id(user_id)
-        return user
+        return await self._repository.get_by_user_id(user_id)
+
+    async def update_user(self, user: User) -> User:
+        return await self._repository.update_user(user)
+
+    async def add_user(self, user: User) -> User:
+        return await self._repository.update_user(user)
