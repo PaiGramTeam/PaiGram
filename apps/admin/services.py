@@ -3,10 +3,10 @@ from typing import List
 from pymysql import IntegrityError
 from telegram import Bot
 
-from cache import BotAdminCache, GroupAdminCache
 from config import config
 from logger import Log
-from repositories import BotAdminRepository
+from .cache import BotAdminCache, GroupAdminCache
+from .repositories import BotAdminRepository
 
 
 class BotAdminService:

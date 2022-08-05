@@ -4,11 +4,11 @@ from warnings import filterwarnings
 import pytz
 from telegram.ext import Application, Defaults
 from telegram.warnings import PTBUserWarning
-from utils.app.manager import AppsManager
 
 from config import config
 from logger import Log
 from utils.aiobrowser import AioBrowser
+from utils.apps.manager import AppsManager
 from utils.job.register import register_job
 from utils.mysql import MySQL
 from utils.plugins.register import register_plugin_handlers

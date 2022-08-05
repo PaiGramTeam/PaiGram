@@ -54,7 +54,7 @@ class AppsManager:
         for app_name in self.app_list:
             if app_name not in self.exclude_list:
                 try:
-                    import_module(f"app.{app_name}")
+                    import_module(f"apps.{app_name}")
                 except ImportError as exc:
                     Log.warning(f"Service模块 {app_name} 导入失败", exc)
                 except ImportWarning as exc:
