@@ -26,7 +26,7 @@ def listener_service():
     return decorator
 
 
-class AppsManager:
+class ServicesManager:
     def __init__(self, mysql: MySQL, redis: RedisDB, browser: AioBrowser):
         self.browser = browser
         self.redis = redis

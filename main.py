@@ -8,7 +8,7 @@ from telegram.warnings import PTBUserWarning
 from config import config
 from logger import Log
 from utils.aiobrowser import AioBrowser
-from utils.apps.manager import AppsManager
+from utils.apps.manager import ServicesManager
 from utils.job.register import register_job
 from utils.mysql import MySQL
 from utils.plugins.register import register_plugin_handlers
@@ -37,10 +37,10 @@ def main() -> None:
 
     # 传入服务并启动
     Log.info("正在启动服务")
-    apps = AppsManager(mysql, redis, browser)
-    apps.refresh_list("./apps/*")
-    apps.import_module()
-    apps.add_service()
+    services = ServicesManager(mysql, redis, browser)
+    services.refresh_list("./apps/*")
+    services.import_module()
+    services.add_service()
 
     # 构建BOT
     Log.info("构建BOT")
