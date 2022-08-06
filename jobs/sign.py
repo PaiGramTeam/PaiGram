@@ -3,6 +3,7 @@ import time
 
 from aiohttp import ClientConnectorError
 from genshin import Game, GenshinException, AlreadyClaimed, InvalidCookies
+from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, JobQueue
 
@@ -80,8 +81,10 @@ class SignJob:
             except BaseException as exc:
                 Log.error(f"执行自动签到时发生错误", exc)
                 continue
+            if sign_db.chat_id < 0:
+                text = f"<a href=\"tg://user?id={sign_db.user_id}\">NOTICE {sign_db.user_id}</a>\n\n{text}"
             try:
-                await context.bot.send_message(sign_db.chat_id, text)
+                await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
             except BadRequest as exc:
                 Log.error(f"执行自动签到时发生错误", exc)
                 sign_db.status = SignStatusEnum.BAD_REQUEST

@@ -7,7 +7,7 @@ from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, fi
 
 from apps.cookies.services import CookiesService
 from apps.sign.services import SignServices
-from apps.sign.models import Sign as SignUser
+from apps.sign.models import Sign as SignUser, SignStatusEnum
 from apps.user.repositories import UserNotFoundError
 from apps.user.services import UserService
 from logger import Log
@@ -99,7 +99,7 @@ class Sign(BasePlugins):
         elif method == "关闭":
             return "您还没有开启自动签到"
         elif method == "开启":
-            user = SignUser(user_id=user_id, chat_id=chat_id)
+            user = SignUser(user_id=user_id, chat_id=chat_id, status=SignStatusEnum.STATUS_SUCCESS)
             await self.sign_service.add(user)
             return "开启自动签到成功"
 
