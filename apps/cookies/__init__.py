@@ -1,6 +1,6 @@
-from utils.apps.manager import listener_service
 from utils.mysql import MySQL
 from utils.redisdb import RedisDB
+from utils.service.manager import listener_service
 from .cache import PublicCookiesCache
 from .repositories import CookiesRepository
 from .services import CookiesService, PublicCookiesService

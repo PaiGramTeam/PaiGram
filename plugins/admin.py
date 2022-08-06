@@ -4,9 +4,9 @@ from telegram.ext import CallbackContext, CommandHandler
 
 from apps.admin import BotAdminService
 from logger import Log
-from utils.apps.inject import inject
 from utils.decorators.admins import bot_admins_rights_check
 from utils.plugins.manager import listener_plugins_class
+from utils.service.inject import inject
 
 
 @listener_plugins_class()

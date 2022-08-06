@@ -10,11 +10,11 @@ from logger import Log
 from models.apihelper.gacha import GachaInfo
 from plugins.base import BasePlugins
 from plugins.gacha.wish import WishCountInfo, get_one
-from utils.apps.inject import inject
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.plugins.manager import listener_plugins_class
+from utils.service.inject import inject
 
 
 @listener_plugins_class()

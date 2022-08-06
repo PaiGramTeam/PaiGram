@@ -7,9 +7,9 @@ import genshin
 import httpx
 from genshin import Client, types
 from httpx import UnsupportedProtocol
+from service.cookies.services import CookiesService
+from service.user.services import UserService
 
-from apps.cookies.services import CookiesService
-from apps.user.services import UserService
 from logger import Log
 from models.base import RegionEnum
 

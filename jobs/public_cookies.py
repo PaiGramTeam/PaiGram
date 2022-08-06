@@ -4,8 +4,8 @@ from telegram.ext import CallbackContext, JobQueue
 
 from apps.cookies.services import PublicCookiesService
 from logger import Log
-from utils.apps.inject import inject
 from utils.job.manager import listener_jobs_class
+from utils.service.inject import inject
 
 
 @listener_jobs_class()

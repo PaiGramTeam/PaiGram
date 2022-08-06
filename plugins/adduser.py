@@ -14,10 +14,10 @@ from apps.user.services import UserService
 from logger import Log
 from models.base import RegionEnum
 from plugins.base import BasePlugins
-from utils.apps.inject import inject
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.plugins.manager import listener_plugins_class
+from utils.service.inject import inject
 
 
 class AddUserCommandData(TelegramObject):

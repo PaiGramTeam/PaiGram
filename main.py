@@ -8,11 +8,11 @@ from telegram.warnings import PTBUserWarning
 from config import config
 from logger import Log
 from utils.aiobrowser import AioBrowser
-from utils.apps.manager import ServicesManager
 from utils.job.register import register_job
 from utils.mysql import MySQL
 from utils.plugins.register import register_plugin_handlers
 from utils.redisdb import RedisDB
+from utils.service.manager import ServicesManager
 
 # 无视相关警告
 # 该警告说明在官方GITHUB的WIKI中Frequently Asked Questions里的What do the per_* settings in ConversationHandler do?

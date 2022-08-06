@@ -3,7 +3,7 @@ from functools import wraps
 
 from logger import Log
 from models.types import Func
-from utils.apps.manager import ServiceDict
+from utils.service.manager import ServiceDict
 
 
 def get_injections(func: Func):

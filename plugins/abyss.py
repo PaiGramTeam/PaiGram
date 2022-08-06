@@ -9,11 +9,11 @@ from apps.user import UserService
 from apps.user.repositories import UserNotFoundError
 from logger import Log
 from plugins.base import BasePlugins
-from utils.apps.inject import inject
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client, url_to_file
 from utils.plugins.manager import listener_plugins_class
+from utils.service.inject import inject
 
 
 @listener_plugins_class()

@@ -13,9 +13,9 @@ from apps.sign.services import SignServices
 from apps.user import UserService
 from config import config
 from logger import Log
-from utils.apps.inject import inject
 from utils.helpers import get_genshin_client
 from utils.job.manager import listener_jobs_class
+from utils.service.inject import inject
 
 
 @listener_jobs_class()

@@ -7,12 +7,12 @@ from apps.wiki.services import WikiService
 from logger import Log
 from metadata.shortname import weaponToName
 from plugins.base import BasePlugins
-from utils.apps.inject import inject
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
 from utils.plugins.manager import listener_plugins_class
+from utils.service.inject import inject
 
 
 @listener_plugins_class()

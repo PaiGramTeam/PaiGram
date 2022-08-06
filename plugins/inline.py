@@ -8,7 +8,7 @@ from telegram.ext import CallbackContext
 
 from apps.wiki import WikiService
 from logger import Log
-from utils.apps.inject import inject
+from utils.service.inject import inject
 
 
 class Inline:

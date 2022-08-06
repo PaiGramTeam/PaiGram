@@ -1,5 +1,5 @@
 from utils.aiobrowser import AioBrowser
-from utils.apps.manager import listener_service
+from utils.service.manager import listener_service
 from .services import TemplateService
 
 

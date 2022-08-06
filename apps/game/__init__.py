@@ -1,5 +1,5 @@
-from utils.apps.manager import listener_service
 from utils.redisdb import RedisDB
+from utils.service.manager import listener_service
 from .cache import GameStrategyCache
 from .services import GameStrategyService
 

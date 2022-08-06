@@ -1,5 +1,5 @@
-from utils.apps.manager import listener_service
 from utils.mysql import MySQL
+from utils.service.manager import listener_service
 from .repositories import SignRepository
 from .services import SignServices
 

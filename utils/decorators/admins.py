@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Callable
 
 from apps.admin.services import BotAdminService
-from utils.apps.inject import inject
+from utils.service.inject import inject
 
 
 def bot_admins_rights_check(func: Callable) -> Callable:
