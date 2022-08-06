@@ -7,10 +7,10 @@ from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramO
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
-from apps.cookies.services import CookiesService
-from apps.user.models import User
-from apps.user.repositories import UserNotFoundError
-from apps.user.services import UserService
+from core.cookies.services import CookiesService
+from core.user.models import User
+from core.user.repositories import UserNotFoundError
+from core.user.services import UserService
 from logger import Log
 from models.base import RegionEnum
 from plugins.base import BasePlugins

@@ -5,11 +5,11 @@ from genshin import Game, GenshinException, AlreadyClaimed, Client
 from telegram import Update
 from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, CallbackContext
 
-from apps.cookies.services import CookiesService
-from apps.sign.models import Sign as SignUser, SignStatusEnum
-from apps.sign.services import SignServices
-from apps.user.repositories import UserNotFoundError
-from apps.user.services import UserService
+from core.cookies.services import CookiesService
+from core.sign.models import Sign as SignUser, SignStatusEnum
+from core.sign.services import SignServices
+from core.user.repositories import UserNotFoundError
+from core.user.services import UserService
 from logger import Log
 from plugins.base import BasePlugins
 from utils.bot import get_all_args

@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Callable
 
-from apps.admin.services import BotAdminService
+from core.admin.services import BotAdminService
 from utils.service.inject import inject
 
 

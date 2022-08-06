@@ -3,10 +3,10 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
 
-from apps.cookies.services import CookiesService
-from apps.template.services import TemplateService
-from apps.user import UserService
-from apps.user.repositories import UserNotFoundError
+from core.cookies.services import CookiesService
+from core.template.services import TemplateService
+from core.user import UserService
+from core.user.repositories import UserNotFoundError
 from logger import Log
 from plugins.base import BasePlugins
 from utils.decorators.error import error_callable

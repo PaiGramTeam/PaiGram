@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import filters, CommandHandler, MessageHandler, CallbackContext
 
-from apps.template import TemplateService
+from core.template import TemplateService
 from logger import Log
 from models.apihelper.gacha import GachaInfo
 from plugins.base import BasePlugins

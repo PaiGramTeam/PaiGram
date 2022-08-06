@@ -7,11 +7,11 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, JobQueue
 
-from apps.cookies import CookiesService
-from apps.sign.models import SignStatusEnum
-from apps.sign.services import SignServices
-from apps.user import UserService
 from config import config
+from core.cookies import CookiesService
+from core.sign.models import SignStatusEnum
+from core.sign.services import SignServices
+from core.user import UserService
 from logger import Log
 from utils.helpers import get_genshin_client
 from utils.job.manager import listener_jobs_class

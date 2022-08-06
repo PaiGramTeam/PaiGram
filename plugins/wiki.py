@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext
 
-from apps.wiki.services import WikiService
+from core.wiki.services import WikiService
 from plugins.base import BasePlugins
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable

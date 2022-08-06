@@ -8,10 +8,10 @@ from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, \
     CallbackContext
 
-from apps.cookies.services import CookiesService
-from apps.template.services import TemplateService
-from apps.user.repositories import UserNotFoundError
-from apps.user.services import UserService
+from core.cookies.services import CookiesService
+from core.template.services import TemplateService
+from core.user.repositories import UserNotFoundError
+from core.user.services import UserService
 from logger import Log
 from plugins.base import BasePlugins
 from utils.decorators.error import error_callable

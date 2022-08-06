@@ -2,8 +2,8 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import filters, CommandHandler, MessageHandler, CallbackContext
 
-from apps.template.services import TemplateService
-from apps.wiki.services import WikiService
+from core.template.services import TemplateService
+from core.wiki.services import WikiService
 from logger import Log
 from metadata.shortname import weaponToName
 from plugins.base import BasePlugins

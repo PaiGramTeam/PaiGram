@@ -3,8 +3,8 @@ from telegram.constants import ChatAction
 from telegram.error import BadRequest
 from telegram.ext import CommandHandler, CallbackContext
 
-from apps.template.services import TemplateService
 from config import config
+from core.template.services import TemplateService
 from logger import Log
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

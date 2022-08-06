@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
-from apps.admin import BotAdminService
+from core.admin import BotAdminService
 from logger import Log
 from utils.decorators.admins import bot_admins_rights_check
 from utils.plugins.manager import listener_plugins_class

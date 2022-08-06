@@ -4,7 +4,7 @@ from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
-from apps.admin.services import BotAdminService
+from core.admin.services import BotAdminService
 from logger import Log
 from utils.service.inject import inject
 

@@ -6,7 +6,7 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 
-from apps.wiki import WikiService
+from core.wiki import WikiService
 from logger import Log
 from utils.service.inject import inject
 
