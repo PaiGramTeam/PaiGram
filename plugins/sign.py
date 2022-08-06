@@ -6,11 +6,14 @@ from telegram import Update
 from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, CallbackContext
 
 from apps.cookies.services import CookiesService
+from apps.sign.services import SignServices
+from apps.sign.models import Sign as SignUser
 from apps.user.repositories import UserNotFoundError
 from apps.user.services import UserService
 from logger import Log
 from plugins.base import BasePlugins
 from utils.apps.inject import inject
+from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -24,9 +27,11 @@ class Sign(BasePlugins):
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
 
     @inject
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None):
+    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
+                 sign_service: SignServices = None):
         self.cookies_service = cookies_service
         self.user_service = user_service
+        self.sign_service = sign_service
 
     @classmethod
     def create_handlers(cls):
@@ -75,11 +80,48 @@ class Sign(BasePlugins):
                   f"签到结果: {result}"
         return message
 
+    async def _process_auto_sign(self, user_id: int, chat_id: int, method: str) -> str:
+        try:
+            await get_genshin_client(user_id, self.user_service, self.cookies_service)
+        except UserNotFoundError:
+            return "未查询到账号信息，请先私聊派蒙绑定账号"
+        user: SignUser = await self.sign_service.get_by_user_id(user_id)
+        if user:
+            if method == "关闭":
+                await self.sign_service.remove(user)
+                return "关闭自动签到成功"
+            elif method == "开启":
+                if user.chat_id == chat_id:
+                    return "自动签到已经开启过了"
+                user.chat_id = chat_id
+                await self.sign_service.update(user)
+                return "修改自动签到通知对话成功"
+        elif method == "关闭":
+            return "您还没有开启自动签到"
+        elif method == "开启":
+            user = SignUser(user_id=user_id, chat_id=chat_id)
+            await self.sign_service.add(user)
+            return "开启自动签到成功"
+
     @error_callable
     @restricts(return_data=ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.message
+        args = get_all_args(context)
+        if len(args) >= 1:
+            msg = None
+            if args[0] == "开启自动签到":
+                msg = await self._process_auto_sign(user.id, message.chat_id, "开启")
+            elif args[0] == "关闭自动签到":
+                msg = await self._process_auto_sign(user.id, message.chat_id, "关闭")
+            if msg:
+                Log.info(f"用户 {user.full_name}[{user.id}] 自动签到命令请求 || 参数 {args[0]}")
+                reply_message = await message.reply_text(msg)
+                if filters.ChatType.GROUPS.filter(message):
+                    self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                    self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                return
         Log.info(f"用户 {user.full_name}[{user.id}] 每日签到命令请求")
         if filters.ChatType.GROUPS.filter(message):
             self._add_delete_message_job(context, message.chat_id, message.message_id)

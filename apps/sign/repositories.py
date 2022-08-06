@@ -17,6 +17,12 @@ class SignRepository:
             session.add(sign)
             await session.commit()
 
+    async def remove(self, sign: Sign):
+        async with self.mysql.Session() as session:
+            session = cast(AsyncSession, session)
+            await session.delete(sign)
+            await session.commit()
+
     async def update(self, sign: Sign):
         async with self.mysql.Session() as session:
             session = cast(AsyncSession, session)
@@ -29,9 +35,7 @@ class SignRepository:
             session = cast(AsyncSession, session)
             statement = select(Sign).where(Sign.user_id == user_id)
             results = await session.exec(statement)
-            if sign := results.first():
-                return sign[0]
-            return None
+            return sign[0] if (sign := results.first()) else None
 
     async def get_all(self) -> List[Sign]:
         async with self.mysql.Session() as session:

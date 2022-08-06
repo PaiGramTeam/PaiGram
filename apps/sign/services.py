@@ -12,6 +12,9 @@ class SignServices:
     async def add(self, sign: Sign):
         return await self._repository.add(sign)
 
+    async def remove(self, sign: Sign):
+        return await self._repository.remove(sign)
+
     async def update(self, sign: Sign):
         return await self._repository.update(sign)
 
