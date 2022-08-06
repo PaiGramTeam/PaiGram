@@ -1,9 +1,10 @@
 from typing import Optional
 
-from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, Application
+from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, Application, InlineQueryHandler
 
 from logger import Log
 from plugins.errorhandler import error_handler
+from plugins.inline import Inline
 from plugins.start import start, ping, reply_keyboard_remove, unknown_command
 from utils.plugins.manager import PluginsManager
 
@@ -42,12 +43,15 @@ def register_plugin_handlers(application: Application):
 
     Log.info("正在加载内置插件")
 
+    inline = Inline()
+
     add_handler(start, command="start")
     add_handler(ping, command="ping")
 
     # 调试功能
     add_handler(reply_keyboard_remove, command="reply_keyboard_remove")
 
+    application.add_handler(InlineQueryHandler(inline.inline_query, block=False))
     application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
     application.add_error_handler(error_handler, block=False)
 
