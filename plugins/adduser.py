@@ -137,10 +137,8 @@ class AddUser(BasePlugins):
         if len(cookie) == 0:
             await update.message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        cookies = {}
-        for key, morsel in cookie.items():
-            cookies[key] = morsel.value
-        if len(cookies) == 0:
+        cookies = {key: morsel.value for key, morsel in cookie.items()}
+        if not cookies:
             await update.message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if add_user_command_data.region == RegionEnum.HYPERION:
@@ -162,10 +160,7 @@ class AddUser(BasePlugins):
             await update.message.reply_text(f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常",
                                             reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        except AttributeError:
-            await update.message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
-        except ValueError:
+        except (AttributeError, ValueError):
             await update.message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         add_user_command_data.cookies = cookies
@@ -178,8 +173,10 @@ class AddUser(BasePlugins):
                   f"角色等级：{user_info.level}\n" \
                   f"UID：`{user_info.uid}`\n" \
                   f"服务器名称：`{user_info.server_name}`\n"
-        await update.message.reply_markdown_v2(message,
-                                               reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        await update.message.reply_markdown_v2(
+            message,
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+        )
         return self.COMMAND_RESULT
 
     @error_callable

@@ -29,12 +29,12 @@ def check_ledger_month(context: CallbackContext) -> int:
         month = args[0]
     elif isinstance(month, int):
         pass
-    elif re_data := re.findall(r"\d+", month):
+    elif re_data := re.findall(r"\d+", str(month)):
         month = int(re_data[0])
     else:
         num_dict = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
                     "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
-        month = sum(num_dict.get(i, 0) for i in month)
+        month = sum(num_dict.get(i, 0) for i in str(month))
     # check right
     now_time = datetime.now()
     allow_month = [datetime.now().month]

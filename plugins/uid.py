@@ -1,5 +1,6 @@
 import os
 import random
+from typing import Optional
 
 from genshin import DataNotPublic, GenshinException, Client
 from telegram import Update
@@ -126,35 +127,35 @@ class Uid(BasePlugins):
 
     @error_callable
     @restricts(return_data=ConversationHandler.END)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
         message = update.message
         Log.info(f"用户 {user.full_name}[{user.id}] 查询游戏用户命令请求")
         uid: int = -1
         try:
             args = context.args
-            if args is not None:
-                if len(args) >= 1:
-                    uid = int(args[0])
+            if args is not None and len(args) >= 1:
+                uid = int(args[0])
         except ValueError as error:
             Log.error("获取 uid 发生错误！ 错误信息为", error)
             await message.reply_text("输入错误")
             return ConversationHandler.END
         try:
             client = await get_genshin_client(user.id, self.user_service, self.cookies_service)
+
             png_data = await self._start_get_user_info(client, uid)
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
         except ValueError as exc:
-            if "洞庭湖未解锁" in str(exc):
-                await message.reply_text("角色尘歌壶未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
-                return ConversationHandler.END
-            else:
+            if "洞庭湖未解锁" not in str(exc):
                 raise exc
+            await message.reply_text("角色尘歌壶未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
+            return ConversationHandler.END
         except AttributeError as exc:
             Log.warning("角色数据有误", exc)
             await message.reply_text("角色数据有误 估计是派蒙晕了")

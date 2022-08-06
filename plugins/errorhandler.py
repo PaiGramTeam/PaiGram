@@ -85,4 +85,3 @@ async def error_handler(update: object, context: CallbackContext) -> None:
                                            parse_mode=ParseMode.HTML)
     except BadRequest as exc:
         Log.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为 {str(exc)}")
-        pass
