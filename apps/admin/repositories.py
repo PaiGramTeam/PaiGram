@@ -22,7 +22,8 @@ class BotAdminRepository:
     async def add_by_user_id(self, user_id: int):
         async with self.mysql.Session() as session:
             admin = Admin(user_id=user_id)
-            await session.add(admin)
+            session.add(admin)
+            await session.commit()
 
     async def get_all_user_id(self) -> List[int]:
         async with self.mysql.Session() as session:
