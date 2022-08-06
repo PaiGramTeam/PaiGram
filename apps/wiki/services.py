@@ -12,9 +12,7 @@ class WikiService:
 
     def __init__(self, cache: WikiCache):
         self._cache = cache
-        """
-        Redis 在这里的作用是作为持久化
-        """
+        """Redis 在这里的作用是作为持久化"""
         self.weapons = Weapons()
         self.characters = Characters()
         self._characters_list = []

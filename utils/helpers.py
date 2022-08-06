@@ -84,7 +84,7 @@ def region_server(uid: Union[int, str]) -> RegionEnum:
     elif isinstance(uid, str):
         region = REGION_MAP.get(str(uid)[0])
     else:
-        raise TypeError(f"UID variable type error")
+        raise TypeError("UID variable type error")
     if region:
         return region
     else:

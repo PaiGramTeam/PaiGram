@@ -73,9 +73,9 @@ class Post(BasePlugins):
         if post_handler_data is None:
             post_handler_data = PostHandlerData()
             context.chat_data["post_handler_data"] = post_handler_data
-        text = "✿✿ヽ（°▽°）ノ✿ 你好！ %s ，\n" \
+        text = f"✿✿ヽ（°▽°）ノ✿ 你好！ {user.username} ，\n" \
                "只需复制URL回复即可 \n" \
-               "退出投稿只需回复退出" % (user["username"])
+               "退出投稿只需回复退出"
         reply_keyboard = [['退出']]
         await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return self.CHECK_POST

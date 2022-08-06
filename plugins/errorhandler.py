@@ -19,10 +19,8 @@ except KeyError as error:
 
 
 async def error_handler(update: object, context: CallbackContext) -> None:
-    """
-    记录错误并发送消息通知开发人员。
-    Log the error and send a telegram message to notify the developer.
-    """
+    """记录错误并发送消息通知开发人员。 Log the error and send a telegram message to notify the developer."""
+
     Log.error(msg="处理函数时发生异常:", exc_info=context.error)
 
     if notice_chat_id is None:

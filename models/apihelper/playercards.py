@@ -146,7 +146,7 @@ class PlayerCardsAPI:
         consts = characters_data["Consts"]
         if 'talentIdList' in avatar_data:
             talent_id_list = avatar_data["talentIdList"]
-            for index, value in enumerate(talent_id_list):
+            for index, _ in enumerate(talent_id_list):
                 talent_list.append(Talent(talent_id_list[index], icon=consts[index]))
 
         element = characters_data["Element"]
