@@ -1,11 +1,10 @@
 import datetime
-from typing import Callable
 
 from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
-from apps.admin import BotAdminService
+from apps.admin.services import BotAdminService
 from logger import Log
 from utils.apps.inject import inject
 
@@ -52,11 +51,12 @@ class BasePlugins:
 
 
 class NewChatMembersHandler:
-    def __init__(self, auth_callback: Callable):
-        self.auth_callback = auth_callback
 
     @inject
-    async def new_member(self, update: Update, context: CallbackContext, bot_admin_service: BotAdminService) -> None:
+    def __init__(self, bot_admin_service: BotAdminService):
+        self.bot_admin_service = bot_admin_service
+
+    async def new_member(self, update: Update, context: CallbackContext) -> None:
         message = update.message
         chat = message.chat
         from_user = message.from_user
@@ -66,7 +66,7 @@ class NewChatMembersHandler:
                 if user.id == context.bot.id:
                     if from_user is not None:
                         Log.info(f"用户 {from_user.full_name}[{from_user.id}] 在群 {chat.title}[{chat.id}] 邀请BOT")
-                        admin_list = await bot_admin_service.get_admin_list()
+                        admin_list = await self.bot_admin_service.get_admin_list()
                         if from_user.id in admin_list:
                             await context.bot.send_message(message.chat_id,
                                                            '感谢邀请小派蒙到本群！请使用 /help 查看咱已经学会的功能。')
@@ -79,5 +79,4 @@ class NewChatMembersHandler:
             Log.warning("不是管理员邀请！退出群聊。")
             await context.bot.send_message(message.chat_id, "派蒙不想进去！不是旅行者的邀请！")
             await context.bot.leave_chat(chat.id)
-        await self.auth_callback(update, context)
 

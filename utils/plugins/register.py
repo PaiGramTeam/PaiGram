@@ -3,6 +3,7 @@ from typing import Optional
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, Application, InlineQueryHandler
 
 from logger import Log
+from plugins.base import NewChatMembersHandler
 from plugins.errorhandler import error_handler
 from plugins.inline import Inline
 from plugins.start import start, ping, reply_keyboard_remove, unknown_command
@@ -28,7 +29,6 @@ def register_plugin_handlers(application: Application):
             application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
 
     # 初始化
-
     Log.info("正在加载插件管理器")
     plugins_manager = PluginsManager()
 
@@ -44,13 +44,15 @@ def register_plugin_handlers(application: Application):
     Log.info("正在加载内置插件")
 
     inline = Inline()
+    new_chat_members_handler = NewChatMembersHandler()
 
     add_handler(start, command="start")
     add_handler(ping, command="ping")
-
     # 调试功能
     add_handler(reply_keyboard_remove, command="reply_keyboard_remove")
 
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS,
+                                           new_chat_members_handler.new_member, block=False))
     application.add_handler(InlineQueryHandler(inline.inline_query, block=False))
     application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
     application.add_error_handler(error_handler, block=False)
