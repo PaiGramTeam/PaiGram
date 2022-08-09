@@ -2,7 +2,7 @@ from http.cookies import SimpleCookie, CookieError
 
 import genshin
 import ujson
-from genshin import InvalidCookies, GenshinException, DataNotPublic
+from genshin import InvalidCookies, GenshinException, DataNotPublic, types
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
 from telegram.helpers import escape_markdown
@@ -135,14 +135,15 @@ class Cookies(BasePlugins):
             await update.message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if cookies_command_data.service == ServiceEnum.HYPERION:
-            client = genshin.ChineseClient(cookies=cookies)
+            client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)
         elif cookies_command_data.service == ServiceEnum.HOYOLAB:
-            client = genshin.GenshinClient(cookies=cookies)
+            client = genshin.Client(cookies=cookies,
+                                    game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn")
         else:
             await update.message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         try:
-            user_info = await client.get_record_card()
+            game_accounts = await client.get_game_accounts()
         except DataNotPublic:
             await update.message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -158,6 +159,13 @@ class Cookies(BasePlugins):
             return ConversationHandler.END
         except ValueError:
             await update.message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        for game_account in game_accounts:
+            if game_account.game == types.Game.GENSHIN:
+                user_info = game_account
+                break
+        else:
+            await update.message.reply_text("未找到原神账号", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         cookies_command_data.cookies = cookies
         cookies_command_data.game_uid = user_info.uid
