@@ -29,7 +29,6 @@ class PluginsManager:
         self.exclude_list: List[str] = []
 
     def refresh_list(self, plugin_paths):
-        self.plugin_list.clear()
         plugin_paths = glob(plugin_paths)
         for plugin_path in plugin_paths:
             if plugin_path.startswith('__'):

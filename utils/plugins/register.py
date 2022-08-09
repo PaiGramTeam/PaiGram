@@ -1,12 +1,13 @@
+from importlib import import_module
 from typing import Optional
 
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, Application, InlineQueryHandler
 
 from logger import Log
 from plugins.base import NewChatMembersHandler
-from plugins.errorhandler import error_handler
-from plugins.inline import Inline
-from plugins.start import start, ping, reply_keyboard_remove, unknown_command
+from plugins.system.errorhandler import error_handler
+from plugins.system.inline import Inline
+from plugins.system.start import start, ping, reply_keyboard_remove, unknown_command
 from utils.plugins.manager import PluginsManager
 
 
@@ -32,10 +33,10 @@ def register_plugin_handlers(application: Application):
     Log.info("正在加载插件管理器")
     plugins_manager = PluginsManager()
 
-    plugins_manager.refresh_list("./plugins/*")
+    plugins_manager.refresh_list("./plugins/genshin/*")
 
     # 忽略内置模块
-    plugins_manager.add_exclude(["start", "base", "auth", "inline", "errorhandler"])
+    # plugins_manager.add_exclude(["start", "auth", "inline", "errorhandler"])
 
     Log.info("加载插件管理器正在加载插件")
     plugins_manager.import_module()
@@ -56,5 +57,7 @@ def register_plugin_handlers(application: Application):
     application.add_handler(InlineQueryHandler(inline.inline_query, block=False))
     application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
     application.add_error_handler(error_handler, block=False)
+
+    import_module(f"plugins.system.admin")
 
     Log.info("插件加载成功")

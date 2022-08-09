@@ -10,15 +10,15 @@ from utils.aiobrowser import AioBrowser
 from utils.mysql import MySQL
 from utils.redisdb import RedisDB
 
-ServiceFunctions: List[Func] = []
-ServiceDict: Dict[str, Func] = {}
+ServicesFunctions: List[Func] = []
+ServicesDict: Dict[str, Func] = {}
 
 
 def listener_service():
     """监听服务"""
 
     def decorator(func: Func):
-        ServiceFunctions.append(
+        ServicesFunctions.append(
             func
         )
         return func
@@ -31,16 +31,16 @@ class ServicesManager:
         self.browser = browser
         self.redis = redis
         self.mysql = mysql
-        self.app_list: List[str] = []
+        self.services_list: List[str] = []
         self.exclude_list: List[str] = []
 
     def refresh_list(self, app_paths):
-        self.app_list.clear()
+        self.services_list.clear()
         app_paths = glob(app_paths)
         for app_path in app_paths:
             if os.path.isdir(app_path):
                 app_path = os.path.basename(app_path)
-                self.app_list.append(app_path)
+                self.services_list.append(app_path)
 
     def add_exclude(self, exclude: Union[str, List[str]]):
         if isinstance(exclude, str):
@@ -51,21 +51,21 @@ class ServicesManager:
             raise TypeError
 
     def import_module(self):
-        for app_name in self.app_list:
-            if app_name not in self.exclude_list:
+        for services_name in self.services_list:
+            if services_name not in self.exclude_list:
                 try:
-                    import_module(f"apps.{app_name}")
+                    import_module(f"apps.{services_name}")
                 except ImportError as exc:
-                    Log.warning(f"Service模块 {app_name} 导入失败", exc)
+                    Log.warning(f"Service模块 {services_name} 导入失败", exc)
                 except ImportWarning as exc:
-                    Log.warning(f"Service模块 {app_name} 加载成功但有警告", exc)
+                    Log.warning(f"Service模块 {services_name} 加载成功但有警告", exc)
                 except Exception as exc:
-                    Log.warning(f"Service模块 {app_name} 加载失败", exc)
+                    Log.warning(f"Service模块 {services_name} 加载失败", exc)
                 else:
-                    Log.debug(f"Service模块 {app_name} 加载成功")
+                    Log.debug(f"Service模块 {services_name} 加载成功")
 
     def add_service(self):
-        for func in ServiceFunctions:
+        for func in ServicesFunctions:
             if callable(func):
                 kwargs = {}
                 try:
@@ -91,7 +91,7 @@ class ServicesManager:
                 try:
                     handlers_list = func(**kwargs)
                     class_name = handlers_list.__class__.__name__
-                    ServiceDict.setdefault(class_name, handlers_list)
+                    ServicesDict.setdefault(class_name, handlers_list)
                 except BaseException as exc:
                     Log.error("初始化Service失败", exc)
                 finally:

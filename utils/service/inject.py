@@ -3,7 +3,7 @@ from functools import wraps
 
 from logger import Log
 from models.types import Func
-from utils.service.manager import ServiceDict
+from utils.service.manager import ServicesDict
 
 
 def get_injections(func: Func):
@@ -21,7 +21,7 @@ def get_injections(func: Func):
         for parameter_name, parameter in signature.parameters.items():
             annotation = parameter.annotation
             class_name = annotation.__name__
-            param = ServiceDict.get(class_name)
+            param = ServicesDict.get(class_name)
             if param is not None:
                 injections.setdefault(parameter_name, param)
     return injections
