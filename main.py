@@ -38,7 +38,7 @@ def main() -> None:
     # 传入服务并启动
     Log.info("正在启动服务")
     services = ServicesManager(mysql, redis, browser)
-    services.refresh_list("./core/*")
+    services.refresh_list("core/*")
     services.import_module()
     services.add_service()
 

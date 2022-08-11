@@ -1,6 +1,7 @@
 import imghdr
+import os
 from enum import Enum
-from typing import Union
+from typing import Union, Optional
 
 from models.baseobject import BaseObject
 
@@ -64,3 +65,29 @@ class GameItem(BaseObject):
 
     __slots__ = ("name", "type", "value", "item_id")
 
+
+class ModuleInfo:
+
+    def __init__(self, file_name: Optional[str] = None, plugin_name: Optional[str] = None,
+                 relative_path: Optional[str] = None):
+        self.relative_path = relative_path
+        self.module_name = plugin_name
+        self.file_name = file_name
+        if file_name is None:
+            if relative_path is None:
+                raise ValueError("file_name 和 relative_path 都不能为空")
+            self.file_name = os.path.basename(relative_path)
+        if plugin_name is None:
+            self.module_name, _ = os.path.splitext(self.file_name)
+
+    @property
+    def package_path(self) -> str:
+        if self.relative_path is None:
+            return ""
+        if os.path.isdir(self.relative_path):
+            return self.relative_path.replace(os.sep, ".")
+        root, _ = os.path.splitext(self.relative_path)
+        return root.replace(os.sep, ".")
+
+    def __str__(self):
+        return self.module_name

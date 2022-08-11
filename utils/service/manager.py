@@ -1,12 +1,10 @@
 import inspect
-import os
-from glob import glob
-from importlib import import_module
-from typing import List, Union, Dict
+from typing import List, Dict
 
 from logger import Log
 from models.types import Func
 from utils.aiobrowser import AioBrowser
+from utils.manager import ModulesManager
 from utils.mysql import MySQL
 from utils.redisdb import RedisDB
 
@@ -26,43 +24,15 @@ def listener_service():
     return decorator
 
 
-class ServicesManager:
+class ServicesManager(ModulesManager):
     def __init__(self, mysql: MySQL, redis: RedisDB, browser: AioBrowser):
+        super().__init__()
         self.browser = browser
         self.redis = redis
         self.mysql = mysql
         self.services_list: List[str] = []
         self.exclude_list: List[str] = []
-
-    def refresh_list(self, app_paths):
-        self.services_list.clear()
-        app_paths = glob(app_paths)
-        for app_path in app_paths:
-            if os.path.isdir(app_path):
-                app_path = os.path.basename(app_path)
-                self.services_list.append(app_path)
-
-    def add_exclude(self, exclude: Union[str, List[str]]):
-        if isinstance(exclude, str):
-            self.exclude_list.append(exclude)
-        elif isinstance(exclude, list):
-            self.exclude_list.extend(exclude)
-        else:
-            raise TypeError
-
-    def import_module(self):
-        for services_name in self.services_list:
-            if services_name not in self.exclude_list:
-                try:
-                    import_module(f"apps.{services_name}")
-                except ImportError as exc:
-                    Log.warning(f"Service模块 {services_name} 导入失败", exc)
-                except ImportWarning as exc:
-                    Log.warning(f"Service模块 {services_name} 加载成功但有警告", exc)
-                except Exception as exc:
-                    Log.warning(f"Service模块 {services_name} 加载失败", exc)
-                else:
-                    Log.debug(f"Service模块 {services_name} 加载成功")
+        self.manager_name = "核心服务管理器"
 
     def add_service(self):
         for func in ServicesFunctions:

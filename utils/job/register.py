@@ -8,7 +8,7 @@ def register_job(application: Application):
     Log.info("正在加载Job管理器")
     jobs_manager = JobsManager()
 
-    jobs_manager.refresh_list("./jobs/*")
+    jobs_manager.refresh_list("jobs/*")
 
     # 忽略内置模块
     jobs_manager.add_exclude(["base"])

@@ -33,7 +33,7 @@ def register_plugin_handlers(application: Application):
     Log.info("正在加载插件管理器")
     plugins_manager = PluginsManager()
 
-    plugins_manager.refresh_list("./plugins/genshin/*")
+    plugins_manager.refresh_list("plugins/genshin/*")
 
     # 忽略内置模块
     # plugins_manager.add_exclude(["start", "auth", "inline", "errorhandler"])

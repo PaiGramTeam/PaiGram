@@ -1,12 +1,9 @@
-import os
-from glob import glob
-from importlib import import_module
-from os import path
-from typing import List, Union
+from typing import List
 
 from telegram.ext import Application
 
 from logger import Log
+from utils.manager import ModulesManager
 
 PluginsClass: List[object] = []
 
@@ -23,46 +20,11 @@ def listener_plugins_class():
     return decorator
 
 
-class PluginsManager:
+class PluginsManager(ModulesManager):
+
     def __init__(self):
-        self.plugin_list: List[str] = []  # 用于存储文件名称
-        self.exclude_list: List[str] = []
-
-    def refresh_list(self, plugin_paths):
-        plugin_paths = glob(plugin_paths)
-        for plugin_path in plugin_paths:
-            if plugin_path.startswith('__'):
-                continue
-            if os.path.isdir(plugin_path):
-                plugin_path = os.path.basename(plugin_path)
-                self.plugin_list.append(plugin_path)
-                continue
-            module_name = path.basename(path.normpath(plugin_path))
-            root, ext = os.path.splitext(module_name)
-            if ext == ".py":
-                self.plugin_list.append(root)
-
-    def add_exclude(self, exclude: Union[str, List[str]]):
-        if isinstance(exclude, str):
-            self.exclude_list.append(exclude)
-        elif isinstance(exclude, list):
-            self.exclude_list.extend(exclude)
-        else:
-            raise TypeError
-
-    def import_module(self):
-        for plugin_name in self.plugin_list:
-            if plugin_name not in self.exclude_list:
-                try:
-                    import_module(f"plugins.{plugin_name}")
-                except ImportError as exc:
-                    Log.warning(f"插件 {plugin_name} 导入失败", exc)
-                except ImportWarning as exc:
-                    Log.warning(f"插件 {plugin_name} 加载成功但有警告", exc)
-                except BaseException as exc:
-                    Log.warning(f"插件 {plugin_name} 加载失败", exc)
-                else:
-                    Log.debug(f"插件 {plugin_name} 加载成功")
+        super().__init__()
+        self.manager_name = "插件管理器"
 
     @staticmethod
     def add_handler(application: Application):

@@ -1,12 +1,9 @@
-import os
-from glob import glob
-from importlib import import_module
-from os import path
-from typing import List, Union
+from typing import List
 
 from telegram.ext import Application
 
 from logger import Log
+from utils.manager import ModulesManager
 
 JobsClass: List[object] = []
 
@@ -23,43 +20,12 @@ def listener_jobs_class():
     return decorator
 
 
-class JobsManager:
+class JobsManager(ModulesManager):
     def __init__(self):
+        super().__init__()
         self.job_list: List[str] = []  # 用于存储文件名称
         self.exclude_list: List[str] = []
-
-    def refresh_list(self, plugin_paths):
-        self.job_list.clear()
-        plugin_paths = glob(plugin_paths)
-        for plugin_path in plugin_paths:
-            if plugin_path.startswith('__'):
-                continue
-            module_name = path.basename(path.normpath(plugin_path))
-            root, ext = os.path.splitext(module_name)
-            if ext == ".py":
-                self.job_list.append(root)
-
-    def add_exclude(self, exclude: Union[str, List[str]]):
-        if isinstance(exclude, str):
-            self.exclude_list.append(exclude)
-        elif isinstance(exclude, list):
-            self.exclude_list.extend(exclude)
-        else:
-            raise TypeError
-
-    def import_module(self):
-        for job_name in self.job_list:
-            if job_name not in self.exclude_list:
-                try:
-                    import_module(f"jobs.{job_name}")
-                except ImportError as exc:
-                    Log.warning(f"Job模块 {job_name} 导入失败", exc)
-                except ImportWarning as exc:
-                    Log.warning(f"Job模块 {job_name} 加载成功但有警告", exc)
-                except BaseException as exc:
-                    Log.warning(f"Job模块 {job_name} 加载失败", exc)
-                else:
-                    Log.debug(f"Job模块 {job_name} 加载成功")
+        self.manager_name = "定时任务管理器"
 
     @staticmethod
     def add_handler(application: Application):
