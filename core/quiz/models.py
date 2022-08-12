@@ -1,7 +1,23 @@
 from typing import List, Optional
 
+from sqlmodel import SQLModel, Field
+
 from models.baseobject import BaseObject
 from models.types import JSONDict
+
+
+class AnswerDB(SQLModel, table=True):
+    __tablename__ = 'answer'
+    id: Optional[int] = Field(default=None, primary_key=True)
+    question_id: Optional[int] = Field()
+    is_correct: Optional[bool] = Field()
+    text: Optional[str] = Field()
+
+
+class QuestionDB(SQLModel, table=True):
+    __tablename__ = 'question'
+    id: Optional[int] = Field(default=None, primary_key=True)
+    text: Optional[str] = Field()
 
 
 class Answer(BaseObject):
