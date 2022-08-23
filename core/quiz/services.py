@@ -3,7 +3,7 @@ from typing import List
 import ujson
 
 from .cache import QuizCache
-from .models import Question
+from .models import Question, Answer
 from .repositories import QuizRepository
 
 
@@ -12,25 +12,28 @@ class QuizService:
         self._repository = repository
         self._cache = cache
 
-    async def get_quiz(self) -> List[Question]:
+    async def get_quiz_form_database(self) -> List[Question]:
         """从数据库获取问题列表
-        :return:
+        :return: Question List
         """
+        temp: list = []
         question_list = await self._repository.get_question_list()
         for question in question_list:
-            question_id = question.question_id
-            answers = await self._repository.get_answer_form_question_id(question_id)
+            question_id = question.id
+            answers = await self._repository.get_answers_form_question_id(question_id)
             question.answers = answers
-        return question_list
+            data = Question.de_database_data(question)
+            data.answers = [Answer.de_database_data(a) for a in answers]
+            temp.append(data)
+        return temp
 
     async def save_quiz(self, data: Question):
-        await self._repository.get_question(data.text)
-        question = await self._repository.get_question(data.text)
+        await self._repository.get_question_by_text(data.text)
         for answers in data.answers:
-            await self._repository.add_answer(question.question_id, answers.is_correct, answers.text)
+            await self._repository.add_answer(answers.to_database_data())
 
     async def refresh_quiz(self) -> int:
-        question_list = await self.get_quiz()
+        question_list = await self.get_quiz_form_database()
         await self._cache.del_all_question()
         question_count = await self._cache.add_question(question_list)
         await self._cache.del_all_answer()

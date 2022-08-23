@@ -17,7 +17,7 @@ class QuizRepository:
             questions = results.all()
             return [question[0] for question in questions]
 
-    async def get_answer_form_question_id(self, question_id: int) -> List[AnswerDB]:
+    async def get_answers_form_question_id(self, question_id: int) -> List[AnswerDB]:
         async with self.mysql.Session() as session:
             query = select(AnswerDB).where(AnswerDB.question_id == question_id)
             results = await session.exec(query)

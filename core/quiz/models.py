@@ -36,6 +36,20 @@ class Answer(BaseObject):
 
     __slots__ = ("answer_id", "question_id", "text", "is_correct")
 
+    def to_database_data(self) -> AnswerDB:
+        data = AnswerDB()
+        data.id = self.answer_id
+        data.question_id = self.question_id
+        data.text = self.text
+        data.is_correct = self.is_correct
+        return data
+
+    @classmethod
+    def de_database_data(cls, data: Optional[AnswerDB]) -> Optional["Answer"]:
+        if data is None:
+            return cls()
+        return cls(answer_id=data.id, question_id=data.question_id, text=data.text, is_correct=data.is_correct)
+
 
 class Question(BaseObject):
     def __init__(self, question_id: int = 0, text: str = "", answers: List[Answer] = None):
@@ -48,6 +62,18 @@ class Question(BaseObject):
         self.question_id = question_id
         self.text = text
         self.answers = [] if answers is None else answers
+
+    def to_database_data(self) -> QuestionDB:
+        data = QuestionDB()
+        data.text = self.text
+        data.id = self.question_id
+        return data
+
+    @classmethod
+    def de_database_data(cls, data: Optional[QuestionDB]) -> Optional["Question"]:
+        if data is None:
+            return cls()
+        return cls(question_id=data.id, text=data.text)
 
     def to_dict(self) -> JSONDict:
         data = super().to_dict()
