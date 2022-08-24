@@ -30,20 +30,17 @@ def register_plugin_handlers(application: Application):
             application.add_handler(CallbackQueryHandler(handler, pattern=query, block=block))
 
     # 初始化
-    Log.info("正在加载插件管理器")
+    Log.info("正在加载动态插件管理器")
     plugins_manager = PluginsManager()
-
+    plugins_manager.add_exclude(["start", "auth", "inline", "errorhandler"]) # 忽略内置模块
+    Log.info("正在加载插件")
     plugins_manager.refresh_list("plugins/genshin/*")
-
-    # 忽略内置模块
-    # plugins_manager.add_exclude(["start", "auth", "inline", "errorhandler"])
-
+    plugins_manager.refresh_list("plugins/system/*")
     Log.info("加载插件管理器正在加载插件")
     plugins_manager.import_module()
     plugins_manager.add_handler(application)
 
-    Log.info("正在加载内置插件")
-
+    Log.info("正在加载静态系统插件")
     inline = Inline()
     new_chat_members_handler = NewChatMembersHandler()
 
