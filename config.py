@@ -2,9 +2,9 @@ import os
 
 import ujson
 from dotenv import load_dotenv
-from distutils.util import strtobool
 
 from utils.storage import Storage
+from utils.helpers import str_to_bool
 
 # take environment variables from .env.
 load_dotenv()
@@ -12,7 +12,7 @@ load_dotenv()
 env = os.getenv
 
 _config = {
-    "debug": bool(strtobool(os.getenv('DEBUG', 'True'))),
+    "debug": str_to_bool(os.getenv('DEBUG', 'True')),
 
     "mysql": {
         "host": env("DB_HOST", "127.0.0.1"),
