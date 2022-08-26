@@ -1,15 +1,23 @@
 import os
+from typing import Any
 
 import ujson
 from dotenv import load_dotenv
 
 from utils.storage import Storage
-from utils.helpers import str_to_bool
 
 # take environment variables from .env.
 load_dotenv()
 
 env = os.getenv
+
+def str_to_bool(value: Any) -> bool:
+    """Return whether the provided string (or any value really) represents true. Otherwise false.
+    Just like plugin server stringToBoolean.
+    """
+    if not value:
+        return False
+    return str(value).lower() in ("y", "yes", "t", "true", "on", "1")
 
 _config = {
     "debug": str_to_bool(os.getenv('DEBUG', 'True')),

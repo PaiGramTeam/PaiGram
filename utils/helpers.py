@@ -1,6 +1,6 @@
 import hashlib
 import os
-from typing import Union, Optional, Any
+from typing import Union, Optional
 
 import aiofiles
 import genshin
@@ -90,11 +90,3 @@ def region_server(uid: Union[int, str]) -> RegionEnum:
     else:
         raise TypeError(f"UID {uid} isn't associated with any region")
 
-
-def str_to_bool(value: Any) -> bool:
-    """Return whether the provided string (or any value really) represents true. Otherwise false.
-    Just like plugin server stringToBoolean.
-    """
-    if not value:
-        return False
-    return str(value).lower() in ("y", "yes", "t", "true", "on", "1")
