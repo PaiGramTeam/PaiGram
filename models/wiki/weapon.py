@@ -1,9 +1,35 @@
 from enum import Enum
-from typing import List
+from typing import List, Optional
+
+from typing_extensions import Self
 
 from models.wiki.base import Model, WikiModel
 from models.wiki.material import Material
 from models.wiki.other import WeaponType
+
+__all__ = ['WeaponAttributeType', 'Weapon', 'WeaponAffix', 'WeaponAttribute']
+
+_WEAPON_ATTR_TYPE_MAP = {
+    "HP": ['Health'],
+    "HP_p": ['HP%', 'Health %'],
+    "ATK": ['Attack'],
+    "ATK_p": ['Atk%', 'Attack %'],
+    "DEF": ['Defense'],
+    "DEF_p": ['Def%', 'Defense %'],
+    "EM": ['Elemental Mastery'],
+    "ER": ['ER%', 'Energy Recharge %'],
+    "CR": ['CrR%', 'Critical Rate %'],
+    "CD": ['Crd%', 'Critical Damage %'],
+    "PD": ['Phys%', 'Physical Damage %'],
+    "HB": [],
+    "Pyro": [],
+    "Hydro": [],
+    "Electro": [],
+    "Cryo": [],
+    "Dendro": [],
+    "Anemo": [],
+    "Geo": [],
+}
 
 
 class WeaponAttributeType(Enum):
@@ -27,11 +53,19 @@ class WeaponAttributeType(Enum):
     Anemo = '风元素伤害加成'
     Geo = '岩元素伤害加成'
 
+    # noinspection PyShadowingBuiltins
+    @classmethod
+    def convert_honey_str(cls, type: str) -> Optional[Self]:
+        type = type.strip()
+        for k, v in _WEAPON_ATTR_TYPE_MAP.items():
+            if type == k or type in v:
+                return cls[k]
+
 
 class WeaponAttribute(Model):
     """武器词条"""
     type: WeaponAttributeType
-    value: float
+    value: str
 
 
 class WeaponAffix(Model):
@@ -50,7 +84,7 @@ class Weapon(WikiModel):
     """武器
 
     Attributes:
-        type:武器类型
+        type: 武器类型
         attack: 基础攻击力
         attribute:
         affix: 武器技能
