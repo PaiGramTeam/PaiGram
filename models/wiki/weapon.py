@@ -35,26 +35,33 @@ class WeaponAttribute(Model):
 
 
 class WeaponAffix(Model):
-    """武器技能"""
+    """武器技能
+
+    Attributes:
+        name: 技能名
+        description: 技能描述
+
+    """
     name: str
-    """技能名"""
     description: List[str]
-    """技能描述"""
 
 
 class Weapon(WikiModel):
-    """武器"""
+    """武器
+
+    Attributes:
+        type:武器类型
+        attack: 基础攻击力
+        attribute:
+        affix: 武器技能
+        description: 描述
+        ascension: 突破材料
+        story: 武器故事
+    """
     type: WeaponType
-    """武器类型"""
     attack: float
-    """攻击力"""
     attribute: WeaponAttribute
-    """武器词条"""
     affix: WeaponAffix
-    """武器技能"""
     description: str
-    """描述"""
     ascension: List[Material]
-    """突破材料"""
     story: str
-    """故事"""

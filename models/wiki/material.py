@@ -6,25 +6,31 @@ __all__ = ['Material']
 
 
 class Material(WikiModel):
-    """材料"""
+    """材料
+
+    Attributes:
+        type: 类型
+        source: 获取方式
+        description: 描述
+        recipe: 合成材料
+        serise: 材料系列
+    """
     type: str
-    """类型"""
     source: List[str]
-    """获取方式"""
     description: str
-    """秒速"""
     recipe: List["MaterialRecipe"]
-    """合成材料"""
     series: Optional["MaterialSeries"]
-    """系列"""
 
 
 class MaterialRecipe(Model):
-    """合成配方"""
+    """合成配方
+
+    Attributes:
+        item: 材料
+        value: 材料数量
+    """
     item: Material
-    """材料"""
     value: int
-    """材料数量"""
 
 
 class MaterialSeries(Model):
