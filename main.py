@@ -24,12 +24,12 @@ def main() -> None:
 
     # 初始化数据库
     Log.info("初始化数据库")
-    mysql = MySQL(host=config.MYSQL["host"], user=config.MYSQL["user"], password=config.MYSQL["password"],
-                  port=config.MYSQL["port"], database=config.MYSQL["database"])
+    mysql = MySQL(host=config.mysql["host"], user=config.mysql["user"], password=config.mysql["password"],
+                  port=config.mysql["port"], database=config.mysql["database"])
 
     # 初始化Redis缓存
     Log.info("初始化Redis缓存")
-    redis = RedisDB(host=config.REDIS["host"], port=config.REDIS["port"], db=config.REDIS["database"])
+    redis = RedisDB(host=config.redis["host"], port=config.redis["port"], db=config.redis["database"])
 
     # 初始化Playwright
     Log.info("初始化Playwright")
@@ -49,7 +49,7 @@ def main() -> None:
 
     application = Application\
         .builder()\
-        .token(config.TELEGRAM["token"])\
+        .token(config.bot_token)\
         .defaults(defaults)\
         .build()
 

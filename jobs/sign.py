@@ -31,7 +31,7 @@ class SignJob:
     @classmethod
     def build_jobs(cls, job_queue: JobQueue):
         sign = cls()
-        if config.DEBUG:
+        if config.debug:
             job_queue.run_once(sign.sign, 3, name="SignJobTest")
         # 每天凌晨一点执行
         job_queue.run_daily(sign.sign, datetime.time(hour=1, minute=0, second=0), name="SignJob")

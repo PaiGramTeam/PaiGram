@@ -27,8 +27,11 @@ __pycache__/
 
 ### Customize ###
 
-config/config.json
 **_test.html
 test_**.html
 logs/
 /resources/*/*/test/
+
+### DotEnv ###
+.env
+

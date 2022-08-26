@@ -26,7 +26,7 @@ class Logger:
         self.logger = logging.getLogger("TGPaimonBot")
         root_logger = logging.getLogger()
         root_logger.setLevel(logging.CRITICAL)
-        if config.DEBUG:
+        if config.debug:
             self.logger.setLevel(logging.DEBUG)
         else:
             self.logger.setLevel(logging.INFO)
