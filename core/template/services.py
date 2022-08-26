@@ -22,7 +22,7 @@ class TemplateService:
         self._jinja2_template = {}
 
     def get_template(self, package_path: str, template_name: str, auto_escape: bool = True) -> Template:
-        if config.DEBUG:
+        if config.debug:
             # DEBUG下 禁止复用 方便查看和修改模板
             loader = PackageLoader(self._template_package_name, package_path)
             jinja2_env = Environment(loader=loader, enable_async=True, autoescape=auto_escape)
