@@ -1,7 +1,5 @@
 from typing import List
 
-import ujson
-
 from .cache import QuizCache
 from .models import Question, Answer
 from .repositories import QuizRepository
@@ -44,9 +42,8 @@ class QuizService:
     async def get_question_id_list(self) -> List[int]:
         return [int(question_id) for question_id in await self._cache.get_all_question_id_list()]
 
-    async def get_answer(self, answer_id: int):
-        data = await self._cache.get_one_answer(answer_id)
-        return ujson.loads(data)
+    async def get_answer(self, answer_id: int) -> Answer:
+        return await self._cache.get_one_answer(answer_id)
 
     async def get_question(self, question_id: int) -> Question:
         return await self._cache.get_one_question(question_id)

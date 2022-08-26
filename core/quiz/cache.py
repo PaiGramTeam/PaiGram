@@ -32,9 +32,10 @@ class QuizCache:
         data = await self.client.get(qname)
         return Question.de_json(ujson.loads(data))
 
-    async def get_one_answer(self, answer_id: int) -> str:
+    async def get_one_answer(self, answer_id: int) -> Answer:
         qname = f"{self.answer_qname}:{answer_id}"
-        return await self.client.get(qname)
+        data = await self.client.get(qname)
+        return Answer.de_json(ujson.loads(data))
 
     async def add_question(self, question_list: List[Question] = None):
         for question in question_list:
