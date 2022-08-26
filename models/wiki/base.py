@@ -19,14 +19,15 @@ class Model(PydanticBaseModel):
 
 
 class WikiModel(Model):
-    """wiki所用到的基类"""
-    """ID"""
+    """wiki所用到的基类
+
+    Attributes:
+        id (:obj:`int`): ID
+        name (:obj:`str`): 名称
+        rarity (:obj:`int`): 星级
+    """
     id: int
-
-    """名称"""
     name: str
-
-    """星级"""
     rarity: int
 
     def __str__(self) -> str:
