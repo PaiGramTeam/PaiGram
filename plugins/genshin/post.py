@@ -178,7 +178,7 @@ class Post(BasePlugins):
         message = update.message
         reply_keyboard = []
         try:
-            for channel_info in config.TELEGRAM["channel"]["POST"]:
+            for channel_info in config.channels:
                 name = channel_info["name"]
                 reply_keyboard.append([f"{name}"])
         except KeyError as error:
@@ -195,7 +195,7 @@ class Post(BasePlugins):
         message = update.message
         channel_id = -1
         try:
-            for channel_info in config.TELEGRAM["channel"]["POST"]:
+            for channel_info in config.channels:
                 if message.text == channel_info["name"]:
                     channel_id = channel_info["chat_id"]
         except KeyError as error:
@@ -252,7 +252,7 @@ class Post(BasePlugins):
         channel_id = post_handler_data.channel_id
         channel_name = None
         try:
-            for channel_info in config.TELEGRAM["channel"]["POST"]:
+            for channel_info in config.channels:
                 if post_handler_data.channel_id == channel_info["chat_id"]:
                     channel_name = channel_info["name"]
         except KeyError as error:
