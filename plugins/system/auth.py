@@ -257,7 +257,7 @@ class Auth:
             )
             reply_message = f"*欢迎来到「提瓦特」世界！* \n" \
                             f"问题: {escape_markdown(question.text, version=2)} \n" \
-                            f"请在 {self.time_out} 内回答问题"
+                            f"请在 {self.time_out}S 内回答问题"
             Log.debug(f"发送入群验证问题 question_id[{question.question_id}] question[{question.text}] \n"
                       f"给{user.full_name}[{user.id}] 在 {chat.title}[{chat.id}]")
             try:
