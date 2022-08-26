@@ -16,7 +16,7 @@ _config = {
 
     "mysql": {
         "host": env("DB_HOST", "127.0.0.1"),
-        "port": int(env("DB_PORT", 3306)),
+        "port": int(env("DB_PORT", "3306")),
         "user": env("DB_USERNAME"),
         "password": env("DB_PASSWORD"),
         "database": env("DB_DATABASE"),
@@ -24,8 +24,8 @@ _config = {
 
     "redis": {
         "host": env("REDIS_HOST", "127.0.0.1"),
-        "port": int(env("REDIS_PORT", 6369)),
-        "database": int(env("REDIS_DB", 0)),
+        "port": int(env("REDIS_PORT", "6369")),
+        "database": int(env("REDIS_DB", "0")),
     },
 
     # 联系 https://t.me/BotFather 使用 /newbot 命令创建机器人并获取 token
