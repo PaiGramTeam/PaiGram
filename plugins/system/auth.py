@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import random
 import time
 from typing import Tuple, Union, Dict
@@ -49,40 +48,37 @@ class Auth:
             chat_administrators = await context.bot.get_chat_administrators(chat_id)
             return chat_administrators
 
-    async def kick_member(self, context: CallbackContext, chat_id: int, user_id: int) -> bool:
-        Log.debug(f"踢出用户 user_id[{user_id}] 在 chat_id[{chat_id}]")
+    async def kick_member_job(self, context: CallbackContext) -> bool:
+        job = context.job
+        Log.debug(f"踢出用户 user_id[{job.user_id}] 在 chat_id[{job.chat_id}]")
         try:
-            await context.bot.ban_chat_member(chat_id=chat_id, user_id=user_id,
+            await context.bot.ban_chat_member(chat_id=job.chat_id, user_id=job.user_id,
                                               until_date=int(time.time()) + self.kick_time)
-            return True
         except BadRequest as error:
-            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行kick失败", error)
-            return False
+            Log.error(f"Auth模块在 chat_id[{job.chat_id}] user_id[{job.user_id}] 执行kick失败", error)
 
     @staticmethod
-    async def clean_message(context: CallbackContext, chat_id: int, user_id: int, message_id: int) -> bool:
-        Log.debug(f"删除消息 user_id[{user_id}] 在 chat_id[{chat_id}] 的 message_id[{message_id}]")
+    async def clean_message_job(context: CallbackContext):
+        job = context.job
+        Log.debug(f"删除消息 chat_id[{job.chat_id}] 的 message_id[{job.data}]")
         try:
-            await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-            return True
+            await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
         except BadRequest as error:
             if "not found" in str(error):
-                Log.warning(f"Auth模块删除消息 chat_id[{chat_id}] user_id[{user_id}] message_id[{message_id}]失败 消息不存在")
+                Log.warning(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息不存在")
             elif "Message can't be deleted" in str(error):
                 Log.warning(
-                    f"Auth模块删除消息 chat_id[{chat_id}] user_id[{user_id}] message_id[{message_id}]失败 消息无法删除 可能是没有授权")
+                    f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息无法删除 可能是没有授权")
             else:
-                Log.error(f"Auth模块删除消息 chat_id[{chat_id}] user_id[{user_id}] message_id[{message_id}]失败", error)
-        return False
+                Log.error(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败", error)
 
     @staticmethod
-    async def restore_member(context: CallbackContext, chat_id: int, user_id: int) -> bool:
+    async def restore_member(context: CallbackContext, chat_id: int, user_id: int):
         Log.debug(f"重置用户权限 user_id[{user_id}] 在 chat_id[{chat_id}]")
         try:
             await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=FullChatPermissions)
         except BadRequest as error:
             Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败", error)
-            return False
 
     async def admin(self, update: Update, context: CallbackContext) -> None:
 
@@ -181,7 +177,8 @@ class Auth:
             buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}"),
                         InlineKeyboardButton("撤回驱离", callback_data=f"auth_admin|unban|{user.id}")]]
             await callback_query.answer(text=f"验证失败，请在 {self.time_out} 秒后重试", show_alert=True)
-            await self.kick_member(context, chat.id, user_id)
+            await context.bot.ban_chat_member(chat_id=chat.id, user_id=user_id,
+                                              until_date=int(time.time()) + self.kick_time)
             text = f"{user.mention_markdown_v2()} 验证失败，已经赶出提瓦特大陆！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
@@ -206,7 +203,7 @@ class Auth:
         not_enough_rights = context.chat_data.get("not_enough_rights", False)
         if not_enough_rights:
             return
-        if message.from_user.id in await self.get_chat_administrators(context.bot,chat_id=chat.id):
+        if message.from_user.id in await self.get_chat_administrators(context.bot, chat_id=chat.id):
             await message.reply_text("派蒙检测到管理员邀请，自动放行了！")
             return
         for user in message.new_chat_members:
@@ -225,7 +222,7 @@ class Auth:
                     reply_message = await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
                                                                     f"请检查是否给派蒙授权管理了")
                     context.chat_data["not_enough_rights"] = True
-                    await self.clean_message(context, chat.id, context.bot.id, reply_message.message_id)
+                    await context.bot.delete_message(chat.id, reply_message.message_id)
                     return
                 else:
                     raise err
@@ -269,19 +266,14 @@ class Auth:
             except BadRequest as error:
                 await message.reply_text("派蒙分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
                 raise error
-            context.job_queue.scheduler.add_job(self.kick_member, "date", id=f"{chat.id}|{user.id}|auth_kick",
-                                                name=f"{chat.id}|{user.id}|auth_kick", args=[context, chat.id, user.id],
-                                                run_date=context.job_queue._tz_now() + datetime.timedelta(
-                                                    seconds=self.time_out), replace_existing=True)
-            context.job_queue.scheduler.add_job(self.clean_message, "date",
-                                                id=f"{message.chat.id}|{user.id}|auth_clean_join",
-                                                name=f"{message.chat.id}|{user.id}|auth_clean_join",
-                                                args=[context, message.chat.id, user.id, message.message_id],
-                                                run_date=context.job_queue._tz_now() + datetime.timedelta(
-                                                    seconds=self.time_out), replace_existing=True)
-            context.job_queue.scheduler.add_job(self.clean_message, "date",
-                                                id=f"{message.chat.id}|{user.id}|auth_clean_question",
-                                                name=f"{message.chat.id}|{user.id}|auth_clean_question",
-                                                args=[context, message.chat.id, user.id, question_message.message_id],
-                                                run_date=context.job_queue._tz_now() + datetime.timedelta(
-                                                    seconds=self.time_out), replace_existing=True)
+            context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out,
+                                       name=f"{chat.id}|{user.id}|auth_kick", chat_id=chat.id, user_id=user.id,
+                                       job_kwargs={"replace_existing": True})
+            context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out, data=message.message_id,
+                                       name=f"{chat.id}|{user.id}|auth_clean_join_message",
+                                       chat_id=chat.id, user_id=user.id,
+                                       job_kwargs={"replace_existing": True})
+            context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out, data=question_message.message_id,
+                                       name=f"{chat.id}|{user.id}|auth_clean_question_message",
+                                       chat_id=chat.id, user_id=user.id,
+                                       job_kwargs={"replace_existing": True})
