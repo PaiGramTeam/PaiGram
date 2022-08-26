@@ -2,7 +2,7 @@ from enum import Enum
 
 from models.wiki.base import Model
 from models.wiki.other import Element, WeaponType
-from tests.test import WikiModel
+from models.wiki.base import WikiModel
 
 
 class Association(Enum):
@@ -41,6 +41,7 @@ class Character(WikiModel):
         kr_cv: 韩配
         description: 描述
     """
+    id: str
     title: str
     occupation: str
     association: Association
