@@ -35,7 +35,7 @@ class QuizService:
         """从数据库刷新问题到Redis缓存 线程安全
         :return: 已经缓存问题的数量
         """
-        # 只允许一个线程访问该区域 避免数据错误
+        # 只允许一个线程访问该区域 让数据被安全有效的访问
         async with self.lock:
             question_list = await self.get_quiz_form_database()
             await self._cache.del_all_question()
