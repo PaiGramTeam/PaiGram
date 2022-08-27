@@ -2,7 +2,7 @@ import asyncio
 from warnings import filterwarnings
 
 import pytz
-from telegram.ext import Application, Defaults
+from telegram.ext import Application, Defaults, AIORateLimiter
 from telegram.warnings import PTBUserWarning
 
 from config import config
@@ -46,11 +46,13 @@ def main() -> None:
     Log.info("构建BOT")
 
     defaults = Defaults(tzinfo=pytz.timezone("Asia/Shanghai"))
+    rate_limiter = AIORateLimiter()
 
-    application = Application\
-        .builder()\
-        .token(config.bot_token)\
-        .defaults(defaults)\
+    application = Application \
+        .builder() \
+        .token(config.bot_token) \
+        .defaults(defaults) \
+        .rate_limiter(rate_limiter) \
         .build()
 
     register_plugin_handlers(application)
