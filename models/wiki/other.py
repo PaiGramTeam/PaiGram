@@ -73,10 +73,9 @@ class AttributeType(Enum):
     Anemo = '风元素伤害加成'
     Geo = '岩元素伤害加成'
 
-    # noinspection PyShadowingBuiltins
     @classmethod
-    def convert_str(cls, type: str) -> Optional[Self]:
-        type = type.strip()
+    def convert_str(cls, string: str) -> Optional[Self]:
+        string = string.strip()
         for k, v in _WEAPON_ATTR_TYPE_MAP.items():
-            if type == k or type in v or type.upper() == k:
+            if string == k or string in v or string.upper() == k:
                 return cls[k]

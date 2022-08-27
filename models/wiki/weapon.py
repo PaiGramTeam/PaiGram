@@ -44,7 +44,7 @@ class Weapon(WikiModel):
         story: 武器故事
     """
 
-    type: WeaponType
+    weapon_type: WeaponType
     attack: float
     attribute: Optional[WeaponAttribute]
     affix: Optional[WeaponAffix]
@@ -70,7 +70,7 @@ class Weapon(WikiModel):
             return list(filter(lambda x: select in ' '.join(x.attrs['class']), tables))
 
         id = int(re.findall(r'/img/.*?(\d+).*', str(table_rows[0]))[0])
-        type = WeaponType[get_table_text(1).split(',')[-1].strip()]
+        weapon_type = WeaponType[get_table_text(1).split(',')[-1].strip()]
         name = get_table_text(0)
         rarity = len(table_rows[2].find_all('img'))
         attack = float(get_table_text(4))
@@ -95,7 +95,8 @@ class Weapon(WikiModel):
             description = get_table_text(5)
             story = tables[-1].text.strip()
         return Weapon(
-            id=id, name=name, rarity=rarity, attack=attack, attribute=attribute, affix=affix, type=type, story=story,
+            id=id, name=name, rarity=rarity, attack=attack, attribute=attribute, affix=affix, weapon_type=weapon_type,
+            story=story,
             description=description, ascension=ascension
         )
 

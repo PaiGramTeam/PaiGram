@@ -66,11 +66,10 @@ class WikiModel(Model):
         for _ in range(retry_times - 1):
             try:
                 return await cls._client.get(url, follow_redirects=True)
-            except (ReadTimeout, ConnectTimeout) as e:
+            except (ReadTimeout, ConnectTimeout):
                 await anyio.sleep(sleep)
         else:
-            # noinspection PyUnboundLocalVariable
-            raise e
+            raise HTTPError
 
     @classmethod
     @abstractmethod
@@ -95,10 +94,9 @@ class WikiModel(Model):
         response = await cls._client_get(url)
         return await cls._parse_soup(BeautifulSoup(response.text, 'lxml'))
 
-    # noinspection PyShadowingBuiltins
     @classmethod
-    async def get_by_id(cls, id: Union[int, str]) -> Self:
-        return await cls._scrape(await cls.get_url_by_id(id))
+    async def get_by_id(cls, id_: Union[int, str]) -> Self:
+        return await cls._scrape(await cls.get_url_by_id(id_))
 
     @classmethod
     async def get_by_name(cls, name: str) -> Optional[Self]:
@@ -114,14 +112,13 @@ class WikiModel(Model):
     def __repr__(self) -> str:
         return self.__str__()
 
-    # noinspection PyShadowingBuiltins
     @staticmethod
     @abstractmethod
-    async def get_url_by_id(id: Union[int, str]) -> URL:
+    async def get_url_by_id(id_: Union[int, str]) -> URL:
         """根据 id 获取对应的 url
 
         Args:
-            id (:obj:`str` | :obj:`int`): 实列ID
+            id_ (:obj:`str` | :obj:`int`): 实列ID
         Returns:
             回对应的 url(httpx.URL)
         """

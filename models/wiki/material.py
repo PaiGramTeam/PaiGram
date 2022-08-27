@@ -49,13 +49,6 @@ class MaterialSeries(Model):
         return list(self.__iter__())[index + 1]
 
     def __contains__(self, material: Union[int, Material]) -> bool:
-        for m in self.__iter__():
-            if isinstance(material, int) and m == material:
-                return True
-            elif m == material:
-                return True
-        return False
-
-    # noinspection PyMethodMayBeStatic
-    def add_material(self, material: Material) -> NoReturn:
-        exec(f'self.level_{material.rarity} = material')
+        if isinstance(material, Material):
+            material = material.id
+        return bool(list(filter(lambda x: x == material, self.__iter__())))
