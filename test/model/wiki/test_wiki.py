@@ -2,6 +2,7 @@ import unittest
 from unittest import IsolatedAsyncioTestCase
 
 from models.wiki.character import Character
+from models.wiki.material import Material
 from models.wiki.weapon import Weapon
 
 
@@ -11,7 +12,7 @@ class TestWeapon(IsolatedAsyncioTestCase):
         self.assertEqual(weapon.name, '原木刀')
         self.assertEqual(weapon.rarity, 4)
         self.assertEqual(weapon.attack, 43.73)
-        self.assertEqual(weapon.attribute.type.value, '攻击力')
+        self.assertEqual(weapon.attribute.type.value, '元素充能效率')
         self.assertEqual(weapon.affix.name, '森林的瑞佑')
 
     async def test_get_by_name(self):
@@ -42,8 +43,29 @@ class TestCharacter(IsolatedAsyncioTestCase):
         self.assertEqual(character.cn_cv, '小N')
 
     async def test_get_full(self):
-        async for character in Character.full_data_generator():
-            print(character)
+        async for character in Character._full_data_generator():
+            self.assertIsInstance(character, Character)
+
+
+class TestMaterial(IsolatedAsyncioTestCase):
+    async def test_get_full_gen(self):
+        async for material in Material._full_data_generator():
+            self.assertIsInstance(material, Material)
+
+    async def test_get_full(self):
+        material_list = await Material.get_full_data()
+        for material in material_list:
+            self.assertIsInstance(material, Material)
+
+
+class TestAll(IsolatedAsyncioTestCase):
+    async def test_all_get_full(self):
+        import asyncio
+        await asyncio.gather(
+            Material.get_full_data(),
+            Weapon.get_full_data(),
+            Character.get_full_data()
+        )
 
 
 if __name__ == "__main__":

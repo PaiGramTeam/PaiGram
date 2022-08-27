@@ -1,13 +1,14 @@
 import asyncio
-import itertools
 import re
 from abc import abstractmethod
+from asyncio import Queue
+from multiprocessing import Value
 from typing import TYPE_CHECKING, Union, ClassVar, List, Optional, Tuple, AsyncIterator
 
 import anyio
 import ujson as json
 from bs4 import BeautifulSoup
-from httpx import URL, AsyncClient, ReadTimeout, ConnectTimeout, HTTPError
+from httpx import URL, AsyncClient, ReadTimeout, ConnectTimeout, HTTPError, ConnectError
 from pydantic import (
     BaseConfig as PydanticBaseConfig,
     BaseModel as PydanticBaseModel,
@@ -65,10 +66,9 @@ class WikiModel(Model):
         for _ in range(retry_times - 1):
             try:
                 return await cls._client.get(url, follow_redirects=True)
-            except (ReadTimeout, ConnectTimeout):
+            except (ReadTimeout, ConnectTimeout, ConnectError):
                 await anyio.sleep(sleep)
-        else:
-            raise HTTPError
+        raise HTTPError
 
     @classmethod
     @abstractmethod
@@ -107,16 +107,22 @@ class WikiModel(Model):
 
     @classmethod
     async def get_full_data(cls) -> List[Self]:
-        result: List[Self] = []
-        for _, url in await cls.get_name_list(with_url=True):
-            result.append(await cls._scrape(url))
-        return result
+        return [i async for i in cls._full_data_generator()]
 
     @classmethod
-    async def full_data_generator(cls) -> AsyncIterator[Self]:
-        # todo 使用并行运行
+    async def _full_data_generator(cls) -> AsyncIterator[Self]:
+        queue: Queue[Self] = Queue()
+        signal = Value('i', 0)
+
+        async def task(u):
+            await queue.put(await cls._scrape(u))
+            signal.value -= 1
+
         for _, url in await cls.get_name_list(with_url=True):
-            yield await cls._scrape(url)
+            signal.value += 1
+            asyncio.create_task(task(url))
+        while signal.value > 0 or not queue.empty():
+            yield await queue.get()
 
     def __str__(self) -> str:
         return f"<{self.__class__.__name__} {super(WikiModel, self).__str__()}>"
@@ -136,32 +142,32 @@ class WikiModel(Model):
         """
 
     @classmethod
-    async def get_name_list(cls, *, with_url: bool = False) -> List[Union[str, Tuple[str, URL]]]:
-        task_group: List['Task'] = []
+    async def _name_list_generator(cls, *, with_url: bool = False) -> AsyncIterator[Union[str, Tuple[str, URL]]]:
+        urls = cls.scrape_urls()
+        queue: Queue[Union[str, Tuple[str, URL]]] = Queue()
+        signal = Value('i', len(urls))
 
-        # todo 用更简洁高效的代码
-        async def get_name_list_from_scrape_url(u):
-            response = await cls._client_get(u)
+        async def get_path_url_list(page: URL, s: Value):
+            response = await cls._client_get(page)
             chaos_data = re.findall(r'sortable_data\.push\((.*)\);\s*sortable_cur_page', response.text)[0]
             json_data = json.loads(chaos_data)
-            result = []
             for data in json_data:
                 data_name = re.findall(r'>(.*)<', data[1])[0]
-                data_url = SCRAPE_HOST.join(re.findall(r'\"(.*?)\"', data[0])[0])
-                result.append((data_name, data_url))
-            return result
+                if with_url:
+                    data_url = SCRAPE_HOST.join(re.findall(r'\"(.*?)\"', data[0])[0])
+                    await queue.put((data_name, data_url))
+                else:
+                    await queue.put(data_name)
+            s.value = s.value - 1
 
         for url in cls.scrape_urls():
-            task_group.append(asyncio.create_task(get_name_list_from_scrape_url(url)))
-        result_list = []
-        for n, item in itertools.groupby(
-                itertools.chain.from_iterable(await asyncio.gather(*task_group)), key=lambda x: x[0]
-        ):
-            if with_url:
-                result_list.append((n, list(item)[0][1]))
-            else:
-                result_list.append(n)
-        return result_list
+            asyncio.create_task(get_path_url_list(url, signal))
+        while signal.value > 0 or not queue.empty():
+            yield await queue.get()
+
+    @classmethod
+    async def get_name_list(cls, *, with_url: bool = False) -> List[Union[str, Tuple[str, URL]]]:
+        return [i async for i in cls._name_list_generator(with_url=with_url)]
 
     @classmethod
     async def get_url_by_name(cls, name: str) -> Optional[URL]:
@@ -172,6 +178,6 @@ class WikiModel(Model):
         Returns:
             若有对应的实列，则返回对应的 url(httpx.URL); 反之, 则返回 None
         """
-        for n, url in await cls.get_name_list(with_url=True):
+        async for n, url in cls._name_list_generator(with_url=True):
             if name == n:
                 return url

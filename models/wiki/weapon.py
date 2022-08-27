@@ -1,5 +1,6 @@
+import itertools
 import re
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Union, TYPE_CHECKING, Tuple
 
 from bs4 import BeautifulSoup
 from httpx import URL
@@ -107,3 +108,13 @@ class Weapon(WikiModel):
     @staticmethod
     async def get_url_by_id(id: Union[int, str]) -> URL:
         return SCRAPE_HOST.join(f'i_n{int(id)}/?lang=CHS')
+
+    @classmethod
+    async def get_name_list(cls, *, with_url: bool = False) -> List[Union[str, Tuple[str, URL]]]:
+        name_list = [i async for i in cls._name_list_generator(with_url=with_url)]
+        if with_url:
+            return [
+                (i[0], list(i[1])[0][1]) for i in itertools.groupby(name_list, lambda x: x[0])
+            ]
+        else:
+            return [i[0] for i in itertools.groupby(name_list, lambda x: x)]
