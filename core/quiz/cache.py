@@ -30,16 +30,18 @@ class QuizCache:
     async def get_one_question(self, question_id: int) -> Question:
         qname = f"{self.question_qname}:{question_id}"
         data = await self.client.get(qname)
-        return Question.de_json(ujson.loads(data))
+        json_data = str(data, encoding="utf-8")
+        return Question.de_json(ujson.loads(json_data))
 
     async def get_one_answer(self, answer_id: int) -> Answer:
         qname = f"{self.answer_qname}:{answer_id}"
         data = await self.client.get(qname)
-        return Answer.de_json(ujson.loads(data))
+        json_data = str(data, encoding="utf-8")
+        return Answer.de_json(ujson.loads(json_data))
 
     async def add_question(self, question_list: List[Question] = None):
         for question in question_list:
-            await self.client.set(f"{self.question_qname}:{question.question_id}", str(question))
+            await self.client.set(f"{self.question_qname}:{question.question_id}", ujson.dumps(question.to_dict()))
         question_id_list = [question.question_id for question in question_list]
         await self.client.lpush(f"{self.question_qname}:id_list", *question_id_list)
         return await self.client.llen(f"{self.question_qname}:id_list")
@@ -58,7 +60,7 @@ class QuizCache:
 
     async def add_answer(self, answer_list: List[Answer] = None):
         for answer in answer_list:
-            await self.client.set(f"{self.answer_qname}:{answer.answer_id}", str(answer))
+            await self.client.set(f"{self.answer_qname}:{answer.answer_id}", ujson.dumps(answer.to_dict()))
         answer_id_list = [answer.answer_id for answer in answer_list]
         await self.client.lpush(f"{self.answer_qname}:id_list", *answer_id_list)
         return await self.client.llen(f"{self.answer_qname}:id_list")

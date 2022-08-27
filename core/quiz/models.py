@@ -78,7 +78,7 @@ class Question(BaseObject):
     def to_dict(self) -> JSONDict:
         data = super().to_dict()
         if self.answers:
-            data["sub_item"] = [e.to_dict() for e in self.answers]
+            data["answers"] = [e.to_dict() for e in self.answers]
         return data
 
     @classmethod
@@ -86,7 +86,7 @@ class Question(BaseObject):
         data = cls._parse_data(data)
         if not data:
             return None
-        data["sub_item"] = Answer.de_list(data.get("sub_item"))
+        data["answers"] = Answer.de_list(data.get("answers"))
         return cls(**data)
 
     __slots__ = ("question_id", "text", "answers")

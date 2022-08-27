@@ -12,6 +12,7 @@ from telegram.helpers import escape_markdown
 from core.quiz import QuizService
 from logger import Log
 from utils.random import MT19937_Random
+from utils.service.inject import inject
 
 FullChatPermissions = ChatPermissions(
     can_send_messages=True,
@@ -28,13 +29,21 @@ FullChatPermissions = ChatPermissions(
 class Auth:
     """群验证模块"""
 
-    def __init__(self, quiz_service: QuizService):
+    @inject
+    def __init__(self, quiz_service: QuizService = None):
         self.quiz_service = quiz_service
         self.time_out = 120
         self.kick_time = 120
         self.random = MT19937_Random()
-        self.lock = asyncio.Lock
+        self.lock = asyncio.Lock()
         self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, list[ChatMember]]] = {}
+        self.is_refresh_quiz = False
+
+    async def refresh_quiz(self):
+        async with self.lock:
+            if not self.is_refresh_quiz:
+                await self.quiz_service.refresh_quiz()
+                self.is_refresh_quiz = True
 
     async def get_chat_administrators(self, context: CallbackContext, chat_id: Union[str, int]) -> list[ChatMember]:
         async with self.lock:
@@ -45,10 +54,16 @@ class Auth:
                     return chat_administrators
             chat_administrators = await context.bot.get_chat_administrators(chat_id)
             self.chat_administrators_cache[f"{chat_id}"] = (time.time(), chat_administrators)
-            chat_administrators = await context.bot.get_chat_administrators(chat_id)
             return chat_administrators
 
-    async def kick_member_job(self, context: CallbackContext) -> bool:
+    @staticmethod
+    def is_admin(chat_administrators: list[ChatMember], user_id: int) -> bool:
+        for admin in chat_administrators:
+            if admin.user.id == user_id:
+                return True
+        return False
+
+    async def kick_member_job(self, context: CallbackContext):
         job = context.job
         Log.debug(f"踢出用户 user_id[{job.user_id}] 在 chat_id[{job.chat_id}]")
         try:
@@ -94,7 +109,8 @@ class Auth:
         message = callback_query.message
         chat = message.chat
         Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth管理员命令")
-        if user.id not in await self.get_chat_administrators(context.bot, chat_id=chat.id):
+        chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
+        if not self.is_admin(chat_administrators, user.id):
             Log.debug(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 非群管理")
             await callback_query.answer(text="你不是管理！\n"
                                              "再乱点我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
@@ -194,6 +210,7 @@ class Auth:
             schedule.remove()
 
     async def new_mem(self, update: Update, context: CallbackContext) -> None:
+        await self.refresh_quiz()
         message = update.message
         chat = message.chat
         for user in message.new_chat_members:
@@ -203,7 +220,8 @@ class Auth:
         not_enough_rights = context.chat_data.get("not_enough_rights", False)
         if not_enough_rights:
             return
-        if message.from_user.id in await self.get_chat_administrators(context.bot, chat_id=chat.id):
+        chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
+        if self.is_admin(chat_administrators, message.from_user.id):
             await message.reply_text("派蒙检测到管理员邀请，自动放行了！")
             return
         for user in message.new_chat_members:
@@ -219,20 +237,15 @@ class Auth:
             except BadRequest as err:
                 if "Not enough rights" in str(err):
                     Log.warning(f"权限不够 chat_id[{message.chat_id}]")
-                    reply_message = await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
-                                                                    f"请检查是否给派蒙授权管理了")
+                    # reply_message = await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
+                    #                                                 f"请检查是否给派蒙授权管理了")
                     context.chat_data["not_enough_rights"] = True
-                    await context.bot.delete_message(chat.id, reply_message.message_id)
+                    # await context.bot.delete_message(chat.id, reply_message.message_id)
                     return
                 else:
                     raise err
             index = self.random.random(0, len(question_id_list))
             question = await self.quiz_service.get_question(question_id_list[index])
-            options = []
-            for answer_id in question.answers:
-                answer = await self.quiz_service.get_answer(answer_id)
-                options.append(answer)
-            random.shuffle(options)
             buttons = [
                 [
                     InlineKeyboardButton(
@@ -240,7 +253,7 @@ class Auth:
                         callback_data=f"auth_challenge|{user.id}|{question['question_id']}|{answer['answer_id']}",
                     )
                 ]
-                for answer in options
+                for answer in question.answers
             ]
             random.shuffle(buttons)
             buttons.append(
@@ -273,7 +286,8 @@ class Auth:
                                        name=f"{chat.id}|{user.id}|auth_clean_join_message",
                                        chat_id=chat.id, user_id=user.id,
                                        job_kwargs={"replace_existing": True})
-            context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out, data=question_message.message_id,
+            context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out,
+                                       data=question_message.message_id,
                                        name=f"{chat.id}|{user.id}|auth_clean_question_message",
                                        chat_id=chat.id, user_id=user.id,
                                        job_kwargs={"replace_existing": True})

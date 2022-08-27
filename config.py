@@ -11,6 +11,7 @@ load_dotenv()
 
 env = os.getenv
 
+
 def str_to_bool(value: Any) -> bool:
     """Return whether the provided string (or any value really) represents true. Otherwise false.
     Just like plugin server stringToBoolean.
@@ -19,8 +20,9 @@ def str_to_bool(value: Any) -> bool:
         return False
     return str(value).lower() in ("y", "yes", "t", "true", "on", "1")
 
+
 _config = {
-    "debug": str_to_bool(os.getenv('DEBUG', 'True')),
+    "debug": str_to_bool(os.getenv('DEBUG', 'False')),
 
     "mysql": {
         "host": env("DB_HOST", "127.0.0.1"),
@@ -55,6 +57,11 @@ _config = {
         # 在环境变量里的格式是 json: [{"username": "", "user_id": 1}]
         *ujson.loads(env('ADMINS', '[]'))
     ],
+
+    "auth": {
+        "status": str_to_bool(os.getenv('GROUP_AUTH_STATUS', 'False')),
+        "groups": ujson.loads(env('AUTH_GROUPS', '[]'))
+    }
 }
 
 config = Storage(_config)

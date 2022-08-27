@@ -19,7 +19,6 @@ class QuizService:
         for question in question_list:
             question_id = question.id
             answers = await self._repository.get_answers_form_question_id(question_id)
-            question.answers = answers
             data = Question.de_database_data(question)
             data.answers = [Answer.de_database_data(a) for a in answers]
             temp.append(data)
