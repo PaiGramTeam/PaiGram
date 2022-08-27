@@ -46,3 +46,9 @@ class QuizService:
 
     async def get_question(self, question_id: int) -> Question:
         return await self._cache.get_one_question(question_id)
+
+    async def delete_question_by_id(self, question_id: int):
+        return await self._repository.delete_question_by_id(question_id)
+
+    async def delete_answer_by_id(self, answer_id: int):
+        return await self._repository.delete_answer_by_id(answer_id)
