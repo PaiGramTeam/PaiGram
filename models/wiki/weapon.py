@@ -69,7 +69,7 @@ class Weapon(WikiModel):
         def find_table(select: str) -> List['Tag']:
             return list(filter(lambda x: select in ' '.join(x.attrs['class']), tables))
 
-        id = int(re.findall(r'/img/.*?(\d+).*', str(table_rows[0]))[0])
+        id_ = int(re.findall(r'/img/.*?(\d+).*', str(table_rows[0]))[0])
         weapon_type = WeaponType[get_table_text(1).split(',')[-1].strip()]
         name = get_table_text(0)
         rarity = len(table_rows[2].find_all('img'))
@@ -95,7 +95,7 @@ class Weapon(WikiModel):
             description = get_table_text(5)
             story = tables[-1].text.strip()
         return Weapon(
-            id=id, name=name, rarity=rarity, attack=attack, attribute=attribute, affix=affix, weapon_type=weapon_type,
+            id=id_, name=name, rarity=rarity, attack=attack, attribute=attribute, affix=affix, weapon_type=weapon_type,
             story=story,
             description=description, ascension=ascension
         )

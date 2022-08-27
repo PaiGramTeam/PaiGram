@@ -2,13 +2,12 @@ import asyncio
 import itertools
 import re
 from abc import abstractmethod
-from asyncio import Event
-from typing import TYPE_CHECKING, Union, ClassVar, List, Optional
+from typing import TYPE_CHECKING, Union, ClassVar, List, Optional, Tuple
 
 import anyio
 import ujson as json
 from bs4 import BeautifulSoup
-from httpx import URL, AsyncClient, ReadTimeout, ConnectTimeout
+from httpx import URL, AsyncClient, ReadTimeout, ConnectTimeout, HTTPError
 from pydantic import (
     BaseConfig as PydanticBaseConfig,
     BaseModel as PydanticBaseModel,
@@ -87,7 +86,7 @@ class WikiModel(Model):
         """从 url 中爬取数据
 
         Args:
-            url (:obj:`httpx.URL` | :obj:`str`): 目标 url. 可以为字符串(str), 也可以为 yarl.URL
+            url (:obj:`httpx.URL` | :obj:`str`): 目标 url. 可以为字符串(str), 也可以为 httpx.URL
         Returns:
             当前业务对应的 WikiModel
         """
@@ -124,20 +123,11 @@ class WikiModel(Model):
         """
 
     @classmethod
-    async def get_url_by_name(cls, name: str) -> Optional[URL]:
-        """通过实列名获取对应的 url
-
-        Args:
-            name (:obj:`str`): 实列名
-        Returns:
-            若有对应的实列，则返回对应的 url(httpx.URL); 反之, 则返回 None
-        """
-        # todo 用更简洁高效的代码
-        urls = cls.scrape_urls()
+    async def get_name_list(cls, *, with_url: bool = False) -> List[Union[str, Tuple[str, URL]]]:
         task_group: List['Task'] = []
-        event = Event()
 
-        async def get_name_list_from_scrape_url(u, is_last):
+        # todo 用更简洁高效的代码
+        async def get_name_list_from_scrape_url(u):
             response = await cls._client_get(u)
             chaos_data = re.findall(r'sortable_data\.push\((.*)\);\s*sortable_cur_page', response.text)[0]
             json_data = json.loads(chaos_data)
@@ -146,15 +136,29 @@ class WikiModel(Model):
                 data_name = re.findall(r'>(.*)<', data[1])[0]
                 data_url = SCRAPE_HOST.join(re.findall(r'\"(.*?)\"', data[0])[0])
                 result.append((data_name, data_url))
-            if is_last:
-                event.set()
             return result
 
-        for url_index, url in enumerate(urls):
-            task_group.append(asyncio.create_task(get_name_list_from_scrape_url(url, (url_index + 1) == len(urls))))
-
+        for url in cls.scrape_urls():
+            task_group.append(asyncio.create_task(get_name_list_from_scrape_url(url)))
+        result_list = []
         for n, item in itertools.groupby(
                 itertools.chain.from_iterable(await asyncio.gather(*task_group)), key=lambda x: x[0]
         ):
+            if with_url:
+                result_list.append((n, list(item)[0][1]))
+            else:
+                result_list.append(n)
+        return result_list
+
+    @classmethod
+    async def get_url_by_name(cls, name: str) -> Optional[URL]:
+        """通过实列名获取对应的 url
+
+        Args:
+            name (:obj:`str`): 实列名
+        Returns:
+            若有对应的实列，则返回对应的 url(httpx.URL); 反之, 则返回 None
+        """
+        for n, url in await cls.get_name_list(with_url=True):
             if name == n:
-                return list(item)[0][1]
+                return url

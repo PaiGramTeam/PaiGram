@@ -1,6 +1,14 @@
-from typing import List, Optional, Iterator, NoReturn, Union
+import re
+from typing import List, Optional, Iterator, Union, TYPE_CHECKING
 
-from models.wiki.base import WikiModel, Model
+from bs4 import BeautifulSoup
+from httpx import URL
+from typing_extensions import Self
+
+from models.wiki.base import WikiModel, Model, SCRAPE_HOST
+
+if TYPE_CHECKING:
+    from bs4 import Tag
 
 __all__ = ['Material', 'MaterialSeries']
 
@@ -14,6 +22,33 @@ class Material(WikiModel):
         description: 描述
         serise: 材料系列
     """
+
+    @staticmethod
+    def scrape_urls() -> List[URL]:
+        return [SCRAPE_HOST.join(f'fam_wep_{i}/?lang=CHS') for i in ['primary', 'secondary', 'common']]
+
+    @classmethod
+    async def _parse_soup(cls, soup: BeautifulSoup) -> Self:
+        soup = soup.select('.wp-block-post-content')[0]
+        tables: List['Tag'] = soup.find_all('table')
+        table_rows: List['Tag'] = tables[0].find_all('tr')
+
+        def get_table_text(table_num: int) -> str:
+            return table_rows[table_num].find_all('td')[-1].text.replace('\xa0', '')
+
+        id_ = int(re.findall(r'/img/.*?(\d+).*', str(table_rows[0]))[0])
+        name = get_table_text(0)
+        rarity = len(table_rows[3].find_all('img'))
+        type_ = get_table_text(1)
+        source = list(
+            filter(lambda x: x, table_rows[-2].find_all('td')[-1].encode_contents().decode().split('<br/>')))
+        description = get_table_text(-1)
+        return Material(id=id_, name=name, rarity=rarity, type=type_, source=source, description=description)
+
+    @staticmethod
+    async def get_url_by_id(id_: Union[int, str]) -> URL:
+        return SCRAPE_HOST.join(f'i_{int(id_)}/?lang=CHS')
+
     type: str
     source: List[str]
     description: str
