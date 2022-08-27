@@ -29,9 +29,8 @@ class QuizCommandData:
 
 @listener_plugins_class()
 class Quiz(BasePlugins):
-    """
-    派蒙的十万个为什么
-    合并了香港问题修改/添加/删除
+    """派蒙的十万个为什么
+    合并了问题修改/添加/删除
     """
 
     CHECK_COMMAND, VIEW_COMMAND, CHECK_QUESTION, \
