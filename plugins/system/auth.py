@@ -26,7 +26,7 @@ FullChatPermissions = ChatPermissions(
 )
 
 
-class Auth:
+class GroupJoiningVerification:
     """群验证模块"""
 
     @inject

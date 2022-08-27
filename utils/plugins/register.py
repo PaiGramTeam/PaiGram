@@ -48,9 +48,9 @@ def register_plugin_handlers(application: Application):
     inline = Inline()
     new_chat_members_handler = NewChatMembersHandler()
 
-    if config.auth["status"]:
-        auth = Auth()
-        for chat_id in config.auth["groups"]:
+    if len(config.joining_verification_groups) >= 1:
+        auth = GroupJoiningVerification()
+        for chat_id in config.joining_verification_groups:
             new_chat_members_handler.add_callback(auth.new_mem, chat_id)
         add_handler(auth.query, query=r"^auth_challenge\|")
         add_handler(auth.admin, query=r"^auth_admin\|")
