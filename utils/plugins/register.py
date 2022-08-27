@@ -6,7 +6,7 @@ from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryH
 from config import config
 from logger import Log
 from plugins.base import NewChatMembersHandler
-from plugins.system.auth import Auth
+from plugins.system.auth import GroupJoiningVerification
 from plugins.system.errorhandler import error_handler
 from plugins.system.inline import Inline
 from plugins.system.start import start, ping, reply_keyboard_remove, unknown_command

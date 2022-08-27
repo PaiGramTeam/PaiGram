@@ -58,10 +58,7 @@ _config = {
         *ujson.loads(env('ADMINS', '[]'))
     ],
 
-    "auth": {
-        "status": str_to_bool(os.getenv('GROUP_AUTH_STATUS', 'False')),
-        "groups": ujson.loads(env('AUTH_GROUPS', '[]'))
-    }
+    "joining_verification_groups": env('JOINING_VERIFICATION_GROUPS', '[]'),
 }
 
 config = Storage(_config)

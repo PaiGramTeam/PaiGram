@@ -279,11 +279,11 @@ class GroupJoiningVerification:
             context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out,
                                        name=f"{chat.id}|{user.id}|auth_kick", chat_id=chat.id, user_id=user.id,
                                        job_kwargs={"replace_existing": True})
-            context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out, data=message.message_id,
+            context.job_queue.run_once(callback=self.clean_message_job, when=self.time_out, data=message.message_id,
                                        name=f"{chat.id}|{user.id}|auth_clean_join_message",
                                        chat_id=chat.id, user_id=user.id,
                                        job_kwargs={"replace_existing": True})
-            context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out,
+            context.job_queue.run_once(callback=self.clean_message_job, when=self.time_out,
                                        data=question_message.message_id,
                                        name=f"{chat.id}|{user.id}|auth_clean_question_message",
                                        chat_id=chat.id, user_id=user.id,
