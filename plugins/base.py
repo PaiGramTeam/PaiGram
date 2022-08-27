@@ -1,4 +1,6 @@
+import asyncio
 import datetime
+from typing import List, Tuple, Callable
 
 from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest
