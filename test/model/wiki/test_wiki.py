@@ -41,6 +41,10 @@ class TestCharacter(IsolatedAsyncioTestCase):
         self.assertEqual(character.association.value, '稻妻')
         self.assertEqual(character.cn_cv, '小N')
 
+    async def test_get_full(self):
+        async for character in Character.full_data_generator():
+            print(character)
+
 
 if __name__ == "__main__":
     unittest.main()

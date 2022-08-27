@@ -2,7 +2,7 @@ import asyncio
 import itertools
 import re
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Union, ClassVar, List, Optional, Tuple
+from typing import TYPE_CHECKING, Union, ClassVar, List, Optional, Tuple, AsyncIterator
 
 import anyio
 import ujson as json
@@ -104,6 +104,19 @@ class WikiModel(Model):
             return None
         else:
             return await cls._scrape(url)
+
+    @classmethod
+    async def get_full_data(cls) -> List[Self]:
+        result: List[Self] = []
+        for _, url in await cls.get_name_list(with_url=True):
+            result.append(await cls._scrape(url))
+        return result
+
+    @classmethod
+    async def full_data_generator(cls) -> AsyncIterator[Self]:
+        # todo 使用并行运行
+        for _, url in await cls.get_name_list(with_url=True):
+            yield await cls._scrape(url)
 
     def __str__(self) -> str:
         return f"<{self.__class__.__name__} {super(WikiModel, self).__str__()}>"

@@ -1,26 +1,15 @@
 import re
-from enum import Enum
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Optional
 
 from bs4 import BeautifulSoup
 from httpx import URL
 
 from models.wiki.base import Model, SCRAPE_HOST
 from models.wiki.base import WikiModel
-from models.wiki.other import Element, WeaponType
+from models.wiki.other import Element, WeaponType, Association
 
 if TYPE_CHECKING:
     from bs4 import Tag
-
-
-class Association(Enum):
-    """角色所属地区"""
-    Mainactor = '主角'
-    Snezhnaya = '至冬'
-    Sumeru = '须弥'
-    Inazuma = '稻妻'
-    Liyue = '璃月'
-    Mondstadt = '蒙德'
 
 
 class Birth(Model):
@@ -61,7 +50,7 @@ class Character(WikiModel):
     association: Association
     weapon_type: WeaponType
     element: Element
-    birth: Birth
+    birth: Optional[Birth]
     constellation: str
     cn_cv: str
     jp_cv: str
@@ -85,24 +74,41 @@ class Character(WikiModel):
 
         id_ = re.findall(r'img/(.*?_\d+)_.*', table_rows[0].find('img').attrs['src'])[0]
         name = get_table_text(0)
-        title = get_table_text(1)
-        occupation = get_table_text(2)
-        association = Association[get_table_text(3).lower().title()]
-        rarity = len(table_rows[4].find_all('img'))
-        weapon_type = WeaponType[get_table_text(5)]
-        element = Element[get_table_text(6)]
-        birth = Birth(day=int(get_table_text(7)), month=int(get_table_text(8)))
-        constellation = get_table_text(10)
-        cn_cv = get_table_text(11)
-        jp_cv = get_table_text(12)
-        en_cv = get_table_text(13)
-        kr_cv = get_table_text(14)
+        if name != '旅行者':
+            title = get_table_text(1)
+            occupation = get_table_text(2)
+            association = Association.convert(get_table_text(3).lower().title())
+            rarity = len(table_rows[4].find_all('img'))
+            weapon_type = WeaponType[get_table_text(5)]
+            element = Element[get_table_text(6)]
+            birth = Birth(day=int(get_table_text(7)), month=int(get_table_text(8)))
+            constellation = get_table_text(10)
+            cn_cv = get_table_text(11)
+            jp_cv = get_table_text(12)
+            en_cv = get_table_text(13)
+            kr_cv = get_table_text(14)
+        else:
+            name = '空' if id_.endswith('5') else '荧'
+            title = get_table_text(0)
+            occupation = get_table_text(1)
+            association = Association.convert(get_table_text(2).lower().title())
+            rarity = len(table_rows[3].find_all('img'))
+            weapon_type = WeaponType[get_table_text(4)]
+            element = Element[get_table_text(5)]
+            birth = None
+            constellation = get_table_text(7)
+            cn_cv = get_table_text(8)
+            jp_cv = get_table_text(9)
+            en_cv = get_table_text(10)
+            kr_cv = get_table_text(11)
         description = get_table_text(-3)
         ascension = CharacterAscension(
-            level=[int(re.findall(r'i_(\d+)/', str(i))[0]) for i in table_rows[-2].find_all('a')],
-            skill=[int(re.findall(r'i_(\d+)/', str(i))[0]) for i in table_rows[-1].find_all('a')]
+            level=[
+                int(target[0]) for i in table_rows[-2].find_all('a')
+                if (target := re.findall(r'\d+', i.attrs['href']))
+            ],
+            skill=[int(re.findall(r'\d+', i.attrs['href'])[0]) for i in table_rows[-1].find_all('a')]
         )
-
         return Character(
             id=id_, name=name, title=title, occupation=occupation, association=association, weapon_type=weapon_type,
             element=element, birth=birth, constellation=constellation, cn_cv=cn_cv, jp_cv=jp_cv, rarity=rarity,

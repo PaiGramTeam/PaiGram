@@ -77,7 +77,7 @@ class Weapon(WikiModel):
         ascension = [re.findall(r'\d+', tag.attrs['href'])[0] for tag in table_rows[-1].find_all('a')]
         if rarity > 2:  # 如果是 3 星及其以上的武器
             attribute = WeaponAttribute(
-                type=AttributeType.convert_str(
+                type=AttributeType.convert(
                     tables[2].find('thead').find('tr').find_all('td')[2].text.split(' ')[1]
                 ),
                 value=get_table_text(6)
@@ -89,7 +89,10 @@ class Weapon(WikiModel):
                 description = get_table_text(-1)
             else:
                 description = get_table_text(9)
-            story = find_table('quotes')[0].text.strip()
+            if story_table := find_table('quotes'):
+                story = story_table[0].text.strip()
+            else:
+                story = None
         else:  # 如果是 2 星及其以下的武器
             attribute = affix = None
             description = get_table_text(5)

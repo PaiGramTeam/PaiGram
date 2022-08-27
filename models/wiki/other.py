@@ -1,5 +1,4 @@
 from enum import Enum
-
 from typing import Optional
 
 from typing_extensions import Self
@@ -7,30 +6,9 @@ from typing_extensions import Self
 __all__ = [
     'Element',
     'WeaponType',
-    'AttributeType'
+    'AttributeType',
+    'Association',
 ]
-
-_WEAPON_ATTR_TYPE_MAP = {
-    "HP": ['Health'],
-    "HP_p": ['HP%', 'Health %'],
-    "ATK": ['Attack'],
-    "ATK_p": ['Atk%', 'Attack %'],
-    "DEF": ['Defense'],
-    "DEF_p": ['Def%', 'Defense %'],
-    "EM": ['Elemental Mastery'],
-    "ER": ['ER%', 'Energy Recharge %'],
-    "CR": ['CrR%', 'Critical Rate %'],
-    "CD": ['Crd%', 'Critical Damage %'],
-    "PD": ['Phys%', 'Physical Damage %'],
-    "HB": [],
-    "Pyro": [],
-    "Hydro": [],
-    "Electro": [],
-    "Cryo": [],
-    "Dendro": [],
-    "Anemo": [],
-    "Geo": [],
-}
 
 
 class Element(Enum):
@@ -41,7 +19,7 @@ class Element(Enum):
     Dendro = '草'
     Anemo = '风'
     Geo = '岩'
-    Multi = '多种'  # 主角
+    Multi = '无'  # 主角
 
 
 class WeaponType(Enum):
@@ -50,6 +28,29 @@ class WeaponType(Enum):
     Polearm = '长柄武器'
     Catalyst = '法器'
     Bow = '弓'
+
+
+_ATTR_TYPE_MAP = {
+    "HP": ['Health'],
+    "HP_p": ['HP%', 'Health %'],
+    "ATK": ['Attack'],
+    "ATK_p": ['Atk%', 'Attack %'],
+    "DEF": ['Defense'],
+    "DEF_p": ['Def%', 'Defense %'],
+    "EM": ['Elemental Mastery'],
+    "ER": ['ER%', 'Energy Recharge %'],
+    "CR": ['CrR%', 'Critical Rate %', 'CritRate%'],
+    "CD": ['Crd%', 'Critical Damage %', 'CritDMG%'],
+    "PD": ['Phys%', 'Physical Damage %'],
+    "HB": [],
+    "Pyro": [],
+    "Hydro": [],
+    "Electro": [],
+    "Cryo": [],
+    "Dendro": [],
+    "Anemo": [],
+    "Geo": [],
+}
 
 
 class AttributeType(Enum):
@@ -74,8 +75,39 @@ class AttributeType(Enum):
     Geo = '岩元素伤害加成'
 
     @classmethod
-    def convert_str(cls, string: str) -> Optional[Self]:
+    def convert(cls, string: str) -> Optional[Self]:
         string = string.strip()
-        for k, v in _WEAPON_ATTR_TYPE_MAP.items():
+        for k, v in _ATTR_TYPE_MAP.items():
             if string == k or string in v or string.upper() == k:
                 return cls[k]
+
+
+_ASSOCIATION_MAP = {
+    'Other': ['Mainactor', 'Ranger', 'Fatui'],
+    'Snezhnaya': [],
+    'Sumeru': [],
+    'Inazuma': [],
+    'Liyue': [],
+    'Mondstadt': [],
+}
+
+
+class Association(Enum):
+    """角色所属地区"""
+    Other = '其它'
+    Snezhnaya = '至冬'
+    Sumeru = '须弥'
+    Inazuma = '稻妻'
+    Liyue = '璃月'
+    Mondstadt = '蒙德'
+
+    @classmethod
+    def convert(cls, string: str) -> Optional[Self]:
+        string = string.strip()
+        for k, v in _ASSOCIATION_MAP.items():
+            if string == k or string in v:
+                return cls[k]
+            string = string.lower().title()
+            if string == k or string in v:
+                return cls[k]
+        return cls[string]
