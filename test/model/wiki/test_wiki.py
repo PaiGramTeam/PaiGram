@@ -1,53 +1,45 @@
 import unittest
 from unittest import IsolatedAsyncioTestCase
 
-from models.wiki.characters import Characters
-from models.wiki.weapons import Weapons
-
-weapons = Weapons()
+from models.wiki.character import Character
+from models.wiki.weapon import Weapon
 
 
-class TestWiki(IsolatedAsyncioTestCase):
-    TEST_WEAPONS_URL = "https://genshin.honeyhunterworld.com/db/weapon/w_3405/?lang=CHS"
-    TEST_CHARACTERS_URL = "https://genshin.honeyhunterworld.com/db/char/hutao/?lang=CHS"
+class TestWeapon(IsolatedAsyncioTestCase):
+    async def test_get_by_id(self):
+        weapon = await Weapon.get_by_id('11417')
+        self.assertEqual(weapon.name, '原木刀')
+        self.assertEqual(weapon.rarity, 4)
+        self.assertEqual(weapon.attack, 43.73)
+        self.assertEqual(weapon.attribute.type.value, '攻击力')
+        self.assertEqual(weapon.affix.name, '森林的瑞佑')
 
-    def setUp(self):
-        self.weapons = Weapons()
-        self.characters = Characters()
+    async def test_get_by_name(self):
+        weapon = await Weapon.get_by_name('风鹰剑')
+        self.assertEqual(weapon.id, 11501)
+        self.assertEqual(weapon.rarity, 5)
+        self.assertEqual(weapon.attack, 47.54)
+        self.assertEqual(weapon.attribute.type.value, '物理伤害加成')
+        self.assertEqual(weapon.affix.name, '西风之鹰的抗争')
+        self.assertTrue('听凭风引，便是正义与自由之风' in weapon.story)
 
-    async def test_get_weapon(self):
-        weapon_info = await self.weapons.get_weapon_info(self.TEST_WEAPONS_URL)
-        self.assertEqual(weapon_info["name"], "护摩之杖")
-        self.assertEqual(weapon_info["description"], "在早已失落的古老祭仪中，使用的朱赤「柴火杖」。")
-        self.assertEqual(weapon_info["atk"]["name"], "基础攻击力")
-        self.assertEqual(weapon_info["atk"]["min"], 46)
-        self.assertEqual(weapon_info["atk"]["max"], 608)
-        self.assertEqual(weapon_info["secondary"]["name"], "暴击伤害")
-        self.assertEqual(weapon_info["secondary"]["min"], 14.4)
-        self.assertEqual(weapon_info["secondary"]["max"], 66.2)
-        self.assertEqual(weapon_info["star"]["value"], 5)
-        self.assertEqual(weapon_info["type"]["name"], "Polearm")
-        self.assertEqual(weapon_info["passive_ability"]["name"], "无羁的朱赤之蝶")
-        self.assertEqual(weapon_info["passive_ability"]["description"], "生命值提升20%。"
-                                                                        "此外，基于装备该武器的角色生命值上限的0.8%，"
-                                                                        "获得攻击力加成。当装备该武器的角色生命值低于50%时，"
-                                                                        "进一步获得1%基于生命值上限的攻击力提升。")
 
-    async def test_get_all_weapon_url(self):
-        url_list = await self.weapons.get_all_weapon_url()
-        self.assertEqual(True, len(url_list) >= 123)
+class TestCharacter(IsolatedAsyncioTestCase):
+    async def test_get_by_id(self):
+        character = await Character.get_by_id('ayaka_002')
+        self.assertEqual(character.name, '神里绫华')
+        self.assertEqual(character.title, '白鹭霜华')
+        self.assertEqual(character.occupation, '社奉行')
+        self.assertEqual(character.association.value, '稻妻')
+        self.assertEqual(character.cn_cv, '小N')
 
-    async def test_get_characters(self):
-        characters_info = await self.characters.get_characters(self.TEST_CHARACTERS_URL)
-        self.assertEqual(characters_info["name"], "胡桃")
-        self.assertEqual(characters_info["title"], "雪霁梅香")
-        self.assertEqual(characters_info["rarity"], 5)
-        self.assertEqual(characters_info["description"], "「往生堂」七十七代堂主，年纪轻轻就已主掌璃月的葬仪事务。")
-        self.assertEqual(characters_info["allegiance"], "往生堂")
-
-    async def test_get_all_characters_url(self):
-        url_list = await self.characters.get_all_characters_url()
-        self.assertEqual(True, len(url_list) >= 49)
+    async def test_get_by_name(self):
+        character = await Character.get_by_name('神里绫华')
+        self.assertEqual(character.id, 'ayaka_002')
+        self.assertEqual(character.title, '白鹭霜华')
+        self.assertEqual(character.occupation, '社奉行')
+        self.assertEqual(character.association.value, '稻妻')
+        self.assertEqual(character.cn_cv, '小N')
 
 
 if __name__ == "__main__":
