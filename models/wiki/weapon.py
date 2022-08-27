@@ -55,10 +55,10 @@ class WeaponAttributeType(Enum):
 
     # noinspection PyShadowingBuiltins
     @classmethod
-    def convert_honey_str(cls, type: str) -> Optional[Self]:
+    def convert_str(cls, type: str) -> Optional[Self]:
         type = type.strip()
         for k, v in _WEAPON_ATTR_TYPE_MAP.items():
-            if type == k or type in v:
+            if type == k or type in v or type.upper() == k:
                 return cls[k]
 
 
@@ -94,8 +94,8 @@ class Weapon(WikiModel):
     """
     type: WeaponType
     attack: float
-    attribute: WeaponAttribute
-    affix: WeaponAffix
+    attribute: Optional[WeaponAttribute]
+    affix: Optional[WeaponAffix]
     description: str
-    ascension: List[Material]
-    story: str
+    ascension: List[int]
+    story: Optional[str]
