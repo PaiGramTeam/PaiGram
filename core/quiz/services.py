@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 
 from .cache import QuizCache
@@ -9,6 +10,7 @@ class QuizService:
     def __init__(self, repository: QuizRepository, cache: QuizCache):
         self._repository = repository
         self._cache = cache
+        self.lock = asyncio.Lock()
 
     async def get_quiz_form_database(self) -> List[Question]:
         """从数据库获取问题列表
@@ -30,13 +32,18 @@ class QuizService:
             await self._repository.add_answer(answers.to_database_data())
 
     async def refresh_quiz(self) -> int:
-        question_list = await self.get_quiz_form_database()
-        await self._cache.del_all_question()
-        question_count = await self._cache.add_question(question_list)
-        await self._cache.del_all_answer()
-        for question in question_list:
-            await self._cache.add_answer(question.answers)
-        return question_count
+        """从数据库刷新问题到Redis缓存 线程安全
+        :return: 已经缓存问题的数量
+        """
+        # 只允许一个线程访问该区域 避免数据错误
+        async with self.lock:
+            question_list = await self.get_quiz_form_database()
+            await self._cache.del_all_question()
+            question_count = await self._cache.add_question(question_list)
+            await self._cache.del_all_answer()
+            for question in question_list:
+                await self._cache.add_answer(question.answers)
+            return question_count
 
     async def get_question_id_list(self) -> List[int]:
         return [int(question_id) for question_id in await self._cache.get_all_question_id_list()]
