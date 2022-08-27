@@ -1,70 +1,21 @@
-from enum import Enum
-from typing import List, Optional
+import re
+from typing import List, Optional, Union, TYPE_CHECKING
 
-from typing_extensions import Self
+from bs4 import BeautifulSoup
+from httpx import URL
 
-from models.wiki.base import Model, WikiModel
-from models.wiki.material import Material
-from models.wiki.other import WeaponType
+from models.wiki.base import Model, WikiModel, SCRAPE_HOST
+from models.wiki.other import WeaponType, AttributeType
 
-__all__ = ['WeaponAttributeType', 'Weapon', 'WeaponAffix', 'WeaponAttribute']
+if TYPE_CHECKING:
+    from bs4 import Tag
 
-_WEAPON_ATTR_TYPE_MAP = {
-    "HP": ['Health'],
-    "HP_p": ['HP%', 'Health %'],
-    "ATK": ['Attack'],
-    "ATK_p": ['Atk%', 'Attack %'],
-    "DEF": ['Defense'],
-    "DEF_p": ['Def%', 'Defense %'],
-    "EM": ['Elemental Mastery'],
-    "ER": ['ER%', 'Energy Recharge %'],
-    "CR": ['CrR%', 'Critical Rate %'],
-    "CD": ['Crd%', 'Critical Damage %'],
-    "PD": ['Phys%', 'Physical Damage %'],
-    "HB": [],
-    "Pyro": [],
-    "Hydro": [],
-    "Electro": [],
-    "Cryo": [],
-    "Dendro": [],
-    "Anemo": [],
-    "Geo": [],
-}
-
-
-class WeaponAttributeType(Enum):
-    HP = "生命"
-    HP_p = "生命%"
-    ATK = "攻击力"
-    ATK_p = "攻击力%"
-    DEF = "防御力"
-    DEF_p = "防御力%"
-    EM = "元素精通"
-    ER = "元素充能效率"
-    CR = "暴击率"
-    CD = "暴击伤害"
-    PD = "物理伤害加成"
-    HB = "治疗加成"
-    Pyro = '火元素伤害加成'
-    Hydro = '水元素伤害加成'
-    Electro = '雷元素伤害加成'
-    Cryo = '冰元素伤害加成'
-    Dendro = '草元素伤害加成'
-    Anemo = '风元素伤害加成'
-    Geo = '岩元素伤害加成'
-
-    # noinspection PyShadowingBuiltins
-    @classmethod
-    def convert_str(cls, type: str) -> Optional[Self]:
-        type = type.strip()
-        for k, v in _WEAPON_ATTR_TYPE_MAP.items():
-            if type == k or type in v or type.upper() == k:
-                return cls[k]
+__all__ = ['Weapon', 'WeaponAffix', 'WeaponAttribute']
 
 
 class WeaponAttribute(Model):
     """武器词条"""
-    type: WeaponAttributeType
+    type: AttributeType
     value: str
 
 
@@ -92,6 +43,7 @@ class Weapon(WikiModel):
         ascension: 突破材料
         story: 武器故事
     """
+
     type: WeaponType
     attack: float
     attribute: Optional[WeaponAttribute]
@@ -99,3 +51,55 @@ class Weapon(WikiModel):
     description: str
     ascension: List[int]
     story: Optional[str]
+
+    @staticmethod
+    def scrape_urls() -> List[URL]:
+        return [SCRAPE_HOST.join(f"fam_{i.lower()}/?lang=CHS") for i in WeaponType.__members__]
+
+    # noinspection PyShadowingBuiltins
+    @classmethod
+    async def _parse_soup(cls, soup: BeautifulSoup) -> 'Weapon':
+        soup = soup.select('.wp-block-post-content')[0]
+        tables: List['Tag'] = soup.find_all('table')
+        table_rows: List['Tag'] = tables[0].find_all('tr')
+
+        def get_table_text(table_num: int) -> str:
+            return table_rows[table_num].find_all('td')[-1].text.replace('\xa0', '')
+
+        def find_table(select: str) -> List['Tag']:
+            return list(filter(lambda x: select in ' '.join(x.attrs['class']), tables))
+
+        id = int(re.findall(r'/img/.*?(\d+).*', str(table_rows[0]))[0])
+        type = WeaponType[get_table_text(1).split(',')[-1].strip()]
+        name = get_table_text(0)
+        rarity = len(table_rows[2].find_all('img'))
+        attack = float(get_table_text(4))
+        ascension = [re.findall(r'\d+', tag.attrs['href'])[0] for tag in table_rows[-1].find_all('a')]
+        if rarity > 2:  # 如果是 3 星及其以上的武器
+            attribute = WeaponAttribute(
+                type=AttributeType.convert_str(
+                    tables[2].find('thead').find('tr').find_all('td')[2].text.split(' ')[1]
+                ),
+                value=get_table_text(6)
+            )
+            affix = WeaponAffix(name=get_table_text(7), description=[
+                i.find_all('td')[1].text for i in tables[3].find_all('tr')[1:]
+            ])
+            if len(tables) < 11:
+                description = get_table_text(-1)
+            else:
+                description = get_table_text(9)
+            story = find_table('quotes')[0].text.strip()
+        else:  # 如果是 2 星及其以下的武器
+            attribute = affix = None
+            description = get_table_text(5)
+            story = tables[-1].text.strip()
+        return Weapon(
+            id=id, name=name, rarity=rarity, attack=attack, attribute=attribute, affix=affix, type=type, story=story,
+            description=description, ascension=ascension
+        )
+
+    # noinspection PyShadowingBuiltins
+    @staticmethod
+    async def get_url_by_id(id: Union[int, str]) -> URL:
+        return SCRAPE_HOST.join(f'i_n{int(id)}/?lang=CHS')
