@@ -29,7 +29,7 @@
 
 #### 模块需求需要的注意事项
 
-`python-telegram-bot` 需要预览版本 即 `20.0a2`
+`python-telegram-bot` 需要预览版本 即 `20.0a4`
 
 出现相关的 `telegram` 模块导入的 `ImportError` 错误需要你手动执行 `pip install python-telegram-bot==20.0a2`
 
@@ -53,3 +53,4 @@
 | [原神抽卡全机制总结](https://www.bilibili.com/read/cv10468091) | 本项目抽卡模拟器使用的逻辑       |
 |   [西风驿站](https://bbs.mihoyo.com/ys/collection/307224)    | 本项目攻略图图源                 |
 |     [Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)      | 本项使用的抽卡图片和前端资源来源 |
+| [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw) | 本项目参考的爬虫代码 |
