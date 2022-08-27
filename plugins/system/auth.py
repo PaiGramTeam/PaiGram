@@ -58,10 +58,7 @@ class Auth:
 
     @staticmethod
     def is_admin(chat_administrators: list[ChatMember], user_id: int) -> bool:
-        for admin in chat_administrators:
-            if admin.user.id == user_id:
-                return True
-        return False
+        return any(admin.user.id == user_id for admin in chat_administrators)
 
     async def kick_member_job(self, context: CallbackContext):
         job = context.job
