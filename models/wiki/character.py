@@ -46,9 +46,9 @@ class CharacterState(Model):
     HP: int
     ATK: float
     DEF: float
-    CR: float
-    CD: float
-    bonus: float
+    CR: str
+    CD: str
+    bonus: str
 
 
 class CharacterIcon(Model):
@@ -150,7 +150,7 @@ class Character(WikiModel):
             stats.append(
                 CharacterState(
                     level=cells[0].text, HP=cells[1].text, ATK=cells[2].text, DEF=cells[3].text,
-                    CR=cells[4].text.rstrip('%'), CD=cells[5].text.rstrip('%'), bonus=cells[6].text.rstrip('%')
+                    CR=cells[4].text, CD=cells[5].text, bonus=cells[6].text
                 )
             )
         return Character(

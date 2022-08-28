@@ -32,7 +32,7 @@ class WeaponAffix(Model):
 class WeaponState(Model):
     level: str
     ATK: float
-    bonus: Optional[float]
+    bonus: Optional[str]
 
 
 class WeaponIcon(Model):
@@ -115,7 +115,7 @@ class Weapon(WikiModel):
         for row in tables[2].find_all('tr')[1:]:
             cells = row.find_all('td')
             if rarity > 2:
-                stats.append(WeaponState(level=cells[0].text, ATK=cells[1].text, bonus=cells[2].text.rstrip('%')))
+                stats.append(WeaponState(level=cells[0].text, ATK=cells[1].text, bonus=cells[2].text))
             else:
                 stats.append(WeaponState(level=cells[0].text, ATK=cells[1].text))
         return Weapon(
