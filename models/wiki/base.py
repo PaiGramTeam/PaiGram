@@ -9,8 +9,6 @@ import anyio
 import ujson as json
 from bs4 import BeautifulSoup
 from httpx import AsyncClient, HTTPError, Response, URL
-# noinspection PyProtectedMember
-from httpx._types import URLTypes
 from pydantic import (
     BaseConfig as PydanticBaseConfig,
     BaseModel as PydanticBaseModel,
@@ -67,7 +65,7 @@ class WikiModel(Model):
         """
 
     @classmethod
-    async def _client_get(cls, url: 'URLTypes', retry_times: int = 5, sleep: float = 1) -> Response:
+    async def _client_get(cls, url: Union[URL, str], retry_times: int = 5, sleep: float = 1) -> Response:
         """用自己的 client 发起 get 请求的快捷函数
 
         Args:
@@ -98,7 +96,7 @@ class WikiModel(Model):
         """
 
     @classmethod
-    async def _scrape(cls, url: 'URLTypes') -> Self:
+    async def _scrape(cls, url: Union[URL, str]) -> Self:
         """从 url 中爬取数据，并返回对应的 Model
 
         Args:
