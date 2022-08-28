@@ -24,6 +24,21 @@ class TestWeapon(IsolatedAsyncioTestCase):
         self.assertEqual(weapon.affix.name, '西风之鹰的抗争')
         self.assertTrue('听凭风引，便是正义与自由之风' in weapon.story)
 
+    async def test_get_full_gen(self):
+        async for weapon in Weapon.full_data_generator():
+            self.assertIsInstance(weapon, Weapon)
+
+    async def test_get_full(self):
+        full_data = await Weapon.get_full_data()
+        for weapon in full_data:
+            self.assertIsInstance(weapon, Weapon)
+
+    async def test_name_list(self):
+        from httpx import URL
+        async for name in Weapon._name_list_generator(with_url=True):
+            self.assertIsInstance(name[0], str)
+            self.assertIsInstance(name[1], URL)
+
 
 class TestCharacter(IsolatedAsyncioTestCase):
     async def test_get_by_id(self):
@@ -47,13 +62,13 @@ class TestCharacter(IsolatedAsyncioTestCase):
         self.assertEqual(main_character.cn_cv, '宴宁&多多poi')
 
     async def test_get_full(self):
-        async for character in Character._full_data_generator():
+        async for character in Character.full_data_generator():
             self.assertIsInstance(character, Character)
 
 
 class TestMaterial(IsolatedAsyncioTestCase):
     async def test_get_full_gen(self):
-        async for material in Material._full_data_generator():
+        async for material in Material.full_data_generator():
             self.assertIsInstance(material, Material)
 
     async def test_get_full(self):
@@ -68,7 +83,8 @@ class TestAll(IsolatedAsyncioTestCase):
         materials, weapons, characters = tuple(await asyncio.gather(
             Material.get_full_data(),
             Weapon.get_full_data(),
-            Character.get_full_data()
+            Character.get_full_data(),
+            return_exceptions=True
         ))
         self.assertEqual(len(materials), 120)
         self.assertEqual(len(weapons), 151)
