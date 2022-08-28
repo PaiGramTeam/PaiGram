@@ -12,7 +12,7 @@ from utils.service.inject import inject
 class PublicCookies:
 
     @inject
-    def __init__(self, public_cookies_service: PublicCookiesService):
+    def __init__(self, public_cookies_service: PublicCookiesService = None):
         self.public_cookies_service = public_cookies_service
 
     @classmethod
