@@ -26,8 +26,8 @@ class CharacterAscension(Model):
         level: 等级突破材料
         skill: 技能/天赋培养材料
     """
-    level: List[int] = []
-    skill: List[int] = []
+    level: List[str] = []
+    skill: List[str] = []
 
 
 class CharacterState(Model):
@@ -139,10 +139,10 @@ class Character(WikiModel):
         description = get_table_text(-3)
         ascension = CharacterAscension(
             level=[
-                int(target[0]) for i in table_rows[-2].find_all('a')
-                if (target := re.findall(r'\d+', i.attrs['href']))  # 过滤掉错误的材料(honey网页的bug)
+                target[0] for i in table_rows[-2].find_all('a')
+                if (target := re.findall(r'/(.*)/', i.attrs['href']))  # 过滤掉错误的材料(honey网页的bug)
             ],
-            skill=[int(re.findall(r'\d+', i.attrs['href'])[0]) for i in table_rows[-1].find_all('a')]
+            skill=[re.findall(r'/(.*)/', i.attrs['href'])[0] for i in table_rows[-1].find_all('a')]
         )
         stats = []
         for row in tables[2].find_all('tr')[1:]:
@@ -158,10 +158,6 @@ class Character(WikiModel):
             element=element, birth=birth, constellation=constellation, cn_cv=cn_cv, jp_cv=jp_cv, rarity=rarity,
             en_cv=en_cv, kr_cv=kr_cv, description=description, ascension=ascension, stats=stats
         )
-
-    @staticmethod
-    async def get_url_by_id(id_: str) -> URL:
-        return SCRAPE_HOST.join(f'{id_}/?lang=CHS')
 
     @classmethod
     async def get_url_by_name(cls, name: str) -> Optional[URL]:

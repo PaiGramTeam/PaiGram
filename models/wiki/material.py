@@ -1,5 +1,5 @@
 import re
-from typing import List, Union
+from typing import List
 
 from bs4 import BeautifulSoup
 from httpx import URL
@@ -39,7 +39,7 @@ class Material(WikiModel):
             """一个快捷函数，用于返回表格对应行的最后一个单元格中的文本"""
             return table_rows[row_num].find_all('td')[-1].text.replace('\xa0', '')
 
-        id_ = int(re.findall(r'/img/.*?(\d+).*', str(table_rows[0]))[0])
+        id_ = re.findall(r'/img/(.*?)\.webp', str(table_rows[0]))[0]
         name = get_table_text(0)
         rarity = len(table_rows[3].find_all('img'))
         type_ = get_table_text(1)
@@ -52,10 +52,6 @@ class Material(WikiModel):
         description = get_table_text(-1)
         return Material(id=id_, name=name, rarity=rarity, type=type_, source=source, description=description)
 
-    @staticmethod
-    async def get_url_by_id(id_: Union[int, str]) -> URL:
-        return SCRAPE_HOST.join(f'i_{int(id_)}/?lang=CHS')
-
     @property
     def icon(self) -> str:
-        return str(SCRAPE_HOST.join(f'/img/i_{self.id}.png'))
+        return str(SCRAPE_HOST.join(f'/img/{self.id}.png'))

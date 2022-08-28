@@ -59,7 +59,7 @@ class Weapon(WikiModel):
     attribute: Optional[WeaponAttribute]
     affix: Optional[WeaponAffix]
     description: str
-    ascension: List[int]
+    ascension: List[str]
     story: Optional[str]
 
     stats: List[WeaponState]
@@ -83,12 +83,12 @@ class Weapon(WikiModel):
             """一个快捷函数，用于寻找对应表格头的表格"""
             return list(filter(lambda x: select in ' '.join(x.attrs['class']), tables))
 
-        id_ = int(re.findall(r'/img/.*?(\d+).*', str(table_rows[0]))[0])
+        id_ = re.findall(r'/img/(.*?)_gacha', str(table_rows[0]))[0]
         weapon_type = WeaponType[get_table_text(1).split(',')[-1].strip()]
         name = get_table_text(0)
         rarity = len(table_rows[2].find_all('img'))
         attack = float(get_table_text(4))
-        ascension = [re.findall(r'\d+', tag.attrs['href'])[0] for tag in table_rows[-1].find_all('a')]
+        ascension = [re.findall(r'/(.*)/', tag.attrs['href'])[0] for tag in table_rows[-1].find_all('a')]
         if rarity > 2:  # 如果是 3 星及其以上的武器
             attribute = WeaponAttribute(
                 type=AttributeType.convert(
@@ -123,10 +123,6 @@ class Weapon(WikiModel):
             story=story, stats=stats, description=description, ascension=ascension
         )
 
-    @staticmethod
-    async def get_url_by_id(id_: Union[int, str]) -> URL:
-        return SCRAPE_HOST.join(f'i_n{int(id_)}/?lang=CHS')
-
     @classmethod
     async def get_name_list(cls, *, with_url: bool = False) -> List[Union[str, Tuple[str, URL]]]:
         # 重写此函数的目的是名字去重，例如单手剑页面中有三个 “「一心传」名刀”
@@ -141,7 +137,7 @@ class Weapon(WikiModel):
     @property
     def icon(self) -> WeaponIcon:
         return WeaponIcon(
-            icon=str(SCRAPE_HOST.join(f'/img/i_n{self.id}.png')),
-            awakened=str(SCRAPE_HOST.join(f'/img/i_n{self.id}_awaken_icon.png')),
-            gacha=str(SCRAPE_HOST.join(f'/img/i_n{self.id}_gacha_icon.png')),
+            icon=str(SCRAPE_HOST.join(f'/img/{self.id}.png')),
+            awakened=str(SCRAPE_HOST.join(f'/img/{self.id}_awaken_icon.png')),
+            gacha=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_icon.png')),
         )

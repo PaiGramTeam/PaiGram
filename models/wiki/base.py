@@ -46,7 +46,7 @@ class WikiModel(Model):
     """
     _client: ClassVar[AsyncClient] = AsyncClient()
 
-    id: int
+    id: str
     name: str
     rarity: int
 
@@ -108,7 +108,7 @@ class WikiModel(Model):
         return await cls._parse_soup(BeautifulSoup(response.text, 'lxml'))
 
     @classmethod
-    async def get_by_id(cls, id_: Union[int, str]) -> Self:
+    async def get_by_id(cls, id_: str) -> Self:
         """通过ID获取Model
 
         Args:
@@ -174,8 +174,7 @@ class WikiModel(Model):
         return self.__str__()
 
     @staticmethod
-    @abstractmethod
-    async def get_url_by_id(id_: Union[int, str]) -> URL:
+    async def get_url_by_id(id_: str) -> URL:
         """根据 id 获取对应的 url
 
         例如神里绫华的ID为 ayaka_002，对应的数据页url为 https://genshin.honeyhunterworld.com/ayaka_002/?lang=CHS
@@ -185,6 +184,7 @@ class WikiModel(Model):
         Returns:
             返回对应的 url
         """
+        return SCRAPE_HOST.join(f"{id_}/?lang=CHS")
 
     @classmethod
     async def _name_list_generator(cls, *, with_url: bool = False) -> AsyncIterator[Union[str, Tuple[str, URL]]]:
