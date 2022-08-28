@@ -6,7 +6,7 @@ from core.template.services import TemplateService
 from core.wiki.services import WikiService
 from logger import Log
 from metadata.shortname import weaponToName
-from models.wiki.material import Material
+from models.wiki.base import SCRAPE_HOST
 from models.wiki.weapon import Weapon
 from plugins.base import BasePlugins
 from utils.bot import get_all_args
@@ -85,7 +85,8 @@ class WeaponPlugin(BasePlugins):
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        await url_to_file((await Material.get_by_id(mid)).icon) for mid in _weapon_data.ascension[-3:]
+                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.png')))
+                        for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": _weapon_data.affix.name,
                     "special_ability_info": _weapon_data.affix.description[0],
@@ -100,7 +101,8 @@ class WeaponPlugin(BasePlugins):
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        await url_to_file((await Material.get_by_id(mid)).icon) for mid in _weapon_data.ascension[-3:]
+                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.png')))
+                        for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": '',
                     "special_ability_info": _weapon_data.description,
