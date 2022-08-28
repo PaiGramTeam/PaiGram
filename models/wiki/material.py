@@ -1,14 +1,11 @@
 import re
-from typing import List, Optional, Iterator, Union, TYPE_CHECKING
+from typing import Iterator, List, Optional, Union
 
 from bs4 import BeautifulSoup
 from httpx import URL
 from typing_extensions import Self
 
-from models.wiki.base import WikiModel, Model, SCRAPE_HOST
-
-if TYPE_CHECKING:
-    from bs4 import Tag
+from models.wiki.base import Model, SCRAPE_HOST, WikiModel
 
 __all__ = ['Material', 'MaterialSeries']
 
@@ -23,35 +20,41 @@ class Material(WikiModel):
         serise: 材料系列
     """
 
+    type: str
+    source: List[str]
+    description: str
+
     @staticmethod
     def scrape_urls() -> List[URL]:
         return [SCRAPE_HOST.join(f'fam_wep_{i}/?lang=CHS') for i in ['primary', 'secondary', 'common']]
 
     @classmethod
     async def _parse_soup(cls, soup: BeautifulSoup) -> Self:
+        """解析材料页"""
         soup = soup.select('.wp-block-post-content')[0]
-        tables: List['Tag'] = soup.find_all('table')
-        table_rows: List['Tag'] = tables[0].find_all('tr')
+        tables = soup.find_all('table')
+        table_rows = tables[0].find_all('tr')
 
-        def get_table_text(table_num: int) -> str:
-            return table_rows[table_num].find_all('td')[-1].text.replace('\xa0', '')
+        def get_table_text(row_num: int) -> str:
+            """一个快捷函数，用于返回表格对应行的最后一个单元格中的文本"""
+            return table_rows[row_num].find_all('td')[-1].text.replace('\xa0', '')
 
         id_ = int(re.findall(r'/img/.*?(\d+).*', str(table_rows[0]))[0])
         name = get_table_text(0)
         rarity = len(table_rows[3].find_all('img'))
         type_ = get_table_text(1)
         source = list(
-            filter(lambda x: x, table_rows[-2].find_all('td')[-1].encode_contents().decode().split('<br/>')))
+            filter(
+                lambda x: x,  # filter 在这里的作用是过滤掉为空的数据
+                table_rows[-2].find_all('td')[-1].encode_contents().decode().split('<br/>')
+            )
+        )
         description = get_table_text(-1)
         return Material(id=id_, name=name, rarity=rarity, type=type_, source=source, description=description)
 
     @staticmethod
     async def get_url_by_id(id_: Union[int, str]) -> URL:
         return SCRAPE_HOST.join(f'i_{int(id_)}/?lang=CHS')
-
-    type: str
-    source: List[str]
-    description: str
 
 
 class MaterialSeries(Model):
@@ -84,6 +87,13 @@ class MaterialSeries(Model):
         return list(self.__iter__())[index + 1]
 
     def __contains__(self, material: Union[int, Material]) -> bool:
+        """该系列是否包含这个材料
+
+        Args:
+            material: 目标的材料 或 目标材料的ID
+        Returns:
+            一个布尔类型
+        """
         if isinstance(material, Material):
             material = material.id
         return bool(list(filter(lambda x: x == material, self.__iter__())))

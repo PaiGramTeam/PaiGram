@@ -1,15 +1,12 @@
 import itertools
 import re
-from typing import List, Optional, Union, TYPE_CHECKING, Tuple
+from typing import List, Optional, Tuple, Union
 
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from models.wiki.base import Model, WikiModel, SCRAPE_HOST
-from models.wiki.other import WeaponType, AttributeType
-
-if TYPE_CHECKING:
-    from bs4 import Tag
+from models.wiki.base import Model, SCRAPE_HOST, WikiModel
+from models.wiki.other import AttributeType, WeaponType
 
 __all__ = ['Weapon', 'WeaponAffix', 'WeaponAttribute']
 
@@ -57,17 +54,19 @@ class Weapon(WikiModel):
     def scrape_urls() -> List[URL]:
         return [SCRAPE_HOST.join(f"fam_{i.lower()}/?lang=CHS") for i in WeaponType.__members__]
 
-    # noinspection PyShadowingBuiltins
     @classmethod
     async def _parse_soup(cls, soup: BeautifulSoup) -> 'Weapon':
+        """解析武器页"""
         soup = soup.select('.wp-block-post-content')[0]
-        tables: List['Tag'] = soup.find_all('table')
-        table_rows: List['Tag'] = tables[0].find_all('tr')
+        tables = soup.find_all('table')
+        table_rows = tables[0].find_all('tr')
 
-        def get_table_text(table_num: int) -> str:
-            return table_rows[table_num].find_all('td')[-1].text.replace('\xa0', '')
+        def get_table_text(row_num: int) -> str:
+            """一个快捷函数，用于返回表格对应行的最后一个单元格中的文本"""
+            return table_rows[row_num].find_all('td')[-1].text.replace('\xa0', '')
 
-        def find_table(select: str) -> List['Tag']:
+        def find_table(select: str):
+            """一个快捷函数，用于寻找对应表格头的表格"""
             return list(filter(lambda x: select in ' '.join(x.attrs['class']), tables))
 
         id_ = int(re.findall(r'/img/.*?(\d+).*', str(table_rows[0]))[0])
@@ -104,13 +103,13 @@ class Weapon(WikiModel):
             description=description, ascension=ascension
         )
 
-    # noinspection PyShadowingBuiltins
     @staticmethod
-    async def get_url_by_id(id: Union[int, str]) -> URL:
-        return SCRAPE_HOST.join(f'i_n{int(id)}/?lang=CHS')
+    async def get_url_by_id(id_: Union[int, str]) -> URL:
+        return SCRAPE_HOST.join(f'i_n{int(id_)}/?lang=CHS')
 
     @classmethod
     async def get_name_list(cls, *, with_url: bool = False) -> List[Union[str, Tuple[str, URL]]]:
+        # 重写此函数的目的是名字去重，例如单手剑页面中有三个 “「一心传」名刀”
         name_list = [i async for i in cls._name_list_generator(with_url=with_url)]
         if with_url:
             return [

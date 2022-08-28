@@ -1,15 +1,12 @@
 import re
-from typing import List, TYPE_CHECKING, Optional
+from typing import List, Optional
 
 from bs4 import BeautifulSoup
 from httpx import URL
 
 from models.wiki.base import Model, SCRAPE_HOST
 from models.wiki.base import WikiModel
-from models.wiki.other import Element, WeaponType, Association
-
-if TYPE_CHECKING:
-    from bs4 import Tag
+from models.wiki.other import Association, Element, WeaponType
 
 
 class Birth(Model):
@@ -23,6 +20,12 @@ class Birth(Model):
 
 
 class CharacterAscension(Model):
+    """角色的突破材料
+
+    Attributes:
+        level: 等级突破材料
+        skill: 技能/天赋培养材料
+    """
     level: List[int] = []
     skill: List[int] = []
 
@@ -65,16 +68,18 @@ class Character(WikiModel):
 
     @classmethod
     async def _parse_soup(cls, soup: BeautifulSoup) -> 'Character':
+        """解析角色页"""
         soup = soup.select('.wp-block-post-content')[0]
-        tables: List['Tag'] = soup.find_all('table')
-        table_rows: List['Tag'] = tables[0].find_all('tr')
+        tables = soup.find_all('table')
+        table_rows = tables[0].find_all('tr')
 
-        def get_table_text(table_num: int) -> str:
-            return table_rows[table_num].find_all('td')[-1].text.replace('\xa0', '')
+        def get_table_text(row_num: int) -> str:
+            """一个快捷函数，用于返回表格对应行的最后一个单元格中的文本"""
+            return table_rows[row_num].find_all('td')[-1].text.replace('\xa0', '')
 
         id_ = re.findall(r'img/(.*?_\d+)_.*', table_rows[0].find('img').attrs['src'])[0]
         name = get_table_text(0)
-        if name != '旅行者':
+        if name != '旅行者':  # 如果角色名不是 旅行者
             title = get_table_text(1)
             occupation = get_table_text(2)
             association = Association.convert(get_table_text(3).lower().title())
@@ -105,7 +110,7 @@ class Character(WikiModel):
         ascension = CharacterAscension(
             level=[
                 int(target[0]) for i in table_rows[-2].find_all('a')
-                if (target := re.findall(r'\d+', i.attrs['href']))
+                if (target := re.findall(r'\d+', i.attrs['href']))  # 过滤掉错误的材料(honey网页的bug)
             ],
             skill=[int(re.findall(r'\d+', i.attrs['href'])[0]) for i in table_rows[-1].find_all('a')]
         )
@@ -115,7 +120,14 @@ class Character(WikiModel):
             en_cv=en_cv, kr_cv=kr_cv, description=description, ascension=ascension
         )
 
-    # noinspection PyShadowingBuiltins
     @staticmethod
-    async def get_url_by_id(id: str) -> URL:
-        return SCRAPE_HOST.join(f'{id}/?lang=CHS')
+    async def get_url_by_id(id_: str) -> URL:
+        return SCRAPE_HOST.join(f'{id_}/?lang=CHS')
+
+    @classmethod
+    async def get_url_by_name(cls, name: str) -> Optional[URL]:
+        # 重写此函数的目的是处理主角名字的 ID
+        _map = {'荧': "playergirl_007", '空': "playerboy_005"}
+        if (id_ := _map.get(name, None)) is not None:
+            return await cls.get_url_by_id(id_)
+        return await super(Character, cls).get_url_by_name(name)

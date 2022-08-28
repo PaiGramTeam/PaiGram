@@ -12,6 +12,7 @@ __all__ = [
 
 
 class Element(Enum):
+    """元素"""
     Pyro = '火'
     Hydro = '水'
     Electro = '雷'
@@ -23,6 +24,7 @@ class Element(Enum):
 
 
 class WeaponType(Enum):
+    """武器类型"""
     Sword = '单手剑'
     Claymore = '双手剑'
     Polearm = '长柄武器'
@@ -31,6 +33,8 @@ class WeaponType(Enum):
 
 
 _ATTR_TYPE_MAP = {
+    # 这个字典用于将 Honey 页面中遇到的 属性的缩写的字符 转为 AttributeType 的字符
+    # 例如 Honey 页面上写的 HP% 则对应 HP_p
     "HP": ['Health'],
     "HP_p": ['HP%', 'Health %'],
     "ATK": ['Attack'],
@@ -54,6 +58,7 @@ _ATTR_TYPE_MAP = {
 
 
 class AttributeType(Enum):
+    """属性枚举类。包含了武器和圣遗物的属性。"""
     HP = "生命"
     HP_p = "生命%"
     ATK = "攻击力"
