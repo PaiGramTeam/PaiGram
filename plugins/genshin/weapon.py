@@ -22,7 +22,7 @@ class Weapon(BasePlugins):
     KEYBOARD = [[InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")]]
 
     @inject
-    def __init__(self, template_service: TemplateService, wiki_service: WikiService):
+    def __init__(self, template_service: TemplateService = None, wiki_service: WikiService = None):
         self.wiki_service = wiki_service
         self.template_service = template_service
 
