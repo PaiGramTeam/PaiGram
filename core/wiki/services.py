@@ -1,9 +1,11 @@
-from typing import List, NoReturn, Optional
+import asyncio
 
-from core.wiki.cache import WikiCache
+import ujson
+
 from logger import Log
-from models.wiki.character import Character
-from models.wiki.weapon import Weapon
+from models.wiki.characters import Characters
+from models.wiki.weapons import Weapons
+from .cache import WikiCache
 
 
 class WikiService:
@@ -11,47 +13,58 @@ class WikiService:
     def __init__(self, cache: WikiCache):
         self._cache = cache
         """Redis 在这里的作用是作为持久化"""
-        self._character_list = []
-        self._character_name_list = []
-        self._weapon_name_list = []
-        self._weapon_list = []
+        self.weapons = Weapons()
+        self.characters = Characters()
+        self._characters_list = []
+        self._characters_name_list = []
+        self._weapons_name_list = []
+        self._weapons_list = []
         self.first_run = True
 
-    async def refresh_weapon(self) -> NoReturn:
-        weapon_name_list = await Weapon.get_name_list()
-        Log.info(f"一共找到 {len(weapon_name_list)} 把武器信息")
-
-        weapon_list = []
-        num = 0
-        async for weapon in Weapon.full_data_generator():
-            weapon_list.append(weapon)
-            num += 1
-            if num % 10 == 0:
-                Log.info(f"现在已经获取到 {num} 把武器信息")
+    async def refresh_weapon(self):
+        weapon_url_list = await self.weapons.get_all_weapon_url()
+        Log.info(f"一共找到 {len(weapon_url_list)} 把武器信息")
+        weapons_list = []
+        task_list = []
+        for index, weapon_url in enumerate(weapon_url_list):
+            task_list.append(self.weapons.get_weapon_info(weapon_url))
+            # weapon_info = await self.weapons.get_weapon_info(weapon_url)
+            if index % 5 == 0:
+                result_list = await asyncio.gather(*task_list)
+                weapons_list.extend(result for result in result_list if isinstance(result, dict))
+                task_list.clear()
+            if index % 10 == 0 and index != 0:
+                Log.info(f"现在已经获取到 {index} 把武器信息")
+        result_list = await asyncio.gather(*task_list)
+        weapons_list.extend(result for result in result_list if isinstance(result, dict))
 
         Log.info("写入武器信息到Redis")
-        self._weapon_list = weapon_list
-        await self._cache.delete("weapon")
-        await self._cache.set("weapon", [i.json() for i in weapon_list])
+        self._weapons_list = weapons_list
+        await self._cache.del_one("weapon")
+        await self._cache.refresh_info_cache("weapon", weapons_list)
 
-    async def refresh_characters(self) -> NoReturn:
-        character_name_list = await Character.get_name_list()
-        Log.info(f"一共找到 {len(character_name_list)} 个角色信息")
-
-        character_list = []
-        num = 0
-        async for character in Character.full_data_generator():
-            character_list.append(character)
-            num += 1
-            if num % 10 == 0:
-                Log.info(f"现在已经获取到 {num} 个角色信息")
+    async def refresh_characters(self):
+        characters_url_list = await self.characters.get_all_characters_url()
+        Log.info(f"一共找到 {len(characters_url_list)} 个角色信息")
+        characters_list = []
+        task_list = []
+        for index, characters_url in enumerate(characters_url_list):
+            task_list.append(self.characters.get_characters(characters_url))
+            if index % 5 == 0:
+                result_list = await asyncio.gather(*task_list)
+                characters_list.extend(result for result in result_list if isinstance(result, dict))
+                task_list.clear()
+            if index % 10 == 0 and index != 0:
+                Log.info(f"现在已经获取到 {index} 个角色信息")
+        result_list = await asyncio.gather(*task_list)
+        characters_list.extend(result for result in result_list if isinstance(result, dict))
 
         Log.info("写入角色信息到Redis")
-        self._character_list = character_list
-        await self._cache.delete("characters")
-        await self._cache.set("characters", [i.json() for i in character_list])
+        self._characters_list = characters_list
+        await self._cache.del_one("characters")
+        await self._cache.refresh_info_cache("characters", characters_list)
 
-    async def refresh_wiki(self) -> NoReturn:
+    async def refresh_wiki(self):
         """
         用于把Redis的缓存全部加载进Python
         :return:
@@ -63,39 +76,40 @@ class WikiService:
         await self.refresh_characters()
         Log.info("刷新成功")
 
-    async def init(self) -> NoReturn:
+    async def init(self):
         """
         用于把Redis的缓存全部加载进Python
         :return:
         """
         if self.first_run:
-            weapon_dict = await self._cache.get("weapon")
-            self._weapon_list = [Weapon.parse_obj(obj) for obj in weapon_dict]
-            self._weapon_name_list = await Weapon.get_name_list()
-            characters_dict = await self._cache.get("characters")
-            self._character_list = [Character.parse_obj(obj) for obj in characters_dict]
-            self._character_name_list = await Character.get_name_list()
-
+            weapon_dict = await self._cache.get_one("weapon")
+            self._weapons_list = ujson.loads(weapon_dict)
+            for weapon in self._weapons_list:
+                self._weapons_name_list.append(weapon["name"])
+            characters_dict = await self._cache.get_one("characters")
+            self._characters_list = ujson.loads(characters_dict)
+            for characters in self._characters_list:
+                self._characters_name_list.append(characters["name"])
             self.first_run = False
 
-    async def get_weapons(self, name: str) -> Optional[Weapon]:
+    async def get_weapons(self, name: str):
         await self.init()
-        if len(self._weapon_list) == 0:
-            return None
-        return next((weapon for weapon in self._weapon_list if weapon.name == name), None)
+        if len(self._weapons_list) == 0:
+            return {}
+        return next((weapon for weapon in self._weapons_list if weapon["name"] == name), {})
 
-    async def get_weapons_name_list(self) -> List[str]:
+    async def get_weapons_name_list(self) -> list:
         await self.init()
-        return self._weapon_name_list
+        return self._weapons_name_list
 
-    async def get_weapons_list(self) -> List[Weapon]:
+    async def get_weapons_list(self) -> list:
         await self.init()
-        return self._weapon_list
+        return self._weapons_list
 
-    async def get_characters_list(self) -> List[Character]:
+    async def get_characters_list(self) -> list:
         await self.init()
-        return self._character_list
+        return self._characters_list
 
-    async def get_characters_name_list(self) -> List[str]:
+    async def get_characters_name_list(self) -> list:
         await self.init()
-        return self._character_name_list
+        return self._characters_name_list

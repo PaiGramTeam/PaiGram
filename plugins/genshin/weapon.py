@@ -1,13 +1,11 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.ext import filters, CommandHandler, MessageHandler, CallbackContext
 
 from core.template.services import TemplateService
 from core.wiki.services import WikiService
 from logger import Log
 from metadata.shortname import weaponToName
-from models.wiki.base import SCRAPE_HOST
-from models.wiki.weapon import Weapon
 from plugins.base import BasePlugins
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
@@ -18,12 +16,10 @@ from utils.service.inject import inject
 
 
 @listener_plugins_class()
-class WeaponPlugin(BasePlugins):
+class Weapon(BasePlugins):
     """武器查询"""
 
-    KEYBOARD = [[
-        InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")
-    ]]
+    KEYBOARD = [[InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")]]
 
     @inject
     def __init__(self, template_service: TemplateService, wiki_service: WikiService):
@@ -56,7 +52,7 @@ class WeaponPlugin(BasePlugins):
         weapon_name = weaponToName(weapon_name)
         weapons_list = await self.wiki_service.get_weapons_list()
         for weapon in weapons_list:
-            if weapon.name == weapon_name:
+            if weapon["name"] == weapon_name:
                 weapon_data = weapon
                 break
         else:
@@ -69,44 +65,27 @@ class WeaponPlugin(BasePlugins):
         Log.info(f"用户 {user.full_name}[{user.id}] 查询武器命令请求 || 参数 {weapon_name}")
         await message.reply_chat_action(ChatAction.TYPING)
 
-        async def input_template_data(_weapon_data: Weapon):
-            if weapon.rarity > 2:
-                bonus = _weapon_data.stats[-1].bonus
-                if '%' in bonus:
-                    bonus = str(round(float(bonus.rstrip('%')))) + '%'
-                else:
-                    bonus = str(round(float(bonus)))
-                _template_data = {
-                    "weapon_name": _weapon_data.name,
-                    "weapon_info_type_img": await url_to_file(_weapon_data.weapon_type.icon_url()),
-                    "progression_secondary_stat_value": bonus,
-                    "progression_secondary_stat_name": _weapon_data.attribute.type.value,
-                    "weapon_info_source_img": await url_to_file(_weapon_data.icon.icon),
-                    "weapon_info_max_level": _weapon_data.stats[-1].level,
-                    "progression_base_atk": round(_weapon_data.stats[-1].ATK),
-                    "weapon_info_source_list": [
-                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.png')))
-                        for mid in _weapon_data.ascension[-3:]
-                    ],
-                    "special_ability_name": _weapon_data.affix.name,
-                    "special_ability_info": _weapon_data.affix.description[0],
-                }
-            else:
-                _template_data = {
-                    "weapon_name": _weapon_data.name,
-                    "weapon_info_type_img": await url_to_file(_weapon_data.weapon_type.icon_url()),
-                    "progression_secondary_stat_value": ' ',
-                    "progression_secondary_stat_name": '无其它属性加成',
-                    "weapon_info_source_img": await url_to_file(_weapon_data.icon.icon),
-                    "weapon_info_max_level": _weapon_data.stats[-1].level,
-                    "progression_base_atk": round(_weapon_data.stats[-1].ATK),
-                    "weapon_info_source_list": [
-                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.png')))
-                        for mid in _weapon_data.ascension[-3:]
-                    ],
-                    "special_ability_name": '',
-                    "special_ability_info": _weapon_data.description,
-                }
+        async def input_template_data(_weapon_data):
+            _template_data = {
+                "weapon_name": _weapon_data["name"],
+                "weapon_info_type_img": await url_to_file(_weapon_data["type"]["icon"]),
+                "progression_secondary_stat_value": _weapon_data["secondary"]["max"],
+                "progression_secondary_stat_name": _weapon_data["secondary"]["name"],
+                "weapon_info_source_img": await url_to_file(_weapon_data["source_img"]),
+                "progression_base_atk": _weapon_data["atk"]["max"],
+                "weapon_info_source_list": [],
+                "special_ability_name": _weapon_data["passive_ability"]["name"],
+                "special_ability_info": _weapon_data["passive_ability"]["description"],
+            }
+            _template_data["weapon_info_source_list"].append(
+                await url_to_file(_weapon_data["materials"]["ascension"]["icon"])
+            )
+            _template_data["weapon_info_source_list"].append(
+                await url_to_file(_weapon_data["materials"]["elite"]["icon"])
+            )
+            _template_data["weapon_info_source_list"].append(
+                await url_to_file(_weapon_data["materials"]["monster"]["icon"])
+            )
             return _template_data
 
         template_data = await input_template_data(weapon_data)
