@@ -27,7 +27,8 @@ class Uid(BasePlugins):
     COMMAND_RESULT, = range(10200, 10201)
 
     @inject
-    def __init__(self, user_service: UserService, cookies_service: CookiesService, template_service: TemplateService):
+    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
+                 template_service: TemplateService = None):
         self.template_service = template_service
         self.cookies_service = cookies_service
         self.user_service = user_service
