@@ -30,6 +30,34 @@ class CharacterAscension(Model):
     skill: List[int] = []
 
 
+class CharacterState(Model):
+    """角色属性值
+
+    Attributes:
+        level: 等级
+        HP: 生命
+        ATK: 攻击力
+        DEF: 防御力
+        CR: 暴击率
+        CD: 暴击伤害
+        bonus: 突破属性
+    """
+    level: str
+    HP: int
+    ATK: float
+    DEF: float
+    CR: float
+    CD: float
+    bonus: float
+
+
+class CharacterIcon(Model):
+    icon: str
+    side: str
+    gacha: str
+    splash: Optional[str]
+
+
 class Character(WikiModel):
     """角色
     Attributes:
@@ -61,6 +89,8 @@ class Character(WikiModel):
     kr_cv: str
     description: str
     ascension: CharacterAscension
+
+    stats: List[CharacterState]
 
     @classmethod
     def scrape_urls(cls) -> List[URL]:
@@ -114,10 +144,19 @@ class Character(WikiModel):
             ],
             skill=[int(re.findall(r'\d+', i.attrs['href'])[0]) for i in table_rows[-1].find_all('a')]
         )
+        stats = []
+        for row in tables[2].find_all('tr')[1:]:
+            cells = row.find_all('td')
+            stats.append(
+                CharacterState(
+                    level=cells[0].text, HP=cells[1].text, ATK=cells[2].text, DEF=cells[3].text,
+                    CR=cells[4].text.rstrip('%'), CD=cells[5].text.rstrip('%'), bonus=cells[6].text.rstrip('%')
+                )
+            )
         return Character(
             id=id_, name=name, title=title, occupation=occupation, association=association, weapon_type=weapon_type,
             element=element, birth=birth, constellation=constellation, cn_cv=cn_cv, jp_cv=jp_cv, rarity=rarity,
-            en_cv=en_cv, kr_cv=kr_cv, description=description, ascension=ascension
+            en_cv=en_cv, kr_cv=kr_cv, description=description, ascension=ascension, stats=stats
         )
 
     @staticmethod
@@ -131,3 +170,12 @@ class Character(WikiModel):
         if (id_ := _map.get(name, None)) is not None:
             return await cls.get_url_by_id(id_)
         return await super(Character, cls).get_url_by_name(name)
+
+    @property
+    def icon(self) -> CharacterIcon:
+        return CharacterIcon(
+            icon=str(SCRAPE_HOST.join(f'/img/{self.id}_icon.png')),
+            side=str(SCRAPE_HOST.join(f'/img/{self.id}_side_icon.png')),
+            gacha=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_card.png')),
+            splash=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_splash.png'))
+        )

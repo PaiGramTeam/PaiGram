@@ -3,6 +3,8 @@ from typing import Optional
 
 from typing_extensions import Self
 
+from models.wiki.base import SCRAPE_HOST
+
 __all__ = [
     'Element',
     'WeaponType',
@@ -23,6 +25,15 @@ class Element(Enum):
     Multi = '无'  # 主角
 
 
+_WEAPON_ICON_MAP = {
+    'Sword': SCRAPE_HOST.join('img/s_23101.png'),
+    'Claymore': SCRAPE_HOST.join('img/s_163101.png'),
+    'Polearm': SCRAPE_HOST.join('img/s_233101.png'),
+    'Catalyst': SCRAPE_HOST.join('img/s_43101.png'),
+    'Bow': SCRAPE_HOST.join('img/s_213101.png'),
+}
+
+
 class WeaponType(Enum):
     """武器类型"""
     Sword = '单手剑'
@@ -30,6 +41,9 @@ class WeaponType(Enum):
     Polearm = '长柄武器'
     Catalyst = '法器'
     Bow = '弓'
+
+    def icon_url(self) -> str:
+        return str(_WEAPON_ICON_MAP.get(self.name))
 
 
 _ATTR_TYPE_MAP = {

@@ -140,10 +140,10 @@ class WikiModel(Model):
         Returns:
             返回能爬到的所有的 Model 所组成的 List
         """
-        return [i async for i in cls._full_data_generator()]
+        return [i async for i in cls.full_data_generator()]
 
     @classmethod
-    async def _full_data_generator(cls) -> AsyncIterator[Self]:
+    async def full_data_generator(cls) -> AsyncIterator[Self]:
         """Model 生成器
 
         这是一个异步生成器，该函数在使用时会爬取所有数据，并将其转为对应的 Model，然后存至一个队列中
@@ -240,3 +240,8 @@ class WikiModel(Model):
         async for n, url in cls._name_list_generator(with_url=True):
             if name == n:
                 return url
+
+    @property
+    @abstractmethod
+    def icon(self):
+        """返回此 Model 的图标链接"""

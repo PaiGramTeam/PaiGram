@@ -29,6 +29,18 @@ class WeaponAffix(Model):
     description: List[str]
 
 
+class WeaponState(Model):
+    level: str
+    ATK: float
+    bonus: Optional[float]
+
+
+class WeaponIcon(Model):
+    icon: str
+    awakened: str
+    gacha: str
+
+
 class Weapon(WikiModel):
     """武器
 
@@ -49,6 +61,8 @@ class Weapon(WikiModel):
     description: str
     ascension: List[int]
     story: Optional[str]
+
+    stats: List[WeaponState]
 
     @staticmethod
     def scrape_urls() -> List[URL]:
@@ -97,10 +111,16 @@ class Weapon(WikiModel):
             attribute = affix = None
             description = get_table_text(5)
             story = tables[-1].text.strip()
+        stats = []
+        for row in tables[2].find_all('tr')[1:]:
+            cells = row.find_all('td')
+            if rarity > 2:
+                stats.append(WeaponState(level=cells[0].text, ATK=cells[1].text, bonus=cells[2].text.rstrip('%')))
+            else:
+                stats.append(WeaponState(level=cells[0].text, ATK=cells[1].text))
         return Weapon(
             id=id_, name=name, rarity=rarity, attack=attack, attribute=attribute, affix=affix, weapon_type=weapon_type,
-            story=story,
-            description=description, ascension=ascension
+            story=story, stats=stats, description=description, ascension=ascension
         )
 
     @staticmethod
@@ -117,3 +137,11 @@ class Weapon(WikiModel):
             ]
         else:
             return [i[0] for i in itertools.groupby(name_list, lambda x: x)]
+
+    @property
+    def icon(self) -> WeaponIcon:
+        return WeaponIcon(
+            icon=str(SCRAPE_HOST.join(f'/img/i_n{self.id}.png')),
+            awakened=str(SCRAPE_HOST.join(f'/img/i_n{self.id}_awaken_icon.png')),
+            gacha=str(SCRAPE_HOST.join(f'/img/i_n{self.id}_gacha_icon.png')),
+        )
