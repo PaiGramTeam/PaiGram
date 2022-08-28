@@ -70,12 +70,12 @@ class WeaponPlugin(BasePlugins):
         await message.reply_chat_action(ChatAction.TYPING)
 
         async def input_template_data(_weapon_data: Weapon):
-            bonus = _weapon_data.stats[-1].bonus
-            if '%' in bonus:
-                bonus = str(round(float(bonus.rstrip('%')))) + '%'
-            else:
-                bonus = str(round(float(bonus)))
             if weapon.rarity > 2:
+                bonus = _weapon_data.stats[-1].bonus
+                if '%' in bonus:
+                    bonus = str(round(float(bonus.rstrip('%')))) + '%'
+                else:
+                    bonus = str(round(float(bonus)))
                 _template_data = {
                     "weapon_name": _weapon_data.name,
                     "weapon_info_type_img": await url_to_file(_weapon_data.weapon_type.icon_url()),
