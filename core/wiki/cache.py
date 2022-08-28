@@ -1,5 +1,6 @@
-import ujson
+import ujson as json
 
+from models.wiki.base import Model
 from utils.redisdb import RedisDB
 
 
@@ -8,14 +9,22 @@ class WikiCache:
         self.client = redis.client
         self.qname = "wiki"
 
-    async def refresh_info_cache(self, key_name: str, info):
-        qname = f"{self.qname}:{key_name}"
-        await self.client.set(qname, ujson.dumps(info))
+    async def set(self, key: str, value):
+        qname = f"{self.qname}:{key}"
+        if isinstance(value, Model):
+            value = value.json()
+        elif isinstance(value, (dict, list)):
+            value = json.dumps(value)
+        await self.client.set(qname, value)
 
-    async def del_one(self, key_name: str):
-        qname = f"{self.qname}:{key_name}"
+    async def delete(self, key: str):
+        qname = f"{self.qname}:{key}"
         await self.client.delete(qname)
 
-    async def get_one(self, key_name: str) -> str:
-        qname = f"{self.qname}:{key_name}"
-        return await self.client.get(qname)
+    async def get(self, key: str) -> dict:
+        qname = f"{self.qname}:{key}"
+        result = json.loads(await self.client.get(qname))
+        if isinstance(result, list) and len(result) > 0:
+            for num, item in enumerate(result):
+                result[num] = json.loads(item)
+        return result
