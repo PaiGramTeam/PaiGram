@@ -42,6 +42,10 @@ class TestCharacter(IsolatedAsyncioTestCase):
         self.assertEqual(character.association.value, '稻妻')
         self.assertEqual(character.cn_cv, '小N')
 
+        main_character = await Character.get_by_name('荧')
+        self.assertEqual(main_character.constellation, '旅人座')
+        self.assertEqual(main_character.cn_cv, '宴宁&多多poi')
+
     async def test_get_full(self):
         async for character in Character._full_data_generator():
             self.assertIsInstance(character, Character)
@@ -61,11 +65,14 @@ class TestMaterial(IsolatedAsyncioTestCase):
 class TestAll(IsolatedAsyncioTestCase):
     async def test_all_get_full(self):
         import asyncio
-        await asyncio.gather(
+        materials, weapons, characters = tuple(await asyncio.gather(
             Material.get_full_data(),
             Weapon.get_full_data(),
             Character.get_full_data()
-        )
+        ))
+        self.assertEqual(len(materials), 120)
+        self.assertEqual(len(weapons), 151)
+        self.assertEqual(len(characters), 58)
 
 
 if __name__ == "__main__":
