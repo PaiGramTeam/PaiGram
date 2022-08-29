@@ -18,9 +18,9 @@ class ModulesManager:
         self.modules_list.clear()
 
     def refresh_list(self, pathname: str):
-        path_list = glob(pathname)
+        path_list = [i.replace(os.sep, "/") for i in glob(pathname)]
         for temp_path in path_list:
-            if temp_path.startswith('__'):
+            if "__" in temp_path:
                 continue
             if os.path.isdir(temp_path):
                 self.modules_list.append(ModuleInfo(relative_path=temp_path))
@@ -52,4 +52,4 @@ class ModulesManager:
                     Log.warning(f"{self.manager_name}加载 {module_info} 失败", exc)
                 else:
                     module_name_list.append(module_info.module_name)
-        Log.info(self.manager_name + "加载模块: " + ", ".join(module_name_list))
+        Log.info(f"{self.manager_name}加载模块: " + ", ".join(module_name_list))

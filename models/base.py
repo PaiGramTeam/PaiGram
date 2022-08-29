@@ -85,9 +85,9 @@ class ModuleInfo:
         if self.relative_path is None:
             return ""
         if os.path.isdir(self.relative_path):
-            return self.relative_path.replace(os.sep, ".")
+            return self.relative_path.replace("/", ".")
         root, _ = os.path.splitext(self.relative_path)
-        return root.replace(os.sep, ".")
+        return root.replace("/", ".")
 
     def __str__(self):
         return self.module_name
