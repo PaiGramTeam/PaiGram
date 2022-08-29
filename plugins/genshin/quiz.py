@@ -28,7 +28,7 @@ class QuizCommandData:
 
 
 @listener_plugins_class()
-class Quiz(BasePlugins):
+class QuizPlugin(BasePlugins):
     """派蒙的十万个为什么
     合并了问题修改/添加/删除
     """
