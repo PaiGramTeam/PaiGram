@@ -1,12 +1,11 @@
 from typing import List, Optional
 
 from models.apihelper.hyperion import Hyperion
-from .cache import GameStrategyCache
+from .cache import GameCache
 
 
 class GameStrategyService:
-
-    def __init__(self, cache: GameStrategyCache, collections: Optional[List[int]] = None):
+    def __init__(self, cache: GameCache, collections: Optional[List[int]] = None):
         self._cache = cache
         self._hyperion = Hyperion()
         if collections is None:
@@ -44,3 +43,27 @@ class GameStrategyService:
         artwork_info = await self._hyperion.get_artwork_info(2, post_id)
         await self._cache.set_url_list(character_name, artwork_info.results.image_url_list)
         return artwork_info.results.image_url_list[0]
+
+
+class GameMaterialService(GameStrategyService):
+    def __init__(self, cache: GameCache, collections: Optional[List[int]] = None):
+        super().__init__(cache, collections)
+        self._collections = [428421, 1164644] if collections is None else collections
+        self._special = ['雷电将军', '珊瑚宫心海', '菲谢尔', '托马', '八重神子', '九条裟罗', '辛焱', '神里绫华']
+
+    async def get_material(self, character_name: str) -> str:
+        cache = await self._cache.get_url_list(character_name)
+        if len(cache) >= 1:
+            return cache[-1]
+
+        for collection_id in self._collections:
+            post_id = await self._get_strategy_from_hyperion(collection_id, character_name)
+            if post_id != -1:
+                break
+        else:
+            return ""
+
+        artwork_info = await self._hyperion.get_artwork_info(2, post_id)
+        await self._cache.set_url_list(character_name, artwork_info.results.image_url_list)
+        image_url_list = artwork_info.results.image_url_list
+        return image_url_list[2] if character_name in self._special else image_url_list[1]

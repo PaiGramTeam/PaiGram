@@ -3,10 +3,10 @@ from typing import List
 from utils.redisdb import RedisDB
 
 
-class GameStrategyCache:
-    def __init__(self, redis: RedisDB, ttl: int = 3600):
+class GameCache:
+    def __init__(self, redis: RedisDB, qname: str, ttl: int = 3600):
         self.client = redis.client
-        self.qname = "game:strategy"
+        self.qname = qname
         self.ttl = ttl
 
     async def get_url_list(self, character_name: str):
