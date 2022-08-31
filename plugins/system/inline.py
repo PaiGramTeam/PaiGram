@@ -15,7 +15,7 @@ class Inline:
     """Inline模块"""
 
     @inject
-    def __init__(self, wiki_service: WikiService):
+    def __init__(self, wiki_service: WikiService = None):
         self.wiki_service = wiki_service
 
     async def inline_query(self, update: Update, _: CallbackContext) -> None:

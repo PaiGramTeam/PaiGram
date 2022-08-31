@@ -26,7 +26,7 @@ class WeaponPlugin(BasePlugins):
     ]]
 
     @inject
-    def __init__(self, template_service: TemplateService, wiki_service: WikiService):
+    def __init__(self, template_service: TemplateService = None, wiki_service: WikiService = None):
         self.wiki_service = wiki_service
         self.template_service = template_service
 

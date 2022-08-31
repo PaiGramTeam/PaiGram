@@ -55,7 +55,7 @@ class BasePlugins:
 class NewChatMembersHandler:
 
     @inject
-    def __init__(self, bot_admin_service: BotAdminService):
+    def __init__(self, bot_admin_service: BotAdminService = None):
         self.bot_admin_service = bot_admin_service
         self.callback: List[Tuple[Callable, int]] = []
 
