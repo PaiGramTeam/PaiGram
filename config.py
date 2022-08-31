@@ -58,7 +58,7 @@ _config = {
         *ujson.loads(env('ADMINS', '[]'))
     ],
 
-    "joining_verification_groups": env('JOINING_VERIFICATION_GROUPS', '[]'),
+    "joining_verification_groups": ujson.loads(env('JOINING_VERIFICATION_GROUPS', '[]')),
 }
 
 config = Storage(_config)
