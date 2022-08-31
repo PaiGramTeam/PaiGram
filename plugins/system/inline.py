@@ -50,8 +50,19 @@ class Inline:
                             input_message_content=InputTextMessageContent(f"角色攻略查询{role_name}",
                                                                           parse_mode=ParseMode.MARKDOWN_V2)
                         ))
+            elif "查看角色培养素材列表并查询" == args[0]:
+                characters_list = await self.wiki_service.get_characters_name_list()
+                for role_name in characters_list:
+                    results_list.append(
+                        InlineQueryResultArticle(
+                            id=str(uuid4()),
+                            title=role_name,
+                            description=f"查看角色培养素材列表并查询 {role_name}",
+                            input_message_content=InputTextMessageContent(f"角色培养素材查询{role_name}",
+                                                                          parse_mode=ParseMode.MARKDOWN_V2)
+                        ))
 
-        if len(results_list) == 0:
+        if not results_list:
             results_list.append(
                 InlineQueryResultArticle(
                     id=str(uuid4()),
