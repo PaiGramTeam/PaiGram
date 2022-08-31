@@ -59,7 +59,7 @@ class Material(BasePlugins):
         Log.info(f"用户 {user.full_name}[{user.id}] 查询角色培养素材命令请求 || 参数 {character_name}")
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         file_path = await url_to_file(url, "")
-        caption = "Form 米游社 友人A " \
+        caption = "From 米游社 友人A " \
                   f"查看 [原图]({url})"
         await message.reply_photo(photo=open(file_path, "rb"), caption=caption, filename=f"{character_name}.png",
                                   allow_sending_without_reply=True, parse_mode=ParseMode.MARKDOWN_V2)
