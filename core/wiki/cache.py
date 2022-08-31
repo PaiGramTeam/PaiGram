@@ -23,7 +23,9 @@ class WikiCache:
 
     async def get(self, key: str) -> dict:
         qname = f"{self.qname}:{key}"
-        result = json.loads(await self.client.get(qname))
+        data = await self.client.get(qname)
+        json_data = str(data, encoding="utf-8")
+        result = json.loads(json_data)
         if isinstance(result, list) and len(result) > 0:
             for num, item in enumerate(result):
                 result[num] = json.loads(item)
