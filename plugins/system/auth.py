@@ -1,7 +1,7 @@
 import asyncio
 import random
 import time
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, List
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember
 from telegram.constants import ParseMode
@@ -36,7 +36,7 @@ class GroupJoiningVerification:
         self.kick_time = 120
         self.random = MT19937_Random()
         self.lock = asyncio.Lock()
-        self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, list[ChatMember]]] = {}
+        self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, List[ChatMember]]] = {}
         self.is_refresh_quiz = False
 
     async def refresh_quiz(self):
@@ -45,7 +45,7 @@ class GroupJoiningVerification:
                 await self.quiz_service.refresh_quiz()
                 self.is_refresh_quiz = True
 
-    async def get_chat_administrators(self, context: CallbackContext, chat_id: Union[str, int]) -> list[ChatMember]:
+    async def get_chat_administrators(self, context: CallbackContext, chat_id: Union[str, int]) -> List[ChatMember]:
         async with self.lock:
             cache_data = self.chat_administrators_cache.get(f"{chat_id}")
             if cache_data is not None:
@@ -57,12 +57,12 @@ class GroupJoiningVerification:
             return chat_administrators
 
     @staticmethod
-    def is_admin(chat_administrators: list[ChatMember], user_id: int) -> bool:
+    def is_admin(chat_administrators: List[ChatMember], user_id: int) -> bool:
         return any(admin.user.id == user_id for admin in chat_administrators)
 
     async def kick_member_job(self, context: CallbackContext):
         job = context.job
-        Log.debug(f"踢出用户 user_id[{job.user_id}] 在 chat_id[{job.chat_id}]")
+        Log.info(f"踢出用户 user_id[{job.user_id}] 在 chat_id[{job.chat_id}]")
         try:
             await context.bot.ban_chat_member(chat_id=job.chat_id, user_id=job.user_id,
                                               until_date=int(time.time()) + self.kick_time)
@@ -124,7 +124,7 @@ class GroupJoiningVerification:
         if result == "pass":
             await callback_query.answer(text="放行", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
-            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|clean_join"):
+            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
                 schedule.remove()
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 放行",
                                     parse_mode=ParseMode.MARKDOWN_V2)
@@ -138,7 +138,7 @@ class GroupJoiningVerification:
         elif result == "unban":
             await callback_query.answer(text="解除驱离", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
-            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|clean_join"):
+            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
                 schedule.remove()
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 解除驱离",
                                     parse_mode=ParseMode.MARKDOWN_V2)
@@ -180,7 +180,7 @@ class GroupJoiningVerification:
             buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}")]]
             await callback_query.answer(text="验证成功", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
-            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|clean_join"):
+            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
                 schedule.remove()
             text = f"{user.mention_markdown_v2()} 验证成功，向着星辰与深渊！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
@@ -278,13 +278,15 @@ class GroupJoiningVerification:
                 raise error
             context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out,
                                        name=f"{chat.id}|{user.id}|auth_kick", chat_id=chat.id, user_id=user.id,
-                                       job_kwargs={"replace_existing": True})
+                                       job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_kick"})
             context.job_queue.run_once(callback=self.clean_message_job, when=self.time_out, data=message.message_id,
                                        name=f"{chat.id}|{user.id}|auth_clean_join_message",
                                        chat_id=chat.id, user_id=user.id,
-                                       job_kwargs={"replace_existing": True})
+                                       job_kwargs={"replace_existing": True,
+                                                   "id": f"{chat.id}|{user.id}|auth_clean_join_message"})
             context.job_queue.run_once(callback=self.clean_message_job, when=self.time_out,
                                        data=question_message.message_id,
                                        name=f"{chat.id}|{user.id}|auth_clean_question_message",
                                        chat_id=chat.id, user_id=user.id,
-                                       job_kwargs={"replace_existing": True})
+                                       job_kwargs={"replace_existing": True,
+                                                   "id": f"{chat.id}|{user.id}|auth_clean_question_message"})
