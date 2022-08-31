@@ -23,7 +23,11 @@ class WikiCache:
 
     async def get(self, key: str) -> dict:
         qname = f"{self.qname}:{key}"
-        result = json.loads(await self.client.get(qname))
+        # noinspection PyBroadException
+        try:
+            result = json.loads(await self.client.get(qname))
+        except Exception:
+            result = []
         if isinstance(result, list) and len(result) > 0:
             for num, item in enumerate(result):
                 result[num] = json.loads(item)
