@@ -29,7 +29,7 @@
 
 #### 模块需求需要的注意事项
 
-`python-telegram-bot` 需要预览版本 即 `20.0a2`
+`python-telegram-bot` 需要预览版本 即 `20.0a4`
 
 出现相关的 `telegram` 模块导入的 `ImportError` 错误需要你手动执行 `pip install python-telegram-bot==20.0a2`
 
@@ -39,8 +39,6 @@
 会导致 `redis` 和 `aiohttp` 的依赖 `async-timeout` 版本冲突进而运行代码导致 `TypeError` 异常
 
 解决上面版本冲突导致的错误需要你手动执行 `pip install aiohttp==3.8.1`
-
-如果出现模块导入错误请打开 issue 联系开发者 这可能由于上游为预览版本 部分类名称改变导致的问题
 
 ## 其他说明
 
@@ -53,3 +51,4 @@
 | [原神抽卡全机制总结](https://www.bilibili.com/read/cv10468091) | 本项目抽卡模拟器使用的逻辑       |
 |   [西风驿站](https://bbs.mihoyo.com/ys/collection/307224)    | 本项目攻略图图源                 |
 |     [Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)      | 本项使用的抽卡图片和前端资源来源 |
+| [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw) | 本项目参考的爬虫代码 |
