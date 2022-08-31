@@ -3,8 +3,10 @@ from typing import Optional
 
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler, Application, InlineQueryHandler
 
+from config import config
 from logger import Log
 from plugins.base import NewChatMembersHandler
+from plugins.system.auth import GroupJoiningVerification
 from plugins.system.errorhandler import error_handler
 from plugins.system.inline import Inline
 from plugins.system.start import start, ping, reply_keyboard_remove, unknown_command
@@ -32,10 +34,12 @@ def register_plugin_handlers(application: Application):
     # 初始化
     Log.info("正在加载动态插件管理器")
     plugins_manager = PluginsManager()
-    plugins_manager.add_exclude(["start", "auth", "inline", "errorhandler"]) # 忽略内置模块
+    plugins_manager.add_exclude(["start", "auth", "inline", "errorhandler"])  # 忽略内置模块
+
     Log.info("正在加载插件")
     plugins_manager.refresh_list("plugins/genshin/*")
     plugins_manager.refresh_list("plugins/system/*")
+
     Log.info("加载插件管理器正在加载插件")
     plugins_manager.import_module()
     plugins_manager.add_handler(application)
@@ -43,6 +47,13 @@ def register_plugin_handlers(application: Application):
     Log.info("正在加载静态系统插件")
     inline = Inline()
     new_chat_members_handler = NewChatMembersHandler()
+
+    if len(config.joining_verification_groups) >= 1:
+        auth = GroupJoiningVerification()
+        for chat_id in config.joining_verification_groups:
+            new_chat_members_handler.add_callback(auth.new_mem, chat_id)
+        add_handler(auth.query, query=r"^auth_challenge\|")
+        add_handler(auth.admin, query=r"^auth_admin\|")
 
     add_handler(start, command="start")
     add_handler(ping, command="ping")
@@ -55,6 +66,6 @@ def register_plugin_handlers(application: Application):
     application.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command))
     application.add_error_handler(error_handler, block=False)
 
-    import_module(f"plugins.system.admin")
+    import_module("plugins.system.admin")
 
     Log.info("插件加载成功")

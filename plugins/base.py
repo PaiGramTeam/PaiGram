@@ -1,4 +1,6 @@
+import asyncio
 import datetime
+from typing import List, Tuple, Callable
 
 from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest
@@ -55,6 +57,12 @@ class NewChatMembersHandler:
     @inject
     def __init__(self, bot_admin_service: BotAdminService):
         self.bot_admin_service = bot_admin_service
+        self.callback: List[Tuple[Callable, int]] = []
+
+    def add_callback(self, callback, chat_id: int):
+        if chat_id >= 0:
+            raise ValueError
+        self.callback.append((callback, chat_id))
 
     async def new_member(self, update: Update, context: CallbackContext) -> None:
         message = update.message
@@ -79,4 +87,11 @@ class NewChatMembersHandler:
             Log.warning("不是管理员邀请！退出群聊。")
             await context.bot.send_message(message.chat_id, "派蒙不想进去！不是旅行者的邀请！")
             await context.bot.leave_chat(chat.id)
-
+        else:
+            tasks = []
+            for callback, chat_id in self.callback:
+                if chat.id == chat_id:
+                    task = asyncio.create_task(callback(update, context))
+                    tasks.append(task)
+            if len(tasks) >= 1:
+                await asyncio.gather(*tasks)
