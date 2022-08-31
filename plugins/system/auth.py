@@ -1,7 +1,7 @@
 import asyncio
 import random
 import time
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, List
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember
 from telegram.constants import ParseMode
@@ -36,7 +36,7 @@ class GroupJoiningVerification:
         self.kick_time = 120
         self.random = MT19937_Random()
         self.lock = asyncio.Lock()
-        self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, list[ChatMember]]] = {}
+        self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, List[ChatMember]]] = {}
         self.is_refresh_quiz = False
 
     async def refresh_quiz(self):
@@ -45,7 +45,7 @@ class GroupJoiningVerification:
                 await self.quiz_service.refresh_quiz()
                 self.is_refresh_quiz = True
 
-    async def get_chat_administrators(self, context: CallbackContext, chat_id: Union[str, int]) -> list[ChatMember]:
+    async def get_chat_administrators(self, context: CallbackContext, chat_id: Union[str, int]) -> List[ChatMember]:
         async with self.lock:
             cache_data = self.chat_administrators_cache.get(f"{chat_id}")
             if cache_data is not None:
@@ -57,7 +57,7 @@ class GroupJoiningVerification:
             return chat_administrators
 
     @staticmethod
-    def is_admin(chat_administrators: list[ChatMember], user_id: int) -> bool:
+    def is_admin(chat_administrators: List[ChatMember], user_id: int) -> bool:
         return any(admin.user.id == user_id for admin in chat_administrators)
 
     async def kick_member_job(self, context: CallbackContext):
