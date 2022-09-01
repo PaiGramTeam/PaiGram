@@ -1,5 +1,7 @@
 import os
+import re
 
+from bs4 import BeautifulSoup
 from pyppeteer import launch
 from telegram import Update
 from telegram.constants import ChatAction
@@ -88,12 +90,24 @@ class Gacha(BasePlugins):
         if user_gacha_count is None:
             user_gacha_count = user_gacha[gacha_id] = WishCountInfo(user_id=user.id)
         # 用户数据储存和处理
+        title = gacha_info["title"]
+        re_color = re.search(r"<color=#(.*?)>", title, flags=0)
+        if re_color is None:
+            title_html = BeautifulSoup(title, "lxml")
+            pool_name = title_html.text
+            Log.warning(f"卡池信息 title 提取 color 失败 title[{title}]")
+        else:
+            color = re_color.group(1)
+            title_html = BeautifulSoup(title, "lxml")
+            title_html.color.name = "span"
+            title_html.span["style"] = f"color:#{color};"
+            pool_name = title_html.p
         await message.reply_chat_action(ChatAction.TYPING)
         data = {
             "_res_path": f"file://{self.resources_dir}",
             "name": f"{user.full_name}",
             "info": gacha_name,
-            "poolName": gacha_info["title"],
+            "poolName": pool_name,
             "items": [],
         }
         for _ in range(10):
@@ -116,7 +130,7 @@ class Gacha(BasePlugins):
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         # 因为 gacha_info["title"] 返回的是 HTML 标签 尝试关闭自动转义
         png_data = await self.template_service.render('genshin/gacha', "gacha.html", data,
-                                                      {"width": 1157, "height": 603}, False, False)
+                                                      {"width": 1157, "height": 603}, False, auto_escape=True)
 
         reply_message = await message.reply_photo(png_data)
         if filters.ChatType.GROUPS.filter(message):

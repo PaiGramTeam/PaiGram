@@ -10,7 +10,11 @@
 <div class="container" id="container">
     <div class="info-bg info-name">{{name}}</div>
     <div class="info-bg info-count">{{info}}</div>
-    <div class="info-bg poor-info">{{poolName}}</div>
+    <div class="info-bg poor-info">
+        {% autoescape  off %}
+        {{poolName}}
+        {% endautoescape %}
+    </div>
     <div class="list-box">
         {% for item in items %}
         <div class="item">

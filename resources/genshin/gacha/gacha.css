@@ -54,6 +54,10 @@ body {
     z-index: 9999;
 }
 
+.poor-info span {
+    font-size: 50px;
+}
+
 .poor-bing {
     position: fixed;
     top: 85px;
