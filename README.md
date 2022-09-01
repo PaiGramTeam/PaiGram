@@ -11,4 +11,4 @@
 
 ---
 
-###  [v3](https://github.com/luoshuijs/TGPaimonBot/tree/v3) 正在构建中。。。
+###[v3](https://github.com/luoshuijs/TGPaimonBot/tree/v3) 正在构建中。。。
