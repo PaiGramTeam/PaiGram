@@ -85,7 +85,7 @@ class WeaponPlugin(BasePlugins):
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.png')))
+                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.webp')))
                         for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": _weapon_data.affix.name,
@@ -101,7 +101,7 @@ class WeaponPlugin(BasePlugins):
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.png')))
+                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.webp')))
                         for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": '',
