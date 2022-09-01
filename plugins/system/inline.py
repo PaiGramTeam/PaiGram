@@ -7,7 +7,7 @@ from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 
 from core.wiki import WikiService
-from logger import Log
+from utils.log import logger
 from utils.service.inject import inject
 
 
@@ -80,11 +80,11 @@ class Inline:
             )
         except BadRequest as exc:
             if "Query is too old" in exc.message:  # 过时请求全部忽略
-                Log.warning(f"用户 {user.full_name}[{user.id}] inline_query请求过时")
+                logger.warning(f"用户 {user.full_name}[{user.id}] inline_query请求过时")
                 return
             if "can't parse entities" not in exc.message:
                 raise exc
-            Log.warning("inline_query发生BadRequest错误", exc_info=exc)
+            logger.warning("inline_query发生BadRequest错误", exc_info=exc)
             await ilq.answer(
                 results=[],
                 switch_pm_text="糟糕，发生错误了。",

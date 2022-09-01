@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import filters, CallbackContext
 
-from logger import Log
+from utils.log import logger
 
 
 def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_message: bool = False,
@@ -63,7 +63,7 @@ def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_
                     if count == 5:
                         context.user_data["restrict_since"] = time.time()
                         await update.effective_message.reply_text("你已经触发洪水防御，请等待5分钟")
-                        Log.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制5分钟")
+                        logger.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制5分钟")
                         return return_data
                 # 单次使用限制
                 if command_time:
@@ -74,7 +74,7 @@ def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_
                                 try:
                                     await message.delete()
                                 except TelegramError as error:
-                                    Log.warning("删除消息失败", error)
+                                    logger.warning("删除消息失败", error)
                             return return_data
                     else:
                         if count >= 1:

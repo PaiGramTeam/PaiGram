@@ -7,7 +7,7 @@ from core.cookies.services import CookiesService
 from core.template.services import TemplateService
 from core.user import UserService
 from core.user.repositories import UserNotFoundError
-from logger import Log
+from utils.log import logger
 from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -95,7 +95,7 @@ class Abyss(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.message
-        Log.info(f"用户 {user.full_name}[{user.id}] 查深渊挑战命令请求")
+        logger.info(f"用户 {user.full_name}[{user.id}] 查深渊挑战命令请求")
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             client = await get_genshin_client(user.id, self.user_service, self.cookies_service)

@@ -7,7 +7,7 @@ from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 
 from core.admin.services import BotAdminService
-from logger import Log
+from utils.log import logger
 from utils.service.inject import inject
 
 
@@ -17,11 +17,11 @@ async def clean_message(context: CallbackContext, chat_id: int, message_id: int)
         return True
     except BadRequest as error:
         if "not found" in str(error):
-            Log.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息不存在")
+            logger.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息不存在")
         elif "Message can't be deleted" in str(error):
-            Log.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息无法删除 可能是没有授权")
+            logger.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息无法删除 可能是没有授权")
         else:
-            Log.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 \n", error)
+            logger.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 \n", error)
     return False
 
 
@@ -73,7 +73,7 @@ class NewChatMembersHandler:
             for user in message.new_chat_members:
                 if user.id == context.bot.id:
                     if from_user is not None:
-                        Log.info(f"用户 {from_user.full_name}[{from_user.id}] 在群 {chat.title}[{chat.id}] 邀请BOT")
+                        logger.info(f"用户 {from_user.full_name}[{from_user.id}] 在群 {chat.title}[{chat.id}] 邀请BOT")
                         admin_list = await self.bot_admin_service.get_admin_list()
                         if from_user.id in admin_list:
                             await context.bot.send_message(message.chat_id,
@@ -81,10 +81,10 @@ class NewChatMembersHandler:
                         else:
                             quit_status = True
                     else:
-                        Log.info(f"未知用户 在群 {chat.title}[{chat.id}] 邀请BOT")
+                        logger.info(f"未知用户 在群 {chat.title}[{chat.id}] 邀请BOT")
                         quit_status = True
         if quit_status:
-            Log.warning("不是管理员邀请！退出群聊。")
+            logger.warning("不是管理员邀请！退出群聊。")
             await context.bot.send_message(message.chat_id, "派蒙不想进去！不是旅行者的邀请！")
             await context.bot.leave_chat(chat.id)
         else:

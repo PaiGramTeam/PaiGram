@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
 
-from logger import Log
+from utils.log import logger
 from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -28,7 +28,7 @@ class Map(BasePlugins):
         ]
 
     async def init_point_list_and_map(self):
-        Log.info("正在初始化地图资源节点")
+        logger.info("正在初始化地图资源节点")
         if not self.init_resource_map:
             await self.map_helper.init_point_list_and_map()
             self.init_resource_map = True
@@ -45,7 +45,7 @@ class Map(BasePlugins):
         if len(args) >= 1:
             resource_name = args[0]
         else:
-            Log.info(f"用户: {user.full_name} [{user.id}] 使用了 map 命令")
+            logger.info(f"用户: {user.full_name} [{user.id}] 使用了 map 命令")
             await message.reply_text("请输入要查找的资源，或私聊派蒙发送 `/map list` 查看资源列表", parse_mode="Markdown")
             return
         if resource_name in ("list", "列表"):
@@ -54,11 +54,11 @@ class Map(BasePlugins):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
                 return
-            Log.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 资源列表")
+            logger.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 资源列表")
             text = self.map_helper.get_resource_list_mes()
             await message.reply_text(text)
             return
-        Log.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 {resource_name}")
+        logger.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 {resource_name}")
         text = await self.map_helper.get_resource_map_mes(resource_name)
         if "不知道" in text or "没有找到" in text:
             await message.reply_text(text, parse_mode="Markdown")

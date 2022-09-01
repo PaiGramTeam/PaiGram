@@ -3,7 +3,7 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.ext import filters, ConversationHandler, CommandHandler, MessageHandler, CallbackContext
 
 from core.game.services import GameStrategyService
-from logger import Log
+from utils.log import logger
 from plugins.base import BasePlugins
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
@@ -54,7 +54,7 @@ class Strategy(BasePlugins):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
-        Log.info(f"用户 {user.full_name}[{user.id}] 查询角色攻略命令请求 || 参数 {character_name}")
+        logger.info(f"用户 {user.full_name}[{user.id}] 查询角色攻略命令请求 || 参数 {character_name}")
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         file_path = await url_to_file(url, "")
         caption = "Form 米游社 西风驿站  " \

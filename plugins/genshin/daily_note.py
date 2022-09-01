@@ -12,7 +12,7 @@ from core.cookies.services import CookiesService
 from core.template.services import TemplateService
 from core.user.repositories import UserNotFoundError
 from core.user.services import UserService
-from logger import Log
+from utils.log import logger
 from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -94,7 +94,7 @@ class DailyNote(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
         message = update.message
-        Log.info(f"用户 {user.full_name}[{user.id}] 查询游戏状态命令请求")
+        logger.info(f"用户 {user.full_name}[{user.id}] 查询游戏状态命令请求")
         try:
             client = await get_genshin_client(user.id, self.user_service, self.cookies_service)
             png_data = await self._get_daily_note(client)

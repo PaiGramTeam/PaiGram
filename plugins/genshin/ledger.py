@@ -12,7 +12,7 @@ from core.cookies.services import CookiesService
 from core.template.services import TemplateService
 from core.user.repositories import UserNotFoundError
 from core.user.services import UserService
-from logger import Log
+from utils.log import logger
 from plugins.base import BasePlugins
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
@@ -156,7 +156,7 @@ class Ledger(BasePlugins):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
-        Log.info(f"用户 {user.full_name}[{user.id}] 查询原石手扎")
+        logger.info(f"用户 {user.full_name}[{user.id}] 查询原石手扎")
         await update.message.reply_chat_action(ChatAction.TYPING)
         try:
             client = await get_genshin_client(user.id, self.user_service, self.cookies_service)

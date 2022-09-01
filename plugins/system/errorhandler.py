@@ -9,19 +9,19 @@ from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 
 from config import config
-from logger import Log
+from utils.log import logger
 
 try:
     notice_chat_id = config.error_notification_chat_id
 except KeyError as error:
-    Log.warning("错误通知Chat_id获取失败或未配置，BOT发生致命错误时不会收到通知 错误信息为\n", error)
+    logger.warning("错误通知Chat_id获取失败或未配置，BOT发生致命错误时不会收到通知 错误信息为\n", error)
     notice_chat_id = None
 
 
 async def error_handler(update: object, context: CallbackContext) -> None:
-    """记录错误并发送消息通知开发人员。 Log the error and send a telegram message to notify the developer."""
+    """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
 
-    Log.error(msg="处理函数时发生异常:", exc_info=context.error)
+    logger.error(msg="处理函数时发生异常:", exc_info=context.error)
 
     if notice_chat_id is None:
         return
@@ -43,7 +43,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
     )
     try:
         if 'make sure that only one bot instance is running' in tb_string:
-            Log.error("其他机器人在运行，请停止！")
+            logger.error("其他机器人在运行，请停止！")
             return
         await context.bot.send_message(notice_chat_id, text_1, parse_mode=ParseMode.HTML)
         await context.bot.send_message(notice_chat_id, text_2, parse_mode=ParseMode.HTML)
@@ -61,7 +61,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
                 try:
                     await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
                 except BadRequest as exc_1:
-                    Log.error("处理函数时发生异常", exc_1)
+                    logger.error("处理函数时发生异常", exc_1)
     effective_user = update.effective_user
     try:
         message: Optional[Message] = None
@@ -73,7 +73,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
             message = update.edited_message
         if message is not None:
             chat = message.chat
-            Log.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
+            logger.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
                      f"在 {chat.full_name}[{chat.id}]"
                      f"的 update_id[{update.update_id}] 错误信息")
             text = f"派蒙这边发生了点问题无法处理！\n" \
@@ -82,4 +82,4 @@ async def error_handler(update: object, context: CallbackContext) -> None:
             await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove(),
                                            parse_mode=ParseMode.HTML)
     except BadRequest as exc:
-        Log.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为 {str(exc)}")
+        logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为 {str(exc)}")

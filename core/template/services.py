@@ -6,7 +6,7 @@ from jinja2 import PackageLoader, Environment, Template
 from playwright.async_api import ViewportSize
 
 from config import config
-from logger import Log
+from utils.log import logger
 from utils.aiobrowser import AioBrowser
 
 
@@ -56,7 +56,7 @@ class TemplateService:
         template = self.get_template(template_path, template_name, auto_escape)
         template_data["res_path"] = f"file://{self._current_dir}"
         html = await template.render_async(**template_data)
-        Log.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
+        logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
         browser = await self._browser.get_browser()
         start_time = time.time()
         page = await browser.new_page(viewport=viewport)
@@ -66,5 +66,5 @@ class TemplateService:
             await page.evaluate(evaluate)
         png_data = await page.screenshot(full_page=full_page)
         await page.close()
-        Log.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
+        logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
         return png_data

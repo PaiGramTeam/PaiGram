@@ -1,7 +1,7 @@
 import inspect
 from functools import wraps
 
-from logger import Log
+from utils.log import logger
 from models.types import Func
 from utils.service.manager import ServicesDict
 
@@ -12,9 +12,9 @@ def get_injections(func: Func):
         signature = inspect.signature(func)
     except ValueError as exception:
         if "no signature found" in str(exception):
-            Log.warning("no signature found", exception)
+            logger.warning("no signature found", exception)
         elif "not supported by signature" in str(exception):
-            Log.warning("not supported by signature", exception)
+            logger.warning("not supported by signature", exception)
         else:
             raise exception
     else:

@@ -12,7 +12,7 @@ from telegram.helpers import escape_markdown
 from core.admin import BotAdminService
 from core.quiz import QuizService
 from core.quiz.models import Answer, Question
-from logger import Log
+from utils.log import logger
 from plugins.base import BasePlugins
 from utils.decorators.restricts import restricts
 from utils.plugins.manager import listener_plugins_class
@@ -73,7 +73,7 @@ class QuizPlugin(BasePlugins):
         user = update.effective_user
         question_id_list = await self.quiz_service.get_question_id_list()
         if filters.ChatType.GROUPS.filter(update.message):
-            Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 发送挑战问题命令请求")
+            logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 发送挑战问题命令请求")
             if len(question_id_list) == 0:
                 return None
         if len(question_id_list) == 0:
@@ -88,7 +88,7 @@ class QuizPlugin(BasePlugins):
                 correct_option = answer.text
         if correct_option is None:
             question_id = question["question_id"]
-            Log.warning(f"Quiz模块 correct_option 异常 question_id[{question_id}] ")
+            logger.warning(f"Quiz模块 correct_option 异常 question_id[{question_id}] ")
             return None
         random.shuffle(_options)
         index = _options.index(correct_option)
@@ -102,7 +102,7 @@ class QuizPlugin(BasePlugins):
         user = update.effective_user
         message = update.message
         if filters.ChatType.PRIVATE.filter(message):
-            Log.info(f"用户 {user.full_name}[{user.id}] quiz命令请求")
+            logger.info(f"用户 {user.full_name}[{user.id}] quiz命令请求")
             admin_list = await self.bot_admin_service.get_admin_list()
             if user.id in admin_list:
                 quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
@@ -183,7 +183,7 @@ class QuizPlugin(BasePlugins):
             await update.message.reply_text("Redis数据错误，重载失败", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except ResponseError as error:
-            Log.error("重载问题失败", error)
+            logger.error("重载问题失败", error)
             await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
                                             reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -251,7 +251,7 @@ class QuizPlugin(BasePlugins):
                 try:
                     await self.quiz_service.refresh_quiz()
                 except ResponseError as error:
-                    Log.error("重载问题失败", error)
+                    logger.error("重载问题失败", error)
                     await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
                                                     reply_markup=ReplyKeyboardRemove())
                     return ConversationHandler.END
@@ -283,7 +283,7 @@ class QuizPlugin(BasePlugins):
             await update.message.reply_text("删除问题成功", reply_markup=ReplyKeyboardRemove())
             await self.quiz_service.refresh_quiz()
         except ResponseError as error:
-            Log.error("重载问题失败", error)
+            logger.error("重载问题失败", error)
             await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记",
                                             reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END

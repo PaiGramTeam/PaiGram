@@ -4,7 +4,7 @@ from pymysql import IntegrityError
 from telegram import Bot
 
 from config import config
-from logger import Log
+from utils.log import logger
 from .cache import BotAdminCache, GroupAdminCache
 from .repositories import BotAdminRepository
 
@@ -27,7 +27,7 @@ class BotAdminService:
         try:
             await self._repository.add_by_user_id(user_id)
         except IntegrityError as error:
-            Log.warning(f"{user_id} 已经存在数据库 \n", error)
+            logger.warning(f"{user_id} 已经存在数据库 \n", error)
         admin_list = await self._repository.get_all_user_id()
         for config_admin in config.admins:
             admin_list.append(config_admin["user_id"])

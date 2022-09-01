@@ -2,7 +2,7 @@ from typing import List
 
 from telegram.ext import Application
 
-from logger import Log
+from utils.log import logger
 from utils.manager import ModulesManager
 
 JobsClass: List[object] = []
@@ -33,12 +33,12 @@ class JobsManager(ModulesManager):
             if callable(func):
                 try:
                     func.build_jobs(application.job_queue)
-                    # Log.info(f"添加每日Job成功 Job名称[{handler.name}] Job每日执行时间[{handler.time.isoformat()}]")
+                    # logger.info(f"添加每日Job成功 Job名称[{handler.name}] Job每日执行时间[{handler.time.isoformat()}]")
                 except AttributeError as exc:
                     if "build_jobs" in str(exc):
-                        Log.error("build_jobs 函数未找到", exc)
-                    Log.error("初始化Class失败", exc)
+                        logger.error("build_jobs 函数未找到", exc)
+                    logger.error("初始化Class失败", exc)
                 except BaseException as exc:
-                    Log.error("初始化Class失败", exc)
+                    logger.error("初始化Class失败", exc)
                 finally:
                     pass

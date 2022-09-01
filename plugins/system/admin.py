@@ -3,7 +3,7 @@ from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
 from core.admin import BotAdminService
-from logger import Log
+from utils.log import logger
 from utils.decorators.admins import bot_admins_rights_check
 from utils.plugins.manager import listener_plugins_class
 from utils.service.inject import inject
@@ -65,7 +65,7 @@ class Admin:
                 await message.reply_text("输入错误")
                 return
         except ValueError as error:
-            Log.error("获取 chat_id 发生错误！ 错误信息为 \n", error)
+            logger.error("获取 chat_id 发生错误！ 错误信息为 \n", error)
             await message.reply_text("输入错误")
             return
         try:
@@ -76,7 +76,7 @@ class Admin:
                 pass
             await context.bot.leave_chat(chat_id)
         except (BadRequest, Forbidden) as error:
-            Log.error(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 \n", error)
+            logger.error(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 \n", error)
             await message.reply_text(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 {str(error)}")
             return
         await message.reply_text(f"退出 chat_id[{chat_id}] 成功！")

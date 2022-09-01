@@ -4,7 +4,7 @@ from importlib import import_module
 from os import path
 from typing import List, Union
 
-from logger import Log
+from utils.log import logger
 from models.base import ModuleInfo
 
 
@@ -45,11 +45,11 @@ class ModulesManager:
                 try:
                     import_module(f"{module_info.package_path}")
                 except ImportError as exc:
-                    Log.warning(f"{self.manager_name}加载 {module_info} 失败", exc)
+                    logger.warning(f"{self.manager_name}加载 {module_info} 失败", exc)
                 except ImportWarning as exc:
-                    Log.warning(f"{self.manager_name}加载 {module_info} 成功但有警告", exc)
+                    logger.warning(f"{self.manager_name}加载 {module_info} 成功但有警告", exc)
                 except BaseException as exc:
-                    Log.warning(f"{self.manager_name}加载 {module_info} 失败", exc)
+                    logger.warning(f"{self.manager_name}加载 {module_info} 失败", exc)
                 else:
                     module_name_list.append(module_info.module_name)
-        Log.info(f"{self.manager_name}加载模块: " + ", ".join(module_name_list))
+        logger.info(f"{self.manager_name}加载模块: " + ", ".join(module_name_list))

@@ -6,7 +6,7 @@ from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, C
     filters
 from telegram.helpers import escape_markdown
 
-from logger import Log
+from utils.log import logger
 from models.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
 from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
@@ -72,7 +72,7 @@ class ArtifactRate(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         message = update.message
         user = update.effective_user
-        Log.info(f"用户 {user.full_name}[{user.id}] 圣遗物评分命令请求")
+        logger.info(f"用户 {user.full_name}[{user.id}] 圣遗物评分命令请求")
         context.user_data["artifact_attr"] = None
         photo_file: Optional[File] = None
         if message is None:

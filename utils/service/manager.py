@@ -1,7 +1,7 @@
 import inspect
 from typing import List, Dict
 
-from logger import Log
+from utils.log import logger
 from models.types import Func
 from utils.aiobrowser import AioBrowser
 from utils.manager import ModulesManager
@@ -42,10 +42,10 @@ class ServicesManager(ModulesManager):
                     signature = inspect.signature(func)
                 except ValueError as exception:
                     if "no signature found" in str(exception):
-                        Log.warning("no signature found", exception)
+                        logger.warning("no signature found", exception)
                         break
                     elif "not supported by signature" in str(exception):
-                        Log.warning("not supported by signature", exception)
+                        logger.warning("not supported by signature", exception)
                         break
                     else:
                         raise exception
@@ -63,6 +63,6 @@ class ServicesManager(ModulesManager):
                     class_name = handlers_list.__class__.__name__
                     ServicesDict.setdefault(class_name, handlers_list)
                 except BaseException as exc:
-                    Log.error("初始化Service失败", exc)
+                    logger.error("初始化Service失败", exc)
                 finally:
                     pass

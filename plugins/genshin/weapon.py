@@ -4,7 +4,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 
 from core.template.services import TemplateService
 from core.wiki.services import WikiService
-from logger import Log
+from utils.log import logger
 from metadata.shortname import weaponToName
 from models.wiki.base import SCRAPE_HOST
 from models.wiki.weapon import Weapon
@@ -66,7 +66,7 @@ class WeaponPlugin(BasePlugins):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
-        Log.info(f"用户 {user.full_name}[{user.id}] 查询武器命令请求 || 参数 {weapon_name}")
+        logger.info(f"用户 {user.full_name}[{user.id}] 查询武器命令请求 || 参数 {weapon_name}")
         await message.reply_chat_action(ChatAction.TYPING)
 
         async def input_template_data(_weapon_data: Weapon):

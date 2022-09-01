@@ -10,7 +10,7 @@ from httpx import UnsupportedProtocol
 
 from core.cookies.services import CookiesService
 from core.user.services import UserService
-from logger import Log
+from utils.log import logger
 from models.base import RegionEnum
 
 USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
@@ -49,11 +49,11 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
             try:
                 data = await client.get(url)
             except UnsupportedProtocol as error:
-                Log.error(f"连接不支持 url[{url}]")
-                Log.error("错误信息为", error)
+                logger.error(f"连接不支持 url[{url}]")
+                logger.error("错误信息为", error)
                 return ""
         if data.is_error:
-            Log.error(f"请求出现错误 url[{url}] status_code[{data.status_code}]")
+            logger.error(f"请求出现错误 url[{url}] status_code[{data.status_code}]")
             return ""
         async with aiofiles.open(file_dir, mode='wb') as f:
             await f.write(data.content)

@@ -8,7 +8,7 @@ from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, M
 from telegram.helpers import escape_markdown
 
 from config import config
-from logger import Log
+from utils.log import logger
 from models.apihelper.base import ArtworkImage
 from models.apihelper.hyperion import Hyperion
 from plugins.base import BasePlugins
@@ -64,7 +64,7 @@ class Post(BasePlugins):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.message
-        Log.info(f"用户 {user.full_name}[{user.id}] POST命令请求")
+        logger.info(f"用户 {user.full_name}[{user.id}] POST命令请求")
         admin_list = await self.service.admin.get_admin_list()
         if user.id not in admin_list:
             await message.reply_text("你不是BOT管理员，不能使用此命令！")
@@ -120,7 +120,7 @@ class Post(BasePlugins):
                 return ConversationHandler.END
         except (BadRequest, TypeError) as error:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
-            Log.error("Post模块发送图片时发生错误", error)
+            logger.error("Post模块发送图片时发生错误", error)
             return ConversationHandler.END
         post_handler_data.post_text = post_text
         post_handler_data.post_images = post_images
@@ -182,7 +182,7 @@ class Post(BasePlugins):
                 name = channel_info["name"]
                 reply_keyboard.append([f"{name}"])
         except KeyError as error:
-            Log.error("从配置文件获取频道信息发生错误，退出任务", error)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("请选择你要推送的频道",
@@ -199,7 +199,7 @@ class Post(BasePlugins):
                 if message.text == channel_info["name"]:
                     channel_id = channel_info["chat_id"]
         except KeyError as error:
-            Log.error("从配置文件获取频道信息发生错误，退出任务", error)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if channel_id == -1:
@@ -256,7 +256,7 @@ class Post(BasePlugins):
                 if post_handler_data.channel_id == channel_info["chat_id"]:
                     channel_name = channel_info["name"]
         except KeyError as error:
-            Log.error("从配置文件获取频道信息发生错误，退出任务", error)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         post_text = post_handler_data.post_text
@@ -283,7 +283,7 @@ class Post(BasePlugins):
                 return ConversationHandler.END
         except (BadRequest, TypeError) as error:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
-            Log.error("Post模块发送图片时发生错误", error)
+            logger.error("Post模块发送图片时发生错误", error)
             return ConversationHandler.END
         await message.reply_text("推送成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END

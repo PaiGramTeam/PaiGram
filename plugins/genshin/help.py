@@ -5,7 +5,7 @@ from telegram.ext import CommandHandler, CallbackContext
 
 from config import config
 from core.template.services import TemplateService
-from logger import Log
+from utils.log import logger
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.plugins.manager import listener_plugins_class
@@ -34,7 +34,7 @@ class Help:
     async def command_start(self, update: Update, _: CallbackContext) -> None:
         message = update.message
         user = update.effective_user
-        Log.info(f"用户 {user.full_name}[{user.id}] 发出help命令")
+        logger.info(f"用户 {user.full_name}[{user.id}] 发出help命令")
         if self.file_id is None or config.debug:
             await message.reply_chat_action(ChatAction.TYPING)
             help_png = await self.template_service.render('bot/help', "help.html", {}, {"width": 768, "height": 768})
@@ -48,5 +48,5 @@ class Help:
                 await message.reply_photo(self.file_id, allow_sending_without_reply=True)
             except BadRequest as error:
                 self.file_id = None
-                Log.error("发送图片失败，尝试清空已经保存的file_id，错误信息为", error)
+                logger.error("发送图片失败，尝试清空已经保存的file_id，错误信息为", error)
                 await message.reply_text("发送图片失败", allow_sending_without_reply=True)

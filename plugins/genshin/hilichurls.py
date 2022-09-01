@@ -4,7 +4,7 @@ from os import sep
 from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext, filters
 
-from logger import Log
+from utils.log import logger
 from plugins.base import BasePlugins
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
@@ -47,6 +47,6 @@ class Hilichurls(BasePlugins):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
-        Log.info(f"用户 {user.full_name}[{user.id}] 查询丘丘语字典命令请求 || 参数 {msg}")
+        logger.info(f"用户 {user.full_name}[{user.id}] 查询丘丘语字典命令请求 || 参数 {msg}")
         result = self.hilichurls_dictionary[f"{search}"]
         await message.reply_markdown_v2(f"丘丘语: `{search}`\n\n`{result}`")

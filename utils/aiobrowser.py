@@ -3,7 +3,7 @@ from typing import Optional
 
 from playwright.async_api import async_playwright, Browser, Playwright
 
-from logger import Log
+from utils.log import logger
 
 
 class AioBrowser:
@@ -14,13 +14,13 @@ class AioBrowser:
         if self._loop is None:
             self._loop = asyncio.get_event_loop()
         try:
-            Log.info("正在尝试启动Playwright")
+            logger.info("正在尝试启动Playwright")
             self._loop.run_until_complete(self._browser_init())
-            Log.info("启动Playwright成功")
+            logger.info("启动Playwright成功")
         except (KeyboardInterrupt, SystemExit):
             pass
         except Exception as exc:
-            Log.error("启动浏览器失败")
+            logger.error("启动浏览器失败")
             raise exc
 
     async def _browser_init(self) -> Browser:

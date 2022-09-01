@@ -11,7 +11,7 @@ from core.cookies.services import CookiesService
 from core.user.models import User
 from core.user.repositories import UserNotFoundError
 from core.user.services import UserService
-from logger import Log
+from utils.log import logger
 from models.base import RegionEnum
 from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
@@ -61,7 +61,7 @@ class AddUser(BasePlugins):
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
-        Log.info(f"用户 {user.full_name}[{user.id}] 绑定账号命令请求")
+        logger.info(f"用户 {user.full_name}[{user.id}] 绑定账号命令请求")
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if add_user_command_data is None:
             cookies_command_data = AddUserCommandData()
@@ -167,7 +167,7 @@ class AddUser(BasePlugins):
         add_user_command_data.game_uid = user_info.uid
         reply_keyboard = [['确认', '退出']]
         await update.message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        Log.info(f"用户 {user.full_name}[{user.id}] 获取账号 {user_info.nickname}[{user_info.uid}] 信息成功")
+        logger.info(f"用户 {user.full_name}[{user.id}] 获取账号 {user_info.nickname}[{user_info.uid}] 信息成功")
         message = f"*角色信息*\n" \
                   f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n" \
                   f"角色等级：{user_info.level}\n" \
@@ -213,7 +213,7 @@ class AddUser(BasePlugins):
                 await self.user_service.update_user(user_db)
                 await self.cookies_service.update_cookies(user.id, add_user_command_data.cookies,
                                                           add_user_command_data.region)
-            Log.info(f"用户 {user.full_name}[{user.id}] 绑定账号成功")
+            logger.info(f"用户 {user.full_name}[{user.id}] 绑定账号成功")
             await update.message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         else:

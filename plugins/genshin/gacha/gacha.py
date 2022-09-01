@@ -6,7 +6,7 @@ from telegram.constants import ChatAction
 from telegram.ext import filters, CommandHandler, MessageHandler, CallbackContext
 
 from core.template import TemplateService
-from logger import Log
+from utils.log import logger
 from models.apihelper.gacha import GachaInfo
 from plugins.base import BasePlugins
 from plugins.genshin.gacha.wish import WishCountInfo, get_one
@@ -78,7 +78,7 @@ class Gacha(BasePlugins):
                 return
         else:
             gacha_info = await self.gacha_info(default=True)
-        Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
+        logger.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
         # 用户数据储存和处理
         gacha_id: str = gacha_info["gacha_id"]
         user_gacha: dict[str, WishCountInfo] = context.user_data.get("gacha")

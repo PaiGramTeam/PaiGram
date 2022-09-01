@@ -2,7 +2,7 @@ from typing import List
 
 from telegram.ext import Application
 
-from logger import Log
+from utils.log import logger
 from utils.manager import ModulesManager
 
 PluginsClass: List[object] = []
@@ -36,9 +36,9 @@ class PluginsManager(ModulesManager):
                         application.add_handler(handler)
                 except AttributeError as exc:
                     if "create_handlers" in str(exc):
-                        Log.error("创建 handlers 函数未找到", exc)
-                    Log.error("初始化Class失败", exc)
+                        logger.error("创建 handlers 函数未找到", exc)
+                    logger.error("初始化Class失败", exc)
                 except BaseException as exc:
-                    Log.error("初始化Class失败", exc)
+                    logger.error("初始化Class失败", exc)
                 finally:
                     pass
