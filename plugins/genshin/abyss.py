@@ -46,6 +46,7 @@ class Abyss(BasePlugins):
 
     async def _get_abyss_data(self, client: Client) -> dict:
         uid = client.uid
+        await client.get_record_cards()
         spiral_abyss_info = await client.get_spiral_abyss(uid)
         if not spiral_abyss_info.unlocked:
             raise ValueError("unlocked is false")
