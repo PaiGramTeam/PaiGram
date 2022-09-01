@@ -65,10 +65,6 @@ class Post(BasePlugins):
         user = update.effective_user
         message = update.message
         Log.info(f"用户 {user.full_name}[{user.id}] POST命令请求")
-        admin_list = await self.service.admin.get_admin_list()
-        if user.id not in admin_list:
-            await message.reply_text("你不是BOT管理员，不能使用此命令！")
-            return ConversationHandler.END
         post_handler_data = context.chat_data.get("post_handler_data")
         if post_handler_data is None:
             post_handler_data = PostHandlerData()
