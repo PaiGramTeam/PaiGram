@@ -10,6 +10,7 @@ from telegram.error import BadRequest, TimedOut, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
 
 from logger import Log
+from utils.error import UrlResourcesNotFoundError
 
 
 async def send_user_notification(update: Update, _: CallbackContext, text: str):
@@ -73,8 +74,11 @@ def error_callable(func: Callable) -> Callable:
             Log.error("python-telegram-bot 模块连接服务器 TimedOut")
             await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
             return ConversationHandler.END
+        except UrlResourcesNotFoundError as exc:
+            Log.error("URL数据资源未找到", exc)
+            await send_user_notification(update, context, "出错了呜呜呜 ~ 资源未找到 ~ ")
+            return ConversationHandler.END
         except InvalidCookies as exc:
-            Log.warning("Cookie错误", exc)
             if "[10001]" in str(exc):
                 await send_user_notification(update, context, "Cookies无效，请尝试重新绑定账户")
             elif "[-100]" in str(exc):
@@ -82,6 +86,7 @@ def error_callable(func: Callable) -> Callable:
             elif "[10103]" in str(exc):
                 await send_user_notification(update, context, "Cookie有效，但没有绑定到游戏帐户，请尝试重新绑定邮游戏账户")
             else:
+                Log.warning("Cookie错误", exc)
                 await send_user_notification(update, context, "Cookies无效，具体原因未知")
             return ConversationHandler.END
         except TooManyRequests as exc:

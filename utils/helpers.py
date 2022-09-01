@@ -12,6 +12,7 @@ from core.cookies.services import CookiesService
 from core.user.services import UserService
 from logger import Log
 from models.base import RegionEnum
+from utils.error import UrlResourcesNotFoundError
 
 USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
                   "Chrome/90.0.4430.72 Safari/537.36"
@@ -54,9 +55,13 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
                 return ""
         if data.is_error:
             Log.error(f"请求出现错误 url[{url}] status_code[{data.status_code}]")
-            return ""
+            raise UrlResourcesNotFoundError(url)
+        if data.status_code != 200:
+            Log.error(f"url_to_file 获取url[{url}] 错误 status_code[f{data.status_code}]")
+            raise UrlResourcesNotFoundError(url)
         async with aiofiles.open(file_dir, mode='wb') as f:
             await f.write(data.content)
+    Log.debug(f"url_to_file 获取url[{url}] 并下载到 file_dir[{file_dir}]")
     return prefix + file_dir
 
 

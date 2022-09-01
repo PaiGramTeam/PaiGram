@@ -12,3 +12,8 @@ class NotFoundError(Exception):
 class RegionNotFoundError(NotFoundError):
     entity_name: str = "RegionEnum"
     entity_value_name: str = "region"
+
+
+class UrlResourcesNotFoundError(NotFoundError):
+    entity_name: str = "url resources"
+    entity_value_name: str = "url"
