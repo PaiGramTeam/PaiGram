@@ -24,3 +24,5 @@ asyncmy>=0.2.5
 python-dotenv>=0.20.0
 aiolimiter>=1.0.0
 alembic>=1.8.1
+black>=22.8.0
+
