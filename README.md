@@ -13,32 +13,28 @@
 
 项目仅供学习交流使用，严禁用于任何商业用途和非法行为
 
-## 需求
-
-### 环境需求
+## 环境需求
 
 - Python 3.8+
 - MySQL
 - Redis
 
-#### 环境需求需要的注意事项
+## 使用方法
 
-因为上游 `genshin.py` 的原因 本项目 python 最低版本为 3.8
+### 1. 安装 `poetry`
+```bash
+pip install --upgrade poetry 
+```
 
-### 模块需求
+### 2. 安装依赖
+```bash
+poetry update
+```
+### 3. 运行
+```bash
+python ./main.py
+```
 
-#### 模块需求需要的注意事项
-
-`python-telegram-bot` 需要预览版本 即 `20.0a4`
-
-出现相关的 `telegram` 模块导入的 `ImportError` 错误需要你手动执行 `pip install python-telegram-bot==20.0a2`
-
-请注意你的 python 是否安装 `aiohttp` （ `genshin.py` 的依赖）
-
-如果 `aiohttp` 版本大于 `4.0.0a1`
-会导致 `redis` 和 `aiohttp` 的依赖 `async-timeout` 版本冲突进而运行代码导致 `TypeError` 异常
-
-解决上面版本冲突导致的错误需要你手动执行 `pip install aiohttp==3.8.1`
 
 ## 其他说明
 
