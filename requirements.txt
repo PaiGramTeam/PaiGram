@@ -1,7 +1,6 @@
 redis>=4.3.3
 ujson==5.4.0
-genshin>=1.2.1
-aiomysql>=0.1.1
+git+https://github.com/thesadru/genshin.py
 colorlog~=6.6.0
 numpy~=1.22.3
 httpx==0.23.0
