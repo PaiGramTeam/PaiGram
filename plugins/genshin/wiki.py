@@ -14,7 +14,7 @@ class Wiki(BasePlugins):
     """有关WIKI操作"""
 
     @inject
-    def __init__(self, wiki_service: WikiService):
+    def __init__(self, wiki_service: WikiService = None):
         self.wiki_service = wiki_service
 
     @classmethod

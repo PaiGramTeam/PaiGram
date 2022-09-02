@@ -14,7 +14,7 @@ class Admin:
     """有关BOT ADMIN处理"""
 
     @inject
-    def __init__(self, bot_admin_service: BotAdminService):
+    def __init__(self, bot_admin_service: BotAdminService = None):
         self.bot_admin_service = bot_admin_service
 
     @classmethod
