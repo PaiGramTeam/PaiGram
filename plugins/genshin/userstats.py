@@ -42,11 +42,13 @@ class UserStats(BasePlugins):
 
     async def _start_get_user_info(self, client: Client, uid: int = -1) -> bytes:
         if uid == -1:
-            uid = client.uid
+            _uid = client.uid
+        else:
+            _uid = uid
         try:
-            user_info = await client.get_genshin_user(uid)
+            user_info = await client.get_genshin_user(_uid)
         except GenshinException as error:
-            Log.warning("get_record_card请求失败 \n", error)
+            Log.warning("get_record_card请求失败", error)
             raise error
         if user_info.teapot is None:
             raise ValueError("洞庭湖未解锁")
@@ -57,11 +59,11 @@ class UserStats(BasePlugins):
             else:
                 record_card_info = await client.get_record_card()
         except DataNotPublic as error:
-            Log.warning("get_record_card请求失败 查询的用户数据未公开 \n", error)
-            nickname = uid
+            Log.warning("get_record_card请求失败 查询的用户数据未公开", error)
+            nickname = _uid
             user_uid = ""
         except GenshinException as error:
-            Log.warning("get_record_card请求失败 \n", error)
+            Log.warning("get_record_card请求失败", error)
             raise error
         else:
             nickname = record_card_info.nickname
