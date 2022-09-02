@@ -1,5 +1,6 @@
 import datetime
 import time
+import asyncio
 
 from aiohttp import ClientConnectorError
 from genshin import Game, GenshinException, AlreadyClaimed, InvalidCookies
@@ -96,6 +97,7 @@ class SignJob:
                 text = f"<a href=\"tg://user?id={sign_db.user_id}\">NOTICE {sign_db.user_id}</a>\n\n{text}"
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
+                await asyncio.sleep(5)  # 回复延迟5S避免触发洪水防御
             except BadRequest as exc:
                 Log.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
                 sign_db.status = SignStatusEnum.BAD_REQUEST
