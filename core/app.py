@@ -7,6 +7,7 @@ import pytz
 from telegram.ext import Application as TgApplication, Defaults
 
 from core.config import AppConfig
+# noinspection PyProtectedMember
 from core.plugin import _Plugin as Plugin
 from utils.const import PLUGIN_DIR, PROJECT_ROOT
 from utils.log import logger
