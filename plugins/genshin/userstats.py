@@ -21,8 +21,8 @@ from utils.service.inject import inject
 
 
 @listener_plugins_class()
-class Uid(BasePlugins):
-    """玩家查询"""
+class UserStats(BasePlugins):
+    """玩家统计查询"""
 
     COMMAND_RESULT, = range(10200, 10201)
 
@@ -37,8 +37,8 @@ class Uid(BasePlugins):
     @classmethod
     def create_handlers(cls):
         uid = cls()
-        return [CommandHandler('uid', uid.command_start, block=True),
-                MessageHandler(filters.Regex(r"^玩家查询(.*)"), uid.command_start, block=True)]
+        return [CommandHandler('stats', uid.command_start, block=True),
+                MessageHandler(filters.Regex(r"^玩家统计查询(.*)"), uid.command_start, block=True)]
 
     async def _start_get_user_info(self, client: Client, uid: int = -1) -> bytes:
         if uid == -1:
@@ -85,6 +85,7 @@ class Uid(BasePlugins):
             "anemoculus_number": user_info.stats.anemoculi,
             "geoculus_number": user_info.stats.geoculi,
             "electroculus_number": user_info.stats.electroculi,
+            "dendroculi_number": user_info.stats.dendroculi,
             "world_exploration_list": [],
             "teapot_level": user_info.teapot.level,
             "teapot_comfort_num": user_info.teapot.comfort,
