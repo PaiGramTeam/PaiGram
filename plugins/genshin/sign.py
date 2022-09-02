@@ -102,7 +102,8 @@ class Sign(BasePlugins):
         elif method == "关闭":
             return "您还没有开启自动签到"
         elif method == "开启":
-            user = SignUser(user_id=user_id, chat_id=chat_id, status=SignStatusEnum.STATUS_SUCCESS)
+            user = SignUser(user_id=user_id, chat_id=chat_id, time_created=datetime.datetime.now(),
+                            status=SignStatusEnum.STATUS_SUCCESS)
             await self.sign_service.add(user)
             return "开启自动签到成功"
 
