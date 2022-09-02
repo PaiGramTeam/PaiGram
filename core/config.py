@@ -12,7 +12,7 @@ from pydantic import (
 
 from utils.const import PROJECT_ROOT
 
-__all__ = ['AppConfig']
+__all__ = ['AppConfig', 'RedisConfig', 'MySqlConfig']
 
 
 class AppConfig(BaseSettings):

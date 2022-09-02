@@ -1,16 +1,10 @@
 import logging
 import os
+import sys
 from datetime import datetime
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict, Iterable,
-    List, Optional,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import (Any, Callable, Dict, Iterable, List, Literal, Optional, TYPE_CHECKING, Union)
 
 import ujson as json
 from rich.columns import Columns
@@ -66,10 +60,15 @@ FormatTimeCallable = Callable[[datetime], Text]
 logging.addLevelName(5, 'TRACE')
 logging.addLevelName(22, 'PLUGIN')
 logging.addLevelName(25, 'SUCCESS')
+color_system: Literal['windows', 'truecolor']
+if sys.platform == 'win32':
+    color_system = 'windows'
+else:
+    color_system = 'truecolor'
 # noinspection SpellCheckingInspection
 log_console = Console(
-    color_system='windows', theme=Theme(DEFAULT_STYLE),
-    width=180 if os.environ.get("PYTHONUNBUFFERED", None) else None
+    color_system=color_system, theme=Theme(DEFAULT_STYLE),
+    width=180 if os.environ.get("PYTHONUNBUFFERED", None) else None  # 针对 Pycharm
 )
 
 
@@ -133,7 +132,8 @@ class Traceback(BaseTraceback):
                 continue
 
             if excluded:
-                assert exclude_frames is not None
+                if exclude_frames is None:
+                    raise ValueError(exclude_frames)
                 yield Text(
                     f"\n... {len(exclude_frames)} frames hidden ...",
                     justify="center",
@@ -266,7 +266,6 @@ class Handler(DefaultRichHandler):
         self.console = log_console
         self.rich_tracebacks = True
         self.tracebacks_show_locals = True
-        self.markup = True
 
     def render(
             self,
@@ -356,8 +355,8 @@ class Handler(DefaultRichHandler):
                 and record.exc_info != (None, None, None)
         ):
             exc_type, exc_value, exc_traceback = record.exc_info
-            assert exc_type is not None
-            assert exc_value is not None
+            if exc_type is None or exc_value is None:
+                raise ValueError(record)
             try:
                 traceback = Traceback.from_exception(
                     exc_type,
@@ -436,14 +435,24 @@ with _lock:
         logger.remove()
         logger.add(Handler(), format="{message}", colorize=False, enqueue=True)
         logger.add(
-            PROJECT_ROOT / 'log/errors.log',
+            PROJECT_ROOT / 'logs/error.log',
             rotation="00:00",
             diagnose=False,
             level="ERROR",
             colorize=False,
-            format="<g>{time:YYYY-MM-DD}</g> <m>{time:HH:mm:ss.SSSS}</m> "
-                   "<level>{level.icon}</level> [<level>{level}</level>] "
-                   "<w>[</w><c><u>{name}</u></c><w>]</w> "
-                   "{message}"
+            format=(
+                FORMAT := "<g>{time:YYYY-MM-DD}</g> <m>{time:HH:mm:ss.SSSS}</m> "
+                          "<level>{level.icon}</level> [<level>{level}</level>] "
+                          "<w>[</w><c><u>{name}</u></c><w>]</w> "
+                          "{message}"
+            )
+        )
+        logger.add(
+            PROJECT_ROOT / 'logs/log.log',
+            rotation="00:00",
+            diagnose=False,
+            level="INFO",
+            colorize=False,
+            format=FORMAT
         )
         __initialized__ = True

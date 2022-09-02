@@ -39,7 +39,7 @@ class _Plugin(object):
                     and
                     isinstance(func := getattr(self, attr), MethodType)
                     and
-                    (data := getattr(func, 'handler_data', None))
+                    (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
                 result.append(self._make_handler(data))
         return result
@@ -80,11 +80,9 @@ class _Conversation(_Plugin):
                             states[key] = [_handler]
                     elif _type == 'fallback':
                         fallbacks.append(_handler)
-                    else:
-                        raise TypeError(_type)
                 else:
                     result.append(_handler)
-        if entry_points and states and fallbacks:
+        if entry_points or states or fallbacks:
             result.append(
                 ConversationHandler(entry_points, states, fallbacks, **self.__class__._con_kwargs)
             )

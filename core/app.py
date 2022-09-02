@@ -1,17 +1,18 @@
+import inspect
 from importlib import import_module
 from multiprocessing import RLock as Lock
-from pathlib import Path
 from typing import Any, Callable, ClassVar, List, NoReturn, Optional, Type
 
 import pytz
+from telegram.error import TimedOut
 from telegram.ext import Application as TgApplication, Defaults
 
 from core.config import AppConfig
 # noinspection PyProtectedMember
 from core.plugin import _Plugin as Plugin
-from utils.const import PLUGIN_DIR, PROJECT_ROOT
+from core.service import Service
+from utils.const import PLUGIN_DIR, PROJECT_ROOT, SERVICE_DIR
 from utils.log import logger
-from utils.typed import StrOrPath
 
 __all__ = ['application']
 
@@ -31,19 +32,18 @@ class Application(object):
     app: Optional[TgApplication] = None
 
     _plugin_init_funcs: List[Callable[[TgApplication], Any]] = []
+    _running_services: List[Service] = []
 
     def _instantiate_plugin(self, plugin: Type[Plugin]) -> Plugin:
         """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
+        signature = inspect.signature(plugin.__init__)
+        for parameter in signature.parameters:
+            ...
         return plugin()
 
-    def install_plugins(self, plugin_path: Optional[StrOrPath] = None):
+    def install_plugins(self):
         """安装插件"""
-        if plugin_path is None:
-            plugin_path = PLUGIN_DIR
-        else:
-            plugin_path = Path(plugin_path).resolve()
-
-        for path in plugin_path.iterdir():  # 遍历插件所在的目录
+        for path in PLUGIN_DIR.iterdir():  # 遍历插件所在的目录
             if not path.name.startswith('_'):
                 if path.is_dir():
                     pkg = str(path.relative_to(PROJECT_ROOT))
@@ -52,10 +52,8 @@ class Application(object):
                 try:
                     module = import_module(pkg := pkg.replace('\\', '.'))  # 导入插件
                 except Exception as e:
-                    logger.error(
-                        f'在导入插件 "{pkg}" 的过程中遇到了错误：\n'
-                        f"[bold red]{type(e).__name__}: {e}[/]", extra={"markup": True}
-                    )
+                    logger.error(f'在导入插件 "{pkg}" 的过程中遇到了错误：')
+                    logger.error(f"{type(e).__name__}: {e}")
                     continue  # 如有错误则继续
                 for attr in dir(module):
                     # 找到该插件
@@ -64,8 +62,33 @@ class Application(object):
                         self.app.add_handlers(instance.handlers)  # 注册它的 handler
                         if hasattr(instance, 'init'):  # 如果有 init 函数 则将这个函数添加至 post_init
                             self._plugin_init_funcs.append(getattr(instance, 'init'))
+                logger.success(f'插件 "{pkg}" 载入成功')
+
+    async def start_services(self):
+        for path in SERVICE_DIR.iterdir():
+            if not path.name.startswith('_') and path.is_file():
+                pkg = str(path.relative_to(PROJECT_ROOT)).split('.')[0].replace('\\', '.')
+                try:
+                    import_module(pkg)
+                except Exception as e:
+                    logger.error(f"在启动服务 \"{pkg}\" 的过程中遇到了错误")
+                    logger.error(f"{type(e).__name__}: {e}")
+                    continue
+        for service_class in Service.__subclasses__():
+            try:
+                if hasattr(service_class, 'from_config'):
+                    instance = service_class.from_config(self.config)
+                else:
+                    instance = service_class()
+                await instance.start()
+                logger.success(f'服务 "{service_class.__name__}" 初始化成功')
+            except Exception as e:
+                logger.error(f'服务 "{service_class.__name__}" 初始化失败', e)
+                continue
 
     async def _post_init(self, app: TgApplication) -> NoReturn:
+        self.install_plugins()
+        await self.start_services()
         for func in self._plugin_init_funcs:
             try:
                 await func(app)
@@ -80,8 +103,12 @@ class Application(object):
             .post_init(self._post_init)
             .build()
         )
-        self.install_plugins()
-        self.app.run_polling()
+        for _ in range(5):
+            try:
+                self.app.run_polling()
+                break
+            except TimedOut:
+                continue
 
 
 application = Application()
