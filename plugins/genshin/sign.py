@@ -57,7 +57,7 @@ class Sign(BasePlugins):
                                                                          game=Game.GENSHIN, lang="zh-cn")
                 Log.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                    Log.error(f"UID {client.uid} 签到失败，触发验证码风控")
+                    Log.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                     return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
             except AlreadyClaimed:
                 result = "今天旅行者已经签到过了~"
