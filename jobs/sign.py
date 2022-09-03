@@ -1,5 +1,6 @@
 import datetime
 import time
+import asyncio
 
 from aiohttp import ClientConnectorError
 from genshin import Game, GenshinException, AlreadyClaimed, InvalidCookies
@@ -16,6 +17,10 @@ from logger import Log
 from utils.helpers import get_genshin_client
 from utils.job.manager import listener_jobs_class
 from utils.service.inject import inject
+
+
+class NeedChallenge(Exception):
+    pass
 
 
 @listener_jobs_class()
@@ -49,8 +54,12 @@ class SignJob:
                 daily_reward_info = await client.get_reward_info(game=Game.GENSHIN)
                 if not daily_reward_info.signed_in:
                     request_daily_reward = await client.request_daily_reward("sign", method="POST", game=Game.GENSHIN)
-                    Log.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
-                    result = "OK"
+                    if request_daily_reward and request_daily_reward.get("success", 0) == 1:
+                        Log.warning(f"UID {client.uid} 签到失败，触发验证码风控")
+                        raise NeedChallenge
+                    else:
+                        Log.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
+                        result = "OK"
                 else:
                     result = "今天旅行者已经签到过了~"
                 reward = rewards[daily_reward_info.claimed_rewards - (1 if daily_reward_info.signed_in else 0)]
@@ -78,13 +87,17 @@ class SignJob:
             except ClientConnectorError:
                 text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
+            except NeedChallenge:
+                text = f"签到失败，触发验证码风控，自动签到自动关闭"
+                sign_db.status = SignStatusEnum.NEED_CHALLENGE
             except BaseException as exc:
                 Log.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
-                continue
+                text = "签到失败了呜呜呜 ~ 执行自动签到时发生错误"
             if sign_db.chat_id < 0:
                 text = f"<a href=\"tg://user?id={sign_db.user_id}\">NOTICE {sign_db.user_id}</a>\n\n{text}"
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
+                await asyncio.sleep(5)  # 回复延迟5S避免触发洪水防御
             except BadRequest as exc:
                 Log.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
                 sign_db.status = SignStatusEnum.BAD_REQUEST

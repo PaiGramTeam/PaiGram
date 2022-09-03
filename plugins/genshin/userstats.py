@@ -21,8 +21,8 @@ from utils.service.inject import inject
 
 
 @listener_plugins_class()
-class Uid(BasePlugins):
-    """玩家查询"""
+class UserStats(BasePlugins):
+    """玩家统计查询"""
 
     COMMAND_RESULT, = range(10200, 10201)
 
@@ -37,16 +37,18 @@ class Uid(BasePlugins):
     @classmethod
     def create_handlers(cls):
         uid = cls()
-        return [CommandHandler('uid', uid.command_start, block=True),
-                MessageHandler(filters.Regex(r"^玩家查询(.*)"), uid.command_start, block=True)]
+        return [CommandHandler('stats', uid.command_start, block=True),
+                MessageHandler(filters.Regex(r"^玩家统计查询(.*)"), uid.command_start, block=True)]
 
     async def _start_get_user_info(self, client: Client, uid: int = -1) -> bytes:
         if uid == -1:
-            uid = client.uid
+            _uid = client.uid
+        else:
+            _uid = uid
         try:
-            user_info = await client.get_genshin_user(uid)
+            user_info = await client.get_genshin_user(_uid)
         except GenshinException as error:
-            Log.warning("get_record_card请求失败 \n", error)
+            Log.warning("get_record_card请求失败", error)
             raise error
         if user_info.teapot is None:
             raise ValueError("洞庭湖未解锁")
@@ -57,11 +59,11 @@ class Uid(BasePlugins):
             else:
                 record_card_info = await client.get_record_card()
         except DataNotPublic as error:
-            Log.warning("get_record_card请求失败 查询的用户数据未公开 \n", error)
-            nickname = uid
+            Log.warning("get_record_card请求失败 查询的用户数据未公开", error)
+            nickname = _uid
             user_uid = ""
         except GenshinException as error:
-            Log.warning("get_record_card请求失败 \n", error)
+            Log.warning("get_record_card请求失败", error)
             raise error
         else:
             nickname = record_card_info.nickname
@@ -85,6 +87,7 @@ class Uid(BasePlugins):
             "anemoculus_number": user_info.stats.anemoculi,
             "geoculus_number": user_info.stats.geoculi,
             "electroculus_number": user_info.stats.electroculi,
+            "dendroculi_number": user_info.stats.dendroculi,
             "world_exploration_list": [],
             "teapot_level": user_info.teapot.level,
             "teapot_comfort_num": user_info.teapot.comfort,

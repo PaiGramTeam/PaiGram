@@ -21,26 +21,25 @@ class TemplateService:
         self._jinja2_env = {}
         self._jinja2_template = {}
 
-    def get_template(self, package_path: str, template_name: str, auto_escape: bool = True) -> Template:
+    def get_template(self, package_path: str, template_name: str) -> Template:
         if config.debug:
             # DEBUG下 禁止复用 方便查看和修改模板
             loader = PackageLoader(self._template_package_name, package_path)
-            jinja2_env = Environment(loader=loader, enable_async=True, autoescape=auto_escape)
+            jinja2_env = Environment(loader=loader, enable_async=True, autoescape=True)
             jinja2_template = jinja2_env.get_template(template_name)
         else:
             jinja2_env: Environment = self._jinja2_env.get(package_path)
             jinja2_template: Template = self._jinja2_template.get(package_path + template_name)
             if jinja2_env is None:
                 loader = PackageLoader(self._template_package_name, package_path)
-                jinja2_env = Environment(loader=loader, enable_async=True, autoescape=auto_escape)
+                jinja2_env = Environment(loader=loader, enable_async=True, autoescape=True)
                 jinja2_template = jinja2_env.get_template(template_name)
                 self._jinja2_env[package_path] = jinja2_env
                 self._jinja2_template[package_path + template_name] = jinja2_template
         return jinja2_template
 
     async def render(self, template_path: str, template_name: str, template_data: dict,
-                     viewport: ViewportSize, full_page: bool = True, auto_escape: bool = True,
-                     evaluate: Optional[str] = None) -> bytes:
+                     viewport: ViewportSize, full_page: bool = True, evaluate: Optional[str] = None) -> bytes:
         """
         模板渲染成图片
         :param template_path: 模板目录
@@ -53,7 +52,7 @@ class TemplateService:
         :return:
         """
         start_time = time.time()
-        template = self.get_template(template_path, template_name, auto_escape)
+        template = self.get_template(template_path, template_name)
         template_data["res_path"] = f"file://{self._current_dir}"
         html = await template.render_async(**template_data)
         Log.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")

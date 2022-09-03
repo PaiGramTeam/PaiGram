@@ -57,7 +57,7 @@ class Sign(BasePlugins):
                                                                          game=Game.GENSHIN, lang="zh-cn")
                 Log.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                    Log.error(f"UID {client.uid} 签到失败，触发验证码风控")
+                    Log.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                     return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
             except AlreadyClaimed:
                 result = "今天旅行者已经签到过了~"
@@ -102,7 +102,8 @@ class Sign(BasePlugins):
         elif method == "关闭":
             return "您还没有开启自动签到"
         elif method == "开启":
-            user = SignUser(user_id=user_id, chat_id=chat_id, status=SignStatusEnum.STATUS_SUCCESS)
+            user = SignUser(user_id=user_id, chat_id=chat_id, time_created=datetime.datetime.now(),
+                            status=SignStatusEnum.STATUS_SUCCESS)
             await self.sign_service.add(user)
             return "开启自动签到成功"
 

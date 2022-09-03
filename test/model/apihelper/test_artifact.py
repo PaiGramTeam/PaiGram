@@ -21,6 +21,9 @@ class TestArtifact(IsolatedAsyncioTestCase):
                          {'type': 'cd', 'name': '暴击伤害', 'value': '10.9%'}]}
         await self.artifact_rate.rate_artifact(artifact_attr)
 
+    async def asyncTearDown(self) -> None:
+        await self.artifact_rate.close()
+
 
 if __name__ == "__main__":
     unittest.main()

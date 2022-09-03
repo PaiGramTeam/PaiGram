@@ -13,32 +13,45 @@
 
 项目仅供学习交流使用，严禁用于任何商业用途和非法行为
 
-## 需求
-
-### 环境需求
+## 环境需求
 
 - Python 3.8+
 - MySQL
 - Redis
 
-#### 环境需求需要的注意事项
+## 使用方法
 
-因为上游 `genshin.py` 的原因 本项目 python 最低版本为 3.8
+### 1. 安装 `poetry`
 
-### 模块需求
+```bash
+pip install --upgrade poetry 
+```
 
-#### 模块需求需要的注意事项
+### 2. 安装依赖
 
-`python-telegram-bot` 需要预览版本 即 `20.0a4`
+```bash
+poetry install
+```
 
-出现相关的 `telegram` 模块导入的 `ImportError` 错误需要你手动执行 `pip install python-telegram-bot==20.0a2`
+### 3. 修改配置
 
-请注意你的 python 是否安装 `aiohttp` （ `genshin.py` 的依赖）
+创建 `.env` 文件并填写数据库连接和 bot token 等参数。
 
-如果 `aiohttp` 版本大于 `4.0.0a1`
-会导致 `redis` 和 `aiohttp` 的依赖 `async-timeout` 版本冲突进而运行代码导致 `TypeError` 异常
+```bash
+cp .env.example .env
+```
 
-解决上面版本冲突导致的错误需要你手动执行 `pip install aiohttp==3.8.1`
+### 4. 初始化数据库
+
+```bash
+alembic upgrade head
+```
+
+### 5. 运行
+
+```bash
+python ./main.py
+```
 
 ## 其他说明
 
@@ -46,9 +59,9 @@
 
 ## Thanks
 
-|                           Nickname                           | Introduce                        |
-| :----------------------------------------------------------: | -------------------------------- |
-| [原神抽卡全机制总结](https://www.bilibili.com/read/cv10468091) | 本项目抽卡模拟器使用的逻辑       |
-|   [西风驿站](https://bbs.mihoyo.com/ys/collection/307224)    | 本项目攻略图图源                 |
-|     [Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)      | 本项使用的抽卡图片和前端资源来源 |
-| [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw) | 本项目参考的爬虫代码 |
+|                                Nickname                                 | Introduce        |
+|:-----------------------------------------------------------------------:|------------------|
+|          [原神抽卡全机制总结](https://www.bilibili.com/read/cv10468091)          | 本项目抽卡模拟器使用的逻辑    |
+| [西风驿站 猫冬](https://bbs.mihoyo.com/ys/accountCenter/postList?id=74019947) | 本项目攻略图图源         |
+|           [Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)           | 本项使用的抽卡图片和前端资源来源 |
+|       [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw)        | 本项目参考的爬虫代码       |
