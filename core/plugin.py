@@ -1,27 +1,34 @@
+import datetime
+import re
 from importlib import import_module
 from re import Pattern
 from types import MethodType
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 # noinspection PyProtectedMember
 from telegram._utils.defaultvalue import DEFAULT_TRUE
 # noinspection PyProtectedMember
-from telegram._utils.types import DVInput
+from telegram._utils.types import DVInput, JSONDict
 from telegram.ext import BaseHandler, ConversationHandler
+# noinspection PyProtectedMember
+from telegram.ext._utils.types import JobCallback
 from telegram.ext.filters import BaseFilter
 from typing_extensions import ParamSpec
 
 __all__ = [
-    'Plugin', 'handler', 'conversation'
+    'Plugin', 'handler', 'conversation', 'job',
 ]
 
 P = ParamSpec('P')
 T = TypeVar('T')
 HandlerType = TypeVar('HandlerType', bound=BaseHandler)
+TimeType = Union[float, datetime.timedelta, datetime.datetime, datetime.time]
+
 _Module = import_module('telegram.ext')
 
 _NORMAL_HANDLER_ATTR_NAME = "_handler_data"
 _CONVERSATION_HANDLER_ATTR_NAME = "_conversation_data"
+_JOB_ATTR_NAME = "_job_data"
 
 
 class _Plugin(object):
@@ -35,13 +42,28 @@ class _Plugin(object):
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                    not (attr.startswith('_') or attr == 'handlers')
+                    not (attr.startswith('_') or attr in ['handlers', 'jobs'])
                     and
                     isinstance(func := getattr(self, attr), MethodType)
                     and
                     (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
                 result.append(self._make_handler(data))
+        return result
+
+    @property
+    def jobs(self) -> List[Dict]:
+        result = []
+        for attr in dir(self):
+            # noinspection PyUnboundLocalVariable
+            if (
+                    not (attr.startswith('_') or attr in ['handlers', 'jobs'])
+                    and
+                    isinstance(func := getattr(self, attr), MethodType)
+                    and
+                    (data := getattr(func, _JOB_ATTR_NAME, None))
+            ):
+                result.append(data)
         return result
 
 
@@ -254,3 +276,73 @@ class conversation(_Handler):
     entry_point = _entry
     state = _State
     fallback = _fallback
+
+
+class _Job(object):
+    kwargs: Dict = {}
+
+    def __init__(
+            self, name: str = None, data: object = None, chat_id: int = None,
+            user_id: int = None, job_kwargs: JSONDict = None, **kwargs
+    ):
+        self.name = name
+        self.data = data
+        self.chat_id = chat_id
+        self.user_id = user_id
+        self.job_kwargs = {} if job_kwargs is None else job_kwargs
+        self.kwargs = kwargs
+
+    def __call__(self, func: JobCallback) -> JobCallback:
+        setattr(func, _JOB_ATTR_NAME, {
+            'name': self.name, 'data': self.data, 'chat_id': self.chat_id, 'user_id': self.user_id,
+            'job_kwargs': self.job_kwargs, 'kwargs': self.kwargs, 'func': func.__name__,
+            'type': re.sub(r'([A-Z])', lambda x: '_' + x.group().lower(), self.__class__.__name__).lstrip('_')
+        })
+        return func
+
+
+class _RunOnce(_Job):
+    def __init__(
+            self, when: TimeType,
+            data: object = None, name: str = None, chat_id: int = None, user_id: int = None, job_kwargs: JSONDict = None
+    ):
+        super().__init__(name, data, chat_id, user_id, job_kwargs, when=when)
+
+
+class _RunRepeating(_Job):
+    def __init__(
+            self, interval: Union[float, datetime.timedelta], first: TimeType = None, last: TimeType = None,
+            data: object = None, name: str = None, chat_id: int = None, user_id: int = None, job_kwargs: JSONDict = None
+    ):
+        super().__init__(name, data, chat_id, user_id, job_kwargs, interval=interval, first=first, last=last)
+
+
+class _RunMonthly(_Job):
+    def __init__(
+            self, when: datetime.time, day: int,
+            data: object = None, name: str = None, chat_id: int = None, user_id: int = None, job_kwargs: JSONDict = None
+    ):
+        super().__init__(name, data, chat_id, user_id, job_kwargs, when=when, day=day)
+
+
+class _RunDaily(_Job):
+    def __init__(
+            self, time: datetime.time, days: Tuple[int, ...] = tuple(range(7)),
+            data: object = None, name: str = None, chat_id: int = None, user_id: int = None, job_kwargs: JSONDict = None
+    ):
+        super().__init__(name, data, chat_id, user_id, job_kwargs, time=time, days=days)
+
+
+class _RunCustom(_Job):
+    def __init__(self, data: object = None, name: str = None, chat_id: int = None, user_id: int = None,
+                 job_kwargs: JSONDict = None):
+        super().__init__(name, data, chat_id, user_id, job_kwargs)
+
+
+# noinspection PyPep8Naming
+class job(object):
+    run_once = _RunOnce
+    run_repeating = _RunRepeating
+    run_monthly = _RunMonthly
+    run_daily = _RunDaily
+    run_custom = _RunCustom
