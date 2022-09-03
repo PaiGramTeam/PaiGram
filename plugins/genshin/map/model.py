@@ -169,10 +169,8 @@ class MapHelper:
             icon = await self.download_icon(icon_url)
             icon = icon.resize((150, 150))
 
-            box_alpha = Image.open(
-                os.path.join(os.path.dirname(__file__), os.path.pardir,
-                             "resources", "icon", "box_alpha.png")).getchannel("A")
-            box = Image.open(os.path.join(os.path.dirname(__file__), os.path.pardir, "resources", "icon", "box.png"))
+            box_alpha = Image.open(f"resources{os.sep}icon{os.sep}box_alpha.png").getchannel("A")
+            box = Image.open(f"resources{os.sep}icon{os.sep}box.png")
 
             try:
                 icon_alpha = icon.getchannel("A")
@@ -244,11 +242,10 @@ class ResourceMap:
 
     def get_icon_path(self):
         # 检查有没有图标，有返回正确图标，没有返回默认图标
-        icon_path = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                                 "resources", "icon", f"{self.resource_id}.png")
+        icon_path = os.path.join(f"resources{os.sep}icon", f"{self.resource_id}.png")
         if os.path.exists(icon_path):
             return icon_path
-        return os.path.join(os.path.dirname(__file__), os.path.pardir, "resources", "icon", "0.png")
+        return os.path.join(f"resources{os.sep}icon{os.sep}0.png")
 
     def get_resource_point_list(self):
         temp_list = []
