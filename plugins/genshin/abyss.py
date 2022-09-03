@@ -16,6 +16,16 @@ from utils.plugins.manager import listener_plugins_class
 from utils.service.inject import inject
 
 
+class AbyssUnlocked(Exception):
+    """根本没动"""
+    pass
+
+
+class NoMostKills(Exception):
+    """挑战了但是数据没刷新"""
+    pass
+
+
 @listener_plugins_class()
 class Abyss(BasePlugins):
     """深渊数据查询"""
@@ -49,10 +59,10 @@ class Abyss(BasePlugins):
         await client.get_record_cards()
         spiral_abyss_info = await client.get_spiral_abyss(uid)
         if not spiral_abyss_info.unlocked:
-            raise ValueError("unlocked is false")
+            raise AbyssUnlocked
         ranks = spiral_abyss_info.ranks
         if len(spiral_abyss_info.ranks.most_kills) == 0:
-            raise ValueError("本次深渊旅行者还没挑战呢")
+            raise NoMostKills
         abyss_data = {
             "uid": uid,
             "max_floor": spiral_abyss_info.max_floor,
@@ -104,17 +114,15 @@ class Abyss(BasePlugins):
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
             return
-        except ValueError as exc:
-            if "unlocked is false" in str(exc):
-                await message.reply_text("本次深渊旅行者还没挑战呢，咕咕咕~~~")
-                return
-            if "本次深渊旅行者还没挑战呢" in str(exc):
-                await message.reply_text("本次深渊旅行者还没挑战呢，咕咕咕~~~")
-                return
-            raise exc
+        except (AbyssUnlocked, NoMostKills):
+            reply_message = await message.reply_text("本次深渊旅行者还没挑战呢，咕咕咕~~~")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+            return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         png_data = await self.template_service.render('genshin/abyss', "abyss.html", abyss_data,
                                                       {"width": 690, "height": 504}, full_page=False)
