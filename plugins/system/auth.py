@@ -190,6 +190,7 @@ class GroupJoiningVerification:
             buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}"),
                         InlineKeyboardButton("撤回驱离", callback_data=f"auth_admin|unban|{user.id}")]]
             await callback_query.answer(text=f"验证失败，请在 {self.time_out} 秒后重试", show_alert=True)
+            await asyncio.sleep(3)
             await context.bot.ban_chat_member(chat_id=chat.id, user_id=user_id,
                                               until_date=int(time.time()) + self.kick_time)
             text = f"{user.mention_markdown_v2()} 验证失败，已经赶出提瓦特大陆！\n" \
