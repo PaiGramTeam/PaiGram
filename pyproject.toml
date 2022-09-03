@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "tgpaimonbot"
+version = "0.3.0"
+description = "Telegarm robot, query the official genshin information."
+authors = ["洛水居室", "zhxy-CN", "Chuangbo Li", "kotoriのねこ", "omg-xtao", "艾迪", "Karako"]
+license = "AGPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+ujson = "^5.4.0"
+genshin = { git = "https://github.com/thesadru/genshin.py" }
+Jinja2 = "^3.1.2"
+numpy = "^1.23.2"
+python-telegram-bot = { version = "^20.0a4", extras = ["rate-limiter"] }
+Pillow = "^9.2.0"
+sqlmodel = "^0.0.8"
+colorlog = "^6.7.0"
+playwright = "^1.25.2"
+fakeredis = "^1.9.0"
+beautifulsoup4 = "^4.11.1"
+asyncmy = "^0.2.5"
+pyppeteer = "^1.0.2"
+aiofiles = "^0.8.0"
+python-dotenv = "^0.20.0"
+PyMySQL = "^1.0.2"
+alembic = "^1.8.1"
+black = "^22.8.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

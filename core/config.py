@@ -3,6 +3,7 @@ from typing import (
     Optional,
     Union,
 )
+import dotenv
 
 import ujson as json
 from pydantic import (
@@ -13,6 +14,8 @@ from pydantic import (
 from utils.const import PROJECT_ROOT
 
 __all__ = ['BotConfig']
+
+dotenv.load_dotenv()
 
 
 class BotConfig(BaseSettings):
@@ -37,8 +40,6 @@ class BotConfig(BaseSettings):
 
     class Config:
         case_sensitive = False
-        env_file = PROJECT_ROOT / '.env'
-        env_file_encoding = 'utf-8'
         json_loads = json.loads
         json_dumps = json.dumps
 
