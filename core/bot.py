@@ -42,7 +42,7 @@ class Bot(object):
         kwargs = {}
         for name, parameter in signature.parameters.items():
             if name != 'self' and parameter.annotation != inspect.Parameter.empty:
-                if s := list(filter(lambda x: type(x) == parameter.annotation, self.services)):
+                if s := list(filter(lambda x: type(x) is parameter.annotation, self.services)):
                     kwargs.update({name: s[0]})
         # noinspection PyArgumentList
         return plugin_cls(**kwargs)
@@ -141,13 +141,13 @@ class Bot(object):
                     self.app.run_polling(close_loop=False)
                     break
                 except TimedOut:
-                    logger.warning(f"连接至 [blue]telegram[/] 服务器失败，正在重试")
+                    logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试")
                     continue
                 except NetworkError as e:
                     if 'SSLZeroReturnError' in str(e):
-                        logger.error(f"代理服务出现异常, 请检查您的代理服务是否配置成功.")
+                        logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
                     else:
-                        logger.error(f"网络连接出现问题, 请检查您的网络状况.")
+                        logger.error("网络连接出现问题, 请检查您的网络状况.")
                     break
         except (SystemExit, KeyboardInterrupt):
             pass
@@ -158,7 +158,7 @@ class Bot(object):
             loop = asyncio.get_event_loop()
             loop.run_until_complete(self.stop_services())
             loop.close()
-        logger.info('BOT 已经关闭')
+        logger.info("BOT 已经关闭")
 
     @property
     def job_queue(self) -> JobQueue:

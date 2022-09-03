@@ -68,7 +68,7 @@ else:
 # noinspection SpellCheckingInspection
 log_console = Console(
     color_system=color_system, theme=Theme(DEFAULT_STYLE),
-    width=180 if os.environ.get("PYTHONUNBUFFERED", None) else None  # 针对 Pycharm
+    width=180 if os.environ.get("PYTHONUNBUFFERED") else None  # 针对 Pycharm
 )
 
 
