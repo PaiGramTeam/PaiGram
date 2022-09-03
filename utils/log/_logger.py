@@ -76,7 +76,7 @@ class Traceback(BaseTraceback):
     def __init__(self, *args, **kwargs):
         kwargs.update({
             'show_locals': True,
-            'max_frames': 20
+            'max_frames': 10
         })
         super(Traceback, self).__init__(*args, **kwargs)
         self.theme = PygmentsSyntaxTheme(MonokaiProStyle)
