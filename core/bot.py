@@ -2,9 +2,8 @@ import asyncio
 import inspect
 from importlib import import_module
 from multiprocessing import RLock as Lock
-from ssl import SSLZeroReturnError
-from types import ModuleType
-from typing import ClassVar, List, NoReturn, Optional, Type
+from pathlib import Path
+from typing import ClassVar, Iterator, List, NoReturn, Optional, Type, TypeVar
 
 import pytz
 from telegram.error import NetworkError, TimedOut
@@ -12,12 +11,14 @@ from telegram.ext import Application as TgApplication, Defaults, JobQueue
 
 from core.config import BotConfig
 # noinspection PyProtectedMember
-from core.plugin import _Plugin as Plugin
+from core.plugin import Plugin, _Plugin
 from core.service import Service
 from utils.const import PLUGIN_DIR, PROJECT_ROOT, SERVICE_DIR
 from utils.log import logger
 
 __all__ = ['bot']
+
+PluginType = TypeVar('PluginType', bound=_Plugin)
 
 
 class Bot(object):
@@ -35,7 +36,7 @@ class Bot(object):
     config: BotConfig = BotConfig()
     services: List[Service] = []
 
-    def _init_plugin(self, plugin_cls: Type[Plugin]) -> Plugin:
+    def _init_plugin(self, plugin_cls: Type[_Plugin]) -> _Plugin:
         """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
         signature = inspect.signature(plugin_cls.__init__)
         kwargs = {}
@@ -46,45 +47,41 @@ class Bot(object):
         # noinspection PyArgumentList
         return plugin_cls(**kwargs)
 
-    async def _load_plugin_module(self, module: ModuleType) -> NoReturn:
-        """从 module 中加载插件"""
-        for attr in dir(module):
-            if (
-                    isinstance(cls := getattr(module, attr), type)
-                    and
-                    issubclass(cls, Plugin)
-                    and
-                    cls not in [Plugin, *Plugin.__subclasses__()]
-            ):
-                pkg = cls.__module__
-                plugin: Plugin = self._init_plugin(cls)
-                if hasattr(plugin, '__async_init__'):
-                    await plugin.__async_init__()
-                logger.debug(f'插件 "{pkg}" 添加了 {len(handlers := plugin.handlers)} 个 handler ')
-                self.app.add_handlers(handlers)
-                logger.debug(f'插件 "{pkg}" 添加了 {len(plugin.jobs)} 个任务')
+    def _gen_plugin_pkg(self, root: Path = None) -> Iterator[str]:
+        """生成可以用于 import_module 导入的字符串"""
+        if root is None:
+            root = PLUGIN_DIR
+        for path in root.iterdir():
+            if not path.name.startswith('_'):
+                if path.is_dir():
+                    yield from self._gen_plugin_pkg(path)
+                elif path.suffix == '.py':
+                    yield str(path.relative_to(PROJECT_ROOT)).split('.py')[0].replace('\\', '.')
 
     async def install_plugins(self):
         """安装插件"""
-        for path in PLUGIN_DIR.iterdir():  # 遍历插件所在的目录
-            if not path.name.startswith('_'):
-                if path.is_dir():
-                    pkg = str(path.relative_to(PROJECT_ROOT))
-                else:
-                    pkg = str(path.relative_to(PROJECT_ROOT)).split('.')[0]
-                try:
-                    module = import_module(pkg := pkg.replace('\\', '.'))  # 导入插件
-                    logger.success(f'插件 "{pkg}" 导入成功')
-                except Exception as e:
-                    logger.error(f'在导入插件 "{pkg}" 的过程中遇到了错误')
-                    logger.error(f"{type(e).__name__}: {e}")
-                    continue  # 如有错误则继续
-                try:
-                    await self._load_plugin_module(module)
-                    logger.success(f'插件 "{pkg}" 载入成功')
-                except Exception as e:
-                    logger.error(f"在初始化插件 \"{pkg}\" 的过程中遇到了错误")
-                    logger.error(f"{type(e).__name__}: {e}")
+        for pkg in self._gen_plugin_pkg():
+            try:
+                import_module(pkg)  # 导入插件
+            except Exception as e:
+                logger.exception(e)
+                logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误')
+                logger.error(f"{type(e).__name__}: {e}")
+                continue  # 如有错误则继续
+        for plugin_cls in {*Plugin.__subclasses__(), *Plugin.Conversation.__subclasses__()}:
+            path = f"{plugin_cls.__module__}.{plugin_cls.__name__}"
+            try:
+                plugin: PluginType = self._init_plugin(plugin_cls)
+                if hasattr(plugin, '__async_init__'):
+                    await plugin.__async_init__()
+                handlers = plugin.handlers
+                logger.debug(f'插件 "{path}" 添加了 {len(handlers)} 个 handler ')
+                logger.debug(f'插件 "{path}" 添加了 {len(plugin.jobs)} 个任务')
+                logger.success(f'插件 "{path}" 载入成功')
+            except Exception as e:
+                logger.exception(e)
+                logger.error(f"在安装插件 \"{path}\" 的过程中遇到了错误")
+                logger.error(f"{type(e).__name__}: {e}")
 
     async def start_services(self):
         """启动服务"""
@@ -119,6 +116,7 @@ class Bot(object):
                     await service.stop()
                     logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
                 except Exception as e:
+                    logger.exception(e)
                     logger.error(f"服务 \"{service.__class__.__name__}\" 关闭失败")
                     logger.error(f"{type(e).__name__}: {e}")
 
@@ -149,9 +147,8 @@ class Bot(object):
                     if 'SSLZeroReturnError' in str(e):
                         logger.error(f"代理服务出现异常, 请检查您的代理服务是否配置成功.")
                     else:
-                        logger.error(f"网络连接出现问题, 请检查您的网络状况")
+                        logger.error(f"网络连接出现问题, 请检查您的网络状况.")
                     break
-            logger.error(f'连接至 [blue]telegram[/] 服务器失败, 正在关闭 BOT')
         except (SystemExit, KeyboardInterrupt):
             pass
         except Exception as e:
