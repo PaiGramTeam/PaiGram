@@ -3,15 +3,13 @@ from typing import (
     Optional,
     Union,
 )
-import dotenv
 
+import dotenv
 import ujson as json
 from pydantic import (
     BaseModel,
     BaseSettings,
 )
-
-from utils.const import PROJECT_ROOT
 
 __all__ = ['BotConfig']
 
@@ -34,8 +32,8 @@ class BotConfig(BaseSettings):
     bot_token: str
     error_notification_chat_id: str
 
-    channels: List[Union[int, str]] = []
-    admins: List[Union[int, str]] = []
+    channels: List['ConfigChannel'] = []
+    admins: List['ConfigUser'] = []
     verify_groups: List[Union[int, str]] = []
 
     class Config:
@@ -84,3 +82,6 @@ class RedisConfig(BaseModel):
     host: str = '127.0.0.1'
     port: int
     database: int = 0
+
+
+BotConfig.update_forward_refs()
