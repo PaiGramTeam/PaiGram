@@ -1,8 +1,8 @@
-from core.app import application
+from core.bot import bot
 
 
 def main():
-    application.launch()
+    bot.launch()
 
 
 if __name__ == '__main__':

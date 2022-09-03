@@ -17,7 +17,7 @@ class AioBrowser(Service):
         if self._playwright is None:
             logger.info("正在尝试启动 Playwright")
             self._playwright = await async_playwright().start()
-            logger.info("Playwright 启动成功")
+            logger.success("Playwright 启动成功")
         if self.browser is None:
             logger.info("正在尝试启动 Browser")
             try:

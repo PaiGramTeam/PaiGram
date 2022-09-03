@@ -266,6 +266,7 @@ class Handler(DefaultRichHandler):
         self.console = log_console
         self.rich_tracebacks = True
         self.tracebacks_show_locals = True
+        self.markup = True
 
     def render(
             self,
@@ -412,15 +413,15 @@ with _lock:
     if not __initialized__:
         import os
         from loguru import logger
-        from core.config import AppConfig
+        from core.config import BotConfig
         from utils.const import PROJECT_ROOT
 
         # noinspection SpellCheckingInspection
         if os.environ.get('PYTHONUNBUFFERED', 0):
             print()
-
+        level = 10 if BotConfig().debug else 20
         logging.basicConfig(
-            level=10 if AppConfig().debug else 20,
+            level=10 if BotConfig().debug else 20,
             format="%(message)s",
             datefmt="[%Y-%m-%d %X]",
             handlers=[Handler()]
@@ -433,7 +434,7 @@ with _lock:
                 logger.level(key, value)
 
         logger.remove()
-        logger.add(Handler(), format="{message}", colorize=False, enqueue=True)
+        logger.add(Handler(), level=level, format="{message}", colorize=False, enqueue=True)
         logger.add(
             PROJECT_ROOT / 'logs/error.log',
             rotation="00:00",

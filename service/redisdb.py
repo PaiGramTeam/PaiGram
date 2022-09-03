@@ -4,20 +4,17 @@ import fakeredis.aioredis
 from redis import asyncio as aioredis
 from typing_extensions import Self
 
-from core.config import AppConfig
+from core.config import BotConfig
 from core.service import Service
 from utils.log import logger
 
 
 class RedisDB(Service):
     @classmethod
-    def from_config(cls, config: AppConfig) -> Self:
+    def from_config(cls, config: BotConfig) -> Self:
         return cls(**config.redis.dict())
 
     def __init__(self, host="127.0.0.1", port=6379, database=0, loop=None):
-        logger.debug(f'获取Redis配置 [host]: {host}')
-        logger.debug(f'获取Redis配置 [port]: {port}')
-        logger.debug(f'获取Redis配置 [db]: {database}')
         self.client = aioredis.Redis(host=host, port=port, db=database)
         self.ttl = 600
         self.key_prefix = "paimon_bot"

@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Un
 from telegram._utils.defaultvalue import DEFAULT_TRUE
 # noinspection PyProtectedMember
 from telegram._utils.types import DVInput, JSONDict
-from telegram.ext import BaseHandler, ConversationHandler
+from telegram.ext import BaseHandler, ConversationHandler, Job
 # noinspection PyProtectedMember
 from telegram.ext._utils.types import JobCallback
 from telegram.ext.filters import BaseFilter
@@ -32,39 +32,47 @@ _JOB_ATTR_NAME = "_job_data"
 
 
 class _Plugin(object):
+    _handlers: List[HandlerType] = []
+    _jobs: List[Job] = []
+
     def _make_handler(self, data: Dict) -> HandlerType:
         func = getattr(self, data.pop('func'))
         return data.pop('type')(callback=func, **data.pop('kwargs'))
 
     @property
     def handlers(self) -> List[HandlerType]:
-        result = []
-        for attr in dir(self):
-            # noinspection PyUnboundLocalVariable
-            if (
-                    not (attr.startswith('_') or attr in ['handlers', 'jobs'])
-                    and
-                    isinstance(func := getattr(self, attr), MethodType)
-                    and
-                    (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
-            ):
-                result.append(self._make_handler(data))
-        return result
+        if not self._handlers:
+            for attr in dir(self):
+                # noinspection PyUnboundLocalVariable
+                if (
+                        not (attr.startswith('_') or attr in ['handlers', 'jobs', 'job_datas'])
+                        and
+                        isinstance(func := getattr(self, attr), MethodType)
+                        and
+                        (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+                ):
+                    self._handlers.append(self._make_handler(data))
+        return self._handlers
 
     @property
-    def jobs(self) -> List[Dict]:
-        result = []
-        for attr in dir(self):
-            # noinspection PyUnboundLocalVariable
-            if (
-                    not (attr.startswith('_') or attr in ['handlers', 'jobs'])
-                    and
-                    isinstance(func := getattr(self, attr), MethodType)
-                    and
-                    (data := getattr(func, _JOB_ATTR_NAME, None))
-            ):
-                result.append(data)
-        return result
+    def jobs(self) -> List[Job]:
+        if not self._jobs:
+            from core.bot import bot
+            for attr in dir(self):
+                # noinspection PyUnboundLocalVariable
+                if (
+                        not (attr.startswith('_') or attr in ['handlers', 'jobs', 'job_datas'])
+                        and
+                        isinstance(func := getattr(self, attr), MethodType)
+                        and
+                        (data := getattr(func, _JOB_ATTR_NAME, None))
+                ):
+                    _job = getattr(bot.job_queue, data.pop('type'))(
+                        callback=func, **data.pop('kwargs'),
+                        **{key: data.pop(key) for key in list(data.keys())}
+                    )
+                    self._jobs.append(_job)
+        return self._jobs
 
 
 class _Conversation(_Plugin):
@@ -105,9 +113,7 @@ class _Conversation(_Plugin):
                 else:
                     result.append(_handler)
         if entry_points or states or fallbacks:
-            result.append(
-                ConversationHandler(entry_points, states, fallbacks, **self.__class__._con_kwargs)
-            )
+            result.append(ConversationHandler(entry_points, states, fallbacks, **self.__class__._con_kwargs))
         return result
 
 
@@ -295,7 +301,7 @@ class _Job(object):
     def __call__(self, func: JobCallback) -> JobCallback:
         setattr(func, _JOB_ATTR_NAME, {
             'name': self.name, 'data': self.data, 'chat_id': self.chat_id, 'user_id': self.user_id,
-            'job_kwargs': self.job_kwargs, 'kwargs': self.kwargs, 'func': func.__name__,
+            'job_kwargs': self.job_kwargs, 'kwargs': self.kwargs,
             'type': re.sub(r'([A-Z])', lambda x: '_' + x.group().lower(), self.__class__.__name__).lstrip('_')
         })
         return func

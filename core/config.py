@@ -12,10 +12,10 @@ from pydantic import (
 
 from utils.const import PROJECT_ROOT
 
-__all__ = ['AppConfig', 'RedisConfig', 'MySqlConfig']
+__all__ = ['BotConfig']
 
 
-class AppConfig(BaseSettings):
+class BotConfig(BaseSettings):
     debug: bool = False
 
     db_host: str
@@ -83,13 +83,3 @@ class RedisConfig(BaseModel):
     host: str = '127.0.0.1'
     port: int
     database: int = 0
-
-
-#
-
-def main():
-    print(AppConfig().bot_token)
-
-
-if __name__ == '__main__':
-    main()
