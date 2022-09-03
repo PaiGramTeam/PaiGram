@@ -91,7 +91,7 @@ class Bot(object):
                 try:
                     import_module(pkg)
                 except Exception as e:
-                    logger.error(f"服务 \"{pkg}\" 在启动的过程中遇到了错误")
+                    logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误')
                     logger.error(f"{type(e).__name__}: {e}")
                     continue
         for service_class in Service.__subclasses__():
