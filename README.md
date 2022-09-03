@@ -22,19 +22,22 @@
 ## 使用方法
 
 ### 1. 安装 `poetry`
+
 ```bash
 pip install --upgrade poetry 
 ```
 
 ### 2. 安装依赖
+
 ```bash
 poetry update
 ```
+
 ### 3. 运行
+
 ```bash
 python ./main.py
 ```
-
 
 ## 其他说明
 
@@ -42,9 +45,9 @@ python ./main.py
 
 ## Thanks
 
-|                           Nickname                           | Introduce                        |
-| :----------------------------------------------------------: | -------------------------------- |
-| [原神抽卡全机制总结](https://www.bilibili.com/read/cv10468091) | 本项目抽卡模拟器使用的逻辑       |
-|   [西风驿站](https://bbs.mihoyo.com/ys/collection/307224)    | 本项目攻略图图源                 |
-|     [Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)      | 本项使用的抽卡图片和前端资源来源 |
-| [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw) | 本项目参考的爬虫代码 |
+|                                Nickname                                 | Introduce        |
+|:-----------------------------------------------------------------------:|------------------|
+|          [原神抽卡全机制总结](https://www.bilibili.com/read/cv10468091)          | 本项目抽卡模拟器使用的逻辑    |
+| [西风驿站 猫冬](https://bbs.mihoyo.com/ys/accountCenter/postList?id=74019947) | 本项目攻略图图源         |
+|           [Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)           | 本项使用的抽卡图片和前端资源来源 |
+|       [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw)        | 本项目参考的爬虫代码       |
