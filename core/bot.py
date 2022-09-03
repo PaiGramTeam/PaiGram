@@ -75,6 +75,7 @@ class Bot(object):
                 if hasattr(plugin, '__async_init__'):
                     await plugin.__async_init__()
                 handlers = plugin.handlers
+                self.app.add_handlers(handlers)
                 logger.debug(f'插件 "{path}" 添加了 {len(handlers)} 个 handler ')
                 logger.debug(f'插件 "{path}" 添加了 {len(plugin.jobs)} 个任务')
                 logger.success(f'插件 "{path}" 载入成功')

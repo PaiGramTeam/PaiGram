@@ -32,8 +32,6 @@ _JOB_ATTR_NAME = "_job_data"
 
 
 class _Plugin(object):
-    _handlers: List[HandlerType] = []
-    _jobs: List[Job] = []
 
     def _make_handler(self, data: Dict) -> HandlerType:
         func = getattr(self, data.pop('func'))
@@ -41,38 +39,38 @@ class _Plugin(object):
 
     @property
     def handlers(self) -> List[HandlerType]:
-        if not self._handlers:
-            for attr in dir(self):
-                # noinspection PyUnboundLocalVariable
-                if (
-                        not (attr.startswith('_') or attr in ['handlers', 'jobs', 'job_datas'])
-                        and
-                        isinstance(func := getattr(self, attr), MethodType)
-                        and
-                        (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
-                ):
-                    self._handlers.append(self._make_handler(data))
-        return self._handlers
+        result = []
+        for attr in dir(self):
+            # noinspection PyUnboundLocalVariable
+            if (
+                    not (attr.startswith('_') or attr in ['handlers', 'jobs', 'job_datas'])
+                    and
+                    isinstance(func := getattr(self, attr), MethodType)
+                    and
+                    (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+            ):
+                result.append(self._make_handler(data))
+        return result
 
     @property
     def jobs(self) -> List[Job]:
-        if not self._jobs:
-            from core.bot import bot
-            for attr in dir(self):
-                # noinspection PyUnboundLocalVariable
-                if (
-                        not (attr.startswith('_') or attr in ['handlers', 'jobs', 'job_datas'])
-                        and
-                        isinstance(func := getattr(self, attr), MethodType)
-                        and
-                        (data := getattr(func, _JOB_ATTR_NAME, None))
-                ):
-                    _job = getattr(bot.job_queue, data.pop('type'))(
-                        callback=func, **data.pop('kwargs'),
-                        **{key: data.pop(key) for key in list(data.keys())}
-                    )
-                    self._jobs.append(_job)
-        return self._jobs
+        from core.bot import bot
+        result = []
+        for attr in dir(self):
+            # noinspection PyUnboundLocalVariable
+            if (
+                    not (attr.startswith('_') or attr in ['handlers', 'jobs', 'job_datas'])
+                    and
+                    isinstance(func := getattr(self, attr), MethodType)
+                    and
+                    (data := getattr(func, _JOB_ATTR_NAME, None))
+            ):
+                _job = getattr(bot.job_queue, data.pop('type'))(
+                    callback=func, **data.pop('kwargs'),
+                    **{key: data.pop(key) for key in list(data.keys())}
+                )
+                result.append(_job)
+        return result
 
 
 class _Conversation(_Plugin):
