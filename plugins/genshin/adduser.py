@@ -70,7 +70,7 @@ class AddUser(Plugin.Conversation, BasePlugin.Conversation):
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         elif update.message.text == "米游社":
-            add_user_command_data.service = RegionEnum.HYPERION
+            add_user_command_data.region = RegionEnum.HYPERION
             bbs_url = "https://bbs.mihoyo.com/ys/"
             bbs_name = "米游社"
             if user_info is not None:
@@ -78,7 +78,7 @@ class AddUser(Plugin.Conversation, BasePlugin.Conversation):
         elif update.message.text == "HoYoLab":
             bbs_url = "https://www.hoyolab.com/home"
             bbs_name = "HoYoLab"
-            add_user_command_data.service = RegionEnum.HOYOLAB
+            add_user_command_data.region = RegionEnum.HOYOLAB
             if user_info is not None:
                 await update.message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         else:
