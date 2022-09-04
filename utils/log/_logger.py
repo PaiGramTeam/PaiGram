@@ -39,7 +39,6 @@ from utils.log._style import (
 
 if TYPE_CHECKING:
     from rich.table import Table
-    from rich.text import TextType
     from rich.console import (
         ConsoleRenderable,
         RenderableType,

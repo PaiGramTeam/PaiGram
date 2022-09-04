@@ -23,7 +23,7 @@ T = TypeVar('T')
 PluginType = TypeVar('PluginType', bound=_Plugin)
 
 
-class Bot(object):
+class Bot:
     _lock: ClassVar[Lock] = Lock()
     _instance: ClassVar[Optional["Bot"]] = None
 
@@ -47,7 +47,7 @@ class Bot(object):
         kwargs = {}
         for name, parameter in signature.parameters.items():
             if name != 'self' and parameter.annotation != inspect.Parameter.empty:
-                if value := self._services.get(parameter.annotation, None):
+                if value := self._services.get(parameter.annotation):
                     kwargs.update({name: value})
         # noinspection PyArgumentList
         return target(**kwargs)
@@ -185,7 +185,7 @@ class Bot(object):
 
     def add_service(self, service: T) -> NoReturn:
         """添加服务。若已经有同类型的服务，则会抛出异常"""
-        if type(service) in self._services.keys():
+        if type(service) in self._services:
             raise ValueError(f"Service \"{type(service)}\" is already existed.")
         self.update_service(service)
 
@@ -196,7 +196,7 @@ class Bot(object):
     def contain_service(self, service: Any) -> bool:
         """判断服务是否存在"""
         if isinstance(service, type):
-            return service in self._services.keys()
+            return service in self._services
         else:
             return service in self._services.values()
 

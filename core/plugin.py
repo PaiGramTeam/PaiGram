@@ -31,7 +31,7 @@ _CONVERSATION_HANDLER_ATTR_NAME = "_conversation_data"
 _JOB_ATTR_NAME = "_job_data"
 
 
-class _Plugin(object):
+class _Plugin:
 
     def _make_handler(self, data: Dict) -> HandlerType:
         func = getattr(self, data.pop('func'))
@@ -102,7 +102,7 @@ class _Conversation(_Plugin):
                     if (_type := conversation_data.pop('type')) == 'entry':
                         entry_points.append(_handler)
                     elif _type == 'state':
-                        if (key := conversation_data.pop('state')) in states.keys():
+                        if (key := conversation_data.pop('state')) in states:
                             states[key].append(_handler)
                         else:
                             states[key] = [_handler]
@@ -119,7 +119,7 @@ class Plugin(_Plugin):
     Conversation = _Conversation
 
 
-class _Handler(object):
+class _Handler:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
@@ -261,7 +261,7 @@ def _entry(func: Callable[P, T]) -> Callable[P, T]:
     return func
 
 
-class _State(object):
+class _State:
     def __init__(self, state: Any):
         self._state = state
 
@@ -282,7 +282,7 @@ class conversation(_Handler):
     fallback = _fallback
 
 
-class _Job(object):
+class _Job:
     kwargs: Dict = {}
 
     def __init__(
@@ -344,7 +344,7 @@ class _RunCustom(_Job):
 
 
 # noinspection PyPep8Naming
-class job(object):
+class job:
     run_once = _RunOnce
     run_repeating = _RunRepeating
     run_monthly = _RunMonthly
