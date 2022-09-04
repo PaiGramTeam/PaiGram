@@ -1,18 +1,20 @@
 import datetime
 import re
 from importlib import import_module
+from queue import PriorityQueue, Empty
 from re import Pattern
 from types import MethodType
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
+from telegram import Update
 # noinspection PyProtectedMember
 from telegram._utils.defaultvalue import DEFAULT_TRUE
 # noinspection PyProtectedMember
 from telegram._utils.types import DVInput, JSONDict
-from telegram.ext import BaseHandler, ConversationHandler, Job
+from telegram.ext import BaseHandler, CallbackContext, ConversationHandler, Job, MessageHandler
 # noinspection PyProtectedMember
 from telegram.ext._utils.types import JobCallback
-from telegram.ext.filters import BaseFilter
+from telegram.ext.filters import BaseFilter, StatusUpdate
 from typing_extensions import ParamSpec
 
 __all__ = [
@@ -42,6 +44,7 @@ class _Plugin:
     @property
     def handlers(self) -> List[HandlerType]:
         result = []
+        callback_queue = PriorityQueue()
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
@@ -51,8 +54,22 @@ class _Plugin:
                     and
                     (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
-                if data['type'] != 'error':
+                if data['type'] not in ['error', 'new_chat_member']:
                     result.append(self._make_handler(data))
+                elif data['type'] == 'new_chat_member':
+                    callback_queue.put((data['priority'], func))
+
+        async def _new_chat_member(update: Update, context: CallbackContext):
+            while not callback_queue.empty():
+                try:
+                    callback = callback_queue.get_nowait()[1]
+                    await callback(update, context)
+                except Empty:
+                    break
+
+        if not callback_queue.empty():
+            result.append(MessageHandler(filters=StatusUpdate.NEW_CHAT_MEMBERS, block=False, callback=_new_chat_member))
+
         return result
 
     @property
@@ -190,9 +207,26 @@ class _InlineQuery(_Handler):
         super().__init__(pattern=pattern, block=block, chat_types=chat_types)
 
 
+class _MessageNewChatMembers(_Handler):
+    def __init__(self, func: Callable[P, T] = None, *, priority: int = 5):
+        super().__init__()
+        self.func = func
+        self.priority = priority
+
+    def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
+        self.func = self.func or func
+        setattr(
+            self.func, _NORMAL_HANDLER_ATTR_NAME,
+            {'type': 'new_chat_member', 'func': self.func.__name__, 'priority': self.priority}
+        )
+        return self.func
+
+
 class _Message(_Handler):
     def __init__(self, filters: "BaseFilter", block: DVInput[bool] = DEFAULT_TRUE, ):
         super(_Message, self).__init__(filters=filters, block=block)
+
+    new_chat_members = _MessageNewChatMembers
 
 
 class _PollAnswer(_Handler):
