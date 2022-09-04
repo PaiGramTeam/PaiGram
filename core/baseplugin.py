@@ -2,6 +2,7 @@ from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler
 
+from core.plugin import handler, conversation
 from utils.log import logger
 
 
@@ -28,13 +29,21 @@ def add_delete_message_job(context: CallbackContext, chat_id: int, message_id: i
                                            "id": f"{chat_id}|{message_id}|clean_message"})
 
 
-class BasePlugin:
+class _BasePlugin:
+    @staticmethod
+    def _add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int, delete_seconds: int = 60):
+        return add_delete_message_job(context, chat_id, message_id, delete_seconds)
+
+
+class _Conversation:
 
     @staticmethod
+    @conversation.fallback
+    @handler.command(command='cancel', block=True)
     async def cancel(update: Update, _: CallbackContext) -> int:
         await update.message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
-    @staticmethod
-    def _add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int, delete_seconds: int = 60):
-        return add_delete_message_job(context, chat_id, message_id, delete_seconds)
+
+class BasePlugin(_BasePlugin):
+    Conversation = _Conversation
