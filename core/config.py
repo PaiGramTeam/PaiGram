@@ -11,7 +11,7 @@ from pydantic import (
     BaseSettings,
 )
 
-__all__ = ['BotConfig']
+__all__ = ['BotConfig', 'config']
 
 dotenv.load_dotenv()
 
@@ -85,3 +85,4 @@ class RedisConfig(BaseModel):
 
 
 BotConfig.update_forward_refs()
+config = BotConfig()

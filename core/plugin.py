@@ -16,7 +16,7 @@ from telegram.ext.filters import BaseFilter
 from typing_extensions import ParamSpec
 
 __all__ = [
-    'Plugin', 'handler', 'conversation', 'job',
+    'Plugin', 'handler', 'conversation', 'job', 'error_handler'
 ]
 
 P = ParamSpec('P')
@@ -29,6 +29,8 @@ _Module = import_module('telegram.ext')
 _NORMAL_HANDLER_ATTR_NAME = "_handler_data"
 _CONVERSATION_HANDLER_ATTR_NAME = "_conversation_data"
 _JOB_ATTR_NAME = "_job_data"
+
+_EXCLUDE_ATTRS = ['handlers', 'jobs', 'error_handlers']
 
 
 class _Plugin:
@@ -43,13 +45,30 @@ class _Plugin:
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                    not (attr.startswith('_') or attr in ['handlers', 'jobs', 'job_datas'])
+                    not (attr.startswith('_') or attr in _EXCLUDE_ATTRS)
                     and
                     isinstance(func := getattr(self, attr), MethodType)
                     and
                     (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
-                result.append(self._make_handler(data))
+                if data['type'] != 'error':
+                    result.append(self._make_handler(data))
+        return result
+
+    @property
+    def error_handlers(self) -> Dict[Callable, bool]:
+        result = {}
+        for attr in dir(self):
+            # noinspection PyUnboundLocalVariable
+            if (
+                    not (attr.startswith('_') or attr in _EXCLUDE_ATTRS)
+                    and
+                    isinstance(func := getattr(self, attr), MethodType)
+                    and
+                    (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+            ):
+                if data['type'] == 'error':
+                    result.update({func: data['block']})
         return result
 
     @property
@@ -59,7 +78,7 @@ class _Plugin:
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                    not (attr.startswith('_') or attr in ['handlers', 'jobs', 'job_datas'])
+                    not (attr.startswith('_') or attr in _EXCLUDE_ATTRS)
                     and
                     isinstance(func := getattr(self, attr), MethodType)
                     and
@@ -254,6 +273,18 @@ class handler(_Handler):
     string_command = _StringCommand
     string_regex = _StringRegex
     type = _Type
+
+
+# noinspection PyPep8Naming
+class error_handler(object):
+    def __init__(self, func: Callable[P, T] = None, *, block: bool = DEFAULT_TRUE):
+        self._func = func
+        self._block = block
+
+    def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
+        self._func = func or self._func
+        setattr(self._func, _NORMAL_HANDLER_ATTR_NAME, {'type': 'error', 'block': self._block})
+        return self._func
 
 
 def _entry(func: Callable[P, T]) -> Callable[P, T]:

@@ -9,7 +9,7 @@ import pytz
 from telegram.error import NetworkError, TimedOut
 from telegram.ext import Application as TgApplication, Defaults, JobQueue
 
-from core.config import BotConfig
+from core.config import BotConfig, config
 from core.error import ServiceNotFoundError
 # noinspection PyProtectedMember
 from core.plugin import Plugin, _Plugin
@@ -35,7 +35,7 @@ class Bot:
         return cls._instance
 
     app: Optional[TgApplication] = None
-    config: BotConfig = BotConfig()
+    config: BotConfig = config
     _services: Dict[Type[T], T] = {}
 
     def init_inject(self, target: Callable[[], T]) -> T:
@@ -79,6 +79,11 @@ class Bot:
                 self.app.add_handlers(handlers)
                 if handlers:
                     logger.debug(f'插件 "{path}" 添加了 {len(handlers)} 个 handler ')
+                error_handlers = plugin.error_handlers
+                for callback, block in error_handlers.items():
+                    self.app.add_error_handler(callback, block)
+                if error_handlers:
+                    logger.debug(f"插件 \"{path}\" 添加了 {len(error_handlers)} 个 error handler")
                 if jobs := plugin.jobs:
                     logger.debug(f'插件 "{path}" 添加了 {len(jobs)} 个任务')
                 logger.success(f'插件 "{path}" 载入成功')
