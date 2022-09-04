@@ -12,7 +12,7 @@ from telegram.helpers import escape_markdown
 from core.plugin import Plugin
 from core.quiz import QuizService
 from utils.log import logger
-from utils.random import MT19937_Random
+from utils.random import MT19937Random
 
 FullChatPermissions = ChatPermissions(
     can_send_messages=True,
@@ -33,7 +33,7 @@ class GroupJoiningVerification(Plugin):
         self.quiz_service = quiz_service
         self.time_out = 120
         self.kick_time = 120
-        self.random = MT19937_Random()
+        self.random = MT19937Random()
         self.lock = asyncio.Lock()
         self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, List[ChatMember]]] = {}
         self.is_refresh_quiz = False

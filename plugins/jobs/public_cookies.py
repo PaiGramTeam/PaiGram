@@ -1,25 +1,18 @@
 import datetime
 
-from telegram.ext import CallbackContext, JobQueue
+from telegram.ext import CallbackContext
 
 from core.cookies.services import PublicCookiesService
+from core.plugin import Plugin, job
 from utils.log import logger
-from utils.job.manager import listener_jobs_class
-from utils.service.inject import inject
 
 
-@listener_jobs_class()
-class PublicCookies:
+class PublicCookies(Plugin):
 
-    @inject
     def __init__(self, public_cookies_service: PublicCookiesService = None):
         self.public_cookies_service = public_cookies_service
 
-    @classmethod
-    def build_jobs(cls, job_queue: JobQueue):
-        jobs = cls()
-        job_queue.run_repeating(jobs.refresh, datetime.timedelta(hours=2))
-
+    @job.run_repeating(interval=datetime.timedelta(hours=2), name="PublicCookiesRefresh")
     async def refresh(self, _: CallbackContext):
         logger.info("正在刷新公共Cookies池")
         await self.public_cookies_service.refresh()

@@ -10,7 +10,7 @@ from core.plugin import Plugin, handler
 from core.quiz import QuizService
 from utils.decorators.restricts import restricts
 from utils.log import logger
-from utils.random import MT19937_Random
+from utils.random import MT19937Random
 
 
 class QuizPlugin(Plugin, BasePlugin):
@@ -20,7 +20,7 @@ class QuizPlugin(Plugin, BasePlugin):
         self.bot_admin_service = bot_admin_service
         self.quiz_service = quiz_service
         self.time_out = 120
-        self.random = MT19937_Random()
+        self.random = MT19937Random()
 
     @handler(CommandHandler, command="quiz", block=False)
     @restricts(restricts_time=20, try_delete_message=True)

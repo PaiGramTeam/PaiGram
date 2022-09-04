@@ -3,9 +3,8 @@ import time
 from numpy.random import Generator, MT19937
 
 
-class MT19937_Random:
-    """
-    基于 numpy 实现的动态删除时间设计
+class MT19937Random:
+    """基于 numpy 实现的动态删除时间设计
                             ——MXtao_dada | 小男孩赛高！
     笑死，不然你猜猜为啥 requirements.txt 有 numpy ？
                             ——洛水居室
@@ -14,9 +13,7 @@ class MT19937_Random:
     """
 
     def __init__(self):
-        """
-        创建随机数生成器
-        """
+        """创建随机数生成器"""
         self.send_time = time.time()
         self.generator = Generator(MT19937(int(self.send_time)))
 
