@@ -5,13 +5,13 @@ import httpx
 import ujson
 
 from modules.apihelper.helpers import get_headers
-from modules.base import GameItem
 from modules.game.artifact import ArtifactInfo
 from modules.game.character import CharacterInfo, CharacterValueInfo
 from modules.game.fetter import FetterInfo
 from modules.game.skill import Skill
 from modules.game.talent import Talent
 from modules.game.weapon import WeaponInfo
+from utils.models.base import GameItem
 
 
 class PlayerCardsAPI:

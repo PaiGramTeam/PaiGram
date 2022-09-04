@@ -3,8 +3,8 @@ from typing import List
 import genshin
 from genshin import GenshinException, InvalidCookies, TooManyRequests, types
 
-from modules.base import RegionEnum
 from utils.log import logger
+from utils.models.base import RegionEnum
 from .cache import PublicCookiesCache
 from .models import CookiesStatusEnum
 from .repositories import CookiesNotFoundError, CookiesRepository

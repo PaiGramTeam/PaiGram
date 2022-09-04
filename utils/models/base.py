@@ -3,7 +3,7 @@ import os
 from enum import Enum
 from typing import Union, Optional
 
-from modules.baseobject import BaseObject
+from utils.baseobject import BaseObject
 
 
 class Stat:

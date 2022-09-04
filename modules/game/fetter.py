@@ -1,4 +1,4 @@
-from modules.baseobject import BaseObject
+from utils.baseobject import BaseObject
 
 
 class FetterInfo(BaseObject):

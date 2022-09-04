@@ -2,8 +2,8 @@ from typing import List, Optional
 
 from sqlmodel import SQLModel, Field, Column, Integer, ForeignKey
 
-from modules.baseobject import BaseObject
-from modules.types import JSONDict
+from utils.baseobject import BaseObject
+from utils.models.types import JSONDict
 
 
 class AnswerDB(SQLModel, table=True):
