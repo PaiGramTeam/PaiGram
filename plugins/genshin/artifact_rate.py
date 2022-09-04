@@ -2,8 +2,7 @@ from typing import Optional
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, File
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, \
-    filters
+from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
@@ -16,7 +15,7 @@ from utils.log import logger
 COMMAND_RESULT = 1
 
 
-class ArtifactRate(Plugin.Conversation, BasePlugin):
+class ArtifactRate(Plugin.Conversation, BasePlugin.Conversation):
     """圣遗物评分"""
 
     STAR_KEYBOARD = [[
@@ -31,21 +30,6 @@ class ArtifactRate(Plugin.Conversation, BasePlugin):
 
     def __init__(self):
         self.artifact_rate = ArtifactOcrRate()
-
-    @classmethod
-    def create_handlers(cls) -> list:
-        artifact_rate = cls()
-        return [
-            ConversationHandler(
-                entry_points=[CommandHandler('artifact_rate', artifact_rate.command_start),
-                              MessageHandler(filters.Regex(r"^圣遗物评分(.*)"), artifact_rate.command_start),
-                              MessageHandler(filters.CaptionRegex(r"^圣遗物评分(.*)"), artifact_rate.command_start)],
-                states={
-                    artifact_rate.COMMAND_RESULT: [CallbackQueryHandler(artifact_rate.command_result)]
-                },
-                fallbacks=[CommandHandler('cancel', artifact_rate.cancel)]
-            )
-        ]
 
     async def get_rate(self, artifact_attr: dict) -> str:
         rate_result_req = await self.artifact_rate.rate_artifact(artifact_attr)
@@ -113,11 +97,11 @@ class ArtifactRate(Plugin.Conversation, BasePlugin):
         if artifact_attr.get("star") is None:
             await message.reply_text("无法识别圣遗物星级，请选择圣遗物星级",
                                      reply_markup=InlineKeyboardMarkup(self.STAR_KEYBOARD))
-            return self.COMMAND_RESULT
+            return COMMAND_RESULT
         if artifact_attr.get("level") is None:
             await message.reply_text("无法识别圣遗物等级，请选择圣遗物等级",
                                      reply_markup=InlineKeyboardMarkup(self.LEVEL_KEYBOARD))
-            return self.COMMAND_RESULT
+            return COMMAND_RESULT
         reply_message = await message.reply_text("识图成功！\n"
                                                  "正在评分中...")
         rate_text = await self.get_rate(artifact_attr)
@@ -156,11 +140,11 @@ class ArtifactRate(Plugin.Conversation, BasePlugin):
         if artifact_attr.get("level") is None:
             await query.edit_message_text("无法识别圣遗物等级，请选择圣遗物等级",
                                           reply_markup=InlineKeyboardMarkup(self.LEVEL_KEYBOARD))
-            return self.COMMAND_RESULT
+            return COMMAND_RESULT
         if artifact_attr.get("star") is None:
             await query.edit_message_text("无法识别圣遗物星级，请选择圣遗物星级",
                                           reply_markup=InlineKeyboardMarkup(self.STAR_KEYBOARD))
-            return self.COMMAND_RESULT
+            return COMMAND_RESULT
         await query.edit_message_text("正在评分中...")
         rate_text = await self.get_rate(artifact_attr)
         await query.edit_message_text(rate_text, parse_mode=ParseMode.MARKDOWN_V2)

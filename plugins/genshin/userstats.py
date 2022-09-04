@@ -22,8 +22,6 @@ from utils.log import logger
 class UserStatsPlugins(Plugin, BasePlugin):
     """玩家统计查询"""
 
-    COMMAND_RESULT, = range(10200, 10201)
-
     def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
                  template_service: TemplateService = None):
         self.template_service = template_service

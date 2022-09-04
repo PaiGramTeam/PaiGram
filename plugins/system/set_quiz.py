@@ -28,7 +28,7 @@ CHECK_COMMAND, VIEW_COMMAND, CHECK_QUESTION, GET_NEW_QUESTION, GET_NEW_CORRECT_A
 QUESTION_EDIT, SAVE_QUESTION = range(10300, 10308)
 
 
-class SetQuizPlugin(Plugin.Conversation, BasePlugin):
+class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
     """派蒙的十万个为什么问题修改/添加/删除"""
 
     def __init__(self, quiz_service: QuizService = None):
@@ -55,7 +55,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
             ["退出"]
         ]
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-        return self.CHECK_COMMAND
+        return CHECK_COMMAND
 
     async def view_command(self, update: Update, _: CallbackContext) -> int:
         keyboard = [
@@ -65,7 +65,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
         ]
         await update.message.reply_text("请回复你要查看的问题",
                                         reply_markup=InlineKeyboardMarkup(keyboard))
-        return self.CHECK_COMMAND
+        return CHECK_COMMAND
 
     @conversation.state(state=CHECK_QUESTION)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -75,7 +75,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
             ["退出"]
         ]
         await update.message.reply_text("请选择你的操作", reply_markup=ReplyKeyboardMarkup(reply_keyboard))
-        return self.CHECK_COMMAND
+        return CHECK_COMMAND
 
     @conversation.state(state=CHECK_COMMAND)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -129,7 +129,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
         quiz_command_data.new_correct_answer = ""
         quiz_command_data.status = 1
         await update.message.reply_text("请回复你要添加的问题，或发送 /cancel 取消操作", reply_markup=ReplyKeyboardRemove())
-        return self.GET_NEW_QUESTION
+        return GET_NEW_QUESTION
 
     @conversation.state(state=GET_NEW_QUESTION)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -139,7 +139,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
                      f"请填写正确答案："
         quiz_command_data.new_question = update.message.text
         await update.message.reply_markdown_v2(reply_text)
-        return self.GET_NEW_CORRECT_ANSWER
+        return GET_NEW_CORRECT_ANSWER
 
     @conversation.state(state=GET_NEW_CORRECT_ANSWER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -149,7 +149,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
                      f"请填写错误答案："
         await update.message.reply_markdown_v2(reply_text)
         quiz_command_data.new_correct_answer = update.message.text
-        return self.GET_NEW_WRONG_ANSWER
+        return GET_NEW_WRONG_ANSWER
 
     @conversation.state(state=GET_NEW_WRONG_ANSWER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -160,7 +160,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
                      f"可继续填写，并使用 {escape_markdown('/finish', version=2)} 结束。"
         await update.message.reply_markdown_v2(reply_text)
         quiz_command_data.new_wrong_answer.append(update.message.text)
-        return self.GET_NEW_WRONG_ANSWER
+        return GET_NEW_WRONG_ANSWER
 
     async def finish_edit(self, update: Update, context: CallbackContext):
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
@@ -170,7 +170,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
         await update.message.reply_markdown_v2(reply_text)
         reply_keyboard = [["保存并重载配置", "抛弃修改并退出"]]
         await update.message.reply_text("请核对问题，并选择下一步操作。", reply_markup=ReplyKeyboardMarkup(reply_keyboard))
-        return self.SAVE_QUESTION
+        return SAVE_QUESTION
 
     @conversation.state(state=SAVE_QUESTION)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -200,7 +200,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
             return ConversationHandler.END
         else:
             await update.message.reply_text("回复错误，请重新选择")
-            return self.SAVE_QUESTION
+            return SAVE_QUESTION
 
     async def edit_question(self, update: Update, context: CallbackContext) -> int:
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
@@ -209,7 +209,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin):
         quiz_command_data.new_correct_answer = ""
         quiz_command_data.status = 2
         await update.message.reply_text("请回复你要修改的问题", reply_markup=ReplyKeyboardRemove())
-        return self.GET_NEW_QUESTION
+        return GET_NEW_QUESTION
 
     async def delete_question(self, update: Update, context: CallbackContext) -> int:
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")

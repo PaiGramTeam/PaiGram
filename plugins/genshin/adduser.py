@@ -29,7 +29,7 @@ class AddUserCommandData(TelegramObject):
 CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
 
 
-class AddUser(Plugin.Conversation, BasePlugin):
+class AddUser(Plugin.Conversation, BasePlugin.Conversation):
     """用户绑定"""
 
     def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None):
@@ -53,7 +53,7 @@ class AddUser(Plugin.Conversation, BasePlugin):
         await update.message.reply_markdown_v2(message,
                                                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
-        return self.CHECK_SERVER
+        return CHECK_SERVER
 
     @conversation.state(state=CHECK_SERVER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -83,7 +83,7 @@ class AddUser(Plugin.Conversation, BasePlugin):
                 await update.message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         else:
             await update.message.reply_text("选择错误，请重新选择")
-            return self.CHECK_SERVER
+            return CHECK_SERVER
         await update.message.reply_text(f"请输入{bbs_name}的Cookies！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
         javascript = "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a[" \
                      "0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的Cookie,请重新登录!');c&&confirm(" \
@@ -101,7 +101,7 @@ class AddUser(Plugin.Conversation, BasePlugin):
                        f"2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n" \
                        f"`{escape_markdown(javascript_android, version=2, entity_type='code')}`"
         await update.message.reply_markdown_v2(help_message, disable_web_page_preview=True)
-        return self.CHECK_COOKIES
+        return CHECK_COOKIES
 
     @conversation.state(state=CHECK_COOKIES)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -162,7 +162,7 @@ class AddUser(Plugin.Conversation, BasePlugin):
             message,
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
         )
-        return self.COMMAND_RESULT
+        return COMMAND_RESULT
 
     @conversation.state(state=COMMAND_RESULT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -205,4 +205,4 @@ class AddUser(Plugin.Conversation, BasePlugin):
             return ConversationHandler.END
         else:
             await update.message.reply_text("回复错误，请重新输入")
-            return self.COMMAND_RESULT
+            return COMMAND_RESULT
