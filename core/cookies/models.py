@@ -11,8 +11,10 @@ class CookiesStatusEnum(int, enum.Enum):
 
 
 class Cookies(SQLModel):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: Optional[int] = Field()
+    __table_args__ = dict(mysql_charset='utf8mb4', mysql_collate="utf8mb4_general_ci")
+
+    id: int = Field(primary_key=True)
+    user_id: Optional[int] = Field(foreign_key="user.user_id")
     cookies: Optional[Dict[str, str]] = Field(sa_column=Column(JSON))
     status: Optional[CookiesStatusEnum] = Field(sa_column=Column(Enum(CookiesStatusEnum)))
 

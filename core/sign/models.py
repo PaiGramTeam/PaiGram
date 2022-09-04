@@ -18,9 +18,11 @@ class SignStatusEnum(int, enum.Enum):
 
 
 class Sign(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field()
-    chat_id: int = Field()
+    __table_args__ = dict(mysql_charset='utf8mb4', mysql_collate="utf8mb4_general_ci")
+
+    id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.user_id")
+    chat_id: Optional[int] = Field(default=None)
     time_created: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True), server_default=func.now()))
     time_updated: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True), onupdate=func.now()))
     status: Optional[SignStatusEnum] = Field(sa_column=Column(Enum(SignStatusEnum)))

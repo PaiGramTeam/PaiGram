@@ -30,10 +30,24 @@ pip install --upgrade poetry
 ### 2. 安装依赖
 
 ```bash
-poetry update
+poetry install
 ```
 
-### 3. 运行
+### 3. 修改配置
+
+创建 `.env` 文件并填写数据库连接和 bot token 等参数。
+
+```bash
+cp .env.example .env
+```
+
+### 4. 初始化数据库
+
+```bash
+alembic upgrade head
+```
+
+### 5. 运行
 
 ```bash
 python ./main.py
