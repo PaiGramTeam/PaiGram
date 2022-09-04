@@ -1,11 +1,10 @@
 import html
+import json
 import traceback
-from typing import Optional
 
-import ujson
-from telegram import Update, ReplyKeyboardRemove, Message
+from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ParseMode
-from telegram.error import BadRequest
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext
 
 from core.bot import bot
@@ -32,7 +31,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
     text_1 = (
         f'<b>处理函数时发生异常</b> \n'
         f'Exception while handling an update \n'
-        f'<pre>update = {html.escape(ujson.dumps(update_str, indent=2, ensure_ascii=False))}'
+        f'<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}'
         '</pre>\n\n'
         f'<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n'
         f'<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n'
@@ -62,21 +61,16 @@ async def error_handler(update: object, context: CallbackContext) -> None:
                 except BadRequest as exc_1:
                     logger.error("处理函数时发生异常", exc_1)
     effective_user = update.effective_user
+    effective_message = update.effective_message
     try:
-        message: Optional[Message] = None
-        if update.callback_query is not None:
-            message = update.callback_query.message
-        if update.message is not None:
-            message = update.message
-        if update.edited_message is not None:
-            message = update.edited_message
-        if message is not None:
-            chat = message.chat
+        if effective_message is not None:
+            chat = effective_message.chat
             logger.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
                         f"在 {chat.full_name}[{chat.id}]"
                         f"的 update_id[{update.update_id}] 错误信息")
             text = f"出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！"
-            await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove(),
+            await context.bot.send_message(effective_message.chat_id, text, reply_markup=ReplyKeyboardRemove(),
                                            parse_mode=ParseMode.HTML)
-    except BadRequest as exc:
-        logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为 {str(exc)}")
+    except (BadRequest, Forbidden) as exc:
+        logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
+        logger.exception(exc)
