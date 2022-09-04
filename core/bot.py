@@ -3,13 +3,14 @@ import inspect
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import Callable, ClassVar, Dict, Iterator, NoReturn, Optional, Type, TypeVar
+from typing import Any, Callable, ClassVar, Dict, Iterator, NoReturn, Optional, Type, TypeVar
 
 import pytz
 from telegram.error import NetworkError, TimedOut
 from telegram.ext import Application as TgApplication, Defaults, JobQueue
 
 from core.config import BotConfig
+from core.error import ServiceNotFoundError
 # noinspection PyProtectedMember
 from core.plugin import Plugin, _Plugin
 from core.service import Service
@@ -35,7 +36,7 @@ class Bot(object):
 
     app: Optional[TgApplication] = None
     config: BotConfig = BotConfig()
-    services: Dict[Type[T], T] = {}
+    _services: Dict[Type[T], T] = {}
 
     def init_inject(self, target: Callable[[], T]) -> T:
         """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
@@ -46,7 +47,7 @@ class Bot(object):
         kwargs = {}
         for name, parameter in signature.parameters.items():
             if name != 'self' and parameter.annotation != inspect.Parameter.empty:
-                if value := self.services.get(parameter.annotation, None):
+                if value := self._services.get(parameter.annotation, None):
                     kwargs.update({name: value})
         # noinspection PyArgumentList
         return target(**kwargs)
@@ -100,7 +101,7 @@ class Bot(object):
                     instance = self.init_inject(base_service_cls)
                 await instance.start()
                 logger.success(f'服务 "{base_service_cls.__name__}" 初始化成功')
-                self.services.update({base_service_cls: instance})
+                self._services.update({base_service_cls: instance})
             except Exception as e:
                 logger.error(f'服务 "{base_service_cls.__name__}" 初始化失败', e)
                 continue
@@ -119,9 +120,9 @@ class Bot(object):
 
     async def stop_services(self):
         """关闭服务"""
-        if self.services:
+        if self._services:
             logger.info('正在关闭服务')
-            for _, service in self.services.items():
+            for _, service in self._services.items():
                 try:
                     if hasattr(service, 'stop'):
                         if inspect.iscoroutinefunction(service.stop):
@@ -134,7 +135,7 @@ class Bot(object):
                     logger.error(f"服务 \"{service.__class__.__name__}\" 关闭失败")
                     logger.error(f"{type(e).__name__}: {e}")
 
-    async def _post_init(self, app: TgApplication) -> NoReturn:
+    async def _post_init(self, _) -> NoReturn:
         logger.info('开始初始化服务')
         await self.start_services()
         logger.info('开始安装插件')
@@ -176,9 +177,36 @@ class Bot(object):
             loop.close()
         logger.info("BOT 已经关闭")
 
+    def find_service(self, target: Type[T]) -> T:
+        """查找服务。若没找到则抛出 ServiceNotFoundError"""
+        if result := self._services.get(target) is None:
+            raise ServiceNotFoundError(target)
+        return result
+
+    def add_service(self, service: T) -> NoReturn:
+        """添加服务。若已经有同类型的服务，则会抛出异常"""
+        if type(service) in self._services.keys():
+            raise ValueError(f"Service \"{type(service)}\" is already existed.")
+        self.update_service(service)
+
+    def update_service(self, service: T):
+        """更新服务。若服务不存在，则添加；若存在，则更新"""
+        self._services.update({type(service): service})
+
+    def contain_service(self, service: Any) -> bool:
+        """判断服务是否存在"""
+        if isinstance(service, type):
+            return service in self._services.keys()
+        else:
+            return service in self._services.values()
+
     @property
     def job_queue(self) -> JobQueue:
         return self.app.job_queue
+
+    @property
+    def services(self) -> Dict[Type[T], T]:
+        return self._services
 
 
 bot = Bot()
