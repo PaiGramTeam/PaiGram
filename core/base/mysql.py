@@ -3,9 +3,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
 from typing_extensions import Self
 
-from core.config import BotConfig
 from core.service import Service
-from utils.log import logger
+from core.config import BotConfig
 
 
 class MySQL(Service):
@@ -35,6 +34,3 @@ class MySQL(Service):
         """获取会话"""
         async with self.Session() as session:
             yield session
-
-    async def wait_closed(self):
-        pass
