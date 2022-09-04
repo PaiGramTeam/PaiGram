@@ -1,9 +1,9 @@
 import unittest
 from unittest import IsolatedAsyncioTestCase
 
-from models.wiki.character import Character
-from models.wiki.material import Material
-from models.wiki.weapon import Weapon
+from modules.wiki.character import Character
+from modules.wiki.material import Material
+from modules.wiki.weapon import Weapon
 
 
 class TestWeapon(IsolatedAsyncioTestCase):

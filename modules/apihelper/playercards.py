@@ -4,14 +4,14 @@ from typing import Union, Optional
 import httpx
 import ujson
 
-from models.base import GameItem
-from models.game.artifact import ArtifactInfo
-from models.game.character import CharacterInfo, CharacterValueInfo
-from models.game.fetter import FetterInfo
-from models.game.skill import Skill
-from models.game.talent import Talent
-from models.game.weapon import WeaponInfo
-from models.apihelper.helpers import get_headers
+from modules.apihelper.helpers import get_headers
+from modules.base import GameItem
+from modules.game.artifact import ArtifactInfo
+from modules.game.character import CharacterInfo, CharacterValueInfo
+from modules.game.fetter import FetterInfo
+from modules.game.skill import Skill
+from modules.game.talent import Talent
+from modules.game.weapon import WeaponInfo
 
 
 class PlayerCardsAPI:

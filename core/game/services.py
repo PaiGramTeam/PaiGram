@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from models.apihelper.hyperion import Hyperion
+from modules.apihelper.hyperion import Hyperion
 from .cache import GameCache
 
 

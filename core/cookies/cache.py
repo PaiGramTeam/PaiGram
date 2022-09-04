@@ -1,8 +1,8 @@
 from typing import List, Union
 
-from models.base import RegionEnum
-from utils.error import RegionNotFoundError
 from core.base.redisdb import RedisDB
+from modules.base import RegionEnum
+from utils.error import RegionNotFoundError
 from .error import CookiesCachePoolExhausted
 
 

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.base.mysql import MySQL
-from models.base import RegionEnum
+from modules.base import RegionEnum
 from utils.error import RegionNotFoundError
 from .error import CookiesNotFoundError
 from .models import HyperionCookie, HoyolabCookie, Cookies

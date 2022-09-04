@@ -13,7 +13,7 @@ from core.plugin import Plugin, handler, conversation
 from core.user.error import UserNotFoundError
 from core.user.models import User
 from core.user.services import UserService
-from models.base import RegionEnum
+from modules.base import RegionEnum
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger

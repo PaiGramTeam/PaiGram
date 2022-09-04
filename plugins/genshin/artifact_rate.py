@@ -7,7 +7,7 @@ from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, conversation, handler
-from models.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
+from modules.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger

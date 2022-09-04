@@ -9,8 +9,8 @@ from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.wiki.services import WikiService
 from metadata.shortname import weaponToName
-from models.wiki.base import SCRAPE_HOST
-from models.wiki.weapon import Weapon
+from modules.wiki.base import SCRAPE_HOST
+from modules.wiki.weapon import Weapon
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

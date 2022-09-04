@@ -1,7 +1,7 @@
 import unittest
 from unittest import IsolatedAsyncioTestCase
 
-from models.apihelper.artifact import ArtifactOcrRate
+from modules.apihelper.artifact import ArtifactOcrRate
 
 
 class TestArtifact(IsolatedAsyncioTestCase):

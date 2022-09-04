@@ -5,8 +5,8 @@ from typing import List, Optional, Tuple, Union
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from models.wiki.base import Model, SCRAPE_HOST, WikiModel
-from models.wiki.other import AttributeType, WeaponType
+from modules.wiki.base import Model, SCRAPE_HOST, WikiModel
+from modules.wiki.other import AttributeType, WeaponType
 
 __all__ = ['Weapon', 'WeaponAffix', 'WeaponAttribute']
 

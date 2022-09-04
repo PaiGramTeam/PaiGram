@@ -1,4 +1,4 @@
-from models.baseobject import BaseObject
+from modules.baseobject import BaseObject
 
 
 class Skill(BaseObject):

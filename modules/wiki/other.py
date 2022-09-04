@@ -3,7 +3,7 @@ from typing import Optional
 
 from typing_extensions import Self
 
-from models.wiki.base import SCRAPE_HOST
+from modules.wiki.base import SCRAPE_HOST
 
 __all__ = [
     'Element',

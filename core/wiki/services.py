@@ -1,9 +1,9 @@
 from typing import List, NoReturn, Optional
 
 from core.wiki.cache import WikiCache
+from modules.wiki.character import Character
+from modules.wiki.weapon import Weapon
 from utils.log import logger
-from models.wiki.character import Character
-from models.wiki.weapon import Weapon
 
 
 class WikiService:

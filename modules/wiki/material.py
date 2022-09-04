@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from httpx import URL
 from typing_extensions import Self
 
-from models.wiki.base import SCRAPE_HOST, WikiModel
+from modules.wiki.base import SCRAPE_HOST, WikiModel
 
 __all__ = ['Material']
 

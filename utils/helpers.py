@@ -12,7 +12,7 @@ from core.bot import bot
 from core.cookies.services import CookiesService
 from core.error import ServiceNotFoundError
 from core.user.services import UserService
-from models.base import RegionEnum
+from modules.base import RegionEnum
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 

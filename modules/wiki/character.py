@@ -4,9 +4,9 @@ from typing import List, Optional
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from models.wiki.base import Model, SCRAPE_HOST
-from models.wiki.base import WikiModel
-from models.wiki.other import Association, Element, WeaponType
+from modules.wiki.base import Model, SCRAPE_HOST
+from modules.wiki.base import WikiModel
+from modules.wiki.other import Association, Element, WeaponType
 
 
 class Birth(Model):

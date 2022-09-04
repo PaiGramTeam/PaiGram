@@ -2,7 +2,7 @@ from typing import Optional
 
 from sqlmodel import SQLModel, Field, Enum, Column
 
-from models.base import RegionEnum
+from modules.base import RegionEnum
 
 
 class User(SQLModel, table=True):

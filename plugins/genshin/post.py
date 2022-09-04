@@ -10,8 +10,8 @@ from telegram.helpers import escape_markdown
 from core.baseplugin import BasePlugin
 from core.bot import bot
 from core.plugin import Plugin, conversation, handler
-from models.apihelper.base import ArtworkImage
-from models.apihelper.hyperion import Hyperion
+from modules.apihelper.base import ArtworkImage
+from modules.apihelper.hyperion import Hyperion
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

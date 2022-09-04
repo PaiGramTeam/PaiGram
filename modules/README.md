@@ -1,4 +1,4 @@
-# model 目录说明
+# modules 目录说明
 
 ## apihelpe 模块
 

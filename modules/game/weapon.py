@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Union, Optional
 
-from models.base import GameItem
-from models.baseobject import BaseObject
+from modules.base import GameItem
+from modules.baseobject import BaseObject
 
 
 class WeaponInfo(BaseObject):

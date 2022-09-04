@@ -5,8 +5,8 @@ from typing import List
 import httpx
 from httpx import AsyncClient
 
-from models.apihelper.base import HyperionResponse, ArtworkImage, BaseResponseData
-from models.apihelper.helpers import get_ds, get_device_id
+from modules.apihelper.base import HyperionResponse, ArtworkImage, BaseResponseData
+from modules.apihelper.helpers import get_ds, get_device_id
 
 
 class Hyperion:

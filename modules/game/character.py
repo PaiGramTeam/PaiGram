@@ -1,12 +1,12 @@
 from typing import Optional, List
 
-from models.baseobject import BaseObject
-from models.game.artifact import ArtifactInfo
-from models.game.fetter import FetterInfo
-from models.game.skill import Skill
-from models.game.talent import Talent
-from models.game.weapon import WeaponInfo
-from models.types import JSONDict
+from modules.baseobject import BaseObject
+from modules.game.artifact import ArtifactInfo
+from modules.game.fetter import FetterInfo
+from modules.game.skill import Skill
+from modules.game.talent import Talent
+from modules.game.weapon import WeaponInfo
+from modules.types import JSONDict
 
 
 class CharacterValueInfo(BaseObject):

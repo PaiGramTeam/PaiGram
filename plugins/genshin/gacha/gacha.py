@@ -10,7 +10,7 @@ from telegram.ext import filters, CommandHandler, MessageHandler, CallbackContex
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
-from models.apihelper.gacha import GachaInfo
+from modules.apihelper.gacha import GachaInfo
 from plugins.genshin.gacha.wish import WishCountInfo, get_one
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
