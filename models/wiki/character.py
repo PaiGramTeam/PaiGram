@@ -170,8 +170,8 @@ class Character(WikiModel):
     @property
     def icon(self) -> CharacterIcon:
         return CharacterIcon(
-            icon=str(SCRAPE_HOST.join(f'/img/{self.id}_icon.png')),
-            side=str(SCRAPE_HOST.join(f'/img/{self.id}_side_icon.png')),
-            gacha=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_card.png')),
-            splash=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_splash.png'))
+            icon=str(SCRAPE_HOST.join(f'/img/{self.id}_icon.webp')),
+            side=str(SCRAPE_HOST.join(f'/img/{self.id}_side_icon.webp')),
+            gacha=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_card.webp')),
+            splash=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_splash.webp'))
         )

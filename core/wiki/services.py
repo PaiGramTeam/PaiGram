@@ -71,10 +71,10 @@ class WikiService:
         if self.first_run:
             weapon_dict = await self._cache.get("weapon")
             self._weapon_list = [Weapon.parse_obj(obj) for obj in weapon_dict]
-            self._weapon_name_list = await Weapon.get_name_list()
+            self._weapon_name_list = [weapon.name for weapon in self._weapon_list]
             characters_dict = await self._cache.get("characters")
             self._character_list = [Character.parse_obj(obj) for obj in characters_dict]
-            self._character_name_list = await Character.get_name_list()
+            self._character_name_list = [character.name for character in self._character_list]
 
             self.first_run = False
 

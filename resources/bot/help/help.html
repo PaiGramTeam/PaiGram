@@ -1,142 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Title</title>
-    <link href="../../styles/tailwind.min.css" rel="stylesheet">
-    <link href="../../styles/font-awesome.min.css" rel="stylesheet">
-    <link href="help.css" rel="stylesheet">
+    <link href="../../styles/tailwind.min.css" rel="stylesheet" />
+    <link href="../../styles/font-awesome.min.css" rel="stylesheet" />
+    <link href="help.css" rel="stylesheet" />
 </head>
 <body>
-<div class="container mx-auto px-5 py-10" id="container">
-    <div class="info p-6 flex flex-wrap mb-8 rounded-xl">
-        <div class="info-name">
+<div class="container mx-auto px-5 py-10 max-w-3xl">
+    <div class="header p-6 flex mb-8 rounded-xl bg-cover justify-between">
+        <div>
             <h1 class="text-4xl italic">TGPaimonBot</h1>
             <h1 class="text-2xl">使用说明</h1>
         </div>
-        <div class="info-name text-1xl ml-60 pt-1">
-            <p><i class="fa fa-address-card-o mr-2"></i>需要绑定Cookie</p>
+        <div class="pt-1 opacity-70">
+            <i class="fa fa-address-card-o mr-2"></i>需要绑定Cookie
         </div>
     </div>
-    <div class="base-command pt-4 rounded-xl">
-        <div class="command-background">
-            <img src="background/2015.png">
-        </div>
-        <div class="genshin-background">
-            <img src="background/genshin.png">
-        </div>
-        <div class="command-type px-1">
-            <div class="command-title text-2xl">
+
+    <div class="box pt-4 rounded-xl space-y-4 overflow-hidden">
+        <div>
+            <div class="command-background pointer-events-none">
+                <img src="background/2015.png" />
+            </div>
+            <div class="genshin-background pointer-events-none">
+                <img src="background/genshin.png" />
+            </div>
+
+            <div class="command-title text-2xl mx-1">
                 <h1>查询命令</h1>
             </div>
-        </div>
-        <div class="command-list py-4 px-2">
-            <div class="flex">
+
+            <div class="grid grid-cols-2 py-4 px-2">
                 <div class="command">
-                    <div class="command-name text-xl">/weapon</div>
-                    <div class="command-description text-base ">查询武器</div>
+                    <div class="command-name">/weapon</div>
+                    <div class="command-description">查询武器</div>
                 </div>
                 <div class="command rounded-xl flex-1">
-                    <div class="command-name text-xl">/strategy</div>
-                    <div class="command-description text-base ">查询角色攻略</div>
+                    <div class="command-name">/strategy</div>
+                    <div class="command-description">查询角色攻略</div>
                 </div>
-            </div>
-            <div class="flex">
+            
                 <div class="command">
-                    <div class="command-name text-xl ">
-                        /uid
+                    <div class="command-name">
+                        /stats
                         <i class="fa fa-address-card-o ml-2"></i>
                     </div>
-                    <div class="name text-base ">查询玩家信息</div>
+                    <div class="command-description">玩家统计查询</div>
                 </div>
                 <div class="command">
-                    <div class="command-name text-xl">
+                    <div class="command-name">
                         /sign
-                        <i class="fa fa-address-card-o ml-2"></i></div>
-                    <div class="command-description text-base ">每日签到 | 查询</div>
+                        <i class="fa fa-address-card-o ml-2"></i>
+                    </div>
+                    <div class="command-description">每日签到 | 查询</div>
                 </div>
-            </div>
-            <div class="flex">
+            
                 <div class="command">
-                    <div class="command-name text-xl">
+                    <div class="command-name">
                         /dailynote
                         <i class="fa fa-address-card-o ml-2"></i>
                     </div>
-                    <div class="name text-base1">查询角色当前状态</div>
+                    <div class="command-description">查询角色当前状态</div>
                 </div>
                 <div class="command">
-                    <div class="command-name text-xl">
+                    <div class="command-name">
                         /artifact_rate
-                        <div class="command-description text-base ">圣遗物评分</div>
                     </div>
+                    <div class="command-description">圣遗物评分</div>
                 </div>
-            </div>
-            <div class="flex">
+            
                 <div class="command">
-                    <div class="command-name text-xl">
+                    <div class="command-name">
                         /ledger
                         <i class="fa fa-address-card-o ml-2"></i>
                     </div>
-                    <div class="name text-base1">查询角色当月旅行扎记</div>
+                    <div class="command-description">查询角色当月旅行扎记</div>
                 </div>
                 <div class="command">
-                    <div class="command-name text-xl">
+                    <div class="command-name">
                         /abyss
                         <i class="fa fa-address-card-o ml-2"></i>
                     </div>
-                    <div class="name text-base1">查询当期深渊螺旋战绩</div>
+                    <div class="command-description">查询当期深渊螺旋战绩</div>
+                </div>
+
+                <div class="command">
+                    <div class="command-name">/material</div>
+                    <div class="command-description">角色培养素材查询</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/hilichurls</div>
+                    <div class="command-description">丘丘语字典</div>
+                </div>
+             </div>
+        </div>
+
+        <div>
+            <div class="command-background pointer-events-none">
+                <img src="background/1006.png" />
+            </div>
+            <div class="command-title text-2xl mx-1">
+                <h1>其他命令</h1>
+            </div>
+            <div class="grid grid-cols-2 py-4 px-2">
+                <div class="command">
+                    <div class="command-name">/gacha</div>
+                    <div class="command-description">抽卡模拟器（非洲人模拟器）</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/quiz</div>
+                    <div class="command-description">
+                        派蒙的十万个为什么
+                    </div>
+                </div>
+                
+                <div class="command">
+                    <div class="command-name">/adduser</div>
+                    <div class="command-description">添加账号（请私聊BOT）</div>
+                </div>
+                <div class="command rounded-xl flex-1">
+                    <div class="command-name">/cancel</div>
+                    <div class="command-description">
+                        取消操作（解决一切玄学问题）
+                    </div>
+                </div>
+             </div>
+        </div>
+
+        <div>
+            <div class="command-title text-2xl mx-1">
+                <h1>inline 模式关键词</h1>
+            </div>
+            <div class="grid grid-cols-2 py-4 px-2">
+                <div class="command">
+                    <div class="command-name">角色名</div>
+                    <div class="command-description">查询角色攻略</div>
                 </div>
             </div>
         </div>
-        <div class="base-command pt-4 mb-8 rounded-xl">
-            <div class="command-background">
-                <img src="background/1006.png">
-            </div>
-            <div class="command-type px-1">
-                <div class="command-title text-2xl">
-                    <h1>其他命令</h1>
-                </div>
-            </div>
-            <div class="command-list py-4 px-2">
-                <div class="flex">
-                    <div class="command">
-                        <div class="command-name text-xl">/gacha</div>
-                        <div class="name text-base1">抽卡模拟器（非洲人模拟器）</div>
-                    </div>
-                    <div class="command">
-                        <div class="command-name text-xl">/quiz</div>
-                        <div class="command-description text-bas">派蒙的十万个为什么</div>
-                    </div>
-                </div>
-                <div class="flex">
-                    <div class="command">
-                        <div class="command-name text-xl">/adduser</div>
-                        <div class="command-description text-base ">添加账号（请私聊BOT）</div>
-                    </div>
-                    <div class="command rounded-xl flex-1">
-                        <div class="command-name text-xl">/cancel</div>
-                        <div class="command-description text-base ">取消操作（解决一切玄学问题）</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="base-command pt-4 mb-8 rounded-xl">
-            <div class="command-type px-1">
-                <div class="command-title text-2xl">
-                    <h1>inline 模式关键词</h1>
-                </div>
-            </div>
-            <div class="command-list py-4 px-2">
-                <div class="flex">
-                    <div class="command">
-                        <div class="command-name text-xl">角色名</div>
-                        <div class="name text-base1">查询角色攻略</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="about">
-            <h1>更多功能，还在咕咕咕！咕咕咕！</h1>
+
+        <div class="about text-center leading-8 text-xs opacity-50">
+            更多功能，还在咕咕咕！咕咕咕！
         </div>
     </div>
 </div>

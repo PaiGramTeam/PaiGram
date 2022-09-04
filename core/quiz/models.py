@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Column, Integer, ForeignKey
 
 from models.baseobject import BaseObject
 from models.types import JSONDict
@@ -8,15 +8,24 @@ from models.types import JSONDict
 
 class AnswerDB(SQLModel, table=True):
     __tablename__ = 'answer'
-    id: Optional[int] = Field(default=None, primary_key=True)
-    question_id: Optional[int] = Field()
+    __table_args__ = dict(mysql_charset='utf8mb4', mysql_collate="utf8mb4_general_ci")
+
+    id: int = Field(primary_key=True)
+    question_id: Optional[int] = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("question.id", ondelete="RESTRICT", onupdate="RESTRICT")
+        )
+    )
     is_correct: Optional[bool] = Field()
     text: Optional[str] = Field()
 
 
 class QuestionDB(SQLModel, table=True):
     __tablename__ = 'question'
-    id: Optional[int] = Field(default=None, primary_key=True)
+    __table_args__ = dict(mysql_charset='utf8mb4', mysql_collate="utf8mb4_general_ci")
+
+    id: int = Field(primary_key=True)
     text: Optional[str] = Field()
 
 

@@ -6,8 +6,10 @@ from models.base import RegionEnum
 
 
 class User(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field()
-    yuanshen_uid: int = Field()
-    genshin_uid: int = Field()
+    __table_args__ = dict(mysql_charset='utf8mb4', mysql_collate="utf8mb4_general_ci")
+
+    id: int = Field(primary_key=True)
+    user_id: int = Field(unique=True)
+    yuanshen_uid: Optional[int] = Field()
+    genshin_uid: Optional[int] = Field()
     region: Optional[RegionEnum] = Field(sa_column=Column(Enum(RegionEnum)))

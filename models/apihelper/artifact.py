@@ -44,6 +44,9 @@ class ArtifactOcrRate:
     def __init__(self):
         self.client = httpx.AsyncClient(headers=self.HEADERS)
 
+    async def close(self):
+        await self.client.aclose()
+
     async def get_artifact_attr(self, photo_byte):
         b64_str = b64encode(photo_byte).decode()
         req = await self.client.post(self.OCR_URL, json={"image": b64_str}, timeout=8)

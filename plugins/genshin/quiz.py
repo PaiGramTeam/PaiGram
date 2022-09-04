@@ -17,6 +17,7 @@ from plugins.base import BasePlugins
 from utils.decorators.restricts import restricts
 from utils.plugins.manager import listener_plugins_class
 from utils.random import MT19937_Random
+from utils.service.inject import inject
 
 
 class QuizCommandData:
@@ -37,6 +38,7 @@ class QuizPlugin(BasePlugins):
     GET_NEW_QUESTION, GET_NEW_CORRECT_ANSWER, GET_NEW_WRONG_ANSWER, \
     QUESTION_EDIT, SAVE_QUESTION = range(10300, 10308)
 
+    @inject
     def __init__(self, quiz_service: QuizService = None, bot_admin_service: BotAdminService = None):
         self.bot_admin_service = bot_admin_service
         self.user_time = {}

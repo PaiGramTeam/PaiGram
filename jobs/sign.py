@@ -1,5 +1,6 @@
 import datetime
 import time
+import asyncio
 
 from aiohttp import ClientConnectorError
 from genshin import Game, GenshinException, AlreadyClaimed, InvalidCookies
@@ -12,10 +13,14 @@ from core.cookies import CookiesService
 from core.sign.models import SignStatusEnum
 from core.sign.services import SignServices
 from core.user import UserService
-from utils.log import logger
+from logger import Log
 from utils.helpers import get_genshin_client
 from utils.job.manager import listener_jobs_class
 from utils.service.inject import inject
+
+
+class NeedChallenge(Exception):
+    pass
 
 
 @listener_jobs_class()
@@ -34,10 +39,10 @@ class SignJob:
         if config.debug:
             job_queue.run_once(sign.sign, 3, name="SignJobTest")
         # 每天凌晨一点执行
-        job_queue.run_daily(sign.sign, datetime.time(hour=1, minute=0, second=0), name="SignJob")
+        job_queue.run_daily(sign.sign, datetime.time(hour=0, minute=1, second=0), name="SignJob")
 
     async def sign(self, context: CallbackContext):
-        logger.info("正在执行自动签到")
+        Log.info("正在执行自动签到")
         sign_list = await self.sign_service.get_all()
         for sign_db in sign_list:
             if sign_db.status != SignStatusEnum.STATUS_SUCCESS:
@@ -49,8 +54,12 @@ class SignJob:
                 daily_reward_info = await client.get_reward_info(game=Game.GENSHIN)
                 if not daily_reward_info.signed_in:
                     request_daily_reward = await client.request_daily_reward("sign", method="POST", game=Game.GENSHIN)
-                    logger.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
-                    result = "OK"
+                    if request_daily_reward and request_daily_reward.get("success", 0) == 1:
+                        Log.warning(f"UID {client.uid} 签到失败，触发验证码风控")
+                        raise NeedChallenge
+                    else:
+                        Log.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
+                        result = "OK"
                 else:
                     result = "今天旅行者已经签到过了~"
                 reward = rewards[daily_reward_info.claimed_rewards - (1 if daily_reward_info.signed_in else 0)]
@@ -78,22 +87,26 @@ class SignJob:
             except ClientConnectorError:
                 text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
+            except NeedChallenge:
+                text = f"签到失败，触发验证码风控，自动签到自动关闭"
+                sign_db.status = SignStatusEnum.NEED_CHALLENGE
             except BaseException as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
-                continue
+                Log.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
+                text = "签到失败了呜呜呜 ~ 执行自动签到时发生错误"
             if sign_db.chat_id < 0:
                 text = f"<a href=\"tg://user?id={sign_db.user_id}\">NOTICE {sign_db.user_id}</a>\n\n{text}"
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
+                await asyncio.sleep(5)  # 回复延迟5S避免触发洪水防御
             except BadRequest as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
+                Log.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
                 sign_db.status = SignStatusEnum.BAD_REQUEST
             except Forbidden as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
+                Log.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
                 sign_db.status = SignStatusEnum.FORBIDDEN
             except BaseException as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
+                Log.error(f"执行自动签到时发生错误 用户UID[{user_id}]", exc)
                 continue
             sign_db.time_updated = datetime.datetime.now()
             await self.sign_service.update(sign_db)
-        logger.info("执行自动签到完成")
+        Log.info("执行自动签到完成")

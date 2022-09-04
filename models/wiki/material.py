@@ -54,4 +54,4 @@ class Material(WikiModel):
 
     @property
     def icon(self) -> str:
-        return str(SCRAPE_HOST.join(f'/img/{self.id}.png'))
+        return str(SCRAPE_HOST.join(f'/img/{self.id}.webp'))

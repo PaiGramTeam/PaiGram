@@ -1,16 +1,16 @@
 import asyncio
 import random
 import time
-from typing import Dict, List, Tuple, Union
+from typing import Tuple, Union, Dict, List
 
-from telegram import ChatMember, ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 from telegram.helpers import escape_markdown
 
 from core.quiz import QuizService
-from utils.log import logger
+from logger import Log
 from utils.random import MT19937_Random
 from utils.service.inject import inject
 
@@ -62,35 +62,35 @@ class GroupJoiningVerification:
 
     async def kick_member_job(self, context: CallbackContext):
         job = context.job
-        logger.info(f"踢出用户 user_id[{job.user_id}] 在 chat_id[{job.chat_id}]")
+        Log.info(f"踢出用户 user_id[{job.user_id}] 在 chat_id[{job.chat_id}]")
         try:
             await context.bot.ban_chat_member(chat_id=job.chat_id, user_id=job.user_id,
                                               until_date=int(time.time()) + self.kick_time)
         except BadRequest as error:
-            logger.error(f"Auth模块在 chat_id[{job.chat_id}] user_id[{job.user_id}] 执行kick失败", error)
+            Log.error(f"Auth模块在 chat_id[{job.chat_id}] user_id[{job.user_id}] 执行kick失败", error)
 
     @staticmethod
     async def clean_message_job(context: CallbackContext):
         job = context.job
-        logger.debug(f"删除消息 chat_id[{job.chat_id}] 的 message_id[{job.data}]")
+        Log.debug(f"删除消息 chat_id[{job.chat_id}] 的 message_id[{job.data}]")
         try:
             await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
         except BadRequest as error:
             if "not found" in str(error):
-                logger.warning(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息不存在")
+                Log.warning(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息不存在")
             elif "Message can't be deleted" in str(error):
-                logger.warning(
+                Log.warning(
                     f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息无法删除 可能是没有授权")
             else:
-                logger.error(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败", error)
+                Log.error(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败", error)
 
     @staticmethod
     async def restore_member(context: CallbackContext, chat_id: int, user_id: int):
-        logger.debug(f"重置用户权限 user_id[{user_id}] 在 chat_id[{chat_id}]")
+        Log.debug(f"重置用户权限 user_id[{user_id}] 在 chat_id[{chat_id}]")
         try:
             await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=FullChatPermissions)
         except BadRequest as error:
-            logger.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败", error)
+            Log.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败", error)
 
     async def admin(self, update: Update, context: CallbackContext) -> None:
 
@@ -98,17 +98,17 @@ class GroupJoiningVerification:
             _data = callback_query_data.split("|")
             _result = _data[1]
             _user_id = int(_data[2])
-            logger.debug(f"admin_callback函数返回 result[{_result}] user_id[{_user_id}]")
+            Log.debug(f"admin_callback函数返回 result[{_result}] user_id[{_user_id}]")
             return _result, _user_id
 
         callback_query = update.callback_query
         user = callback_query.from_user
         message = callback_query.message
         chat = message.chat
-        logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth管理员命令")
+        Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth管理员命令")
         chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
         if not self.is_admin(chat_administrators, user.id):
-            logger.debug(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 非群管理")
+            Log.debug(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 非群管理")
             await callback_query.answer(text="你不是管理！\n"
                                              "再乱点我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
@@ -116,7 +116,7 @@ class GroupJoiningVerification:
         try:
             member_info = await context.bot.get_chat_member(chat.id, user_id)
         except BadRequest as error:
-            logger.warning(f"获取用户 {user_id} 在群 {chat.title}[{chat.id}] 信息失败 \n", error)
+            Log.warning(f"获取用户 {user_id} 在群 {chat.title}[{chat.id}] 信息失败 \n", error)
             user_info = f"{user_id}"
         else:
             user_info = member_info.user.mention_markdown_v2()
@@ -124,27 +124,27 @@ class GroupJoiningVerification:
         if result == "pass":
             await callback_query.answer(text="放行", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
-            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_clean_join_message"):
+            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
                 schedule.remove()
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 放行",
                                     parse_mode=ParseMode.MARKDOWN_V2)
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理放行")
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理放行")
         elif result == "kick":
             await callback_query.answer(text="驱离", show_alert=False)
             await context.bot.ban_chat_member(chat.id, user_id)
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 驱离",
                                     parse_mode=ParseMode.MARKDOWN_V2)
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理踢出")
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理踢出")
         elif result == "unban":
             await callback_query.answer(text="解除驱离", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
-            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_clean_join_message"):
+            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
                 schedule.remove()
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 解除驱离",
                                     parse_mode=ParseMode.MARKDOWN_V2)
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理解除封禁")
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理解除封禁")
         else:
-            logger.warning(f"auth 模块 admin 函数 发现未知命令 result[{result}]")
+            Log.warning(f"auth 模块 admin 函数 发现未知命令 result[{result}]")
             await context.bot.send_message(chat.id, "派蒙这边收到了错误的消息！请检查详细日记！")
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
             schedule.remove()
@@ -161,8 +161,8 @@ class GroupJoiningVerification:
             _result = _answer.is_correct
             _answer_encode = _answer.text
             _question_encode = _question.text
-            logger.debug(f"query_callback函数返回 user_id[{_user_id}] result[{_result}] \n"
-                         f"question_encode[{_question_encode}] answer_encode[{_answer_encode}]")
+            Log.debug(f"query_callback函数返回 user_id[{_user_id}] result[{_result}] \n"
+                      f"question_encode[{_question_encode}] answer_encode[{_answer_encode}]")
             return _user_id, _result, _question_encode, _answer_encode
 
         callback_query = update.callback_query
@@ -170,38 +170,38 @@ class GroupJoiningVerification:
         message = callback_query.message
         chat = message.chat
         user_id, result, question, answer = await query_callback(callback_query.data)
-        logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth认证命令 ")
+        Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth认证命令 ")
         if user.id != user_id:
             await callback_query.answer(text="这不是你的验证！\n"
                                              "再乱点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
-        logger.info(
-            f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
+        Log.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
         if result:
             buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}")]]
             await callback_query.answer(text="验证成功", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
-            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_clean_join_message"):
+            if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
                 schedule.remove()
             text = f"{user.mention_markdown_v2()} 验证成功，向着星辰与深渊！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 验证成功")
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 验证成功")
         else:
             buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}"),
                         InlineKeyboardButton("撤回驱离", callback_data=f"auth_admin|unban|{user.id}")]]
             await callback_query.answer(text=f"验证失败，请在 {self.time_out} 秒后重试", show_alert=True)
+            await asyncio.sleep(3)
             await context.bot.ban_chat_member(chat_id=chat.id, user_id=user_id,
                                               until_date=int(time.time()) + self.kick_time)
             text = f"{user.mention_markdown_v2()} 验证失败，已经赶出提瓦特大陆！\n" \
                    f"问题：{escape_markdown(question, version=2)} \n" \
                    f"回答：{escape_markdown(answer, version=2)}"
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 验证失败")
+            Log.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 验证失败")
         try:
             await message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)
         except BadRequest as exc:
             if 'are exactly the same as ' in str(exc):
-                logger.warning("编辑消息发生异常，可能为用户点按多次键盘导致")
+                Log.warning("编辑消息发生异常，可能为用户点按多次键盘导致")
             else:
                 raise exc
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
@@ -214,7 +214,7 @@ class GroupJoiningVerification:
         for user in message.new_chat_members:
             if user.id == context.bot.id:
                 return
-            logger.info(f"用户 {user.full_name}[{user.id}] 尝试加入群 {chat.title}[{chat.id}]")
+            Log.info(f"用户 {user.full_name}[{user.id}] 尝试加入群 {chat.title}[{chat.id}]")
         not_enough_rights = context.chat_data.get("not_enough_rights", False)
         if not_enough_rights:
             return
@@ -234,7 +234,7 @@ class GroupJoiningVerification:
                                                        permissions=ChatPermissions(can_send_messages=False))
             except BadRequest as err:
                 if "Not enough rights" in str(err):
-                    logger.warning(f"权限不够 chat_id[{message.chat_id}]")
+                    Log.warning(f"权限不够 chat_id[{message.chat_id}]")
                     # reply_message = await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
                     #                                                 f"请检查是否给派蒙授权管理了")
                     context.chat_data["not_enough_rights"] = True
@@ -269,8 +269,8 @@ class GroupJoiningVerification:
             reply_message = f"*欢迎来到「提瓦特」世界！* \n" \
                             f"问题: {escape_markdown(question.text, version=2)} \n" \
                             f"请在 {self.time_out}S 内回答问题"
-            logger.debug(f"发送入群验证问题 question_id[{question.question_id}] question[{question.text}] \n"
-                         f"给{user.full_name}[{user.id}] 在 {chat.title}[{chat.id}]")
+            Log.debug(f"发送入群验证问题 question_id[{question.question_id}] question[{question.text}] \n"
+                      f"给{user.full_name}[{user.id}] 在 {chat.title}[{chat.id}]")
             try:
                 question_message = await message.reply_markdown_v2(reply_message,
                                                                    reply_markup=InlineKeyboardMarkup(buttons))
@@ -283,9 +283,11 @@ class GroupJoiningVerification:
             context.job_queue.run_once(callback=self.clean_message_job, when=self.time_out, data=message.message_id,
                                        name=f"{chat.id}|{user.id}|auth_clean_join_message",
                                        chat_id=chat.id, user_id=user.id,
-                                       job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_kick"})
+                                       job_kwargs={"replace_existing": True,
+                                                   "id": f"{chat.id}|{user.id}|auth_clean_join_message"})
             context.job_queue.run_once(callback=self.clean_message_job, when=self.time_out,
                                        data=question_message.message_id,
                                        name=f"{chat.id}|{user.id}|auth_clean_question_message",
                                        chat_id=chat.id, user_id=user.id,
-                                       job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_kick"})
+                                       job_kwargs={"replace_existing": True,
+                                                   "id": f"{chat.id}|{user.id}|auth_clean_question_message"})

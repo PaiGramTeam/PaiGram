@@ -10,7 +10,7 @@ from core.sign.models import Sign as SignUser, SignStatusEnum
 from core.sign.services import SignServices
 from core.user.repositories import UserNotFoundError
 from core.user.services import UserService
-from utils.log import logger
+from logger import Log
 from plugins.base import BasePlugins
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
@@ -44,31 +44,31 @@ class Sign(BasePlugins):
         try:
             rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
         except GenshinException as error:
-            logger.error(f"UID {client.uid} 获取签到信息失败，API返回信息为 {str(error)}")
+            Log.error(f"UID {client.uid} 获取签到信息失败，API返回信息为 {str(error)}")
             return f"获取签到信息失败，API返回信息为 {str(error)}"
         try:
             daily_reward_info = await client.get_reward_info(game=Game.GENSHIN, lang="zh-cn")  # 获取签到信息失败
         except GenshinException as error:
-            logger.error(f"UID {client.uid} 获取签到状态失败，API返回信息为 {str(error)}")
+            Log.error(f"UID {client.uid} 获取签到状态失败，API返回信息为 {str(error)}")
             return f"获取签到状态失败，API返回信息为 {str(error)}"
         if not daily_reward_info.signed_in:
             try:
                 request_daily_reward = await client.request_daily_reward("sign", method="POST",
                                                                          game=Game.GENSHIN, lang="zh-cn")
-                logger.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
+                Log.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                    logger.error(f"UID {client.uid} 签到失败，触发验证码风控")
+                    Log.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                     return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
             except AlreadyClaimed:
                 result = "今天旅行者已经签到过了~"
             except GenshinException as error:
-                logger.error(f"UID {client.uid} 签到失败，API返回信息为 {str(error)}")
+                Log.error(f"UID {client.uid} 签到失败，API返回信息为 {str(error)}")
                 return f"获取签到状态失败，API返回信息为 {str(error)}"
             else:
                 result = "OK"
         else:
             result = "今天旅行者已经签到过了~"
-        logger.info(f"UID {client.uid} 签到结果 {result}")
+        Log.info(f"UID {client.uid} 签到结果 {result}")
         reward = rewards[daily_reward_info.claimed_rewards - (1 if daily_reward_info.signed_in else 0)]
         today = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         cn_timezone = datetime.timezone(datetime.timedelta(hours=8))
@@ -102,7 +102,8 @@ class Sign(BasePlugins):
         elif method == "关闭":
             return "您还没有开启自动签到"
         elif method == "开启":
-            user = SignUser(user_id=user_id, chat_id=chat_id, status=SignStatusEnum.STATUS_SUCCESS)
+            user = SignUser(user_id=user_id, chat_id=chat_id, time_created=datetime.datetime.now(),
+                            status=SignStatusEnum.STATUS_SUCCESS)
             await self.sign_service.add(user)
             return "开启自动签到成功"
 
@@ -119,13 +120,13 @@ class Sign(BasePlugins):
             elif args[0] == "关闭自动签到":
                 msg = await self._process_auto_sign(user.id, message.chat_id, "关闭")
             if msg:
-                logger.info(f"用户 {user.full_name}[{user.id}] 自动签到命令请求 || 参数 {args[0]}")
+                Log.info(f"用户 {user.full_name}[{user.id}] 自动签到命令请求 || 参数 {args[0]}")
                 reply_message = await message.reply_text(msg)
                 if filters.ChatType.GROUPS.filter(message):
                     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                     self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
                 return
-        logger.info(f"用户 {user.full_name}[{user.id}] 每日签到命令请求")
+        Log.info(f"用户 {user.full_name}[{user.id}] 每日签到命令请求")
         if filters.ChatType.GROUPS.filter(message):
             self._add_delete_message_job(context, message.chat_id, message.message_id)
         try:

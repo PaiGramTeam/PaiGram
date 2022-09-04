@@ -137,7 +137,7 @@ class Weapon(WikiModel):
     @property
     def icon(self) -> WeaponIcon:
         return WeaponIcon(
-            icon=str(SCRAPE_HOST.join(f'/img/{self.id}.png')),
-            awakened=str(SCRAPE_HOST.join(f'/img/{self.id}_awaken_icon.png')),
-            gacha=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_icon.png')),
+            icon=str(SCRAPE_HOST.join(f'/img/{self.id}.webp')),
+            awakened=str(SCRAPE_HOST.join(f'/img/{self.id}_awaken_icon.webp')),
+            gacha=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_icon.webp')),
         )

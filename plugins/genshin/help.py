@@ -17,7 +17,7 @@ class Help:
     """帮助菜单"""
 
     @inject
-    def __init__(self, template_service: TemplateService):
+    def __init__(self, template_service: TemplateService = None):
         self.template_service = template_service
         self.help_png = None
         self.file_id = None

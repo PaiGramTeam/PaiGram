@@ -17,6 +17,7 @@ from utils.service.manager import ServicesManager
 # 无视相关警告
 # 该警告说明在官方GITHUB的WIKI中Frequently Asked Questions里的What do the per_* settings in ConversationHandler do?
 filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
+filterwarnings(action="ignore", message=r".*Prior to v20.0 the `days` parameter", category=PTBUserWarning)
 
 
 def main() -> None:
