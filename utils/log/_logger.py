@@ -31,6 +31,7 @@ from rich.traceback import (
     Traceback as BaseTraceback,
 )
 
+from core.config import BotConfig
 from utils.log._style import (
     DEFAULT_STYLE,
     MonokaiProStyle,
@@ -57,8 +58,8 @@ __initialized__ = False
 
 FormatTimeCallable = Callable[[datetime], Text]
 
+config = BotConfig()
 logging.addLevelName(5, 'TRACE')
-logging.addLevelName(22, 'PLUGIN')
 logging.addLevelName(25, 'SUCCESS')
 color_system: Literal['windows', 'truecolor']
 if sys.platform == 'win32':
@@ -267,6 +268,7 @@ class Handler(DefaultRichHandler):
         self.rich_tracebacks = True
         self.tracebacks_show_locals = True
         self.markup = True
+        self.keywords = [*self.KEYWORDS, 'BOT']
 
     def render(
             self,
@@ -296,7 +298,7 @@ class Handler(DefaultRichHandler):
         else:
             path = '<INPUT>'
         path = path.replace('lib.site-packages.', '')
-        level = self.get_level_text(record)
+        _level = self.get_level_text(record)
         time_format = None if self.formatter is None else self.formatter.datefmt
         log_time = datetime.fromtimestamp(record.created)
 
@@ -313,7 +315,7 @@ class Handler(DefaultRichHandler):
             ),
             log_time=log_time,
             time_format=time_format,
-            level=level,
+            level=_level,
             path=path,
             line_no=record.lineno,
             # link_path=record.pathname if self.enable_link_path else None,
@@ -409,22 +411,41 @@ class Handler(DefaultRichHandler):
             self.handleError(record)
 
 
+class DebugFileHandler(DefaultRichHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.level = 10
+        path = PROJECT_ROOT.joinpath(f"logs/debug")
+        path.mkdir(exist_ok=True)
+        file = open(
+            path / f"{datetime.now().strftime('%Y-%m-%d')}.log", mode='a+', encoding='utf-8'
+        )
+        self.console = Console(color_system='auto', width=200, file=file)
+
+
+class ErrorFileHandler(DefaultRichHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.level = 40
+        path = PROJECT_ROOT.joinpath(f"logs/error")
+        path.mkdir(exist_ok=True)
+        file = open(
+            path / f"{datetime.now().strftime('%Y-%m-%d')}.log", mode='a+', encoding='utf-8'
+        )
+        self.console = Console(color_system='auto', width=200, file=file)
+
+
 with _lock:
     if not __initialized__:
-        import os
         from loguru import logger
-        from core.config import BotConfig
         from utils.const import PROJECT_ROOT
 
-        # noinspection SpellCheckingInspection
-        if os.environ.get('PYTHONUNBUFFERED', 0):
-            print()
-        level = 10 if BotConfig().debug else 20
+        level = 10 if config.debug else 20
         logging.basicConfig(
-            level=10 if BotConfig().debug else 20,
+            level=10 if config.debug else 20,
             format="%(message)s",
             datefmt="[%Y-%m-%d %X]",
-            handlers=[Handler()]
+            handlers=[Handler(), DebugFileHandler(), ErrorFileHandler()]
         )
 
         # noinspection PyUnresolvedReferences,PyProtectedMember
@@ -435,25 +456,4 @@ with _lock:
 
         logger.remove()
         logger.add(Handler(), level=level, format="{message}", colorize=False, enqueue=True)
-        logger.add(
-            PROJECT_ROOT / 'logs/error.log',
-            rotation="00:00",
-            diagnose=False,
-            level="ERROR",
-            colorize=False,
-            format=(
-                FORMAT := "<g>{time:YYYY-MM-DD}</g> <m>{time:HH:mm:ss.SSSS}</m> "
-                          "<level>{level.icon}</level> [<level>{level}</level>] "
-                          "<w>[</w><c><u>{name}</u></c><w>]</w> "
-                          "{message}"
-            )
-        )
-        logger.add(
-            PROJECT_ROOT / 'logs/log.log',
-            rotation="00:00",
-            diagnose=False,
-            level="INFO",
-            colorize=False,
-            format=FORMAT
-        )
         __initialized__ = True
