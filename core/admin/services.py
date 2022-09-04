@@ -3,9 +3,9 @@ from typing import List
 from pymysql import IntegrityError
 from telegram import Bot
 
-from config import config
 from core.admin.cache import BotAdminCache, GroupAdminCache
 from core.admin.repositories import BotAdminRepository
+from core.bot import bot
 from utils.log import logger
 
 
@@ -29,7 +29,7 @@ class BotAdminService:
         except IntegrityError as error:
             logger.warning(f"{user_id} 已经存在数据库 \n", error)
         admin_list = await self._repository.get_all_user_id()
-        for config_admin in config.admins:
+        for config_admin in bot.config.admins:
             admin_list.append(config_admin["user_id"])
         await self._cache.set_list(admin_list)
         return True

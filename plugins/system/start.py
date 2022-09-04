@@ -8,33 +8,33 @@ from utils.decorators.restricts import restricts
 @restricts()
 async def start(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
-    message = update.message
+    message = update.effective_message
     args = context.args
     if args is not None and len(args) >= 1 and args[0] == "inline_message":
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
                                         f"{escape_markdown('发送 /help 命令即可查看命令帮助')}")
         return
-    await update.message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
+    await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
 
 
 @restricts()
 async def help_command(update: Update, _: CallbackContext) -> None:
-    await update.message.reply_text("前面的区域，以后再来探索吧！")
+    await update.effective_message.reply_text("前面的区域，以后再来探索吧！")
 
 
 @restricts()
 async def unknown_command(update: Update, _: CallbackContext) -> None:
-    await update.message.reply_text("前面的区域，以后再来探索吧！")
+    await update.effective_message.reply_text("前面的区域，以后再来探索吧！")
 
 
 @restricts()
 async def emergency_food(update: Update, _: CallbackContext) -> None:
-    await update.message.reply_text("派蒙才不是应急食品！")
+    await update.effective_message.reply_text("派蒙才不是应急食品！")
 
 
 @restricts()
 async def ping(update: Update, _: CallbackContext) -> None:
-    await update.message.reply_text("online! ヾ(✿ﾟ▽ﾟ)ノ")
+    await update.effective_message.reply_text("online! ヾ(✿ﾟ▽ﾟ)ノ")
 
 
 @restricts()
