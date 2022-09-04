@@ -6,4 +6,4 @@ __all__ = [
 ]
 
 PROJECT_ROOT = Path(__file__).joinpath('../..').resolve()
-PLUGIN_DIR = PROJECT_ROOT / 'plugin'
+PLUGIN_DIR = PROJECT_ROOT / 'plugins'
