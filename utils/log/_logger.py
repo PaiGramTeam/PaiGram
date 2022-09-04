@@ -415,11 +415,9 @@ class DebugFileHandler(DefaultRichHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.level = 10
-        path = PROJECT_ROOT.joinpath(f"logs/debug")
-        path.mkdir(exist_ok=True)
-        file = open(
-            path / f"{datetime.now().strftime('%Y-%m-%d')}.log", mode='a+', encoding='utf-8'
-        )
+        path = PROJECT_ROOT.joinpath("logs/debug")
+        path.mkdir(parents=True, exist_ok=True)
+        file = open(path / f"{datetime.now().strftime('%Y-%m-%d')}.log", mode='a+', encoding='utf-8')
         self.console = Console(color_system='auto', width=200, file=file)
 
 
@@ -427,11 +425,9 @@ class ErrorFileHandler(DefaultRichHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.level = 40
-        path = PROJECT_ROOT.joinpath(f"logs/error")
-        path.mkdir(exist_ok=True)
-        file = open(
-            path / f"{datetime.now().strftime('%Y-%m-%d')}.log", mode='a+', encoding='utf-8'
-        )
+        path = PROJECT_ROOT.joinpath("logs/error")
+        path.mkdir(parents=True, exist_ok=True)
+        file = open(path / f"{datetime.now().strftime('%Y-%m-%d')}.log", mode='a+', encoding='utf-8')
         self.console = Console(color_system='auto', width=200, file=file)
 
 
