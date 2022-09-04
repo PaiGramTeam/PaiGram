@@ -3,7 +3,6 @@ import inspect
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from queue import PriorityQueue
 from typing import Any, Callable, ClassVar, Dict, Iterator, NoReturn, Optional, TYPE_CHECKING, Type, TypeVar
 
 import pytz
@@ -75,7 +74,7 @@ class Bot:
             except Exception as e:
                 logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                 continue  # 如有错误则继续
-        queue = PriorityQueue()
+        callback_dict = {}
         for plugin_cls in {*Plugin.__subclasses__(), *Plugin.Conversation.__subclasses__()}:
             path = f"{plugin_cls.__module__}.{plugin_cls.__name__}"
             try:
@@ -89,7 +88,9 @@ class Bot:
 
                 # noinspection PyProtectedMember
                 for priority, callback in plugin._new_chat_members_handler_funcs():
-                    queue.put((priority, callback))
+                    if not callback_dict.get(priority, None):
+                        callback_dict[priority] = []
+                    callback_dict[priority].append(callback)
 
                 error_handlers = plugin.error_handlers
                 for callback, block in error_handlers.items():
@@ -103,18 +104,21 @@ class Bot:
             except Exception as e:
                 logger.exception(e)
                 logger.error(f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
-        if not queue.empty():
-            count = queue.qsize()
+        if callback_dict:
+            num = sum(len(callback_dict[i]) for i in callback_dict.keys())
 
             async def _new_chat_member_callback(update: 'Update', context: 'CallbackContext'):
-                while not queue.empty():
-                    await queue.get()[1](update, context)
+                nonlocal callback
+                for key, value in callback_dict.items():
+                    for callback in value:
+                        await callback(update, context)
 
             self.app.add_handler(MessageHandler(
                 callback=_new_chat_member_callback, filters=StatusUpdate.NEW_CHAT_MEMBERS, block=False
             ))
             logger.success(
-                f'成功添加了 {count} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]')
+                f'成功添加了 {num} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]'
+            )
 
     async def _start_base_services(self):
         for pkg in self._gen_pkg(PROJECT_ROOT / 'core/base'):

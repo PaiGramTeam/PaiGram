@@ -3,7 +3,7 @@ import re
 from importlib import import_module
 from re import Pattern
 from types import MethodType
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 # noinspection PyProtectedMember
 from telegram._utils.defaultvalue import DEFAULT_TRUE
@@ -14,10 +14,6 @@ from telegram.ext import BaseHandler, ConversationHandler, Job
 from telegram.ext._utils.types import JobCallback
 from telegram.ext.filters import BaseFilter
 from typing_extensions import ParamSpec
-
-if TYPE_CHECKING:
-    from telegram import Update
-    from telegram.ext import CallbackContext
 
 __all__ = [
     'Plugin', 'handler', 'conversation', 'job', 'error_handler'
@@ -35,20 +31,6 @@ _CONVERSATION_HANDLER_ATTR_NAME = "_conversation_data"
 _JOB_ATTR_NAME = "_job_data"
 
 _EXCLUDE_ATTRS = ['handlers', 'jobs', 'error_handlers']
-
-
-class _WrappedCallback(object):
-    def __init__(self, func: Callable[P, T]):
-        self.func = func
-
-    def __lt__(self, other: "_WrappedCallback"):
-        return self.func.__name__ < other.func.__name__
-
-    def __gt__(self, other: "_WrappedCallback"):
-        return self.func.__name__ > other.func.__name__
-
-    def __call__(self, update: "Update", context: "CallbackContext"):
-        return self.func(update, context)
 
 
 class _Plugin:
@@ -87,7 +69,7 @@ class _Plugin:
                     (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
                 if data['type'] == 'new_chat_member':
-                    result.append((data['priority'], _WrappedCallback(func)))
+                    result.append((data['priority'], func))
 
         return result
 
