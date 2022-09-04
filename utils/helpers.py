@@ -54,7 +54,7 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
         async with httpx.AsyncClient(headers=REQUEST_HEADERS) as client:
             try:
                 data = await client.get(url)
-            except UnsupportedProtocol as error:
+            except UnsupportedProtocol:
                 logger.error(f"连接不支持 url[{url}]")
                 return ""
         if data.is_error:
