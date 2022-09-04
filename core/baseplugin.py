@@ -41,7 +41,7 @@ class _Conversation:
     @conversation.fallback
     @handler.command(command='cancel', block=True)
     async def cancel(update: Update, _: CallbackContext) -> int:
-        await update.message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
+        await update.effective_message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
 
