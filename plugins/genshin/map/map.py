@@ -5,27 +5,20 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
 
-from utils.log import logger
-from plugins.base import BasePlugins
+from core.baseplugin import BasePlugin
+from core.plugin import handler, Plugin
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
+from utils.log import logger
 from .model import MapHelper
 
 
-class Map(BasePlugins):
+class Map(Plugin, BasePlugin):
     """支持资源点查询"""
 
     def __init__(self):
         self.init_resource_map = False
         self.map_helper = MapHelper()
-
-    @classmethod
-    def create_handlers(cls) -> list:
-        map_res = cls()
-        return [
-            CommandHandler("map", map_res.command_start, block=False),
-            MessageHandler(filters.Regex(r"^资源点查询(.*)"), map_res.command_start, block=True)
-        ]
 
     async def init_point_list_and_map(self):
         logger.info("正在初始化地图资源节点")
@@ -33,6 +26,8 @@ class Map(BasePlugins):
             await self.map_helper.init_point_list_and_map()
             self.init_resource_map = True
 
+    @handler(CommandHandler, command="map", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^资源点查询(.*)"), block=False)
     @error_callable
     @restricts(restricts_time=20)
     async def command_start(self, update: Update, context: CallbackContext):

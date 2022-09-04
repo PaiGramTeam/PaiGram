@@ -4,17 +4,18 @@ from bs4 import BeautifulSoup
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InputMediaPhoto
 from telegram.constants import ParseMode, MessageLimit
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, MessageHandler, filters
+from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
-from config import config
-from logger import Log
+from core.baseplugin import BasePlugin
+from core.bot import bot
+from core.plugin import Plugin, conversation, handler
 from models.apihelper.base import ArtworkImage
 from models.apihelper.hyperion import Hyperion
-from plugins.base import BasePlugins
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
-from utils.plugins.manager import listener_plugins_class
+from utils.decorators.restricts import restricts
+from utils.log import logger
 
 
 class PostHandlerData:
@@ -27,44 +28,27 @@ class PostHandlerData:
         self.tags: Optional[List[str]] = []
 
 
-@listener_plugins_class()
-class Post(BasePlugins):
-    """文章推送"""
+CHECK_POST, SEND_POST, CHECK_COMMAND, GTE_DELETE_PHOTO = range(10900, 10904)
+GET_POST_CHANNEL, GET_TAGS, GET_TEXT = range(10904, 10907)
 
-    CHECK_POST, SEND_POST, CHECK_COMMAND, GTE_DELETE_PHOTO = range(10900, 10904)
-    GET_POST_CHANNEL, GET_TAGS, GET_TEXT = range(10904, 10907)
+
+class Post(Plugin.Conversation, BasePlugin):
+    """文章推送"""
 
     MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]], True, True)
 
     def __init__(self):
         self.bbs = Hyperion()
 
-    @classmethod
-    def create_handlers(cls):
-        post = cls()
-        post_handler = ConversationHandler(
-            entry_points=[CommandHandler('post', post.command_start, block=True)],
-            states={
-                post.CHECK_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.check_post, block=True)],
-                post.SEND_POST: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.send_post, block=True)],
-                post.CHECK_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.check_command, block=True)],
-                post.GTE_DELETE_PHOTO: [
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, post.get_delete_photo, block=True)],
-                post.GET_POST_CHANNEL: [
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, post.get_post_channel, block=True)],
-                post.GET_TAGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.get_tags, block=True)],
-                post.GET_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, post.get_edit_text, block=True)]
-            },
-            fallbacks=[CommandHandler('cancel', post.cancel, block=True)]
-        )
-        return [post_handler]
-
+    @conversation.entry_point
+    @handler.command(command='post', filters=filters.ChatType.PRIVATE, block=True)
+    @restricts()
     @bot_admins_rights_check
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
-        message = update.message
-        Log.info(f"用户 {user.full_name}[{user.id}] POST命令请求")
+        message = update.effective_message
+        logger.info(f"用户 {user.full_name}[{user.id}] POST命令请求")
         post_handler_data = context.chat_data.get("post_handler_data")
         if post_handler_data is None:
             post_handler_data = PostHandlerData()
@@ -76,11 +60,13 @@ class Post(BasePlugins):
         await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return self.CHECK_POST
 
+    @conversation.state(state=CHECK_POST)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def check_post(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
-        message = update.message
-        if update.message.text == "退出":
+        message = update.effective_message
+        if message.text == "退出":
             await message.reply_text("退出投稿", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
 
@@ -114,9 +100,10 @@ class Post(BasePlugins):
             else:
                 await message.reply_text("图片获取错误", reply_markup=ReplyKeyboardRemove())  # excuse?
                 return ConversationHandler.END
-        except (BadRequest, TypeError) as error:
+        except (BadRequest, TypeError) as exc:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
-            Log.error("Post模块发送图片时发生错误", error)
+            logger.error("Post模块发送图片时发生错误")
+            logger.exception(exc)
             return ConversationHandler.END
         post_handler_data.post_text = post_text
         post_handler_data.post_images = post_images
@@ -126,9 +113,11 @@ class Post(BasePlugins):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return self.CHECK_COMMAND
 
+    @conversation.state(state=CHECK_COMMAND)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def check_command(self, update: Update, context: CallbackContext) -> int:
-        message = update.message
+        message = update.effective_message
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -150,11 +139,13 @@ class Post(BasePlugins):
                                  f"当前一共有 {photo_len} 张图片")
         return self.GTE_DELETE_PHOTO
 
+    @conversation.state(state=GTE_DELETE_PHOTO)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def get_delete_photo(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         photo_len = len(post_handler_data.post_images)
-        message = update.message
+        message = update.effective_message
         args = message.text.split(" ")
         index: List[int] = []
         try:
@@ -171,31 +162,34 @@ class Post(BasePlugins):
         return self.CHECK_COMMAND
 
     async def get_channel(self, update: Update, _: CallbackContext) -> int:
-        message = update.message
+        message = update.effective_message
         reply_keyboard = []
         try:
-            for channel_info in config.channels:
+            for channel_info in bot.config.channels:
                 name = channel_info["name"]
                 reply_keyboard.append([f"{name}"])
         except KeyError as error:
-            Log.error("从配置文件获取频道信息发生错误，退出任务", error)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("请选择你要推送的频道",
                                  reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return self.GET_POST_CHANNEL
 
+    @conversation.state(state=GET_POST_CHANNEL)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def get_post_channel(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
-        message = update.message
+        message = update.effective_message
         channel_id = -1
         try:
-            for channel_info in config.channels:
+            for channel_info in bot.config.channels:
                 if message.text == channel_info["name"]:
                     channel_id = channel_info["chat_id"]
-        except KeyError as error:
-            Log.error("从配置文件获取频道信息发生错误，退出任务", error)
+        except KeyError as exc:
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc)
+            logger.exception(exc)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if channel_id == -1:
@@ -208,14 +202,16 @@ class Post(BasePlugins):
         return self.SEND_POST
 
     async def add_tags(self, update: Update, _: CallbackContext) -> int:
-        message = update.message
+        message = update.effective_message
         await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符，不用添加 # 作为开头，推送时程序会自动添加")
         return self.GET_TAGS
 
+    @conversation.state(state=GET_TAGS)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def get_tags(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
-        message = update.message
+        message = update.effective_message
         args = message.text.split(" ")
         post_handler_data.tags = args
         await message.reply_text("添加成功")
@@ -223,14 +219,16 @@ class Post(BasePlugins):
         return self.CHECK_COMMAND
 
     async def edit_text(self, update: Update, _: CallbackContext) -> int:
-        message = update.message
+        message = update.effective_message
         await message.reply_text("请回复替换的文本")
         return self.GET_TEXT
 
+    @conversation.state(state=GET_TEXT)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def get_edit_text(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
-        message = update.message
+        message = update.effective_message
         post_handler_data.post_text = message.text_markdown_v2
         await message.reply_text("替换成功")
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
@@ -240,19 +238,20 @@ class Post(BasePlugins):
     @error_callable
     async def send_post(update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
-        message = update.message
-        if update.message.text == "退出":
+        message = update.effective_message
+        if message.text == "退出":
             await message.reply_text(text="退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("正在推送", reply_markup=ReplyKeyboardRemove())
         channel_id = post_handler_data.channel_id
         channel_name = None
         try:
-            for channel_info in config.channels:
+            for channel_info in bot.config.channels:
                 if post_handler_data.channel_id == channel_info["chat_id"]:
                     channel_name = channel_info["name"]
-        except KeyError as error:
-            Log.error("从配置文件获取频道信息发生错误，退出任务", error)
+        except KeyError as exc:
+            logger.error("从配置文件获取频道信息发生错误，退出任务")
+            logger.exception(exc)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         post_text = post_handler_data.post_text
@@ -277,9 +276,10 @@ class Post(BasePlugins):
             else:
                 await message.reply_text("图片获取错误", reply_markup=ReplyKeyboardRemove())  # excuse?
                 return ConversationHandler.END
-        except (BadRequest, TypeError) as error:
+        except (BadRequest, TypeError) as exc:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
-            Log.error("Post模块发送图片时发生错误", error)
+            logger.error("Post模块发送图片时发生错误")
+            logger.exception(exc)
             return ConversationHandler.END
         await message.reply_text("推送成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END

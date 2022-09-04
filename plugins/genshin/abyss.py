@@ -1,19 +1,19 @@
 from genshin import Client
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import CommandHandler, CallbackContext
+from telegram.ext import MessageHandler, filters
 
+from core.baseplugin import BasePlugin
 from core.cookies.services import CookiesService
-from core.template.services import TemplateService
+from core.plugin import handler, Plugin
+from core.template import TemplateService
 from core.user import UserService
 from core.user.repositories import UserNotFoundError
-from utils.log import logger
-from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client, url_to_file
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.log import logger
 
 
 class AbyssUnlocked(Exception):
@@ -26,24 +26,14 @@ class NoMostKills(Exception):
     pass
 
 
-@listener_plugins_class()
-class Abyss(BasePlugins):
+class Abyss(Plugin, BasePlugin):
     """深渊数据查询"""
 
-    @inject
     def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
                  template_service: TemplateService = None):
         self.template_service = template_service
         self.cookies_service = cookies_service
         self.user_service = user_service
-
-    @classmethod
-    def create_handlers(cls) -> list:
-        abyss = cls()
-        return [
-            CommandHandler("abyss", abyss.command_start, block=False),
-            MessageHandler(filters.Regex(r"^深渊数据查询(.*)"), abyss.command_start, block=True)
-        ]
 
     @staticmethod
     def _get_role_star_bg(value: int):
@@ -101,15 +91,17 @@ class Abyss(BasePlugins):
             abyss_data["most_played_list"].append(temp)
         return abyss_data
 
+    @handler(CommandHandler, command="abyss", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^深渊数据查询(.*)"), block=False)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
-        message = update.message
+        message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] 查深渊挑战命令请求")
         await message.reply_chat_action(ChatAction.TYPING)
         try:
-            client = await get_genshin_client(user.id, self.user_service, self.cookies_service)
+            client = await get_genshin_client(user.id)
             abyss_data = await self._get_abyss_data(client)
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
@@ -128,4 +120,3 @@ class Abyss(BasePlugins):
                                                       {"width": 690, "height": 504}, full_page=False)
         await message.reply_photo(png_data, filename=f"abyss_{user.id}.png",
                                   allow_sending_without_reply=True)
-        return

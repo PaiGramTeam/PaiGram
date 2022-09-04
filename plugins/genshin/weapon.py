@@ -1,47 +1,40 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.ext import CommandHandler, CallbackContext
+from telegram.ext import MessageHandler, filters
 
-from core.template.services import TemplateService
+from core.baseplugin import BasePlugin
+from core.plugin import Plugin, handler
+from core.template import TemplateService
 from core.wiki.services import WikiService
-from utils.log import logger
 from metadata.shortname import weaponToName
 from models.wiki.base import SCRAPE_HOST
 from models.wiki.weapon import Weapon
-from plugins.base import BasePlugins
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.log import logger
 
 
-@listener_plugins_class()
-class WeaponPlugin(BasePlugins):
+class WeaponPlugin(Plugin, BasePlugin):
     """武器查询"""
 
     KEYBOARD = [[
         InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")
     ]]
 
-    @inject
     def __init__(self, template_service: TemplateService = None, wiki_service: WikiService = None):
         self.wiki_service = wiki_service
         self.template_service = template_service
 
-    @classmethod
-    def create_handlers(cls) -> list:
-        weapon = cls()
-        return [
-            CommandHandler("weapon", weapon.command_start, block=False),
-            MessageHandler(filters.Regex("^武器查询(.*)"), weapon.command_start, block=False)
-        ]
-
+    @handler(CommandHandler, command="help", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^武器查询(.*)"), block=False)
     @error_callable
     @restricts()
     async def command_start(self, update: Update, context: CallbackContext) -> None:
-        message = update.message
+        message = update.effective_message
         user = update.effective_user
         args = get_all_args(context)
         if len(args) >= 1:
@@ -85,7 +78,7 @@ class WeaponPlugin(BasePlugins):
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.webp')))
+                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.png')))
                         for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": _weapon_data.affix.name,
@@ -101,7 +94,7 @@ class WeaponPlugin(BasePlugins):
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.webp')))
+                        await url_to_file(str(SCRAPE_HOST.join(f'/img/{mid}.png')))
                         for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": '',

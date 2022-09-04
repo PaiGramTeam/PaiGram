@@ -2,41 +2,32 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import filters, ConversationHandler, CommandHandler, MessageHandler, CallbackContext
 
+from core.baseplugin import BasePlugin
 from core.game.services import GameMaterialService
-from utils.log import logger
-from plugins.base import BasePlugins
+from core.plugin import Plugin, handler
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.log import logger
 
 
-@listener_plugins_class()
-class Material(BasePlugins):
+class Material(Plugin, BasePlugin):
     """角色培养素材查询"""
 
     KEYBOARD = [[InlineKeyboardButton(
         text="查看角色培养素材列表并查询",
         switch_inline_query_current_chat="查看角色培养素材列表并查询")]]
 
-    @inject
     def __init__(self, game_material_service: GameMaterialService = None):
         self.game_material_service = game_material_service
 
-    @classmethod
-    def create_handlers(cls) -> list:
-        material = cls()
-        return [
-            CommandHandler("material", material.command_start, block=False),
-            MessageHandler(filters.Regex("^角色培养素材查询(.*)"), material.command_start, block=False),
-        ]
-
-    @error_callable
+    @handler(CommandHandler, command="material", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^角色培养素材查询(.*)"), block=False)
     @restricts(return_data=ConversationHandler.END)
+    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
-        message = update.message
+        message = update.effective_message
         user = update.effective_user
         args = get_all_args(context)
         if len(args) >= 1:

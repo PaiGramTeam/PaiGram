@@ -3,41 +3,32 @@ from telegram.constants import ChatAction
 from telegram.error import BadRequest
 from telegram.ext import CommandHandler, CallbackContext
 
-from config import config
-from core.template.services import TemplateService
-from utils.log import logger
+from core.bot import bot
+from core.plugin import Plugin, handler
+from core.template import TemplateService
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.log import logger
 
 
-@listener_plugins_class()
-class Help:
-    """帮助菜单"""
-
-    @inject
+class HelpPlugin(Plugin):
     def __init__(self, template_service: TemplateService = None):
-        self.template_service = template_service
-        self.help_png = None
         self.file_id = None
+        self.help_png = None
+        if template_service is None:
+            raise ModuleNotFoundError
+        self.template_service = template_service
 
-    @classmethod
-    def create_handlers(cls) -> list:
-        _help = cls()
-        return [
-            CommandHandler("help", _help.command_start, block=False),
-        ]
-
+    @handler(CommandHandler, command="help", block=False)
     @error_callable
     @restricts()
-    async def command_start(self, update: Update, _: CallbackContext) -> None:
-        message = update.message
+    async def start(self, update: Update, _: CallbackContext):
         user = update.effective_user
+        message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] 发出help命令")
-        if self.file_id is None or config.debug:
+        if self.file_id is None or bot.config.debug:
             await message.reply_chat_action(ChatAction.TYPING)
-            help_png = await self.template_service.render('bot/help', "help.html", {}, {"width": 768, "height": 768})
+            help_png = await self.template_service.render("bot/help", "help.html", {}, {"width": 768, "height": 768})
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             reply_photo = await message.reply_photo(help_png, filename="help.png", allow_sending_without_reply=True)
             photo = reply_photo.photo[0]

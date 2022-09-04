@@ -6,20 +6,19 @@ from datetime import datetime, timedelta
 from genshin import GenshinException, DataNotPublic
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
+from core.baseplugin import BasePlugin
 from core.cookies.services import CookiesService
+from core.plugin import Plugin, handler
 from core.template.services import TemplateService
 from core.user.repositories import UserNotFoundError
 from core.user.services import UserService
-from utils.log import logger
-from plugins.base import BasePlugins
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.log import logger
 
 
 def check_ledger_month(context: CallbackContext) -> int:
@@ -50,25 +49,15 @@ def check_ledger_month(context: CallbackContext) -> int:
     return now_time.month
 
 
-@listener_plugins_class()
-class Ledger(BasePlugins):
+class Ledger(Plugin, BasePlugin):
     """旅行札记"""
 
-    COMMAND_RESULT, = range(10200, 10201)
-
-    @inject
     def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
                  template_service: TemplateService = None):
         self.template_service = template_service
         self.cookies_service = cookies_service
         self.user_service = user_service
         self.current_dir = os.getcwd()
-
-    @classmethod
-    def create_handlers(cls):
-        ledger = cls()
-        return [CommandHandler("ledger", ledger.command_start, block=True),
-                MessageHandler(filters.Regex(r"^旅行扎记(.*)"), ledger.command_start, block=True)]
 
     async def _start_get_ledger(self, client, month=None) -> bytes:
         try:
@@ -142,8 +131,10 @@ class Ledger(BasePlugins):
                                                       evaluate=evaluate)
         return png_data
 
+    @handler(CommandHandler, command="material", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^角色培养素材查询(.*)"), block=False)
+    @restricts()
     @error_callable
-    @restricts(return_data=ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.message
@@ -158,7 +149,7 @@ class Ledger(BasePlugins):
         logger.info(f"用户 {user.full_name}[{user.id}] 查询原石手扎")
         await update.message.reply_chat_action(ChatAction.TYPING)
         try:
-            client = await get_genshin_client(user.id, self.user_service, self.cookies_service)
+            client = await get_genshin_client(user.id)
             png_data = await self._start_get_ledger(client, month)
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")

@@ -6,19 +6,18 @@ from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, C
     filters
 from telegram.helpers import escape_markdown
 
-from utils.log import logger
+from core.baseplugin import BasePlugin
+from core.plugin import Plugin, conversation, handler
 from models.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
-from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.plugins.manager import listener_plugins_class
+from utils.log import logger
+
+COMMAND_RESULT = 1
 
 
-@listener_plugins_class()
-class ArtifactRate(BasePlugins):
+class ArtifactRate(Plugin.Conversation, BasePlugin):
     """圣遗物评分"""
-
-    COMMAND_RESULT = 1
 
     STAR_KEYBOARD = [[
         InlineKeyboardButton(
@@ -67,10 +66,14 @@ class ArtifactRate(BasePlugins):
                f"{escape_markdown(get_comment(rate_result['total_percent']), version=2)}\n" \
                "_评分、识图均来自 genshin\\.pub_"
 
+    @conversation.entry_point
+    @handler.command(command='artifact_rate', filters=filters.ChatType.PRIVATE, block=True)
+    @handler.message(filters=filters.Regex(r"^圣遗物评分(.*)"), block=True)
+    @handler.message(filters=filters.CaptionRegex(r"^圣遗物评分(.*)"), block=True)
     @error_callable
     @restricts(return_data=ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
-        message = update.message
+        message = update.effective_message
         user = update.effective_user
         logger.info(f"用户 {user.full_name}[{user.id}] 圣遗物评分命令请求")
         context.user_data["artifact_attr"] = None
@@ -121,6 +124,8 @@ class ArtifactRate(BasePlugins):
         await reply_message.edit_text(rate_text, parse_mode=ParseMode.MARKDOWN_V2)
         return ConversationHandler.END
 
+    @conversation.state(state=COMMAND_RESULT)
+    @handler.callback_query()
     @error_callable
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         query = update.callback_query

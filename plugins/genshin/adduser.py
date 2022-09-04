@@ -4,20 +4,19 @@ from typing import Optional
 import genshin
 from genshin import InvalidCookies, GenshinException, DataNotPublic
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
+from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
+from core.baseplugin import BasePlugin
 from core.cookies.services import CookiesService
+from core.plugin import Plugin, handler, conversation
 from core.user.models import User
 from core.user.repositories import UserNotFoundError
 from core.user.services import UserService
-from utils.log import logger
 from models.base import RegionEnum
-from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.log import logger
 
 
 class AddUserCommandData(TelegramObject):
@@ -27,36 +26,18 @@ class AddUserCommandData(TelegramObject):
     game_uid: int = 0
 
 
-@listener_plugins_class()
-class AddUser(BasePlugins):
+CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
+
+
+class AddUser(Plugin.Conversation, BasePlugin):
     """用户绑定"""
 
-    CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
-
-    @inject
     def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None):
         self.cookies_service = cookies_service
         self.user_service = user_service
 
-    @classmethod
-    def create_handlers(cls):
-        cookies = cls()
-        cookies_handler = ConversationHandler(
-            entry_points=[CommandHandler('adduser', cookies.command_start, filters.ChatType.PRIVATE, block=True),
-                          MessageHandler(filters.Regex(r"^绑定账号(.*)") & filters.ChatType.PRIVATE,
-                                         cookies.command_start, block=True)],
-            states={
-                cookies.CHECK_SERVER: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                      cookies.check_server, block=True)],
-                cookies.CHECK_COOKIES: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                       cookies.check_cookies, block=True)],
-                cookies.COMMAND_RESULT: [MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                                        cookies.command_result, block=True)],
-            },
-            fallbacks=[CommandHandler('cancel', cookies.cancel, block=True)],
-        )
-        return [cookies_handler]
-
+    @conversation.entry_point
+    @handler.command(command='adduser', filters=filters.ChatType.PRIVATE, block=True)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
@@ -74,6 +55,8 @@ class AddUser(BasePlugins):
 
         return self.CHECK_SERVER
 
+    @conversation.state(state=CHECK_SERVER)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def check_server(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
@@ -120,6 +103,8 @@ class AddUser(BasePlugins):
         await update.message.reply_markdown_v2(help_message, disable_web_page_preview=True)
         return self.CHECK_COOKIES
 
+    @conversation.state(state=CHECK_COOKIES)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
@@ -179,6 +164,8 @@ class AddUser(BasePlugins):
         )
         return self.COMMAND_RESULT
 
+    @conversation.state(state=COMMAND_RESULT)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user

@@ -3,32 +3,21 @@ from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
 from core.admin import BotAdminService
-from utils.log import logger
+from core.plugin import handler
 from utils.decorators.admins import bot_admins_rights_check
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.log import logger
 
 
-@listener_plugins_class()
 class Admin:
     """有关BOT ADMIN处理"""
 
-    @inject
     def __init__(self, bot_admin_service: BotAdminService = None):
         self.bot_admin_service = bot_admin_service
 
-    @classmethod
-    def create_handlers(cls) -> list:
-        admin = cls()
-        return [
-            CommandHandler("add_admin", admin.add_admin, block=False),
-            CommandHandler("del_admin", admin.del_admin, block=False),
-            CommandHandler("leave_chat", admin.leave_chat, block=False),
-        ]
-
+    @handler(CommandHandler, command="add_admin", block=False)
     @bot_admins_rights_check
     async def add_admin(self, update: Update, _: CallbackContext):
-        message = update.message
+        message = update.effective_message
         reply_to_message = message.reply_to_message
         if reply_to_message is None:
             await message.reply_text("请回复对应消息")
@@ -40,9 +29,10 @@ class Admin:
                 await self.bot_admin_service.add_admin(reply_to_message.from_user.id)
                 await message.reply_text("添加成功")
 
+    @handler(CommandHandler, command="del_admin", block=False)
     @bot_admins_rights_check
     async def del_admin(self, update: Update, _: CallbackContext):
-        message = update.message
+        message = update.effective_message
         reply_to_message = message.reply_to_message
         admin_list = await self.bot_admin_service.get_admin_list()
         if reply_to_message is None:
@@ -54,9 +44,10 @@ class Admin:
             else:
                 await message.reply_text("该用户不存在管理员列表")
 
+    @handler(CommandHandler, command="leave_chat", block=False)
     @bot_admins_rights_check
     async def leave_chat(self, update: Update, context: CallbackContext):
-        message = update.message
+        message = update.effective_message
         try:
             args = message.text.split()
             if len(args) >= 2:

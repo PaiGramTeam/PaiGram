@@ -2,34 +2,30 @@ import json
 from os import sep
 
 from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext, filters
+from telegram.ext import CommandHandler, CallbackContext
+from telegram.ext import filters
 
-from utils.log import logger
-from plugins.base import BasePlugins
+from core.baseplugin import BasePlugin
+from core.plugin import Plugin, handler
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.plugins.manager import listener_plugins_class
+from utils.log import logger
 
 
-@listener_plugins_class()
-class Hilichurls(BasePlugins):
+class HilichurlsPlugin(Plugin, BasePlugin):
+    """丘丘语字典."""
 
     def __init__(self):
         """加载数据文件.数据整理自 https://wiki.biligame.com/ys By @zhxycn."""
         with open(f"resources{sep}json{sep}hilichurls_dictionary.json", "r", encoding="utf8") as f:
             self.hilichurls_dictionary = json.load(f)
 
-    @classmethod
-    def create_handlers(cls):
-        hilichurls = cls()
-        return [CommandHandler('hilichurls', hilichurls.command_start)]
-
-    @error_callable
+    @handler(CommandHandler, command="hilichurls", block=False)
     @restricts()
+    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
-        """丘丘语字典."""
-        message = update.message
+        message = update.effective_message
         user = update.effective_user
         args = get_all_args(context)
         if len(args) >= 1:
