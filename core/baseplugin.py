@@ -35,12 +35,11 @@ class _BasePlugin:
         return add_delete_message_job(context, chat_id, message_id, delete_seconds)
 
 
-class _Conversation:
+class _Conversation(_BasePlugin):
 
-    @staticmethod
     @conversation.fallback
     @handler.command(command='cancel', block=True)
-    async def cancel(update: Update, _: CallbackContext) -> int:
+    async def cancel(self, update: Update, _: CallbackContext) -> int:
         await update.effective_message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
