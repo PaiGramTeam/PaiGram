@@ -5,7 +5,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from models.base import RegionEnum
 from utils.error import NotFoundError, RegionNotFoundError
-from utils.mysql import MySQL
+from core.base.mysql import MySQL
 from .models import HyperionCookie, HoyolabCookie, Cookies
 
 

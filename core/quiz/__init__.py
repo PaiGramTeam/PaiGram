@@ -1,12 +1,12 @@
-from utils.mysql import MySQL
-from utils.redisdb import RedisDB
-from utils.service.manager import listener_service
+from core.base.mysql import MySQL
+from core.base.redisdb import RedisDB
+from core.service import init_service
 from .cache import QuizCache
 from .repositories import QuizRepository
 from .services import QuizService
 
 
-@listener_service()
+@init_service
 def create_quiz_service(mysql: MySQL, redis: RedisDB):
     _repository = QuizRepository(mysql)
     _cache = QuizCache(redis)

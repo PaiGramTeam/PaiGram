@@ -2,7 +2,7 @@ import asyncio
 from typing import List
 
 from .cache import QuizCache
-from .models import Question, Answer
+from .models import Answer, Question
 from .repositories import QuizRepository
 
 

@@ -2,7 +2,7 @@ from typing import List, Union
 
 from models.base import RegionEnum
 from utils.error import RegionNotFoundError
-from utils.redisdb import RedisDB
+from core.base.redisdb import RedisDB
 from .error import CookiesCachePoolExhausted
 
 

@@ -1,6 +1,6 @@
 from typing import List
 
-from .models import Question, Answer
+from .models import Answer, Question
 
 
 def CreatQuestionFromSQLData(data: tuple) -> List[Question]:
@@ -9,6 +9,7 @@ def CreatQuestionFromSQLData(data: tuple) -> List[Question]:
         (question_id, text) = temp_data
         temp_list.append(Question(question_id, text))
     return temp_list
+
 
 def CreatAnswerFromSQLData(data: tuple) -> List[Answer]:
     temp_list = []

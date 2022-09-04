@@ -1,13 +1,13 @@
 from typing import List
 
 import genshin
-from genshin import types, InvalidCookies, TooManyRequests, GenshinException
+from genshin import GenshinException, InvalidCookies, TooManyRequests, types
 
-from utils.log import logger
 from models.base import RegionEnum
+from utils.log import logger
 from .cache import PublicCookiesCache
 from .models import CookiesStatusEnum
-from .repositories import CookiesRepository, CookiesNotFoundError
+from .repositories import CookiesNotFoundError, CookiesRepository
 
 
 class CookiesService:
@@ -95,5 +95,5 @@ class PublicCookiesService:
                 logger.warning(f"用户 [{public_id}] 获取账号信息发生错误，错误信息为", exc)
                 continue
             logger.info(f"用户 user_id[{user_id}] 请求"
-                     f"用户 user_id[{public_id}] 的公共Cookies 该Cookie使用次数为[{count}]次 ")
+                        f"用户 user_id[{public_id}] 的公共Cookies 该Cookie使用次数为[{count}]次 ")
             return cookies

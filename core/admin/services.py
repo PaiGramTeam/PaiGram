@@ -4,9 +4,9 @@ from pymysql import IntegrityError
 from telegram import Bot
 
 from config import config
+from core.admin.cache import BotAdminCache, GroupAdminCache
+from core.admin.repositories import BotAdminRepository
 from utils.log import logger
-from .cache import BotAdminCache, GroupAdminCache
-from .repositories import BotAdminRepository
 
 
 class BotAdminService:

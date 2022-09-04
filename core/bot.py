@@ -3,7 +3,7 @@ import inspect
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import ClassVar, Dict, Iterator, NoReturn, Optional, Type, TypeVar
+from typing import Callable, ClassVar, Dict, Iterator, NoReturn, Optional, Type, TypeVar
 
 import pytz
 from telegram.error import NetworkError, TimedOut
@@ -35,11 +35,14 @@ class Bot(object):
 
     app: Optional[TgApplication] = None
     config: BotConfig = BotConfig()
-    services: Dict[Type[Service], Service] = {}
+    services: Dict[Type[T], T] = {}
 
-    def _init_inject(self, target: Type[T]) -> T:
+    def init_inject(self, target: Callable[[], T]) -> T:
         """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
-        signature = inspect.signature(target.__init__)
+        if isinstance(target, type):
+            signature = inspect.signature(target.__init__)
+        else:
+            signature = inspect.signature(target)
         kwargs = {}
         for name, parameter in signature.parameters.items():
             if name != 'self' and parameter.annotation != inspect.Parameter.empty:
@@ -63,14 +66,12 @@ class Bot(object):
             try:
                 import_module(pkg)  # 导入插件
             except Exception as e:
-                logger.exception(e)
-                logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误')
-                logger.error(f"{type(e).__name__}: {e}")
+                logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                 continue  # 如有错误则继续
         for plugin_cls in {*Plugin.__subclasses__(), *Plugin.Conversation.__subclasses__()}:
             path = f"{plugin_cls.__module__}.{plugin_cls.__name__}"
             try:
-                plugin: PluginType = self._init_inject(plugin_cls)
+                plugin: PluginType = self.init_inject(plugin_cls)
                 if hasattr(plugin, '__async_init__'):
                     await plugin.__async_init__()
                 handlers = plugin.handlers
@@ -82,23 +83,21 @@ class Bot(object):
                 logger.success(f'插件 "{path}" 载入成功')
             except Exception as e:
                 logger.exception(e)
-                logger.error(f"在安装插件 \"{path}\" 的过程中遇到了错误")
-                logger.error(f"{type(e).__name__}: {e}")
+                logger.error(f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
 
     async def _start_base_services(self):
         for pkg in self._gen_pkg(PROJECT_ROOT / 'core/base'):
             try:
                 import_module(pkg)
             except Exception as e:
-                logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误')
-                logger.error(f"{type(e).__name__}: {e}")
+                logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                 continue
         for base_service_cls in Service.__subclasses__():
             try:
                 if hasattr(base_service_cls, 'from_config'):
                     instance = base_service_cls.from_config(self.config)
                 else:
-                    instance = self._init_inject(base_service_cls)
+                    instance = self.init_inject(base_service_cls)
                 await instance.start()
                 logger.success(f'服务 "{base_service_cls.__name__}" 初始化成功')
                 self.services.update({base_service_cls: instance})
@@ -106,31 +105,17 @@ class Bot(object):
                 logger.error(f'服务 "{base_service_cls.__name__}" 初始化失败', e)
                 continue
 
-    async def _start_other_services(self):
-        for pkg in self._gen_pkg(PROJECT_ROOT / 'core'):
-            if len(splits := pkg.split('.')) > 2 and splits[1] != 'base':
-                try:
-                    import_module(pkg)
-                except Exception as e:
-                    logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误')
-                    logger.error(f"{type(e).__name__}: {e}")
-                    continue
-        for service_cls in Service.__subclasses__():
-            if service_cls not in self.services.keys():
-                try:
-                    instance = self._init_inject(service_cls)
-                    await instance.start()
-                    logger.success(f'服务 "{service_cls.__name__}" 初始化成功')
-                    self.services.update({service_cls: instance})
-                except Exception as e:
-                    logger.error(f'服务 "{service_cls.__name__}" 初始化失败', e)
-                    breakpoint()
-                    continue
-
     async def start_services(self):
         """启动服务"""
         await self._start_base_services()
-        await self._start_other_services()
+        for path in (PROJECT_ROOT / 'core').iterdir():
+            if not path.name.startswith('_') and path.is_dir() and path.name != 'base':
+                pkg = str(path.relative_to(PROJECT_ROOT)).split('.py')[0].replace('\\', '.')
+                try:
+                    import_module(pkg)
+                except Exception as e:
+                    logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+                    continue
 
     async def stop_services(self):
         """关闭服务"""
@@ -138,15 +123,21 @@ class Bot(object):
             logger.info('正在关闭服务')
             for _, service in self.services.items():
                 try:
-                    await service.stop()
-                    logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
+                    if hasattr(service, 'stop'):
+                        if inspect.iscoroutinefunction(service.stop):
+                            await service.stop()
+                        else:
+                            service.stop()
+                        logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
                 except Exception as e:
                     logger.exception(e)
                     logger.error(f"服务 \"{service.__class__.__name__}\" 关闭失败")
                     logger.error(f"{type(e).__name__}: {e}")
 
     async def _post_init(self, app: TgApplication) -> NoReturn:
+        logger.info('开始初始化服务')
         await self.start_services()
+        logger.info('开始安装插件')
         await self.install_plugins()
 
     def launch(self) -> NoReturn:

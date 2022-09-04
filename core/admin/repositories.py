@@ -3,8 +3,8 @@ from typing import List, cast
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from utils.mysql import MySQL
-from .models import Admin
+from core.admin.models import Admin
+from core.base.mysql import MySQL
 
 
 class BotAdminRepository:

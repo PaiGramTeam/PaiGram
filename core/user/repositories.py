@@ -3,8 +3,8 @@ from typing import cast
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from core.base.mysql import MySQL
 from utils.error import NotFoundError
-from utils.mysql import MySQL
 from .models import User
 
 

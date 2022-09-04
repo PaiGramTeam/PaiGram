@@ -2,8 +2,8 @@ from typing import List
 
 from sqlmodel import select
 
-from utils.mysql import MySQL
-from .models import QuestionDB, AnswerDB
+from core.base.mysql import MySQL
+from .models import AnswerDB, QuestionDB
 
 
 class QuizRepository:
