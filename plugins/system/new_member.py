@@ -1,26 +1,19 @@
-import asyncio
-from typing import List, Tuple, Callable
-
 from telegram import Update
 from telegram.ext import CallbackContext, filters
 
-from core.admin.services import BotAdminService
+from core.admin import BotAdminService
+from core.plugin import Plugin, handler
 from utils.log import logger
 
 
-class NewChatMembersHandler:
+class BotJoiningGroupsVerification(Plugin):
 
     def __init__(self, bot_admin_service: BotAdminService = None):
         self.bot_admin_service = bot_admin_service
-        self.callback: List[Tuple[Callable, int]] = []
 
-    def add_callback(self, callback, chat_id: int):
-        if chat_id >= 0:
-            raise ValueError
-        self.callback.append((callback, chat_id))
-
+    @handler.message.new_chat_members(priority=1)
     async def new_member(self, update: Update, context: CallbackContext) -> None:
-        message = update.message
+        message = update.effective_message
         chat = message.chat
         from_user = message.from_user
         quit_status = False
@@ -42,11 +35,3 @@ class NewChatMembersHandler:
             logger.warning("不是管理员邀请！退出群聊。")
             await context.bot.send_message(message.chat_id, "派蒙不想进去！不是旅行者的邀请！")
             await context.bot.leave_chat(chat.id)
-        else:
-            tasks = []
-            for callback, chat_id in self.callback:
-                if chat.id == chat_id:
-                    task = asyncio.create_task(callback(update, context))
-                    tasks.append(task)
-            if tasks:
-                await asyncio.gather(*tasks)

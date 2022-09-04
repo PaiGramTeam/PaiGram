@@ -6,10 +6,11 @@ from typing import Tuple, Union, Dict, List
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, CallbackQueryHandler
 from telegram.helpers import escape_markdown
 
-from core.plugin import Plugin
+from core.bot import bot
+from core.plugin import Plugin, handler
 from core.quiz import QuizService
 from utils.log import logger
 from utils.random import MT19937Random
@@ -94,6 +95,7 @@ class GroupJoiningVerification(Plugin):
             logger.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败")
             logger.exception(exc)
 
+    @handler(CallbackQueryHandler, query=r"^auth_admin\|", block=False)
     async def admin(self, update: Update, context: CallbackContext) -> None:
 
         async def admin_callback(callback_query_data: str) -> Tuple[str, int]:
@@ -151,6 +153,7 @@ class GroupJoiningVerification(Plugin):
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
             schedule.remove()
 
+    @handler(CallbackQueryHandler, query=r"^auth_challenge\|", block=False)
     async def query(self, update: Update, context: CallbackContext) -> None:
 
         async def query_callback(callback_query_data: str) -> Tuple[int, bool, str, str]:
@@ -209,10 +212,19 @@ class GroupJoiningVerification(Plugin):
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
             schedule.remove()
 
+    @handler.message.new_chat_members(priority=2)
     async def new_mem(self, update: Update, context: CallbackContext) -> None:
-        await self.refresh_quiz()
-        message = update.message
+        message = update.effective_message
         chat = message.chat
+        if len(bot.config.verify_groups) >= 1:
+            for verify_group in bot.config.verify_groups:
+                if verify_group == chat.id:
+                    break
+            else:
+                return
+        else:
+            return
+        await self.refresh_quiz()
         for user in message.new_chat_members:
             if user.id == context.bot.id:
                 return
