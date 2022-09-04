@@ -3,12 +3,12 @@ from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
 from core.admin import BotAdminService
-from core.plugin import handler
+from core.plugin import handler, Plugin
 from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger
 
 
-class Admin:
+class AdminPlugin(Plugin):
     """有关BOT ADMIN处理"""
 
     def __init__(self, bot_admin_service: BotAdminService = None):
