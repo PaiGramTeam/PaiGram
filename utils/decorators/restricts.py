@@ -1,6 +1,6 @@
 import time
 from functools import wraps
-from typing import Callable
+from typing import Callable, cast
 
 from telegram import Update
 from telegram.error import TelegramError
@@ -39,14 +39,16 @@ def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_
         @wraps(func)
         async def restricts_func(*args, **kwargs):
             if len(args) == 3:
-                update: Update = args[1]
-                context: CallbackContext = args[2]
+                # self update context
+                _, update, context = args
             elif len(args) == 2:
-                update: Update = args[0]
-                context: CallbackContext = args[1]
+                # update context
+                update, context = args
             else:
                 return await func(*args, **kwargs)
-            message = update.message
+            update = cast(Update, update)
+            context = cast(CallbackContext, context)
+            message = update.effective_message
             user = update.effective_user
             if filters_chat.filter(message):
                 command_time = context.user_data.get("command_time", 0)
@@ -62,7 +64,7 @@ def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_
                 else:
                     if count == 5:
                         context.user_data["restrict_since"] = time.time()
-                        await update.effective_message.reply_text("你已经触发洪水防御，请等待5分钟")
+                        await message.reply_text("你已经触发洪水防御，请等待5分钟")
                         logger.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制5分钟")
                         return return_data
                 # 单次使用限制
@@ -73,8 +75,9 @@ def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_
                             if try_delete_message:
                                 try:
                                     await message.delete()
-                                except TelegramError as error:
-                                    logger.warning("删除消息失败", error)
+                                except TelegramError as exc:
+                                    logger.warning("删除消息失败")
+                                    logger.exception(exc)
                             return return_data
                     else:
                         if count >= 1:
