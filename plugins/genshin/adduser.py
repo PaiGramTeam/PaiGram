@@ -10,8 +10,8 @@ from telegram.helpers import escape_markdown
 from core.baseplugin import BasePlugin
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler, conversation
+from core.user.error import UserNotFoundError
 from core.user.models import User
-from core.user.repositories import UserNotFoundError
 from core.user.services import UserService
 from models.base import RegionEnum
 from utils.decorators.error import error_callable

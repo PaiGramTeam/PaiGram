@@ -11,7 +11,7 @@ from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.sign.models import Sign as SignUser, SignStatusEnum
 from core.sign.services import SignServices
-from core.user.repositories import UserNotFoundError
+from core.user.error import UserNotFoundError
 from core.user.services import UserService
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable

@@ -12,7 +12,7 @@ from core.baseplugin import BasePlugin
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template.services import TemplateService
-from core.user.repositories import UserNotFoundError
+from core.user.error import UserNotFoundError
 from core.user.services import UserService
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

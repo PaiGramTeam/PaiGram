@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.base.mysql import MySQL
-from utils.error import NotFoundError
+from .error import UserNotFoundError
 from .models import User
 
 
@@ -34,8 +34,3 @@ class UserRepository:
             session = cast(AsyncSession, session)
             session.add(user)
             await session.commit()
-
-
-class UserNotFoundError(NotFoundError):
-    entity_name: str = "User"
-    entity_value_name: str = "user_id"

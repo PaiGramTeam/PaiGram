@@ -11,7 +11,7 @@ from core.baseplugin import BasePlugin
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template.services import TemplateService
-from core.user.repositories import UserNotFoundError
+from core.user.error import UserNotFoundError
 from core.user.services import UserService
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -138,7 +138,6 @@ class UserStatsPlugins(Plugin, BasePlugin):
             return ConversationHandler.END
         try:
             client = await get_genshin_client(user.id)
-
             png_data = await self._start_get_user_info(client, uid)
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")

@@ -9,7 +9,7 @@ from core.cookies.services import CookiesService
 from core.plugin import handler, Plugin
 from core.template import TemplateService
 from core.user import UserService
-from core.user.repositories import UserNotFoundError
+from core.user.error import UserNotFoundError
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client, url_to_file
