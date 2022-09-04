@@ -50,7 +50,7 @@ alembic upgrade head
 ### 5. 运行
 
 ```bash
-python ./main.py
+python ./run.py
 ```
 
 ## 其他说明
