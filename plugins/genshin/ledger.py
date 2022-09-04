@@ -131,8 +131,8 @@ class Ledger(Plugin, BasePlugin):
                                                       evaluate=evaluate)
         return png_data
 
-    @handler(CommandHandler, command="material", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^角色培养素材查询(.*)"), block=False)
+    @handler(CommandHandler, command="ledger", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^旅行扎记(.*)"), block=False)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:

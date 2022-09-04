@@ -99,8 +99,8 @@ class Sign(Plugin, BasePlugin):
             await self.sign_service.add(user)
             return "开启自动签到成功"
 
-    @handler(CommandHandler, command="help", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^武器查询(.*)"), block=False)
+    @handler(CommandHandler, command="sign", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^每日签到(.*)"), block=False)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:

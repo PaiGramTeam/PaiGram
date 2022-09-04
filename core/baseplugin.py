@@ -1,5 +1,3 @@
-
-
 from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler
@@ -11,6 +9,7 @@ async def clean_message(context: CallbackContext):
     job = context.job
     logger.debug(f"删除消息 chat_id[{job.chat_id}] 的 message_id[{job.data}]")
     try:
+        # noinspection PyTypeChecker
         await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
     except BadRequest as error:
         if "not found" in str(error):

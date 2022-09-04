@@ -22,7 +22,7 @@ class QuizPlugin(Plugin, BasePlugin):
         self.time_out = 120
         self.random = MT19937_Random()
 
-    @handler(CommandHandler, command="help", block=False)
+    @handler(CommandHandler, command="quiz", block=False)
     @restricts(restricts_time=20, try_delete_message=True)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user

@@ -29,7 +29,7 @@ class WeaponPlugin(Plugin, BasePlugin):
         self.wiki_service = wiki_service
         self.template_service = template_service
 
-    @handler(CommandHandler, command="help", block=False)
+    @handler(CommandHandler, command="weapon", block=False)
     @handler(MessageHandler, filters=filters.Regex("^武器查询(.*)"), block=False)
     @error_callable
     @restricts()

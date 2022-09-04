@@ -48,7 +48,7 @@ class Bot:
         for name, parameter in signature.parameters.items():
             if name != 'self' and parameter.annotation != inspect.Parameter.empty:
                 if value := self._services.get(parameter.annotation):
-                    kwargs.update({name: value})
+                    kwargs[name] = value
         # noinspection PyArgumentList
         return target(**kwargs)
 
@@ -120,20 +120,21 @@ class Bot:
 
     async def stop_services(self):
         """关闭服务"""
-        if self._services:
-            logger.info('正在关闭服务')
-            for _, service in self._services.items():
-                try:
-                    if hasattr(service, 'stop'):
-                        if inspect.iscoroutinefunction(service.stop):
-                            await service.stop()
-                        else:
-                            service.stop()
-                        logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
-                except Exception as e:
-                    logger.exception(e)
-                    logger.error(f"服务 \"{service.__class__.__name__}\" 关闭失败")
-                    logger.error(f"{type(e).__name__}: {e}")
+        if not self._services:
+            return
+        logger.info('正在关闭服务')
+        for _, service in self._services.items():
+            try:
+                if hasattr(service, 'stop'):
+                    if inspect.iscoroutinefunction(service.stop):
+                        await service.stop()
+                    else:
+                        service.stop()
+                    logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
+            except Exception as e:
+                logger.exception(e)
+                logger.error(f"服务 \"{service.__class__.__name__}\" 关闭失败")
+                logger.error(f"{type(e).__name__}: {e}")
 
     async def _post_init(self, _) -> NoReturn:
         logger.info('开始初始化服务')
@@ -153,7 +154,7 @@ class Bot:
         )
         logger.info('BOT 初始化成功')
         try:
-            for num in range(5):
+            for _ in range(5):
                 try:
                     self.app.run_polling(close_loop=False)
                     break

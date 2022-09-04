@@ -48,5 +48,5 @@ class NewChatMembersHandler:
                 if chat.id == chat_id:
                     task = asyncio.create_task(callback(update, context))
                     tasks.append(task)
-            if len(tasks) >= 1:
+            if tasks:
                 await asyncio.gather(*tasks)
