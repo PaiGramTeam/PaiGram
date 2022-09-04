@@ -1,7 +1,7 @@
 from httpx import AsyncClient
 
-from .base import BaseResponseData
-from .helpers import get_ds, get_device_id, get_recognize_server
+from models.apihelper.base import BaseResponseData
+from models.apihelper.helpers import get_ds, get_device_id, get_recognize_server
 
 
 class Genshin:

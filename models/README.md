@@ -22,6 +22,6 @@
 
 ### 感谢
 
-|                          Nickname                          | Contribution         |
-| :--------------------------------------------------------: | -------------------- |
-| [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw) | 本项目参考的爬虫代码 |
+|                          Nickname                          | Contribution |
+|:----------------------------------------------------------:|--------------|
+| [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw) | 本项目参考的爬虫代码   |

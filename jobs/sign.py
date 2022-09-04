@@ -49,7 +49,7 @@ class SignJob:
                 continue
             user_id = sign_db.user_id
             try:
-                client = await get_genshin_client(user_id, self.user_service, self.cookies_service)
+                client = await get_genshin_client(user_id)
                 rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
                 daily_reward_info = await client.get_reward_info(game=Game.GENSHIN)
                 if not daily_reward_info.signed_in:

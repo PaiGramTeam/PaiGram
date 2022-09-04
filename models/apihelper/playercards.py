@@ -11,7 +11,7 @@ from models.game.fetter import FetterInfo
 from models.game.skill import Skill
 from models.game.talent import Talent
 from models.game.weapon import WeaponInfo
-from .helpers import get_headers
+from models.apihelper.helpers import get_headers
 
 
 class PlayerCardsAPI:

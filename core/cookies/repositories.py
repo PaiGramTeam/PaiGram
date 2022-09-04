@@ -47,16 +47,11 @@ class CookiesRepository:
     async def update_cookies_ex(self, cookies: Cookies, region: RegionEnum):
         async with self.mysql.Session() as session:
             session = cast(AsyncSession, session)
-            if region == RegionEnum.HYPERION:
-                session.add(cookies)
-                await session.commit()
-                await session.refresh(cookies)
-            elif region == RegionEnum.HOYOLAB:
-                await session.add(cookies)
-                await session.commit()
-                await session.refresh(cookies)
-            else:
+            if region not in [RegionEnum.HYPERION, RegionEnum.HOYOLAB]:
                 raise RegionNotFoundError(region.name)
+            session.add(cookies)
+            await session.commit()
+            await session.refresh(cookies)
 
     async def get_cookies(self, user_id, region: RegionEnum) -> Cookies:
         async with self.mysql.Session() as session:

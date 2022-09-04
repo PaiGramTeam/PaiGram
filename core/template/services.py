@@ -47,7 +47,6 @@ class TemplateService:
         :param template_data: 模板数据
         :param viewport: 截图大小
         :param full_page: 是否长截图
-        :param auto_escape: 是否自动转义
         :param evaluate: 页面加载后运行的 js
         :return:
         """

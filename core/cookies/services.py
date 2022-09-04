@@ -85,7 +85,7 @@ class PublicCookiesService:
                 await self._repository.update_cookies_ex(cookies, region)
                 await self._cache.delete(cookies.user_id, region)
                 continue
-            except TooManyRequests as exc:
+            except TooManyRequests:
                 logger.warning(f"用户 [{public_id}] 查询次数太多（操作频繁）")
                 cookies.status = CookiesStatusEnum.TOO_MANY_REQUESTS
                 await self._repository.update_cookies_ex(cookies, region)
