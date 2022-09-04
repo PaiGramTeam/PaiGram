@@ -8,13 +8,11 @@ from telegram.ext import CallbackContext
 
 from core.wiki import WikiService
 from utils.log import logger
-from utils.service.inject import inject
 
 
 class Inline:
     """Inline模块"""
 
-    @inject
     def __init__(self, wiki_service: WikiService = None):
         self.wiki_service = wiki_service
 

@@ -272,7 +272,7 @@ class GroupJoiningVerification(Plugin):
                             f"问题: {escape_markdown(question.text, version=2)} \n" \
                             f"请在 {self.time_out}S 内回答问题"
             logger.debug(f"发送入群验证问题 question_id[{question.question_id}] question[{question.text}] \n"
-                      f"给{user.full_name}[{user.id}] 在 {chat.title}[{chat.id}]")
+                         f"给{user.full_name}[{user.id}] 在 {chat.title}[{chat.id}]")
             try:
                 question_message = await message.reply_markdown_v2(reply_message,
                                                                    reply_markup=InlineKeyboardMarkup(buttons))

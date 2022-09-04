@@ -1,60 +1,15 @@
 import asyncio
-import datetime
 from typing import List, Tuple, Callable
 
-from telegram import Update, ReplyKeyboardRemove
-from telegram.error import BadRequest
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram import Update
+from telegram.ext import CallbackContext, filters
 
 from core.admin.services import BotAdminService
 from utils.log import logger
-from utils.service.inject import inject
-
-
-async def clean_message(context: CallbackContext, chat_id: int, message_id: int) -> bool:
-    try:
-        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-        return True
-    except BadRequest as error:
-        if "not found" in str(error):
-            logger.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息不存在")
-        elif "Message can't be deleted" in str(error):
-            logger.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 消息无法删除 可能是没有授权")
-        else:
-            logger.warning(f"定时删除消息 chat_id[{chat_id}] message_id[{message_id}]失败 \n", error)
-    return False
-
-
-def add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int,
-                           delete_seconds: int = 60):
-    context.job_queue.scheduler.add_job(clean_message, "date",
-                                        id=f"{chat_id}|{message_id}|auto_clean_message",
-                                        name=f"{chat_id}|{message_id}|auto_clean_message",
-                                        args=[context, chat_id, message_id],
-                                        run_date=context.job_queue._tz_now() + datetime.timedelta(
-                                            seconds=delete_seconds), replace_existing=True)
-
-
-class BasePlugins:
-
-    @staticmethod
-    async def cancel(update: Update, _: CallbackContext) -> int:
-        await update.message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
-        return ConversationHandler.END
-
-    @staticmethod
-    async def _clean(context: CallbackContext, chat_id: int, message_id: int) -> bool:
-        return await clean_message(context, chat_id, message_id)
-
-    @staticmethod
-    def _add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int,
-                                delete_seconds: int = 60):
-        return add_delete_message_job(context, chat_id, message_id, delete_seconds)
 
 
 class NewChatMembersHandler:
 
-    @inject
     def __init__(self, bot_admin_service: BotAdminService = None):
         self.bot_admin_service = bot_admin_service
         self.callback: List[Tuple[Callable, int]] = []

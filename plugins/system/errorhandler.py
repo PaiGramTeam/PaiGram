@@ -8,13 +8,13 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 
-from config import config
+from core.bot import bot
 from utils.log import logger
 
 try:
-    notice_chat_id = config.error_notification_chat_id
+    notice_chat_id = bot.config.error_notification_chat_id
 except KeyError as error:
-    logger.warning("错误通知Chat_id获取失败或未配置，BOT发生致命错误时不会收到通知 错误信息为\n", error)
+    logger.warning("错误通知Chat_id获取失败或未配置，BOT发生致命错误时不会收到通知")
     notice_chat_id = None
 
 
@@ -74,8 +74,8 @@ async def error_handler(update: object, context: CallbackContext) -> None:
         if message is not None:
             chat = message.chat
             logger.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
-                     f"在 {chat.full_name}[{chat.id}]"
-                     f"的 update_id[{update.update_id}] 错误信息")
+                        f"在 {chat.full_name}[{chat.id}]"
+                        f"的 update_id[{update.update_id}] 错误信息")
             text = f"出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！\n" \
                    f"如果当前有对话请发送 /cancel 退出对话。\n"
             await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove(),
