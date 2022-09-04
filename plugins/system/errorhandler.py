@@ -9,19 +9,18 @@ from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 
 from core.bot import bot
+from core.plugin import error_handler
 from utils.log import logger
 
-try:
-    notice_chat_id = bot.config.error_notification_chat_id
-except KeyError as error:
-    logger.warning("错误通知Chat_id获取失败或未配置，BOT发生致命错误时不会收到通知")
-    notice_chat_id = None
+notice_chat_id = bot.config.error_notification_chat_id
 
 
+@error_handler(block=False)
 async def error_handler(update: object, context: CallbackContext) -> None:
     """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
 
-    logger.error(msg="处理函数时发生异常:", exc_info=context.error)
+    logger.error("处理函数时发生异常")
+    logger.exception(context.error)
 
     if notice_chat_id is None:
         return
@@ -76,8 +75,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
             logger.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
                         f"在 {chat.full_name}[{chat.id}]"
                         f"的 update_id[{update.update_id}] 错误信息")
-            text = f"出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！\n" \
-                   f"如果当前有对话请发送 /cancel 退出对话。\n"
+            text = f"出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！"
             await context.bot.send_message(message.chat_id, text, reply_markup=ReplyKeyboardRemove(),
                                            parse_mode=ParseMode.HTML)
     except BadRequest as exc:

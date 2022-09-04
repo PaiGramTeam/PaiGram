@@ -1,10 +1,12 @@
 from telegram import Update, ReplyKeyboardRemove
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, CommandHandler
 from telegram.helpers import escape_markdown
 
+from core.plugin import handler
 from utils.decorators.restricts import restricts
 
 
+@handler(CommandHandler, command="start", block=False)
 @restricts()
 async def start(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
@@ -18,11 +20,6 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 
 @restricts()
-async def help_command(update: Update, _: CallbackContext) -> None:
-    await update.effective_message.reply_text("前面的区域，以后再来探索吧！")
-
-
-@restricts()
 async def unknown_command(update: Update, _: CallbackContext) -> None:
     await update.effective_message.reply_text("前面的区域，以后再来探索吧！")
 
@@ -32,11 +29,13 @@ async def emergency_food(update: Update, _: CallbackContext) -> None:
     await update.effective_message.reply_text("派蒙才不是应急食品！")
 
 
+@handler(CommandHandler, command="ping", block=False)
 @restricts()
 async def ping(update: Update, _: CallbackContext) -> None:
     await update.effective_message.reply_text("online! ヾ(✿ﾟ▽ﾟ)ノ")
 
 
+@handler(CommandHandler, command="reply_keyboard_remove", block=False)
 @restricts()
 async def reply_keyboard_remove(update: Update, _: CallbackContext) -> None:
     await update.message.reply_text("移除远程键盘成功", reply_markup=ReplyKeyboardRemove())

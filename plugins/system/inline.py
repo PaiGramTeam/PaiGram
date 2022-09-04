@@ -4,18 +4,20 @@ from uuid import uuid4
 from telegram import InlineQueryResultArticle, InputTextMessageContent, Update, InlineQuery
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, InlineQueryHandler
 
+from core.plugin import handler, Plugin
 from core.wiki import WikiService
 from utils.log import logger
 
 
-class Inline:
+class Inline(Plugin):
     """Inline模块"""
 
     def __init__(self, wiki_service: WikiService = None):
         self.wiki_service = wiki_service
 
+    @handler(InlineQueryHandler, block=False)
     async def inline_query(self, update: Update, _: CallbackContext) -> None:
         user = update.effective_user
         ilq = cast(InlineQuery, update.inline_query)
