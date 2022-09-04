@@ -1,21 +1,23 @@
 import datetime
 import re
 from importlib import import_module
-from queue import PriorityQueue, Empty
 from re import Pattern
 from types import MethodType
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Tuple, Type, TypeVar, Union
 
-from telegram import Update
 # noinspection PyProtectedMember
 from telegram._utils.defaultvalue import DEFAULT_TRUE
 # noinspection PyProtectedMember
 from telegram._utils.types import DVInput, JSONDict
-from telegram.ext import BaseHandler, CallbackContext, ConversationHandler, Job, MessageHandler
+from telegram.ext import BaseHandler, ConversationHandler, Job
 # noinspection PyProtectedMember
 from telegram.ext._utils.types import JobCallback
-from telegram.ext.filters import BaseFilter, StatusUpdate
+from telegram.ext.filters import BaseFilter
 from typing_extensions import ParamSpec
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import CallbackContext
 
 __all__ = [
     'Plugin', 'handler', 'conversation', 'job', 'error_handler'
@@ -35,6 +37,20 @@ _JOB_ATTR_NAME = "_job_data"
 _EXCLUDE_ATTRS = ['handlers', 'jobs', 'error_handlers']
 
 
+class _WrappedCallback(object):
+    def __init__(self, func: Callable[P, T]):
+        self.func = func
+
+    def __lt__(self, other: "_WrappedCallback"):
+        return self.func.__name__ < other.func.__name__
+
+    def __gt__(self, other: "_WrappedCallback"):
+        return self.func.__name__ > other.func.__name__
+
+    def __call__(self, update: "Update", context: "CallbackContext"):
+        return self.func(update, context)
+
+
 class _Plugin:
 
     def _make_handler(self, data: Dict) -> HandlerType:
@@ -44,7 +60,6 @@ class _Plugin:
     @property
     def handlers(self) -> List[HandlerType]:
         result = []
-        callback_queue = PriorityQueue()
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
@@ -56,19 +71,23 @@ class _Plugin:
             ):
                 if data['type'] not in ['error', 'new_chat_member']:
                     result.append(self._make_handler(data))
-                elif data['type'] == 'new_chat_member':
-                    callback_queue.put((data['priority'], func))
 
-        async def _new_chat_member(update: Update, context: CallbackContext):
-            while not callback_queue.empty():
-                try:
-                    callback = callback_queue.get_nowait()[1]
-                    await callback(update, context)
-                except Empty:
-                    break
+        return result
 
-        if not callback_queue.empty():
-            result.append(MessageHandler(filters=StatusUpdate.NEW_CHAT_MEMBERS, block=False, callback=_new_chat_member))
+    def _new_chat_members_handler_funcs(self) -> List[Tuple[int, Callable]]:
+
+        result = []
+        for attr in dir(self):
+            # noinspection PyUnboundLocalVariable
+            if (
+                    not (attr.startswith('_') or attr in _EXCLUDE_ATTRS)
+                    and
+                    isinstance(func := getattr(self, attr), MethodType)
+                    and
+                    (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+            ):
+                if data['type'] == 'new_chat_member':
+                    result.append((data['priority'], _WrappedCallback(func)))
 
         return result
 
@@ -217,7 +236,7 @@ class _MessageNewChatMembers(_Handler):
         self.func = self.func or func
         setattr(
             self.func, _NORMAL_HANDLER_ATTR_NAME,
-            {'type': 'new_chat_member', 'func': self.func.__name__, 'priority': self.priority}
+            {'type': 'new_chat_member', 'priority': self.priority}
         )
         return self.func
 

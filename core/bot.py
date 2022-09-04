@@ -3,11 +3,13 @@ import inspect
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import Any, Callable, ClassVar, Dict, Iterator, NoReturn, Optional, Type, TypeVar
+from queue import PriorityQueue
+from typing import Any, Callable, ClassVar, Dict, Iterator, NoReturn, Optional, TYPE_CHECKING, Type, TypeVar
 
 import pytz
 from telegram.error import NetworkError, TimedOut
-from telegram.ext import Application as TgApplication, Defaults, JobQueue
+from telegram.ext import Application as TgApplication, Defaults, JobQueue, MessageHandler
+from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config
 from core.error import ServiceNotFoundError
@@ -16,6 +18,10 @@ from core.plugin import Plugin, _Plugin
 from core.service import Service
 from utils.const import PLUGIN_DIR, PROJECT_ROOT
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import CallbackContext
 
 __all__ = ['bot']
 
@@ -69,6 +75,7 @@ class Bot:
             except Exception as e:
                 logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                 continue  # 如有错误则继续
+        queue = PriorityQueue()
         for plugin_cls in {*Plugin.__subclasses__(), *Plugin.Conversation.__subclasses__()}:
             path = f"{plugin_cls.__module__}.{plugin_cls.__name__}"
             try:
@@ -79,17 +86,35 @@ class Bot:
                 self.app.add_handlers(handlers)
                 if handlers:
                     logger.debug(f'插件 "{path}" 添加了 {len(handlers)} 个 handler ')
+
+                # noinspection PyProtectedMember
+                for priority, callback in plugin._new_chat_members_handler_funcs():
+                    queue.put((priority, callback))
+
                 error_handlers = plugin.error_handlers
                 for callback, block in error_handlers.items():
                     self.app.add_error_handler(callback, block)
                 if error_handlers:
                     logger.debug(f"插件 \"{path}\" 添加了 {len(error_handlers)} 个 error handler")
+
                 if jobs := plugin.jobs:
                     logger.debug(f'插件 "{path}" 添加了 {len(jobs)} 个任务')
                 logger.success(f'插件 "{path}" 载入成功')
             except Exception as e:
                 logger.exception(e)
                 logger.error(f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+        if not queue.empty():
+            count = queue.qsize()
+
+            async def _new_chat_member_callback(update: 'Update', context: 'CallbackContext'):
+                while not queue.empty():
+                    await queue.get()[1](update, context)
+
+            self.app.add_handler(MessageHandler(
+                callback=_new_chat_member_callback, filters=StatusUpdate.NEW_CHAT_MEMBERS, block=False
+            ))
+            logger.success(
+                f'成功添加了 {count} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]')
 
     async def _start_base_services(self):
         for pkg in self._gen_pkg(PROJECT_ROOT / 'core/base'):
