@@ -31,6 +31,7 @@ pip install --upgrade poetry
 
 ```bash
 poetry install
+playwright install chromium
 ```
 
 ### 3. 修改配置
