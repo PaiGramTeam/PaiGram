@@ -283,7 +283,7 @@ class Handler(DefaultRichHandler):
         if record.pathname != '<input>':
             try:
                 path = str(Path(record.pathname).relative_to(PROJECT_ROOT))
-                path = path.split('.')[0].replace('\\', '.').replace('/', '.')
+                path = path.split('.')[0].replace(os.sep, '.')
             except ValueError:
                 import site
                 path = None
@@ -296,8 +296,7 @@ class Handler(DefaultRichHandler):
                 if path is None:
                     path = "<SITE>"
                 else:
-                    path = path.split('.')[0].replace('\\', '.').replace('/',
-                                                                         '.')
+                    path = path.split('.')[0].replace(os.sep, '.')
         else:
             path = '<INPUT>'
         path = path.replace('lib.site-packages.', '')

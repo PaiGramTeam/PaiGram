@@ -1,3 +1,4 @@
+import os
 import asyncio
 import inspect
 from importlib import import_module
@@ -64,7 +65,7 @@ class Bot:
                 if path.is_dir():
                     yield from self._gen_pkg(path)
                 elif path.suffix == '.py':
-                    yield str(path.relative_to(PROJECT_ROOT)).split('.py')[0].replace('\\', '.')
+                    yield str(path.relative_to(PROJECT_ROOT)).split('.py')[0].replace(os.sep, '.')
 
     async def install_plugins(self):
         """安装插件"""
@@ -145,7 +146,7 @@ class Bot:
         await self._start_base_services()
         for path in (PROJECT_ROOT / 'core').iterdir():
             if not path.name.startswith('_') and path.is_dir() and path.name != 'base':
-                pkg = str(path.relative_to(PROJECT_ROOT)).split('.py')[0].replace('\\', '.')
+                pkg = str(path.relative_to(PROJECT_ROOT)).split('.py')[0].replace(os.sep, '.')
                 try:
                     import_module(pkg)
                 except Exception as e:  # pylint: disable=W0703
