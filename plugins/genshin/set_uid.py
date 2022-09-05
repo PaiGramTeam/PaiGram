@@ -25,7 +25,7 @@ class AddUserCommandData(TelegramObject):
     game_uid: int = 0
 
 
-CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
+CHECK_SERVER, CHECK_UID, COMMAND_RESULT = range(10100, 10103)
 
 
 class SetUid(Plugin.Conversation, BasePlugin.Conversation):
@@ -85,9 +85,9 @@ class SetUid(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text("你已经绑定Cookie，无法继续下一步")
                 return ConversationHandler.END
         await message.reply_text("请输入你的UID", reply_markup=ReplyKeyboardRemove())
-        return CHECK_COOKIES
+        return CHECK_UID
 
-    @conversation.state(state=CHECK_COOKIES)
+    @conversation.state(state=CHECK_UID)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
