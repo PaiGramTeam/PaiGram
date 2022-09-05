@@ -1,6 +1,6 @@
-import os
 import asyncio
 import inspect
+import os
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from pathlib import Path
@@ -43,6 +43,7 @@ class Bot:
     app: Optional[TgApplication] = None
     _config: BotConfig = config
     _services: Dict[Type[T], T] = {}
+    _running: bool = False
 
     def init_inject(self, target: Callable[..., T]) -> T:
         """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
@@ -178,6 +179,7 @@ class Bot:
 
     def launch(self) -> NoReturn:
         """启动机器人"""
+        self._running = True
         logger.info('正在初始化BOT')
         self.app = (
             TgApplication.builder()
@@ -212,6 +214,7 @@ class Bot:
             loop.run_until_complete(self.stop_services())
             loop.close()
         logger.info("BOT 已经关闭")
+        self._running = False
 
     def find_service(self, target: Type[T]) -> T:
         """查找服务。若没找到则抛出 ServiceNotFoundError"""
@@ -247,6 +250,10 @@ class Bot:
     @property
     def config(self) -> BotConfig:
         return self._config
+
+    @property
+    def is_running(self) -> bool:
+        return self._running
 
 
 bot = Bot()

@@ -21,11 +21,12 @@ class Service(ABC):
 
 def init_service(func: Callable):
     from core.bot import bot
-
-    try:
-        service = bot.init_inject(func)
-        logger.success(f'服务 "{service.__class__.__name__}" 初始化成功')
-        bot.add_service(service)
-    except Exception as e:  # pylint: disable=W0703
-        # noinspection PyUnresolvedReferences
-        logger.error(f'来自{func.__module__}的服务初始化失败：{e}')
+    if bot.is_running:
+        try:
+            service = bot.init_inject(func)
+            logger.success(f'服务 "{service.__class__.__name__}" 初始化成功')
+            bot.add_service(service)
+        except Exception as e:  # pylint: disable=W0703
+            # noinspection PyUnresolvedReferences
+            logger.error(f'来自{func.__module__}的服务初始化失败：{e}')
+    return func
