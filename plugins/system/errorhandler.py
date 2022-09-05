@@ -16,7 +16,7 @@ notice_chat_id = bot.config.error_notification_chat_id
 
 class ErrorHandler(Plugin):
 
-    @error_handler(block=False)
+    @error_handler(block=False)  # pylint: disable=E1120
     async def error_handler(self, update: object, context: CallbackContext) -> None:
         """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
 

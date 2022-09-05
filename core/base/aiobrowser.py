@@ -13,7 +13,7 @@ class AioBrowser(Service):
         self._playwright: Optional[Playwright] = None
         self._loop = loop
 
-    async def start(self, *args, **kwargs):
+    async def start(self):
         if self._playwright is None:
             logger.info("正在尝试启动 [blue]Playwright[/]")
             self._playwright = await async_playwright().start()

@@ -22,7 +22,6 @@ from utils.log import logger
 
 class TeapotUnlocked(Exception):
     """尘歌壶未解锁"""
-    pass
 
 
 class UserStatsPlugins(Plugin, BasePlugin):

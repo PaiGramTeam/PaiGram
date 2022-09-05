@@ -7,7 +7,7 @@ from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Opti
 
 import pytz
 from telegram.error import NetworkError, TimedOut
-from telegram.ext import Application as TgApplication, Defaults, JobQueue, MessageHandler, AIORateLimiter
+from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults, JobQueue, MessageHandler
 from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config
@@ -40,7 +40,7 @@ class Bot:
         return cls._instance
 
     app: Optional[TgApplication] = None
-    config: BotConfig = config
+    _config: BotConfig = config
     _services: Dict[Type[T], T] = {}
 
     def init_inject(self, target: Callable[[], T]) -> T:
@@ -71,7 +71,7 @@ class Bot:
         for pkg in self._gen_pkg(PLUGIN_DIR):
             try:
                 import_module(pkg)  # 导入插件
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                 continue  # 如有错误则继续
         callback_dict: Dict[int, List[Callable]] = {}
@@ -101,7 +101,7 @@ class Bot:
                 if jobs := plugin.jobs:
                     logger.debug(f'插件 "{path}" 添加了 {len(jobs)} 个任务')
                 logger.success(f'插件 "{path}" 载入成功')
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 logger.exception(e)
                 logger.error(f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
         if callback_dict:
@@ -124,19 +124,19 @@ class Bot:
         for pkg in self._gen_pkg(PROJECT_ROOT / 'core/base'):
             try:
                 import_module(pkg)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                 continue
         for base_service_cls in Service.__subclasses__():
             try:
                 if hasattr(base_service_cls, 'from_config'):
-                    instance = base_service_cls.from_config(self.config)
+                    instance = base_service_cls.from_config(self._config)
                 else:
                     instance = self.init_inject(base_service_cls)
                 await instance.start()
                 logger.success(f'服务 "{base_service_cls.__name__}" 初始化成功')
                 self._services.update({base_service_cls: instance})
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 logger.error(f'服务 "{base_service_cls.__name__}" 初始化失败', e)
                 continue
 
@@ -148,7 +148,7 @@ class Bot:
                 pkg = str(path.relative_to(PROJECT_ROOT)).split('.py')[0].replace('\\', '.')
                 try:
                     import_module(pkg)
-                except Exception as e:
+                except Exception as e:  # pylint: disable=W0703
                     logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                     continue
 
@@ -165,7 +165,7 @@ class Bot:
                     else:
                         service.stop()
                     logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 logger.exception(e)
                 logger.error(f"服务 \"{service.__class__.__name__}\" 关闭失败")
                 logger.error(f"{type(e).__name__}: {e}")
@@ -183,7 +183,7 @@ class Bot:
             TgApplication.builder()
             .rate_limiter(AIORateLimiter())
             .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
-            .token(self.config.bot_token)
+            .token(self._config.bot_token)
             .post_init(self._post_init)
             .build()
         )
@@ -204,7 +204,7 @@ class Bot:
                     break
         except (SystemExit, KeyboardInterrupt):
             pass
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0703
             logger.info("BOT 执行过程中出现错误")
             logger.exception(e)
         finally:
@@ -243,6 +243,10 @@ class Bot:
     @property
     def services(self) -> Dict[Type[T], T]:
         return self._services
+
+    @property
+    def config(self) -> BotConfig:
+        return self._config
 
 
 bot = Bot()

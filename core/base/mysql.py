@@ -24,12 +24,6 @@ class MySQL(Service):
         )
         self.Session = sessionmaker(bind=self.engine, class_=AsyncSession)
 
-    async def start(self, *args, **kwargs):
-        pass
-
-    async def stop(self, *args, **kwargs):
-        pass
-
     async def get_session(self):
         """获取会话"""
         async with self.Session() as session:

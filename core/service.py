@@ -12,10 +12,10 @@ class Service(ABC):
     def __init__(self, *args, **kwargs):
         """初始化"""
 
-    async def start(self, *args, **kwargs):
+    async def start(self):
         """启动 service"""
 
-    async def stop(self, *args, **kwargs):
+    async def stop(self):
         """关闭 service"""
 
 

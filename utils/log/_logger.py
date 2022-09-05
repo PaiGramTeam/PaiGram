@@ -37,7 +37,7 @@ from utils.log._style import (
     MonokaiProStyle,
 )
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pylint: disable=unused-import
     from rich.table import Table
     from rich.console import (
         ConsoleRenderable,
@@ -74,10 +74,7 @@ log_console = Console(
 
 class Traceback(BaseTraceback):
     def __init__(self, *args, **kwargs):
-        kwargs.update({
-            'show_locals': True,
-            'max_frames': 10
-        })
+        kwargs.update({'show_locals': True, 'max_frames': 10})
         super(Traceback, self).__init__(*args, **kwargs)
         self.theme = PygmentsSyntaxTheme(MonokaiProStyle)
 
@@ -182,7 +179,7 @@ class Traceback(BaseTraceback):
                         dedent=False,
                     )
                     yield ""
-                except Exception as error:
+                except Exception as error:  # pylint: disable=W0703
                     yield Text.assemble(
                         (f"\n{error}", "traceback.error"),
                     )
@@ -237,7 +234,7 @@ class LogRender(DefaultLogRender):
                 log_time_display = time_format(log_time)
             else:
                 log_time_display = Text(log_time.strftime(time_format))
-            if log_time_display == self._last_time and self.omit_repeated_times:
+            if log_time_display == self._last_time and self.omit_repeated_times:  # pyline: disable=E0203
                 row.append(Text(" " * len(log_time_display)))
             else:
                 row.append(log_time_display)
@@ -390,7 +387,7 @@ class Handler(DefaultRichHandler):
         # noinspection PyBroadException
         try:
             message = json.loads(message)
-        except Exception:
+        except Exception:  # pylint: disable=W0703
             pass
 
         if message is not None:
@@ -404,7 +401,7 @@ class Handler(DefaultRichHandler):
         # noinspection PyBroadException
         try:
             self.console.print(log_renderable)
-        except Exception:
+        except Exception:  # pylint: disable=W0703
             self.handleError(record)
 
 
