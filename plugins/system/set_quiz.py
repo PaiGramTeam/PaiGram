@@ -2,7 +2,7 @@ import re
 from typing import List
 
 from redis import DataError, ResponseError
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
@@ -15,6 +15,17 @@ from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
 
+(
+    CHECK_COMMAND,
+    VIEW_COMMAND,
+    CHECK_QUESTION,
+    GET_NEW_QUESTION,
+    GET_NEW_CORRECT_ANSWER,
+    GET_NEW_WRONG_ANSWER,
+    QUESTION_EDIT,
+    SAVE_QUESTION
+) = range(10300, 10308)
+
 
 class QuizCommandData:
     question_id: int = -1
@@ -22,10 +33,6 @@ class QuizCommandData:
     new_correct_answer: str = ""
     new_wrong_answer: List[str] = []
     status: int = 0
-
-
-CHECK_COMMAND, VIEW_COMMAND, CHECK_QUESTION, GET_NEW_QUESTION, GET_NEW_CORRECT_ANSWER, GET_NEW_WRONG_ANSWER, \
-QUESTION_EDIT, SAVE_QUESTION = range(10300, 10308)
 
 
 class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
@@ -58,6 +65,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
         return CHECK_COMMAND
 
     async def view_command(self, update: Update, _: CallbackContext) -> int:
+        _ = self
         keyboard = [
             [
                 InlineKeyboardButton(text="选择问题", switch_inline_query_current_chat="查看问题 ")
@@ -123,12 +131,14 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
         return ConversationHandler.END
 
     async def add_question(self, update: Update, context: CallbackContext) -> int:
+        _ = self
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
         quiz_command_data.new_wrong_answer = []
         quiz_command_data.new_question = ""
         quiz_command_data.new_correct_answer = ""
         quiz_command_data.status = 1
-        await update.message.reply_text("请回复你要添加的问题，或发送 /cancel 取消操作", reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text("请回复你要添加的问题，或发送 /cancel 取消操作",
+                                        reply_markup=ReplyKeyboardRemove())
         return GET_NEW_QUESTION
 
     @conversation.state(state=GET_NEW_QUESTION)
@@ -163,13 +173,15 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
         return GET_NEW_WRONG_ANSWER
 
     async def finish_edit(self, update: Update, context: CallbackContext):
+        _ = self
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
         reply_text = f"问题：`{escape_markdown(quiz_command_data.new_question, version=2)}`\n" \
                      f"正确答案：`{escape_markdown(quiz_command_data.new_correct_answer, version=2)}`\n" \
                      f"错误答案：`{escape_markdown(' '.join(quiz_command_data.new_wrong_answer), version=2)}`"
         await update.message.reply_markdown_v2(reply_text)
         reply_keyboard = [["保存并重载配置", "抛弃修改并退出"]]
-        await update.message.reply_text("请核对问题，并选择下一步操作。", reply_markup=ReplyKeyboardMarkup(reply_keyboard))
+        await update.message.reply_text("请核对问题，并选择下一步操作。",
+                                        reply_markup=ReplyKeyboardMarkup(reply_keyboard))
         return SAVE_QUESTION
 
     @conversation.state(state=SAVE_QUESTION)
@@ -203,6 +215,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
             return SAVE_QUESTION
 
     async def edit_question(self, update: Update, context: CallbackContext) -> int:
+        _ = self
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
         quiz_command_data.new_wrong_answer = []
         quiz_command_data.new_question = ""

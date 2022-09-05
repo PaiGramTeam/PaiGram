@@ -3,7 +3,7 @@ import inspect
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import Any, Callable, ClassVar, Dict, Iterator, NoReturn, Optional, TYPE_CHECKING, Type, TypeVar
+from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Optional, TYPE_CHECKING, Type, TypeVar
 
 import pytz
 from telegram.error import NetworkError, TimedOut
@@ -74,7 +74,7 @@ class Bot:
             except Exception as e:
                 logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                 continue  # 如有错误则继续
-        callback_dict = {}
+        callback_dict: Dict[int, List[Callable]] = {}
         for plugin_cls in {*Plugin.__subclasses__(), *Plugin.Conversation.__subclasses__()}:
             path = f"{plugin_cls.__module__}.{plugin_cls.__name__}"
             try:
@@ -87,8 +87,8 @@ class Bot:
                     logger.debug(f'插件 "{path}" 添加了 {len(handlers)} 个 handler ')
 
                 # noinspection PyProtectedMember
-                for priority, callback in plugin._new_chat_members_handler_funcs():
-                    if not callback_dict.get(priority, None):
+                for priority, callback in plugin._new_chat_members_handler_funcs():  # pylint: disable=W0212
+                    if not callback_dict.get(priority):
                         callback_dict[priority] = []
                     callback_dict[priority].append(callback)
 
@@ -105,11 +105,11 @@ class Bot:
                 logger.exception(e)
                 logger.error(f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
         if callback_dict:
-            num = sum(len(callback_dict[i]) for i in callback_dict.keys())
+            num = sum(len(callback_dict[i]) for i in callback_dict)
 
             async def _new_chat_member_callback(update: 'Update', context: 'CallbackContext'):
                 nonlocal callback
-                for key, value in callback_dict.items():
+                for _, value in callback_dict.items():
                     for callback in value:
                         await callback(update, context)
 

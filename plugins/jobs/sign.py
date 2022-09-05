@@ -77,7 +77,7 @@ class SignJob(Plugin):
                 text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
             except NeedChallenge:
-                text = f"签到失败，触发验证码风控，自动签到自动关闭"
+                text = "签到失败，触发验证码风控，自动签到自动关闭"
                 sign_db.status = SignStatusEnum.NEED_CHALLENGE
             except BaseException as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")

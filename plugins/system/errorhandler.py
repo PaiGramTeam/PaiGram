@@ -70,7 +70,7 @@ class ErrorHandler(Plugin):
                 logger.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
                             f"在 {chat.full_name}[{chat.id}]"
                             f"的 update_id[{update.update_id}] 错误信息")
-                text = f"出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！"
+                text = "出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！"
                 await context.bot.send_message(effective_message.chat_id, text, reply_markup=ReplyKeyboardRemove(),
                                                parse_mode=ParseMode.HTML)
         except (BadRequest, Forbidden) as exc:

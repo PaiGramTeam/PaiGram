@@ -63,9 +63,9 @@ class PlayerCardsAPI:
         equip_list = avatar_data["equipList"]  # 圣遗物和武器相关
         fetter_info = avatar_data["fetterInfo"]  # 好感等级
         fight_prop_map = avatar_data["fightPropMap"]  # 属性
-        # inherent_proud_skill_list = avatar_data["inherentProudSkillList"]  # 不知道
+        # inherent_proud_skill_list = avatar_data["inherentProudSkillList"]
         prop_map = avatar_data["propMap"]  # 角色等级 其他信息
-        # proud_skill_extra_level_map = avatar_data["proudSkillExtraLevelMap"]  # 不知道
+        # proud_skill_extra_level_map = avatar_data["proudSkillExtraLevelMap"]
         # skill_depot_id = avatar_data["skillDepotId"]  # 不知道
         skill_level_map = avatar_data["skillLevelMap"]  # 技能等级
 

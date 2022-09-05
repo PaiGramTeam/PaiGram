@@ -163,7 +163,7 @@ class Character(WikiModel):
     async def get_url_by_name(cls, name: str) -> Optional[URL]:
         # 重写此函数的目的是处理主角名字的 ID
         _map = {'荧': "playergirl_007", '空': "playerboy_005"}
-        if (id_ := _map.get(name, None)) is not None:
+        if (id_ := _map.get(name)) is not None:
             return await cls.get_url_by_id(id_)
         return await super(Character, cls).get_url_by_name(name)
 

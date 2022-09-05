@@ -35,15 +35,16 @@ class Model(PydanticBaseModel):
 
 
 class WikiModel(Model):
+    # noinspection PyUnresolvedReferences
     """wiki所用到的基类
 
-    Attributes:
-        id (:obj:`int`): ID
-        name (:obj:`str`): 名称
-        rarity (:obj:`int`): 星级
+        Attributes:
+            id (:obj:`int`): ID
+            name (:obj:`str`): 名称
+            rarity (:obj:`int`): 星级
 
-        _client (:class:`httpx.AsyncClient`): 发起 http 请求的 client
-    """
+            _client (:class:`httpx.AsyncClient`): 发起 http 请求的 client
+        """
     _client: ClassVar[AsyncClient] = AsyncClient()
 
     id: str
@@ -199,7 +200,7 @@ class WikiModel(Model):
         queue: Queue[Union[str, Tuple[str, URL]]] = Queue()  # 存放 Model 的队列
         signal = Value('i', len(urls))  # 一个用于异步任务同步的信号，初始值为存放所需要爬取的页面数
 
-        async def task(page: URL, s: Value):
+        async def task(page: URL):
             """包装的爬虫任务"""
             response = await cls._client_get(page)
             # 从页面中获取对应的 chaos data (未处理的json格式字符串)
@@ -215,7 +216,7 @@ class WikiModel(Model):
             signal.value = signal.value - 1  # 信号量减少 1 ，说明该爬虫任务已经完成
 
         for url in urls:  # 遍历需要爬出的页面
-            asyncio.create_task(task(url, signal))  # 添加爬虫任务
+            asyncio.create_task(task(url))  # 添加爬虫任务
         while signal.value > 0 or not queue.empty():  # 当还有未完成的爬虫任务或存放数据的队列不为空时
             yield await queue.get()  # 取出并返回一个存放的 Model
 

@@ -20,7 +20,7 @@ def get_device_id(name: str) -> str:
 
 
 def md5(text: str) -> str:
-    _md5 = hashlib.md5()
+    _md5 = hashlib.md5(usedforsecurity=False)
     _md5.update(text.encode())
     return _md5.hexdigest()
 

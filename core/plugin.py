@@ -111,10 +111,10 @@ class _Plugin:
 
 
 class _Conversation(_Plugin):
-    _con_kwargs: Dict
+    _conversation_kwargs: Dict
 
     def __init_subclass__(cls, **kwargs):
-        cls._con_kwargs = kwargs
+        cls._conversation_kwargs = kwargs
         super(_Conversation, cls).__init_subclass__()
         return cls
 
@@ -148,7 +148,12 @@ class _Conversation(_Plugin):
                 else:
                     result.append(_handler)
         if entry_points or states or fallbacks:
-            result.append(ConversationHandler(entry_points, states, fallbacks, **self.__class__._con_kwargs))
+            result.append(
+                ConversationHandler(
+                    entry_points, states, fallbacks,
+                    **self.__class__._conversation_kwargs  # pylint: disable=W0212
+                )
+            )
         return result
 
 
@@ -311,7 +316,7 @@ class handler(_Handler):
 
 
 # noinspection PyPep8Naming
-class error_handler(object):
+class error_handler:
     def __init__(self, func: Callable[P, T] = None, *, block: bool = DEFAULT_TRUE):
         self._func = func
         self._block = block
@@ -329,10 +334,10 @@ def _entry(func: Callable[P, T]) -> Callable[P, T]:
 
 class _State:
     def __init__(self, state: Any):
-        self._state = state
+        self.state = state
 
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
-        setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {'type': 'state', 'state': self._state})
+        setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {'type': 'state', 'state': self.state})
         return func
 
 

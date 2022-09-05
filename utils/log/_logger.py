@@ -80,8 +80,6 @@ class Traceback(BaseTraceback):
         })
         super(Traceback, self).__init__(*args, **kwargs)
         self.theme = PygmentsSyntaxTheme(MonokaiProStyle)
-        # if log_console.width >= 150:
-        #     self.width = 150
 
     @group()
     def _render_stack(self, stack: Stack) -> RenderResult:
@@ -316,8 +314,8 @@ class Handler(DefaultRichHandler):
             time_format=time_format,
             level=_level,
             path=path,
-            line_no=record.lineno,
             # link_path=record.pathname if self.enable_link_path else None,
+            line_no=record.lineno,
         )
         return log_renderable
 
@@ -435,7 +433,7 @@ with _lock:
         from loguru import logger
         from utils.const import PROJECT_ROOT
 
-        level = 10 if config.debug else 20
+        level_ = 10 if config.debug else 20
         logging.basicConfig(
             level=10 if config.debug else 20,
             format="%(message)s",
@@ -443,12 +441,6 @@ with _lock:
             handlers=[Handler(), DebugFileHandler(), ErrorFileHandler()]
         )
 
-        # noinspection PyUnresolvedReferences,PyProtectedMember
-        for key, value in logging._nameToLevel.items():
-            # noinspection PyUnresolvedReferences,PyProtectedMember
-            if key not in logger._core.levels.keys():
-                logger.level(key, value)
-
         logger.remove()
-        logger.add(Handler(), level=level, format="{message}", colorize=False, enqueue=True)
+        logger.add(Handler(), level=level_, format="{message}", colorize=False, enqueue=True)
         __initialized__ = True
