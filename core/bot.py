@@ -166,7 +166,6 @@ class Bot:
                         service.stop()
                     logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
             except Exception as e:  # pylint: disable=W0703
-                logger.exception(e)
                 logger.exception(f"服务 \"{service.__class__.__name__}\" 关闭失败: \n{type(e).__name__}: {e}")
 
     async def _post_init(self, _) -> NoReturn:
@@ -206,8 +205,7 @@ class Bot:
         except (SystemExit, KeyboardInterrupt):
             pass
         except Exception as e:  # pylint: disable=W0703
-            logger.info("BOT 执行过程中出现错误")
-            logger.exception(e)
+            logger.exception(f"BOT 执行过程中出现错误: {e}")
         finally:
             loop = asyncio.get_event_loop()
             loop.run_until_complete(self.stop_services())
