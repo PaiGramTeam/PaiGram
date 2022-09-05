@@ -1,5 +1,9 @@
+import os
 import asyncio
+from glob import glob
+from importlib import import_module
 from logging.config import fileConfig
+from typing import Iterator
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -10,6 +14,8 @@ from sqlmodel import SQLModel
 
 from alembic import context
 
+from utils.const import PROJECT_ROOT
+from utils.log import logger
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -20,15 +26,28 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# register our models for alembic to auto-generate migrations
-from utils.manager import ModulesManager
 
-manager = ModulesManager()
-manager.refresh_list("core/*")
-manager.refresh_list("jobs/*")
-manager.refresh_list("plugins/genshin/*")
-manager.refresh_list("plugins/system/*")
-manager.import_module()
+def scan_models() -> Iterator[str]:
+    """扫描所有 models.py 模块。
+    我们规定所有插件的 model 都需要放在名为 models.py 的文件里。"""
+
+    for path in glob("**/models.py", root_dir=PROJECT_ROOT, recursive=True):
+        yield path.split(".py")[0].replace(os.sep, ".")
+
+
+def import_models():
+    """导入我们所有的 models，使 alembic 可以自动对比 db scheme 创建 migration revision"""
+    for pkg in scan_models():
+        try:
+            import_module(pkg)  # 导入 models
+        except Exception as e:  # pylint: disable=W0703
+            logger.error(
+                f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]'
+            )
+
+
+# register our models for alembic to auto-generate migrations
+import_models()
 
 target_metadata = SQLModel.metadata
 
@@ -39,14 +58,14 @@ target_metadata = SQLModel.metadata
 
 # here we allow ourselves to pass interpolation vars to alembic.ini
 # from the application config module
-from config import config as appConfig
+from core.config import config as botConfig
 
 section = config.config_ini_section
-config.set_section_option(section, "DB_HOST", appConfig.mysql["host"])
-config.set_section_option(section, "DB_PORT", str(appConfig.mysql["port"]))
-config.set_section_option(section, "DB_USERNAME", appConfig.mysql["user"])
-config.set_section_option(section, "DB_PASSWORD", appConfig.mysql["password"])
-config.set_section_option(section, "DB_DATABASE", appConfig.mysql["database"])
+config.set_section_option(section, "DB_HOST", botConfig.mysql.host)
+config.set_section_option(section, "DB_PORT", str(botConfig.mysql.port))
+config.set_section_option(section, "DB_USERNAME", botConfig.mysql.username)
+config.set_section_option(section, "DB_PASSWORD", botConfig.mysql.password)
+config.set_section_option(section, "DB_DATABASE", botConfig.mysql.database)
 
 
 def run_migrations_offline() -> None:
