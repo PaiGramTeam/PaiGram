@@ -2,9 +2,7 @@ from utils.baseobject import BaseObject
 
 
 class Talent(BaseObject):
-    """
-    命座
-    """
+    """命座"""
 
     def __init__(self, talent_id: int = 0, name: str = "", icon: str = ""):
         """

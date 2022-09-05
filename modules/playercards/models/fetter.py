@@ -2,9 +2,7 @@ from utils.baseobject import BaseObject
 
 
 class FetterInfo(BaseObject):
-    """
-    好感度信息
-    """
+    """好感度信息"""
 
     def __init__(self, level: int = 0):
         """

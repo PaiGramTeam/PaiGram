@@ -7,9 +7,7 @@ from utils.models.types import JSONDict
 
 
 class ArtifactInfo(BaseObject):
-    """
-    圣遗物信息
-    """
+    """圣遗物信息"""
 
     def __init__(self, item_id: int = 0, name: str = "", level: int = 0, main_item: Optional[GameItem] = None,
                  pos: Union[Enum, str] = "", star: int = 1, sub_item: Optional[List[GameItem]] = None, icon: str = ""):

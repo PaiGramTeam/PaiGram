@@ -5,12 +5,12 @@ import httpx
 import ujson
 
 from modules.apihelper.helpers import get_headers
-from modules.game.artifact import ArtifactInfo
-from modules.game.character import CharacterInfo, CharacterValueInfo
-from modules.game.fetter import FetterInfo
-from modules.game.skill import Skill
-from modules.game.talent import Talent
-from modules.game.weapon import WeaponInfo
+from modules.playercards.models.artifact import ArtifactInfo
+from modules.playercards.models.character import CharacterInfo, CharacterValueInfo
+from modules.playercards.models.fetter import FetterInfo
+from modules.playercards.models.skill import Skill
+from modules.playercards.models.talent import Talent
+from modules.playercards.models.weapon import WeaponInfo
 from utils.models.base import GameItem
 
 
@@ -20,9 +20,9 @@ class PlayerCardsAPI:
     def __init__(self):
         self.client = httpx.AsyncClient(headers=get_headers())
         project_path = os.path.dirname(__file__)
-        characters_map_file = os.path.join(project_path, "metadata", "CharactersMap.json")
-        name_text_map_hash_file = os.path.join(project_path, "metadata", "NameTextMapHash.json")
-        reliquary_name_map_file = os.path.join(project_path, "metadata", "ReliquaryNameMap.json")
+        characters_map_file = os.path.join(project_path, "../apihelper/metadata", "CharactersMap.json")
+        name_text_map_hash_file = os.path.join(project_path, "../apihelper/metadata", "NameTextMapHash.json")
+        reliquary_name_map_file = os.path.join(project_path, "../apihelper/metadata", "ReliquaryNameMap.json")
         with open(characters_map_file, "r", encoding="utf-8") as f:
             self._characters_map_json: dict = ujson.load(f)
         with open(name_text_map_hash_file, "r", encoding="utf-8") as f:

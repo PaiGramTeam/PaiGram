@@ -2,9 +2,7 @@ from utils.baseobject import BaseObject
 
 
 class Skill(BaseObject):
-    """
-    技能信息
-    """
+    """技能信息"""
 
     def __init__(self, skill_id: int = 0, name: str = "", level: int = 0, icon: str = ""):
         """

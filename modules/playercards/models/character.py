@@ -1,17 +1,16 @@
 from typing import Optional, List
 
-from modules.game.artifact import ArtifactInfo
-from modules.game.fetter import FetterInfo
-from modules.game.skill import Skill
-from modules.game.talent import Talent
-from modules.game.weapon import WeaponInfo
+from modules.playercards.models.artifact import ArtifactInfo
+from modules.playercards.models.fetter import FetterInfo
+from modules.playercards.models.skill import Skill
+from modules.playercards.models.talent import Talent
+from modules.playercards.models.weapon import WeaponInfo
 from utils.baseobject import BaseObject
 from utils.models.types import JSONDict
 
 
 class CharacterValueInfo(BaseObject):
-    """角色数值信息
-    """
+    """角色数值信息"""
 
     def __init__(self, hp: float = 0, base_hp: float = 0, atk: float = 0, base_atk: float = 0,
                  def_value: float = 0, base_def: float = 0, elemental_mastery: float = 0, crit_rate: float = 0,
