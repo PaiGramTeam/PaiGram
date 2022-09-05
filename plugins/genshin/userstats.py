@@ -19,6 +19,11 @@ from utils.helpers import url_to_file, get_genshin_client
 from utils.log import logger
 
 
+class TeapotUnlocked(Exception):
+    """尘歌壶未解锁"""
+    pass
+
+
 class UserStatsPlugins(Plugin, BasePlugin):
     """玩家统计查询"""
 
@@ -36,24 +41,22 @@ class UserStatsPlugins(Plugin, BasePlugin):
             _uid = uid
         try:
             user_info = await client.get_genshin_user(_uid)
-        except GenshinException as error:
-            logger.warning("get_record_card请求失败", error)
-            raise error
+        except GenshinException as exc:
+            raise exc
         if user_info.teapot is None:
-            raise ValueError("洞庭湖未解锁")
+            raise TeapotUnlocked
         try:
             # 查询的UID如果是自己的，会返回DataNotPublic，自己查不了自己可还行......
             if uid > 0:
                 record_card_info = await client.get_record_card(uid)
             else:
                 record_card_info = await client.get_record_card()
-        except DataNotPublic as error:
-            logger.warning("get_record_card请求失败 查询的用户数据未公开", error)
+        except DataNotPublic:
+            logger.warning("get_record_card请求失败 查询的用户数据未公开")
             nickname = _uid
             user_uid = ""
-        except GenshinException as error:
-            logger.warning("get_record_card请求失败", error)
-            raise error
+        except GenshinException as exc:
+            raise exc
         else:
             nickname = record_card_info.nickname
             user_uid = record_card_info.uid
@@ -146,9 +149,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
-        except ValueError as exc:
-            if "洞庭湖未解锁" not in str(exc):
-                raise exc
+        except TeapotUnlocked:
             await message.reply_text("角色尘歌壶未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
             return ConversationHandler.END
         except AttributeError as exc:
