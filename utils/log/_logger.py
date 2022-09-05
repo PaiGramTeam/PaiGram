@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import (Any, Callable, Dict, Iterable, List, Literal, Optional, TYPE_CHECKING, Union)
+from typing import (Any, Callable, Dict, Iterable, List, Literal, Mapping, Optional, TYPE_CHECKING, Union)
 
 import ujson as json
 from rich.columns import Columns
@@ -30,13 +30,16 @@ from rich.traceback import (
     Stack,
     Traceback as BaseTraceback,
 )
+from ujson import JSONDecodeError
 
 from core.config import BotConfig
+from utils.const import PROJECT_ROOT
 from utils.log._file import FileIO
 from utils.log._style import (
     DEFAULT_STYLE,
     MonokaiProStyle,
 )
+from utils.typedefs import ExceptionInfoType
 
 if TYPE_CHECKING:
     from rich.table import Table  # pylint: disable=unused-import
@@ -69,7 +72,7 @@ else:
 # noinspection SpellCheckingInspection
 log_console = Console(
     color_system=color_system, theme=Theme(DEFAULT_STYLE),
-    width=180 if os.environ.get("PYTHONUNBUFFERED") else None  # 针对 Pycharm
+    width=180 if "PYCHARM_HOSTED" in os.environ else None  # 针对 Pycharm
 )
 
 
@@ -254,10 +257,16 @@ class LogRender(DefaultLogRender):
         row.append(Renderables(renderables))
         if path:
             path_text = Text()
-            path_text.append(path)
+            path_text.append(
+                path, style=f"link file://{link_path}" if link_path else ""
+            )
             row.append(path_text)
 
-        row.append(str(line_no))
+        line_no_text = Text()
+        line_no_text.append(
+            str(line_no), style=f"link file://{link_path}#{line_no}" if link_path else ""
+        )
+        row.append(line_no_text)
 
         output.add_row(*row)
         return output
@@ -319,7 +328,7 @@ class Handler(DefaultRichHandler):
             time_format=time_format,
             level=_level,
             path=path,
-            # link_path=record.pathname if self.enable_link_path else None,
+            link_path=record.pathname if self.enable_link_path else None,
             line_no=record.lineno,
         )
         return log_renderable
@@ -351,7 +360,7 @@ class Handler(DefaultRichHandler):
 
         return message_text
 
-    def handle(self, record: "LogRecord") -> None:
+    def emit(self, record: "LogRecord") -> None:
         message = self.format(record)
         traceback = None
         if (
@@ -362,50 +371,36 @@ class Handler(DefaultRichHandler):
             exc_type, exc_value, exc_traceback = record.exc_info
             if exc_type is None or exc_value is None:
                 raise ValueError(record)
-            try:
-                traceback = Traceback.from_exception(
-                    exc_type,
-                    exc_value,
-                    exc_traceback,
-                    width=self.tracebacks_width,
-                    extra_lines=self.tracebacks_extra_lines,
-                    word_wrap=self.tracebacks_word_wrap,
-                    show_locals=self.tracebacks_show_locals,
-                    locals_max_length=self.locals_max_length,
-                    locals_max_string=self.locals_max_string,
-                    suppress=self.tracebacks_suppress,
-                )
-            except ImportError:
-                return
-            except Exception as e:
-                print(type(e), e)
-                return
-            message = record.msg.split('\n')[0]
+            traceback = Traceback.from_exception(
+                exc_type,
+                exc_value,
+                exc_traceback,
+                width=self.tracebacks_width,
+                extra_lines=self.tracebacks_extra_lines,
+                word_wrap=self.tracebacks_word_wrap,
+                show_locals=self.tracebacks_show_locals,
+                locals_max_length=self.locals_max_length,
+                locals_max_string=self.locals_max_string,
+                suppress=self.tracebacks_suppress,
+            )
+            message = record.getMessage()
             if self.formatter:
                 record.message = record.getMessage()
                 formatter = self.formatter
                 if hasattr(formatter, "usesTime") and formatter.usesTime():
-                    record.asctime = formatter.formatTime(
-                        record, formatter.datefmt
-                    )
+                    record.asctime = formatter.formatTime(record, formatter.datefmt)
                 message = formatter.formatMessage(record)
             if message == str(exc_value):
                 message = None
 
-        # noinspection PyBroadException
-        try:
-            message = json.loads(message)
-        except Exception:  # nosec B110 # pylint: disable=W0703
-            pass
-
         if message is not None:
-            message_renderable = self.render_message(record, message)
+            try:
+                message_renderable = self.render_message(record, json.loads(message))
+            except JSONDecodeError:
+                message_renderable = self.render_message(record, message)
         else:
             message_renderable = None
-        log_renderable = self.render(
-            record=record, traceback=traceback,
-            message_renderable=message_renderable
-        )
+        log_renderable = self.render(record=record, traceback=traceback, message_renderable=message_renderable)
         # noinspection PyBroadException
         try:
             self.console.print(log_renderable)
@@ -431,11 +426,20 @@ class ErrorFileHandler(DefaultRichHandler):
         self.console = Console(color_system='auto', width=200, file=FileIO(path))
 
 
+class Logger(logging.Logger):
+    def success(
+            self,
+            msg: Any, *args: Any,
+            exc_info: Optional[ExceptionInfoType] = None,
+            stack_info: bool = False,
+            stacklevel: int = 1,
+            extra: Optional[Mapping[str, Any]] = None
+    ) -> None:
+        return self.log(25, msg, *args, exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
+
+
 with _lock:
     if not __initialized__:
-        from loguru import logger
-        from utils.const import PROJECT_ROOT
-
         logging.captureWarnings(True)
         handler, debug_handler, error_handler = Handler(), DebugFileHandler(), ErrorFileHandler()
 
@@ -448,9 +452,11 @@ with _lock:
         )
         warnings_logger = logging.getLogger("py.warnings")
         warnings_logger.addHandler(handler)
+        warnings_logger.addHandler(debug_handler)
 
-        logger.remove()
-        logger.add(handler, level=level_, format="{message}", colorize=False, enqueue=True)
-        logger.add(debug_handler, level='DEBUG', format="{message}", colorize=False, enqueue=False)
-        logger.add(error_handler, level='ERROR', format="{message}", colorize=False, enqueue=False)
+        logger = Logger('TGPaimon', level_)
+        logger.addHandler(handler)
+        logger.addHandler(debug_handler)
+        logger.addHandler(error_handler)
+
         __initialized__ = True

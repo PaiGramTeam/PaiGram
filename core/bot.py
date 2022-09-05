@@ -73,7 +73,7 @@ class Bot:
             try:
                 import_module(pkg)  # 导入插件
             except Exception as e:  # pylint: disable=W0703
-                logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+                logger.exception(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                 continue  # 如有错误则继续
         callback_dict: Dict[int, List[Callable]] = {}
         for plugin_cls in {*Plugin.__subclasses__(), *Plugin.Conversation.__subclasses__()}:
@@ -103,8 +103,7 @@ class Bot:
                     logger.debug(f'插件 "{path}" 添加了 {len(jobs)} 个任务')
                 logger.success(f'插件 "{path}" 载入成功')
             except Exception as e:  # pylint: disable=W0703
-                logger.exception(e)
-                logger.error(f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+                logger.exception(f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
         if callback_dict:
             num = sum(len(callback_dict[i]) for i in callback_dict)
 
@@ -126,7 +125,7 @@ class Bot:
             try:
                 import_module(pkg)
             except Exception as e:  # pylint: disable=W0703
-                logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+                logger.exception(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                 continue
         for base_service_cls in Service.__subclasses__():
             try:
@@ -138,7 +137,7 @@ class Bot:
                 logger.success(f'服务 "{base_service_cls.__name__}" 初始化成功')
                 self._services.update({base_service_cls: instance})
             except Exception as e:  # pylint: disable=W0703
-                logger.error(f'服务 "{base_service_cls.__name__}" 初始化失败', e)
+                logger.exception(f'服务 "{base_service_cls.__name__}" 初始化失败: {e}')
                 continue
 
     async def start_services(self):
@@ -150,7 +149,7 @@ class Bot:
                 try:
                     import_module(pkg)
                 except Exception as e:  # pylint: disable=W0703
-                    logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+                    logger.exception(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
                     continue
 
     async def stop_services(self):
@@ -168,8 +167,7 @@ class Bot:
                     logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(e)
-                logger.error(f"服务 \"{service.__class__.__name__}\" 关闭失败")
-                logger.error(f"{type(e).__name__}: {e}")
+                logger.exception(f"服务 \"{service.__class__.__name__}\" 关闭失败: \n{type(e).__name__}: {e}")
 
     async def _post_init(self, _) -> NoReturn:
         logger.info('开始初始化服务')
@@ -199,6 +197,7 @@ class Bot:
                     logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试")
                     continue
                 except NetworkError as e:
+                    logger.exception()
                     if 'SSLZeroReturnError' in str(e):
                         logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
                     else:

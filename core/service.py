@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
+from types import FunctionType
+
+from utils.log import logger
 
 __all__ = ['Service', 'init_service']
-
-from typing import Callable
-
-from loguru import logger
 
 
 class Service(ABC):
@@ -19,7 +18,7 @@ class Service(ABC):
         """关闭 service"""
 
 
-def init_service(func: Callable):
+def init_service(func: FunctionType):
     from core.bot import bot
     if bot.is_running:
         try:
@@ -27,6 +26,5 @@ def init_service(func: Callable):
             logger.success(f'服务 "{service.__class__.__name__}" 初始化成功')
             bot.add_service(service)
         except Exception as e:  # pylint: disable=W0703
-            # noinspection PyUnresolvedReferences
-            logger.error(f'来自{func.__module__}的服务初始化失败：{e}')
+            logger.exception(f'来自{func.__module__}的服务初始化失败：{e}')
     return func

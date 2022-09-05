@@ -3,8 +3,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
 from typing_extensions import Self
 
-from core.service import Service
 from core.config import BotConfig
+from core.service import Service
 
 
 class MySQL(Service):
