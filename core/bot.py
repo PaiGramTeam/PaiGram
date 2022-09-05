@@ -7,7 +7,7 @@ from typing import Any, Callable, ClassVar, Dict, Iterator, NoReturn, Optional, 
 
 import pytz
 from telegram.error import NetworkError, TimedOut
-from telegram.ext import Application as TgApplication, Defaults, JobQueue, MessageHandler
+from telegram.ext import Application as TgApplication, Defaults, JobQueue, MessageHandler, AIORateLimiter
 from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config
@@ -181,6 +181,7 @@ class Bot:
         logger.info('正在初始化BOT')
         self.app = (
             TgApplication.builder()
+            .rate_limiter(AIORateLimiter())
             .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
             .token(self.config.bot_token)
             .post_init(self._post_init)
