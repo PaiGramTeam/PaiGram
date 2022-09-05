@@ -20,9 +20,9 @@ class PlayerCardsAPI:
     def __init__(self):
         self.client = httpx.AsyncClient(headers=get_headers())
         project_path = os.path.dirname(__file__)
-        characters_map_file = os.path.join(project_path, "../apihelper/metadata", "CharactersMap.json")
-        name_text_map_hash_file = os.path.join(project_path, "../apihelper/metadata", "NameTextMapHash.json")
-        reliquary_name_map_file = os.path.join(project_path, "../apihelper/metadata", "ReliquaryNameMap.json")
+        characters_map_file = os.path.join(project_path, "metadata", "CharactersMap.json")
+        name_text_map_hash_file = os.path.join(project_path, "metadata", "NameTextMapHash.json")
+        reliquary_name_map_file = os.path.join(project_path, "metadata", "ReliquaryNameMap.json")
         with open(characters_map_file, "r", encoding="utf-8") as f:
             self._characters_map_json: dict = ujson.load(f)
         with open(name_text_map_hash_file, "r", encoding="utf-8") as f:
