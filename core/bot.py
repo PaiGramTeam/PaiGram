@@ -44,7 +44,7 @@ class Bot:
     _config: BotConfig = config
     _services: Dict[Type[T], T] = {}
 
-    def init_inject(self, target: Callable[[], T]) -> T:
+    def init_inject(self, target: Callable[..., T]) -> T:
         """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
         if isinstance(target, type):
             signature = inspect.signature(target.__init__)
@@ -55,7 +55,6 @@ class Bot:
             if name != 'self' and parameter.annotation != inspect.Parameter.empty:
                 if value := self._services.get(parameter.annotation):
                     kwargs[name] = value
-        # noinspection PyArgumentList
         return target(**kwargs)
 
     def _gen_pkg(self, root: Path) -> Iterator[str]:

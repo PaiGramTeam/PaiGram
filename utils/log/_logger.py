@@ -436,16 +436,21 @@ with _lock:
         from loguru import logger
         from utils.const import PROJECT_ROOT
 
+        logging.captureWarnings(True)
+        handler, debug_handler, error_handler = Handler(), DebugFileHandler(), ErrorFileHandler()
+
         level_ = 10 if config.debug else 20
         logging.basicConfig(
             level=10 if config.debug else 20,
             format="%(message)s",
             datefmt="[%Y-%m-%d %X]",
-            handlers=[Handler(), DebugFileHandler(), ErrorFileHandler()]
+            handlers=[handler, debug_handler, error_handler]
         )
+        warnings_logger = logging.getLogger("py.warnings")
+        warnings_logger.addHandler(handler)
 
         logger.remove()
-        logger.add(Handler(), level=level_, format="{message}", colorize=False, enqueue=True)
-        logger.add(DebugFileHandler(), level='DEBUG', format="{message}", colorize=False, enqueue=False)
-        logger.add(ErrorFileHandler(), level='ERROR', format="{message}", colorize=False, enqueue=False)
+        logger.add(handler, level=level_, format="{message}", colorize=False, enqueue=True)
+        logger.add(debug_handler, level='DEBUG', format="{message}", colorize=False, enqueue=False)
+        logger.add(error_handler, level='ERROR', format="{message}", colorize=False, enqueue=False)
         __initialized__ = True
