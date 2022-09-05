@@ -1,13 +1,14 @@
+from typing import Dict
+
 from genshin import Client
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, CallbackContext
-from telegram.ext import MessageHandler, filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
-from core.plugin import handler, Plugin
+from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
@@ -45,7 +46,7 @@ class Abyss(Plugin, BasePlugin):
         else:
             raise ValueError("错误的数据")
 
-    async def _get_abyss_data(self, client: Client) -> dict:
+    async def _get_abyss_data(self, client: Client) -> Dict:
         uid = client.uid
         await client.get_record_cards()
         spiral_abyss_info = await client.get_spiral_abyss(uid)

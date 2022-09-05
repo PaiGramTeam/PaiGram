@@ -1,6 +1,6 @@
 import hashlib
 import os
-from typing import Union, Optional, cast
+from typing import Tuple, Union, Optional, cast
 
 import aiofiles
 import genshin
@@ -94,7 +94,7 @@ async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None) 
     return client
 
 
-async def get_public_genshin_client(user_id: int) -> tuple[Client, Optional[int]]:
+async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]]:
     if user_service is None:
         raise ServiceNotFoundError(UserService)
     if public_cookies_service is None:

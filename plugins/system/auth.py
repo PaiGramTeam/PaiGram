@@ -95,7 +95,7 @@ class GroupJoiningVerification(Plugin):
             logger.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败")
             logger.exception(exc)
 
-    @handler(CallbackQueryHandler, query=r"^auth_admin\|", block=False)
+    @handler(CallbackQueryHandler, pattern=r"^auth_admin\|", block=False)
     async def admin(self, update: Update, context: CallbackContext) -> None:
 
         async def admin_callback(callback_query_data: str) -> Tuple[str, int]:
@@ -153,7 +153,7 @@ class GroupJoiningVerification(Plugin):
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
             schedule.remove()
 
-    @handler(CallbackQueryHandler, query=r"^auth_challenge\|", block=False)
+    @handler(CallbackQueryHandler, pattern=r"^auth_challenge\|", block=False)
     async def query(self, update: Update, context: CallbackContext) -> None:
 
         async def query_callback(callback_query_data: str) -> Tuple[int, bool, str, str]:
@@ -180,7 +180,8 @@ class GroupJoiningVerification(Plugin):
             await callback_query.answer(text="这不是你的验证！\n"
                                              "再乱点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
+        logger.info(
+            f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
         if result:
             buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}")]]
             await callback_query.answer(text="验证成功", show_alert=False)
