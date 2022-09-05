@@ -1,5 +1,5 @@
 import os
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from types import TracebackType
 from typing import AnyStr, IO, Iterable, Iterator, List, Optional, Type

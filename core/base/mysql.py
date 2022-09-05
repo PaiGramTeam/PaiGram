@@ -12,7 +12,7 @@ class MySQL(Service):
     def from_config(cls, config: BotConfig) -> Self:
         return cls(**config.mysql.dict())
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 3306, username: str = "root",
+    def __init__(self, host: str = "127.0.0.1", port: int = 3306, username: str = "root",  # nosec B107
                  password: str = "", database: str = ""):  # nosec B107
         self.database = database
         self.password = password

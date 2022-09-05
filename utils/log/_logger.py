@@ -30,9 +30,9 @@ from rich.traceback import (
     Stack,
     Traceback as BaseTraceback,
 )
-from utils.log._file import FileIO
 
 from core.config import BotConfig
+from utils.log._file import FileIO
 from utils.log._style import (
     DEFAULT_STYLE,
     MonokaiProStyle,
@@ -40,7 +40,7 @@ from utils.log._style import (
 
 if TYPE_CHECKING:
     from rich.table import Table  # pylint: disable=unused-import
-    from rich.console import (
+    from rich.console import (  # pylint: disable=unused-import
         ConsoleRenderable,
         RenderableType,
     )
@@ -396,8 +396,8 @@ class Handler(DefaultRichHandler):
         # noinspection PyBroadException
         try:
             message = json.loads(message)
-        except Exception:  # pylint: disable=W0703
-            pass  # nosec B110
+        except Exception:  # nosec B110 # pylint: disable=W0703
+            pass
 
         if message is not None:
             message_renderable = self.render_message(record, message)
