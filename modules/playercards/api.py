@@ -51,7 +51,7 @@ class PlayerCardsAPI:
         return self._reliquary_name_map_json[reliquary]
 
     async def get_data(self, uid: Union[str, int]):
-        url = f"https://enka.shinshin.moe/u/{uid}/__data.json"
+        url = f"https://enka.network/u/{uid}/__data.json"
         response = await self.client.get(url)
         return response
 
