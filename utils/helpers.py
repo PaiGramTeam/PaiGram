@@ -1,6 +1,6 @@
 import hashlib
 import os
-from typing import Union, Optional
+from typing import Union, Optional, cast
 
 import aiofiles
 import genshin
@@ -9,7 +9,7 @@ from genshin import Client, types
 from httpx import UnsupportedProtocol
 
 from core.bot import bot
-from core.cookies.services import CookiesService
+from core.cookies.services import CookiesService, PublicCookiesService
 from core.error import ServiceNotFoundError
 from core.user.services import UserService
 from utils.error import UrlResourcesNotFoundError
@@ -25,7 +25,11 @@ if not os.path.exists(cache_dir):
     os.mkdir(cache_dir)
 
 cookies_service = bot.services.get(CookiesService)
+cookies_service = cast(CookiesService, cookies_service)
 user_service = bot.services.get(UserService)
+user_service = cast(UserService, user_service)
+public_cookies_service = bot.services.get(PublicCookiesService)
+public_cookies_service = cast(PublicCookiesService, public_cookies_service)
 
 REGION_MAP = {
     "1": RegionEnum.HYPERION,
@@ -88,6 +92,26 @@ async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None) 
     else:
         raise TypeError("region is not RegionEnum.NULL")
     return client
+
+
+async def get_public_genshin_client(user_id: int) -> tuple[Client, Optional[int]]:
+    if user_service is None:
+        raise ServiceNotFoundError(UserService)
+    if public_cookies_service is None:
+        raise ServiceNotFoundError(PublicCookiesService)
+    user = await user_service.get_user_by_id(user_id)
+    region = user.region
+    cookies = await public_cookies_service.get_cookies(user_id, region)
+    if region == RegionEnum.HYPERION:
+        uid = user.yuanshen_uid
+        client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)
+    elif region == RegionEnum.HOYOLAB:
+        uid = user.genshin_uid
+        client = genshin.Client(cookies=cookies.cookies,
+                                game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn")
+    else:
+        raise TypeError("region is not RegionEnum.NULL")
+    return client, uid
 
 
 def region_server(uid: Union[int, str]) -> RegionEnum:
