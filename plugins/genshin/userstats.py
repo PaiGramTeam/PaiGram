@@ -8,6 +8,7 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters
 
 from core.baseplugin import BasePlugin
+from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template.services import TemplateService
@@ -142,7 +143,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
         try:
             client = await get_genshin_client(user.id)
             png_data = await self._start_get_user_info(client, uid)
-        except UserNotFoundError:
+        except (UserNotFoundError, CookiesNotFoundError):
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
