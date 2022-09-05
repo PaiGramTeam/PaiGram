@@ -30,6 +30,7 @@ from rich.traceback import (
     Stack,
     Traceback as BaseTraceback,
 )
+from utils.log._file import FileIO
 
 from core.config import BotConfig
 from utils.log._style import (
@@ -198,6 +199,14 @@ class Traceback(BaseTraceback):
 
 
 class LogRender(DefaultLogRender):
+    @property
+    def last_time(self):
+        return self._last_time
+
+    @last_time.setter
+    def last_time(self, last_time):
+        self._last_time = last_time
+
     def __init__(self, *args, **kwargs):
         super(LogRender, self).__init__(*args, **kwargs)
         self.show_level = True
@@ -409,20 +418,18 @@ class DebugFileHandler(DefaultRichHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.level = 10
-        path = PROJECT_ROOT.joinpath("logs/debug")
-        path.mkdir(parents=True, exist_ok=True)
-        file = open(path / f"{datetime.now().strftime('%Y-%m-%d')}.log", mode='a+', encoding='utf-8')
-        self.console = Console(color_system='auto', width=200, file=file)
+        path = PROJECT_ROOT.joinpath("logs/debug/debug.log")
+        path.parent.mkdir(exist_ok=True)
+        self.console = Console(color_system='auto', width=200, file=FileIO(path))
 
 
 class ErrorFileHandler(DefaultRichHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.level = 40
-        path = PROJECT_ROOT.joinpath("logs/error")
-        path.mkdir(parents=True, exist_ok=True)
-        file = open(path / f"{datetime.now().strftime('%Y-%m-%d')}.log", mode='a+', encoding='utf-8')
-        self.console = Console(color_system='auto', width=200, file=file)
+        path = PROJECT_ROOT.joinpath("logs/error/error.log")
+        path.parent.mkdir(exist_ok=True)
+        self.console = Console(color_system='auto', width=200, file=FileIO(path))
 
 
 with _lock:
@@ -440,4 +447,6 @@ with _lock:
 
         logger.remove()
         logger.add(Handler(), level=level_, format="{message}", colorize=False, enqueue=True)
+        logger.add(DebugFileHandler(), level='DEBUG', format="{message}", colorize=False, enqueue=False)
+        logger.add(ErrorFileHandler(), level='ERROR', format="{message}", colorize=False, enqueue=False)
         __initialized__ = True
