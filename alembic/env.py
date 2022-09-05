@@ -1,6 +1,5 @@
 import os
 import asyncio
-from glob import glob
 from importlib import import_module
 from logging.config import fileConfig
 from typing import Iterator
@@ -31,8 +30,8 @@ def scan_models() -> Iterator[str]:
     """扫描所有 models.py 模块。
     我们规定所有插件的 model 都需要放在名为 models.py 的文件里。"""
 
-    for path in glob("**/models.py", root_dir=PROJECT_ROOT, recursive=True):
-        yield path.split(".py")[0].replace(os.sep, ".")
+    for path in PROJECT_ROOT.glob("**/models.py"):
+        yield str(path.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")
 
 
 def import_models():
