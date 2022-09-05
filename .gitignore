@@ -35,3 +35,6 @@ logs/
 ### DotEnv ###
 .env
 
+
+### private plugins ###
+plugins/private
