@@ -3,6 +3,7 @@ from typing import Optional
 
 import genshin
 from genshin import InvalidCookies, GenshinException, DataNotPublic
+from sqlalchemy.exc import NoResultFound
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
 from telegram.helpers import escape_markdown
@@ -211,8 +212,13 @@ class AddUser(BasePlugins):
                     await update.message.reply_text("数据错误")
                     return ConversationHandler.END
                 await self.user_service.update_user(user_db)
-                await self.cookies_service.update_cookies(user.id, add_user_command_data.cookies,
-                                                          add_user_command_data.region)
+                # 临时解决错误
+                try:
+                    await self.cookies_service.update_cookies(user.id, add_user_command_data.cookies,
+                                                              add_user_command_data.region)
+                except NoResultFound:
+                    await self.cookies_service.add_cookies(user.id, add_user_command_data.cookies,
+                                                           add_user_command_data.region)
             Log.info(f"用户 {user.full_name}[{user.id}] 绑定账号成功")
             await update.message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
