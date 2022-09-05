@@ -9,6 +9,7 @@ from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
+from core.cookies.models import Cookies
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler, conversation
 from core.user.error import UserNotFoundError
@@ -22,6 +23,7 @@ from utils.models.base import RegionEnum
 
 class AddUserCommandData(TelegramObject):
     user: Optional[User] = None
+    cookies_database_data: Optional[Cookies] = None
     region: RegionEnum = RegionEnum.HYPERION
     cookies: dict = {}
     game_uid: int = 0
@@ -82,9 +84,10 @@ class AddUser(Plugin.Conversation, BasePlugin.Conversation):
             user_info = None
         if user_info is not None:
             try:
-                await self.cookies_service.get_cookies(user.id, add_user_command_data.region)
+                cookies_database_data = await self.cookies_service.get_cookies(user.id, add_user_command_data.region)
+                add_user_command_data.cookies_database_data = cookies_database_data
             except CookiesNotFoundError:
-                await message.reply_text("你已经绑定用户，如果继续操作会覆盖当前用户。")
+                await message.reply_text("你已经绑定UID，如果继续操作会覆盖当前UID。")
             else:
                 await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         add_user_command_data.user = user_info
@@ -189,8 +192,6 @@ class AddUser(Plugin.Conversation, BasePlugin.Conversation):
                     await message.reply_text("数据错误")
                     return ConversationHandler.END
                 await self.user_service.add_user(user_db)
-                await self.cookies_service.add_cookies(user.id, add_user_command_data.cookies,
-                                                       add_user_command_data.region)
             else:
                 user_db = add_user_command_data.user
                 user_db.region = add_user_command_data.region
@@ -202,6 +203,10 @@ class AddUser(Plugin.Conversation, BasePlugin.Conversation):
                     await message.reply_text("数据错误")
                     return ConversationHandler.END
                 await self.user_service.update_user(user_db)
+            if add_user_command_data.cookies_database_data is None:
+                await self.cookies_service.add_cookies(user.id, add_user_command_data.cookies,
+                                                       add_user_command_data.region)
+            else:
                 await self.cookies_service.update_cookies(user.id, add_user_command_data.cookies,
                                                           add_user_command_data.region)
             logger.info(f"用户 {user.full_name}[{user.id}] 绑定账号成功")
