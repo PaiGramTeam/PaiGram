@@ -118,7 +118,7 @@ class SetUid(Plugin.Conversation, BasePlugin.Conversation):
         try:
             user_info = await client.get_record_card(uid)
         except GenshinException as exc:
-            await message.reply_text(f"获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text("获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
             logger.error("获取账号信息发生错误")
             logger.exception(exc)
             return ConversationHandler.END

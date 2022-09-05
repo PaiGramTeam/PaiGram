@@ -13,7 +13,7 @@ class MySQL(Service):
         return cls(**config.mysql.dict())
 
     def __init__(self, host: str = "127.0.0.1", port: int = 3306, username: str = "root",
-                 password: str = "", database: str = ""):
+                 password: str = "", database: str = ""):  # nosec B107
         self.database = database
         self.password = password
         self.user = username

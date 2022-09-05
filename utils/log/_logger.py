@@ -37,18 +37,18 @@ from utils.log._style import (
     MonokaiProStyle,
 )
 
-if TYPE_CHECKING:  # pylint: disable=unused-import
-    from rich.table import Table
+if TYPE_CHECKING:
+    from rich.table import Table  # pylint: disable=unused-import
     from rich.console import (
         ConsoleRenderable,
         RenderableType,
     )
-    from rich.console import (
+    from rich.console import (  # pylint: disable=unused-import
         ConsoleRenderable,
         RenderableType,
     )
-    from rich.table import Table
-    from logging import LogRecord
+    from rich.table import Table  # pylint: disable=unused-import
+    from logging import LogRecord  # pylint: disable=unused-import
 
 __all__ = ["logger"]
 
@@ -234,11 +234,11 @@ class LogRender(DefaultLogRender):
                 log_time_display = time_format(log_time)
             else:
                 log_time_display = Text(log_time.strftime(time_format))
-            if log_time_display == self._last_time and self.omit_repeated_times:  # pyline: disable=E0203
+            if log_time_display == self.last_time and self.omit_repeated_times:
                 row.append(Text(" " * len(log_time_display)))
             else:
                 row.append(log_time_display)
-                self._last_time = log_time_display
+                self.last_time = log_time_display
         if self.show_level:
             row.append(level)
 
@@ -388,7 +388,7 @@ class Handler(DefaultRichHandler):
         try:
             message = json.loads(message)
         except Exception:  # pylint: disable=W0703
-            pass
+            pass  # nosec B110
 
         if message is not None:
             message_renderable = self.render_message(record, message)

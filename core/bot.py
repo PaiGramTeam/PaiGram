@@ -10,7 +10,7 @@ from telegram.error import NetworkError, TimedOut
 from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults, JobQueue, MessageHandler
 from telegram.ext.filters import StatusUpdate
 
-from core.config import BotConfig, config
+from core.config import BotConfig, config  # pylint: disable=W0611
 from core.error import ServiceNotFoundError
 # noinspection PyProtectedMember
 from core.plugin import Plugin, _Plugin

@@ -27,7 +27,7 @@ class RedisDB(Service):
             logger.info("连接 [red]Redis[/] 失败")
             raise RuntimeError("连接 [red]Redis[/] 失败")
 
-    async def start(self):
+    async def start(self):  # pylint: disable=W0221
         if self._loop is None:
             self._loop = asyncio.get_running_loop()
         logger.info("正在尝试建立与 [red]Redis[/] 连接")
@@ -40,5 +40,5 @@ class RedisDB(Service):
             self.client = fakeredis.aioredis.FakeRedis()
             await self.ping()
 
-    async def stop(self):
+    async def stop(self):  # pylint: disable=W0221
         await self.client.close()
