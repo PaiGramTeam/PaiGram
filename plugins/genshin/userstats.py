@@ -9,14 +9,12 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Conver
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
-from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template.services import TemplateService
 from core.user.error import UserNotFoundError
-from core.user.services import UserService
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.helpers import url_to_file, get_genshin_client
+from utils.helpers import url_to_file, get_genshin_client, get_public_genshin_client
 from utils.log import logger
 
 
@@ -27,11 +25,8 @@ class TeapotUnlocked(Exception):
 class UserStatsPlugins(Plugin, BasePlugin):
     """玩家统计查询"""
 
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
-                 template_service: TemplateService = None):
+    def __init__(self, template_service: TemplateService = None):
         self.template_service = template_service
-        self.cookies_service = cookies_service
-        self.user_service = user_service
         self.current_dir = os.getcwd()
 
     async def _start_get_user_info(self, client: Client, uid: int = -1) -> bytes:
@@ -140,9 +135,14 @@ class UserStatsPlugins(Plugin, BasePlugin):
             await message.reply_text("输入错误")
             return ConversationHandler.END
         try:
-            client = await get_genshin_client(user.id)
+            try:
+                client = await get_genshin_client(user.id)
+            except CookiesNotFoundError:
+                client, _uid = await get_public_genshin_client(user.id)
+                if uid == -1:
+                    uid = _uid
             png_data = await self._start_get_user_info(client, uid)
-        except (UserNotFoundError, CookiesNotFoundError):
+        except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
