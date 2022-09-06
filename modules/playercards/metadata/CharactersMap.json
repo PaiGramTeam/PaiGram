@@ -251,7 +251,15 @@
     },
     "NameTextMapHash": 3608180322,
     "SideIconName": "UI_AvatarIcon_Side_Diluc",
-    "QualityType": "QUALITY_ORANGE"
+    "QualityType": "QUALITY_ORANGE",
+    "Costumes": {
+      "201601": {
+        "sideIconName": "UI_AvatarIcon_Side_DilucCostumeFlamme",
+        "icon": "UI_AvatarIcon_DilucCostumeFlamme",
+        "art": "UI_Costume_DilucCostumeFlamme",
+        "avatarId": 10000016
+      }
+    }
   },
   "10000020": {
     "Element": "Electric",
@@ -586,7 +594,15 @@
     },
     "NameTextMapHash": 3277782506,
     "SideIconName": "UI_AvatarIcon_Side_Fischl",
-    "QualityType": "QUALITY_PURPLE"
+    "QualityType": "QUALITY_PURPLE",
+    "Costumes": {
+      "203101": {
+        "sideIconName": "UI_AvatarIcon_Side_FischlCostumeHighness",
+        "icon": "UI_AvatarIcon_FischlCostumeHighness",
+        "art": "UI_Costume_FischlCostumeHighness",
+        "avatarId": 10000031
+      }
+    }
   },
   "10000032": {
     "Element": "Fire",
@@ -1366,6 +1382,35 @@
     "SideIconName": "UI_AvatarIcon_Side_Yae",
     "QualityType": "QUALITY_ORANGE"
   },
+  "10000059": {
+    "Element": "Wind",
+    "Consts": [
+      "UI_Talent_S_Heizo_01",
+      "UI_Talent_S_Heizo_02",
+      "UI_Talent_U_Heizo_01",
+      "UI_Talent_S_Heizo_03",
+      "UI_Talent_U_Heizo_02",
+      "UI_Talent_S_Heizo_04"
+    ],
+    "SkillOrder": [
+      10591,
+      10592,
+      10595
+    ],
+    "Skills": {
+      "10591": "Skill_A_Catalyst_MD",
+      "10592": "Skill_S_Heizo_01",
+      "10595": "Skill_E_Heizo_01"
+    },
+    "ProudMap": {
+      "10591": 5931,
+      "10592": 5932,
+      "10595": 5939
+    },
+    "NameTextMapHash": 646032090,
+    "SideIconName": "UI_AvatarIcon_Side_Heizo",
+    "QualityType": "QUALITY_PURPLE"
+  },
   "10000060": {
     "Element": "Water",
     "Consts": [
@@ -1540,7 +1585,122 @@
     "SideIconName": "UI_AvatarIcon_Side_Ayato",
     "QualityType": "QUALITY_ORANGE"
   },
-  "10000005-501": {},
+  "10000067": {
+    "Element": "Grass",
+    "Consts": [
+      "UI_Talent_S_Collei_01",
+      "UI_Talent_S_Collei_02",
+      "UI_Talent_U_Collei_02",
+      "UI_Talent_S_Collei_03",
+      "UI_Talent_U_Collei_01",
+      "UI_Talent_S_Collei_04"
+    ],
+    "SkillOrder": [
+      10671,
+      10672,
+      10675
+    ],
+    "Skills": {
+      "10671": "Skill_A_02",
+      "10672": "Skill_S_Collei_01",
+      "10675": "Skill_E_Collei_01"
+    },
+    "ProudMap": {
+      "10671": 6731,
+      "10672": 6732,
+      "10675": 6739
+    },
+    "NameTextMapHash": 2948362178,
+    "SideIconName": "UI_AvatarIcon_Side_Collei",
+    "QualityType": "QUALITY_PURPLE"
+  },
+  "10000068": {
+    "Element": "Electric",
+    "Consts": [
+      "UI_Talent_S_Dori_01",
+      "UI_Talent_S_Dori_02",
+      "UI_Talent_U_Dori_02",
+      "UI_Talent_S_Dori_03",
+      "UI_Talent_U_Dori_01",
+      "UI_Talent_S_Dori_04"
+    ],
+    "SkillOrder": [
+      10681,
+      10682,
+      10685
+    ],
+    "Skills": {
+      "10681": "Skill_A_04",
+      "10682": "Skill_S_Dori_01",
+      "10685": "Skill_E_Dori_01"
+    },
+    "ProudMap": {
+      "10681": 6831,
+      "10682": 6832,
+      "10685": 6839
+    },
+    "NameTextMapHash": 388272194,
+    "SideIconName": "UI_AvatarIcon_Side_Dori",
+    "QualityType": "QUALITY_PURPLE"
+  },
+  "10000069": {
+    "Element": "Grass",
+    "Consts": [
+      "UI_Talent_S_Tighnari_01",
+      "UI_Talent_S_Tighnari_02",
+      "UI_Talent_U_Tighnari_01",
+      "UI_Talent_S_Tighnari_03",
+      "UI_Talent_U_Tighnari_02",
+      "UI_Talent_S_Tighnari_04"
+    ],
+    "SkillOrder": [
+      10691,
+      10692,
+      10695
+    ],
+    "Skills": {
+      "10691": "Skill_A_02",
+      "10692": "Skill_S_Tighnari_01",
+      "10695": "Skill_E_Tighnari_01"
+    },
+    "ProudMap": {
+      "10691": 6931,
+      "10692": 6932,
+      "10695": 6939
+    },
+    "NameTextMapHash": 2506955778,
+    "SideIconName": "UI_AvatarIcon_Side_Tighnari",
+    "QualityType": "QUALITY_ORANGE"
+  },
+  "10000005-501": {
+    "Element": "None",
+    "Consts": [
+      "None",
+      "None",
+      "None",
+      "None",
+      "None",
+      "None"
+    ],
+    "SkillOrder": [
+      100540,
+      10067,
+      10068
+    ],
+    "Skills": {
+      "10067": "None",
+      "10068": "None",
+      "100540": "Skill_A_01"
+    },
+    "NameTextMapHash": 3816664530,
+    "ProudMap": {
+      "10067": 732,
+      "10068": 739,
+      "100540": 731
+    },
+    "SideIconName": "UI_AvatarIcon_Side_PlayerBoy",
+    "QualityType": "QUALITY_ORANGE"
+  },
   "10000005-502": {},
   "10000005-503": {},
   "10000005-504": {
@@ -1631,7 +1791,64 @@
     "SideIconName": "UI_AvatarIcon_Side_PlayerBoy",
     "QualityType": "QUALITY_ORANGE"
   },
-  "10000007-701": {},
+  "10000005-508": {
+    "Element": "Grass",
+    "Consts": [
+      "UI_Talent_S_PlayerGrass_01",
+      "UI_Talent_S_PlayerGrass_02",
+      "UI_Talent_S_PlayerGrass_03",
+      "UI_Talent_S_PlayerGrass_04",
+      "UI_Talent_S_PlayerGrass_05",
+      "UI_Talent_S_PlayerGrass_06"
+    ],
+    "SkillOrder": [
+      100547,
+      10117,
+      10118
+    ],
+    "Skills": {
+      "10117": "Skill_E_PlayerGrass_01",
+      "10118": "Skill_S_PlayerGrass_01",
+      "100547": "Skill_A_01"
+    },
+    "NameTextMapHash": 1533656818,
+    "ProudMap": {
+      "10117": 1132,
+      "10118": 1139,
+      "100547": 1130
+    },
+    "SideIconName": "UI_AvatarIcon_Side_PlayerBoy",
+    "QualityType": "QUALITY_ORANGE"
+  },
+  "10000007-701": {
+    "Element": "None",
+    "Consts": [
+      "None",
+      "None",
+      "None",
+      "None",
+      "None",
+      "None"
+    ],
+    "SkillOrder": [
+      100550,
+      10067,
+      10068
+    ],
+    "Skills": {
+      "10067": "None",
+      "10068": "None",
+      "100550": "Skill_A_01"
+    },
+    "NameTextMapHash": 3816664530,
+    "ProudMap": {
+      "10067": 732,
+      "10068": 739,
+      "100550": 731
+    },
+    "SideIconName": "UI_AvatarIcon_Side_PlayerGirl",
+    "QualityType": "QUALITY_ORANGE"
+  },
   "10000007-702": {},
   "10000007-703": {},
   "10000007-704": {
@@ -1718,6 +1935,35 @@
       "10602": 1032,
       "10605": 1039,
       "100556": 1031
+    },
+    "SideIconName": "UI_AvatarIcon_Side_PlayerGirl",
+    "QualityType": "QUALITY_ORANGE"
+  },
+  "10000007-708": {
+    "Element": "Grass",
+    "Consts": [
+      "UI_Talent_S_PlayerGrass_01",
+      "UI_Talent_S_PlayerGrass_02",
+      "UI_Talent_S_PlayerGrass_03",
+      "UI_Talent_S_PlayerGrass_04",
+      "UI_Talent_S_PlayerGrass_05",
+      "UI_Talent_S_PlayerGrass_06"
+    ],
+    "SkillOrder": [
+      100557,
+      10117,
+      10118
+    ],
+    "Skills": {
+      "10117": "Skill_E_PlayerGrass_01",
+      "10118": "Skill_S_PlayerGrass_01",
+      "100557": "Skill_A_01"
+    },
+    "NameTextMapHash": 3816664530,
+    "ProudMap": {
+      "10117": 1132,
+      "10118": 1139,
+      "100557": 1131
     },
     "SideIconName": "UI_AvatarIcon_Side_PlayerGirl",
     "QualityType": "QUALITY_ORANGE"

@@ -5,6 +5,7 @@ import httpx
 import ujson
 
 from modules.apihelper.helpers import get_headers
+from modules.playercards.error import ResponseError, PlayerInfoDataNotFind, ShowAvatarInfoNotFind, AvatarInfoNotFind
 from modules.playercards.models.artifact import ArtifactInfo
 from modules.playercards.models.character import CharacterInfo, CharacterValueInfo
 from modules.playercards.models.fetter import FetterInfo
@@ -53,7 +54,16 @@ class PlayerCardsAPI:
     async def get_data(self, uid: Union[str, int]):
         url = f"https://enka.network/u/{uid}/__data.json"
         response = await self.client.get(url)
-        return response
+        if response.status_code != 200:
+            raise ResponseError(response.status_code)
+        json_data = response.json()
+        if not json_data.get("playerInfo"):
+            raise PlayerInfoDataNotFind(uid)
+        if not json_data.get("playerInfo").get("showAvatarInfoList"):
+            raise ShowAvatarInfoNotFind(uid)
+        if not json_data.get("avatarInfoList"):
+            raise AvatarInfoNotFind(uid)
+        return json_data
 
     def data_handler(self, avatar_data: dict, avatar_id: int) -> CharacterInfo:
         artifact_list = []
