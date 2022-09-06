@@ -1,13 +1,6 @@
-from utils.baseobject import BaseObject
+from pydantic import BaseModel
 
 
-class FetterInfo(BaseObject):
+class FetterInfo(BaseModel):
     """好感度信息"""
-
-    def __init__(self, level: int = 0):
-        """
-        :param level: 等级
-        """
-        self.level = level
-
-    __slots__ = ("level",)
+    level: int = 0  # 好感度等级

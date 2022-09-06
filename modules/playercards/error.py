@@ -8,6 +8,7 @@ class PlayerCardsError(Exception):
 
 class ResponseError(PlayerCardsError):
     """请求错误"""
+
     def __init__(self, status_code):
         super().__init__(f"请求错误 status_code[{status_code}] ")
 

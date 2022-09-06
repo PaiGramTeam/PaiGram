@@ -9,10 +9,10 @@ from modules.playercards.error import ResponseError, PlayerInfoDataNotFind, Show
 from modules.playercards.models.artifact import ArtifactInfo
 from modules.playercards.models.character import CharacterInfo, CharacterValueInfo
 from modules.playercards.models.fetter import FetterInfo
+from modules.playercards.models.item import GameItem
 from modules.playercards.models.skill import Skill
 from modules.playercards.models.talent import Talent
 from modules.playercards.models.weapon import WeaponInfo
-from utils.models.base import GameItem
 
 
 class PlayerCardsAPI:
@@ -65,7 +65,7 @@ class PlayerCardsAPI:
             raise AvatarInfoNotFind(uid)
         return json_data
 
-    def data_handler(self, avatar_data: dict, avatar_id: int) -> CharacterInfo:
+    def de_character_info(self, avatar_data: dict, avatar_id: int) -> CharacterInfo:
         artifact_list = []
 
         weapon_info: Optional[WeaponInfo] = None
@@ -95,11 +95,8 @@ class PlayerCardsAPI:
                 reliquary_sub_stats = flat['reliquarySubstats']
                 sub_item = []
                 for reliquary_sub in reliquary_sub_stats:
-                    sub_item.append(GameItem(name=self.get_reliquary_name(reliquary_sub["appendPropId"]),
-                                             item_type=reliquary_sub["appendPropId"], value=reliquary_sub["statValue"]))
-                main_item = GameItem(name=self.get_reliquary_name(reliquary_main_stat["mainPropId"]),
-                                     item_type=reliquary_main_stat["mainPropId"],
-                                     value=reliquary_main_stat["statValue"])
+                    sub_item.append(GameItem(type=reliquary_sub["appendPropId"], value=reliquary_sub["statValue"]))
+                main_item = GameItem(type=reliquary_main_stat["mainPropId"], value=reliquary_main_stat["statValue"])
                 name = self.get_text(flat["nameTextMapHash"])
                 artifact_list.append(ArtifactInfo(item_id=equip["itemId"], name=name, star=flat["rankLevel"],
                                                   level=reliquary["level"] - 1, main_item=main_item, sub_item=sub_item))
@@ -114,22 +111,17 @@ class PlayerCardsAPI:
                 if 'affixMap' in weapon_data:
                     affix = list(weapon_data['affixMap'].values())[0] + 1
                 else:
-
                     affix = 1
                 reliquary_main_stat = flat["weaponStats"][0]
                 reliquary_sub_stats = flat['weaponStats'][1]
-                sub_item = GameItem(name=self.get_reliquary_name(reliquary_main_stat["appendPropId"]),
-                                    item_type=reliquary_sub_stats["appendPropId"],
-                                    value=reliquary_sub_stats["statValue"])
-                main_item = GameItem(name=self.get_reliquary_name(reliquary_main_stat["appendPropId"]),
-                                     item_type=reliquary_main_stat["appendPropId"],
-                                     value=reliquary_main_stat["statValue"])
+                sub_item = GameItem(type=reliquary_sub_stats["appendPropId"], value=reliquary_sub_stats["statValue"])
+                main_item = GameItem(type=reliquary_main_stat["appendPropId"], value=reliquary_main_stat["statValue"])
                 weapon_name = self.get_text(flat["nameTextMapHash"])
                 weapon_info = WeaponInfo(item_id=equip["itemId"], name=weapon_name, star=flat["rankLevel"],
                                          level=weapon_level, main_item=main_item, sub_item=sub_item, affix=affix)
 
         # 好感度
-        fetter = FetterInfo(fetter_info["expLevel"])
+        fetter = FetterInfo(level=fetter_info["expLevel"])
 
         # 基础数值处理
         for i in range(40, 47):
@@ -139,17 +131,20 @@ class PlayerCardsAPI:
         else:
             dmg_bonus = 0
 
-        base_value = CharacterValueInfo(fight_prop_map["2000"], fight_prop_map["1"], fight_prop_map["2001"],
-                                        fight_prop_map["4"], fight_prop_map["2002"], fight_prop_map["7"],
-                                        fight_prop_map["28"], fight_prop_map["20"], fight_prop_map["22"],
-                                        fight_prop_map["23"], fight_prop_map["26"], fight_prop_map["27"],
-                                        fight_prop_map["29"], fight_prop_map["30"], dmg_bonus)
+        base_value = CharacterValueInfo(hp=fight_prop_map["2000"], base_hp=fight_prop_map["1"],
+                                        atk=fight_prop_map["2001"], base_atk=fight_prop_map["4"],
+                                        def_value=fight_prop_map["2002"], base_def=fight_prop_map["7"],
+                                        elemental_mastery=fight_prop_map["28"], crit_rate=fight_prop_map["20"],
+                                        crit_dmg=fight_prop_map["22"], energy_recharge=fight_prop_map["23"],
+                                        heal_bonus=fight_prop_map["26"], healed_bonus=fight_prop_map["27"],
+                                        physical_dmg_sub=fight_prop_map["29"], physical_dmg_bonus=fight_prop_map["30"],
+                                        dmg_bonus=dmg_bonus)
 
         # 技能处理
         skill_list = []
         skills = characters_data["Skills"]
         for skill_id in skill_level_map:
-            skill_list.append(Skill(skill_id, name=skill_level_map[skill_id], icon=skills[skill_id]))
+            skill_list.append(Skill(skill_id=skill_id, name=skill_level_map[skill_id], icon=skills[skill_id]))
 
         # 命座处理
         talent_list = []
@@ -157,10 +152,11 @@ class PlayerCardsAPI:
         if 'talentIdList' in avatar_data:
             talent_id_list = avatar_data["talentIdList"]
             for index, _ in enumerate(talent_id_list):
-                talent_list.append(Talent(talent_id_list[index], icon=consts[index]))
+                talent_list.append(Talent(talent_id=talent_id_list[index], icon=consts[index]))
 
         element = characters_data["Element"]
         icon = characters_data["SideIconName"]
-        character_info = CharacterInfo(character_name, element, character_level, fetter, base_value, weapon_info,
-                                       artifact_list, skill_list, talent_list, icon)
+        character_info = CharacterInfo(name=character_name, elementl=element, level=character_level, fetter=fetter,
+                                       base_value=base_value, weapon=weapon_info, artifact=artifact_list,
+                                       skill=skill_list, talent=talent_list, icon=icon)
         return character_info
