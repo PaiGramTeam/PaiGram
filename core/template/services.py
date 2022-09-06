@@ -38,10 +38,21 @@ class TemplateService:
                 self._jinja2_template[package_path + template_name] = jinja2_template
         return jinja2_template
 
+    async def render_async(self, template_path: str, template_name: str, template_data: dict):
+        """模板渲染
+        :param template_path: 模板目录
+        :param template_name: 模板文件名
+        :param template_data: 模板数据
+        """
+        start_time = time.time()
+        template = self.get_template(template_path, template_name)
+        html = await template.render_async(**template_data)
+        logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
+        return html
+
     async def render(self, template_path: str, template_name: str, template_data: dict,
                      viewport: ViewportSize, full_page: bool = True, evaluate: Optional[str] = None) -> bytes:
-        """
-        模板渲染成图片
+        """模板渲染成图片
         :param template_path: 模板目录
         :param template_name: 模板文件名
         :param template_data: 模板数据
