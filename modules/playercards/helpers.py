@@ -1,9 +1,11 @@
-import json
 import os
-from typing import List, Union, Optional
+from typing import List, Optional, Union
+
+import ujson as json
+from enkanetwork import Equipments
 
 from modules.playercards._metadata import _de_item_rule
-from modules.playercards.models.artifact import ArtifactScoreInfo, ArtifactInfo
+from modules.playercards.models.artifact import ArtifactInfo, ArtifactScoreInfo
 from modules.playercards.models.character import CharacterInfo, CharacterValueInfo
 from modules.playercards.models.fetter import FetterInfo
 from modules.playercards.models.fightprop import FightProp, FightPropScore
@@ -143,18 +145,26 @@ def de_character_info(avatar_data: dict, avatar_id: int) -> CharacterInfo:
     return character_info
 
 
-def artifact_stats_theory(items: List[GameItem], character_name: str = "", main_items: List[FightProp] = None):
-    """圣遗物副词条评分"""
+def artifact_stats_theory(artifact: Equipments, character_name: str = "", main_items: List[FightProp] = None):
+    """圣遗物副词条评分
+
+    Args:
+        artifact: 圣遗物对象
+        character_name: 角色名
+        main_items: 主要词条？
+    Returns:
+        返回由圣遗物属性 ArtifactScoreInfo 组成的 list
+    """
     data: List[ArtifactScoreInfo] = []
-    # 从数据库获取针对角色的评分规则
     if character_name != "":
-        _main_items = item_rule.get(character_name)
+        _main_items = item_rule.get(character_name, None)
         if _main_items is not None:
-            main_items = _main_items
+            main_items = list({*main_items, *_main_items})
     # 如果指定计算词条为空设置默认
     if main_items is None:
-        main_items = [FightProp.FIGHT_PROP_CRITICAL, FightProp.FIGHT_PROP_CRITICAL_HURT,
-                      FightProp.FIGHT_PROP_ATTACK_PERCENT]
+        main_items = [
+            FightProp.FIGHT_PROP_CRITICAL, FightProp.FIGHT_PROP_CRITICAL_HURT, FightProp.FIGHT_PROP_ATTACK_PERCENT
+        ]
     # 修正要评分的数值词条
     if FightProp.FIGHT_PROP_ATTACK_PERCENT in main_items and FightProp.FIGHT_PROP_ATTACK not in main_items:
         main_items.append(FightProp.FIGHT_PROP_ATTACK)
@@ -163,9 +173,9 @@ def artifact_stats_theory(items: List[GameItem], character_name: str = "", main_
     if FightProp.FIGHT_PROP_DEFENSE_PERCENT in main_items and FightProp.FIGHT_PROP_DEFENSE not in main_items:
         main_items.append(FightProp.FIGHT_PROP_DEFENSE)
     # 鉴定圣遗物为寄.jpg
-    for item in items:
+    for i, state in enumerate([artifact.detail.mainstats, *artifact.detail.substats]):
         score = 0
-        if item.type in main_items:
-            score = FightPropScore.__getitem__(item.type.name).value * item.value
-        data.append(ArtifactScoreInfo(item=item.type, value=item.value, score=score))
+        if state.prop_id in map(lambda x: x.name, main_items):
+            score = float(FightPropScore[state.prop_id].value) * state.value
+        data.append(ArtifactScoreInfo(state=state, score=score, is_main=i == 0))
     return data

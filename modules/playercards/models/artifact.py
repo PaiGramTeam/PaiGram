@@ -1,5 +1,6 @@
-from typing import Optional, List
+from typing import List, Optional
 
+from enkanetwork import EquipmentsStats
 from pydantic import BaseModel
 
 from modules.playercards.models.item import GameItem
@@ -17,6 +18,6 @@ class ArtifactInfo(BaseModel):
 
 
 class ArtifactScoreInfo(BaseModel):
-    item: GameItem
-    value: float
-    score: float
+    state: EquipmentsStats  # 词条对象
+    score: float  # 得分
+    is_main: bool  # 是否为主词条
