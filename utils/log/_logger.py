@@ -462,13 +462,17 @@ class Logger(logging.Logger):
 
     def exception(
             self,
-            msg: Any = NOT_SET,
             *args: Any,
-            exc_info: Optional[ExceptionInfoType] = None,
+            msg: Any = NOT_SET,
+            exc_info: Optional[ExceptionInfoType] = True,
             stack_info: bool = False,
             stacklevel: int = 1,
-            extra: Optional[Mapping[str, Any]] = None
+            extra: Optional[Mapping[str, Any]] = None,
+            **kwargs
     ) -> None:
+        if args and msg is NOT_SET:
+            msg = args[0]
+            args = args[1:]
         super(Logger, self).exception(
             "" if msg is NOT_SET else msg, *args,
             exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra

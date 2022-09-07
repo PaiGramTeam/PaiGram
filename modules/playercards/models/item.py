@@ -19,9 +19,7 @@ class GameItem(BaseModel):
                 _type = FightProp.__getitem__(_type)
             except ValueError:
                 _type = FightProp(_type)
-        elif isinstance(_type, FightProp):
-            _type = _type
-        else:
+        elif not isinstance(_type, FightProp):
             raise TypeError
         return _type
 

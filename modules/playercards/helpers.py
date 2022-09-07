@@ -159,7 +159,7 @@ def artifact_stats_theory(artifact: Equipments, character_name: str = "", main_i
     if character_name != "":
         _main_items = item_rule.get(character_name, None)
         if _main_items is not None:
-            main_items = list({*main_items, *_main_items})
+            main_items = list(set(main_items + _main_items))
     # 如果指定计算词条为空设置默认
     if main_items is None:
         main_items = [
