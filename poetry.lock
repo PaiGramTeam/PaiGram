@@ -281,6 +281,25 @@ wrapt = ">=1.10,<2"
 dev = ["PyTest", "PyTest (<5)", "PyTest-Cov", "PyTest-Cov (<2.6)", "bump2version (<1)", "configparser (<5)", "importlib-metadata (<3)", "importlib-resources (<4)", "sphinx (<2)", "sphinxcontrib-websupport (<2)", "tox", "zipp (<2)"]
 
 [[package]]
+name = "enkanetwork.py"
+version = "1.2.10"
+description = "Library for fetching JSON data from site https://enka.network/"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+develop = false
+
+[package.dependencies]
+aiohttp = "*"
+pydantic = "*"
+
+[package.source]
+type = "git"
+url = "https://github.com/mrwan200/EnkaNetwork.py"
+reference = "HEAD"
+resolved_reference = "d1079baff72a55da52b38451e950ded6a4af8dd9"
+
+[[package]]
 name = "fakeredis"
 version = "1.9.0"
 description = "Fake implementation of redis API for testing purposes."
@@ -949,7 +968,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "81eeca52bdc4e40b5538907961bd48ba82f0429a914b6d02349411443cc82ab9"
+content-hash = "e9e557aad86a486e9d7a603dbcefe18269ad6414d89f9b98dbcad06fb200d2a1"
 
 [metadata.files]
 aiofiles = [
@@ -1156,6 +1175,7 @@ Deprecated = [
     {file = "Deprecated-1.2.13-py2.py3-none-any.whl", hash = "sha256:64756e3e14c8c5eea9795d93c524551432a0be75629f8f29e67ab8caf076c76d"},
     {file = "Deprecated-1.2.13.tar.gz", hash = "sha256:43ac5335da90c31c24ba028af536a91d41d53f9e6901ddb021bcc572ce44e38d"},
 ]
+"enkanetwork.py" = []
 fakeredis = [
     {file = "fakeredis-1.9.0-py3-none-any.whl", hash = "sha256:868467ff399520fc77e37ff002c60d1b2a1674742982e27338adaeebcc537648"},
     {file = "fakeredis-1.9.0.tar.gz", hash = "sha256:60639946e3bb1274c30416f539f01f9d73b4ea68c244c1442f5524e45f51e882"},
