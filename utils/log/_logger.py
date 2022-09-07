@@ -33,7 +33,7 @@ from rich.traceback import (
 from ujson import JSONDecodeError
 
 from core.config import BotConfig
-from utils.const import PROJECT_ROOT
+from utils.const import NOT_SET, PROJECT_ROOT
 from utils.log._file import FileIO
 from utils.log._style import (
     DEFAULT_STYLE,
@@ -459,6 +459,20 @@ class Logger(logging.Logger):
             extra: Optional[Mapping[str, Any]] = None
     ) -> None:
         return self.log(25, msg, *args, exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
+
+    def exception(
+            self,
+            msg: Any = NOT_SET,
+            *args: Any,
+            exc_info: Optional[ExceptionInfoType] = None,
+            stack_info: bool = False,
+            stacklevel: int = 1,
+            extra: Optional[Mapping[str, Any]] = None
+    ) -> None:
+        super(Logger, self).exception(
+            "" if msg is NOT_SET else msg, *args,
+            exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra
+        )
 
 
 with _lock:
