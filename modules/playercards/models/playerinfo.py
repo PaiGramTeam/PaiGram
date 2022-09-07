@@ -7,7 +7,7 @@ from modules.playercards.error import PlayerInfoDataNotFind
 
 class ShowAvatarInfo(BaseModel):
     avatar_id: int  # 角色ID
-    level: int  # 角色ID
+    level: int  # 等级
 
     @classmethod
     def de_data(cls, json_data: dict):
@@ -18,13 +18,13 @@ class ShowAvatarInfo(BaseModel):
 class PlayerInfo(BaseModel):
     uid: Union[str, int]
     nickname: str  # 角色名称
-    finish_achievement_num: int  # 完成的成就
-    signature: str  # 签名
-    tower_floor_index: int  # 深境螺旋到达的层数
-    tower_level_index: int  # 深境螺旋到达的次层数
-    level: int  # 等级
-    world_level: int  # 世界等级
-    show_avatar_info: List[ShowAvatarInfo]
+    finish_achievement_num: int = 0  # 完成的成就
+    signature: str = ""  # 签名
+    tower_floor_index: int = 0  # 深境螺旋到达的层数
+    tower_level_index: int = 0  # 深境螺旋到达的次层数
+    level: int = 1  # 等级
+    world_level: int = 1  # 世界等级
+    show_avatar_info: List[ShowAvatarInfo] = []
 
     @classmethod
     def de_data(cls, json_data: dict):

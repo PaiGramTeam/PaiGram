@@ -14,3 +14,9 @@ class ArtifactInfo(BaseModel):
     star: int = 1  # 圣遗物星级
     sub_item: List[GameItem] = []  # 副词条
     icon: str = ""  # 图标
+
+
+class ArtifactScoreInfo(BaseModel):
+    item: GameItem
+    value: float
+    score: float

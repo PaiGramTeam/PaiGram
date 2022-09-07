@@ -3,7 +3,10 @@ from typing import Union
 
 class PlayerCardsError(Exception):
     """本模块的异常基本类型"""
-    pass
+
+
+class HTTPResponseError(PlayerCardsError):
+    """请求错误"""
 
 
 class ResponseError(PlayerCardsError):
