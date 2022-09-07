@@ -413,7 +413,18 @@ class DebugFileHandler(DefaultRichHandler):
         super().__init__(*args, **kwargs)
         self.level = 10
         path = PROJECT_ROOT.joinpath("logs/debug/debug.log")
-        path.parent.mkdir(exist_ok=True)
+        while True:
+            try:
+                path.parent.mkdir(exist_ok=True)
+                break
+            except FileNotFoundError:
+                parent = path.parent
+                while True:
+                    try:
+                        parent.mkdir(exist_ok=True)
+                        break
+                    except FileNotFoundError:
+                        parent = parent.parent
         self.console = Console(color_system='auto', width=200, file=FileIO(path))
 
 
@@ -422,6 +433,18 @@ class ErrorFileHandler(DefaultRichHandler):
         super().__init__(*args, **kwargs)
         self.level = 40
         path = PROJECT_ROOT.joinpath("logs/error/error.log")
+        while True:
+            try:
+                path.parent.mkdir(exist_ok=True)
+                break
+            except FileNotFoundError:
+                parent = path.parent
+                while True:
+                    try:
+                        parent.mkdir(exist_ok=True)
+                        break
+                    except FileNotFoundError:
+                        parent = parent.parent
         path.parent.mkdir(exist_ok=True)
         self.console = Console(color_system='auto', width=200, file=FileIO(path))
 

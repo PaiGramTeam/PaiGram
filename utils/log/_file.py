@@ -28,7 +28,15 @@ class FileIO(IO[str]):
         if modify_date < today:
             if self.file_stream is not None and not self.file_stream.closed:
                 self.file_stream.close()
-            self.file.rename(self.path.joinpath(f'{modify_date.strftime("%Y-%m-%d")}.log'))
+            log_path = self.path.joinpath(f'{modify_date.strftime("%Y-%m-%d")}.log')
+            if log_path.exists():
+                # 转存日志
+                with open(log_path, mode='a+', encoding='utf-8') as file:
+                    file.write('\n')
+                    with open(self.file, mode='r+', encoding='utf-8') as f:
+                        file.writelines(f.readlines())
+            else:
+                self.file.rename(self.path.joinpath(f'{modify_date.strftime("%Y-%m-%d")}.log'))
             self.file_stream = self.file.open(mode='a+', encoding='utf-8')
         return self.file_stream
 
