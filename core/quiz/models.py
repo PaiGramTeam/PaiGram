@@ -3,7 +3,7 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Column, Integer, ForeignKey
 
 from utils.baseobject import BaseObject
-from utils.models.types import JSONDict
+from utils.typedefs import JSONDict
 
 
 class AnswerDB(SQLModel, table=True):
