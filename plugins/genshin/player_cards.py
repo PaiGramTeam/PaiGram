@@ -1,5 +1,6 @@
 import json
 from typing import Dict, Union, Optional, List
+import asyncio
 
 from enkanetwork import (
     EnkaNetworkAPI,
@@ -9,7 +10,7 @@ from enkanetwork import (
     CharacterInfo,
     Assets,
 )
-from telegram import Update
+from telegram import Update, InputMediaPhoto
 from telegram.ext import CommandHandler, filters, CallbackContext, MessageHandler
 
 from core.base.redisdb import RedisDB
@@ -81,11 +82,12 @@ class PlayerCards(Plugin, BasePlugin):
             return
 
         data = await self.client.fetch_user(uid)
-        character_info = data.characters[0]
-        logger.debug(character_info)
-        render_template = RenderTemplate(uid, character_info, self.template_service)
-        png_data = await render_template.render()
-        await message.reply_photo(png_data)
+        pngs = await asyncio.gather(*[
+            RenderTemplate(uid, c, self.template_service).render()
+            for c in data.characters
+        ])
+        media = [InputMediaPhoto(png) for png in pngs]
+        await message.reply_media_group(media)
 
 
 class RenderTemplate:
@@ -183,6 +185,7 @@ class RenderTemplate:
 
     async def cache_images(self) -> None:
         """缓存所有图片到本地"""
+        # TODO: 并发下载所有资源
         c = self.character
         # 角色
         c.image.banner.url = await url_to_file(c.image.banner.url)
