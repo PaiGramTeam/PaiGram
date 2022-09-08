@@ -1,8 +1,9 @@
 <div class="flex-1 flex items-end justify-center">
   <div class="flex pb-2">
-    {% for item in items %}
+    {% for item in constellations %}
     <div
-      class="w-16 h-16 flex items-center justify-center bg-contain bg-no-repeat bg-center"
+      class="w-16 h-16 flex items-center justify-center bg-contain bg-no-repeat bg-center
+      {%- if not item.unlocked %} grayscale opacity-75 {% endif %}"
       style="background-image: url('{{ item.background }}')"
     >
       <img src="{{ item.img }}" alt="" class="w-8 h-8" />

@@ -1,5 +1,5 @@
 <div class="flex flex-row">
-  {% for item in items %}
+  {% for item in skills %}
   <div class="mx-auto flex flex-col items-center justify-center">
     <div
       class="w-32 h-32 flex items-center justify-center bg-contain bg-no-repeat bg-center"
@@ -10,7 +10,7 @@
     <div
       class="w-10 -mt-8 text-xl font-medium bg-white text-neutral-800 italic rounded-lg text-center bg-opacity-80"
     >
-      {{item.level}}
+      {{ item.level }}
     </div>
   </div>
   {% endfor %}

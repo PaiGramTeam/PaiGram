@@ -45,7 +45,7 @@
           style="background-image: url('{{image_banner}}');"
         ></div>
         <div class="relative w-full flex p-5 mb-4 space-x-8 overflow-hidden">
-          {% autoescape off %} {{constellations}} {% endautoescape %}
+          {% include 'constellations.html' %}
 
           <div class="flex-1 space-y-4">
             <div class="text-right italic">
@@ -63,8 +63,8 @@
               </div>
             </div>
 
-            {% autoescape off %} {{skills}} {% endautoescape %} {% autoescape
-            off %} {{stats}} {% endautoescape %}
+            {% include 'skills.html' %}
+            {% include 'stats.html' %}
           </div>
         </div>
       </div>
@@ -72,8 +72,6 @@
       <!-- Info -->
       <div class="px-5 relative">
         <div class="grid grid-cols-3 gap-2">
-          {% for info in infos %} {% autoescape off %} {{info}} {% endautoescape
-          %} {% endfor %}
         </div>
       </div>
     </div>

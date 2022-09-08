@@ -1,5 +1,5 @@
 import json
-from typing import Union, Optional, List, cast
+from typing import Any, Dict, Union, Optional, List, cast
 
 from enkanetwork import EnkaNetworkAPI, Equipments, EquipmentsType, DigitType, Stats, CharacterInfo, \
     EnkaNetworkResponse, Assets
@@ -98,29 +98,29 @@ class RenderTemplate:
         player_card_data["constellations"] = await self.de_constellations()
         player_card_data["skills"] = await self.de_skills()
         player_card_data["stats"] = await self.de_stats()
-        artifacts = await self.de_artifacts()
-        for artifact in artifacts:
-            player_card_data["infos"].append(artifact)
+        # artifacts = await self.de_artifacts()
+        # for artifact in artifacts:
+        #     player_card_data["infos"].append(artifact)
         data = await self.template_service.render_async('genshin/player_card', "player_card.html", player_card_data)
         print(data)
         return await self.template_service.render('genshin/player_card', "player_card.html", player_card_data,
                                                   {"width": 845, 'height': 1080}, full_page=True)
 
     async def de_stats(self) -> str:
-        stats_data = []
+        items: List[Dict[str, str]] = []
         logger.debug(self.character.stats)
 
-        stats_data.append(("基础生命值", self.character.stats.BASE_HP.to_rounded()))
+        items.append(("基础生命值", self.character.stats.BASE_HP.to_rounded()))
 
-        stats_data.append(("生命值", self.character.stats.FIGHT_PROP_MAX_HP.to_rounded()))
-        stats_data.append(("基础攻击力", self.character.stats.FIGHT_PROP_BASE_ATTACK.to_rounded()))
-        stats_data.append(("攻击力", self.character.stats.FIGHT_PROP_CUR_ATTACK.to_rounded()))
-        stats_data.append(("基础防御力", self.character.stats.FIGHT_PROP_BASE_DEFENSE.to_rounded()))
-        stats_data.append(("防御力", self.character.stats.FIGHT_PROP_CUR_DEFENSE.to_rounded()))
-        stats_data.append(("暴击率", self.character.stats.FIGHT_PROP_CRITICAL.to_percentage_symbol()))
-        stats_data.append(("暴击伤害", self.character.stats.FIGHT_PROP_CRITICAL_HURT.to_percentage_symbol()))
-        stats_data.append(("元素充能效率", self.character.stats.FIGHT_PROP_CHARGE_EFFICIENCY.to_percentage_symbol()))
-        stats_data.append(("元素精通", self.character.stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded()))
+        items.append(("生命值", self.character.stats.FIGHT_PROP_MAX_HP.to_rounded()))
+        items.append(("基础攻击力", self.character.stats.FIGHT_PROP_BASE_ATTACK.to_rounded()))
+        items.append(("攻击力", self.character.stats.FIGHT_PROP_CUR_ATTACK.to_rounded()))
+        items.append(("基础防御力", self.character.stats.FIGHT_PROP_BASE_DEFENSE.to_rounded()))
+        items.append(("防御力", self.character.stats.FIGHT_PROP_CUR_DEFENSE.to_rounded()))
+        items.append(("暴击率", self.character.stats.FIGHT_PROP_CRITICAL.to_percentage_symbol()))
+        items.append(("暴击伤害", self.character.stats.FIGHT_PROP_CRITICAL_HURT.to_percentage_symbol()))
+        items.append(("元素充能效率", self.character.stats.FIGHT_PROP_CHARGE_EFFICIENCY.to_percentage_symbol()))
+        items.append(("元素精通", self.character.stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded()))
 
         # 查找元素伤害加成和治疗加成
         for stat in self.character.stats:
@@ -139,34 +139,36 @@ class RenderTemplate:
             if name is None:
                 continue
             logger.info(f"{name} -> {value}")
-            stats_data.append((name, value))
-        return await self.template_service.render_async('genshin/player_card', "stats.html", { 'stats': stats_data })
+            items.append((name, value))
+        
+        return items
 
     async def de_skills(self) -> str:
         background = f"img/talent-{self.character.element.name.lower()}.png"
-        skills_data = {
-            "items": []
-        }
+        items: List[Dict[str, Any]] = []
+
         for skill in self.character.skills:
             img = await url_to_file(skill.icon.url)
-            skills_data["items"].append({
+            items.append({
                 "background": background,
                 "img": img,
                 "level": skill.level
             })
-        return await self.template_service.render_async('genshin/player_card', "skills.html", skills_data)
+
+        return items
 
     async def de_constellations(self) -> str:
         background = f"img/talent-{self.character.element.name.lower()}.png"
-        artifacts_data = {
-            "items": []
-        }
+        items = []
+
         for constellation in self.character.constellations:
-            artifacts_data["items"].append({
+            items.append({
                 "background": background,
-                "img": constellation.icon.url
+                "img": constellation.icon.url,
+                "unlocked": constellation.unlocked,
             })
-        return await self.template_service.render_async('genshin/player_card', "constellations.html", artifacts_data)
+
+        return items
 
     async def de_artifacts(self) -> List[str]:
         html_list: List[str] = []
