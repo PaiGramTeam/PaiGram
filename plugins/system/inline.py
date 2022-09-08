@@ -4,20 +4,20 @@ from uuid import uuid4
 from telegram import InlineQueryResultArticle, InputTextMessageContent, Update, InlineQuery
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, InlineQueryHandler
 
+from core.plugin import handler, Plugin
 from core.wiki import WikiService
-from logger import Log
-from utils.service.inject import inject
+from utils.log import logger
 
 
-class Inline:
+class Inline(Plugin):
     """Inline模块"""
 
-    @inject
     def __init__(self, wiki_service: WikiService = None):
         self.wiki_service = wiki_service
 
+    @handler(InlineQueryHandler, block=False)
     async def inline_query(self, update: Update, _: CallbackContext) -> None:
         user = update.effective_user
         ilq = cast(InlineQuery, update.inline_query)
@@ -80,11 +80,11 @@ class Inline:
             )
         except BadRequest as exc:
             if "Query is too old" in exc.message:  # 过时请求全部忽略
-                Log.warning(f"用户 {user.full_name}[{user.id}] inline_query请求过时")
+                logger.warning(f"用户 {user.full_name}[{user.id}] inline_query请求过时")
                 return
             if "can't parse entities" not in exc.message:
                 raise exc
-            Log.warning("inline_query发生BadRequest错误", exc_info=exc)
+            logger.warning("inline_query发生BadRequest错误", exc_info=exc)
             await ilq.answer(
                 results=[],
                 switch_pm_text="糟糕，发生错误了。",

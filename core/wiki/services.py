@@ -1,9 +1,9 @@
 from typing import List, NoReturn, Optional
 
 from core.wiki.cache import WikiCache
-from logger import Log
-from models.wiki.character import Character
-from models.wiki.weapon import Weapon
+from modules.wiki.character import Character
+from modules.wiki.weapon import Weapon
+from utils.log import logger
 
 
 class WikiService:
@@ -19,7 +19,7 @@ class WikiService:
 
     async def refresh_weapon(self) -> NoReturn:
         weapon_name_list = await Weapon.get_name_list()
-        Log.info(f"一共找到 {len(weapon_name_list)} 把武器信息")
+        logger.info(f"一共找到 {len(weapon_name_list)} 把武器信息")
 
         weapon_list = []
         num = 0
@@ -27,16 +27,16 @@ class WikiService:
             weapon_list.append(weapon)
             num += 1
             if num % 10 == 0:
-                Log.info(f"现在已经获取到 {num} 把武器信息")
+                logger.info(f"现在已经获取到 {num} 把武器信息")
 
-        Log.info("写入武器信息到Redis")
+        logger.info("写入武器信息到Redis")
         self._weapon_list = weapon_list
         await self._cache.delete("weapon")
         await self._cache.set("weapon", [i.json() for i in weapon_list])
 
     async def refresh_characters(self) -> NoReturn:
         character_name_list = await Character.get_name_list()
-        Log.info(f"一共找到 {len(character_name_list)} 个角色信息")
+        logger.info(f"一共找到 {len(character_name_list)} 个角色信息")
 
         character_list = []
         num = 0
@@ -44,9 +44,9 @@ class WikiService:
             character_list.append(character)
             num += 1
             if num % 10 == 0:
-                Log.info(f"现在已经获取到 {num} 个角色信息")
+                logger.info(f"现在已经获取到 {num} 个角色信息")
 
-        Log.info("写入角色信息到Redis")
+        logger.info("写入角色信息到Redis")
         self._character_list = character_list
         await self._cache.delete("characters")
         await self._cache.set("characters", [i.json() for i in character_list])
@@ -56,12 +56,12 @@ class WikiService:
         用于把Redis的缓存全部加载进Python
         :return:
         """
-        Log.info("正在重新获取Wiki")
-        Log.info("正在重新获取武器信息")
+        logger.info("正在重新获取Wiki")
+        logger.info("正在重新获取武器信息")
         await self.refresh_weapon()
-        Log.info("正在重新获取角色信息")
+        logger.info("正在重新获取角色信息")
         await self.refresh_characters()
-        Log.info("刷新成功")
+        logger.info("刷新成功")
 
     async def init(self) -> NoReturn:
         """

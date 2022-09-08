@@ -2,23 +2,21 @@ from typing import Optional
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, File
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, \
-    filters
+from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
-from logger import Log
-from models.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
-from plugins.base import BasePlugins
+from core.baseplugin import BasePlugin
+from core.plugin import Plugin, conversation, handler
+from modules.apihelper.artifact import ArtifactOcrRate, get_comment, get_format_sub_item
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.plugins.manager import listener_plugins_class
+from utils.log import logger
+
+COMMAND_RESULT = 1
 
 
-@listener_plugins_class()
-class ArtifactRate(BasePlugins):
+class ArtifactRate(Plugin.Conversation, BasePlugin.Conversation):
     """圣遗物评分"""
-
-    COMMAND_RESULT = 1
 
     STAR_KEYBOARD = [[
         InlineKeyboardButton(
@@ -32,21 +30,6 @@ class ArtifactRate(BasePlugins):
 
     def __init__(self):
         self.artifact_rate = ArtifactOcrRate()
-
-    @classmethod
-    def create_handlers(cls) -> list:
-        artifact_rate = cls()
-        return [
-            ConversationHandler(
-                entry_points=[CommandHandler('artifact_rate', artifact_rate.command_start),
-                              MessageHandler(filters.Regex(r"^圣遗物评分(.*)"), artifact_rate.command_start),
-                              MessageHandler(filters.CaptionRegex(r"^圣遗物评分(.*)"), artifact_rate.command_start)],
-                states={
-                    artifact_rate.COMMAND_RESULT: [CallbackQueryHandler(artifact_rate.command_result)]
-                },
-                fallbacks=[CommandHandler('cancel', artifact_rate.cancel)]
-            )
-        ]
 
     async def get_rate(self, artifact_attr: dict) -> str:
         rate_result_req = await self.artifact_rate.rate_artifact(artifact_attr)
@@ -67,12 +50,16 @@ class ArtifactRate(BasePlugins):
                f"{escape_markdown(get_comment(rate_result['total_percent']), version=2)}\n" \
                "_评分、识图均来自 genshin\\.pub_"
 
+    @conversation.entry_point
+    @handler.command(command='artifact_rate', filters=filters.ChatType.PRIVATE, block=True)
+    @handler.message(filters=filters.Regex(r"^圣遗物评分(.*)"), block=True)
+    @handler.message(filters=filters.CaptionRegex(r"^圣遗物评分(.*)"), block=True)
     @error_callable
     @restricts(return_data=ConversationHandler.END)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
-        message = update.message
+        message = update.effective_message
         user = update.effective_user
-        Log.info(f"用户 {user.full_name}[{user.id}] 圣遗物评分命令请求")
+        logger.info(f"用户 {user.full_name}[{user.id}] 圣遗物评分命令请求")
         context.user_data["artifact_attr"] = None
         photo_file: Optional[File] = None
         if message is None:
@@ -110,17 +97,19 @@ class ArtifactRate(BasePlugins):
         if artifact_attr.get("star") is None:
             await message.reply_text("无法识别圣遗物星级，请选择圣遗物星级",
                                      reply_markup=InlineKeyboardMarkup(self.STAR_KEYBOARD))
-            return self.COMMAND_RESULT
+            return COMMAND_RESULT
         if artifact_attr.get("level") is None:
             await message.reply_text("无法识别圣遗物等级，请选择圣遗物等级",
                                      reply_markup=InlineKeyboardMarkup(self.LEVEL_KEYBOARD))
-            return self.COMMAND_RESULT
+            return COMMAND_RESULT
         reply_message = await message.reply_text("识图成功！\n"
                                                  "正在评分中...")
         rate_text = await self.get_rate(artifact_attr)
         await reply_message.edit_text(rate_text, parse_mode=ParseMode.MARKDOWN_V2)
         return ConversationHandler.END
 
+    @conversation.state(state=COMMAND_RESULT)
+    @handler.callback_query()
     @error_callable
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         query = update.callback_query
@@ -151,11 +140,11 @@ class ArtifactRate(BasePlugins):
         if artifact_attr.get("level") is None:
             await query.edit_message_text("无法识别圣遗物等级，请选择圣遗物等级",
                                           reply_markup=InlineKeyboardMarkup(self.LEVEL_KEYBOARD))
-            return self.COMMAND_RESULT
+            return COMMAND_RESULT
         if artifact_attr.get("star") is None:
             await query.edit_message_text("无法识别圣遗物星级，请选择圣遗物星级",
                                           reply_markup=InlineKeyboardMarkup(self.STAR_KEYBOARD))
-            return self.COMMAND_RESULT
+            return COMMAND_RESULT
         await query.edit_message_text("正在评分中...")
         rate_text = await self.get_rate(artifact_attr)
         await query.edit_message_text(rate_text, parse_mode=ParseMode.MARKDOWN_V2)

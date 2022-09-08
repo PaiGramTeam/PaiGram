@@ -1,6 +1,6 @@
 from typing import List
 
-from utils.redisdb import RedisDB
+from core.base.redisdb import RedisDB
 
 
 class GameCache:

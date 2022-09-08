@@ -31,6 +31,7 @@ pip install --upgrade poetry
 
 ```bash
 poetry install
+playwright install chromium
 ```
 
 ### 3. 修改配置
@@ -50,7 +51,7 @@ alembic upgrade head
 ### 5. 运行
 
 ```bash
-python ./main.py
+python ./run.py
 ```
 
 ## 其他说明

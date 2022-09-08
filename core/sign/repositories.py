@@ -1,9 +1,9 @@
-from typing import List, cast, Optional
+from typing import List, Optional, cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from utils.mysql import MySQL
+from core.base.mysql import MySQL
 from .models import Sign
 
 

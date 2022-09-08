@@ -7,38 +7,27 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters
 
-from core.cookies.services import CookiesService
+from core.baseplugin import BasePlugin
+from core.cookies.error import CookiesNotFoundError
+from core.plugin import Plugin, handler
 from core.template.services import TemplateService
-from core.user.repositories import UserNotFoundError
-from core.user.services import UserService
-from logger import Log
-from plugins.base import BasePlugins
+from core.user.error import UserNotFoundError
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.helpers import url_to_file, get_genshin_client
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.helpers import url_to_file, get_genshin_client, get_public_genshin_client
+from utils.log import logger
 
 
-@listener_plugins_class()
-class UserStats(BasePlugins):
+class TeapotUnlocked(Exception):
+    """尘歌壶未解锁"""
+
+
+class UserStatsPlugins(Plugin, BasePlugin):
     """玩家统计查询"""
 
-    COMMAND_RESULT, = range(10200, 10201)
-
-    @inject
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
-                 template_service: TemplateService = None):
+    def __init__(self, template_service: TemplateService = None):
         self.template_service = template_service
-        self.cookies_service = cookies_service
-        self.user_service = user_service
         self.current_dir = os.getcwd()
-
-    @classmethod
-    def create_handlers(cls):
-        uid = cls()
-        return [CommandHandler('stats', uid.command_start, block=True),
-                MessageHandler(filters.Regex(r"^玩家统计查询(.*)"), uid.command_start, block=True)]
 
     async def _start_get_user_info(self, client: Client, uid: int = -1) -> bytes:
         if uid == -1:
@@ -47,24 +36,22 @@ class UserStats(BasePlugins):
             _uid = uid
         try:
             user_info = await client.get_genshin_user(_uid)
-        except GenshinException as error:
-            Log.warning("get_record_card请求失败", error)
-            raise error
+        except GenshinException as exc:
+            raise exc
         if user_info.teapot is None:
-            raise ValueError("洞庭湖未解锁")
+            raise TeapotUnlocked
         try:
             # 查询的UID如果是自己的，会返回DataNotPublic，自己查不了自己可还行......
             if uid > 0:
                 record_card_info = await client.get_record_card(uid)
             else:
                 record_card_info = await client.get_record_card()
-        except DataNotPublic as error:
-            Log.warning("get_record_card请求失败 查询的用户数据未公开", error)
+        except DataNotPublic:
+            logger.warning("get_record_card请求失败 查询的用户数据未公开")
             nickname = _uid
             user_uid = ""
-        except GenshinException as error:
-            Log.warning("get_record_card请求失败", error)
-            raise error
+        except GenshinException as exc:
+            raise exc
         else:
             nickname = record_card_info.nickname
             user_uid = record_card_info.uid
@@ -129,24 +116,31 @@ class UserStats(BasePlugins):
                                                       {"width": 1024, "height": 1024})
         return png_data
 
-    @error_callable
+    @handler(CommandHandler, command="stats", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^玩家统计查询(.*)"), block=False)
     @restricts(return_data=ConversationHandler.END)
+    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
-        message = update.message
-        Log.info(f"用户 {user.full_name}[{user.id}] 查询游戏用户命令请求")
+        message = update.effective_message
+        logger.info(f"用户 {user.full_name}[{user.id}] 查询游戏用户命令请求")
         uid: int = -1
         try:
             args = context.args
             if args is not None and len(args) >= 1:
                 uid = int(args[0])
-        except ValueError as error:
-            Log.error("获取 uid 发生错误！ 错误信息为", error)
+        except ValueError as exc:
+            logger.error("获取 uid 发生错误！ 错误信息为")
+            logger.exception(exc)
             await message.reply_text("输入错误")
             return ConversationHandler.END
         try:
-            client = await get_genshin_client(user.id, self.user_service, self.cookies_service)
-
+            try:
+                client = await get_genshin_client(user.id)
+            except CookiesNotFoundError:
+                client, _uid = await get_public_genshin_client(user.id)
+                if uid == -1:
+                    uid = _uid
             png_data = await self._start_get_user_info(client, uid)
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
@@ -155,13 +149,11 @@ class UserStats(BasePlugins):
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
-        except ValueError as exc:
-            if "洞庭湖未解锁" not in str(exc):
-                raise exc
+        except TeapotUnlocked:
             await message.reply_text("角色尘歌壶未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
             return ConversationHandler.END
         except AttributeError as exc:
-            Log.warning("角色数据有误", exc)
+            logger.warning("角色数据有误", exc)
             await message.reply_text("角色数据有误 估计是派蒙晕了")
             return ConversationHandler.END
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)

@@ -17,6 +17,7 @@ out/
 env/
 venv/
 cache/
+temp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -35,3 +36,6 @@ logs/
 ### DotEnv ###
 .env
 
+
+### private plugins ###
+plugins/private

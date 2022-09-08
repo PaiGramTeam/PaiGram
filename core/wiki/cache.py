@@ -1,7 +1,7 @@
 import ujson as json
 
-from models.wiki.base import Model
-from utils.redisdb import RedisDB
+from core.base.redisdb import RedisDB
+from modules.wiki.base import Model
 
 
 class WikiCache:

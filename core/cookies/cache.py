@@ -1,8 +1,8 @@
 from typing import List, Union
 
-from models.base import RegionEnum
+from core.base.redisdb import RedisDB
 from utils.error import RegionNotFoundError
-from utils.redisdb import RedisDB
+from utils.models.base import RegionEnum
 from .error import CookiesCachePoolExhausted
 
 
@@ -12,9 +12,11 @@ class PublicCookiesCache:
     def __init__(self, redis: RedisDB):
         self.client = redis.client
         self.score_qname = "cookie:public"
+        self.user_times_qname = "cookie:public:times"
         self.end = 20
+        self.user_times_ttl = 60 * 60 * 24
 
-    def get_queue_name(self, region: RegionEnum):
+    def get_public_cookies_queue_name(self, region: RegionEnum):
         if region == RegionEnum.HYPERION:
             return self.score_qname + ":yuanshen"
         elif region == RegionEnum.HOYOLAB:
@@ -22,26 +24,26 @@ class PublicCookiesCache:
         else:
             raise RegionNotFoundError(region.name)
 
-    async def putback(self, uid: int, region: RegionEnum):
+    async def putback_public_cookies(self, uid: int, region: RegionEnum):
         """重新添加单个到缓存列表
         :param uid:
         :param region:
         :return:
         """
-        qname = self.get_queue_name(region)
+        qname = self.get_public_cookies_queue_name(region)
         score_maps = {f"{uid}": 0}
         result = await self.client.zrem(qname, f"{uid}")
         if result == 1:
             await self.client.zadd(qname, score_maps)
         return result
 
-    async def add(self, uid: Union[List[int], int], region: RegionEnum):
+    async def add_public_cookies(self, uid: Union[List[int], int], region: RegionEnum):
         """单个或批量添加到缓存列表
         :param uid:
         :param region:
         :return: 成功返回列表大小
         """
-        qname = self.get_queue_name(region)
+        qname = self.get_public_cookies_queue_name(region)
         if isinstance(uid, int):
             score_maps = {f"{uid}": 0}
         elif isinstance(uid, list):
@@ -57,16 +59,17 @@ class PublicCookiesCache:
             add, count = await pipe.execute()
             return int(add), count
 
-    async def get(self, region: RegionEnum):
+    async def get_public_cookies(self, region: RegionEnum):
         """从缓存列表获取
         :param region:
         :return:
         """
-        qname = self.get_queue_name(region)
+        qname = self.get_public_cookies_queue_name(region)
         scores = await self.client.zrevrange(qname, 0, self.end, withscores=True, score_cast_func=int)
         if len(scores) > 0:
             def take_score(elem):
                 return elem[1]
+
             scores.sort(key=take_score)
             key = scores[0][0]
             score = scores[0][1]
@@ -77,16 +80,23 @@ class PublicCookiesCache:
             await pipe.execute()
         return int(key), score + 1
 
-    async def delete(self, uid: int, region: RegionEnum):
-        qname = self.get_queue_name(region)
+    async def delete_public_cookies(self, uid: int, region: RegionEnum):
+        qname = self.get_public_cookies_queue_name(region)
         async with self.client.pipeline(transaction=True) as pipe:
             await pipe.zrem(qname, uid)
             return await pipe.execute()
 
-    async def count(self, limit: bool = True):
+    async def get_public_cookies_count(self, limit: bool = True):
         async with self.client.pipeline(transaction=True) as pipe:
             if limit:
                 await pipe.zcount(0, self.end)
             else:
                 await pipe.zcard(self.score_qname)
             return await pipe.execute()
+
+    async def incr_by_user_times(self, user_id: Union[List[int], int]):
+        qname = self.user_times_qname + f":{user_id}"
+        times = await self.client.incrby(qname)
+        if times <= 1:
+            await self.client.expire(qname, self.user_times_ttl)
+        return times

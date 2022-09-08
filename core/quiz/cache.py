@@ -2,8 +2,8 @@ from typing import List
 
 import ujson
 
-from utils.redisdb import RedisDB
-from .models import Question, Answer
+from core.base.redisdb import RedisDB
+from .models import Answer, Question
 
 
 class QuizCache:

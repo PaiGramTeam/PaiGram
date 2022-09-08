@@ -7,34 +7,20 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import filters, CommandHandler, MessageHandler, CallbackContext
 
+from core.baseplugin import BasePlugin
+from core.plugin import Plugin, handler
 from core.template import TemplateService
-from logger import Log
-from models.apihelper.gacha import GachaInfo
-from plugins.base import BasePlugins
+from modules.apihelper.gacha import GachaInfo
 from plugins.genshin.gacha.wish import WishCountInfo, get_one
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.log import logger
 
 
-@listener_plugins_class()
-class Gacha(BasePlugins):
+class Gacha(Plugin, BasePlugin):
     """抽卡模拟器（非首模拟器/减寿模拟器）"""
 
-    CHECK_SERVER, COMMAND_RESULT = range(10600, 10602)
-
-    @classmethod
-    def create_handlers(cls) -> list:
-        gacha = cls()
-        return [
-            CommandHandler("gacha", gacha.command_start, block=False),
-            MessageHandler(filters.Regex("^抽卡模拟器(.*)"), gacha.command_start, block=False),
-            MessageHandler(filters.Regex("^非首模拟器(.*)"), gacha.command_start, block=False),
-        ]
-
-    @inject
     def __init__(self, template_service: TemplateService = None):
         self.gacha = GachaInfo()
         self.template_service = template_service
@@ -59,6 +45,9 @@ class Gacha(BasePlugins):
         gacha_info["gacha_id"] = gacha_id
         return gacha_info
 
+    @handler(CommandHandler, command="gacha", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^深渊数据查询(.*)"), block=False)
+    @handler(MessageHandler, filters=filters.Regex("^非首模拟器(.*)"), block=False)
     @restricts(filters.ChatType.GROUPS, restricts_time=20, try_delete_message=True)
     @restricts(filters.ChatType.PRIVATE)
     @error_callable
@@ -80,7 +69,7 @@ class Gacha(BasePlugins):
                 return
         else:
             gacha_info = await self.gacha_info(default=True)
-        Log.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
+        logger.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
         # 用户数据储存和处理
         gacha_id: str = gacha_info["gacha_id"]
         user_gacha: dict[str, WishCountInfo] = context.user_data.get("gacha")
@@ -95,7 +84,7 @@ class Gacha(BasePlugins):
         if re_color is None:
             title_html = BeautifulSoup(title, "lxml")
             pool_name = title_html.text
-            Log.warning(f"卡池信息 title 提取 color 失败 title[{title}]")
+            logger.warning(f"卡池信息 title 提取 color 失败 title[{title}]")
         else:
             color = re_color.group(1)
             title_html = BeautifulSoup(title, "lxml")

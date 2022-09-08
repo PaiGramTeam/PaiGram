@@ -1,35 +1,38 @@
 from functools import wraps
-from typing import Callable
+from typing import Callable, cast
 
-from core.admin.services import BotAdminService
-from utils.service.inject import inject
+from telegram import Update
+
+from core.admin import BotAdminService
+from core.bot import bot
+from core.error import ServiceNotFoundError
+
+bot_admin_service = bot.services.get(BotAdminService)
 
 
 def bot_admins_rights_check(func: Callable) -> Callable:
     """BOT ADMIN 权限检查"""
 
-    @inject
-    def get_bot_admin_service(bot_admin_service: BotAdminService = None):
-        return bot_admin_service
-
     @wraps(func)
     async def decorator(*args, **kwargs):
         if len(args) == 3:
             # self update context
-            _, update, context = args
+            _, update, _ = args
         elif len(args) == 2:
             # update context
-            update, context = args
+            update, _ = args
         else:
             return await func(*args, **kwargs)
-        bot_admin_service = get_bot_admin_service()
         if bot_admin_service is None:
-            raise RuntimeError("bot_admin_service is None")
+            raise ServiceNotFoundError("BotAdminService")
         admin_list = await bot_admin_service.get_admin_list()
-        if update.message.from_user.id in admin_list:
+        update = cast(Update, update)
+        message = update.effective_message
+        user = update.effective_user
+        if user.id in admin_list:
             return await func(*args, **kwargs)
         else:
-            await update.message.reply_text("权限不足")
+            await message.reply_text("权限不足")
         return None
 
     return decorator

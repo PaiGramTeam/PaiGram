@@ -8,38 +8,28 @@ from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, \
     CallbackContext
 
+from core.baseplugin import BasePlugin
+from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
+from core.plugin import Plugin, handler
 from core.template.services import TemplateService
-from core.user.repositories import UserNotFoundError
+from core.user.error import UserNotFoundError
 from core.user.services import UserService
-from logger import Log
-from plugins.base import BasePlugins
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
-from utils.plugins.manager import listener_plugins_class
-from utils.service.inject import inject
+from utils.log import logger
 
 
-@listener_plugins_class()
-class DailyNote(BasePlugins):
+class DailyNote(Plugin, BasePlugin):
     """每日便签"""
 
-    COMMAND_RESULT, = range(10200, 10201)
-
-    @inject
     def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
                  template_service: TemplateService = None):
         self.template_service = template_service
         self.cookies_service = cookies_service
         self.user_service = user_service
         self.current_dir = os.getcwd()
-
-    @classmethod
-    def create_handlers(cls) -> list:
-        daily_note = cls()
-        return [CommandHandler('dailynote', daily_note.command_start, block=True),
-                MessageHandler(filters.Regex(r"^当前状态(.*)"), daily_note.command_start, block=True)]
 
     async def _get_daily_note(self, client) -> bytes:
         daily_info = await client.get_genshin_notes(client.uid)
@@ -89,16 +79,18 @@ class DailyNote(BasePlugins):
                                                       {"width": 600, "height": 548}, full_page=False)
         return png_data
 
-    @restricts()
+    @handler(CommandHandler, command="dailynote", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^当前状态(.*)"), block=False)
+    @restricts(return_data=ConversationHandler.END)
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
         message = update.message
-        Log.info(f"用户 {user.full_name}[{user.id}] 查询游戏状态命令请求")
+        logger.info(f"用户 {user.full_name}[{user.id}] 查询游戏状态命令请求")
         try:
-            client = await get_genshin_client(user.id, self.user_service, self.cookies_service)
+            client = await get_genshin_client(user.id)
             png_data = await self._get_daily_note(client)
-        except UserNotFoundError:
+        except (UserNotFoundError, CookiesNotFoundError):
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)

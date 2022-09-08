@@ -3,9 +3,10 @@ from typing import cast, List
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from models.base import RegionEnum
-from utils.error import NotFoundError, RegionNotFoundError
-from utils.mysql import MySQL
+from core.base.mysql import MySQL
+from utils.error import RegionNotFoundError
+from utils.models.base import RegionEnum
+from .error import CookiesNotFoundError
 from .models import HyperionCookie, HoyolabCookie, Cookies
 
 
@@ -47,16 +48,11 @@ class CookiesRepository:
     async def update_cookies_ex(self, cookies: Cookies, region: RegionEnum):
         async with self.mysql.Session() as session:
             session = cast(AsyncSession, session)
-            if region == RegionEnum.HYPERION:
-                session.add(cookies)
-                await session.commit()
-                await session.refresh(cookies)
-            elif region == RegionEnum.HOYOLAB:
-                await session.add(cookies)
-                await session.commit()
-                await session.refresh(cookies)
-            else:
+            if region not in [RegionEnum.HYPERION, RegionEnum.HOYOLAB]:
                 raise RegionNotFoundError(region.name)
+            session.add(cookies)
+            await session.commit()
+            await session.refresh(cookies)
 
     async def get_cookies(self, user_id, region: RegionEnum) -> Cookies:
         async with self.mysql.Session() as session:
@@ -93,8 +89,3 @@ class CookiesRepository:
                 return [cookies[0] for cookies in db_cookies]
             else:
                 raise RegionNotFoundError(region.name)
-
-
-class CookiesNotFoundError(NotFoundError):
-    entity_name: str = "CookiesRepository"
-    entity_value_name: str = "user_id"
