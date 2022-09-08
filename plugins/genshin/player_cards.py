@@ -237,8 +237,6 @@ class RenderTemplate:
         """在 equipments 数组中找到圣遗物，并转换成带有分数的 model。equipments 数组包含圣遗物和武器"""
         return [
             Artifact(e)
-            for e in filter(
-                lambda x: x.type == EquipmentsType.ARTIFACT,
-                self.character.equipments,
-            )
+            for e in self.character.equipments
+            if e.type == EquipmentsType.ARTIFACT
         ]
