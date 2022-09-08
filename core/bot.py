@@ -73,7 +73,10 @@ class Bot:
             try:
                 import_module(pkg)  # 导入插件
             except Exception as e:  # pylint: disable=W0703
-                logger.exception(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+                logger.exception(
+                    f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]',
+                    extra={'markup': True}
+                )
                 continue  # 如有错误则继续
         callback_dict: Dict[int, List[Callable]] = {}
         for plugin_cls in {*Plugin.__subclasses__(), *Plugin.Conversation.__subclasses__()}:
@@ -103,7 +106,10 @@ class Bot:
                     logger.debug(f'插件 "{path}" 添加了 {len(jobs)} 个任务')
                 logger.success(f'插件 "{path}" 载入成功')
             except Exception as e:  # pylint: disable=W0703
-                logger.exception(f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+                logger.exception(
+                    f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]',
+                    extra={'markup': True}
+                )
         if callback_dict:
             num = sum(len(callback_dict[i]) for i in callback_dict)
 
@@ -117,7 +123,8 @@ class Bot:
                 callback=_new_chat_member_callback, filters=StatusUpdate.NEW_CHAT_MEMBERS, block=False
             ))
             logger.success(
-                f'成功添加了 {num} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]'
+                f'成功添加了 {num} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]',
+                extra={'markup': True}
             )
 
     async def _start_base_services(self):
@@ -125,7 +132,10 @@ class Bot:
             try:
                 import_module(pkg)
             except Exception as e:  # pylint: disable=W0703
-                logger.exception(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+                logger.exception(
+                    f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]',
+                    extra={'markup': True}
+                )
                 continue
         for base_service_cls in Service.__subclasses__():
             try:
@@ -149,7 +159,10 @@ class Bot:
                 try:
                     import_module(pkg)
                 except Exception as e:  # pylint: disable=W0703
-                    logger.exception(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+                    logger.exception(
+                        f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]',
+                        extra={'markup': True}
+                    )
                     continue
 
     async def stop_services(self):
@@ -193,7 +206,7 @@ class Bot:
                     self.app.run_polling(close_loop=False)
                     break
                 except TimedOut:
-                    logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试")
+                    logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试", extra={'markup': True})
                     continue
                 except NetworkError as e:
                     logger.exception()

@@ -22,21 +22,21 @@ class RedisDB(Service):
 
     async def ping(self):
         if await self.client.ping():
-            logger.info("连接 [red]Redis[/] 成功")
+            logger.info("连接 [red]Redis[/] 成功", extra={'markup': True})
         else:
-            logger.info("连接 [red]Redis[/] 失败")
-            raise RuntimeError("连接 [red]Redis[/] 失败")
+            logger.info("连接 [red]Redis[/] 失败", extra={'markup': True})
+            raise RuntimeError("连接 Redis 失败")
 
     async def start(self):  # pylint: disable=W0221
         if self._loop is None:
             self._loop = asyncio.get_running_loop()
-        logger.info("正在尝试建立与 [red]Redis[/] 连接")
+        logger.info("正在尝试建立与 [red]Redis[/] 连接", extra={'markup': True})
         try:
             await self.ping()
         except (KeyboardInterrupt, SystemExit):
             pass
         except BaseException as exc:
-            logger.warning("尝试连接 [red]Redis[/] 失败，使用 [red]fakeredis[/] 模拟", exc)
+            logger.warning("尝试连接 [red]Redis[/] 失败，使用 [red]fakeredis[/] 模拟", exc, extra={'markup': True})
             self.client = fakeredis.aioredis.FakeRedis()
             await self.ping()
 

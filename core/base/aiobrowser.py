@@ -15,16 +15,16 @@ class AioBrowser(Service):
 
     async def start(self):
         if self._playwright is None:
-            logger.info("正在尝试启动 [blue]Playwright[/]")
+            logger.info("正在尝试启动 [blue]Playwright[/]", extra={'markup': True})
             self._playwright = await async_playwright().start()
-            logger.success("[blue]Playwright[/] 启动成功")
+            logger.success("[blue]Playwright[/] 启动成功", extra={'markup': True})
         if self.browser is None:
-            logger.info("正在尝试启动 [blue]Browser[/]")
+            logger.info("正在尝试启动 [blue]Browser[/]", extra={'markup': True})
             try:
                 self.browser = await self._playwright.chromium.launch(timeout=5000)
-                logger.success("[blue]Browser[/] 启动成功")
+                logger.success("[blue]Browser[/] 启动成功", extra={'markup': True})
             except TimeoutError as err:
-                logger.warning("[blue]Browser[/] 启动失败")
+                logger.warning("[blue]Browser[/] 启动失败", extra={'markup': True})
                 raise err
 
         return self.browser
