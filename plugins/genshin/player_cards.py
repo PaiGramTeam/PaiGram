@@ -6,6 +6,7 @@ from enkanetwork import (
     EnkaNetworkAPI,
     Equipments,
     EquipmentsType,
+    EquipmentsStats,
     Stats,
     CharacterInfo,
     Assets,
@@ -82,12 +83,37 @@ class PlayerCards(Plugin, BasePlugin):
             return
 
         data = await self.client.fetch_user(uid)
-        pngs = await asyncio.gather(*[
-            RenderTemplate(uid, c, self.template_service).render()
-            for c in data.characters
-        ])
+        pngs = await asyncio.gather(
+            *[
+                RenderTemplate(uid, c, self.template_service).render()
+                for c in data.characters
+            ]
+        )
         media = [InputMediaPhoto(png) for png in pngs]
         await message.reply_media_group(media)
+
+
+class Artifact(Equipments):
+    score: float
+    score_label: str
+    substat_scores: List[float]
+
+    def __init__(self, **data: Any) -> None:
+        super().__init__(**data)
+
+        # 圣遗物评分
+        self.score = 99
+        # 圣遗物评级
+        self.score_label = "SSS"
+
+        # 圣遗物单行属性评分
+        self.substat_scores = [self.substat_score(s) for s in self.detail.substats]
+
+        # 总分对齐系数
+        self.score_k = "100%"
+
+    def substat_score(stat: EquipmentsStats) -> float:
+        return 99
 
 
 class RenderTemplate:
@@ -111,12 +137,11 @@ class RenderTemplate:
             "character": self.character,
             "stats": await self.de_stats(),
             "weapon": self.find_weapon(),
-            "artifacts": list(
-                filter(
-                    lambda x: x.type == EquipmentsType.ARTIFACT,
-                    self.character.equipments,
-                )
-            ),
+            # 圣遗物评分
+            "artifact_total_score": 180.5,
+            # 圣遗物评级
+            "artifact_total_score_label": "S",
+            "artifacts": self.find_artifacts(),
         }
 
         # html = await self.template_service.render_async(
@@ -207,3 +232,13 @@ class RenderTemplate:
         for item in self.character.equipments:
             if item.type == EquipmentsType.WEAPON:
                 return item
+
+    def find_artifacts(self) -> List[Artifact]:
+        """在 equipments 数组中找到圣遗物，并转换成带有分数的 model。equipments 数组包含圣遗物和武器"""
+        return [
+            Artifact(e)
+            for e in filter(
+                lambda x: x.type == EquipmentsType.ARTIFACT,
+                self.character.equipments,
+            )
+        ]

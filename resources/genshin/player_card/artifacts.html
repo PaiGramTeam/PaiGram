@@ -20,7 +20,8 @@
         <div class="italic">{{ item.detail.mainstats.value }}</div>
       </div>
       <div class="text-yellow-400 text-base">
-        <span class="italic">46.7</span> 分 - SSS
+        <span class="italic"> {{ item.score }} </span> 分 - {{ item.score_label
+        }}
       </div>
     </div>
   </div>
@@ -29,7 +30,10 @@
     <div class="px-4 py-1 odd:bg-white odd:bg-opacity-10 flex space-x-4">
       <div class="flex-1 truncate">{{ stat.name }}</div>
       <div class="min-w-30 italic text-right">+{{ stat.value }}</div>
-      <div class="min-w-30 text-right"><span class="italic">99</span> <span class="text-sm">分</span></div>
+      <div class="min-w-30 text-right">
+        <span class="italic">{{ item.substat_scores[loop.index0] }}</span>
+        <span class="text-sm">分</span>
+      </div>
     </div>
     {% endfor %}
   </div>
