@@ -118,6 +118,7 @@ class RenderTemplate:
         player_card_data["constellations"] = await self.de_constellations()
         player_card_data["skills"] = await self.de_skills()
         player_card_data["stats"] = await self.de_stats()
+        player_card_data["weapon"] = await self.de_weapon()
         # artifacts = await self.de_artifacts()
         # for artifact in artifacts:
         #     player_card_data["infos"].append(artifact)
