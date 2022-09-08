@@ -1,14 +1,12 @@
 import json
-from typing import Dict, Union, Optional, List, cast
+from typing import Dict, Union, Optional, List
 
 from enkanetwork import (
     EnkaNetworkAPI,
     Equipments,
     EquipmentsType,
-    DigitType,
     Stats,
     CharacterInfo,
-    EnkaNetworkResponse,
     Assets,
 )
 from telegram import Update
@@ -81,12 +79,10 @@ class PlayerCards(Plugin, BasePlugin):
                     context, message.chat_id, message.message_id, 30
                 )
             return
-        # 注意！！！！！！！！！！！！！！！！！！！！！！！！！！！！
-        # 调试使用 非常建议手动缓存到cache 因为enka时不时会奔溃
-        # data = await self.client.fetch_user(uid)
-        d = await self.cache.get_data(uid)
-        data = EnkaNetworkResponse.parse_obj(d)
+
+        data = await self.client.fetch_user(uid)
         character_info = data.characters[0]
+        logger.debug(character_info)
         render_template = RenderTemplate(uid, character_info, self.template_service)
         png_data = await render_template.render()
         await message.reply_photo(png_data)
@@ -113,16 +109,19 @@ class RenderTemplate:
             "character": self.character,
             "stats": await self.de_stats(),
             "weapon": self.find_weapon(),
+            "artifacts": list(
+                filter(
+                    lambda x: x.type == EquipmentsType.ARTIFACT,
+                    self.character.equipments,
+                )
+            ),
         }
 
-        # artifacts = await self.de_artifacts()
-        # for artifact in artifacts:
-        #     data["infos"].append(artifact)
+        # html = await self.template_service.render_async(
+        #     "genshin/player_card", "player_card.html", data
+        # )
+        # logger.debug(html)
 
-        html = await self.template_service.render_async(
-            "genshin/player_card", "player_card.html", data
-        )
-        print(html)
         return await self.template_service.render(
             "genshin/player_card",
             "player_card.html",
@@ -183,7 +182,7 @@ class RenderTemplate:
         return items
 
     async def cache_images(self) -> None:
-        '''缓存所有图片到本地'''
+        """缓存所有图片到本地"""
         c = self.character
         # 角色
         c.image.banner.url = await url_to_file(c.image.banner.url)
@@ -201,39 +200,7 @@ class RenderTemplate:
             item.detail.icon.url = await url_to_file(item.detail.icon.url)
 
     def find_weapon(self) -> Union[Equipments, None]:
-        '''在 equipments 数组中找到武器，equipments 数组包含圣遗物和武器'''
+        """在 equipments 数组中找到武器，equipments 数组包含圣遗物和武器"""
         for item in self.character.equipments:
             if item.type == EquipmentsType.WEAPON:
                 return item
-
-    async def de_artifacts(self) -> List[str]:
-        html_list: List[str] = []
-        for artifact in filter(
-            lambda x: x.type == EquipmentsType.ARTIFACT, self.character.equipments
-        ):
-            artifact = cast(Equipments, artifact)
-            img = await url_to_file(artifact.detail.icon.url)
-            artifacts_data = {
-                "img": img,
-                "level": artifact.level,
-                "name": artifact.detail.name,
-                "detail_names": [],
-                "detail_values": [],
-                "detail_scores": [],
-            }
-            artifacts_data["detail_names"].append(artifact.detail.mainstats.name)
-            artifacts_data["detail_values"].append(
-                f"{artifact.detail.mainstats.value}{'%' if artifact.detail.mainstats.type == DigitType.PERCENT else ''}"
-            )
-            artifacts_data["detail_scores"].append("-")
-            for substate in artifact.detail.substats:
-                artifacts_data["detail_names"].append(substate.name)
-                artifacts_data["detail_values"].append(
-                    f"{substate.value}{'%' if substate.type == DigitType.PERCENT else ''}"
-                )
-                artifacts_data["detail_scores"].append(substate)
-            html = await self.template_service.render_async(
-                "genshin/player_card", "artifacts.html", artifacts_data
-            )
-            html_list.append(html)
-        return html_list
