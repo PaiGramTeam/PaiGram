@@ -1,14 +1,10 @@
-<div class="flex-col bg-black bg-opacity-20 rounded-lg justify-center mb-4">
-  <div class="flex flex-row text-white">
-    <div class="flex flex-col w-full">
-      {% for name in names %}
-      <div class="px-2 py-1 bg-white bg-opacity-10">{{name}}</div>
-      {% endfor %}
-    </div>
-    <div class="flex flex-col w-full">
-      {% for value in values %}
-      <div class="px-2 py-1 bg-white bg-opacity-10">{{value}}</div>
-      {% endfor %}
-    </div>
+<div class="rounded-lg overflow-hidden bg-black bg-opacity-20">
+  {% for (name, value) in stats %}
+  <div
+    class="flex justify-between px-10 py-1.5 even:bg-black even:bg-opacity-30"
+  >
+    <div>{{ name }}</div>
+    <div class="italic">{{ value }}</div>
   </div>
+  {% endfor %}
 </div>

@@ -1,77 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
     <title>Title</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../../js/tailwindcss-3.1.8.js"></script>
     <style>
-        .text-shadow {
-            text-shadow: 0 .08em .1em #000, 0 .1em .3em rgba(0, 0, 0, .4);
-        }
-        .data {
-            background: url({{background}});
-            width: 1400px;
-            height: 700px;
-            overflow: hidden;
-        }
+      .text-shadow {
+        text-shadow: 0 0.08em 0.1em #000, 0 0.1em 0.3em rgba(0, 0, 0, 0.4);
+      }
 
-        .skills {
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center center;
-            position: relative;
-        }
-
-        .skills img {
-            width: 46%;
-            height: 46%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            margin: -22% 0 0 -23%;
-        }
+      .star {
+        background-image: url("./test/star.png");
+        height: 1rem;
+        width: 5rem;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+      .star-1 {
+        background-position-y: 0;
+      }
+      .star-2 {
+        background-position-y: -1rem;
+      }
+      .star-3 {
+        background-position-y: -2rem;
+      }
+      .star-4 {
+        background-position-y: -3rem;
+      }
+      .star-5 {
+        background-position-y: -4rem;
+      }
     </style>
-</head>
-<body>
-<div class="data w-full flex flex-col h-screen bg-no-repeat bg-cover relative">
-    <!-- Character Background -->
-    <div class="characters flex m-4 mb-1 relative">
-        <div class="absolute w-11/12 -top-8 -left-40 h-opacity-90">
-            <img class="object-cover h-full" src="{{image_banner}}" alt="">
-        </div>
-        {% autoescape off %}
-        {{constellations}}
-        {% endautoescape %}
-        <div class="w-full relative">
-            <div class="text-right mb-4">
-                <div class="flex flex-row-reverse mb-2">
-                    <div class="characters-name text-white text-4xl font-bold text-shadow">{{name}}</div>
+  </head>
+  <body class="text-xl text-neutral-200">
+    <div
+      class="data bg-no-repeat bg-cover pb-5 min-w-[845px] overflow-hidden"
+      style="background-image: url('{{ background }}')"
+    >
+      <div class="relative">
+        <!-- Character Background -->
+        <div
+          class="absolute w-full h-full -left-1/4 top-8 opacity-80 bg-contain bg-no-repeat bg-center"
+          style="background-image: url('{{image_banner}}');"
+        ></div>
+        <div class="relative w-full flex p-5 mb-4 space-x-8 overflow-hidden">
+          {% autoescape off %} {{constellations}} {% endautoescape %}
+
+          <div class="flex-1 space-y-4">
+            <div class="text-right italic">
+              <div class="characters-name text-5xl font-bold text-shadow mb-2">
+                {{ name }}
+              </div>
+              <div
+                class="flex flex-row justify-end text-2xl text-shadow space-x-2"
+              >
+                <div class="characters-level pr-4">UID {{ uid }}</div>
+                <div class="characters-level">Lv.{{ level }}</div>
+                <div class="characters-level bg-red-600 rounded-lg px-2">
+                  {{ friendship_level }}
                 </div>
-                <div class="flex flex-row-reverse text-white text-2xl font-bold text-shadow">
-                    <div class="characters-level ml-4 bg-red-600 rounded-lg px-2 ">
-                        {{friendship_level}}
-                    </div>
-                    <div class="characters-level ml-4">{{level}}</div>
-                    <div class="characters-level ">UID {{uid}}</div>
-                </div>
+              </div>
             </div>
-            {% autoescape  off %}
-                {{skills}}
-            {% endautoescape %}
-            {% autoescape  off %}
-                {{stats}}
-            {% endautoescape %}
+
+            {% autoescape off %} {{skills}} {% endautoescape %} {% autoescape
+            off %} {{stats}} {% endautoescape %}
+          </div>
         </div>
-    </div>
-    <div class="info md-4 mx-4 relative">
+      </div>
+
+      <!-- Info -->
+      <div class="px-5 relative">
         <div class="grid grid-cols-3 gap-2">
-            {% for info in infos %}
-            {% autoescape  off %}
-                {{info}}
-            {% endautoescape %}
-            {% endfor %}
+          {% for info in infos %} {% autoescape off %} {{info}} {% endautoescape
+          %} {% endfor %}
         </div>
+      </div>
     </div>
-</div>
-</body>
+  </body>
 </html>

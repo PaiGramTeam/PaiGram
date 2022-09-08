@@ -1,10 +1,17 @@
-<div class="flex flex-row mb-4">
-    {% for item in items %}
-    <div class="mx-auto flex flex-col items-center justify-center">
-        <div class="w-24 h-24 skills" style="background-image: url({{item.background}})">
-            <img src="{{item.img}}" alt="" class="object-cover">
-        </div>
-        <div class="text-1xl text-white bg-red-600 rounded-lg text-center px-2 bg-opacity-20">{{item.level}}</div>
+<div class="flex flex-row">
+  {% for item in items %}
+  <div class="mx-auto flex flex-col items-center justify-center">
+    <div
+      class="w-32 h-32 flex items-center justify-center bg-contain bg-no-repeat bg-center"
+      style="background-image: url('{{ item.background }}')"
+    >
+      <img src="{{ item.img }}" alt="" class="w-16 h-16" />
     </div>
-    {% endfor %}
+    <div
+      class="w-10 -mt-8 text-xl font-medium bg-white text-neutral-800 italic rounded-lg text-center bg-opacity-80"
+    >
+      {{item.level}}
+    </div>
+  </div>
+  {% endfor %}
 </div>

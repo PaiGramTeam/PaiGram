@@ -91,6 +91,7 @@ class RenderTemplate:
         player_card_data["background"] = background
         player_card_data["image_banner"] = await url_to_file(self.character.image.banner.url)
         player_card_data["friendship_level"] = self.character.friendship_level
+        player_card_data["name"] = self.character.name
         player_card_data["level"] = self.character.level
         player_card_data["uid"] = self.uid
 
@@ -103,33 +104,24 @@ class RenderTemplate:
         data = await self.template_service.render_async('genshin/player_card', "player_card.html", player_card_data)
         print(data)
         return await self.template_service.render('genshin/player_card', "player_card.html", player_card_data,
-                                                  {"width": 900, "height": 1080}, full_page=True)
+                                                  {"width": 845, 'height': 1080}, full_page=True)
 
     async def de_stats(self) -> str:
-        stats_data = {
-            "names": [],
-            "values": []
-        }
-        stats_data["names"].append("基础生命值")
-        stats_data["values"].append(self.character.stats.BASE_HP.to_rounded())
-        stats_data["names"].append("生命值")
-        stats_data["values"].append(self.character.stats.FIGHT_PROP_MAX_HP.to_rounded())
-        stats_data["names"].append("基础攻击力")
-        stats_data["values"].append(self.character.stats.FIGHT_PROP_BASE_ATTACK.to_rounded())
-        stats_data["names"].append("攻击力")
-        stats_data["values"].append(self.character.stats.FIGHT_PROP_CUR_ATTACK.to_rounded())
-        stats_data["names"].append("基础防御力")
-        stats_data["values"].append(self.character.stats.FIGHT_PROP_BASE_DEFENSE.to_rounded())
-        stats_data["names"].append("防御力")
-        stats_data["values"].append(self.character.stats.FIGHT_PROP_CUR_DEFENSE.to_rounded())
-        stats_data["names"].append("暴击率")
-        stats_data["values"].append(self.character.stats.FIGHT_PROP_CRITICAL.to_percentage_symbol())
-        stats_data["names"].append("暴击伤害")
-        stats_data["values"].append(self.character.stats.FIGHT_PROP_CRITICAL_HURT.to_percentage_symbol())
-        stats_data["names"].append("元素充能效率")
-        stats_data["values"].append(self.character.stats.FIGHT_PROP_CHARGE_EFFICIENCY.to_percentage_symbol())
-        stats_data["names"].append("元素精通")
-        stats_data["values"].append(self.character.stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded())
+        stats_data = []
+        logger.debug(self.character.stats)
+
+        stats_data.append(("基础生命值", self.character.stats.BASE_HP.to_rounded()))
+
+        stats_data.append(("生命值", self.character.stats.FIGHT_PROP_MAX_HP.to_rounded()))
+        stats_data.append(("基础攻击力", self.character.stats.FIGHT_PROP_BASE_ATTACK.to_rounded()))
+        stats_data.append(("攻击力", self.character.stats.FIGHT_PROP_CUR_ATTACK.to_rounded()))
+        stats_data.append(("基础防御力", self.character.stats.FIGHT_PROP_BASE_DEFENSE.to_rounded()))
+        stats_data.append(("防御力", self.character.stats.FIGHT_PROP_CUR_DEFENSE.to_rounded()))
+        stats_data.append(("暴击率", self.character.stats.FIGHT_PROP_CRITICAL.to_percentage_symbol()))
+        stats_data.append(("暴击伤害", self.character.stats.FIGHT_PROP_CRITICAL_HURT.to_percentage_symbol()))
+        stats_data.append(("元素充能效率", self.character.stats.FIGHT_PROP_CHARGE_EFFICIENCY.to_percentage_symbol()))
+        stats_data.append(("元素精通", self.character.stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded()))
+
         # 查找元素伤害加成和治疗加成
         for stat in self.character.stats:
             if 40 <= stat[1].id <= 46:  # 元素伤害加成
@@ -147,9 +139,8 @@ class RenderTemplate:
             if name is None:
                 continue
             logger.info(f"{name} -> {value}")
-            stats_data["names"].append(name)
-            stats_data["values"].append(value)
-        return await self.template_service.render_async('genshin/player_card', "stats.html", stats_data)
+            stats_data.append((name, value))
+        return await self.template_service.render_async('genshin/player_card', "stats.html", { 'stats': stats_data })
 
     async def de_skills(self) -> str:
         background = f"img/talent-{self.character.element.name.lower()}.png"
