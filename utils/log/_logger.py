@@ -279,7 +279,6 @@ class Handler(DefaultRichHandler):
         self.console = log_console
         self.rich_tracebacks = True
         self.tracebacks_show_locals = True
-        self.markup = True
         self.keywords = [*self.KEYWORDS, 'BOT']
 
     def render(
