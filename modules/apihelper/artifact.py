@@ -36,9 +36,21 @@ class ArtifactOcrRate:
     OCR_URL = "https://api.genshin.pub/api/v1/app/ocr"
     RATE_URL = "https://api.genshin.pub/api/v1/relic/rate"
     HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36",
-        "Content-Type": "bot/json; charset=utf-8",
+        'authority': 'api.genshin.pub',
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'zh-CN,zh;q=0.9,zh-Hans;q=0.8,und;q=0.7,en;q=0.6,zh-Hant;q=0.5,ja;q=0.4',
+        'content-type': 'application/json;charset=UTF-8',
+        'dnt': '1',
+        'origin': 'https://genshin.pub',
+        'referer': 'https://genshin.pub/',
+        'sec-ch-ua': '"Chromium";v="104", " Not A;Brand";v="99"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+        'sec-gpc': '1',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.115 Safari/537.36',
     }
 
     def __init__(self):
