@@ -110,7 +110,30 @@ class RenderTemplate:
             "names": [],
             "values": []
         }
+        stats_data["names"].append("基础生命值")
+        stats_data["values"].append(self.character.stats.BASE_HP.to_rounded())
+        stats_data["names"].append("生命值")
+        stats_data["values"].append(self.character.stats.FIGHT_PROP_MAX_HP.to_rounded())
+        stats_data["names"].append("基础攻击力")
+        stats_data["values"].append(self.character.stats.FIGHT_PROP_BASE_ATTACK.to_rounded())
+        stats_data["names"].append("攻击力")
+        stats_data["values"].append(self.character.stats.FIGHT_PROP_CUR_ATTACK.to_rounded())
+        stats_data["names"].append("基础防御力")
+        stats_data["values"].append(self.character.stats.FIGHT_PROP_BASE_DEFENSE.to_rounded())
+        stats_data["names"].append("防御力")
+        stats_data["values"].append(self.character.stats.FIGHT_PROP_CUR_DEFENSE.to_rounded())
+        stats_data["names"].append("暴击率")
+        stats_data["values"].append(self.character.stats.FIGHT_PROP_CRITICAL.to_percentage_symbol())
+        stats_data["names"].append("暴击伤害")
+        stats_data["values"].append(self.character.stats.FIGHT_PROP_CRITICAL_HURT.to_percentage_symbol())
+        stats_data["names"].append("元素充能效率")
+        stats_data["values"].append(self.character.stats.FIGHT_PROP_CHARGE_EFFICIENCY.to_percentage_symbol())
+        stats_data["names"].append("元素精通")
+        stats_data["values"].append(self.character.stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded())
+        # 查找
         for stat in self.character.stats:
+            if "_ADD_HURT" not in stat[0]:
+                continue
             name = assets.get_hash_map(stat[0])
             if name is None:
                 continue
