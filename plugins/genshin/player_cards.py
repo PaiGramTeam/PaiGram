@@ -140,11 +140,11 @@ class RenderTemplate:
                 pass
             else:
                 continue
-            name = assets.get_hash_map(stat[0])
-            if name is None:
-                continue
             value = stat[1].to_rounded() if isinstance(stat[1], Stats) else stat[1].to_percentage_symbol()
             if value == 0 or value == "0%":
+                continue
+            name = assets.get_hash_map(stat[0])
+            if name is None:
                 continue
             logger.info(f"{name} -> {value}")
             stats_data["names"].append(name)
