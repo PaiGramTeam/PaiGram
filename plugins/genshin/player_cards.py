@@ -130,9 +130,9 @@ class RenderTemplate:
         stats_data["values"].append(self.character.stats.FIGHT_PROP_CHARGE_EFFICIENCY.to_percentage_symbol())
         stats_data["names"].append("元素精通")
         stats_data["values"].append(self.character.stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded())
-        # 查找
+        # 查找元素伤害加成和治疗加成
         for stat in self.character.stats:
-            if "_ADD_HURT" not in stat[0]:
+            if "_ADD_HURT" not in stat[0] or "FIGHT_PROP_HEAL_ADD" == stat[0]:
                 continue
             name = assets.get_hash_map(stat[0])
             if name is None:
