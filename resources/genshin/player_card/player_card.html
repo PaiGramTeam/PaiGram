@@ -3,13 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <link href="./player_card.html.css" rel="stylesheet">
-    <link href="../styles/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .text-shadow {
+            text-shadow: 0 .08em .1em #000, 0 .1em .3em rgba(0, 0, 0, .4);
+        }
+        .data {
+            background: url({{background}});
+            width: 1400px;
+            height: 700px;
+            overflow: hidden;
+        }
+
+        .skills {
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center center;
+            position: relative;
+        }
+
+        .skills img {
+            width: 46%;
+            height: 46%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin: -22% 0 0 -23%;
+        }
+    </style>
 </head>
-<div class="container">
-
-</div>
 <body>
-
+<div class="data w-full flex flex-col h-screen bg-no-repeat bg-cover relative">
+    <!-- Character Background -->
+    <div class="characters flex m-4 mb-1 relative">
+        <div class="absolute w-11/12 -top-8 -left-40 h-opacity-90">
+            <img class="object-cover h-full" src="{{image_banner}}" alt="">
+        </div>
+        {% autoescape off %}
+        {{constellations}}
+        {% endautoescape %}
+        <div class="w-full relative">
+            <div class="text-right mb-4">
+                <div class="flex flex-row-reverse mb-2">
+                    <div class="characters-name text-white text-4xl font-bold text-shadow">{{name}}</div>
+                </div>
+                <div class="flex flex-row-reverse text-white text-2xl font-bold text-shadow">
+                    <div class="characters-level ml-4 bg-red-600 rounded-lg px-2 ">
+                        {{friendship_level}}
+                    </div>
+                    <div class="characters-level ml-4">{{level}}</div>
+                    <div class="characters-level ">UID {{uid}}</div>
+                </div>
+            </div>
+            {% autoescape  off %}
+                {{skills}}
+            {% endautoescape %}
+            {% autoescape  off %}
+                {{stats}}
+            {% endautoescape %}
+        </div>
+    </div>
+    <div class="info md-4 mx-4 relative">
+        <div class="grid grid-cols-3 gap-2">
+            {% for info in infos %}
+            {% autoescape  off %}
+                {{info}}
+            {% endautoescape %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
 </body>
 </html>

@@ -1,0 +1,10 @@
+<div class="flex flex-row mb-4">
+    {% for item in items %}
+    <div class="mx-auto flex flex-col items-center justify-center">
+        <div class="w-24 h-24 skills" style="background-image: url({{item.background}})">
+            <img src="{{item.img}}" alt="" class="object-cover">
+        </div>
+        <div class="text-1xl text-white bg-red-600 rounded-lg text-center px-2 bg-opacity-20">{{item.level}}</div>
+    </div>
+    {% endfor %}
+</div>
