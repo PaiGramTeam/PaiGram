@@ -1,7 +1,8 @@
 import json
 from typing import Union, Optional, List, cast
 
-from enkanetwork import EnkaNetworkAPI, Equipments, EquipmentsType, DigitType, Stats, CharacterInfo, EnkaNetworkResponse
+from enkanetwork import EnkaNetworkAPI, Equipments, EquipmentsType, DigitType, Stats, CharacterInfo, \
+    EnkaNetworkResponse, Assets
 from telegram import Update
 from telegram.ext import CommandHandler, filters, CallbackContext, MessageHandler
 
@@ -14,7 +15,10 @@ from core.user.error import UserNotFoundError
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
+from utils.log import logger
 from utils.models.base import RegionEnum
+
+assets = Assets(lang="chs")
 
 
 class PlayerCardsCache:
@@ -107,10 +111,14 @@ class RenderTemplate:
             "values": []
         }
         for stat in self.character.stats:
-            value = stat[1].to_rounded() if isinstance(stat[1], Stats) else stat[1].to_percentage_symbol()
-            if value == 0:
+            name = assets.get_hash_map(stat[0])
+            if name is None:
                 continue
-            stats_data["names"].append(value)
+            value = stat[1].to_rounded() if isinstance(stat[1], Stats) else stat[1].to_percentage_symbol()
+            if value == 0 or value == "0%":
+                continue
+            logger.info(f"{name} -> {value}")
+            stats_data["names"].append(name)
             stats_data["values"].append(value)
         return await self.template_service.render_async('genshin/player_card', "stats.html", stats_data)
 
