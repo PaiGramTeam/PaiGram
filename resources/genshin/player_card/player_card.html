@@ -36,13 +36,13 @@
   <body class="text-xl text-neutral-200">
     <div
       class="data bg-no-repeat bg-cover pb-5 min-w-[845px] overflow-hidden"
-      style="background-image: url('{{ background }}')"
+      style="background-image: url('img/bg-{{ character.element.name | lower }}.jpg')"
     >
       <div class="relative mb-4 overflow-hidden">
         <!-- Character Background -->
         <div
           class="absolute w-full h-full -left-1/4 top-8 opacity-80 bg-contain bg-no-repeat bg-center"
-          style="background-image: url('{{image_banner}}');"
+          style="background-image: url('{{ character.image.banner.url }}');"
         ></div>
         <div class="relative w-full flex p-5 space-x-8">
           {% include 'constellations.html' %}
@@ -50,15 +50,15 @@
           <div class="flex-1 space-y-4">
             <div class="text-right italic">
               <div class="characters-name text-5xl font-bold text-shadow mb-2">
-                {{ name }}
+                {{ character.name }}
               </div>
               <div
                 class="flex flex-row justify-end text-2xl text-shadow space-x-2"
               >
                 <div class="characters-level pr-4">UID {{ uid }}</div>
-                <div class="characters-level">Lv.{{ level }}</div>
+                <div class="characters-level">Lv.{{ character.level }}</div>
                 <div class="characters-level bg-red-600 rounded-lg px-2">
-                  {{ friendship_level }}
+                  {{ character.friendship_level }}
                 </div>
               </div>
             </div>

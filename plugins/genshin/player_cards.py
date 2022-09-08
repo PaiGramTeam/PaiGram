@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Union, Optional, List, cast
+from typing import Dict, Union, Optional, List, cast
 
 from enkanetwork import (
     EnkaNetworkAPI,
@@ -101,35 +101,32 @@ class RenderTemplate:
     ):
         self.uid = uid
         self.template_service = template_service
-        self.character = character
+        # 因为需要替换线上 enka 图片地址为本地地址，先克隆数据，避免修改原数据
+        self.character = character.copy()
 
     async def render(self):
-        player_card_data = {"infos": []}
-        background = f"img/bg-{self.character.element.name.lower()}.jpg"
-        player_card_data["background"] = background
-        player_card_data["image_banner"] = await url_to_file(
-            self.character.image.banner.url
-        )
-        player_card_data["friendship_level"] = self.character.friendship_level
-        player_card_data["name"] = self.character.name
-        player_card_data["level"] = self.character.level
-        player_card_data["uid"] = self.uid
+        # 缓存所有图片到本地
+        await self.cache_images()
 
-        player_card_data["constellations"] = await self.de_constellations()
-        player_card_data["skills"] = await self.de_skills()
-        player_card_data["stats"] = await self.de_stats()
-        player_card_data["weapon"] = await self.de_weapon()
+        data = {
+            "uid": self.uid,
+            "character": self.character,
+            "stats": await self.de_stats(),
+            "weapon": self.find_weapon(),
+        }
+
         # artifacts = await self.de_artifacts()
         # for artifact in artifacts:
-        #     player_card_data["infos"].append(artifact)
-        data = await self.template_service.render_async(
-            "genshin/player_card", "player_card.html", player_card_data
+        #     data["infos"].append(artifact)
+
+        html = await self.template_service.render_async(
+            "genshin/player_card", "player_card.html", data
         )
-        print(data)
+        print(html)
         return await self.template_service.render(
             "genshin/player_card",
             "player_card.html",
-            player_card_data,
+            data,
             {"width": 845, "height": 1080},
             full_page=True,
         )
@@ -185,32 +182,26 @@ class RenderTemplate:
 
         return items
 
-    async def de_skills(self) -> str:
-        background = f"img/talent-{self.character.element.name.lower()}.png"
-        items: List[Dict[str, Any]] = []
+    async def cache_images(self) -> None:
+        '''缓存所有图片到本地'''
+        c = self.character
+        # 角色
+        c.image.banner.url = await url_to_file(c.image.banner.url)
 
-        for skill in self.character.skills:
-            img = await url_to_file(skill.icon.url)
-            items.append({"background": background, "img": img, "level": skill.level})
+        # 技能
+        for item in c.skills:
+            item.icon.url = await url_to_file(item.icon.url)
 
-        return items
+        # 命座
+        for item in c.constellations:
+            item.icon.url = await url_to_file(item.icon.url)
 
-    async def de_constellations(self) -> str:
-        background = f"img/talent-{self.character.element.name.lower()}.png"
-        items = []
+        # 装备，包括圣遗物和武器
+        for item in c.equipments:
+            item.detail.icon.url = await url_to_file(item.detail.icon.url)
 
-        for constellation in self.character.constellations:
-            items.append(
-                {
-                    "background": background,
-                    "img": constellation.icon.url,
-                    "unlocked": constellation.unlocked,
-                }
-            )
-
-        return items
-
-    async def de_weapon(self) -> Union[Dict[str, Any], None]:
+    def find_weapon(self) -> Union[Equipments, None]:
+        '''在 equipments 数组中找到武器，equipments 数组包含圣遗物和武器'''
         for item in self.character.equipments:
             if item.type == EquipmentsType.WEAPON:
                 return item
