@@ -1,6 +1,6 @@
-import json
-from typing import Dict, Union, Optional, List
 import asyncio
+import json
+from typing import Union, Optional, List, Any, Tuple
 
 from enkanetwork import (
     EnkaNetworkAPI,
@@ -46,10 +46,10 @@ class PlayerCardsCache:
 
 class PlayerCards(Plugin, BasePlugin):
     def __init__(
-        self,
-        user_service: UserService = None,
-        template_service: TemplateService = None,
-        redis: RedisDB = None,
+            self,
+            user_service: UserService = None,
+            template_service: TemplateService = None,
+            redis: RedisDB = None,
     ):
         self.user_service = user_service
         self.client = EnkaNetworkAPI(lang="chs")
@@ -92,10 +92,10 @@ class PlayerCards(Plugin, BasePlugin):
 
 class RenderTemplate:
     def __init__(
-        self,
-        uid: Union[int, str],
-        character: CharacterInfo,
-        template_service: TemplateService = None,
+            self,
+            uid: Union[int, str],
+            character: CharacterInfo,
+            template_service: TemplateService = None,
     ):
         self.uid = uid
         self.template_service = template_service
@@ -132,9 +132,9 @@ class RenderTemplate:
             full_page=True,
         )
 
-    async def de_stats(self) -> str:
+    async def de_stats(self) -> List[Tuple[str, Any]]:
         stats = self.character.stats
-        items: List[Dict[str, str]] = []
+        items: List[Tuple[str, Any]] = []
         logger.debug(self.character.stats)
 
         items.append(("基础生命值", stats.BASE_HP.to_rounded()))
@@ -173,7 +173,7 @@ class RenderTemplate:
                 if isinstance(stat[1], Stats)
                 else stat[1].to_percentage_symbol()
             )
-            if value == 0 or value == "0%":
+            if value in ("0%", 0):
                 continue
             name = assets.get_hash_map(stat[0])
             if name is None:
