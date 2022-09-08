@@ -39,6 +39,11 @@ class GroupJoiningVerification(Plugin):
         self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, List[ChatMember]]] = {}
         self.is_refresh_quiz = False
 
+    async def __async_init__(self):
+        logger.info("群验证模块正在刷新问题列表")
+        await self.refresh_quiz()
+        logger.success("群验证模块刷新问题列表成功")
+
     async def refresh_quiz(self):
         async with self.lock:
             if not self.is_refresh_quiz:
@@ -225,7 +230,6 @@ class GroupJoiningVerification(Plugin):
                 return
         else:
             return
-        await self.refresh_quiz()
         for user in message.new_chat_members:
             if user.id == context.bot.id:
                 return

@@ -35,9 +35,16 @@ _EXCLUDE_ATTRS = ['handlers', 'jobs', 'error_handlers']
 
 class _Plugin:
 
-    def _make_handler(self, data: Dict) -> HandlerType:
-        func = getattr(self, data.pop('func'))
-        return data.pop('type')(callback=func, **data.pop('kwargs'))
+    def _make_handler(self, datas: Union[List[Dict], Dict]) -> List[HandlerType]:
+        result = []
+        if isinstance(datas, list):
+            for data in filter(lambda x: x, datas):
+                func = getattr(self, data.pop('func'))
+                result.append(data.pop('type')(callback=func, **data.pop('kwargs')))
+        else:
+            func = getattr(self, datas.pop('func'))
+            result.append(datas.pop('type')(callback=func, **datas.pop('kwargs')))
+        return result
 
     @property
     def handlers(self) -> List[HandlerType]:
@@ -49,11 +56,11 @@ class _Plugin:
                     and
                     isinstance(func := getattr(self, attr), MethodType)
                     and
-                    (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+                    (datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
-                if data['type'] not in ['error', 'new_chat_member']:
-                    result.append(self._make_handler(data))
-
+                for data in datas:
+                    if data['type'] not in ['error', 'new_chat_member']:
+                        result.extend(self._make_handler(data))
         return result
 
     def _new_chat_members_handler_funcs(self) -> List[Tuple[int, Callable]]:
@@ -66,10 +73,11 @@ class _Plugin:
                     and
                     isinstance(func := getattr(self, attr), MethodType)
                     and
-                    (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+                    (datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
-                if data['type'] == 'new_chat_member':
-                    result.append((data['priority'], func))
+                for data in datas:
+                    if data and data['type'] == 'new_chat_member':
+                        result.append((data['priority'], func))
 
         return result
 
@@ -83,10 +91,11 @@ class _Plugin:
                     and
                     isinstance(func := getattr(self, attr), MethodType)
                     and
-                    (data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+                    (datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
-                if data['type'] == 'error':
-                    result.update({func: data['block']})
+                for data in datas:
+                    if data and data['type'] == 'error':
+                        result.update({func: data['block']})
         return result
 
     @property
@@ -100,13 +109,14 @@ class _Plugin:
                     and
                     isinstance(func := getattr(self, attr), MethodType)
                     and
-                    (data := getattr(func, _JOB_ATTR_NAME, None))
+                    (datas := getattr(func, _JOB_ATTR_NAME, None))
             ):
-                _job = getattr(bot.job_queue, data.pop('type'))(
-                    callback=func, **data.pop('kwargs'),
-                    **{key: data.pop(key) for key in list(data.keys())}
-                )
-                result.append(_job)
+                for data in datas:
+                    _job = getattr(bot.job_queue, data.pop('type'))(
+                        callback=func, **data.pop('kwargs'),
+                        **{key: data.pop(key) for key in list(data.keys())}
+                    )
+                    result.append(_job)
         return result
 
 
@@ -132,21 +142,21 @@ class _Conversation(_Plugin):
                     and
                     isinstance(func := getattr(self, attr), Callable)
                     and
-                    (handler_data := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+                    (handler_datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
-                _handler = self._make_handler(handler_data)
+                _handlers = self._make_handler(handler_datas)
                 if conversation_data := getattr(func, _CONVERSATION_HANDLER_ATTR_NAME, None):
                     if (_type := conversation_data.pop('type')) == 'entry':
-                        entry_points.append(_handler)
+                        entry_points.extend(_handlers)
                     elif _type == 'state':
                         if (key := conversation_data.pop('state')) in states:
-                            states[key].append(_handler)
+                            states[key].extend(_handlers)
                         else:
-                            states[key] = [_handler]
+                            states[key] = _handlers
                     elif _type == 'fallback':
-                        fallbacks.append(_handler)
+                        fallbacks.extend(_handlers)
                 else:
-                    result.append(_handler)
+                    result.extend(_handlers)
         if entry_points or states or fallbacks:
             result.append(
                 ConversationHandler(
@@ -170,7 +180,13 @@ class _Handler:
         return getattr(_Module, f"{self.__class__.__name__.strip('_')}Handler")
 
     def __call__(self, func: Callable[P, T]) -> Callable[P, T]:
-        setattr(func, _NORMAL_HANDLER_ATTR_NAME, {'type': self._type, 'func': func.__name__, 'kwargs': self.kwargs})
+        data = {'type': self._type, 'func': func.__name__, 'kwargs': self.kwargs}
+        if hasattr(func, _NORMAL_HANDLER_ATTR_NAME):
+            handler_datas = getattr(func, _NORMAL_HANDLER_ATTR_NAME)
+            handler_datas.append(data)
+            setattr(func, _NORMAL_HANDLER_ATTR_NAME, handler_datas)
+        else:
+            setattr(func, _NORMAL_HANDLER_ATTR_NAME, [data])
         return func
 
 
@@ -221,11 +237,14 @@ class _MessageNewChatMembers(_Handler):
 
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
         self.func = self.func or func
-        setattr(
-            self.func, _NORMAL_HANDLER_ATTR_NAME,
-            {'type': 'new_chat_member', 'priority': self.priority}
-        )
-        return self.func
+        data = {'type': 'new_chat_member', 'priority': self.priority}
+        if hasattr(func, _NORMAL_HANDLER_ATTR_NAME):
+            handler_datas = getattr(func, _NORMAL_HANDLER_ATTR_NAME)
+            handler_datas.append(data)
+            setattr(func, _NORMAL_HANDLER_ATTR_NAME, handler_datas)
+        else:
+            setattr(func, _NORMAL_HANDLER_ATTR_NAME, [data])
+        return func
 
 
 class _Message(_Handler):
@@ -323,8 +342,14 @@ class error_handler:
 
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
         self._func = func or self._func
-        setattr(self._func, _NORMAL_HANDLER_ATTR_NAME, {'type': 'error', 'block': self._block})
-        return self._func
+        data = {'type': 'error', 'block': self._block}
+        if hasattr(func, _NORMAL_HANDLER_ATTR_NAME):
+            handler_datas = getattr(func, _NORMAL_HANDLER_ATTR_NAME)
+            handler_datas.append(data)
+            setattr(func, _NORMAL_HANDLER_ATTR_NAME, handler_datas)
+        else:
+            setattr(func, _NORMAL_HANDLER_ATTR_NAME, [data])
+        return func
 
 
 def _entry(func: Callable[P, T]) -> Callable[P, T]:
@@ -368,11 +393,17 @@ class _Job:
         self.kwargs = kwargs
 
     def __call__(self, func: JobCallback) -> JobCallback:
-        setattr(func, _JOB_ATTR_NAME, {
+        data = {
             'name': self.name, 'data': self.data, 'chat_id': self.chat_id, 'user_id': self.user_id,
             'job_kwargs': self.job_kwargs, 'kwargs': self.kwargs,
             'type': re.sub(r'([A-Z])', lambda x: '_' + x.group().lower(), self.__class__.__name__).lstrip('_')
-        })
+        }
+        if hasattr(func, _JOB_ATTR_NAME):
+            job_datas = getattr(func, _JOB_ATTR_NAME)
+            job_datas.append(data)
+            setattr(func, _JOB_ATTR_NAME, job_datas)
+        else:
+            setattr(func, _JOB_ATTR_NAME, [data])
         return func
 
 
