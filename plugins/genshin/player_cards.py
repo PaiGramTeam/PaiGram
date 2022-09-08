@@ -209,6 +209,11 @@ class RenderTemplate:
 
         return items
 
+    async def de_weapon(self) -> Union[Dict[str, Any], None]:
+        for item in self.character.equipments:
+            if item.type == EquipmentsType.WEAPON:
+                return item
+
     async def de_artifacts(self) -> List[str]:
         html_list: List[str] = []
         for artifact in filter(

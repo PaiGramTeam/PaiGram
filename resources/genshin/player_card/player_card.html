@@ -10,7 +10,7 @@
       }
 
       .star {
-        background-image: url("./test/star.png");
+        background-image: url("./img/star.png");
         height: 1rem;
         width: 5rem;
         background-repeat: no-repeat;
@@ -38,13 +38,13 @@
       class="data bg-no-repeat bg-cover pb-5 min-w-[845px] overflow-hidden"
       style="background-image: url('{{ background }}')"
     >
-      <div class="relative">
+      <div class="relative mb-4 overflow-hidden">
         <!-- Character Background -->
         <div
           class="absolute w-full h-full -left-1/4 top-8 opacity-80 bg-contain bg-no-repeat bg-center"
           style="background-image: url('{{image_banner}}');"
         ></div>
-        <div class="relative w-full flex p-5 mb-4 space-x-8 overflow-hidden">
+        <div class="relative w-full flex p-5 space-x-8">
           {% include 'constellations.html' %}
 
           <div class="flex-1 space-y-4">
@@ -63,8 +63,7 @@
               </div>
             </div>
 
-            {% include 'skills.html' %}
-            {% include 'stats.html' %}
+            {% include 'skills.html' %} {% include 'stats.html' %}
           </div>
         </div>
       </div>
@@ -72,6 +71,9 @@
       <!-- Info -->
       <div class="px-5 relative">
         <div class="grid grid-cols-3 gap-2">
+          {% if weapon %}
+            {% include 'weapon.html' %}
+          {% endif %}
         </div>
       </div>
     </div>
