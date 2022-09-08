@@ -28,7 +28,7 @@ class AddUserCommandData(TelegramObject):
 CHECK_SERVER, CHECK_UID, COMMAND_RESULT = range(10100, 10103)
 
 
-class SetUid(Plugin.Conversation, BasePlugin.Conversation):
+class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
     """UID用户绑定"""
 
     def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
@@ -38,7 +38,7 @@ class SetUid(Plugin.Conversation, BasePlugin.Conversation):
         self.user_service = user_service
 
     @conversation.entry_point
-    @handler.command(command='set_uid', filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command(command='setuid', filters=filters.ChatType.PRIVATE, block=True)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
@@ -49,7 +49,8 @@ class SetUid(Plugin.Conversation, BasePlugin.Conversation):
         if add_user_command_data is None:
             cookies_command_data = AddUserCommandData()
             context.chat_data["add_uid_command_data"] = cookies_command_data
-        text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！请选择要绑定的服务器！或回复退出取消操作")}'
+        text = f'你好 {user.mention_markdown_v2()} ' \
+               f'{escape_markdown("！本次绑定只绑定UID，未绑定Cookies部分功能无法使用。请选择要绑定的服务器！或回复退出取消操作")}'
         reply_keyboard = [['米游社', 'HoYoLab'], ["退出"]]
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return CHECK_SERVER

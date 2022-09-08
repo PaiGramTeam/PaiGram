@@ -32,15 +32,15 @@ class AddUserCommandData(TelegramObject):
 CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
 
 
-class AddUser(Plugin.Conversation, BasePlugin.Conversation):
-    """用户绑定"""
+class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
+    """Cookie绑定"""
 
     def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None):
         self.cookies_service = cookies_service
         self.user_service = user_service
 
     @conversation.entry_point
-    @handler.command(command='adduser', filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command(command='setcookies', filters=filters.ChatType.PRIVATE, block=True)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
