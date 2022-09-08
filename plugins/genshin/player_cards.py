@@ -132,7 +132,7 @@ class RenderTemplate:
         stats_data["values"].append(self.character.stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded())
         # 查找元素伤害加成和治疗加成
         for stat in self.character.stats:
-            if "_ADD_HURT" not in stat[0] or "FIGHT_PROP_HEAL_ADD" != stat[0] or "NONEXTRA" in stat[0] or "HIT" in stat[0]:
+            if "_ADD_HURT" not in stat[0] and "FIGHT_PROP_HEAL_ADD" != stat[0]:
                 continue
             name = assets.get_hash_map(stat[0])
             if name is None:
