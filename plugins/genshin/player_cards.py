@@ -1,5 +1,4 @@
-import json
-from typing import Union, Optional, List, Any, Tuple
+from typing import Union, List, Any, Tuple
 
 from enkanetwork import (
     EnkaNetworkAPI,
@@ -15,7 +14,6 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, filters, CallbackContext, MessageHandler
 
-from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
@@ -33,13 +31,10 @@ assets = Assets(lang="chs")
 
 
 class PlayerCards(Plugin, BasePlugin):
-    def __init__(self, user_service: UserService = None, template_service: TemplateService = None,
-                 redis: RedisDB = None):
+    def __init__(self, user_service: UserService = None, template_service: TemplateService = None):
         self.user_service = user_service
         self.client = EnkaNetworkAPI(lang="chs")
         self.template_service = template_service
-        self.redis = redis
-        self.cache = PlayerCardsCache(redis)
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
@@ -307,21 +302,3 @@ class RenderTemplate:
             for e in self.character.equipments
             if e.type == EquipmentsType.ARTIFACT
         ]
-
-
-class PlayerCardsCache:
-    def __init__(self, redis: RedisDB):
-        self.ttl = 300
-        self.qname = "player_cards"
-        self.client = redis.client
-
-    async def get_data(self, uid: Union[str, int]) -> Optional[dict]:
-        data = await self.client.get(f"{self.qname}:{uid}")
-        if data is None:
-            return None
-        json_data = str(data, encoding="utf-8")
-        return json.loads(json_data)
-
-    async def set_data(self, uid: Union[str, int], data: dict):
-        await self.client.set(f"{self.qname}:{uid}", json.dumps(data))
-        await self.client.expire(f"{self.qname}:{uid}", self.ttl)
