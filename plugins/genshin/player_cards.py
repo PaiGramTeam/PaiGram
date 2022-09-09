@@ -10,6 +10,7 @@ from enkanetwork import (
     Stats,
     CharacterInfo,
     Assets,
+    DigitType,
 )
 from pydantic import BaseModel
 from telegram import Update, InputMediaPhoto
@@ -189,6 +190,9 @@ class RenderTemplate:
             # 圣遗物评级颜色
             "artifact_total_score_class": Artifact.get_score_class(artifact_total_score_label),
             "artifacts": artifacts,
+
+            # 需要在模板中使用的 enum 类型
+            "DigitType": DigitType,
         }
 
         # html = await self.template_service.render_async(
@@ -200,7 +204,7 @@ class RenderTemplate:
             "genshin/player_card",
             "player_card.html",
             data,
-            {"width": 900, "height": 1080},
+            {"width": 950, "height": 1080},
             full_page=True,
         )
 

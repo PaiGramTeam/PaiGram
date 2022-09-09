@@ -17,7 +17,10 @@
       <div class="font-medium">{{ item.equipment.detail.artifact_name_set }}</div>
       <div class="flex text-sm space-x-2">
         <div>{{ item.equipment.detail.mainstats.name }}</div>
-        <div class="italic">{{ item.equipment.detail.mainstats.value }}</div>
+        <div class="italic">
+            {{ item.equipment.detail.mainstats.value }}
+            {%- if item.equipment.detail.mainstats.type == DigitType.PERCENT -%} % {%- endif %}
+        </div>
       </div>
       <div class="text-base {{ item.score_class }}">
         <span class="italic"> {{ item.score }} </span> 分 - {{ item.score_label
@@ -28,8 +31,17 @@
   <div>
     {% for stat in item.equipment.detail.substats %}
     <div class="px-4 py-1 odd:bg-white odd:bg-opacity-10 flex space-x-4 {% if item.substat_scores[loop.index0] == 0 %} text-neutral-400 {% endif %}">
-      <div class="flex-1 truncate">{{ stat.name }}</div>
-      <div class="min-w-30 italic text-right">+{{ stat.value }}</div>
+      <div class="flex-1 truncate">
+        {%- if stat.name == '元素充能效率' -%}
+            充能效率
+        {%- else -%}
+        {{ stat.name }}
+        {%- endif -%}
+      </div>
+      <div class="min-w-30 italic text-right">
+        +{{ stat.value }}
+        {%- if stat.type == DigitType.PERCENT -%} % {%- endif %}
+    </div>
       <div class="min-w-30 text-right">
         <span class="italic">{{ item.substat_scores[loop.index0] }}</span>
         <span class="text-sm">分</span>
