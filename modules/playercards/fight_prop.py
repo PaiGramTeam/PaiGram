@@ -35,6 +35,8 @@ class FightProp(enum.Enum):
 
 
 class FightPropScore(enum.Enum):
+    _value_: float
+    value: float
     FIGHT_PROP_BASE_ATTACK = 1
     FIGHT_PROP_BASE_DEFENSE = 1
     FIGHT_PROP_BASE_HP = 1

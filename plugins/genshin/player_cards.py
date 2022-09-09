@@ -69,6 +69,7 @@ class PlayerCards(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
+        logger.info(f"用户 {user.full_name}[{user.id}] 查询角色培养素材命令请求 || 参数 {character_name}")
         try:
             data = await self.client.fetch_user(uid)
         except EnkaServerError:
@@ -87,13 +88,13 @@ class PlayerCards(Plugin, BasePlugin):
             await message.reply_text("UID 错误或者非法")
             return
         if len(data.characters) == 0:
-            await message.reply_text("请先将角色加入个人资料并公开查看角色详情")
+            await message.reply_text("请先将角色加入到角色展柜并允许查看角色详情")
             return
         for characters in data.characters:
             if characters.name == character_name:
                 break
         else:
-            await message.reply_text(f"角色展柜未找到 {character_name}")
+            await message.reply_text(f"角色展柜中未找到 {character_name}")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
@@ -159,10 +160,8 @@ class RenderTemplate:
         # 缓存所有图片到本地
         await self.cache_images()
 
-        artifact_total_score: float = 0
         artifacts = self.find_artifacts()
-        for artifact in artifacts:
-            artifact_total_score += artifact.score
+        artifact_total_score: float = sum(artifact.score for artifact in artifacts)
 
         artifact_total_score = round(artifact_total_score, 1)
 
@@ -244,9 +243,7 @@ class RenderTemplate:
                 pass
             elif stat[1].id == 29:  # 物理伤害加成
                 pass
-            elif stat[1].id == 26:  # 治疗加成
-                pass
-            else:
+            elif stat[1].id != 26:  # 治疗加成
                 continue
             value = (
                 stat[1].to_rounded()

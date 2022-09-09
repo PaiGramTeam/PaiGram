@@ -17,7 +17,7 @@ class ArtifactStatsTheory:
         self.character_name = character_name
         fight_prop_rule_list = fight_prop_rule_data.get(self.character_name, [])
         self.main_prop = [FightProp(fight_prop_rule) for fight_prop_rule in fight_prop_rule_list]
-        if len(self.main_prop) == 0:
+        if not self.main_prop:
             self.main_prop = [FightProp.FIGHT_PROP_CRITICAL, FightProp.FIGHT_PROP_CRITICAL_HURT,
                               FightProp.FIGHT_PROP_ATTACK_PERCENT]
         # 修正要评分的数值词条
@@ -25,7 +25,8 @@ class ArtifactStatsTheory:
             self.main_prop.append(FightProp.FIGHT_PROP_ATTACK)
         if FightProp.FIGHT_PROP_HP_PERCENT in self.main_prop and FightProp.FIGHT_PROP_HP not in self.main_prop:
             self.main_prop.append(FightProp.FIGHT_PROP_HP)
-        if FightProp.FIGHT_PROP_DEFENSE_PERCENT in self.main_prop and FightProp.FIGHT_PROP_DEFENSE not in self.main_prop:
+        if FightProp.FIGHT_PROP_DEFENSE_PERCENT in self.main_prop and \
+                FightProp.FIGHT_PROP_DEFENSE not in self.main_prop:
             self.main_prop.append(FightProp.FIGHT_PROP_DEFENSE)
 
     def theory(self, sub_stats: EquipmentsStats) -> float:
