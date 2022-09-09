@@ -1,4 +1,3 @@
-import asyncio
 import json
 from typing import Union, Optional, List, Any, Tuple
 
@@ -10,10 +9,10 @@ from enkanetwork import (
     Stats,
     CharacterInfo,
     Assets,
-    DigitType,
-)
+    DigitType, EnkaServerError, Forbidden, UIDNotFounded, VaildateUIDError, HTTPException, )
 from pydantic import BaseModel
-from telegram import Update, InputMediaPhoto
+from telegram import Update
+from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, filters, CallbackContext, MessageHandler
 
 from core.base.redisdb import RedisDB
@@ -23,6 +22,7 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from modules.playercards.helpers import ArtifactStatsTheory
+from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
@@ -32,42 +32,24 @@ from utils.models.base import RegionEnum
 assets = Assets(lang="chs")
 
 
-class PlayerCardsCache:
-    def __init__(self, redis: RedisDB):
-        self.question_qname = "player_cards"
-        self.client = redis.client
-
-    async def get_data(self, uid: Union[str, int]) -> Optional[dict]:
-        data = await self.client.get(f"{self.question_qname}:{uid}")
-        if data is None:
-            return None
-        json_data = str(data, encoding="utf-8")
-        return json.loads(json_data)
-
-    async def set_data(self, uid: Union[str, int], data: dict):
-        await self.client.set(f"{self.question_qname}:{uid}", json.dumps(data))
-
-
 class PlayerCards(Plugin, BasePlugin):
-    def __init__(
-        self,
-        user_service: UserService = None,
-        template_service: TemplateService = None,
-        redis: RedisDB = None,
-    ):
+    def __init__(self, user_service: UserService = None, template_service: TemplateService = None,
+                 redis: RedisDB = None):
         self.user_service = user_service
         self.client = EnkaNetworkAPI(lang="chs")
         self.template_service = template_service
         self.redis = redis
         self.cache = PlayerCardsCache(redis)
 
-    @handler(CommandHandler, command="player_cards", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^刷新(.*)"), block=False)
+    @handler(CommandHandler, command="player_card", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
     @restricts()
     @error_callable
     async def player_cards(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
+        args = get_all_args(context)
+        await message.reply_chat_action(ChatAction.TYPING)
         try:
             user_info = await self.user_service.get_user_by_id(user.id)
             if user_info.region == RegionEnum.HYPERION:
@@ -84,19 +66,43 @@ class PlayerCards(Plugin, BasePlugin):
                     context, message.chat_id, message.message_id, 30
                 )
             return
-
-        data = await self.client.fetch_user(uid)
-        pngs = await asyncio.gather(
-            *[
-                RenderTemplate(uid, c, self.template_service).render()
-                for c in data.characters
-            ]
-        )
-        media = [InputMediaPhoto(png) for png in pngs]
-        if media:
-            await message.reply_media_group(media)
+        if len(args) == 1:
+            character_name = args[0]
         else:
-            reply_message = await message.reply_text("请先将角色加入个人资料并公开查看角色详情")
+            reply_message = await message.reply_text("请回复角色名参数")
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self._add_delete_message_job(context, message.chat_id, message.message_id)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+            return
+        try:
+            data = await self.client.fetch_user(uid)
+        except EnkaServerError:
+            await message.reply_text("Enka.Network 服务请求错误，请稍后重试")
+            return
+        except Forbidden:
+            await message.reply_text("Enka.Network 服务请求被拒绝，请稍后重试")
+            return
+        except HTTPException:
+            await message.reply_text("Enka.Network HTTP 服务请求错误，请稍后重试")
+            return
+        except UIDNotFounded:
+            await message.reply_text("UID 未找到")
+            return
+        except VaildateUIDError:
+            await message.reply_text("UID 错误或者非法")
+            return
+        if len(data.characters) == 0:
+            await message.reply_text("请先将角色加入个人资料并公开查看角色详情")
+            return
+        for characters in data.characters:
+            if characters.name == character_name:
+                break
+        else:
+            await message.reply_text(f"角色展柜未找到 {character_name}")
+            return
+        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
+        await message.reply_photo(pnd_data, filename=f"player_card_{uid}_{character_name}.png")
 
 
 class Artifact(BaseModel):
@@ -301,3 +307,21 @@ class RenderTemplate:
             for e in self.character.equipments
             if e.type == EquipmentsType.ARTIFACT
         ]
+
+
+class PlayerCardsCache:
+    def __init__(self, redis: RedisDB):
+        self.ttl = 300
+        self.qname = "player_cards"
+        self.client = redis.client
+
+    async def get_data(self, uid: Union[str, int]) -> Optional[dict]:
+        data = await self.client.get(f"{self.qname}:{uid}")
+        if data is None:
+            return None
+        json_data = str(data, encoding="utf-8")
+        return json.loads(json_data)
+
+    async def set_data(self, uid: Union[str, int], data: dict):
+        await self.client.set(f"{self.qname}:{uid}", json.dumps(data))
+        await self.client.expire(f"{self.qname}:{uid}", self.ttl)
