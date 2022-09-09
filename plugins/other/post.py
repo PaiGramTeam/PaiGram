@@ -234,9 +234,9 @@ class Post(Plugin.Conversation, BasePlugin):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
 
-    @staticmethod
+    @conversation.state(state=SEND_POST)
     @error_callable
-    async def send_post(update: Update, context: CallbackContext) -> int:
+    async def send_post(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.effective_message
         if message.text == "退出":
