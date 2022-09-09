@@ -8,6 +8,7 @@ from telegram.ext import MessageHandler, filters
 from core.baseplugin import BasePlugin
 from core.game.services import GameStrategyService
 from core.plugin import Plugin, handler
+from metadata.shortname import roleToName
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -40,6 +41,7 @@ class StrategyPlugin(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
+        character_name = roleToName(character_name)
         url = await self.game_strategy_service.get_strategy(character_name)
         if url == "":
             reply_message = await message.reply_text(f"没有找到 {character_name} 的攻略",

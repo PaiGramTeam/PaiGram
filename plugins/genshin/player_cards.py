@@ -19,6 +19,7 @@ from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from metadata.shortname import roleToName
 from modules.playercards.helpers import ArtifactStatsTheory
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
@@ -64,12 +65,13 @@ class PlayerCards(Plugin, BasePlugin):
         if len(args) == 1:
             character_name = args[0]
         else:
-            reply_message = await message.reply_text("请回复角色名参数")
-            if filters.ChatType.GROUPS.filter(reply_message):
-                self._add_delete_message_job(context, message.chat_id, message.message_id)
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-            return
-        logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
+            character_name = "all"
+            # reply_message = await message.reply_text("请回复角色名参数")
+            # if filters.ChatType.GROUPS.filter(reply_message):
+            #     self._add_delete_message_job(context, message.chat_id, message.message_id)
+            #     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+            # return
+        character_name = roleToName(character_name)
         try:
             data = await self.client.fetch_user(uid)
         except EnkaServerError:
@@ -90,12 +92,22 @@ class PlayerCards(Plugin, BasePlugin):
         if data.characters is None:
             await message.reply_text("请先将角色加入到角色展柜并允许查看角色详情")
             return
-        for characters in data.characters:
-            if characters.name == character_name:
-                break
-        else:
-            await message.reply_text(f"角色展柜中未找到 {character_name}")
+        characters_map = {character.name: character for character in data.characters}
+        reply_message = None
+        if character_name == "all":
+            reply_message = await message.reply_text(
+                "请输入角色名来查询，目前你的角色展柜有以下角色：" +
+                "、".join(characters_map.keys()))
+        elif character_name not in characters_map:
+            reply_message = await message.reply_text(f"角色展柜中未找到 {character_name}")
+        if reply_message:
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self._add_delete_message_job(context, message.chat_id, message.message_id)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             return
+        characters = characters_map[character_name]
+        logger.info(
+            f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
         await message.reply_photo(pnd_data, filename=f"player_card_{uid}_{character_name}.png")
