@@ -39,7 +39,9 @@ class QuizCache:
         json_data = str(data, encoding="utf-8")
         return Answer.de_json(ujson.loads(json_data))
 
-    async def add_question(self, question_list: List[Question] = None):
+    async def add_question(self, question_list: List[Question] = None) -> int:
+        if not question_list:
+            return 0
         for question in question_list:
             await self.client.set(f"{self.question_qname}:{question.question_id}", ujson.dumps(question.to_dict()))
         question_id_list = [question.question_id for question in question_list]
@@ -58,7 +60,9 @@ class QuizCache:
             for key in keys:
                 await self.client.delete(key)
 
-    async def add_answer(self, answer_list: List[Answer] = None):
+    async def add_answer(self, answer_list: List[Answer] = None) -> int:
+        if not answer_list:
+            return 0
         for answer in answer_list:
             await self.client.set(f"{self.answer_qname}:{answer.answer_id}", ujson.dumps(answer.to_dict()))
         answer_id_list = [answer.answer_id for answer in answer_list]
