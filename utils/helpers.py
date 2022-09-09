@@ -1,5 +1,6 @@
 import hashlib
 import os
+from pathlib import Path
 from typing import Tuple, Union, Optional, cast
 
 import aiofiles
@@ -48,7 +49,7 @@ def sha1(text: str) -> str:
     return _sha1.hexdigest()
 
 
-async def url_to_file(url: str, prefix: str = "file://") -> str:
+async def url_to_file(url: str, return_path: bool = False) -> str:
     url_sha1 = sha1(url)
     url_file_name = os.path.basename(url)
     _, extension = os.path.splitext(url_file_name)
@@ -70,7 +71,11 @@ async def url_to_file(url: str, prefix: str = "file://") -> str:
         async with aiofiles.open(file_dir, mode='wb') as f:
             await f.write(data.content)
     logger.debug(f"url_to_file 获取url[{url}] 并下载到 file_dir[{file_dir}]")
-    return prefix + file_dir
+
+    if return_path:
+        return file_dir
+
+    return Path(file_dir).as_uri()
 
 
 async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None) -> Client:

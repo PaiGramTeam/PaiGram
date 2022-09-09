@@ -49,10 +49,10 @@ class PlayerCardsCache:
 
 class PlayerCards(Plugin, BasePlugin):
     def __init__(
-            self,
-            user_service: UserService = None,
-            template_service: TemplateService = None,
-            redis: RedisDB = None,
+        self,
+        user_service: UserService = None,
+        template_service: TemplateService = None,
+        redis: RedisDB = None,
     ):
         self.user_service = user_service
         self.client = EnkaNetworkAPI(lang="chs")
