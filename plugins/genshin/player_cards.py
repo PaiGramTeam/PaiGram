@@ -10,16 +10,15 @@ from enkanetwork import (
     Assets,
     DigitType, EnkaServerError, Forbidden, UIDNotFounded, VaildateUIDError, HTTPException, StatsPercentage, )
 from pydantic import BaseModel
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, filters, CallbackContext, MessageHandler
+from telegram.ext import CommandHandler, filters, CallbackContext, MessageHandler, CallbackQueryHandler
 
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from metadata.shortname import roleToName
 from modules.playercards.helpers import ArtifactStatsTheory
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
@@ -39,6 +38,7 @@ class PlayerCards(Plugin, BasePlugin):
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
+    @restricts(filters.ChatType.GROUPS, restricts_time=20, try_delete_message=True)
     @restricts()
     @error_callable
     async def player_cards(self, update: Update, context: CallbackContext) -> None:
@@ -62,16 +62,6 @@ class PlayerCards(Plugin, BasePlugin):
                     context, message.chat_id, message.message_id, 30
                 )
             return
-        if len(args) == 1:
-            character_name = args[0]
-        else:
-            character_name = "all"
-            # reply_message = await message.reply_text("请回复角色名参数")
-            # if filters.ChatType.GROUPS.filter(reply_message):
-            #     self._add_delete_message_job(context, message.chat_id, message.message_id)
-            #     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-            # return
-        character_name = roleToName(character_name)
         try:
             data = await self.client.fetch_user(uid)
         except EnkaServerError:
@@ -92,25 +82,88 @@ class PlayerCards(Plugin, BasePlugin):
         if data.characters is None:
             await message.reply_text("请先将角色加入到角色展柜并允许查看角色详情")
             return
-        characters_map = {character.name: character for character in data.characters}
-        reply_message = None
-        if character_name == "all":
-            reply_message = await message.reply_text(
-                "请输入角色名来查询，目前你的角色展柜有以下角色：" +
-                "、".join(characters_map.keys()))
-        elif character_name not in characters_map:
-            reply_message = await message.reply_text(f"角色展柜中未找到 {character_name}")
-        if reply_message:
+        if len(args) == 1:
+            character_name = args[0]
+            logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
+        else:
+            logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求")
+            buttons = []
+            temp = []
+            for index, value in enumerate(data.characters):
+                temp.append(InlineKeyboardButton(
+                    value.name,
+                    callback_data=f"get_player_card|{user.id}|{uid}|{value.name}",
+                ))
+                if index == 3:
+                    buttons.append(temp)
+                    temp = []
+            if len(temp) > 0:
+                buttons.append(temp)
+            reply_message = await message.reply_photo(photo=open("resources/img/kitsune.png", "rb"),
+                                                      reply_markup=InlineKeyboardMarkup(buttons))
             if filters.ChatType.GROUPS.filter(reply_message):
-                self._add_delete_message_job(context, message.chat_id, message.message_id)
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
             return
-        characters = characters_map[character_name]
-        logger.info(
-            f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
+        for characters in data.characters:
+            if characters.name == character_name:
+                break
+        else:
+            await message.reply_text(f"角色展柜中未找到 {character_name}")
+            return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
         await message.reply_photo(pnd_data, filename=f"player_card_{uid}_{character_name}.png")
+
+    @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
+    @restricts(filters.ChatType.GROUPS, restricts_time=20, try_delete_message=True)
+    @restricts()
+    async def get_player_cards(self, update: Update, _: CallbackContext) -> None:
+        callback_query = update.callback_query
+        user = callback_query.from_user
+        message = callback_query.message
+
+        async def get_player_card_callback(callback_query_data: str) -> tuple[str, int, int]:
+            _data = callback_query_data.split("|")
+            _user_id = int(_data[1])
+            _uid = int(_data[2])
+            _result = _data[3]
+            logger.debug(f"callback_query_data函数返回 result[{_result}] user_id[{_user_id}] uid[{_uid}]")
+            return _result, _user_id, _uid
+
+        result, user_id, uid = await get_player_card_callback(callback_query.data)
+        if user.id != user_id:
+            return
+        logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{result}] uid[{uid}]")
+        try:
+            data = await self.client.fetch_user(uid)
+        except EnkaServerError:
+            await message.edit_text("Enka.Network 服务请求错误，请稍后重试")
+            return
+        except Forbidden:
+            await message.edit_text("Enka.Network 服务请求被拒绝，请稍后重试")
+            return
+        except HTTPException:
+            await message.edit_text("Enka.Network HTTP 服务请求错误，请稍后重试")
+            return
+        except UIDNotFounded:
+            await message.edit_text("UID 未找到")
+            return
+        except VaildateUIDError:
+            await message.edit_text("UID 错误或者非法")
+            return
+        if data.characters is None:
+            await message.edit_text("请先将角色加入到角色展柜并允许查看角色详情")
+            return
+        for characters in data.characters:
+            if characters.name == result:
+                break
+        else:
+            await message.edit_text(f"角色展柜中未找到 {result}")
+            return
+        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
+        await message.edit_media(InputMediaPhoto(pnd_data, filename=f"player_card_{uid}_{result}.png"))
 
 
 class Artifact(BaseModel):
