@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Type, Union, Optional, List, Any, Tuple
+from typing import Union, Optional, List, Any, Tuple
 
 from pydantic import BaseModel
 from enkanetwork import (
@@ -98,36 +98,23 @@ class PlayerCards(Plugin, BasePlugin):
 
 
 class Artifact(BaseModel):
-    '''在 enka Equipments model 基础上扩展了圣遗物评分数据'''
+    """在 enka Equipments model 基础上扩展了圣遗物评分数据"""
+
     equipment: Equipments
+    # 圣遗物评分
     score: float
+    # 圣遗物评级
     score_label: str
+    # 圣遗物单行属性评分
     substat_scores: List[float]
-
-    @classmethod
-    def from_equipment(cls: Type['Artifact'], equipment: Equipments) -> 'Artifact':
-        return cls(
-            equipment = equipment,
-            # 圣遗物评分
-            score = 99,
-            # 圣遗物评级
-            score_label = "SSS",
-
-            # 圣遗物单行属性评分
-            substat_scores = [cls.substat_score(s) for s in equipment.detail.substats],
-        )
-
-    @staticmethod
-    def substat_score(stat: EquipmentsStats) -> float:
-        return 99
 
 
 class RenderTemplate:
     def __init__(
-            self,
-            uid: Union[int, str],
-            character: CharacterInfo,
-            template_service: TemplateService = None,
+        self,
+        uid: Union[int, str],
+        character: CharacterInfo,
+        template_service: TemplateService = None,
     ):
         self.uid = uid
         self.template_service = template_service
@@ -241,8 +228,20 @@ class RenderTemplate:
 
     def find_artifacts(self) -> List[Artifact]:
         """在 equipments 数组中找到圣遗物，并转换成带有分数的 model。equipments 数组包含圣遗物和武器"""
+
+        def substat_score(s: EquipmentsStats) -> float:
+            return 99
+
         return [
-            Artifact.from_equipment(e)
+            Artifact(
+                equipment=e,
+                # 圣遗物评分
+                score=99,
+                # 圣遗物评级
+                score_label="SSS",
+                # 圣遗物单行属性评分
+                substat_scores=[substat_score(s) for s in e.detail.substats],
+            )
             for e in self.character.equipments
             if e.type == EquipmentsType.ARTIFACT
         ]
