@@ -1,8 +1,6 @@
-import asyncio
 import json
 from typing import Union, Optional, List, Any, Tuple
 
-from pydantic import BaseModel
 from enkanetwork import (
     EnkaNetworkAPI,
     Equipments,
@@ -12,7 +10,8 @@ from enkanetwork import (
     CharacterInfo,
     Assets,
 )
-from telegram import Update, InputMediaPhoto
+from pydantic import BaseModel
+from telegram import Update
 from telegram.ext import CommandHandler, filters, CallbackContext, MessageHandler
 
 from core.base.redisdb import RedisDB
@@ -21,6 +20,7 @@ from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from modules.playercards.helpers import ArtifactStatsTheory
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
@@ -102,11 +102,29 @@ class Artifact(BaseModel):
 
     equipment: Equipments
     # 圣遗物评分
-    score: float
+    score: float = 0
     # 圣遗物评级
-    score_label: str
+    score_label: str = "E"
     # 圣遗物单行属性评分
     substat_scores: List[float]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for substat_scores in self.substat_scores:
+            self.score += substat_scores
+        self.score = round(self.score, 2)
+
+        for r in (("D", 10),
+                  ("C", 16.5),
+                  ("B", 23.1),
+                  ("A", 29.7),
+                  ("S", 36.3),
+                  ("SS", 42.9),
+                  ("SSS", 49.5),
+                  ("ACE", 56.1),
+                  ("ACE²", 66)):
+            if self.score >= r[1]:
+                self.score_label = r[0]
 
 
 class RenderTemplate:
@@ -229,16 +247,14 @@ class RenderTemplate:
     def find_artifacts(self) -> List[Artifact]:
         """在 equipments 数组中找到圣遗物，并转换成带有分数的 model。equipments 数组包含圣遗物和武器"""
 
+        stats = ArtifactStatsTheory(self.character.name)
+
         def substat_score(s: EquipmentsStats) -> float:
-            return 99
+            return stats.theory(s)
 
         return [
             Artifact(
                 equipment=e,
-                # 圣遗物评分
-                score=99,
-                # 圣遗物评级
-                score_label="SSS",
                 # 圣遗物单行属性评分
                 substat_scores=[substat_score(s) for s in e.detail.substats],
             )
