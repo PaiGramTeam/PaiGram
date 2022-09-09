@@ -240,7 +240,6 @@ class RenderTemplate:
             if 40 <= stat[1].id <= 46:  # 元素伤害加成
                 if max_stat.value <= stat[1].value:
                     max_stat = stat[1]
-                pass
             elif stat[1].id == 29:  # 物理伤害加成
                 pass
             elif stat[1].id != 26:  # 治疗加成
