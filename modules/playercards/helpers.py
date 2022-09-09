@@ -15,7 +15,7 @@ class ArtifactStatsTheory:
 
     def __init__(self, character_name: str):
         self.character_name = character_name
-        fight_prop_rule_list = fight_prop_rule_data.get(self.character_name)
+        fight_prop_rule_list = fight_prop_rule_data.get(self.character_name, [])
         self.main_prop = [FightProp(fight_prop_rule) for fight_prop_rule in fight_prop_rule_list]
         if len(self.main_prop) == 0:
             self.main_prop = [FightProp.FIGHT_PROP_CRITICAL, FightProp.FIGHT_PROP_CRITICAL_HURT,
