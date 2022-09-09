@@ -87,7 +87,7 @@ class PlayerCards(Plugin, BasePlugin):
         except VaildateUIDError:
             await message.reply_text("UID 错误或者非法")
             return
-        if len(data.characters) == 0:
+        if data.characters is None:
             await message.reply_text("请先将角色加入到角色展柜并允许查看角色详情")
             return
         for characters in data.characters:
