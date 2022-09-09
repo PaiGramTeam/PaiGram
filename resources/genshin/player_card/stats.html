@@ -1,0 +1,10 @@
+<div class="rounded-lg overflow-hidden bg-black bg-opacity-20">
+  {% for (name, value) in stats %}
+  <div
+    class="flex justify-between px-10 py-1.5 even:bg-black even:bg-opacity-30"
+  >
+    <div>{{ name }}</div>
+    <div class="italic">{{ value }}</div>
+  </div>
+  {% endfor %}
+</div>

@@ -1,0 +1,13 @@
+<div class="flex-1 flex items-end justify-center">
+  <div class="flex pb-2">
+    {% for item in character.constellations %}
+    <div
+      class="w-16 h-16 flex items-center justify-center bg-contain bg-no-repeat bg-center
+      {%- if not item.unlocked %} grayscale opacity-75 {% endif %}"
+      style="background-image: url('img/talent-{{ character.element.name | lower }}.png')"
+    >
+      <img src="{{ item.icon.url }}" alt="" class="w-8 h-8" />
+    </div>
+    {% endfor %}
+  </div>
+</div>

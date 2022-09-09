@@ -1,15 +1,86 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
     <title>Title</title>
-    <link href="./player_card.html.css" rel="stylesheet">
-    <link href="../styles/tailwind.min.css" rel="stylesheet">
-</head>
-<div class="container">
+    <script src="../../js/tailwindcss-3.1.8.js"></script>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet">
+    <style>
+      .text-shadow {
+        text-shadow: 0 0.08em 0.1em #000, 0 0.1em 0.3em rgba(0, 0, 0, 0.4);
+      }
 
-</div>
-<body>
+      .star {
+        background-image: url("./img/star.png");
+        height: 1rem;
+        width: 5rem;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+      .star-1 {
+        background-position-y: 0;
+      }
+      .star-2 {
+        background-position-y: -1rem;
+      }
+      .star-3 {
+        background-position-y: -2rem;
+      }
+      .star-4 {
+        background-position-y: -3rem;
+      }
+      .star-5 {
+        background-position-y: -4rem;
+      }
+    </style>
+  </head>
+  <body class="text-xl text-neutral-200">
+    <div
+      class="data bg-no-repeat bg-cover pb-5 min-w-[845px] overflow-hidden"
+      style="background-image: url('img/bg-{{ character.element.name | lower }}.jpg')"
+    >
+      <div class="relative mb-4 overflow-hidden">
+        <!-- Character Background -->
+        <div
+          class="absolute w-full h-full -left-1/4 top-8 opacity-80 bg-cover bg-no-repeat bg-center"
+          style="background-image: url('{{ character.image.banner.url }}');"
+        ></div>
+        <div class="relative w-full flex p-5 space-x-8">
+          {% include 'constellations.html' %}
 
-</body>
+          <div class="flex-1 space-y-4">
+            <div class="text-right italic">
+              <div class="characters-name text-5xl font-bold text-shadow mb-2">
+                {{ character.name }}
+              </div>
+              <div
+                class="flex flex-row justify-end text-2xl text-shadow space-x-2"
+              >
+                <div class="characters-level pr-4">UID {{ uid }}</div>
+                <div class="characters-level">Lv.{{ character.level }}</div>
+                <div class="characters-level bg-red-600 rounded-lg px-2">
+                  ❤ {{ character.friendship_level }}
+                </div>
+              </div>
+            </div>
+
+            {% include 'skills.html' %} {% include 'stats.html' %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="px-5 relative">
+        <div class="grid grid-cols-3 gap-4">
+
+          <div class="flex flex-col space-y-2">
+            {% include 'weapon.html' %}
+            {% include 'score.html' %}
+          </div>
+
+          {% include 'artifacts.html' %}
+        </div>
+      </div>
+    </div>
+  </body>
 </html>
