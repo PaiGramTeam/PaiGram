@@ -235,6 +235,7 @@ class Post(Plugin.Conversation, BasePlugin):
         return CHECK_COMMAND
 
     @conversation.state(state=SEND_POST)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def send_post(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
