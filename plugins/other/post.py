@@ -58,7 +58,7 @@ class Post(Plugin.Conversation, BasePlugin):
                "退出投稿只需回复退出"
         reply_keyboard = [['退出']]
         await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
-        return self.CHECK_POST
+        return CHECK_POST
 
     @conversation.state(state=CHECK_POST)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -111,7 +111,7 @@ class Post(Plugin.Conversation, BasePlugin):
         post_handler_data.tags = []
         post_handler_data.channel_id = -1
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
-        return self.CHECK_COMMAND
+        return CHECK_COMMAND
 
     @conversation.state(state=CHECK_COMMAND)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -137,7 +137,7 @@ class Post(Plugin.Conversation, BasePlugin):
         message = update.message
         await message.reply_text("请回复你要删除的图片的序列，从1开始，如果删除多张图片回复的序列请以空格作为分隔符，"
                                  f"当前一共有 {photo_len} 张图片")
-        return self.GTE_DELETE_PHOTO
+        return GTE_DELETE_PHOTO
 
     @conversation.state(state=GTE_DELETE_PHOTO)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -155,11 +155,11 @@ class Post(Plugin.Conversation, BasePlugin):
                 index.append(int(temp))
         except ValueError:
             await message.reply_text("数据不合法，请重新操作")
-            return self.GTE_DELETE_PHOTO
+            return GTE_DELETE_PHOTO
         post_handler_data.delete_photo = index
         await message.reply_text("删除成功")
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
-        return self.CHECK_COMMAND
+        return CHECK_COMMAND
 
     async def get_channel(self, update: Update, _: CallbackContext) -> int:
         message = update.effective_message
@@ -174,7 +174,7 @@ class Post(Plugin.Conversation, BasePlugin):
             return ConversationHandler.END
         await message.reply_text("请选择你要推送的频道",
                                  reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
-        return self.GET_POST_CHANNEL
+        return GET_POST_CHANNEL
 
     @conversation.state(state=GET_POST_CHANNEL)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -199,12 +199,12 @@ class Post(Plugin.Conversation, BasePlugin):
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("请核对你修改的信息",
                                  reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
-        return self.SEND_POST
+        return SEND_POST
 
     async def add_tags(self, update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符，不用添加 # 作为开头，推送时程序会自动添加")
-        return self.GET_TAGS
+        return GET_TAGS
 
     @conversation.state(state=GET_TAGS)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -216,12 +216,12 @@ class Post(Plugin.Conversation, BasePlugin):
         post_handler_data.tags = args
         await message.reply_text("添加成功")
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
-        return self.CHECK_COMMAND
+        return CHECK_COMMAND
 
     async def edit_text(self, update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         await message.reply_text("请回复替换的文本")
-        return self.GET_TEXT
+        return GET_TEXT
 
     @conversation.state(state=GET_TEXT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -232,7 +232,7 @@ class Post(Plugin.Conversation, BasePlugin):
         post_handler_data.post_text = message.text_markdown_v2
         await message.reply_text("替换成功")
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
-        return self.CHECK_COMMAND
+        return CHECK_COMMAND
 
     @staticmethod
     @error_callable
