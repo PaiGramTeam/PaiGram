@@ -36,7 +36,7 @@ class CookiesRepository:
             else:
                 raise RegionNotFoundError(region.name)
             results = await session.exec(statement)
-            db_cookies = results.one()
+            db_cookies = results.first()
             if db_cookies is None:
                 raise CookiesNotFoundError(user_id)
             db_cookies = db_cookies[0]
