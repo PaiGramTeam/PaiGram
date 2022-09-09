@@ -71,7 +71,11 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
         async with aiofiles.open(file_dir, mode='wb') as f:
             await f.write(data.content)
     logger.debug(f"url_to_file 获取url[{url}] 并下载到 file_dir[{file_dir}]")
-    return file_dir if return_path else Path(file_dir).as_uri()
+
+    if return_path:
+        return file_dir
+
+    return Path(file_dir).as_uri()
 
 
 async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None) -> Client:
@@ -116,7 +120,9 @@ async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]
 
 
 def region_server(uid: Union[int, str]) -> RegionEnum:
-    if isinstance(uid, (int, str)):
+    if isinstance(uid, int):
+        region = REGION_MAP.get(str(uid)[0])
+    elif isinstance(uid, str):
         region = REGION_MAP.get(str(uid)[0])
     else:
         raise TypeError("UID variable type error")

@@ -166,7 +166,7 @@ class Post(Plugin.Conversation, BasePlugin):
         reply_keyboard = []
         try:
             for channel_info in bot.config.channels:
-                name = channel_info["name"]
+                name = channel_info.name
                 reply_keyboard.append([f"{name}"])
         except KeyError as error:
             logger.error("从配置文件获取频道信息发生错误，退出任务", error)
@@ -185,8 +185,8 @@ class Post(Plugin.Conversation, BasePlugin):
         channel_id = -1
         try:
             for channel_info in bot.config.channels:
-                if message.text == channel_info["name"]:
-                    channel_id = channel_info["chat_id"]
+                if message.text == channel_info.name:
+                    channel_id = channel_info.chat_id
         except KeyError as exc:
             logger.error("从配置文件获取频道信息发生错误，退出任务", exc)
             logger.exception(exc)
@@ -234,9 +234,10 @@ class Post(Plugin.Conversation, BasePlugin):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
 
-    @staticmethod
+    @conversation.state(state=SEND_POST)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
-    async def send_post(update: Update, context: CallbackContext) -> int:
+    async def send_post(self, update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.effective_message
         if message.text == "退出":
@@ -247,8 +248,8 @@ class Post(Plugin.Conversation, BasePlugin):
         channel_name = None
         try:
             for channel_info in bot.config.channels:
-                if post_handler_data.channel_id == channel_info["chat_id"]:
-                    channel_name = channel_info["name"]
+                if post_handler_data.channel_id == channel_info.chat_id:
+                    channel_name = channel_info.name
         except KeyError as exc:
             logger.error("从配置文件获取频道信息发生错误，退出任务")
             logger.exception(exc)
