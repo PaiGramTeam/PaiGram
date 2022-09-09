@@ -174,11 +174,11 @@ class RenderTemplate:
         items: List[Tuple[str, Any]] = []
         logger.debug(self.character.stats)
 
-        items.append(("基础生命值", stats.BASE_HP.to_rounded()))
+        # items.append(("基础生命值", stats.BASE_HP.to_rounded()))
         items.append(("生命值", stats.FIGHT_PROP_MAX_HP.to_rounded()))
-        items.append(("基础攻击力", stats.FIGHT_PROP_BASE_ATTACK.to_rounded()))
+        # items.append(("基础攻击力", stats.FIGHT_PROP_BASE_ATTACK.to_rounded()))
         items.append(("攻击力", stats.FIGHT_PROP_CUR_ATTACK.to_rounded()))
-        items.append(("基础防御力", stats.FIGHT_PROP_BASE_DEFENSE.to_rounded()))
+        # items.append(("基础防御力", stats.FIGHT_PROP_BASE_DEFENSE.to_rounded()))
         items.append(("防御力", stats.FIGHT_PROP_CUR_DEFENSE.to_rounded()))
         items.append(("暴击率", stats.FIGHT_PROP_CRITICAL.to_percentage_symbol()))
         items.append(
