@@ -109,11 +109,11 @@ class Artifact(BaseModel):
     # 圣遗物单行属性评分
     substat_scores: List[float]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         for substat_scores in self.substat_scores:
             self.score += substat_scores
-        self.score = round(self.score, 2)
+        self.score = round(self.score, 1)
 
         for r in (("D", 10),
                   ("C", 16.5),
@@ -129,12 +129,7 @@ class Artifact(BaseModel):
 
 
 class RenderTemplate:
-    def __init__(
-        self,
-        uid: Union[int, str],
-        character: CharacterInfo,
-        template_service: TemplateService = None,
-    ):
+    def __init__(self, uid: Union[int, str], character: CharacterInfo, template_service: TemplateService = None):
         self.uid = uid
         self.template_service = template_service
         # 因为需要替换线上 enka 图片地址为本地地址，先克隆数据，避免修改原数据
@@ -144,16 +139,36 @@ class RenderTemplate:
         # 缓存所有图片到本地
         await self.cache_images()
 
+        artifact_total_score: float = 0
+        artifacts = self.find_artifacts()
+        for artifact in artifacts:
+            artifact_total_score += artifact.score
+
+        artifact_total_score = round(artifact_total_score, 1)
+
+        artifact_total_score_label: str = "E"
+        for r in (("D", 10),
+                  ("C", 16.5),
+                  ("B", 23.1),
+                  ("A", 29.7),
+                  ("S", 36.3),
+                  ("SS", 42.9),
+                  ("SSS", 49.5),
+                  ("ACE", 56.1),
+                  ("ACE²", 66)):
+            if artifact_total_score / 5 >= r[1]:
+                artifact_total_score_label = r[0]
+
         data = {
             "uid": self.uid,
             "character": self.character,
             "stats": await self.de_stats(),
             "weapon": self.find_weapon(),
             # 圣遗物评分
-            "artifact_total_score": 180.5,
+            "artifact_total_score": artifact_total_score,
             # 圣遗物评级
-            "artifact_total_score_label": "S",
-            "artifacts": self.find_artifacts(),
+            "artifact_total_score_label": artifact_total_score_label,
+            "artifacts": artifacts,
         }
 
         # html = await self.template_service.render_async(

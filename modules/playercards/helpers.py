@@ -38,4 +38,4 @@ class ArtifactStatsTheory:
         score: float = 0
         if sub_stats.prop_id in map(lambda x: x.name, self.main_prop):
             score = float(FightPropScore[sub_stats.prop_id].value) * sub_stats.value
-        return round(score, 2)
+        return round(score, 1)
