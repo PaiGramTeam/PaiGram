@@ -103,7 +103,7 @@ class PlayerCards(Plugin, BasePlugin):
                     temp = []
             if len(temp) > 0:
                 buttons.append(temp)
-            reply_message = await message.reply_photo(photo=self.temp_photo,
+            reply_message = await message.reply_photo(photo=self.temp_photo, caption="请选择你要查询的角色",
                                                       reply_markup=InlineKeyboardMarkup(buttons))
             if reply_message.photo:
                 self.temp_photo = reply_message.photo[-1].file_id
