@@ -91,7 +91,10 @@ class PlayerCards(Plugin, BasePlugin):
             ]
         )
         media = [InputMediaPhoto(png) for png in pngs]
-        await message.reply_media_group(media)
+        if media:
+            await message.reply_media_group(media)
+        else:
+            reply_message = await message.reply_text("请先将角色加入个人资料并公开查看角色详情")
 
 
 class Artifact(BaseModel):
