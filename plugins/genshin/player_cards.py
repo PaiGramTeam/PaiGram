@@ -106,6 +106,8 @@ class Artifact(BaseModel):
     score: float = 0
     # 圣遗物评级
     score_label: str = "E"
+    # 圣遗物评级颜色
+    score_class: str = ""
     # 圣遗物单行属性评分
     substat_scores: List[float]
 
@@ -126,6 +128,22 @@ class Artifact(BaseModel):
                   ("ACE²", 66)):
             if self.score >= r[1]:
                 self.score_label = r[0]
+                self.score_class = self.get_score_class(r[0])
+
+    @staticmethod
+    def get_score_class(label: str) -> str:
+        mapping = {
+            "D": "text-neutral-400",
+            "C": "text-neutral-200",
+            "B": "text-neutral-200",
+            "A": "text-violet-400",
+            "S": "text-violet-400",
+            "SS": "text-yellow-400",
+            "SSS": "text-yellow-400",
+            "ACE": "text-red-500",
+            "ACE²": "text-red-500",
+        }
+        return mapping.get(label, "text-neutral-400")
 
 
 class RenderTemplate:
@@ -168,6 +186,8 @@ class RenderTemplate:
             "artifact_total_score": artifact_total_score,
             # 圣遗物评级
             "artifact_total_score_label": artifact_total_score_label,
+            # 圣遗物评级颜色
+            "artifact_total_score_class": Artifact.get_score_class(artifact_total_score_label),
             "artifacts": artifacts,
         }
 
