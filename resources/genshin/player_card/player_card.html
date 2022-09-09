@@ -59,7 +59,11 @@
                 <div class="characters-level pr-4">UID {{ uid }}</div>
                 <div class="characters-level">Lv.{{ character.level }}</div>
                 <div class="characters-level bg-red-600 rounded-lg px-2">
+                  {%- if character.constellations_unlocked > 0 -%}
                   {{ character.constellations_unlocked }} <span class="not-italic">命</span>
+                  {%- else -%}
+                  {{ character.friendship_level }}
+                  {%- endif -%}
                 </div>
               </div>
             </div>
