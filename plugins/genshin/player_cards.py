@@ -107,9 +107,6 @@ class PlayerCards(Plugin, BasePlugin):
                                                       reply_markup=InlineKeyboardMarkup(buttons))
             if reply_message.photo:
                 self.temp_photo = reply_message.photo[-1].file_id
-            if filters.ChatType.GROUPS.filter(reply_message):
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
             return
         for characters in data.characters:
             if characters.name == character_name:
