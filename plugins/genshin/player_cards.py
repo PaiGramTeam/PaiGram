@@ -8,7 +8,8 @@ from enkanetwork import (
     Stats,
     CharacterInfo,
     Assets,
-    DigitType, EnkaServerError, Forbidden, UIDNotFounded, VaildateUIDError, HTTPException, StatsPercentage, )
+    DigitType, EnkaServerError, Forbidden, UIDNotFounded, VaildateUIDError, HTTPException, StatsPercentage,
+    EnkaNetworkResponse, )
 from pydantic import BaseModel
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.constants import ChatAction
@@ -19,6 +20,7 @@ from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from metadata.shortname import roleToName
 from modules.playercards.helpers import ArtifactStatsTheory
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
@@ -35,6 +37,21 @@ class PlayerCards(Plugin, BasePlugin):
         self.user_service = user_service
         self.client = EnkaNetworkAPI(lang="chs")
         self.template_service = template_service
+        self.temp_photo = open("resources/img/kitsune.png", "rb")
+
+    async def _fetch_user(self, uid) -> Union[EnkaNetworkResponse, str]:
+        try:
+            return await self.client.fetch_user(uid)
+        except EnkaServerError:
+            return "Enka.Network 服务请求错误，请稍后重试"
+        except Forbidden:
+            return "Enka.Network 服务请求被拒绝，请稍后重试"
+        except HTTPException:
+            return "Enka.Network HTTP 服务请求错误，请稍后重试"
+        except UIDNotFounded:
+            return "UID 未找到"
+        except VaildateUIDError:
+            return "UID 未找到"
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
@@ -62,28 +79,15 @@ class PlayerCards(Plugin, BasePlugin):
                     context, message.chat_id, message.message_id, 30
                 )
             return
-        try:
-            data = await self.client.fetch_user(uid)
-        except EnkaServerError:
-            await message.reply_text("Enka.Network 服务请求错误，请稍后重试")
-            return
-        except Forbidden:
-            await message.reply_text("Enka.Network 服务请求被拒绝，请稍后重试")
-            return
-        except HTTPException:
-            await message.reply_text("Enka.Network HTTP 服务请求错误，请稍后重试")
-            return
-        except UIDNotFounded:
-            await message.reply_text("UID 未找到")
-            return
-        except VaildateUIDError:
-            await message.reply_text("UID 错误或者非法")
+        data = await self._fetch_user(uid)
+        if isinstance(data, str):
+            await message.reply_text(data)
             return
         if data.characters is None:
             await message.reply_text("请先将角色加入到角色展柜并允许查看角色详情")
             return
         if len(args) == 1:
-            character_name = args[0]
+            character_name = roleToName(args[0])
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
         else:
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求")
@@ -99,8 +103,10 @@ class PlayerCards(Plugin, BasePlugin):
                     temp = []
             if len(temp) > 0:
                 buttons.append(temp)
-            reply_message = await message.reply_photo(photo=open("resources/img/kitsune.png", "rb"),
+            reply_message = await message.reply_photo(photo=self.temp_photo,
                                                       reply_markup=InlineKeyboardMarkup(buttons))
+            if reply_message.photo:
+                self.temp_photo = reply_message.photo[-1].file_id
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
@@ -135,22 +141,9 @@ class PlayerCards(Plugin, BasePlugin):
         if user.id != user_id:
             return
         logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{result}] uid[{uid}]")
-        try:
-            data = await self.client.fetch_user(uid)
-        except EnkaServerError:
-            await message.edit_text("Enka.Network 服务请求错误，请稍后重试")
-            return
-        except Forbidden:
-            await message.edit_text("Enka.Network 服务请求被拒绝，请稍后重试")
-            return
-        except HTTPException:
-            await message.edit_text("Enka.Network HTTP 服务请求错误，请稍后重试")
-            return
-        except UIDNotFounded:
-            await message.edit_text("UID 未找到")
-            return
-        except VaildateUIDError:
-            await message.edit_text("UID 错误或者非法")
+        data = await self._fetch_user(uid)
+        if isinstance(data, str):
+            await message.reply_text(data)
             return
         if data.characters is None:
             await message.edit_text("请先将角色加入到角色展柜并允许查看角色详情")
