@@ -8,7 +8,7 @@ from enkanetwork import (
     Stats,
     CharacterInfo,
     Assets,
-    DigitType, EnkaServerError, Forbidden, UIDNotFounded, VaildateUIDError, HTTPException, )
+    DigitType, EnkaServerError, Forbidden, UIDNotFounded, VaildateUIDError, HTTPException, StatsPercentage, )
 from pydantic import BaseModel
 from telegram import Update
 from telegram.constants import ChatAction
@@ -236,8 +236,11 @@ class RenderTemplate:
         items.append(("元素精通", stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded()))
 
         # 查找元素伤害加成和治疗加成
+        max_stat = StatsPercentage()  # 用于记录最高元素伤害加成 避免武器特效影响
         for stat in stats:
             if 40 <= stat[1].id <= 46:  # 元素伤害加成
+                if max_stat.value <= stat[1].value:
+                    max_stat = stat[1]
                 pass
             elif stat[1].id == 29:  # 物理伤害加成
                 pass
@@ -255,8 +258,12 @@ class RenderTemplate:
             name = assets.get_hash_map(stat[0])
             if name is None:
                 continue
-            logger.info(f"{name} -> {value}")
             items.append((name, value))
+
+        for item in items:
+            if "元素伤害加成" in item[0]:
+                if max_stat.to_percentage_symbol() != item[1]:
+                    items.remove(item)
 
         return items
 
