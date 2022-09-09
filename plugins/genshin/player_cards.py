@@ -260,10 +260,11 @@ class RenderTemplate:
                 continue
             items.append((name, value))
 
-        for item in items:
-            if "元素伤害加成" in item[0]:
-                if max_stat.to_percentage_symbol() != item[1]:
-                    items.remove(item)
+        if max_stat.id != 0:
+            for item in items:
+                if "元素伤害加成" in item[0]:
+                    if max_stat.to_percentage_symbol() != item[1]:
+                        items.remove(item)
 
         return items
 
