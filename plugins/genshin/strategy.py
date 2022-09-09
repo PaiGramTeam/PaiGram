@@ -50,7 +50,7 @@ class StrategyPlugin(Plugin, BasePlugin):
             return
         logger.info(f"用户 {user.full_name}[{user.id}] 查询角色攻略命令请求 || 参数 {character_name}")
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        file_path = await url_to_file(url, "")
+        file_path = await url_to_file(url, return_path=True)
         caption = "From 米游社 西风驿站  " \
                   f"查看 [原图]({url})"
         await message.reply_photo(photo=open(file_path, "rb"), caption=caption, filename=f"{character_name}.png",
