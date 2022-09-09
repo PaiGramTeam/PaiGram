@@ -6,6 +6,7 @@ from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext
 from telegram.ext import MessageHandler, filters
 
+from core.admin.services import BotAdminService
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
@@ -27,7 +28,8 @@ class Sign(Plugin, BasePlugin):
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
 
     def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
-                 sign_service: SignServices = None):
+                 sign_service: SignServices = None, bot_admin_service: BotAdminService = None):
+        self.bot_admin_service = bot_admin_service
         self.cookies_service = cookies_service
         self.user_service = user_service
         self.sign_service = sign_service
@@ -111,7 +113,11 @@ class Sign(Plugin, BasePlugin):
         if len(args) >= 1:
             msg = None
             if args[0] == "开启自动签到":
-                msg = await self._process_auto_sign(user.id, message.chat_id, "开启")
+                admin_list = await self.bot_admin_service.get_admin_list()
+                if user.id in admin_list:
+                    msg = await self._process_auto_sign(user.id, message.chat_id, "开启")
+                else:
+                    msg = await self._process_auto_sign(user.id, user.id, "开启")
             elif args[0] == "关闭自动签到":
                 msg = await self._process_auto_sign(user.id, message.chat_id, "关闭")
             if msg:
