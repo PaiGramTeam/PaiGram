@@ -166,7 +166,7 @@ class Post(Plugin.Conversation, BasePlugin):
         reply_keyboard = []
         try:
             for channel_info in bot.config.channels:
-                name = channel_info["name"]
+                name = channel_info.name
                 reply_keyboard.append([f"{name}"])
         except KeyError as error:
             logger.error("从配置文件获取频道信息发生错误，退出任务", error)
@@ -185,8 +185,8 @@ class Post(Plugin.Conversation, BasePlugin):
         channel_id = -1
         try:
             for channel_info in bot.config.channels:
-                if message.text == channel_info["name"]:
-                    channel_id = channel_info["chat_id"]
+                if message.text == channel_info.name:
+                    channel_id = channel_info.chat_id
         except KeyError as exc:
             logger.error("从配置文件获取频道信息发生错误，退出任务", exc)
             logger.exception(exc)
@@ -247,8 +247,8 @@ class Post(Plugin.Conversation, BasePlugin):
         channel_name = None
         try:
             for channel_info in bot.config.channels:
-                if post_handler_data.channel_id == channel_info["chat_id"]:
-                    channel_name = channel_info["name"]
+                if post_handler_data.channel_id == channel_info.chat_id:
+                    channel_name = channel_info.name
         except KeyError as exc:
             logger.error("从配置文件获取频道信息发生错误，退出任务")
             logger.exception(exc)
