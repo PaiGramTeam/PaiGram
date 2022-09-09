@@ -1,7 +1,8 @@
 import asyncio
 import json
-from typing import Union, Optional, List, Any, Tuple
+from typing import Type, Union, Optional, List, Any, Tuple
 
+from pydantic import BaseModel
 from enkanetwork import (
     EnkaNetworkAPI,
     Equipments,
@@ -93,25 +94,27 @@ class PlayerCards(Plugin, BasePlugin):
         await message.reply_media_group(media)
 
 
-class Artifact(Equipments):
+class Artifact(BaseModel):
+    '''在 enka Equipments model 基础上扩展了圣遗物评分数据'''
+    equipment: Equipments
     score: float
     score_label: str
     substat_scores: List[float]
 
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
+    @classmethod
+    def from_equipment(cls: Type['Artifact'], equipment: Equipments) -> 'Artifact':
+        return cls(
+            equipment = equipment,
+            # 圣遗物评分
+            score = 99,
+            # 圣遗物评级
+            score_label = "SSS",
 
-        # 圣遗物评分
-        self.score = 99
-        # 圣遗物评级
-        self.score_label = "SSS"
+            # 圣遗物单行属性评分
+            substat_scores = [cls.substat_score(s) for s in equipment.detail.substats],
+        )
 
-        # 圣遗物单行属性评分
-        self.substat_scores = [self.substat_score(s) for s in self.detail.substats]
-
-        # 总分对齐系数
-        self.score_k = "100%"
-
+    @staticmethod
     def substat_score(stat: EquipmentsStats) -> float:
         return 99
 
@@ -126,7 +129,7 @@ class RenderTemplate:
         self.uid = uid
         self.template_service = template_service
         # 因为需要替换线上 enka 图片地址为本地地址，先克隆数据，避免修改原数据
-        self.character = character.copy()
+        self.character = character.copy(deep=True)
 
     async def render(self):
         # 缓存所有图片到本地
@@ -236,7 +239,7 @@ class RenderTemplate:
     def find_artifacts(self) -> List[Artifact]:
         """在 equipments 数组中找到圣遗物，并转换成带有分数的 model。equipments 数组包含圣遗物和武器"""
         return [
-            Artifact(e)
+            Artifact.from_equipment(e)
             for e in self.character.equipments
             if e.type == EquipmentsType.ARTIFACT
         ]

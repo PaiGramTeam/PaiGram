@@ -4,20 +4,20 @@
     <div class="relative">
       <img
         class="w-24 h-24"
-        src="{{ item.detail.icon.url }}"
-        alt="{{ item.detail.name }}"
+        src="{{ item.equipment.detail.icon.url }}"
+        alt="{{ item.equipment.detail.name }}"
       />
       <div
         class="absolute bottom-3 right-3 px-1 text-base italic bg-black bg-opacity-50 rounded"
       >
-        +{{ item.level }}
+        +{{ item.equipment.level }}
       </div>
     </div>
     <div class="">
-      <div class="font-medium">{{ item.detail.artifact_name_set }}</div>
+      <div class="font-medium">{{ item.equipment.detail.artifact_name_set }}</div>
       <div class="flex text-sm space-x-2">
-        <div>{{ item.detail.mainstats.name }}</div>
-        <div class="italic">{{ item.detail.mainstats.value }}</div>
+        <div>{{ item.equipment.detail.mainstats.name }}</div>
+        <div class="italic">{{ item.equipment.detail.mainstats.value }}</div>
       </div>
       <div class="text-yellow-400 text-base">
         <span class="italic"> {{ item.score }} </span> 分 - {{ item.score_label
@@ -26,7 +26,7 @@
     </div>
   </div>
   <div>
-    {% for stat in item.detail.substats %}
+    {% for stat in item.equipment.detail.substats %}
     <div class="px-4 py-1 odd:bg-white odd:bg-opacity-10 flex space-x-4">
       <div class="flex-1 truncate">{{ stat.name }}</div>
       <div class="min-w-30 italic text-right">+{{ stat.value }}</div>
@@ -37,11 +37,13 @@
     </div>
     {% endfor %}
   </div>
+  <!--
   <div
     class="px-4 py-1 flex justify-between border-t border-neutral-200 border-dashed"
   >
     <div>总分对齐系数</div>
     <div class="italic">x 100.0%</div>
   </div>
+  -->
 </div>
 {% endfor %}
