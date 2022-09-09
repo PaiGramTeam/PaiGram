@@ -200,7 +200,7 @@ class RenderTemplate:
             "genshin/player_card",
             "player_card.html",
             data,
-            {"width": 845, "height": 1080},
+            {"width": 900, "height": 1080},
             full_page=True,
         )
 
