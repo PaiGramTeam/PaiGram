@@ -2,7 +2,7 @@ import os
 import random
 from typing import Optional
 
-from genshin import DataNotPublic, GenshinException, Client
+from genshin import GenshinException, Client
 from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, ConversationHandler, filters
@@ -40,21 +40,8 @@ class UserStatsPlugins(Plugin, BasePlugin):
             raise exc
         if user_info.teapot is None:
             raise TeapotUnlocked
-        try:
-            # 查询的UID如果是自己的，会返回DataNotPublic，自己查不了自己可还行......
-            if uid > 0:
-                record_card_info = await client.get_record_card(uid)
-            else:
-                record_card_info = await client.get_record_card()
-        except DataNotPublic:
-            logger.warning("get_record_card请求失败 查询的用户数据未公开")
-            nickname = _uid
-            user_uid = ""
-        except GenshinException as exc:
-            raise exc
-        else:
-            nickname = record_card_info.nickname
-            user_uid = record_card_info.uid
+        nickname = user_info.info.nickname
+        user_uid = _uid
         user_avatar = user_info.characters[0].icon
         user_data = {
             "name": nickname,
