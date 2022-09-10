@@ -463,12 +463,16 @@ with _lock:
             FileHandler(level=40, path=config.logger.path.joinpath("error/error.log"))
         )
 
+        log_filter = logging.Filter('TGPaimon')
+        handler.addFilter(log_filter)
+        debug_handler.addFilter(log_filter)
+
         level_ = 10 if config.debug else 20
         logging.basicConfig(
             level=10 if config.debug else 20,
             format="%(message)s",
-            datefmt="[%Y-%m-%d %X]",
-            handlers=[handler, debug_handler, error_handler]
+            datefmt=config.logger.time_format,
+            handlers=[handler, debug_handler, error_handler],
         )
         warnings_logger = logging.getLogger("py.warnings")
         warnings_logger.addHandler(handler)

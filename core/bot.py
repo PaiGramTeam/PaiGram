@@ -186,6 +186,7 @@ class Bot:
         await self.start_services()
         logger.info('开始安装插件')
         await self.install_plugins()
+        logger.info('BOT 初始化成功')
 
     def launch(self) -> NoReturn:
         """启动机器人"""
@@ -199,7 +200,6 @@ class Bot:
             .post_init(self._post_init)
             .build()
         )
-        logger.info('BOT 初始化成功')
         try:
             for _ in range(5):
                 try:
