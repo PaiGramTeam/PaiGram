@@ -48,8 +48,7 @@ class Gacha(Plugin, BasePlugin):
     @handler(CommandHandler, command="gacha", block=False)
     @handler(MessageHandler, filters=filters.Regex("^深渊数据查询(.*)"), block=False)
     @handler(MessageHandler, filters=filters.Regex("^非首模拟器(.*)"), block=False)
-    @restricts(filters.ChatType.GROUPS, restricts_time=20, try_delete_message=True)
-    @restricts(filters.ChatType.PRIVATE)
+    @restricts(restricts_time=3, restricts_time_of_groups=20)
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.message
