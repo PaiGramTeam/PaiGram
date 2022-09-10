@@ -71,14 +71,13 @@ else:
     color_system = 'truecolor'
 # noinspection SpellCheckingInspection
 log_console = Console(
-    color_system=color_system, theme=Theme(DEFAULT_STYLE),
-    width=180 if "PYCHARM_HOSTED" in os.environ else None  # 针对 Pycharm
+    color_system=color_system, theme=Theme(DEFAULT_STYLE), width=config.logger.width
 )
 
 
 class Traceback(BaseTraceback):
     def __init__(self, *args, **kwargs):
-        kwargs.update({'show_locals': True, 'max_frames': 20})
+        kwargs.update({'show_locals': True, 'max_frames': config.logger.traceback_max_frames})
         super(Traceback, self).__init__(*args, **kwargs)
         self.theme = PygmentsSyntaxTheme(MonokaiProStyle)
 
@@ -213,7 +212,7 @@ class LogRender(DefaultLogRender):
     def __init__(self, *args, **kwargs):
         super(LogRender, self).__init__(*args, **kwargs)
         self.show_level = True
-        self.time_format = "[%Y-%m-%d %X]"
+        self.time_format = config.logger.time_format
 
     def __call__(
             self,
@@ -279,7 +278,7 @@ class Handler(DefaultRichHandler):
         self.console = log_console
         self.rich_tracebacks = True
         self.tracebacks_show_locals = True
-        self.keywords = [*self.KEYWORDS, 'BOT']
+        self.keywords = self.KEYWORDS + config.logger.render_keywords
 
     def render(
             self,
@@ -455,11 +454,13 @@ class Logger(logging.Logger):
 
 with _lock:
     if not __initialized__:
+        if "PYCHARM_HOSTED" in os.environ:
+            print()  # 针对 pycharm 的控制台 bug
         logging.captureWarnings(True)
         handler, debug_handler, error_handler = (
-            Handler(locals_max_length=4, locals_max_string=10),
-            FileHandler(level=10, path=PROJECT_ROOT.joinpath("logs/debug/debug.log")),
-            FileHandler(level=40, path=PROJECT_ROOT.joinpath("logs/error/error.log"))
+            Handler(locals_max_length=4),
+            FileHandler(level=10, path=config.logger.path.joinpath("debug/debug.log")),
+            FileHandler(level=40, path=config.logger.path.joinpath("error/error.log"))
         )
 
         level_ = 10 if config.debug else 20

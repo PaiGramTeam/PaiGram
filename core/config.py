@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import (
     List,
     Optional,
@@ -12,6 +13,8 @@ from pydantic import (
 )
 
 __all__ = ['BotConfig', 'config']
+
+from utils.const import PROJECT_ROOT
 
 dotenv.load_dotenv()
 
@@ -36,6 +39,12 @@ class BotConfig(BaseSettings):
     admins: List['ConfigUser'] = []
     verify_groups: List[Union[int, str]] = []
 
+    logger_width: int = 180
+    logger_log_path: str = './logs'
+    logger_time_format: str = "[%Y-%m-%d %X]"
+    logger_traceback_max_frames: int = 20
+    logger_render_keywords: List[str] = ['BOT']
+
     class Config:
         case_sensitive = False
         json_loads = json.loads
@@ -57,6 +66,16 @@ class BotConfig(BaseSettings):
             host=self.redis_host,
             port=self.redis_port,
             database=self.redis_db,
+        )
+
+    @property
+    def logger(self) -> "LoggerConfig":
+        return LoggerConfig(
+            width=self.logger_width,
+            traceback_max_frames=self.logger_traceback_max_frames,
+            path=PROJECT_ROOT.joinpath(self.logger_log_path).resolve(),
+            time_format=self.logger_time_format,
+            render_keywords=self.logger_render_keywords,
         )
 
 
@@ -82,6 +101,14 @@ class RedisConfig(BaseModel):
     host: str = '127.0.0.1'
     port: int
     database: int = 0
+
+
+class LoggerConfig(BaseModel):
+    width: int = 180
+    time_format: str = "[%Y-%m-%d %X]"
+    traceback_max_frames: int = 20
+    path: Path = PROJECT_ROOT / 'logs'
+    render_keywords: List[str] = ['BOT']
 
 
 BotConfig.update_forward_refs()
