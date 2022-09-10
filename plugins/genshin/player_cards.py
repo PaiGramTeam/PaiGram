@@ -315,9 +315,8 @@ class RenderTemplate:
 
         if max_stat.id != 0:
             for item in items:
-                if "元素伤害加成" in item[0]:
-                    if max_stat.to_percentage_symbol() != item[1]:
-                        items.remove(item)
+                if "元素伤害加成" in item[0] and max_stat.to_percentage_symbol() != item[1]:
+                    items.remove(item)
 
         return items
 
@@ -372,9 +371,7 @@ class RenderTemplate:
         unlocked_constellations = len([i for i in self.character.constellations if i.unlocked])
         for i in range(2):
             if unlocked_constellations >= 3 + i * 2:
-                if data[i] == "E":
-                    if len(self.character.skills) >= 2:
-                        self.character.skills[1].level += 3
-                elif data[i] == "Q":
-                    if len(self.character.skills) >= 3:
-                        self.character.skills[2].level += 3
+                if data[i] == "E" and len(self.character.skills) >= 2:
+                    self.character.skills[1].level += 3
+                elif data[i] == "Q" and len(self.character.skills) >= 3:
+                    self.character.skills[2].level += 3
