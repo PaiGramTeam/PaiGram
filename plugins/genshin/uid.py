@@ -50,7 +50,7 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
             cookies_command_data = AddUserCommandData()
             context.chat_data["add_uid_command_data"] = cookies_command_data
         text = f'你好 {user.mention_markdown_v2()} ' \
-               f'{escape_markdown("！请输入通行证UID，未绑定Cookies部分功能无法使用。请选择要绑定的服务器！或回复退出取消操作")}'
+               f'{escape_markdown("！请输入通行证UID，BOT将会通过通行证UID查找游戏UID。请选择要绑定的服务器！或回复退出取消操作")}'
         reply_keyboard = [['米游社', 'HoYoLab'], ["退出"]]
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return CHECK_SERVER
@@ -85,7 +85,7 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
             else:
                 await message.reply_text("你已经绑定Cookie，无法继续下一步")
                 return ConversationHandler.END
-        await message.reply_text("请输入你的UID", reply_markup=ReplyKeyboardRemove())
+        await message.reply_text("请输入你的通行证UID", reply_markup=ReplyKeyboardRemove())
         return CHECK_UID
 
     @conversation.state(state=CHECK_UID)
