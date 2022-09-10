@@ -1,7 +1,7 @@
 from typing import Optional
 
 import genshin
-from genshin import GenshinException, types
+from genshin import GenshinException, types, DataNotPublic
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
 from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
@@ -50,7 +50,7 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
             cookies_command_data = AddUserCommandData()
             context.chat_data["add_uid_command_data"] = cookies_command_data
         text = f'你好 {user.mention_markdown_v2()} ' \
-               f'{escape_markdown("！本次绑定只绑定UID，未绑定Cookies部分功能无法使用。请选择要绑定的服务器！或回复退出取消操作")}'
+               f'{escape_markdown("！请输入通行证UID，未绑定Cookies部分功能无法使用。请选择要绑定的服务器！或回复退出取消操作")}'
         reply_keyboard = [['米游社', 'HoYoLab'], ["退出"]]
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return CHECK_SERVER
@@ -100,7 +100,7 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         try:
-            uid = int(message.text)
+            hoyolab_uid = int(message.text)
         except ValueError:
             await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -117,13 +117,20 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
         else:
             return ConversationHandler.END
         try:
-            user_info = await client.get_record_card(uid)
+            user_info = await client.get_record_card(hoyolab_uid)
+        except DataNotPublic:
+            await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())
+            logger.error(f"获取账号信息发生错误 hoyolab_uid[{hoyolab_uid}] 账户信息未公开")
+            return ConversationHandler.END
         except GenshinException as exc:
             await message.reply_text("获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
             logger.error("获取账号信息发生错误")
             logger.exception(exc)
             return ConversationHandler.END
-        add_user_command_data.game_uid = uid
+        if user_info.game != types.Game.GENSHIN:
+            await message.reply_text("角色信息查询返回非原神游戏信息，"
+                                     "请设置展示主界面为原神", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
         reply_keyboard = [['确认', '退出']]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
         logger.info(f"用户 {user.full_name}[{user.id}] 获取账号 {user_info.nickname}[{user_info.uid}] 信息成功")
@@ -132,6 +139,7 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
                f"角色等级：{user_info.level}\n" \
                f"UID：`{user_info.uid}`\n" \
                f"服务器名称：`{user_info.server_name}`\n"
+        add_user_command_data.game_uid = user_info.uid
         await message.reply_markdown_v2(
             text,
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
