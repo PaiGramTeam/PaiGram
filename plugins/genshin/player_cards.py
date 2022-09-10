@@ -134,6 +134,8 @@ class PlayerCards(Plugin, BasePlugin):
 
         result, user_id, uid = await get_player_card_callback(callback_query.data)
         if user.id != user_id:
+            await callback_query.answer(text="这不是你的按钮！\n"
+                                             "再乱点再按我叫西风骑士团、千岩军、天领奉和教令院了！", show_alert=True)
             return
         logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{result}] uid[{uid}]")
         data = await self._fetch_user(uid)
@@ -149,6 +151,7 @@ class PlayerCards(Plugin, BasePlugin):
         else:
             await message.edit_text(f"角色展柜中未找到 {result}")
             return
+        await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
         await message.edit_media(InputMediaPhoto(pnd_data, filename=f"player_card_{uid}_{result}.png"))
