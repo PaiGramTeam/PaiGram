@@ -12,6 +12,7 @@ from telegram.helpers import escape_markdown
 from core.bot import bot
 from core.plugin import Plugin, handler
 from core.quiz import QuizService
+from utils.decorators.restricts import restricts
 from utils.log import logger
 from utils.random import MT19937Random
 
@@ -101,6 +102,7 @@ class GroupJoiningVerification(Plugin):
             logger.exception(exc)
 
     @handler(CallbackQueryHandler, pattern=r"^auth_admin\|", block=False)
+    @restricts(without_overlapping=True)
     async def admin(self, update: Update, context: CallbackContext) -> None:
 
         async def admin_callback(callback_query_data: str) -> Tuple[str, int]:
@@ -159,6 +161,7 @@ class GroupJoiningVerification(Plugin):
             schedule.remove()
 
     @handler(CallbackQueryHandler, pattern=r"^auth_challenge\|", block=False)
+    @restricts(without_overlapping=True)
     async def query(self, update: Update, context: CallbackContext) -> None:
 
         async def query_callback(callback_query_data: str) -> Tuple[int, bool, str, str]:
