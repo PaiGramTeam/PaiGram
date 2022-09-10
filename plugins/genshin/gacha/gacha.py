@@ -1,11 +1,12 @@
 import os
 import re
+from typing import Dict
 
 from bs4 import BeautifulSoup
 from pyppeteer import launch
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import filters, CommandHandler, MessageHandler, CallbackContext
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
@@ -71,7 +72,7 @@ class Gacha(Plugin, BasePlugin):
         logger.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
         # 用户数据储存和处理
         gacha_id: str = gacha_info["gacha_id"]
-        user_gacha: dict[str, WishCountInfo] = context.user_data.get("gacha")
+        user_gacha: Dict[str, WishCountInfo] = context.user_data.get("gacha")
         if user_gacha is None:
             user_gacha = context.user_data["gacha"] = {}
         user_gacha_count: WishCountInfo = user_gacha.get(gacha_id)

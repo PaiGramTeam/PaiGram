@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Optional, Tuple
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, File
+from telegram import File, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
@@ -119,7 +119,7 @@ class ArtifactRate(Plugin.Conversation, BasePlugin.Conversation):
             await query.edit_message_text("数据错误")
             return ConversationHandler.END
 
-        def get_callback_data(callback_query_data: str) -> tuple[str, int]:
+        def get_callback_data(callback_query_data: str) -> Tuple[str, int]:
             _data = callback_query_data.split("|")
             _key_name = _data[1]
             try:

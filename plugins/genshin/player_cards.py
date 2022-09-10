@@ -1,19 +1,26 @@
-from typing import Union, List, Any, Tuple
+from typing import Any, List, Tuple, Union
 
 from enkanetwork import (
-    EnkaNetworkAPI,
-    Equipments,
-    EquipmentsType,
-    EquipmentsStats,
-    Stats,
-    CharacterInfo,
     Assets,
-    DigitType, EnkaServerError, Forbidden, UIDNotFounded, VaildateUIDError, HTTPException, StatsPercentage,
-    EnkaNetworkResponse, )
+    CharacterInfo,
+    DigitType,
+    EnkaNetworkAPI,
+    EnkaNetworkResponse,
+    EnkaServerError,
+    Equipments,
+    EquipmentsStats,
+    EquipmentsType,
+    Forbidden,
+    HTTPException,
+    Stats,
+    StatsPercentage,
+    UIDNotFounded,
+    VaildateUIDError,
+)
 from pydantic import BaseModel
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, Update
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, filters, CallbackContext, MessageHandler, CallbackQueryHandler
+from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
@@ -87,7 +94,9 @@ class PlayerCards(Plugin, BasePlugin):
             return
         if len(args) == 1:
             character_name = roleToName(args[0])
-            logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
+            logger.info(
+                f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]"
+            )
         else:
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求")
             buttons = []
@@ -124,7 +133,7 @@ class PlayerCards(Plugin, BasePlugin):
         user = callback_query.from_user
         message = callback_query.message
 
-        async def get_player_card_callback(callback_query_data: str) -> tuple[str, int, int]:
+        async def get_player_card_callback(callback_query_data: str) -> Tuple[str, int, int]:
             _data = callback_query_data.split("|")
             _user_id = int(_data[1])
             _uid = int(_data[2])
