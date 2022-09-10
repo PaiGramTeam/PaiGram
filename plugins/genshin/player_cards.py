@@ -21,7 +21,7 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.shortname import roleToName
-from modules.playercards.helpers import ArtifactStatsTheory
+from modules.playercards.helpers import ArtifactStatsTheory, fix_skills_level_data
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -231,6 +231,8 @@ class RenderTemplate:
             if artifact_total_score / 5 >= r[1]:
                 artifact_total_score_label = r[0]
 
+        self.fix_skills_level()
+
         data = {
             "uid": self.uid,
             "character": self.character,
@@ -311,9 +313,8 @@ class RenderTemplate:
 
         if max_stat.id != 0:
             for item in items:
-                if "元素伤害加成" in item[0]:
-                    if max_stat.to_percentage_symbol() != item[1]:
-                        items.remove(item)
+                if "元素伤害加成" in item[0] and max_stat.to_percentage_symbol() != item[1]:
+                    items.remove(item)
 
         return items
 
@@ -359,3 +360,16 @@ class RenderTemplate:
             for e in self.character.equipments
             if e.type == EquipmentsType.ARTIFACT
         ]
+
+    def fix_skills_level(self) -> None:
+        """修复因命座加成导致的技能等级错误"""
+        data = fix_skills_level_data.get(self.character.name)
+        if not data:
+            return
+        unlocked_constellations = len([i for i in self.character.constellations if i.unlocked])
+        for i in range(2):
+            if unlocked_constellations >= 3 + i * 2:
+                if data[i] == "E" and len(self.character.skills) >= 2:
+                    self.character.skills[1].level += 3
+                elif data[i] == "Q" and len(self.character.skills) >= 3:
+                    self.character.skills[2].level += 3
