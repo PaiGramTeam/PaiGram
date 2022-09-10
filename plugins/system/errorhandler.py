@@ -21,7 +21,7 @@ class ErrorHandler(Plugin):
         """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
 
         logger.error("处理函数时发生异常")
-        logger.exception(context.error)
+        logger.exception(context.error, exc_info=(type(context.error), context.error, context.error.__traceback__))
 
         if notice_chat_id is None:
             return
@@ -61,7 +61,7 @@ class ErrorHandler(Plugin):
                     try:
                         await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
                     except BadRequest as exc_1:
-                        logger.error("处理函数时发生异常", exc_1)
+                        logger.exception(exc_1)
         effective_user = update.effective_user
         effective_message = update.effective_message
         try:
