@@ -55,7 +55,7 @@ class PlayerCards(Plugin, BasePlugin):
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
-    @restricts(restricts_time_of_groups=20, try_delete_message=True, without_overlapping=True)
+    @restricts(restricts_time_of_groups=20, without_overlapping=True)
     @error_callable
     async def player_cards(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
@@ -118,7 +118,7 @@ class PlayerCards(Plugin, BasePlugin):
         await message.reply_photo(pnd_data, filename=f"player_card_{uid}_{character_name}.png")
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
-    @restricts(restricts_time_of_groups=20, try_delete_message=True, without_overlapping=True)
+    @restricts(restricts_time_of_groups=20, without_overlapping=True)
     async def get_player_cards(self, update: Update, _: CallbackContext) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
