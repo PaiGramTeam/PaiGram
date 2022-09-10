@@ -78,7 +78,7 @@ log_console = Console(
 
 class Traceback(BaseTraceback):
     def __init__(self, *args, **kwargs):
-        kwargs.update({'show_locals': True, 'max_frames': 10})
+        kwargs.update({'show_locals': True, 'max_frames': 20})
         super(Traceback, self).__init__(*args, **kwargs)
         self.theme = PygmentsSyntaxTheme(MonokaiProStyle)
 
@@ -407,31 +407,9 @@ class Handler(DefaultRichHandler):
             self.handleError(record)
 
 
-class DebugFileHandler(DefaultRichHandler):
-    def __init__(self, *args, **kwargs):
+class FileHandler(Handler):
+    def __init__(self, *args, path: Path, **kwargs):
         super().__init__(*args, **kwargs)
-        self.level = 10
-        path = PROJECT_ROOT.joinpath("logs/debug/debug.log")
-        while True:
-            try:
-                path.parent.mkdir(exist_ok=True)
-                break
-            except FileNotFoundError:
-                parent = path.parent
-                while True:
-                    try:
-                        parent.mkdir(exist_ok=True)
-                        break
-                    except FileNotFoundError:
-                        parent = parent.parent
-        self.console = Console(color_system='auto', width=200, file=FileIO(path))
-
-
-class ErrorFileHandler(DefaultRichHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.level = 40
-        path = PROJECT_ROOT.joinpath("logs/error/error.log")
         while True:
             try:
                 path.parent.mkdir(exist_ok=True)
@@ -445,7 +423,7 @@ class ErrorFileHandler(DefaultRichHandler):
                     except FileNotFoundError:
                         parent = parent.parent
         path.parent.mkdir(exist_ok=True)
-        self.console = Console(color_system='auto', width=200, file=FileIO(path))
+        self.console = Console(width=180, file=FileIO(path), theme=Theme(DEFAULT_STYLE))
 
 
 class Logger(logging.Logger):
@@ -461,17 +439,14 @@ class Logger(logging.Logger):
 
     def exception(
             self,
-            *args: Any,
             msg: Any = NOT_SET,
+            *args: Any,
             exc_info: Optional[ExceptionInfoType] = True,
             stack_info: bool = False,
             stacklevel: int = 1,
             extra: Optional[Mapping[str, Any]] = None,
             **kwargs
     ) -> None:
-        if args and msg is NOT_SET:
-            msg = args[0]
-            args = args[1:]
         super(Logger, self).exception(
             "" if msg is NOT_SET else msg, *args,
             exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra
@@ -481,7 +456,11 @@ class Logger(logging.Logger):
 with _lock:
     if not __initialized__:
         logging.captureWarnings(True)
-        handler, debug_handler, error_handler = Handler(), DebugFileHandler(), ErrorFileHandler()
+        handler, debug_handler, error_handler = (
+            Handler(locals_max_length=4, locals_max_string=10),
+            FileHandler(level=10, path=PROJECT_ROOT.joinpath("logs/debug/debug.log")),
+            FileHandler(level=40, path=PROJECT_ROOT.joinpath("logs/error/error.log"))
+        )
 
         level_ = 10 if config.debug else 20
         logging.basicConfig(

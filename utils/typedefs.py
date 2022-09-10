@@ -1,13 +1,17 @@
 from pathlib import Path
 from types import TracebackType
-from typing import Tuple, Type, Union, Dict, Any
+from typing import Optional, Tuple, Type, Union, Dict, Any
 
 __all__ = [
     'StrOrPath',
-    'ExceptionInfoType',
+    'SysExcInfoType', 'ExceptionInfoType',
     'JSONDict',
 ]
 
 StrOrPath = Union[str, Path]
-ExceptionInfoType = Union[bool, Tuple[Type[BaseException], BaseException, TracebackType, None], Tuple[None, None, None]]
+SysExcInfoType = Union[
+    Tuple[Type[BaseException], BaseException, Optional[TracebackType]],
+    Tuple[None, None, None]
+]
+ExceptionInfoType = Union[bool, SysExcInfoType, BaseException]
 JSONDict = Dict[str, Any]
