@@ -1,13 +1,15 @@
+import asyncio
 import time
 from functools import wraps
 from typing import Callable, cast
-import asyncio
 
 from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import filters, CallbackContext
 
 from utils.log import logger
+
+_lock = asyncio.Lock()
 
 
 def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_message: bool = False,
@@ -58,16 +60,17 @@ def restricts(filters_chat: filters = filters.ALL, return_data=None, try_delete_
             message = update.effective_message
             user = update.effective_user
 
-            lock = context.user_data.get("lock")
-            if not lock:
-                lock = context.user_data["lock"] = asyncio.Lock()
+            async with _lock:
+                user_lock = context.user_data.get("lock")
+                if user_lock is None:
+                    user_lock = context.user_data["lock"] = asyncio.Lock()
 
             # 如果上一个命令还未完成，忽略后续重复调用
-            if without_overlapping and lock.locked():
+            if without_overlapping and user_lock.locked():
                 logger.debug(f"用户 {user.full_name}[{user.id}] 触发 overlapping 该次命令已忽略")
                 return return_data
 
-            async with lock:
+            async with user_lock:
                 if filters_chat.filter(message):
                     command_time = context.user_data.get("command_time", 0)
                     count = context.user_data.get("usage_count", 0)
