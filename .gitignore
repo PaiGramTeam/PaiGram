@@ -39,3 +39,6 @@ logs/
 
 ### private plugins ###
 plugins/private
+
+### mtp ###
+paimon.session
