@@ -34,6 +34,10 @@ Pyrogram = { version = "^2.0.51", optional = true }
 [tool.poetry.extras]
 pyro = ["Pyrogram", "TgCrypto"]
 
+[tool.poetry.group.pyro.dependencies]
+Pyrogram = "^2.0.51"
+TgCrypto = "^1.2.3"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

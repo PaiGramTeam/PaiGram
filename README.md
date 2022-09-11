@@ -30,7 +30,7 @@ pip install --upgrade poetry
 ### 2. 安装依赖
 
 ```bash
-poetry install
+poetry install --only-root
 playwright install chromium
 ```
 
