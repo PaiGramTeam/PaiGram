@@ -30,8 +30,14 @@ pip install --upgrade poetry
 ### 2. 安装依赖
 
 ```bash
-poetry install --only-root
+poetry install
 playwright install chromium
+```
+
+#### 可选依赖项
+
+```bash
+poetry install --extras pyro
 ```
 
 ### 3. 修改配置
