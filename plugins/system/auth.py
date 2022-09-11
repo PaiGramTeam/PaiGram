@@ -315,13 +315,17 @@ class GroupJoiningVerification(Plugin):
                                        chat_id=chat.id, user_id=user.id,
                                        job_kwargs={"replace_existing": True,
                                                    "id": f"{chat.id}|{user.id}|auth_clean_question_message"})
-            if self.mtp is not None:
+            if self.mtp:
                 from pyrogram.errors import BadRequest as MTPBadRequest, FloodWait as MTPFloodWait
                 try:
-                    messages_list = await self.mtp.get_messages(chat.id,
-                                                                message_ids=[message.id + 1, question_message.id])
+                    messages_list = await self.mtp.get_messages(
+                        chat.id,
+                        message_ids=list(range(message.id + 1, question_message.id))
+                    )
                     for find_message in messages_list:
-                        if find_message.from_user.id == user.id:
+                        if find_message.empty:
+                            continue
+                        if find_message.from_user and find_message.from_user.id == user.id:
                             await self.mtp.delete_messages(chat_id=chat.id, message_ids=find_message.id)
                             logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 验证缝隙间发送消息"
                                         "现已删除")
