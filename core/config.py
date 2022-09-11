@@ -35,6 +35,9 @@ class BotConfig(BaseSettings):
     bot_token: str
     error_notification_chat_id: str
 
+    api_id: Optional[int]
+    api_hash: Optional[str]
+
     channels: List['ConfigChannel'] = []
     admins: List['ConfigUser'] = []
     verify_groups: List[Union[int, str]] = []
@@ -78,6 +81,13 @@ class BotConfig(BaseSettings):
             render_keywords=self.logger_render_keywords,
         )
 
+    @property
+    def mtproto(self) -> "MTProtoConfig":
+        return MTProtoConfig(
+            api_id=self.api_id,
+            api_hash=self.api_hash,
+        )
+
 
 class ConfigChannel(BaseModel):
     name: str
@@ -109,6 +119,11 @@ class LoggerConfig(BaseModel):
     traceback_max_frames: int = 20
     path: Path = PROJECT_ROOT / 'logs'
     render_keywords: List[str] = ['BOT']
+
+
+class MTProtoConfig(BaseModel):
+    api_id: Optional[int]
+    api_hash: Optional[str]
 
 
 BotConfig.update_forward_refs()

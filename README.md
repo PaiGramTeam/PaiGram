@@ -34,6 +34,12 @@ poetry install
 playwright install chromium
 ```
 
+#### 可选依赖项
+
+```bash
+poetry install --extras pyro
+```
+
 ### 3. 修改配置
 
 创建 `.env` 文件并填写数据库连接和 bot token 等参数。

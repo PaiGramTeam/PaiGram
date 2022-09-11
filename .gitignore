@@ -39,3 +39,8 @@ logs/
 
 ### private plugins ###
 plugins/private
+
+### mtp ###
+paimon.session
+PaimonBot.session
+PaimonBot.session-journal

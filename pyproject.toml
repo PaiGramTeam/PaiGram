@@ -27,8 +27,12 @@ PyMySQL = "^1.0.2"
 alembic = "^1.8.1"
 black = "^22.8.0"
 rich = "^12.5.1"
-enkanetwork-py = {git = "https://github.com/mrwan200/EnkaNetwork.py"}
+enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
+TgCrypto = { version = "^1.2.3", optional = true }
+Pyrogram = { version = "^2.0.51", optional = true }
 
+[tool.poetry.extras]
+pyro = ["Pyrogram", "TgCrypto"]
 
 [build-system]
 requires = ["poetry-core"]
