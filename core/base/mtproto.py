@@ -45,13 +45,13 @@ class MTProto(Service):
 
     async def start(self):  # pylint: disable=W0221
         if not PYROGRAM_AVAILABLE:
-            logger.warning("MTProto 服务需要的 pyrogram 模块未导入 本次服务 client 为 None")
+            logger.info("MTProto 服务需要的 pyrogram 模块未导入 本次服务 client 为 None")
             return
         if bot.config.mtproto.api_id is None:
-            logger.warning("MTProto 服务需要的 api_id 未配置 本次服务 client 为 None")
+            logger.info("MTProto 服务需要的 api_id 未配置 本次服务 client 为 None")
             return
         if bot.config.mtproto.api_hash is None:
-            logger.warning("MTProto 服务需要的 api_hash 未配置 本次服务 client 为 None")
+            logger.info("MTProto 服务需要的 api_hash 未配置 本次服务 client 为 None")
             return
         self.client = Client(api_id=bot.config.mtproto.api_id, api_hash=bot.config.mtproto.api_hash, name=self.name,
                              bot_token=bot.config.bot_token, proxy=self.proxy)
