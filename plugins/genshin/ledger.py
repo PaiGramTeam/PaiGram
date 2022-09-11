@@ -133,12 +133,12 @@ class Ledger(Plugin, BasePlugin):
         return png_data
 
     @handler(CommandHandler, command="ledger", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^旅行扎记(.*)"), block=False)
+    @handler(MessageHandler, filters=filters.Regex("^旅行札记查询(.*)"), block=False)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
-        message = update.message
+        message = update.effective_message
         try:
             month = check_ledger_month(context)
         except IndexError:
@@ -147,8 +147,8 @@ class Ledger(Plugin, BasePlugin):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 查询原石手扎")
-        await update.message.reply_chat_action(ChatAction.TYPING)
+        logger.info(f"用户 {user.full_name}[{user.id}] 查询旅行札记")
+        await message.reply_chat_action(ChatAction.TYPING)
         try:
             client = await get_genshin_client(user.id)
             png_data = await self._start_get_ledger(client, month)
@@ -159,10 +159,10 @@ class Ledger(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
         except DataNotPublic:
-            reply_message = await update.message.reply_text("查询失败惹，可能是旅行札记功能被禁用了？")
+            reply_message = await message.reply_text("查询失败惹，可能是旅行札记功能被禁用了？")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
-        await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await update.message.reply_photo(png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True)
+        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        await message.reply_photo(png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True)
