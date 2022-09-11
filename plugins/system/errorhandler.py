@@ -1,7 +1,9 @@
-import html
 import json
+import os
+import time
 import traceback
 
+import aiofiles
 from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
@@ -12,6 +14,13 @@ from core.plugin import error_handler, Plugin
 from utils.log import logger
 
 notice_chat_id = bot.config.error_notification_chat_id
+current_dir = os.getcwd()
+logs_dir = os.path.join(current_dir, "logs")
+if not os.path.exists(logs_dir):
+    os.mkdir(logs_dir)
+report_dir = os.path.join(current_dir, "report")
+if not os.path.exists(report_dir):
+    os.mkdir(report_dir)
 
 
 class ErrorHandler(Plugin):
@@ -27,41 +36,38 @@ class ErrorHandler(Plugin):
             return
 
         tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
-        tb_string = ''.join(tb_list)
+        tb_string = "".join(tb_list)
 
         update_str = update.to_dict() if isinstance(update, Update) else str(update)
-        text_1 = (
-            f'<b>处理函数时发生异常</b> \n'
-            f'Exception while handling an update \n'
-            f'<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}'
-            '</pre>\n\n'
-            f'<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n'
-            f'<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n'
+
+        error_text = (
+            f"-----Exception while handling an update-----\n"
+            f"update = {json.dumps(update_str, indent=2, ensure_ascii=False)}\n"
+            f"context.chat_data = {str(context.chat_data)}\n"
+            f"context.user_data = {str(context.user_data)}\n"
+            "\n"
+            "-----Traceback info-----\n"
+            f"{tb_string}"
         )
-        text_2 = (
-            f'<pre>{html.escape(tb_string)}</pre>'
-        )
+        file_name = f"error_{update.update_id if isinstance(update, Update) else int(time.time())}.txt"
+        log_file = os.path.join(report_dir, file_name)
+        try:
+            async with aiofiles.open(log_file, mode='w+', encoding='utf-8') as f:
+                await f.write(error_text)
+        except Exception as exc:
+            logger.error("保存日记失败")
+            logger.exception(exc)
         try:
             if 'make sure that only one bot instance is running' in tb_string:
                 logger.error("其他机器人在运行，请停止！")
                 return
-            await context.bot.send_message(notice_chat_id, text_1, parse_mode=ParseMode.HTML)
-            await context.bot.send_message(notice_chat_id, text_2, parse_mode=ParseMode.HTML)
-        except BadRequest as exc:
-            if 'too long' in str(exc):
-                text = (
-                    f'<b>处理函数时发生异常，traceback太长导致无法发送，但已写入日志</b> \n'
-                    f'<code>{html.escape(str(context.error))}</code>'
-                )
-                try:
-                    await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
-                except BadRequest:
-                    text = (
-                        '<b>处理函数时发生异常，traceback太长导致无法发送，但已写入日志</b> \n')
-                    try:
-                        await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
-                    except BadRequest as exc_1:
-                        logger.exception(exc_1)
+            await context.bot.send_document(chat_id=notice_chat_id, document=open(log_file, "rb"),
+                                            caption="Error report.")
+        except (BadRequest, Forbidden) as exc:
+            logger.error("发送日记失败")
+            logger.exception(exc)
+        except FileNotFoundError:
+            logger.error("发送日记失败 文件不存在")
         effective_user = update.effective_user
         effective_message = update.effective_message
         try:
