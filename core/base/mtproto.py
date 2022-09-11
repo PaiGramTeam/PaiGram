@@ -33,7 +33,7 @@ class MTProto(Service):
         return os.path.exists(self.session_path)
 
     def __init__(self):
-        self.name = "TGPaimonBot"
+        self.name = "PaimonBot"
         current_dir = os.getcwd()
         self.session_path = os.path.join(current_dir, "paimon.session")
         self.client: Optional[Client] = None
@@ -53,16 +53,9 @@ class MTProto(Service):
         if bot.config.mtproto.api_hash is None:
             logger.warning("MTProto 服务需要的 api_hash 未配置 本次服务 client 为 None")
             return
-        if self.session_exists():
-            session_string = await self.get_session()
-            self.client = Client(api_id=bot.config.mtproto.api_id, api_hash=bot.config.mtproto.api_hash, name=self.name,
-                                 bot_token=bot.config.bot_token, session_string=session_string, proxy=self.proxy)
-        else:
-            self.client = Client(api_id=bot.config.mtproto.api_id, api_hash=bot.config.mtproto.api_hash, name=self.name,
-                                 bot_token=bot.config.bot_token, in_memory=True, proxy=self.proxy)
+        self.client = Client(api_id=bot.config.mtproto.api_id, api_hash=bot.config.mtproto.api_hash, name=self.name,
+                             bot_token=bot.config.bot_token, proxy=self.proxy)
         await self.client.start()
-        session_string = await self.client.export_session_string()
-        await self.set_session(session_string)
 
     async def stop(self):  # pylint: disable=W0221
         if self.client is not None:
