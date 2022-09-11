@@ -1,10 +1,13 @@
+import inspect
+import io
 import logging
 import os
 import sys
+import traceback as traceback_
 from datetime import datetime
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import (Any, Callable, Dict, Iterable, List, Literal, Mapping, Optional, TYPE_CHECKING, Union)
+from typing import (Any, Callable, Dict, Iterable, List, Literal, Mapping, Optional, TYPE_CHECKING, Tuple, Union)
 
 import ujson as json
 from rich.columns import Columns
@@ -360,7 +363,7 @@ class Handler(DefaultRichHandler):
 
     def emit(self, record: "LogRecord") -> None:
         message = self.format(record)
-        traceback = None
+        _traceback = None
         if (
                 self.rich_tracebacks
                 and record.exc_info
@@ -369,7 +372,7 @@ class Handler(DefaultRichHandler):
             exc_type, exc_value, exc_traceback = record.exc_info
             if exc_type is None or exc_value is None:
                 raise ValueError(record)
-            traceback = Traceback.from_exception(
+            _traceback = Traceback.from_exception(
                 exc_type,
                 exc_value,
                 exc_traceback,
@@ -398,7 +401,7 @@ class Handler(DefaultRichHandler):
                 message_renderable = self.render_message(record, message)
         else:
             message_renderable = None
-        log_renderable = self.render(record=record, traceback=traceback, message_renderable=message_renderable)
+        log_renderable = self.render(record=record, traceback=_traceback, message_renderable=message_renderable)
         # noinspection PyBroadException
         try:
             self.console.print(log_renderable)
@@ -450,6 +453,39 @@ class Logger(logging.Logger):
             "" if msg is NOT_SET else msg, *args,
             exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra
         )
+
+    def findCaller(self, stack_info: bool = False, stacklevel: int = 1) -> Tuple[str, int, str, Optional[str]]:
+        frame = inspect.currentframe()
+        if frame is not None:
+            frame = frame.f_back
+        original_frame = frame
+        while frame and stacklevel > 1:
+            frame = frame.f_back
+            stacklevel -= 1
+        if not frame:
+            frame = original_frame
+        rv = "(unknown file)", 0, "(unknown function)", None
+        while hasattr(frame, "f_code"):
+            code = frame.f_code
+            filename = os.path.normcase(code.co_filename)
+            if filename in [
+                os.path.normcase(Path(__file__).resolve()),
+                os.path.normcase(logging.addLevelName.__code__.co_filename)
+            ]:
+                frame = frame.f_back
+                continue
+            sinfo = None
+            if stack_info:
+                sio = io.StringIO()
+                sio.write('Stack (most recent call last):\n')
+                traceback_.print_stack(frame, file=sio)
+                sinfo = sio.getvalue()
+                if sinfo[-1] == '\n':
+                    sinfo = sinfo[:-1]
+                sio.close()
+            rv = (code.co_filename, frame.f_lineno, code.co_name, sinfo)
+            break
+        return rv
 
 
 with _lock:
