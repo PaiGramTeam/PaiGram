@@ -318,7 +318,8 @@ class GroupJoiningVerification(Plugin):
             if self.mtp is not None:
                 from pyrogram.errors import BadRequest as MTPBadRequest, FloodWait as MTPFloodWait
                 try:
-                    messages_list = await self.mtp.get_messages(chat.id, message_ids=[message.id, question_message.id])
+                    messages_list = await self.mtp.get_messages(chat.id,
+                                                                message_ids=[message.id + 1, question_message.id])
                     for find_message in messages_list:
                         if find_message.from_user.id == user.id:
                             await self.mtp.delete_messages(chat_id=chat.id, message_ids=find_message.id)
