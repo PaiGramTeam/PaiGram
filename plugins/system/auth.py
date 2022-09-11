@@ -315,7 +315,7 @@ class GroupJoiningVerification(Plugin):
                                        chat_id=chat.id, user_id=user.id,
                                        job_kwargs={"replace_existing": True,
                                                    "id": f"{chat.id}|{user.id}|auth_clean_question_message"})
-            if self.mtp:
+            if self.mtp and (question_message.id - message.id - 1):
                 from pyrogram.errors import BadRequest as MTPBadRequest, FloodWait as MTPFloodWait
                 try:
                     messages_list = await self.mtp.get_messages(
