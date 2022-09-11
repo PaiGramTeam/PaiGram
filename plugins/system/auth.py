@@ -9,6 +9,7 @@ from telegram.error import BadRequest
 from telegram.ext import CallbackContext, CallbackQueryHandler
 from telegram.helpers import escape_markdown
 
+from core.base.mtproto import MTProto
 from core.bot import bot
 from core.plugin import Plugin, handler
 from core.quiz import QuizService
@@ -31,7 +32,7 @@ FullChatPermissions = ChatPermissions(
 class GroupJoiningVerification(Plugin):
     """群验证模块"""
 
-    def __init__(self, quiz_service: QuizService = None):
+    def __init__(self, quiz_service: QuizService = None, mtp: MTProto = None):
         self.quiz_service = quiz_service
         self.time_out = 120
         self.kick_time = 120
@@ -39,6 +40,7 @@ class GroupJoiningVerification(Plugin):
         self.lock = asyncio.Lock()
         self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, List[ChatMember]]] = {}
         self.is_refresh_quiz = False
+        self.mtp = mtp.client
 
     async def __async_init__(self):
         logger.info("群验证模块正在刷新问题列表")
@@ -296,9 +298,9 @@ class GroupJoiningVerification(Plugin):
             try:
                 question_message = await message.reply_markdown_v2(reply_message,
                                                                    reply_markup=InlineKeyboardMarkup(buttons))
-            except BadRequest as error:
+            except BadRequest as exc:
                 await message.reply_text("派蒙分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
-                raise error
+                raise exc
             context.job_queue.run_once(callback=self.kick_member_job, when=self.time_out,
                                        name=f"{chat.id}|{user.id}|auth_kick", chat_id=chat.id, user_id=user.id,
                                        job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_kick"})
@@ -313,3 +315,19 @@ class GroupJoiningVerification(Plugin):
                                        chat_id=chat.id, user_id=user.id,
                                        job_kwargs={"replace_existing": True,
                                                    "id": f"{chat.id}|{user.id}|auth_clean_question_message"})
+            if self.mtp is not None:
+                from pyrogram.errors import BadRequest as MTPBadRequest, FloodWait as MTPFloodWait
+                try:
+                    messages_list = await self.mtp.get_messages(chat.id, message_ids=[message.id, question_message.id])
+                    for find_message in messages_list:
+                        if find_message.from_user.id == user.id:
+                            await self.mtp.delete_messages(chat_id=chat.id, message_ids=find_message.id)
+                            logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 验证缝隙间发送消息"
+                                        "现已删除")
+                except MTPFloodWait:
+                    logger.warning("调用 mtp 触发洪水限制")
+                    continue
+                except MTPBadRequest as exc:
+                    logger.warning("调用 mtp 请求错误")
+                    logger.exception(exc)
+                    continue
