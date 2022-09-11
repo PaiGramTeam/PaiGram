@@ -42,7 +42,7 @@ assets = Assets(lang="chs")
 class PlayerCards(Plugin, BasePlugin):
     def __init__(self, user_service: UserService = None, template_service: TemplateService = None):
         self.user_service = user_service
-        self.client = EnkaNetworkAPI(lang="chs")
+        self.client = EnkaNetworkAPI(lang="chs", agent="TGPaimonBot/3.0")
         self.template_service = template_service
         self.temp_photo = open("resources/img/kitsune.png", "rb")
 
