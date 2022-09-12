@@ -10,6 +10,7 @@ def artifact_rate(event_loop):
     event_loop.run_until_complete(artifact_rate.close())
 
 
+@pytest.mark.asyncio
 async def test_rate_artifact(artifact_rate):
     artifact_attr = {
         'name': '翠绿的猎人之冠', 'pos': '理之冠', 'star': 5, 'level': 20,
