@@ -317,6 +317,14 @@ aioredis = ["aioredis (>=2.0.1,<3.0.0)"]
 lua = ["lupa (>=1.13,<2.0)"]
 
 [[package]]
+name = "flaky"
+version = "3.7.0"
+description = "Plugin for nose or pytest that automatically reruns flaky tests."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
 name = "frozenlist"
 version = "1.3.1"
 description = "A list-like structure which implements collections.abc.MutableSequence"
@@ -1084,7 +1092,7 @@ test = ["pytest", "pytest-asyncio"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "9f68326048a3a54f590c34bbc33e1ea1b0d4579db15e0358bce1b3d341d30a35"
+content-hash = "014c140671ec3f6c133ddde989dfc195fb345a51fba15e1a09d3f4957c1a9fe5"
 
 [metadata.files]
 aiofiles = [
@@ -1295,6 +1303,10 @@ Deprecated = [
 fakeredis = [
     {file = "fakeredis-1.9.1-py3-none-any.whl", hash = "sha256:b9830f68dafafc0abe6c037775765166e9e2ff6b0da8abd3838eb2c3910f8e65"},
     {file = "fakeredis-1.9.1.tar.gz", hash = "sha256:e884776d7d0216e9c6c514527718259cfbd555777b36ba403ae680bd1489f7a1"},
+]
+flaky = [
+    {file = "flaky-3.7.0-py2.py3-none-any.whl", hash = "sha256:d6eda73cab5ae7364504b7c44670f70abed9e75f77dd116352f662817592ec9c"},
+    {file = "flaky-3.7.0.tar.gz", hash = "sha256:3ad100780721a1911f57a165809b7ea265a7863305acb66708220820caf8aa0d"},
 ]
 frozenlist = [
     {file = "frozenlist-1.3.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:5f271c93f001748fc26ddea409241312a75e13466b06c94798d1a341cf0e6989"},
