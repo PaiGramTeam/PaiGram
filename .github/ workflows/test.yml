@@ -5,10 +5,14 @@ on:
     branches:
       - main
     paths:
+      - 'modules/apihelper/**'
+      - 'modules/wiki/**'
       - 'tests/**'
   pull_request:
     types: [ opened, synchronize ]
     paths:
+      - 'modules/apihelper/**'
+      - 'modules/wiki/**'
       - 'tests/**'
 
 jobs:
