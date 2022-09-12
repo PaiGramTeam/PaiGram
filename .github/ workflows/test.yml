@@ -1,11 +1,16 @@
 name: Test
 
 on:
-  pull_request:
+  push:
     branches:
-      - 'test'
-      - 'test/**'
-      - 'wiki/**'
+      - main
+    paths:
+      - '.github/workflows/**'
+      - 'tests/**'
+  pull_request:
+    types: [ opened, synchronize ]
+    paths:
+      - 'tests/**'
 
 jobs:
   pytest:
