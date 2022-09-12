@@ -38,6 +38,13 @@ lxml = "^4.9.1"
 pyro = ["Pyrogram", "TgCrypto"]
 test = ["pytest", "pytest-asyncio"]
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
