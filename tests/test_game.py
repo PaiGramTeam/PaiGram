@@ -1,5 +1,6 @@
 import pytest
 import pytest_asyncio
+from flaky import flaky
 
 from modules.apihelper.hyperion import Hyperion
 
@@ -13,6 +14,7 @@ async def hyperion():
 
 # noinspection PyShadowingNames
 @pytest.mark.asyncio
+@flaky(3, 1)
 async def test_get_strategy(hyperion):
     test_collection_id_list = [839176, 839179, 839181]
     test_result = ["温迪", "胡桃", "雷电将军"]

@@ -4,6 +4,7 @@ from random import sample, randint
 from typing import Type
 
 import pytest
+from flaky import flaky
 
 from modules.wiki.base import WikiModel
 from modules.wiki.character import Character
@@ -25,6 +26,7 @@ def event_loop():
 class TestWeapon:
 
     @staticmethod
+    @flaky(3, 1)
     async def test_get_by_id():
         weapon = await Weapon.get_by_id('i_n11417')
         assert weapon.name == '原木刀'
@@ -34,6 +36,7 @@ class TestWeapon:
         assert weapon.affix.name == '森林的瑞佑'
 
     @staticmethod
+    @flaky(3, 1)
     async def test_get_by_name():
         weapon = await Weapon.get_by_name('风鹰剑')
         assert weapon.id == 'i_n11501'
@@ -44,6 +47,7 @@ class TestWeapon:
         assert '听凭风引，便是正义与自由之风' in weapon.story
 
     @staticmethod
+    @flaky(3, 1)
     async def test_name_list():
         from httpx import URL
         async for name in Weapon._name_list_generator(with_url=True):
@@ -55,6 +59,7 @@ class TestWeapon:
 class TestCharacter:
 
     @staticmethod
+    @flaky(3, 1)
     async def test_get_by_id():
         character = await Character.get_by_id('ayaka_002')
         assert character.name == '神里绫华'
@@ -64,6 +69,7 @@ class TestCharacter:
         assert character.cn_cv == '小N'
 
     @staticmethod
+    @flaky(3, 1)
     async def test_get_by_name():
         character = await Character.get_by_name('神里绫华')
         assert character.name == '神里绫华'
@@ -76,6 +82,7 @@ class TestCharacter:
         assert main_character.cn_cv == '宴宁&多多poi'
 
     @staticmethod
+    @flaky(3, 1)
     async def test_name_list():
         from httpx import URL
         async for name in Character._name_list_generator(with_url=True):
@@ -87,6 +94,7 @@ class TestCharacter:
 class TestMaterial:
 
     @staticmethod
+    @flaky(3, 1)
     async def test_get_by_id():
         material = await Material.get_by_id('i_504')
         assert material.name == '高塔孤王的碎梦'
@@ -95,6 +103,7 @@ class TestMaterial:
         assert '巴巴托斯' in material.description
 
     @staticmethod
+    @flaky(3, 1)
     async def test_get_by_name():
         material = await Material.get_by_name('地脉的新芽')
         assert material.id == 'i_73'
@@ -103,6 +112,7 @@ class TestMaterial:
         assert '勃发' in material.description
 
     @staticmethod
+    @flaky(3, 1)
     async def test_name_list():
         from httpx import URL
         async for name in Material._name_list_generator(with_url=True):
@@ -112,13 +122,15 @@ class TestMaterial:
 
 @pytest.mark.asyncio
 class TestAll:
+
     @staticmethod
+    @flaky(3, 1)
     async def make_test(target: Type[WikiModel]):
         from httpx import URL
         name_list = await target.get_name_list(with_url=True)
         name_len = len(name_list)
         assert name_len != 0
-        test_len = randint(1, max(2, int(len(name_list) * 0.3)))  # pylint: disable=B311
+        test_len = randint(1, max(2, int(len(name_list) * 0.3)))  # bandit: disable=B311
         LOGGER.info("得到了 %d 条 %s 的数据, 将会测试其中的 %s 条数据", name_len, target.__name__, test_len)
         for name, url in sample(name_list, test_len):
             assert isinstance(name, str)
@@ -127,11 +139,14 @@ class TestAll:
             assert isinstance(instance, target)
             LOGGER.info("%s is ok.", instance.name)
 
+    @flaky(3, 1)
     async def test_random_material(self):
         await self.make_test(Material)
 
+    @flaky(3, 1)
     async def test_random_weapon(self):
         await self.make_test(Weapon)
 
+    @flaky(3, 1)
     async def test_random_character(self):
         await self.make_test(Character)
