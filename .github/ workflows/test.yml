@@ -24,6 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade poetry
+          poetry config virtualenvs.create false
           poetry install
           poetry install --extras test
       - name: Test with pytest
