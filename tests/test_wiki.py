@@ -57,7 +57,9 @@ class TestWeapon:
 
 @pytest.mark.asyncio
 class TestCharacter:
-    async def test_get_by_id(self):
+
+    @staticmethod
+    async def test_get_by_id():
         character = await Character.get_by_id('ayaka_002')
         assert character.name == '神里绫华'
         assert character.title == '白鹭霜华'
@@ -65,7 +67,8 @@ class TestCharacter:
         assert character.association.value == '稻妻'
         assert character.cn_cv == '小N'
 
-    async def test_get_by_name(self):
+    @staticmethod
+    async def test_get_by_name():
         character = await Character.get_by_name('神里绫华')
         assert character.name == '神里绫华'
         assert character.title == '白鹭霜华'
@@ -77,7 +80,8 @@ class TestCharacter:
         assert main_character.constellation == '旅人座'
         assert main_character.cn_cv == '宴宁&多多poi'
 
-    async def test_get_full(self):
+    @staticmethod
+    async def test_get_full():
         async for character in Character.full_data_generator():
             assert isinstance(character, Character)
 
