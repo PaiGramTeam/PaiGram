@@ -9,6 +9,8 @@ on:
   pull_request:
     types: [ opened, synchronize ]
     paths:
+      - 'modules/apihelper/**'
+      - 'modules/wiki/**'
       - 'tests/**'
 
 jobs:
