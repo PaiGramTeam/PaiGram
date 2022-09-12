@@ -1,9 +1,18 @@
+import asyncio
+
 import pytest
 
 from modules.apihelper.hyperion import Hyperion
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.get_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="session")
 def hyperion(event_loop):
     hyperion = Hyperion()
     yield hyperion
