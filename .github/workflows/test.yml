@@ -12,6 +12,8 @@ on:
       - 'modules/apihelper/**'
       - 'modules/wiki/**'
       - 'tests/**'
+  schedule:
+    - cron: '0 4 * * 3'
 
 jobs:
   pytest:
