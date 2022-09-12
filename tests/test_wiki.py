@@ -130,7 +130,7 @@ class TestAll:
         name_list = await target.get_name_list(with_url=True)
         name_len = len(name_list)
         assert name_len != 0
-        test_len = randint(1, max(2, int(len(name_list) * 0.3)))  # bandit: disable=B311
+        test_len = randint(1, max(2, int(len(name_list) * 0.3)))  # nosec
         LOGGER.info("得到了 %d 条 %s 的数据, 将会测试其中的 %s 条数据", name_len, target.__name__, test_len)
         for name, url in sample(name_list, test_len):
             assert isinstance(name, str)
