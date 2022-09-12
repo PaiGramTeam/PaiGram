@@ -1,10 +1,16 @@
 import asyncio
+import logging
+from random import sample, randint
+from typing import Type
 
 import pytest
 
+from modules.wiki.base import WikiModel
 from modules.wiki.character import Character
 from modules.wiki.material import Material
 from modules.wiki.weapon import Weapon
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="session")
@@ -19,7 +25,7 @@ class TestWeapon:
 
     @staticmethod
     async def test_get_by_id():
-        weapon = await Weapon.get_by_id('11417')
+        weapon = await Weapon.get_by_id('i_n11417')
         assert weapon.name == '原木刀'
         assert weapon.rarity == 4
         assert weapon.attack == 43.73
@@ -29,23 +35,12 @@ class TestWeapon:
     @staticmethod
     async def test_get_by_name():
         weapon = await Weapon.get_by_name('风鹰剑')
-        assert weapon.id == 11501
+        assert weapon.id == 'i_n11501'
         assert weapon.rarity == 5
         assert weapon.attack == 47.54
         assert weapon.attribute.type.value == '物理伤害加成'
         assert weapon.affix.name == '西风之鹰的抗争'
         assert '听凭风引，便是正义与自由之风' in weapon.story
-
-    @staticmethod
-    async def test_get_full_gen():
-        async for weapon in Weapon.full_data_generator():
-            assert isinstance(weapon, Weapon)
-
-    @staticmethod
-    async def test_get_full():
-        full_data = await Weapon.get_full_data()
-        for weapon in full_data:
-            assert isinstance(weapon, Weapon)
 
     @staticmethod
     async def test_name_list():
@@ -80,37 +75,62 @@ class TestCharacter:
         assert main_character.cn_cv == '宴宁&多多poi'
 
     @staticmethod
-    async def test_get_full():
-        async for character in Character.full_data_generator():
-            assert isinstance(character, Character)
+    async def test_name_list():
+        from httpx import URL
+        async for name in Character._name_list_generator(with_url=True):
+            assert isinstance(name[0], str)
+            assert isinstance(name[1], URL)
 
 
 @pytest.mark.asyncio
 class TestMaterial:
 
     @staticmethod
-    async def test_get_full_gen():
-        async for material in Material.full_data_generator():
-            assert isinstance(material, Material)
+    async def test_get_by_id():
+        material = await Material.get_by_id('i_504')
+        assert material.name == '高塔孤王的碎梦'
+        assert material.type == '武器突破素材'
+        assert '合成获得' in material.source
+        assert '巴巴托斯' in material.description
 
     @staticmethod
-    async def test_get_full():
-        material_list = await Material.get_full_data()
-        for material in material_list:
-            assert isinstance(material, Material)
+    async def test_get_by_name():
+        material = await Material.get_by_name('地脉的新芽')
+        assert material.id == 'i_73'
+        assert material.type == '角色培养素材'
+        assert '60级以上深渊法师掉落' in material.source
+        assert '勃发' in material.description
+
+    @staticmethod
+    async def test_name_list():
+        from httpx import URL
+        async for name in Material._name_list_generator(with_url=True):
+            assert isinstance(name[0], str)
+            assert isinstance(name[1], URL)
 
 
 @pytest.mark.asyncio
 class TestAll:
-
     @staticmethod
-    async def test_all_get_full():
-        materials, weapons, characters = tuple(await asyncio.gather(
-            Material.get_full_data(),
-            Weapon.get_full_data(),
-            Character.get_full_data(),
-            return_exceptions=True
-        ))
-        assert len(materials) == 120
-        assert len(weapons) == 151
-        assert len(characters) == 58
+    async def make_test(target: Type[WikiModel]):
+        from httpx import URL
+        name_list = await target.get_name_list(with_url=True)
+        name_len = len(name_list)
+        assert name_len != 0
+        test_len = randint(1, max(2, int(len(name_list) * 0.3)))
+        LOGGER.info(f"得到了 {name_len} 条 {target.__name__} 的数据, 将会测试其中的 {test_len} 条数据")
+        for name, url in sample(name_list, test_len):
+            assert isinstance(name, str)
+            assert isinstance(url, URL)
+            instance = await target._scrape(url)
+            assert isinstance(instance, target)
+            LOGGER.info(f"\"{instance.name}\" is ok.")
+
+    async def test_random_material(self):
+        await self.make_test(Material)
+
+    async def test_random_weapon(self):
+        await self.make_test(Weapon)
+
+    async def test_random_character(self):
+        await self.make_test(Character)

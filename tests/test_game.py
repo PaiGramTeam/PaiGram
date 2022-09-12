@@ -1,24 +1,17 @@
-import asyncio
-
 import pytest
+import pytest_asyncio
 
 from modules.apihelper.hyperion import Hyperion
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.get_event_loop()
-    yield loop
-    loop.close()
+@pytest_asyncio.fixture
+async def hyperion():
+    _hyperion = Hyperion()
+    yield _hyperion
+    await _hyperion.close()
 
 
-@pytest.fixture(scope="session")
-def hyperion(event_loop):
-    hyperion = Hyperion()
-    yield hyperion
-    event_loop.run_until_complete(hyperion.close())
-
-
+# noinspection PyShadowingNames
 @pytest.mark.asyncio
 async def test_get_strategy(hyperion):
     test_collection_id_list = [839176, 839179, 839181]

@@ -1,24 +1,17 @@
-import asyncio
-
 import pytest
+import pytest_asyncio
 
 from modules.apihelper.artifact import ArtifactOcrRate
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.get_event_loop()
-    yield loop
-    loop.close()
+@pytest_asyncio.fixture
+async def artifact_rate():
+    _artifact_rate = ArtifactOcrRate()
+    yield _artifact_rate
+    await _artifact_rate.close()
 
 
-@pytest.fixture(scope="session")
-def artifact_rate():
-    artifact_rate = ArtifactOcrRate()
-    yield artifact_rate
-    event_loop.run_until_complete(artifact_rate.close())
-
-
+# noinspection PyShadowingNames
 @pytest.mark.asyncio
 async def test_rate_artifact(artifact_rate):
     artifact_attr = {
