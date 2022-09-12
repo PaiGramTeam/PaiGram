@@ -40,6 +40,10 @@ logs/
 ### private plugins ###
 plugins/private
 
+
+# Unit test / coverage reports
+.pytest_cache
+
 ### mtp ###
 paimon.session
 PaimonBot.session
