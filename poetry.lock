@@ -335,7 +335,7 @@ python-versions = ">=3.7"
 [[package]]
 name = "genshin"
 version = "1.2.4"
-description = ""
+description = "An API wrapper for Genshin Impact."
 category = "main"
 optional = false
 python-versions = ">=3.8"
@@ -355,7 +355,7 @@ geetest = ["rsa"]
 type = "git"
 url = "https://github.com/thesadru/genshin.py"
 reference = "HEAD"
-resolved_reference = "50fb45b9b6ac099b94d1e59c72138ed18b1bb0de"
+resolved_reference = "e195dea14a28450fe9ee819e6e77399a4111e785"
 
 [[package]]
 name = "greenlet"
