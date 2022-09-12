@@ -16,6 +16,7 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture(scope="session")
 def event_loop():
     loop = asyncio.get_event_loop()
+    asyncio.set_event_loop(loop)
     yield loop
     loop.close()
 
@@ -117,14 +118,14 @@ class TestAll:
         name_list = await target.get_name_list(with_url=True)
         name_len = len(name_list)
         assert name_len != 0
-        test_len = randint(1, max(2, int(len(name_list) * 0.3)))
-        LOGGER.info(f"得到了 {name_len} 条 {target.__name__} 的数据, 将会测试其中的 {test_len} 条数据")
+        test_len = randint(1, max(2, int(len(name_list) * 0.3)))  # pylint: disable=B311
+        LOGGER.info("得到了 %d 条 %s 的数据, 将会测试其中的 %s 条数据" % (name_len, target.__name__, test_len))
         for name, url in sample(name_list, test_len):
             assert isinstance(name, str)
             assert isinstance(url, URL)
             instance = await target._scrape(url)
             assert isinstance(instance, target)
-            LOGGER.info(f"\"{instance.name}\" is ok.")
+            LOGGER.info("%s is ok." % instance.name)
 
     async def test_random_material(self):
         await self.make_test(Material)
