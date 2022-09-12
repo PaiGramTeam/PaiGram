@@ -14,7 +14,7 @@ def event_loop():
     loop.close()
 
 
-@pytest.mark.asyncio
+
 class TestWeapon:
 
     @staticmethod
@@ -75,7 +75,6 @@ class TestCharacter:
         assert character.occupation == '社奉行'
         assert character.association.value == '稻妻'
         assert character.cn_cv == '小N'
-
         main_character = await Character.get_by_name('荧')
         assert main_character.constellation == '旅人座'
         assert main_character.cn_cv == '宴宁&多多poi'
@@ -86,7 +85,7 @@ class TestCharacter:
             assert isinstance(character, Character)
 
 
-@pytest.mark.asyncio
+
 class TestMaterial:
 
     @staticmethod
@@ -101,7 +100,7 @@ class TestMaterial:
             assert isinstance(material, Material)
 
 
-@pytest.mark.asyncio
+
 class TestAll:
 
     @staticmethod
