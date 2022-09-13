@@ -8,9 +8,9 @@ roles = {
     10000002: ['神里绫华', 'Kamisato Ayaka', 'Ayaka', 'ayaka', '神里', '绫华', '神里凌华', '凌华', '白鹭公主',
                '神里大小 姐'],
     10000003: ['琴', 'Jean', 'jean', '团长', '代理团长', '琴团长', '蒲公英骑士'],
-    10000005: ['空', '男主', '男主角', '龙哥', '空哥'],
+    10000005: ['空', 'Aether', 'aether', '男主', '男主角', '龙哥', '空哥'],
     10000006: ['丽莎', 'Lisa', 'lisa', '图书管理员', '图书馆管理员', '蔷薇魔女'],
-    10000007: ['荧', '女主', '女主角', '莹', '萤', '黄毛阿姨', '荧妹'],
+    10000007: ['荧', 'Lumine', 'lumine', '女主', '女主角', '莹', '萤', '黄毛阿姨', '荧妹'],
     10000014: ['芭芭拉', 'Barbara', 'barbara', '巴巴拉', '拉粑粑', '拉巴巴', '内鬼', '加湿器', '闪耀偶像', '偶像'],
     10000015: ['凯亚', 'Kaeya', 'kaeya', '盖亚', '凯子哥', '凯鸭', '矿工', '矿工头子', '骑兵队长', '凯子',
                '凝冰渡海真君'],
@@ -83,7 +83,10 @@ roles = {
                '大舅哥'],
     10000067: ['柯莱', 'Collei', 'collei', '克莱', '科莱', '须弥飞行冠军', '草安伯'],
     10000068: ['多莉', 'Dori', 'dori', '多利', '多丽'],
-    10000069: ['提纳里', 'Tighnari', 'tighnari', '巡林官', '小提', '缇娜里', '提哪里', '提那里']
+    10000069: ['提纳里', 'Tighnari', 'tighnari', '巡林官', '小提', '缇娜里', '提哪里', '提那里'],
+    10000070: ['妮露', 'Nilou', 'nilou'],
+    10000071: ['赛诺', 'Cyno', 'cyno'],
+    10000072: ['坎蒂丝', 'Candace', 'candace'],
 }
 weapons = {
     "磐岩结绿": ["绿箭", "绿剑"],
@@ -166,16 +169,19 @@ weapons = {
 }
 
 
+# noinspection PyPep8Naming
 def roleToName(shortname: str) -> str:
     """讲角色昵称转为正式名"""
     return next((value[0] for value in roles.values() for name in value if name == shortname), shortname)
 
 
+# noinspection PyPep8Naming
 def roleToId(name: str) -> Optional[int]:
     """获取角色ID"""
     return next((key for key, value in roles.items() for n in value if n == name), None)
 
 
+# noinspection PyPep8Naming
 def weaponToName(shortname: str) -> str:
     """讲武器昵称转为正式名"""
     return next((key for key, value in weapons.items() if shortname == key or shortname in value), shortname)
