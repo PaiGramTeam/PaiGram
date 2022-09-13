@@ -6,8 +6,9 @@ from aiofiles import open as async_open
 from httpx import AsyncClient, HTTPError
 
 from core.service import Service
-from metadata.shortname import roleToId, roles
+from metadata.shortname import roleToId, roles, weaponToName
 from modules.wiki.character import Character
+from modules.wiki.weapon import Weapon
 from utils.const import PROJECT_ROOT
 from utils.helpers import mkdir
 
@@ -31,15 +32,12 @@ class AssetsService(Service):
         for _ in range(retry):
             try:
                 response = await self.client.get(url)
-                break
-            except HTTPError as e:
+            except HTTPError:
                 await asyncio.sleep(1)
                 continue
-        else:
-            raise e
-        async with async_open(path, 'wb') as file:
-            await file.write(response.content)
-        return path
+            async with async_open(path, 'wb') as file:
+                await file.write(response.content)
+            return path
 
     # noinspection SpellCheckingInspection
     async def character_icon(self, target: Union[int, str]) -> List[Path]:
@@ -56,12 +54,27 @@ class AssetsService(Service):
         else:
             cid = target
         if (path := ASSETS_PATH.joinpath(f"character/{cid}")).exists() and (result := list(path.iterdir())):
-            return list(map(lambda x: x.resolve(), result))
+            return list(map(lambda x: x.resolve(), filter(lambda x: x, result)))
         else:
             mkdir(path)
             character = await Character.get_by_id(cid)
-            icon_dict: dict = character.icon.dict()
             result = []
-            for icon_type, url in icon_dict.items():
+            for icon_type, url in character.icon.dict().items():
                 result.append(await self._download(url, path.joinpath(f"{icon_type}.webp")))
-            return list(map(lambda x: x.resolve(), result))
+            return list(map(lambda x: x.resolve(), filter(lambda x: x, result)))
+
+    async def weapon_icon(self, target: Union[int, str]) -> List[Path]:
+        if isinstance(target, int):
+            weapon = await Weapon.get_by_id(f"i_n{target}")
+        elif not target[-1].isdigit():
+            weapon = await Weapon.get_by_name(weaponToName(target))
+        else:
+            weapon = await Weapon.get_by_id(target)
+        if (path := ASSETS_PATH.joinpath(f"weapon/{weapon.id}")).exists() and (result := list(path.iterdir())):
+            return list(map(lambda x: x.resolve(), filter(lambda x: x, result)))
+        else:
+            mkdir(path)
+            result = []
+            for icon_type, url in weapon.icon.dict().items():
+                result.append(await self._download(url, path.joinpath(f"{icon_type}.webp")))
+            return list(map(lambda x: x.resolve(), filter(lambda x: x, result)))
