@@ -130,3 +130,19 @@ def region_server(uid: Union[int, str]) -> RegionEnum:
         return region
     else:
         raise TypeError(f"UID {uid} isn't associated with any region")
+
+
+def mkdir(path: Path) -> Path:
+    """根据路径依次创建文件夹"""
+    if path.suffix == '':
+        parent = path
+    else:
+        parent = path.parent
+
+    while not parent.exists():
+        try:
+            parent.mkdir(exist_ok=True)
+        except FileNotFoundError:
+            parent = parent.parent
+
+    return path
