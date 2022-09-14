@@ -79,19 +79,3 @@ class Material(WikiModel):
     @property
     def icon(self) -> str:
         return str(SCRAPE_HOST.join(f'/img/{self.id}.webp'))
-
-
-async def main():
-    material = await Material.get_by_id("i_31")
-    print(material.source)
-
-
-if __name__ == '__main__':
-    import asyncio
-    import sys
-    from asyncio import new_event_loop
-
-    if sys.platform.startswith('win'):
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-    asyncio.run(main())
