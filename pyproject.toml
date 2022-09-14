@@ -38,6 +38,7 @@ lxml = "^4.9.1"
 [tool.poetry.extras]
 pyro = ["Pyrogram", "TgCrypto"]
 test = ["pytest", "pytest-asyncio", "flaky"]
+all = ["pytest", "pytest-asyncio", "flaky", "Pyrogram", "TgCrypto"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
