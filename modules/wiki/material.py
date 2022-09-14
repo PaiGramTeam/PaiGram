@@ -34,7 +34,7 @@ class Material(WikiModel):
 
     @classmethod
     async def get_name_list(cls, *, with_url: bool = False) -> List[Union[str, Tuple[str, URL]]]:
-        return list(sorted(set(await super(Material, cls).get_name_list(with_url=with_url)), key=lambda x: x.id))
+        return list(sorted(set(await super(Material, cls).get_name_list(with_url=with_url)), key=lambda x: x[0]))
 
     @classmethod
     async def _parse_soup(cls, soup: BeautifulSoup) -> "Material":
