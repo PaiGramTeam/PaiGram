@@ -65,7 +65,7 @@ class ErrorHandler(Plugin):
                 logger.error("消息未修改")
                 return
             await context.bot.send_document(chat_id=notice_chat_id, document=open(log_file, "rb"),
-                                            caption=f"Error: \"{str(context.error)}\"")
+                                            caption=f"Error: \"{context.error.__class__.__name__)\"")
         except (BadRequest, Forbidden) as exc:
             logger.error("发送日记失败")
             logger.exception(exc)
