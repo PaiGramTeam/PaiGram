@@ -1,5 +1,6 @@
 import logging
 
+import aiofiles
 import pytest
 import pytest_asyncio
 from flaky import flaky
@@ -35,8 +36,8 @@ class TestArtifactOcrRate:
     @staticmethod
     @flaky(3, 1)
     async def test_ocr_artifact(artifact_rate):
-        with open("tests/data/test_artifact.jpg", "rb") as f:
-            photo = f.read()
+        async with aiofiles.open("tests/data/test_artifact.jpg", mode="rb") as f:
+            photo = await f.read()
         data = await artifact_rate.get_artifact_attr(photo)
         LOGGER.info(data.text)
         assert data.status_code == 200

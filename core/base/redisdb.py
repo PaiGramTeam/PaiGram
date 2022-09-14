@@ -35,8 +35,8 @@ class RedisDB(Service):
             await self.ping()
         except (KeyboardInterrupt, SystemExit):
             pass
-        except BaseException as exc:
-            logger.warning("尝试连接 [red]Redis[/] 失败，使用 [red]fakeredis[/] 模拟", exc, extra={'markup': True})
+        except Exception as exc:
+            logger.exception("尝试连接 [red]Redis[/] 失败，使用 [red]fakeredis[/] 模拟", exc_info=exc, extra={'markup': True})
             self.client = fakeredis.aioredis.FakeRedis()
             await self.ping()
 

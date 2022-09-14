@@ -61,8 +61,11 @@ class ErrorHandler(Plugin):
             if 'make sure that only one bot instance is running' in tb_string:
                 logger.error("其他机器人在运行，请停止！")
                 return
+            if 'Message is not modified' in tb_string:
+                logger.error("消息未修改")
+                return
             await context.bot.send_document(chat_id=notice_chat_id, document=open(log_file, "rb"),
-                                            caption="Error report.")
+                                            caption=f"Error: \"{str(context.error)}\"")
         except (BadRequest, Forbidden) as exc:
             logger.error("发送日记失败")
             logger.exception(exc)
