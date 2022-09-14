@@ -8,7 +8,14 @@ from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Opti
 
 import pytz
 from telegram.error import NetworkError, TimedOut
-from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults, JobQueue, MessageHandler
+from telegram.ext import (
+    AIORateLimiter,
+    Application as TgApplication,
+    CallbackContext,
+    Defaults,
+    JobQueue,
+    MessageHandler,
+)
 from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config  # pylint: disable=W0611
@@ -21,7 +28,6 @@ from utils.log import logger
 
 if TYPE_CHECKING:
     from telegram import Update
-    from telegram.ext import CallbackContext
 
 __all__ = ['bot']
 
@@ -45,18 +51,24 @@ class Bot:
     _services: Dict[Type[T], T] = {}
     _running: bool = False
 
-    def init_inject(self, target: Callable[..., T]) -> T:
-        """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
-        if isinstance(target, type):
-            signature = inspect.signature(target.__init__)
-        else:
-            signature = inspect.signature(target)
+    def _inject(self, signature: inspect.Signature, target: Callable[..., T]) -> T:
         kwargs = {}
         for name, parameter in signature.parameters.items():
             if name != 'self' and parameter.annotation != inspect.Parameter.empty:
                 if value := self._services.get(parameter.annotation):
                     kwargs[name] = value
         return target(**kwargs)
+
+    def init_inject(self, target: Callable[..., T]) -> T:
+        """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
+        if isinstance(target, type):
+            signature = inspect.signature(target.__init__)
+        else:
+            signature = inspect.signature(target)
+        return self._inject(signature, target)
+
+    async def async_inject(self, target: Callable[..., T]) -> T:
+        return await self._inject(inspect.signature(target), target)
 
     def _gen_pkg(self, root: Path) -> Iterator[str]:
         """生成可以用于 import_module 导入的字符串"""
@@ -84,7 +96,7 @@ class Bot:
             try:
                 plugin: PluginType = self.init_inject(plugin_cls)
                 if hasattr(plugin, '__async_init__'):
-                    await plugin.__async_init__()
+                    await self.async_inject(plugin.__async_init__)
                 handlers = plugin.handlers
                 self.app.add_handlers(handlers)
                 if handlers:
@@ -181,7 +193,8 @@ class Bot:
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(f"服务 \"{service.__class__.__name__}\" 关闭失败: \n{type(e).__name__}: {e}")
 
-    async def _post_init(self, _) -> NoReturn:
+    async def _post_init(self, context: CallbackContext) -> NoReturn:
+        self._services.update({CallbackContext: context})
         logger.info('开始初始化服务')
         await self.start_services()
         logger.info('开始安装插件')
