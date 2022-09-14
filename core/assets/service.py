@@ -8,6 +8,7 @@ from httpx import AsyncClient, HTTPError
 from core.service import Service
 from metadata.shortname import roleToId, roles, weaponToName
 from modules.wiki.character import Character
+from modules.wiki.material import Material
 from modules.wiki.weapon import Weapon
 from utils.const import PROJECT_ROOT
 from utils.helpers import mkdir
@@ -56,25 +57,31 @@ class AssetsService(Service):
         if (path := ASSETS_PATH.joinpath(f"character/{cid}")).exists() and (result := list(path.iterdir())):
             return list(map(lambda x: x.resolve(), filter(lambda x: x, result)))
         else:
-            mkdir(path)
             character = await Character.get_by_id(cid)
             result = []
             for icon_type, url in character.icon.dict().items():
-                result.append(await self._download(url, path.joinpath(f"{icon_type}.webp")))
+                result.append(await self._download(url, mkdir(path).joinpath(f"{icon_type}.webp")))
             return list(map(lambda x: x.resolve(), filter(lambda x: x, result)))
 
-    async def weapon_icon(self, target: Union[int, str]) -> List[Path]:
-        if isinstance(target, int):
-            weapon = await Weapon.get_by_id(f"i_n{target}")
-        elif not target[-1].isdigit():
+    async def weapon_icon(self, target: str) -> List[Path]:
+        if not target[-1].isdigit():
             weapon = await Weapon.get_by_name(weaponToName(target))
         else:
             weapon = await Weapon.get_by_id(target)
         if (path := ASSETS_PATH.joinpath(f"weapon/{weapon.id}")).exists() and (result := list(path.iterdir())):
             return list(map(lambda x: x.resolve(), filter(lambda x: x, result)))
         else:
-            mkdir(path)
             result = []
             for icon_type, url in weapon.icon.dict().items():
-                result.append(await self._download(url, path.joinpath(f"{icon_type}.webp")))
+                result.append(await self._download(url, mkdir(path).joinpath(f"{icon_type}.webp")))
             return list(map(lambda x: x.resolve(), filter(lambda x: x, result)))
+
+    async def material_icon(self, target: str) -> Path:
+        if not target[-1].isdigit():
+            material = await Material.get_by_name(target)
+        else:
+            material = await Material.get_by_id(target)
+        if (path := ASSETS_PATH.joinpath(f'material/{material.id}.webp')).exists():
+            return path
+        else:
+            return await self._download(material.icon, mkdir(path))
