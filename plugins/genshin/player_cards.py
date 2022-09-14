@@ -128,6 +128,7 @@ class PlayerCards(Plugin, BasePlugin):
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
     @restricts(restricts_time_of_groups=20, without_overlapping=True)
+    @error_callable
     async def get_player_cards(self, update: Update, _: CallbackContext) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
