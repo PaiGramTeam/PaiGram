@@ -15,6 +15,7 @@ from core.plugin import Plugin, handler, conversation
 from core.user.error import UserNotFoundError
 from core.user.models import User
 from core.user.services import UserService
+from modules.apihelper.hyperion import YuanShen
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -27,9 +28,11 @@ class AddUserCommandData(TelegramObject):
     region: RegionEnum = RegionEnum.NULL
     cookies: dict = {}
     game_uid: int = 0
+    phone: int = 0
+    sign_in_client: Optional[YuanShen.SignIn] = None
 
 
-CHECK_SERVER, CHECK_COOKIES, COMMAND_RESULT = range(10100, 10103)
+CHECK_SERVER, CHOOSE_METHOD, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10106)
 
 
 class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
@@ -92,6 +95,18 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         add_user_command_data.user = user_info
         add_user_command_data.region = region
+        if bbs_name == "米游社":
+            text = "请选择绑定方法！或回复退出取消操作"
+            reply_keyboard = [['手机号登录', 'Cookies登录'], ["退出"]]
+            await message.reply_markdown_v2(
+                text,
+                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+            return CHOOSE_METHOD
+        await self.send_cookies_help_message(message, bbs_name, bbs_url)
+        return INPUT_COOKIES
+
+    @staticmethod
+    async def send_cookies_help_message(message, bbs_name: str = "米游社", bbs_url: str = "https://bbs.mihoyo.com/ys/"):
         await message.reply_text(f"请输入{bbs_name}的Cookies！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
         javascript = "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a[" \
                      "0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的Cookie,请重新登录!');c&&confirm(" \
@@ -109,13 +124,100 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                        f"2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n" \
                        f"`{escape_markdown(javascript_android, version=2, entity_type='code')}`"
         await message.reply_markdown_v2(help_message, disable_web_page_preview=True)
-        return CHECK_COOKIES
 
-    @conversation.state(state=CHECK_COOKIES)
+    @conversation.state(state=CHOOSE_METHOD)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
-    async def check_cookies(self, update: Update, context: CallbackContext) -> int:
-        user = update.effective_user
+    async def choose_method(self, update: Update, _: CallbackContext) -> int:
+        message = update.effective_message
+        if message.text == "退出":
+            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        elif message.text == "手机号登录":
+            await message.reply_text("请发送 11 位手机号码！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
+            return CHECK_PHONE
+        elif message.text == "Cookies登录":
+            await self.send_cookies_help_message(message)
+            return INPUT_COOKIES
+        else:
+            await message.reply_text("选择错误，请重新选择")
+            return CHOOSE_METHOD
+
+    @conversation.state(state=CHECK_PHONE)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
+    @error_callable
+    async def check_phone(self, update: Update, context: CallbackContext) -> int:
+        message = update.effective_message
+        if message.text == "退出":
+            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        try:
+            if not message.text.startswith("1"):
+                raise ValueError
+            phone = int(message.text)
+            if len(str(phone)) != 11:
+                raise ValueError
+        except ValueError:
+            await message.reply_text("手机号码输入错误，请重新输入！或回复退出取消操作")
+            return CHECK_PHONE
+        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
+        add_user_command_data.phone = phone
+        await message.reply_text("请打开 https://user.mihoyo.com/#/login/captcha ，输入手机号并获取验证码，"
+                                 "然后将收到的验证码发送给我（请不要在网页上进行登录）")
+        return CHECK_CAPTCHA
+
+    @conversation.state(state=CHECK_CAPTCHA)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
+    @error_callable
+    async def check_captcha(self, update: Update, context: CallbackContext) -> int:
+        message = update.effective_message
+        if message.text == "退出":
+            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        try:
+            captcha = int(message.text)
+            if len(str(captcha)) != 6:
+                raise ValueError
+        except ValueError:
+            await message.reply_text("验证码输入错误，请重新输入！或回复退出取消操作")
+            return CHECK_CAPTCHA
+        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
+        if not add_user_command_data.sign_in_client:
+            phone = add_user_command_data.phone
+            client = YuanShen.SignIn(phone)
+            try:
+                success = await client.login(captcha)
+                if not success:
+                    await message.reply_text(
+                        "登录失败：可能是验证码错误，注意不要在登录页面使用掉验证码，如果验证码已经使用，请重新获取验证码！")
+                    return ConversationHandler.END
+                await client.get_s_token()
+            except Exception:
+                await message.reply_text("登录失败：米游社返回了错误的数据，请稍后再试！")
+                return ConversationHandler.END
+            add_user_command_data.sign_in_client = client
+            await message.reply_text(
+                "请再次打开 https://user.mihoyo.com/#/login/captcha ，输入手机号并获取验证码（需要等待一分钟），"
+                "然后将收到的验证码发送给我（请不要在网页上进行登录）")
+            return CHECK_CAPTCHA
+        else:
+            client = add_user_command_data.sign_in_client
+            try:
+                success = await client.get_token(captcha)
+                if not success:
+                    await message.reply_text(
+                        "登录失败：可能是验证码错误，注意不要在登录页面使用掉验证码，如果验证码已经使用，请重新获取验证码！")
+                    return ConversationHandler.END
+            except Exception:
+                await message.reply_text("登录失败：米游社返回了错误的数据，请稍后再试！")
+                return ConversationHandler.END
+            add_user_command_data.cookies = client.cookie
+            return await self.check_cookies(update, context)
+
+    @conversation.state(state=INPUT_COOKIES)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
+    @error_callable
+    async def input_cookies(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if message.text == "退出":
@@ -135,6 +237,15 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         if not cookies:
             await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
+        add_user_command_data.cookies = cookies
+        return await self.check_cookies(update, context)
+
+    @staticmethod
+    async def check_cookies(update: Update, context: CallbackContext) -> int:
+        user = update.effective_user
+        message = update.effective_message
+        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
+        cookies = add_user_command_data.cookies
         if add_user_command_data.region == RegionEnum.HYPERION:
             client = genshin.ChineseClient(cookies=cookies)
         elif add_user_command_data.region == RegionEnum.HOYOLAB:
@@ -157,7 +268,6 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         except (AttributeError, ValueError):
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        add_user_command_data.cookies = cookies
         add_user_command_data.game_uid = user_info.uid
         reply_keyboard = [['确认', '退出']]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
