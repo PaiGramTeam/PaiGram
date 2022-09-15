@@ -21,8 +21,8 @@ fakeredis = "^1.9.0"
 beautifulsoup4 = "^4.11.1"
 asyncmy = "^0.2.5"
 pyppeteer = "^1.0.2"
-aiofiles = "^0.8.0"
-python-dotenv = "^0.20.0"
+aiofiles = "^22.1.0"
+python-dotenv = "^0.21.0"
 PyMySQL = "^1.0.2"
 alembic = "^1.8.1"
 black = "^22.8.0"
@@ -38,6 +38,7 @@ lxml = "^4.9.1"
 [tool.poetry.extras]
 pyro = ["Pyrogram", "TgCrypto"]
 test = ["pytest", "pytest-asyncio", "flaky"]
+all = ["pytest", "pytest-asyncio", "flaky", "Pyrogram", "TgCrypto"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
