@@ -70,6 +70,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if add_user_command_data is None:
             cookies_command_data = AddUserCommandData()
+            cookies_command_data.region = RegionEnum.HYPERION
             context.chat_data["add_user_command_data"] = cookies_command_data
         text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！该绑定方法仅支持国服，请发送 11 位手机号码！或回复退出取消操作")}'
         await message.reply_markdown_v2(text)
