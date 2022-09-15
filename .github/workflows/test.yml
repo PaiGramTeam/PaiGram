@@ -17,13 +17,21 @@ on:
 
 jobs:
   pytest:
-    runs-on: ubuntu-latest
+    name: pytest
+    runs-on: ${{matrix.os}}
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        python-version: [ '3.10' ]
+        os: [ ubuntu-latest, windows-latest ]
+        experimental: [ false ]
+      fail-fast: False
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
       - name: Install poetry
         run: |
           pip install --upgrade poetry
