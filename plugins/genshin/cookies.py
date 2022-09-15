@@ -32,7 +32,7 @@ class AddUserCommandData(TelegramObject):
     sign_in_client: Optional[YuanShen.SignIn] = None
 
 
-CHECK_SERVER, CHOOSE_METHOD, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10106)
+CHECK_SERVER, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10106)
 
 
 class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
@@ -59,6 +59,21 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         reply_keyboard = [['米游社', 'HoYoLab'], ["退出"]]
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return CHECK_SERVER
+
+    @conversation.entry_point
+    @handler.command(command='mlogin', filters=filters.ChatType.PRIVATE, block=True)
+    @error_callable
+    async def choose_method(self, update: Update, context: CallbackContext) -> int:
+        user = update.effective_user
+        message = update.effective_message
+        logger.info(f"用户 {user.full_name}[{user.id}] 绑定账号命令请求")
+        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
+        if add_user_command_data is None:
+            cookies_command_data = AddUserCommandData()
+            context.chat_data["add_user_command_data"] = cookies_command_data
+        text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！该绑定方法仅支持国服，请发送 11 位手机号码！或回复退出取消操作")}'
+        await message.reply_markdown_v2(text)
+        return CHECK_PHONE
 
     @conversation.state(state=CHECK_SERVER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -95,18 +110,6 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         add_user_command_data.user = user_info
         add_user_command_data.region = region
-        if bbs_name == "米游社":
-            text = "请选择绑定方法！或回复退出取消操作"
-            reply_keyboard = [['手机号登录', 'Cookies登录'], ["退出"]]
-            await message.reply_markdown_v2(
-                text,
-                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-            return CHOOSE_METHOD
-        await self.send_cookies_help_message(message, bbs_name, bbs_url)
-        return INPUT_COOKIES
-
-    @staticmethod
-    async def send_cookies_help_message(message, bbs_name: str = "米游社", bbs_url: str = "https://bbs.mihoyo.com/ys/"):
         await message.reply_text(f"请输入{bbs_name}的Cookies！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
         javascript = "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a[" \
                      "0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的Cookie,请重新登录!');c&&confirm(" \
@@ -124,24 +127,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                        f"2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n" \
                        f"`{escape_markdown(javascript_android, version=2, entity_type='code')}`"
         await message.reply_markdown_v2(help_message, disable_web_page_preview=True)
-
-    @conversation.state(state=CHOOSE_METHOD)
-    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
-    async def choose_method(self, update: Update, _: CallbackContext) -> int:
-        message = update.effective_message
-        if message.text == "退出":
-            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
-        elif message.text == "手机号登录":
-            await message.reply_text("请发送 11 位手机号码！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
-            return CHECK_PHONE
-        elif message.text == "Cookies登录":
-            await self.send_cookies_help_message(message)
-            return INPUT_COOKIES
-        else:
-            await message.reply_text("选择错误，请重新选择")
-            return CHOOSE_METHOD
+        return INPUT_COOKIES
 
     @conversation.state(state=CHECK_PHONE)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
