@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, Optional, Union
 
 import ujson as json
 from aiofiles import open as async_open
@@ -10,32 +10,22 @@ from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
 from telegram import Update
 from telegram.constants import ParseMode
+from metadata.honey import HONEY_ID_MAP, HONEY_ROLE_NAME_MAP
 
 from core.assets import AssetsService
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user.error import UserNotFoundError
-from metadata.shortname import honey_role_map
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import get_genshin_client
 from utils.log import logger
 
-DATA_FILE_PATH = Path(__file__).joinpath('../data.json').resolve()
 DATA_TYPE = Dict[str, List[List[str]]]
+DATA_FILE_PATH = Path(__file__).joinpath('../daily.json').resolve()
 AREA = ['蒙德', '璃月', '稻妻', '须弥']
 DOMAINS = ['忘却之峡', '太山府', '菫色之庭', '昏识塔', '塞西莉亚苗圃', '震雷连山密宫', '砂流之庭', '有顶塔']
-DOMAIN_AREA_MAP = {k: v for k in DOMAINS for v in AREA * 2}
-
-
-class RenderData(BaseModel):
-    user: List[str]
-    full: List[str]
-
-
-class AreaData(BaseModel):
-    area: Literal['蒙德', '璃月', '稻妻', '须弥']
-    data: RenderData
+DOMAIN_AREA_MAP = {k: v for k, v in zip(DOMAINS, AREA * 2)}
 
 
 class DailyMaterial(Plugin):
@@ -60,43 +50,79 @@ class DailyMaterial(Plugin):
     @handler.command('daily_material', block=False)
     async def daily_material(self, update: Update, _):
         user = update.effective_user
-        weekday = (now := datetime.now()).weekday() - (1 if now.hour < 4 else 0)
+        now = datetime.now()
+        # 获取今日是星期几，判定了是否过了凌晨4点
+        weekday = now.weekday() - (1 if now.hour < 4 else 0)
         weekday = 6 if weekday < 0 else weekday
 
-        sche_data = {'character': {}, 'weapon': {}}
+        # 获取已经缓存至本地的秘境素材信息
+        local_data = {'character': [], 'weapon': []}
         for domain, sche in self.data.items():
             area = DOMAIN_AREA_MAP[domain]
-            key = 'character' if DOMAINS.index(domain) < 4 else 'weapon'
-            if area not in sche_data[key].keys():
-                sche_data[key][area] = {}
-            sche_data[key][area].update({domain: sche[weekday]})
+            type_ = 'character' if DOMAINS.index(domain) < 4 else 'weapon'
+            local_data[type_].append({'name': area, 'materials': sche[weekday][0], 'items': sche[weekday][1]})
 
-        user_data = {'character': [], 'weapon': []}  # [[角色], [武器]]
+        # 尝试获取用户已绑定的原神账号信息
+        client = None
+        user_data = {'character': [], 'weapon': []}
         try:
+            logger.debug("尝试获取已绑定的原神账号")
             client = await get_genshin_client(user.id)
+            logger.debug(f"获取成功, UID: {client.uid}")
             characters = await client.get_genshin_characters(client.uid)
             for character in characters:
+                cid = HONEY_ROLE_NAME_MAP[character.id][0]
                 weapon = character.weapon
-                user_data['character'].append([
-                    cid := honey_role_map[character.id][0],
-                    character.name, character.level, character.constellation, character.rarity
-                ])
-                user_data['weapon'].append([
-                    f"i_n{weapon.id}", weapon.name, weapon.level, weapon.refinement, weapon.rarity, cid
-                ])
+                user_data['character'].append(
+                    CharacterData(
+                        id=cid, name=character.name, rarity=character.rarity, level=character.level,
+                        constellation=character.constellation,
+                        icon=(c_icons := await self.assets_service.character_icon(cid))['icon']
+                    )
+                )
+                user_data['weapon'].append(
+                    WeaponData(
+                        id=(wid := f"i_n{weapon.id}"), name=weapon.name, level=weapon.level, rarity=weapon.rarity,
+                        refinement=weapon.refinement,
+                        icon=(await self.assets_service.weapon_icon(wid))[
+                            'icon' if weapon.ascension < 2 else 'awakened'
+                        ], c_path=c_icons['side']
+                    )
+                )
+            del character, weapon, characters
         except (UserNotFoundError, CookiesNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
 
-        render_data = {
-            'character': {j: [[], []] for i, j in enumerate(DOMAINS) if i < 4},
-            'weapon': {j: [[], []] for i, j in enumerate(DOMAINS) if i >= 4}
-        }
-        for i, domain in enumerate(DOMAINS):
-            key = 'character' if i < 4 else 'weapon'
-            area = DOMAIN_AREA_MAP[domain]
-            for id_ in sche_data[key][area][domain][1]:
-                render_data[key][domain][id_ not in map(lambda x: x[0], user_data[key])].append(id_)
-        render_data.update({'user_data': user_data})
+        render_data = RenderData(time=now, weekday=weekday, uid=client.uid if client else client)
+        for type_ in ['character', 'weapon']:
+            areas = []
+            for area_data in local_data[type_]:
+                items = []
+                for id_ in area_data['items']:
+                    added = False
+                    for i in user_data[type_]:
+                        if id_ == i.id:
+                            items.append(i)
+                            added = True
+                            break
+                    if added:
+                        continue
+                    data_mode = CharacterData if type_ == 'character' else WeaponData
+                    d = HONEY_ID_MAP[type_][id_]
+                    # if d[1] < 3:  # 跳过 2 星及以下的武器
+                    #     continue
+                    items.append(data_mode(
+                        id=id_, name=d[0], rarity=d[1],
+                        icon=(await (getattr(self.assets_service, f'{type_}_icon')(id_)))['icon']
+                    ))
+                materials = []
+                for mid in area_data['materials']:
+                    materials.append(await self.assets_service.material_icon(mid))
+                areas.append(AreaData(name=area_data['name'], materials=materials, items=items))
+            del items, materials
+            setattr(render_data, type_, areas)
+        del areas
+
         breakpoint()
 
     @handler.command('refresh_daily_material', block=False)
@@ -148,3 +174,34 @@ class DailyMaterial(Plugin):
                 continue
         # noinspection PyTypeChecker
         return result
+
+
+class ItemData(BaseModel):
+    id: str
+    name: str
+    rarity: int
+    icon: Path
+    level: Optional[int] = None
+
+
+class CharacterData(ItemData):
+    constellation: Optional[int] = None
+
+
+class WeaponData(ItemData):
+    c_path: Optional[Path] = None
+    refinement: Optional[int] = None
+
+
+class AreaData(BaseModel):
+    name: Literal['蒙德', '璃月', '稻妻', '须弥']
+    materials: List[Path] = []
+    items: List[Union[CharacterData, WeaponData]] = []
+
+
+class RenderData(BaseModel):
+    time: datetime
+    weekday: int
+    uid: Optional[int] = None
+    character: List[AreaData] = []
+    weapon: List[AreaData] = []
