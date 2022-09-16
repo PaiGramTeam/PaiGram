@@ -3,6 +3,7 @@ import re
 from abc import abstractmethod
 from asyncio import Queue
 from multiprocessing import Value
+from ssl import SSLZeroReturnError
 from typing import AsyncIterator, ClassVar, List, Optional, Tuple, Union
 
 import anyio
@@ -81,7 +82,7 @@ class WikiModel(Model):
         for _ in range(retry_times):
             try:
                 return await cls._client.get(url, follow_redirects=True)
-            except HTTPError:
+            except (HTTPError, SSLZeroReturnError):
                 await anyio.sleep(sleep)
         return await cls._client.get(url, follow_redirects=True)  # 防止 retry_times 等于 0 的时候无法发生请求
 
