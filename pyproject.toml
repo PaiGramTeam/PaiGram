@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-ujson = "^5.4.0"
+ujson = "^5.5.0"
 genshin = { git = "https://github.com/thesadru/genshin.py" }
 Jinja2 = "^3.1.2"
 numpy = "^1.23.2"
