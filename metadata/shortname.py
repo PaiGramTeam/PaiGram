@@ -1,7 +1,7 @@
 from typing import Optional
 
 __all__ = [
-    'roles', 'weapons', 'honey_role_map',
+    'roles', 'weapons',
     'roleToId', 'roleToName', 'weaponToName',
 ]
 
@@ -171,67 +171,6 @@ weapons = {
     "讨龙英杰谭": ["讨龙"],
     "神射手之誓": ["脚气弓", "神射手"],
     "黑缨枪": ["史莱姆枪"]
-}
-# noinspection SpellCheckingInspection
-honey_role_map = {
-    10000002: ['ayaka_002', '神里绫华', 'ayaka'],
-    10000042: ['keqing_042', '刻晴', 'keqing'],
-    10000030: ['zhongli_030', '钟离', 'zhongli'],
-    10000026: ['xiao_026', '魈', 'xiao'],
-    10000020: ['razor_020', '雷泽', 'razor'],
-    10000015: ['kaeya_015', '凯亚', 'kaeya'],
-    10000037: ['ganyu_037', '甘雨', 'ganyu'],
-    10000041: ['mona_041', '莫娜', 'mona'],
-    10000038: ['albedo_038', '阿贝多', 'albedo'],
-    10000014: ['barbara_014', '芭芭拉', 'barbara'],
-    10000027: ['ningguang_027', '凝光', 'ningguang'],
-    10000054: ['kokomi_054', '珊瑚宫心海', 'kokomi'],
-    10000044: ['xinyan_044', '辛焱', 'xinyan'],
-    10000056: ['sara_056', '九条裟罗', 'sara'],
-    10000053: ['sayu_053', '早柚', 'sayu'],
-    10000043: ['sucrose_043', '砂糖', 'sucrose'],
-    10000059: ['heizo_059', '鹿野院平藏', 'heizo'],
-    10000060: ['yelan_060', '夜兰', 'yelan'],
-    10000064: ['yunjin_064', '云堇', 'yunjin'],
-    10000050: ['tohma_050', '托马', 'tohma'],
-    10000066: ['ayato_066', '神里绫人', 'ayato'],
-    10000067: ['collei_067', '柯莱', 'collei'],
-    10000052: ['shougun_052', '雷电将军', 'shougun'],
-    10000069: ['tighnari_069', '提纳里', 'tighnari'],
-    10000007: ['playergirl_007', '荧', 'playergirl'],
-    10000016: ['diluc_016', '迪卢克', 'diluc'],
-    10000070: ['nilou_070', '妮露', 'nilou'],
-    10000047: ['kazuha_047', '枫原万叶', 'kazuha'],
-    10000055: ['gorou_055', '五郎', 'gorou'],
-    10000034: ['noel_034', '诺艾尔', 'noel'],
-    10000024: ['beidou_024', '北斗', 'beidou'],
-    10000032: ['bennett_032', '班尼特', 'bennett'],
-    10000062: ['aloy_062', '埃洛伊', 'aloy'],
-    10000025: ['xingqiu_025', '行秋', 'xingqiu'],
-    10000022: ['venti_022', '温迪', 'venti'],
-    10000036: ['chongyun_036', '重云', 'chongyun'],
-    10000049: ['yoimiya_049', '宵宫', 'yoimiya'],
-    10000029: ['klee_029', '可莉', 'klee'],
-    10000006: ['lisa_006', '丽莎', 'lisa'],
-    10000033: ['tartaglia_033', '达达利亚', 'tartaglia'],
-    10000039: ['diona_039', '迪奥娜', 'diona'],
-    10000063: ['shenhe_063', '申鹤', 'shenhe'],
-    10000072: ['candace_072', '坎蒂丝', 'candace'],
-    10000045: ['rosaria_045', '罗莎莉亚', 'rosaria'],
-    10000051: ['eula_051', '优菈', 'eula'],
-    10000035: ['qiqi_035', '七七', 'qiqi'],
-    10000057: ['itto_057', '荒泷一斗', 'itto'],
-    10000005: ['playerboy_005', '空', 'playerboy'],
-    10000048: ['feiyan_048', '烟绯', 'feiyan'],
-    10000003: ['qin_003', '琴', 'qin'],
-    10000023: ['xiangling_023', '香菱', 'xiangling'],
-    10000071: ['cyno_071', '赛诺', 'cyno'],
-    10000031: ['fischl_031', '菲谢尔', 'fischl'],
-    10000046: ['hutao_046', '胡桃', 'hutao'],
-    10000021: ['ambor_021', '安柏', 'ambor'],
-    10000068: ['dori_068', '多莉', 'dori'],
-    10000065: ['shinobu_065', '久岐忍', 'shinobu'],
-    10000058: ['yae_058', '八重神子', 'yae']
 }
 
 
