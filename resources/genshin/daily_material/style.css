@@ -176,7 +176,7 @@ body {
 }
 
 .item-icon > img {
-    width: 130px;
+    height: 100%;
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
