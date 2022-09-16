@@ -22,7 +22,7 @@ body {
 }
 
 .container {
-    width: 930px;
+    width: 1104px;
     background-color: var(--bg-color);
     position: absolute;
     left: 50%;
@@ -176,10 +176,12 @@ body {
 }
 
 .item-icon > img {
-    height: 100%;
+    max-height: 100%;
+    max-width: 150px;
     position: absolute;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(-50%);
 }
 
 .item-name {
@@ -249,8 +251,9 @@ body {
 }
 
 .weapon > .role > img {
-    width: 102%;
+    height: 50px;
     position: absolute;
-    left: 5px;
+    left: 58%;
+    transform: translateX(-50%);
     bottom: 0;
 }

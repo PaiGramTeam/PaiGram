@@ -1,22 +1,26 @@
+import itertools
+import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, Iterable, List, Literal, Optional, Union
 
 import ujson as json
 from aiofiles import open as async_open
 from bs4 import BeautifulSoup
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
-from telegram import Update
-from telegram.constants import ParseMode
-from metadata.honey import HONEY_ID_MAP, HONEY_ROLE_NAME_MAP
+from telegram import InputMediaPhoto, Update
+from telegram.constants import ChatAction, ParseMode
 
 from core.assets import AssetsService
+from core.base.aiobrowser import AioBrowser
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user.error import UserNotFoundError
+from metadata.honey import HONEY_ID_MAP, HONEY_ROLE_NAME_MAP
+from utils.const import RESOURCE_DIR
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import get_genshin_client
 from utils.log import logger
@@ -27,12 +31,31 @@ AREA = ['蒙德', '璃月', '稻妻', '须弥']
 DOMAINS = ['忘却之峡', '太山府', '菫色之庭', '昏识塔', '塞西莉亚苗圃', '震雷连山密宫', '砂流之庭', '有顶塔']
 DOMAIN_AREA_MAP = {k: v for k, v in zip(DOMAINS, AREA * 2)}
 
+WEEK_MAP = ['一', '二', '三', '四', '五', '六', '日']
+
+
+def convert_path(path: Union[str, Path]) -> str:
+    return f"..{os.sep}..{os.sep}" + str(path.relative_to(RESOURCE_DIR))
+
+
+def sort_item(items: List['ItemData']) -> Iterable['ItemData']:
+    result_a = []
+    for _, group_a in itertools.groupby(sorted(items, key=lambda x: x.rarity, reverse=True), lambda x: x.rarity):
+        result_b = []
+        for _, group_b in itertools.groupby(
+                sorted(group_a, key=lambda x: x.level or -1, reverse=True), lambda x: x.level or -1
+        ):
+            result_b.append(sorted(group_b, key=lambda x: x.constellation or x.refinement or -1, reverse=True))
+        result_a.append(itertools.chain(*result_b))
+    return itertools.chain(*result_a)
+
 
 class DailyMaterial(Plugin):
     """每日素材表"""
     data: DATA_TYPE
 
-    def __init__(self, assets: AssetsService, template: TemplateService):
+    def __init__(self, assets: AssetsService, template: TemplateService, browser: AioBrowser):
+        self.browser = browser
         self.assets_service = assets
         self.template_service = template
         self.client = AsyncClient()
@@ -55,6 +78,12 @@ class DailyMaterial(Plugin):
         weekday = now.weekday() - (1 if now.hour < 4 else 0)
         weekday = 6 if weekday < 0 else weekday
 
+        if weekday == 6:
+            await update.message.reply_text("今天是星期天, <b>全部素材都可以</b>刷哦~", parse_mode=ParseMode.HTML)
+            return
+
+        time = now.strftime("%m-%d %H:%M") + " 星期" + WEEK_MAP[weekday]
+
         # 获取已经缓存至本地的秘境素材信息
         local_data = {'character': [], 'weapon': []}
         for domain, sche in self.data.items():
@@ -74,26 +103,28 @@ class DailyMaterial(Plugin):
                 cid = HONEY_ROLE_NAME_MAP[character.id][0]
                 weapon = character.weapon
                 user_data['character'].append(
-                    CharacterData(
+                    ItemData(
                         id=cid, name=character.name, rarity=character.rarity, level=character.level,
                         constellation=character.constellation,
-                        icon=(c_icons := await self.assets_service.character_icon(cid))['icon']
+                        icon="file://" + str((c_icons := await self.assets_service.character_icon(cid))['icon'])
                     )
                 )
                 user_data['weapon'].append(
-                    WeaponData(
+                    ItemData(
                         id=(wid := f"i_n{weapon.id}"), name=weapon.name, level=weapon.level, rarity=weapon.rarity,
                         refinement=weapon.refinement,
-                        icon=(await self.assets_service.weapon_icon(wid))[
-                            'icon' if weapon.ascension < 2 else 'awakened'
-                        ], c_path=c_icons['side']
+                        icon=convert_path(
+                            (
+                                await self.assets_service.weapon_icon(wid)
+                            )['icon' if weapon.ascension < 2 else 'awakened']),
+                        c_path=convert_path(c_icons['side'])
                     )
                 )
             del character, weapon, characters
         except (UserNotFoundError, CookiesNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
 
-        render_data = RenderData(time=now, weekday=weekday, uid=client.uid if client else client)
+        render_data = RenderData(time=time, uid=client.uid if client else client)
         for type_ in ['character', 'weapon']:
             areas = []
             for area_data in local_data[type_]:
@@ -102,28 +133,36 @@ class DailyMaterial(Plugin):
                     added = False
                     for i in user_data[type_]:
                         if id_ == i.id:
-                            items.append(i)
+                            if i.rarity > 3:  # 跳过 3 星及以下的武器
+                                items.append(i)
                             added = True
                             break
                     if added:
                         continue
-                    data_mode = CharacterData if type_ == 'character' else WeaponData
                     d = HONEY_ID_MAP[type_][id_]
-                    # if d[1] < 3:  # 跳过 2 星及以下的武器
-                    #     continue
-                    items.append(data_mode(
+                    if d[1] < 4:  # 跳过 3 星及以下的武器
+                        continue
+                    items.append(ItemData(
                         id=id_, name=d[0], rarity=d[1],
-                        icon=(await (getattr(self.assets_service, f'{type_}_icon')(id_)))['icon']
+                        icon=convert_path((await (getattr(self.assets_service, f'{type_}_icon')(id_)))['icon'])
                     ))
                 materials = []
                 for mid in area_data['materials']:
-                    materials.append(await self.assets_service.material_icon(mid))
-                areas.append(AreaData(name=area_data['name'], materials=materials, items=items))
+                    path = convert_path(await self.assets_service.material_icon(mid))
+                    material = HONEY_ID_MAP['material'][mid]
+                    materials.append(ItemData(id=mid, icon=path, name=material[0], rarity=material[1]))
+                areas.append(AreaData(name=area_data['name'], materials=materials, items=sort_item(items)))
             del items, materials
             setattr(render_data, type_, areas)
         del areas
-
-        breakpoint()
+        character_img_data = await self.template_service.render(
+            'genshin/daily_material', 'character.html', {'data': render_data}, {'width': 1164, 'height': 500}
+        )
+        weapon_img_data = await self.template_service.render(
+            'genshin/daily_material', 'weapon.html', {'data': render_data}, {'width': 1164, 'height': 500}
+        )
+        await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        await update.message.reply_media_group([InputMediaPhoto(character_img_data), InputMediaPhoto(weapon_img_data)])
 
     @handler.command('refresh_daily_material', block=False)
     @bot_admins_rights_check
@@ -180,28 +219,24 @@ class ItemData(BaseModel):
     id: str
     name: str
     rarity: int
-    icon: Path
+    icon: str
     level: Optional[int] = None
-
-
-class CharacterData(ItemData):
     constellation: Optional[int] = None
-
-
-class WeaponData(ItemData):
-    c_path: Optional[Path] = None
     refinement: Optional[int] = None
+    c_path: Optional[str] = None
 
 
 class AreaData(BaseModel):
     name: Literal['蒙德', '璃月', '稻妻', '须弥']
-    materials: List[Path] = []
-    items: List[Union[CharacterData, WeaponData]] = []
+    materials: List[ItemData] = []
+    items: Iterable[ItemData] = []
 
 
 class RenderData(BaseModel):
-    time: datetime
-    weekday: int
+    time: str
     uid: Optional[int] = None
     character: List[AreaData] = []
     weapon: List[AreaData] = []
+
+    def __getitem__(self, item):
+        return self.__getattribute__(item)
