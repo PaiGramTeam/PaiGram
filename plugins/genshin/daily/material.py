@@ -29,7 +29,7 @@ DATA_TYPE = Dict[str, List[List[str]]]
 DATA_FILE_PATH = Path(__file__).joinpath('../daily.json').resolve()
 AREA = ['蒙德', '璃月', '稻妻', '须弥']
 DOMAINS = ['忘却之峡', '太山府', '菫色之庭', '昏识塔', '塞西莉亚苗圃', '震雷连山密宫', '砂流之庭', '有顶塔']
-DOMAIN_AREA_MAP = {k: v for k, v in zip(DOMAINS, AREA * 2)}
+DOMAIN_AREA_MAP = dict(zip(DOMAINS, AREA * 2))
 
 WEEK_MAP = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -120,7 +120,6 @@ class DailyMaterial(Plugin):
                         c_path=convert_path(c_icons['side'])
                     )
                 )
-            del character, weapon, characters
         except (UserNotFoundError, CookiesNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
 
@@ -152,9 +151,7 @@ class DailyMaterial(Plugin):
                     material = HONEY_ID_MAP['material'][mid]
                     materials.append(ItemData(id=mid, icon=path, name=material[0], rarity=material[1]))
                 areas.append(AreaData(name=area_data['name'], materials=materials, items=sort_item(items)))
-            del items, materials
             setattr(render_data, type_, areas)
-        del areas
         character_img_data = await self.template_service.render(
             'genshin/daily_material', 'character.html', {'data': render_data}, {'width': 1164, 'height': 500}
         )
@@ -198,10 +195,10 @@ class DailyMaterial(Plugin):
                         for day in map(int, tag.find('div')['data-days']):
                             result[key][day][1].append(id_)
                 for stage, schedules in result.items():
-                    for day, sche in enumerate(schedules):
-                        result[stage][day][1] = list(set(i for i in result[stage][day][1]))
+                    for day, _ in enumerate(schedules):
+                        result[stage][day][1] = list(set(result[stage][day][1]))
                 async with async_open(DATA_FILE_PATH, 'w', encoding='utf-8') as file:
-                    await file.write(json.dumps(result))
+                    await file.write(json.dumps(result))  # pylint: disable=PY-W0079
                 logger.info("每日素材刷新成功")
                 break
             except HTTPError:

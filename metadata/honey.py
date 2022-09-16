@@ -462,16 +462,3 @@ HONEY_ROLE_NAME_MAP = {
     10000065: ['shinobu_065', '久岐忍', 'shinobu'],
     10000058: ['yae_058', '八重神子', 'yae']
 }
-
-
-def main():
-    from pathlib import Path
-    path = Path("Y:/Fork/TGPaimonBot/plugins/genshin/daily/honey.json").resolve()
-    import ujson as json
-
-    data = json.load(path.open())
-    breakpoint()
-
-
-if __name__ == '__main__':
-    main()

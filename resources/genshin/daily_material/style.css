@@ -4,10 +4,11 @@
 }
 
 :root {
-    --bg-color: #EBE5D9;
-    --font-color: #514E49;
-    --color-1: #D6BA92;
-    --shadow: #726C65;
+    --bg-color: #ebe5d9;
+    --font-color: #514e49;
+    --color-1: #d6ba92;
+    --shadow: #726c65;
+
 }
 
 * {
@@ -34,7 +35,6 @@ body {
     width: 100%;
     font-size: 40px;
     text-align: center;
-    /*background-color: #9a9ad1;*/
 }
 
 .user-info {
@@ -47,7 +47,6 @@ body {
     font-style: italic;
 }
 
-
 .user-info > span:last-child {
     float: right;
 }
@@ -55,7 +54,6 @@ body {
 .box {
     width: 100%;
     margin: 10px 0;
-    /*background-color: aquamarine;*/
 }
 
 .title {
@@ -80,7 +78,6 @@ body {
     position: relative;
     padding-left: 15px;
 }
-
 
 .area-head > img {
     height: inherit;
@@ -148,17 +145,14 @@ body {
 
 .area-content {
     margin: 20px 0;
-    /*background-color: red;*/
     padding: 0 20px;
     display: flex;
-    /*flex-basis: min-content;*/
     flex-flow: wrap;
 }
 
 .item {
     width: 150px;
     background-color: var(--bg-color);
-    overflow: hidden;
     border-radius: 10px;
     box-shadow: 3px 3px 10px var(--shadow);
     margin: 10px 12px;
@@ -213,6 +207,10 @@ body {
 }
 
 
+.character {
+    overflow: hidden;
+}
+
 .character > .item-icon > div:nth-child(2) {
     border-radius: 0 0 0 5px;
     box-shadow: -1px 1px 5px var(--shadow);
@@ -231,12 +229,12 @@ body {
 
 
 .weapon {
-    overflow: unset !important;
+    overflow: unset;
     position: relative;
 }
 
 .weapon > .role {
-    background-color: #4C526B;
+    background-color: #4c526b;
     position: absolute;
     right: -10px;
     top: -10px;

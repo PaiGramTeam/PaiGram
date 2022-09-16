@@ -39,12 +39,11 @@ class Material(WikiModel):
     @classmethod
     async def _parse_soup(cls, soup: BeautifulSoup) -> "Material":
         """解析突破素材页"""
-        from bs4 import Tag
         soup = soup.select('.wp-block-post-content')[0]
         tables = soup.find_all('table')
         table_rows = tables[0].find_all('tr')
 
-        def get_table_row(target: str) -> Optional['Tag']:
+        def get_table_row(target: str):
             """一个便捷函数，用于返回对应表格头的对应行的最后一个单元格中的文本"""
             for row in table_rows:
                 if target in row.find('td').text:
