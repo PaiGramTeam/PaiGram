@@ -18,9 +18,9 @@ class PublicCookiesCache:
 
     def get_public_cookies_queue_name(self, region: RegionEnum):
         if region == RegionEnum.HYPERION:
-            return self.score_qname + ":yuanshen"
+            return f"{self.score_qname}:yuanshen"
         elif region == RegionEnum.HOYOLAB:
-            return self.score_qname + ":genshin"
+            return f"{self.score_qname}:genshin"
         else:
             raise RegionNotFoundError(region.name)
 
@@ -47,11 +47,9 @@ class PublicCookiesCache:
         if isinstance(uid, int):
             score_maps = {f"{uid}": 0}
         elif isinstance(uid, list):
-            score_maps = {}
-            for i in uid:
-                score_maps[f"{i}"] = 0
+            score_maps = {f"{i}": 0 for i in uid}
         else:
-            raise TypeError(f"uid variable type error")
+            raise TypeError("uid variable type error")
         async with self.client.pipeline(transaction=True) as pipe:
             # nx:只添加新元素。不要更新已经存在的元素
             await pipe.zadd(qname, score_maps, nx=True)
@@ -65,16 +63,11 @@ class PublicCookiesCache:
         :return:
         """
         qname = self.get_public_cookies_queue_name(region)
-        scores = await self.client.zrevrange(qname, 0, self.end, withscores=True, score_cast_func=int)
-        if len(scores) > 0:
-            def take_score(elem):
-                return elem[1]
-
-            scores.sort(key=take_score)
-            key = scores[0][0]
-            score = scores[0][1]
-        else:
+        scores = await self.client.zrange(qname, 0, self.end, withscores=True, score_cast_func=int)
+        if len(scores) <= 0:
             raise CookiesCachePoolExhausted
+        key = scores[0][0]
+        score = scores[0][1]
         async with self.client.pipeline(transaction=True) as pipe:
             await pipe.zincrby(qname, 1, key)
             await pipe.execute()
@@ -95,7 +88,7 @@ class PublicCookiesCache:
             return await pipe.execute()
 
     async def incr_by_user_times(self, user_id: Union[List[int], int]):
-        qname = self.user_times_qname + f":{user_id}"
+        qname = f"{self.user_times_qname}:{user_id}"
         times = await self.client.incrby(qname)
         if times <= 1:
             await self.client.expire(qname, self.user_times_ttl)

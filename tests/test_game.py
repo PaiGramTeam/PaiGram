@@ -16,8 +16,8 @@ async def hyperion():
 @pytest.mark.asyncio
 @flaky(3, 1)
 async def test_get_strategy(hyperion):
-    test_collection_id_list = [839176, 839179, 839181]
-    test_result = ["温迪", "胡桃", "雷电将军"]
+    test_collection_id_list = [839176, 839179, 839181, 1180811]
+    test_result = ["温迪", "胡桃", "雷电将军", "柯莱"]
 
     async def get_post_id(_collection_id: int, character_name: str) -> str:
         post_full_in_collection = await hyperion.get_post_full_in_collection(_collection_id)
