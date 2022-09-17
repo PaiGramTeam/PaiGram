@@ -296,8 +296,8 @@ class DailyMaterial(Plugin, BasePlugin):
     async def _download_icon(self, message: Optional[Message] = None):
         from time import time as time_
         lock = asyncio.Lock()
-        the_time = Value(c_double, time_() - 1)
         interval = 2
+        the_time = Value(c_double, time_() - interval)
 
         async def task(_id, _item, _type):
             logger.debug(f"正在开始下载 \"{_item[0]}\" 的图标素材")
@@ -306,9 +306,9 @@ class DailyMaterial(Plugin, BasePlugin):
                     text = '\n'.join(message.text_html.split('\n')[:2]) + f"\n正在搬运 <b>{_item[0]}</b> 的图标素材。。。"
                     try:
                         await message.edit_text(text, parse_mode=ParseMode.HTML)
+                        the_time.value = time_()
                     except (TimedOut, RetryAfter):
                         pass
-                    the_time.value = time_()
             asset = getattr(self.assets_service, _type)(_id)
             icon_types = list(filter(
                 lambda x: not x.startswith('_') and x not in ['path'] and callable(getattr(asset, x)),
@@ -326,9 +326,9 @@ class DailyMaterial(Plugin, BasePlugin):
                     )
                     try:
                         await message.edit_text(text, parse_mode=ParseMode.HTML)
+                        the_time.value = time_()
                     except (TimedOut, RetryAfter):
                         pass
-                    the_time.value = time_()
 
         for type_, items in HONEY_ID_MAP.items():
             task_list = []
