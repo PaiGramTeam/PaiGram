@@ -30,7 +30,7 @@ class TemplateService:
         else:
             jinja2_env: Environment = self._jinja2_env.get(package_path)
             jinja2_template: Template = self._jinja2_template.get(package_path + template_name)
-            if jinja2_env is None:
+            if jinja2_env is None or jinja2_template is None:
                 loader = PackageLoader(self._template_package_name, package_path)
                 jinja2_env = Environment(loader=loader, enable_async=True, autoescape=True)
                 jinja2_template = jinja2_env.get_template(template_name)

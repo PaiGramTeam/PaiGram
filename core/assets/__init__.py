@@ -1,5 +1,5 @@
 from core.service import init_service
-from .service import AssetsService
+from core.assets.service import AssetsService
 
 
 @init_service

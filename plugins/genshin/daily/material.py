@@ -45,7 +45,7 @@ WEEK_MAP = ['一', '二', '三', '四', '五', '六', '日']
 
 
 def convert_path(path: Union[str, Path]) -> str:
-    return f"..{os.sep}..{os.sep}" + str(path.relative_to(RESOURCE_DIR))
+    return f"..{os.sep}..{os.sep}{str(path.relative_to(RESOURCE_DIR))}"
 
 
 def sort_item(items: List['ItemData']) -> Iterable['ItemData']:
@@ -65,9 +65,9 @@ class DailyMaterial(Plugin, BasePlugin):
     data: DATA_TYPE
     locks: Tuple[Lock] = (Lock(), Lock())
 
-    def __init__(self, assets: AssetsService, template: TemplateService):
+    def __init__(self, assets: AssetsService, template_service: TemplateService):
         self.assets_service = assets
-        self.template_service = template
+        self.template_service = template_service
         self.client = AsyncClient()
 
     async def __async_init__(self):
