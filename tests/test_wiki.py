@@ -102,6 +102,12 @@ class TestMaterial:
         assert '合成获得' in material.source
         assert '巴巴托斯' in material.description
 
+        material = await Material.get_by_id('i_483')
+        assert material.name == '凶将之手眼'
+        assert material.type == '角色培养素材'
+        assert '70级以上永恒的守护者挑战奖励' in material.source
+        assert '所见即所为' in material.description
+
     @staticmethod
     @flaky(3, 1)
     async def test_get_by_name():
@@ -110,6 +116,12 @@ class TestMaterial:
         assert material.type == '角色培养素材'
         assert '60级以上深渊法师掉落' in material.source
         assert '勃发' in material.description
+
+        material = await Material.get_by_name('「黄金」的教导')
+        assert material.id == 'i_431'
+        assert material.type == '天赋培养素材'
+        assert 2 in material.weekdays
+        assert '土的象' in material.description
 
     @staticmethod
     @flaky(3, 1)

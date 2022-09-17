@@ -1,14 +1,23 @@
 import asyncio
 import inspect
 import os
+from asyncio import CancelledError
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Optional, TYPE_CHECKING, Type, TypeVar
 
 import pytz
+from async_timeout import timeout
 from telegram.error import NetworkError, TimedOut
-from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults, JobQueue, MessageHandler
+from telegram.ext import (
+    AIORateLimiter,
+    Application as TgApplication,
+    CallbackContext,
+    Defaults,
+    JobQueue,
+    MessageHandler,
+)
 from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config  # pylint: disable=W0611
@@ -21,7 +30,6 @@ from utils.log import logger
 
 if TYPE_CHECKING:
     from telegram import Update
-    from telegram.ext import CallbackContext
 
 __all__ = ['bot']
 
@@ -45,18 +53,24 @@ class Bot:
     _services: Dict[Type[T], T] = {}
     _running: bool = False
 
-    def init_inject(self, target: Callable[..., T]) -> T:
-        """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
-        if isinstance(target, type):
-            signature = inspect.signature(target.__init__)
-        else:
-            signature = inspect.signature(target)
+    def _inject(self, signature: inspect.Signature, target: Callable[..., T]) -> T:
         kwargs = {}
         for name, parameter in signature.parameters.items():
             if name != 'self' and parameter.annotation != inspect.Parameter.empty:
                 if value := self._services.get(parameter.annotation):
                     kwargs[name] = value
         return target(**kwargs)
+
+    def init_inject(self, target: Callable[..., T]) -> T:
+        """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
+        if isinstance(target, type):
+            signature = inspect.signature(target.__init__)
+        else:
+            signature = inspect.signature(target)
+        return self._inject(signature, target)
+
+    async def async_inject(self, target: Callable[..., T]) -> T:
+        return await self._inject(inspect.signature(target), target)
 
     def _gen_pkg(self, root: Path) -> Iterator[str]:
         """生成可以用于 import_module 导入的字符串"""
@@ -84,7 +98,7 @@ class Bot:
             try:
                 plugin: PluginType = self.init_inject(plugin_cls)
                 if hasattr(plugin, '__async_init__'):
-                    await plugin.__async_init__()
+                    await self.async_inject(plugin.__async_init__)
                 handlers = plugin.handlers
                 self.app.add_handlers(handlers)
                 if handlers:
@@ -170,18 +184,22 @@ class Bot:
         if not self._services:
             return
         logger.info('正在关闭服务')
-        for _, service in self._services.items():
-            try:
-                if hasattr(service, 'stop'):
-                    if inspect.iscoroutinefunction(service.stop):
-                        await service.stop()
-                    else:
-                        service.stop()
-                    logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
-            except Exception as e:  # pylint: disable=W0703
-                logger.exception(f"服务 \"{service.__class__.__name__}\" 关闭失败: \n{type(e).__name__}: {e}")
+        for _, service in filter(lambda x: not isinstance(x[1], TgApplication), self._services.items()):
+            async with timeout(5):
+                try:
+                    if hasattr(service, 'stop'):
+                        if inspect.iscoroutinefunction(service.stop):
+                            await service.stop()
+                        else:
+                            service.stop()
+                        logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
+                except CancelledError:
+                    logger.warning(f'服务 "{service.__class__.__name__}" 关闭超时')
+                except Exception as e:  # pylint: disable=W0703
+                    logger.exception(f"服务 \"{service.__class__.__name__}\" 关闭失败: \n{type(e).__name__}: {e}")
 
-    async def _post_init(self, _) -> NoReturn:
+    async def _post_init(self, context: CallbackContext) -> NoReturn:
+        self._services.update({CallbackContext: context})
         logger.info('开始初始化服务')
         await self.start_services()
         logger.info('开始安装插件')

@@ -1,7 +1,9 @@
+import asyncio
 import hashlib
 import os
+from multiprocessing import RLock
 from pathlib import Path
-from typing import Tuple, Union, Optional, cast
+from typing import Optional, Tuple, Union, cast
 
 import aiofiles
 import genshin
@@ -130,3 +132,42 @@ def region_server(uid: Union[int, str]) -> RegionEnum:
         return region
     else:
         raise TypeError(f"UID {uid} isn't associated with any region")
+
+
+def mkdir(path: Path) -> Path:
+    """根据路径依次创建文件夹"""
+    path_list = []
+
+    parent = path.parent if path.suffix else path
+    while not parent.exists():
+        path_list.append(parent)
+        try:
+            parent.mkdir(exist_ok=True)
+        except FileNotFoundError:
+            parent = parent.parent
+
+    while path_list:
+        path_list.pop().mkdir(exist_ok=True)
+
+    return path
+
+
+class Event:
+    """一个线程安装的事件对象"""
+    _event: asyncio.Event = asyncio.Event()
+    _lock = RLock()
+
+    async def wait(self) -> bool:
+        return await self._event.wait()
+
+    def set(self):
+        with self._lock:
+            self._event.set()
+
+    def clear(self):
+        with self._lock:
+            self._event.clear()
+
+    def is_set(self) -> bool:
+        with self._lock:
+            return self._event.is_set()
