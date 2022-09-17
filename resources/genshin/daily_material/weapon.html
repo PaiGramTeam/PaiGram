@@ -55,9 +55,12 @@
                                 {% endif %}
                                 {% if item.refinement != none %}
                                     {% if item.refinement == 5 %}
-                                        <div style="background-color: #FB5621;">精炼5</div>
+                                        <div style="background-color: rgba(251,86,33, 0.8);backdrop-filter: blur(3px);">
+                                            精炼5
+                                        </div>
                                     {% else %}
-                                        <div style="background-color: #67A7E6;">精炼{{ item.refinement }}</div>
+                                        <div style="background-color: rgba(103,167,230, 0.8);backdrop-filter: blur(3px);">
+                                            精炼{{ item.refinement }}</div>
                                     {% endif %}
                                 {% endif %}
                                 <img src="{{ item.icon }}" alt="{{ item.name }}"/>

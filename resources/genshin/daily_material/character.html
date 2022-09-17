@@ -50,9 +50,11 @@
                                 {% endif %}
                                 {% if item.constellation != none %}
                                     {% if item.constellation == 6 %}
-                                        <div style="background-color: deeppink;">6命</div>
+                                        <div style="background-color: rgba(255,20,147, 0.8);backdrop-filter: blur(3px);">
+                                            6命
+                                        </div>
                                     {% elif item.constellation != 0 %}
-                                        <div style="background-color: #67A7E6;">{{ item.constellation }}命</div>
+                                        <div style="background-color: rgba(103,167,230, 0.8);backdrop-filter: blur(3px);">{{ item.constellation }}命</div>
                                     {% endif %}
                                 {% endif %}
                                 <img src="{{ item.icon }}" alt="{{ item.name }}"/>

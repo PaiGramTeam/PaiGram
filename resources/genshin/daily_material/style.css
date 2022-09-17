@@ -198,7 +198,8 @@ body {
 }
 
 .item > .item-icon > div:first-child {
-    background-color: cornflowerblue;
+    background-color: rgba(100, 149, 237, 0.7);
+    backdrop-filter: blur(3px);
     border-radius: 0 0 5px 0;
     box-shadow: 1px 1px 5px var(--shadow);
     left: 0;
@@ -234,7 +235,8 @@ body {
 }
 
 .weapon > .role {
-    background-color: #4c526b;
+    background-color: rgb(76 82 107 / 80%);
+    backdrop-filter: blur(3px);
     position: absolute;
     right: -10px;
     top: -10px;
