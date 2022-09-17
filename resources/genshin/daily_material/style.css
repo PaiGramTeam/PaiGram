@@ -15,11 +15,13 @@
     font-family: 'HYWH', serif;
     color: var(--font-color);
     background-repeat: no-repeat;
+
 }
 
 body {
     margin: 0;
     padding: 0;
+
 }
 
 .container {
@@ -31,7 +33,7 @@ body {
     padding: 15px 30px;
 }
 
-.container > div:first-child {
+.container > div.title {
     width: 100%;
     font-size: 40px;
     text-align: center;
@@ -112,7 +114,6 @@ body {
     margin: 0 5px;
     filter: drop-shadow(1px 1px 5px #838383);
 }
-
 
 .material-icon {
     width: 60px;
@@ -207,7 +208,6 @@ body {
     padding: 4px 5px;
 }
 
-
 .character {
     overflow: hidden;
 }
@@ -227,7 +227,6 @@ body {
     font-size: 18px;
     padding: 3px;
 }
-
 
 .weapon {
     overflow: unset;

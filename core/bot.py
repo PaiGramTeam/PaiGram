@@ -184,7 +184,7 @@ class Bot:
         if not self._services:
             return
         logger.info('正在关闭服务')
-        for service_type, service in filter(lambda x: not isinstance(x[1], TgApplication), self._services.items()):
+        for _, service in filter(lambda x: not isinstance(x[1], TgApplication), self._services.items()):
             async with timeout(5):
                 try:
                     if hasattr(service, 'stop'):
