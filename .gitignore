@@ -33,6 +33,8 @@ test_**.html
 logs/
 report/
 /resources/*/*/test/
+plugins/genshin/daily/daily.json
+resources/assets/
 
 ### DotEnv ###
 .env

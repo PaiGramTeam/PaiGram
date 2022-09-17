@@ -297,7 +297,7 @@ class DailyMaterial(Plugin, BasePlugin):
         from time import time as time_
         lock = asyncio.Lock()
         the_time = Value(c_double, time_() - 1)
-        interval = 0.2
+        interval = 2
 
         async def task(_id, _item, _type):
             logger.debug(f"正在开始下载 \"{_item[0]}\" 的图标素材")
