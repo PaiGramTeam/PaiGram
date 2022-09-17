@@ -1,12 +1,14 @@
 import asyncio
 import inspect
 import os
+from asyncio import CancelledError
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Optional, TYPE_CHECKING, Type, TypeVar
 
 import pytz
+from async_timeout import timeout
 from telegram.error import NetworkError, TimedOut
 from telegram.ext import (
     AIORateLimiter,
@@ -182,16 +184,19 @@ class Bot:
         if not self._services:
             return
         logger.info('正在关闭服务')
-        for _, service in filter(lambda x: not isinstance(x[1], TgApplication), self._services.items()):
-            try:
-                if hasattr(service, 'stop'):
-                    if inspect.iscoroutinefunction(service.stop):
-                        await service.stop()
-                    else:
-                        service.stop()
-                    logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
-            except Exception as e:  # pylint: disable=W0703
-                logger.exception(f"服务 \"{service.__class__.__name__}\" 关闭失败: \n{type(e).__name__}: {e}")
+        for service_type, service in filter(lambda x: not isinstance(x[1], TgApplication), self._services.items()):
+            async with timeout(5):
+                try:
+                    if hasattr(service, 'stop'):
+                        if inspect.iscoroutinefunction(service.stop):
+                            await service.stop()
+                        else:
+                            service.stop()
+                        logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
+                except CancelledError:
+                    logger.warning(f'服务 "{service.__class__.__name__}" 关闭超时')
+                except Exception as e:  # pylint: disable=W0703
+                    logger.exception(f"服务 \"{service.__class__.__name__}\" 关闭失败: \n{type(e).__name__}: {e}")
 
     async def _post_init(self, context: CallbackContext) -> NoReturn:
         self._services.update({CallbackContext: context})
