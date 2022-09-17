@@ -172,7 +172,7 @@ class DailyMaterial(Plugin, BasePlugin):
             local_data[type_].append({'name': area, 'materials': sche[weekday][0], 'items': sche[weekday][1]})
 
         # 尝试获取用户已绑定的原神账号信息
-        client, user_data = self._get_data_from_user(user)
+        client, user_data = await self._get_data_from_user(user)
 
         await update.message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
