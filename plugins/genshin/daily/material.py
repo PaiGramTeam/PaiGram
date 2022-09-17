@@ -140,12 +140,13 @@ class DailyMaterial(Plugin, BasePlugin):
             time = now.strftime("%m-%d %H:%M") + " 星期" + WEEK_MAP[weekday]
         full = args and args[-1] == 'full'
 
+        logger.info(f"用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday={weekday} full={full}")
+
         if weekday == 6:
-            notice = await update.message.reply_text(
+            await update.message.reply_text(
                 ("今天" if title == '今日' else '这天') + "是星期天, <b>全部素材都可以</b>刷哦~",
                 parse_mode=ParseMode.HTML
             )
-            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
             return
 
         if self.locks[0].locked():
@@ -154,8 +155,7 @@ class DailyMaterial(Plugin, BasePlugin):
             return
 
         if self.locks[1].locked():
-            notice = await update.message.reply_text("派蒙正在搬运每日素材的图标，以后再来探索吧~")
-            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
+            await update.message.reply_text("派蒙正在搬运每日素材的图标，以后再来探索吧~")
             return
 
         notice = await update.message.reply_text("派蒙可能需要找找图标素材，还请耐心等待哦~")
@@ -278,6 +278,7 @@ class DailyMaterial(Plugin, BasePlugin):
                             result[key][day][1].append(id_)
                 for stage, schedules in result.items():
                     for day, _ in enumerate(schedules):
+                        # noinspection PyUnresolvedReferences
                         result[stage][day][1] = list(set(result[stage][day][1]))
                 async with async_open(DATA_FILE_PATH, 'w', encoding='utf-8') as file:
                     await file.write(json.dumps(result))  # pylint: disable=PY-W0079
