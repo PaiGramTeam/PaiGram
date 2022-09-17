@@ -7,14 +7,15 @@ from ctypes import c_double
 from datetime import datetime
 from multiprocessing import Value
 from pathlib import Path
-from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import ujson as json
 from aiofiles import open as async_open
 from bs4 import BeautifulSoup
+from genshin import Client
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
-from telegram import InputMediaDocument, InputMediaPhoto, Message, Update
+from telegram import InputMediaDocument, InputMediaPhoto, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
@@ -83,6 +84,40 @@ class DailyMaterial(Plugin, BasePlugin):
                 data = json.loads(await file.read())
             self.data = data
 
+    async def _get_data_from_user(self, user: User) -> Tuple[Optional[Client], Dict[str, List[Any]]]:
+        client = None
+        user_data = {'character': [], 'weapon': []}
+        try:
+            logger.debug("尝试获取已绑定的原神账号")
+            client = await get_genshin_client(user.id)
+            logger.debug(f"获取成功, UID: {client.uid}")
+            characters = await client.get_genshin_characters(client.uid)
+            for character in characters:
+                cid = HONEY_ROLE_NAME_MAP[character.id][0]
+                weapon = character.weapon
+                user_data['character'].append(
+                    ItemData(
+                        id=cid, name=character.name, rarity=character.rarity, level=character.level,
+                        constellation=character.constellation,
+                        icon=convert_path(await self.assets_service.character(cid).icon())
+                    )
+                )
+                user_data['weapon'].append(
+                    ItemData(
+                        id=(wid := f"i_n{weapon.id}"), name=weapon.name, level=weapon.level, rarity=weapon.rarity,
+                        refinement=weapon.refinement,
+                        icon=convert_path(
+                            await getattr(
+                                self.assets_service.weapon(wid), 'icon' if weapon.ascension < 2 else 'awakened'
+                            )()
+                        ),
+                        c_path=convert_path(await self.assets_service.character(cid).side())
+                    )
+                )
+        except (UserNotFoundError, CookiesNotFoundError):
+            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+        return client, user_data
+
     @handler.command('daily_material', block=False)
     @restricts(restricts_time_of_groups=20, without_overlapping=True)
     @error_callable
@@ -137,37 +172,8 @@ class DailyMaterial(Plugin, BasePlugin):
             local_data[type_].append({'name': area, 'materials': sche[weekday][0], 'items': sche[weekday][1]})
 
         # 尝试获取用户已绑定的原神账号信息
-        client = None
-        user_data = {'character': [], 'weapon': []}
-        try:
-            logger.debug("尝试获取已绑定的原神账号")
-            client = await get_genshin_client(user.id)
-            logger.debug(f"获取成功, UID: {client.uid}")
-            characters = await client.get_genshin_characters(client.uid)
-            for character in characters:
-                cid = HONEY_ROLE_NAME_MAP[character.id][0]
-                weapon = character.weapon
-                user_data['character'].append(
-                    ItemData(
-                        id=cid, name=character.name, rarity=character.rarity, level=character.level,
-                        constellation=character.constellation,
-                        icon=convert_path(await self.assets_service.character(cid).icon())
-                    )
-                )
-                user_data['weapon'].append(
-                    ItemData(
-                        id=(wid := f"i_n{weapon.id}"), name=weapon.name, level=weapon.level, rarity=weapon.rarity,
-                        refinement=weapon.refinement,
-                        icon=convert_path(
-                            await getattr(
-                                self.assets_service.weapon(wid), 'icon' if weapon.ascension < 2 else 'awakened'
-                            )()
-                        ),
-                        c_path=convert_path(await self.assets_service.character(cid).side())
-                    )
-                )
-        except (UserNotFoundError, CookiesNotFoundError):
-            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+        client, user_data = self._get_data_from_user(user)
+
         await update.message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
         for type_ in ['character', 'weapon']:
@@ -184,11 +190,11 @@ class DailyMaterial(Plugin, BasePlugin):
                             break
                     if added:
                         continue
-                    d = HONEY_ID_MAP[type_][id_]
-                    if d[1] < 4:  # 跳过 3 星及以下的武器
+                    item = HONEY_ID_MAP[type_][id_]
+                    if item[1] < 4:  # 跳过 3 星及以下的武器
                         continue
                     items.append(ItemData(
-                        id=id_, name=d[0], rarity=d[1],
+                        id=id_, name=item[0], rarity=item[1],
                         icon=convert_path(await getattr(self.assets_service, f'{type_}')(id_).icon())
                     ))
                 materials = []
