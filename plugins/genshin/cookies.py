@@ -32,7 +32,7 @@ class AddUserCommandData(TelegramObject):
     sign_in_client: Optional[YuanShen.SignIn] = None
 
 
-CHECK_SERVER, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10106)
+CHECK_SERVER, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10105)
 
 
 class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
