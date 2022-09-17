@@ -106,17 +106,21 @@ class DailyMaterial(Plugin, BasePlugin):
         full = args and args[-1] == 'full'
 
         if weekday == 6:
-            await update.message.reply_text("今天是星期天, <b>全部素材都可以</b>刷哦~", parse_mode=ParseMode.HTML)
+            notice = await update.message.reply_text(
+                ("今天" if title == '今日' else '这天') + "是星期天, <b>全部素材都可以</b>刷哦~",
+                parse_mode=ParseMode.HTML
+            )
+            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
             return
 
         if self.locks[0].locked():
             notice = await update.message.reply_text("派蒙正在摘抄每日素材表，以后再来探索吧~")
-            context.application.job_queue.run_once(lambda _: notice.delete(), 5)
+            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
             return
 
         if self.locks[1].locked():
             notice = await update.message.reply_text("派蒙正在搬运每日素材的图标，以后再来探索吧~")
-            context.application.job_queue.run_once(lambda _: notice.delete(), 5)
+            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
             return
 
         notice = await update.message.reply_text("派蒙可能需要找找图标素材，还请耐心等待哦~")
