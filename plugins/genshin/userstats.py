@@ -70,6 +70,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
             "teapot_list": []
         }
         for exploration in user_info.explorations:
+            exploration.background_image
             exploration_data = {
                 "name": exploration.name,
                 "exploration_percentage": exploration.explored,
