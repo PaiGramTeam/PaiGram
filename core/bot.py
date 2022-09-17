@@ -182,7 +182,7 @@ class Bot:
         if not self._services:
             return
         logger.info('正在关闭服务')
-        for _, service in self._services.items():
+        for _, service in filter(lambda x: not isinstance(x[1], TgApplication), self._services.items()):
             try:
                 if hasattr(service, 'stop'):
                     if inspect.iscoroutinefunction(service.stop):
