@@ -1,0 +1,76 @@
+:root {
+    --dark: #e0dad3;
+    --light: #f0ece8;
+    --white: #f5f5f5;
+    --grey: #6c6c6c;
+}
+
+body {
+    background-color: rgba(253, 253, 253, 0.75);
+}
+
+.header {
+    background-image: url(background/mondstadt.png);
+    box-shadow: 0 0 16px rgb(123 242 248 / 50%);
+}
+
+.box {
+    border: 2px solid rgb(123, 242, 248, 0.5);
+    background-color: #fdfdf3;
+    box-shadow: 0 0 16px rgb(123 242 248 / 50%);
+}
+
+.box-title {
+    background-color: #43849abb;
+    text-align: center;
+    line-height: 3rem;
+    --tw-ring-color: #43849a;
+}
+
+
+.box-title h1 {
+    text-shadow: 0 0 1px #44cc33;
+}
+
+.stats-box {
+    color: #43849a;
+}
+
+.world-exploration-icon {
+    filter: brightness(0.8);
+}
+
+.world-exploration {
+    border: 1px solid rgb(166, 88, 55, 0.2);
+    background-color: rgb(255, 255, 255, 0.5);
+}
+
+.pointer-bar {
+    width: 95%;
+    height: 8px;
+    display: inline-block;
+    background-color: rgb(0, 0, 0, 0.1);
+    border-radius: 0.25rem;
+}
+
+.pointer-progress-bar {
+    border-radius: 0.25rem;
+    height: 100%;
+    background: linear-gradient(to right, #8a4d30, #a85631, #96502c);
+}
+
+.test {
+    background: linear-gradient(to bottom, #66bbee, #5ddddd, #55dddd);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.test-1 {
+    color: #fff;
+    background: linear-gradient(to right, rgb(0, 0, 0, 0), #5ddddd, rgb(0, 0, 0, 0));
+}
+
+.about {
+    background-color: #e0dad3;
+    color: #8a4d30;
+}
