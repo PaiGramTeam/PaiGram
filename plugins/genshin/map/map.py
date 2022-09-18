@@ -31,7 +31,7 @@ class Map(Plugin, BasePlugin):
     @error_callable
     @restricts(restricts_time=20)
     async def command_start(self, update: Update, context: CallbackContext):
-        message = update.message
+        message = update.effective_message
         args = context.args
         user = update.effective_user
         if not self.init_resource_map:

@@ -49,7 +49,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
-        message = update.message
+        message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] set_quiz命令请求")
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
         if quiz_command_data is None:
@@ -144,10 +144,11 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
     @conversation.state(state=GET_NEW_QUESTION)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     async def get_new_question(self, update: Update, context: CallbackContext) -> int:
+        message = update.effective_message
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
         reply_text = f"问题：`{escape_markdown(update.message.text, version=2)}`\n" \
                      f"请填写正确答案："
-        quiz_command_data.new_question = update.message.text
+        quiz_command_data.new_question = message.text
         await update.message.reply_markdown_v2(reply_text)
         return GET_NEW_CORRECT_ANSWER
 
