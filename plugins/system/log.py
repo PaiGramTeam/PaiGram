@@ -5,6 +5,7 @@ from telegram.ext import CommandHandler, CallbackContext
 
 from core.plugin import Plugin, handler
 from utils.decorators.admins import bot_admins_rights_check
+from utils.log import logger
 
 current_dir = os.getcwd()
 error_log = os.path.join(current_dir, "logs", "error", "error.log")
@@ -16,6 +17,8 @@ class Log(Plugin):
     @handler(CommandHandler, command="send_log", block=False)
     @bot_admins_rights_check
     async def send_log(self, update: Update, _: CallbackContext):
+        user = update.effective_user
+        logger.info(f"用户 {user.full_name}[{user.id}] send_log命令请求")
         message = update.effective_message
         if os.path.exists(error_log):
             await message.reply_document(open(error_log, mode='rb+'), caption="Error Log")
