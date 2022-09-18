@@ -127,10 +127,16 @@ class DailyMaterial(Plugin, BasePlugin):
         now = datetime.now()
 
         if args and is_number(args[0]):
-            # 适配出现 负数、小数和数字大于 7 的状况
-            weekday = (_ := int(args[0])) - (_ > 0)
-            weekday = (weekday % 7 + 7) % 7
-            time = title = f"星期{WEEK_MAP[weekday]}"
+            # 适配出现 负数、小数、数字大于 7 、Nan 和 1e-10的状况
+            try:
+                weekday = (_ := int(args[0])) - (_ > 0)
+                weekday = (weekday % 7 + 7) % 7
+                time = title = f"星期{WEEK_MAP[weekday]}"
+            except ValueError:
+                title = "今日"
+                weekday = now.weekday() - (1 if now.hour < 4 else 0)
+                weekday = 6 if weekday < 0 else weekday
+                time = now.strftime("%m-%d %H:%M") + " 星期" + WEEK_MAP[weekday]
         else:  # 获取今日是星期几，判定了是否过了凌晨4点
             title = "今日"
             weekday = now.weekday() - (1 if now.hour < 4 else 0)
