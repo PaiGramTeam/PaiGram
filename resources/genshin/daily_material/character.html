@@ -42,7 +42,11 @@
                 </div>
                 <div class="area-content">
                     {% for item in area.items %}
-                        <div class="item character">
+                        <div class="item character"
+                                {% if item.level == none or item.level == 90 %}
+                             style="filter: grayscale(80%);"
+                                {% endif %}
+                        >
                             <div class="item-icon"
                                  style="background-image: url(./bg/rarity/full/{{ item.rarity }}.png)">
                                 {% if item.level != none %}
