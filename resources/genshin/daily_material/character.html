@@ -43,7 +43,7 @@
                 <div class="area-content">
                     {% for item in area.items %}
                         <div class="item character"
-                                {% if data.uid != none and item.level == none or item.level == 90 %}
+                                {% if data.uid != none and item.level == none %}
                              style="filter: grayscale(80%);"
                                 {% endif %}
                         >

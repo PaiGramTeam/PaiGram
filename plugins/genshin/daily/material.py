@@ -146,7 +146,7 @@ class DailyMaterial(Plugin, BasePlugin):
         full = bool(args and args[-1] == 'full')  # 判定最后一个参数是不是 full
 
         logger.info(
-            f"用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday={WEEK_MAP[weekday]} full={full}")
+            f"用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday=\"{WEEK_MAP[weekday]}\" full={full}")
 
         if weekday == 6:
             await update.message.reply_text(
