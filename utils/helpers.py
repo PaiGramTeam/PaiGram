@@ -1,7 +1,9 @@
+import asyncio
 import hashlib
 import os
+from multiprocessing import RLock
 from pathlib import Path
-from typing import Tuple, Union, Optional, cast
+from typing import Optional, Tuple, Union, cast
 
 import aiofiles
 import genshin
@@ -130,3 +132,37 @@ def region_server(uid: Union[int, str]) -> RegionEnum:
         return region
     else:
         raise TypeError(f"UID {uid} isn't associated with any region")
+
+
+def mkdir(path: Path) -> Path:
+    """根据路径依次创建文件夹"""
+    path_list = []
+
+    parent = path.parent if path.suffix else path
+    while not parent.exists():
+        path_list.append(parent)
+        try:
+            parent.mkdir(exist_ok=True)
+        except FileNotFoundError:
+            parent = parent.parent
+
+    while path_list:
+        path_list.pop().mkdir(exist_ok=True)
+
+    return path
+
+
+def is_number(target: str) -> bool:
+    """判断字符串是否是数字"""
+    try:  # 尝试将字符串转为浮点数
+        float(target)
+        return True
+    except ValueError:
+        pass
+    try:
+        import unicodedata  # 处理ASCii码的包
+        unicodedata.numeric(target)  # 把一个表示数字的字符串转换为浮点数返回的函数
+        return True
+    except (TypeError, ValueError):
+        pass
+    return False

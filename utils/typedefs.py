@@ -1,14 +1,17 @@
 from pathlib import Path
 from types import TracebackType
-from typing import Optional, Tuple, Type, Union, Dict, Any
+from typing import Any, Dict, Optional, Tuple, Type, Union
+
+from httpx import URL
 
 __all__ = [
-    'StrOrPath',
+    'StrOrPath', 'StrOrURL',
     'SysExcInfoType', 'ExceptionInfoType',
     'JSONDict',
 ]
 
 StrOrPath = Union[str, Path]
+StrOrURL = Union[str, URL]
 SysExcInfoType = Union[
     Tuple[Type[BaseException], BaseException, Optional[TracebackType]],
     Tuple[None, None, None]

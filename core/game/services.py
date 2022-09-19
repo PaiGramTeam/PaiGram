@@ -9,7 +9,7 @@ class GameStrategyService:
         self._cache = cache
         self._hyperion = Hyperion()
         if collections is None:
-            self._collections = [839176, 839179, 839181]
+            self._collections = [839176, 839179, 839181, 1180811]
         else:
             self._collections = collections
 

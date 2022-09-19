@@ -85,7 +85,7 @@ class DailyNote(Plugin, BasePlugin):
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
-        message = update.message
+        message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] 查询游戏状态命令请求")
         try:
             client = await get_genshin_client(user.id)

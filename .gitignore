@@ -31,7 +31,10 @@ __pycache__/
 **_test.html
 test_**.html
 logs/
+report/
 /resources/*/*/test/
+plugins/genshin/daily/daily.json
+resources/assets/
 
 ### DotEnv ###
 .env

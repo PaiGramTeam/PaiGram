@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!--suppress HtmlUnknownTag, SpellCheckingInspection -->
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>每日素材</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+</head>
+<body>
+<main class="container">
+    <div class="title">{{ data.title }}可培养角色</div>
+    <div class="user-info">
+        {% if data.uid != none %}
+            <span>UID: {{ data.uid }}</span>
+        {% else %}
+            <span>暂未绑定UID</span>
+        {% endif %}
+        <span>{{ data.time }}</span>
+    </div>
+    <hr/>
+    <div class="box">
+        {% for area in data.character %}
+            <div class="area">
+                <div class="area-head">
+                    <img src="./bg/area/{{ loop.index0 }}.png" alt="{{ area.name }}"/>
+                    <span>{{ area.name }}</span>
+                    <span class="materials">
+                        {% for material in area.materials %}
+                            <div class="material">
+                                <div class="material-icon"
+                                     style="background-image: url(./bg/rarity/half/{{ material.rarity }}.png)">
+                                <img alt="{{ material.name }}" src="{{ material.icon }}"/>
+                                </div>
+                                <div class="material-star">
+                                    {% for _ in range(material.rarity) %}
+                                        <img alt="star" src="./bg/rarity/star.webp"/>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </span>
+                </div>
+                <div class="area-content">
+                    {% for item in area.items %}
+                        <div class="item character">
+                            <div class="item-icon"
+                                 style="background-image: url(./bg/rarity/full/{{ item.rarity }}.png)">
+                                {% if item.level != none %}
+                                    <div>Lv.{{ item.level }}</div>
+                                {% endif %}
+                                {% if item.constellation != none %}
+                                    {% if item.constellation == 6 %}
+                                        <div style="background-color: rgba(255,20,147, 0.8);backdrop-filter: blur(3px);">
+                                            6命
+                                        </div>
+                                    {% elif item.constellation != 0 %}
+                                        <div style="background-color: rgba(103,167,230, 0.8);backdrop-filter: blur(3px);">{{ item.constellation }}命</div>
+                                    {% endif %}
+                                {% endif %}
+                                <img src="{{ item.icon }}" alt="{{ item.name }}"/>
+                            </div>
+                            <div class="item-name">
+                                <div>{{ item.name }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+</main>
+</body>
+</html>

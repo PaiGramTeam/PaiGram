@@ -1,0 +1,258 @@
+@font-face {
+    font-family: 'HYWH';
+    src: url('../../fonts/汉仪文黑-85W.ttf') format('truetype');
+}
+
+:root {
+    --bg-color: #ebe5d9;
+    --font-color: #514e49;
+    --color-1: #d6ba92;
+    --shadow: #726c65;
+
+}
+
+* {
+    font-family: 'HYWH', serif;
+    color: var(--font-color);
+    background-repeat: no-repeat;
+
+}
+
+body {
+    margin: 0;
+    padding: 0;
+
+}
+
+.container {
+    width: 1104px;
+    background-color: var(--bg-color);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 30px;
+}
+
+.container > div.title {
+    width: 100%;
+    font-size: 40px;
+    text-align: center;
+}
+
+.user-info {
+    margin-top: 20px;
+    font-size: 25px;
+    border-left-color: var(--color-1);
+    border-left-style: solid;
+    border-left-width: 10px;
+    padding: 0;
+    font-style: italic;
+}
+
+.user-info > span:last-child {
+    float: right;
+}
+
+.box {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.title {
+    font-size: 30px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    margin: 20px 0;
+}
+
+.area {
+    width: calc(100% - 20px);
+    padding: 0 10px;
+}
+
+.area-head {
+    background-image: url("bg/title/01.png");
+    background-size: contain;
+    width: calc(100% - 20px);
+    height: 80px;
+    filter: drop-shadow(5px 5px 5px var(--shadow));
+    position: relative;
+    padding-left: 15px;
+}
+
+.area-head > img {
+    height: inherit;
+    filter: drop-shadow(3px 3px 5px black);
+}
+
+.area-head > span {
+    font-size: 23px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.materials {
+    width: 335px;
+    height: inherit;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: url("bg/title/02.png");
+    background-size: 100% 100%;
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.material {
+    position: relative;
+    top: 5px;
+    width: 60px;
+    margin: 0 5px;
+    filter: drop-shadow(1px 1px 5px #838383);
+}
+
+.material-icon {
+    width: 60px;
+    height: 60px;
+    background-size: 100% auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border-radius: 5px;
+}
+
+.material-icon > img {
+    height: calc(100% - 10px);
+}
+
+.material-star {
+    position: relative;
+    top: -5px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    filter: drop-shadow(1px 1px 2px #6c6c6c);
+}
+
+.material-star > img {
+    width: 10px;
+}
+
+.area-content {
+    margin: 20px 0;
+    padding: 0 20px;
+    display: flex;
+    flex-flow: wrap;
+}
+
+.item {
+    width: 150px;
+    background-color: var(--bg-color);
+    border-radius: 10px;
+    box-shadow: 3px 3px 10px var(--shadow);
+    margin: 10px 12px;
+    justify-content: center;
+}
+
+.item-icon {
+    width: inherit;
+    height: 152px;
+    background-size: 104% auto;
+    background-position: center;
+    overflow: hidden;
+    border-radius: 10px 10px 35px 0;
+    position: relative;
+}
+
+.item-icon > img {
+    max-height: 100%;
+    max-width: 150px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+}
+
+.item-name {
+    text-align: center;
+    display: flex;
+    align-items: center;
+    height: 35px;
+}
+
+.item-name > div {
+    width: 100%;
+    font-size: 22px;
+    text-align: center;
+}
+
+.item > .item-icon > div {
+    position: absolute;
+    z-index: 1;
+    color: white;
+}
+
+.item > .item-icon > div:first-child {
+    background-color: rgba(100, 149, 237, 0.7);
+    backdrop-filter: blur(3px);
+    border-radius: 0 0 5px 0;
+    box-shadow: 1px 1px 5px var(--shadow);
+    left: 0;
+    font-size: 18px;
+    padding: 4px 5px;
+}
+
+.character {
+    overflow: hidden;
+}
+
+.character > .item-icon > div:nth-child(2) {
+    border-radius: 0 0 0 5px;
+    box-shadow: -1px 1px 5px var(--shadow);
+    right: 0;
+    font-size: 20px;
+    padding: 3px;
+}
+
+.weapon > .item-icon > div:nth-child(2) {
+    border-radius: 0 5px 0 0;
+    box-shadow: -1px -1px 5px var(--shadow);
+    bottom: 0;
+    font-size: 18px;
+    padding: 3px;
+}
+
+.weapon {
+    overflow: unset;
+    position: relative;
+}
+
+.weapon > .role {
+    background-color: rgb(76 82 107 / 80%);
+    backdrop-filter: blur(3px);
+    position: absolute;
+    right: -10px;
+    top: -10px;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+    border-radius: 100%;
+    border-style: solid;
+    border-width: 3px;
+    border-color: white;
+}
+
+.weapon > .role > img {
+    height: 50px;
+    position: absolute;
+    left: 58%;
+    transform: translateX(-50%);
+    bottom: 0;
+}

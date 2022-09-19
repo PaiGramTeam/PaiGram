@@ -52,7 +52,7 @@ class Gacha(Plugin, BasePlugin):
     @restricts(restricts_time=3, restricts_time_of_groups=20)
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
-        message = update.message
+        message = update.effective_message
         user = update.effective_user
         args = get_all_args(context)
         gacha_name = "角色活动"
