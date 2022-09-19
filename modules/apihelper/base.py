@@ -1,5 +1,6 @@
 import imghdr
 from enum import Enum
+from typing import Any, Dict
 
 
 class ArtworkImage:
@@ -76,17 +77,12 @@ class ArtworkInfo:
         self.post_id = post_id
 
 
-class HyperionResponse:
-    """
-    :param response: 相应
-    :param error_message: 错误信息
-    """
+class PostFullInCollectionInfo:
 
-    def __init__(self, response=None, error_message: str = ""):
-        if response is None:
-            self.error: bool = True
-            self.message: str = error_message
-            return
+    def __init__(self, response: Dict[str, Any]):
+        """PostFullInCollectionInfo
+        :param response: 相应请求
+        """
         self.response: dict = response
         self.code = response["retcode"]
         if self.code == 0:
