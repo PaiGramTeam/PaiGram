@@ -2,16 +2,17 @@ import asyncio
 import re
 from typing import List
 
-import httpx
 from httpx import AsyncClient
 
-from modules.apihelper.base import HyperionResponse, ArtworkImage, BaseResponseData
+from modules.apihelper.base import PostFullInCollectionInfo, ArtworkImage, BaseResponseData
 from modules.apihelper.helpers import get_ds, get_device_id
+from modules.apihelper.hoyorequest import HOYORequest
+from utils.typedefs import JSONDict
 
 
 class Hyperion:
-    """
-    米忽悠bbs相关API请求
+    """米忽悠bbs相关API请求
+
     该名称来源于米忽悠的安卓BBS包名结尾，考虑到大部分重要的功能确实是在移动端实现了
     """
 
@@ -22,7 +23,7 @@ class Hyperion:
                  "Chrome/90.0.4430.72 Safari/537.36"
 
     def __init__(self):
-        self.client = httpx.AsyncClient(headers=self.get_headers())
+        self.client = HOYORequest(headers=self.get_headers())
 
     @staticmethod
     def extract_post_id(text: str) -> int:
@@ -81,38 +82,32 @@ class Hyperion:
                  f"{auto_orient}/interlace,{interlace}/format,{images_format}"
         return {"x-oss-process": params}
 
-    async def get_post_full_in_collection(self, collection_id: int, gids: int = 2, order_type=1) -> BaseResponseData:
+    async def get_post_full_in_collection(self, collection_id: int, gids: int = 2, order_type=1) -> JSONDict:
         params = {
             "collection_id": collection_id,
             "gids": gids,
             "order_type": order_type
         }
         response = await self.client.get(url=self.POST_FULL_IN_COLLECTION_URL, params=params)
-        if response.is_error:
-            return BaseResponseData(error_message="请求错误")
-        return BaseResponseData(response.json())
+        return response
 
-    async def get_artwork_info(self, gids: int, post_id: int, read: int = 1) -> HyperionResponse:
+    async def get_artwork_info(self, gids: int, post_id: int, read: int = 1) -> PostFullInCollectionInfo:
         params = {
             "gids": gids,
             "post_id": post_id,
             "read": read
         }
         response = await self.client.get(self.POST_FULL_URL, params=params)
-        if response.is_error:
-            return HyperionResponse(error_message="请求错误")
-        return HyperionResponse(response.json())
+        return PostFullInCollectionInfo(response=response)
 
-    async def get_post_full_info(self, gids: int, post_id: int, read: int = 1) -> BaseResponseData:
+    async def get_post_full_info(self, gids: int, post_id: int, read: int = 1) -> JSONDict:
         params = {
             "gids": gids,
             "post_id": post_id,
             "read": read
         }
         response = await self.client.get(self.POST_FULL_URL, params=params)
-        if response.is_error:
-            return BaseResponseData(error_message="请求错误")
-        return BaseResponseData(response.json())
+        return response
 
     async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
         artwork_info = await self.get_artwork_info(gids, post_id)
@@ -135,10 +130,8 @@ class Hyperion:
         return art_list
 
     async def download_image(self, art_id: int, url: str, page: int = 0) -> ArtworkImage:
-        response = await self.client.get(url, params=self.get_images_params(resize=2000), timeout=5)
-        if response.is_error:
-            return ArtworkImage(art_id, page, True)
-        return ArtworkImage(art_id, page, data=response.content)
+        response = await self.client.get(url, params=self.get_images_params(resize=2000), timeout=10, de_json=False)
+        return ArtworkImage(art_id, page, data=response)
 
     async def get_new_list(self, gids: int, type_id: int, page_size: int = 20):
         """
@@ -151,12 +144,10 @@ class Hyperion:
             "type": type_id
         }
         response = await self.client.get(url=self.GET_NEW_LIST_URL, params=params)
-        if response.is_error:
-            return BaseResponseData(error_message="请求错误")
-        return BaseResponseData(response.json())
+        return response
 
     async def close(self):
-        await self.client.aclose()
+        await self.client.shutdown()
 
 
 class YuanShen:
