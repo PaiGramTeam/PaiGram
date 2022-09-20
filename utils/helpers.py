@@ -1,7 +1,7 @@
 import hashlib
 import os
 from pathlib import Path
-from typing import Iterator, Optional, Tuple, Union, cast
+from typing import Optional, Tuple, Union, cast
 
 import aiofiles
 import genshin
@@ -130,21 +130,3 @@ def region_server(uid: Union[int, str]) -> RegionEnum:
         return region
     else:
         raise TypeError(f"UID {uid} isn't associated with any region")
-
-
-def mkdir(path: Path) -> Path:
-    """根据路径依次创建文件夹"""
-    path_list = []
-
-    parent = path.parent if path.suffix else path
-    while not parent.exists():
-        path_list.append(parent)
-        try:
-            parent.mkdir(exist_ok=True)
-        except FileNotFoundError:
-            parent = parent.parent
-
-    while path_list:
-        path_list.pop().mkdir(exist_ok=True)
-
-    return path

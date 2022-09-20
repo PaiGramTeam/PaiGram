@@ -11,11 +11,11 @@ from metadata.honey import HONEY_RESERVED_ID_MAP
 from metadata.shortname import roleToId, roles
 from modules.wiki.base import SCRAPE_HOST
 from utils.const import PROJECT_ROOT
-from utils.helpers import mkdir
+from utils.log import logger
 from utils.typedefs import StrOrURL
 
 ASSETS_PATH = PROJECT_ROOT.joinpath('resources/assets')
-ASSETS_PATH.mkdir(exist_ok=True)
+ASSETS_PATH.mkdir(exist_ok=True, parents=True)
 
 
 class _AssetsService(ABC):
@@ -26,7 +26,9 @@ class _AssetsService(ABC):
 
     @property
     def path(self) -> Path:
-        return mkdir(self._dir.joinpath(self.id))
+        path = self._dir.joinpath(self.id)
+        path.mkdir(exist_ok=True, parents=True)
+        return path
 
     def __init__(self, client: AsyncClient):
         self._client = client
