@@ -212,7 +212,6 @@ class DailyMaterial(Plugin, BasePlugin):
                             if i.rarity > 3:  # 跳过 3 星及以下的武器
                                 items.append(i)
                             added = True
-                            break
                     if added:
                         continue
                     item = HONEY_ID_MAP[type_][id_]
