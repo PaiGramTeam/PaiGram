@@ -69,21 +69,14 @@ body {
 .area {
     width: calc(100% - 20px);
     padding: 0 10px;
+    margin: 40px 0;
 }
 
 .area-head {
-    background-image: url("bg/title/01.png");
-    background-size: contain;
     width: calc(100% - 20px);
     height: 80px;
-    filter: drop-shadow(5px 5px 5px var(--shadow));
     position: relative;
     padding-left: 15px;
-}
-
-.area-head > img {
-    height: inherit;
-    filter: drop-shadow(3px 3px 5px black);
 }
 
 .area-head > span {
@@ -91,6 +84,46 @@ body {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
+}
+
+.area-name {
+    background-image: url("bg/title/01.png");
+    background-size: contain;
+    height: inherit;
+    width: 356px;
+    filter: drop-shadow(3px 3px 5px rgba(0, 0, 0, 0.8));
+}
+
+.area-name > img {
+    height: inherit;
+    filter: drop-shadow(3px 3px 5px black);
+    position: relative;
+    left: 5px;
+}
+
+.area-name > div {
+    position: absolute;
+    top: 50%;
+    left: 88px;
+    transform: translateY(-50%);
+    font-size: 28px;
+}
+
+.material-name {
+    top: 0 !important;
+    right: 269px;
+    z-index: 2;
+    padding: 2px 20px;
+    min-width: 100px;
+    min-height: 40px;
+    border-radius: 20px 5px 20px 20px;
+    background-color: rgb(246 222 169 / 50%);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 3px 3px 5px rgb(0 0 0 / 50%);
+    font-size: 24px !important;
 }
 
 .materials {
@@ -105,6 +138,26 @@ body {
     position: relative;
     top: 50%;
     transform: translateY(-50%);
+    filter: drop-shadow(3px 3px 5px rgba(0, 0, 0, 0.8));
+}
+
+.materials > div:not(.material) {
+    position: absolute;
+    width: 100px;
+    height: 35px;
+    background: rgb(246 222 169 / 80%);
+    left: -35px;
+    top: -15px;
+    z-index: 2;
+    box-shadow: 1px 1px 10px rgb(0 0 0 / 20%);
+    border-radius: 20px 5px 20px 20px;
+    backdrop-filter: blur(10px);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    color: rgb(255 255 255);
 }
 
 .material {

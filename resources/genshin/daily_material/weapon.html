@@ -22,8 +22,11 @@
         {% for area in data.weapon %}
             <div class="area">
                 <div class="area-head">
-                    <img src="./bg/area/{{ loop.index0 }}.png" alt="{{ area.name }}"/>
-                    <span>{{ area.name }}</span>
+                    <span class="area-name">
+                        <img src="./bg/area/{{ loop.index0 }}.png" alt="{{ area.name }}"/>
+                        <div>{{ area.name }}</div>
+                    </span>
+                    <span class="material-name">{{ area.material_name }}</span>
                     <span class="materials">
                         {% for material in area.materials %}
                             <div class="material">
@@ -42,7 +45,11 @@
                 </div>
                 <div class="area-content">
                     {% for item in area.items %}
-                        <div class="item weapon">
+                        <div class="item weapon"
+                                {% if data.uid != none and (item.level == none or item.level >= 81) %}
+                             style="filter: grayscale(80%);"
+                                {% endif %}
+                        >
                             {% if item.c_path != none %}
                                 <div class="role">
                                     <img src="{{ item.c_path }}" alt=""/>
@@ -58,9 +65,10 @@
                                         <div style="background-color: rgba(251,86,33, 0.8);backdrop-filter: blur(3px);">
                                             精炼5
                                         </div>
-                                    {% else %}
+                                    {% elif item.refinement != 1 %}
                                         <div style="background-color: rgba(103,167,230, 0.8);backdrop-filter: blur(3px);">
-                                            精炼{{ item.refinement }}</div>
+                                            精炼{{ item.refinement }}
+                                        </div>
                                     {% endif %}
                                 {% endif %}
                                 <img src="{{ item.icon }}" alt="{{ item.name }}"/>

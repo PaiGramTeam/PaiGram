@@ -1,5 +1,4 @@
 import asyncio
-import itertools
 import re
 from asyncio import Lock
 from ctypes import c_double
@@ -7,10 +6,11 @@ from datetime import datetime
 from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
-from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
 
 import ujson as json
 from aiofiles import open as async_open
+from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
 from genshin import Client
 from httpx import AsyncClient, HTTPError
@@ -31,7 +31,7 @@ from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.helpers import get_genshin_client, is_number
+from utils.helpers import get_genshin_client
 from utils.log import logger
 
 DATA_TYPE = Dict[str, List[List[str]]]
@@ -45,18 +45,44 @@ WEEK_MAP = ['一', '二', '三', '四', '五', '六', '日']
 def sort_item(items: List['ItemData']) -> Iterable['ItemData']:
     """对武器和角色进行排序
 
-    角色排序规则：星级>等级>命座
-    武器排序规则：星级>等级>精炼度
+    排序规则：持有（星级 > 等级 > 命座/精炼) > 未持有（星级 > 等级 > 命座/精炼）
     """
-    result_a = []
-    for _, group_a in itertools.groupby(sorted(items, key=lambda x: x.rarity, reverse=True), lambda x: x.rarity):
-        result_b = []
-        for _, group_b in itertools.groupby(
-                sorted(group_a, key=lambda x: x.level or -1, reverse=True), lambda x: x.level or -1
-        ):
-            result_b.append(sorted(group_b, key=lambda x: x.constellation or x.refinement or -1, reverse=True))
-        result_a.append(itertools.chain(*result_b))
-    return itertools.chain(*result_a)
+    return (
+        ArkoWrapper(items)
+        .sort(lambda x: x.level or -1, reverse=True)
+        .groupby(lambda x: x.level is None)  # 根据持有与未持有进行分组并排序
+        .map(
+            lambda x: (
+                ArkoWrapper(x[1])
+                .sort(lambda y: y.rarity, reverse=True)
+                .groupby(lambda y: y.rarity)  # 根据星级分组并排序
+                .map(lambda y: (
+                    ArkoWrapper(y[1])
+                    .sort(lambda z: z.refinement or z.constellation or -1, reverse=True)
+                    .groupby(lambda z: z.refinement or z.constellation or -1)  # 根据命座/精炼进行分组并排序
+                    .map(lambda i: ArkoWrapper(i[1]).sort(lambda j: j.id))
+                ))
+            )
+        ).flat(3)
+    )
+
+
+def get_material_serial_name(names: Iterable[str]) -> str:
+    """获取材料的系列名"""
+
+    def all_substrings(string: str) -> Iterator[str]:
+        """获取字符串的所有连续字串"""
+        length = len(string)
+        for i in range(length):
+            for j in range(i + 1, length + 1):
+                yield string[i:j]
+
+    result = []
+    for name_a, name_b in ArkoWrapper(names).repeat(1).group(2).unique(list):
+        for sub_string in all_substrings(name_a):
+            if sub_string in ArkoWrapper(all_substrings(name_b)):
+                result.append(sub_string)
+    return ArkoWrapper(result).sort(len, reverse=True)[0].strip('的')
 
 
 class DailyMaterial(Plugin, BasePlugin):
@@ -126,26 +152,19 @@ class DailyMaterial(Plugin, BasePlugin):
         args = get_all_args(context)
         now = datetime.now()
 
-        if args and is_number(args[0]):
-            # 适配出现 负数、小数、数字大于 7 、Nan 和 1e-10的状况
-            try:
-                weekday = (_ := int(args[0])) - (_ > 0)
-                weekday = (weekday % 7 + 7) % 7
-                time = title = f"星期{WEEK_MAP[weekday]}"
-            except ValueError:
-                title = "今日"
-                weekday = now.weekday() - (1 if now.hour < 4 else 0)
-                weekday = 6 if weekday < 0 else weekday
-                time = now.strftime("%m-%d %H:%M") + " 星期" + WEEK_MAP[weekday]
-        else:  # 获取今日是星期几，判定了是否过了凌晨4点
+        try:
+            weekday = (_ := int(args[0])) - (_ > 0)
+            weekday = (weekday % 7 + 7) % 7
+            time = title = f"星期{WEEK_MAP[weekday]}"
+        except (ValueError, IndexError):
             title = "今日"
             weekday = now.weekday() - (1 if now.hour < 4 else 0)
             weekday = 6 if weekday < 0 else weekday
             time = now.strftime("%m-%d %H:%M") + " 星期" + WEEK_MAP[weekday]
-        full = args and args[-1] == 'full'  # 判定最后一个参数是不是 full
+        full = bool(args and args[-1] == 'full')  # 判定最后一个参数是不是 full
 
         logger.info(
-            f"用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday={WEEK_MAP[weekday]} full={full}")
+            f"用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday=\"{WEEK_MAP[weekday]}\" full={full}")
 
         if weekday == 6:
             await update.message.reply_text(
@@ -193,7 +212,6 @@ class DailyMaterial(Plugin, BasePlugin):
                             if i.rarity > 3:  # 跳过 3 星及以下的武器
                                 items.append(i)
                             added = True
-                            break
                     if added:
                         continue
                     item = HONEY_ID_MAP[type_][id_]
@@ -208,7 +226,10 @@ class DailyMaterial(Plugin, BasePlugin):
                     path = (await self.assets_service.material(mid).icon()).as_uri()
                     material = HONEY_ID_MAP['material'][mid]
                     materials.append(ItemData(id=mid, icon=path, name=material[0], rarity=material[1]))
-                areas.append(AreaData(name=area_data['name'], materials=materials, items=sort_item(items)))
+                areas.append(AreaData(
+                    name=area_data['name'], materials=materials, items=sort_item(items),
+                    material_name=get_material_serial_name(map(lambda x: x.name, materials))
+                ))
             setattr(render_data, type_, areas)
 
         await update.message.reply_chat_action(ChatAction.TYPING)
@@ -363,6 +384,7 @@ class ItemData(BaseModel):
 
 class AreaData(BaseModel):
     name: Literal['蒙德', '璃月', '稻妻', '须弥']  # 区域名
+    material_name: str  # 区域的材料系列名
     materials: List[ItemData] = []  # 区域材料
     items: Iterable[ItemData] = []  # 可培养的角色或武器
 
