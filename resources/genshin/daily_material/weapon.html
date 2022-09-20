@@ -22,8 +22,11 @@
         {% for area in data.weapon %}
             <div class="area">
                 <div class="area-head">
-                    <img src="./bg/area/{{ loop.index0 }}.png" alt="{{ area.name }}"/>
-                    <span>{{ area.name }}</span>
+                    <span class="area-name">
+                        <img src="./bg/area/{{ loop.index0 }}.png" alt="{{ area.name }}"/>
+                        <div>{{ area.name }}</div>
+                    </span>
+                    <span class="material-name">{{ area.material_name }}</span>
                     <span class="materials">
                         {% for material in area.materials %}
                             <div class="material">

@@ -6,7 +6,7 @@ from datetime import datetime
 from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
-from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
 
 import ujson as json
 from aiofiles import open as async_open
@@ -50,21 +50,39 @@ def sort_item(items: List['ItemData']) -> Iterable['ItemData']:
     return (
         ArkoWrapper(items)
         .sort(lambda x: x.level or -1, reverse=True)
-        .groupby(lambda x: x.level is None)
+        .groupby(lambda x: x.level is None)  # 根据持有与未持有进行分组并排序
         .map(
             lambda x: (
                 ArkoWrapper(x[1])
                 .sort(lambda y: y.rarity, reverse=True)
-                .groupby(lambda y: y.rarity)
+                .groupby(lambda y: y.rarity)  # 根据星级分组并排序
                 .map(lambda y: (
                     ArkoWrapper(y[1])
                     .sort(lambda z: z.refinement or z.constellation or -1, reverse=True)
-                    .groupby(lambda z: z.refinement or z.constellation or -1)
+                    .groupby(lambda z: z.refinement or z.constellation or -1)  # 根据命座/精炼进行分组并排序
                     .map(lambda i: ArkoWrapper(i[1]).sort(lambda j: j.id))
                 ))
             )
         ).flat(3)
     )
+
+
+def get_material_serial_name(names: Iterable[str]) -> str:
+    """获取材料的系列名"""
+
+    def all_substrings(string: str) -> Iterator[str]:
+        """获取字符串的所有连续字串"""
+        length = len(string)
+        for i in range(length):
+            for j in range(i + 1, length + 1):
+                yield string[i:j]
+
+    result = []
+    for name_a, name_b in ArkoWrapper(names).repeat(1).group(2).unique(list):
+        for sub_string in all_substrings(name_a):
+            if sub_string in ArkoWrapper(all_substrings(name_b)):
+                result.append(sub_string)
+    return ArkoWrapper(result).sort(len, reverse=True)[0].strip('的')
 
 
 class DailyMaterial(Plugin, BasePlugin):
@@ -209,8 +227,10 @@ class DailyMaterial(Plugin, BasePlugin):
                     path = (await self.assets_service.material(mid).icon()).as_uri()
                     material = HONEY_ID_MAP['material'][mid]
                     materials.append(ItemData(id=mid, icon=path, name=material[0], rarity=material[1]))
-                _items = sort_item(items)
-                areas.append(AreaData(name=area_data['name'], materials=materials, items=_items))
+                areas.append(AreaData(
+                    name=area_data['name'], materials=materials, items=sort_item(items),
+                    material_name=get_material_serial_name(map(lambda x: x.name, materials))
+                ))
             setattr(render_data, type_, areas)
 
         await update.message.reply_chat_action(ChatAction.TYPING)
@@ -365,6 +385,7 @@ class ItemData(BaseModel):
 
 class AreaData(BaseModel):
     name: Literal['蒙德', '璃月', '稻妻', '须弥']  # 区域名
+    material_name: str  # 区域的材料系列名
     materials: List[ItemData] = []  # 区域材料
     items: Iterable[ItemData] = []  # 可培养的角色或武器
 
