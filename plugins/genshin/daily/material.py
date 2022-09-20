@@ -183,6 +183,7 @@ class DailyMaterial(Plugin, BasePlugin):
             return
 
         notice = await update.message.reply_text("派蒙可能需要找找图标素材，还请耐心等待哦~")
+        self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
         await update.message.reply_chat_action(ChatAction.TYPING)
 
         # 获取已经缓存的秘境素材信息
@@ -233,12 +234,22 @@ class DailyMaterial(Plugin, BasePlugin):
             setattr(render_data, type_, areas)
 
         await update.message.reply_chat_action(ChatAction.TYPING)
-        character_img_data = await self.template_service.render(  # 渲染角色素材页
-            'genshin/daily_material', 'character.html', {'data': render_data}, {'width': 1164, 'height': 500}
-        )
-        weapon_img_data = await self.template_service.render(  # 渲染武器素材页
-            'genshin/daily_material', 'weapon.html', {'data': render_data}, {'width': 1164, 'height': 500}
-        )
+        render_tasks = [
+            asyncio.create_task(
+                self.template_service.render(  # 渲染角色素材页
+                    'genshin/daily_material', 'character.html', {'data': render_data}, {'width': 1164, 'height': 500}
+                )
+            ),
+            asyncio.create_task(
+                self.template_service.render(  # 渲染武器素材页
+                    'genshin/daily_material', 'weapon.html', {'data': render_data}, {'width': 1164, 'height': 500}
+                )
+            )]
+
+        while not all(map(lambda x: x.done(), render_tasks)):
+            await asyncio.sleep(0)
+
+        character_img_data, weapon_img_data = tuple(map(lambda x: x.result(), render_tasks))
 
         await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         if full:  # 是否发送原图
@@ -250,7 +261,7 @@ class DailyMaterial(Plugin, BasePlugin):
             await update.message.reply_media_group(
                 [InputMediaPhoto(character_img_data), InputMediaPhoto(weapon_img_data)]
             )
-        await notice.delete()
+        logger.debug("角色、武器培养素材图发送成功")
 
     @handler.command('refresh_daily_material', block=False)
     @bot_admins_rights_check

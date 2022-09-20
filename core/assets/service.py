@@ -45,17 +45,25 @@ class _AssetsService(ABC):
 
     async def _download(self, url: StrOrURL, path: Path, retry: int = 5) -> Optional[Path]:
         import asyncio
-        for _ in range(retry):
-            try:
-                response = await self._client.get(url, follow_redirects=False)
-            except (HTTPError, SSLZeroReturnError):
-                await asyncio.sleep(1)
-                continue
-            if response.status_code != 200:
-                return None
-            async with async_open(path, 'wb') as file:
-                await file.write(response.content)
-            return path
+
+        async def _task():
+            logger.debug(f"正在从 {url} 下载图标至 {path}")
+            for _ in range(retry):
+                try:
+                    response = await self._client.get(url, follow_redirects=False)
+                except (HTTPError, SSLZeroReturnError):
+                    await asyncio.sleep(1)
+                    continue
+                if response.status_code != 200:
+                    return None
+                async with async_open(path, 'wb') as file:
+                    await file.write(response.content)
+                return path
+
+        task = asyncio.create_task(_task())
+        while not task.done():
+            await asyncio.sleep(0)
+        return task.result()
 
     @abstractmethod
     async def icon(self) -> Path:
