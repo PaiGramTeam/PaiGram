@@ -66,8 +66,9 @@ class AdminPlugin(Plugin):
             except (BadRequest, Forbidden):
                 pass
             await context.bot.leave_chat(chat_id)
-        except (BadRequest, Forbidden) as error:
-            logger.error(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 \n", error)
-            await message.reply_text(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 {str(error)}")
+        except (BadRequest, Forbidden) as exc:
+            logger.error(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 \n")
+            logger.exception(exc)
+            await message.reply_text(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 {str(exc)}")
             return
         await message.reply_text(f"退出 chat_id[{chat_id}] 成功！")
