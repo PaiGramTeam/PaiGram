@@ -3,7 +3,7 @@ from functools import wraps
 from typing import Callable, cast
 
 from aiohttp import ClientConnectorError
-from genshin import InvalidCookies, GenshinException, TooManyRequests
+from genshin import InvalidCookies, GenshinException, TooManyRequests, DataNotPublic
 from httpx import ConnectTimeout
 from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest, TimedOut, Forbidden
@@ -93,11 +93,15 @@ def error_callable(func: Callable) -> Callable:
             logger.warning("查询次数太多（操作频繁）", exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ 当天查询次数已经超过30次，请次日再进行查询")
             return ConversationHandler.END
+        except DataNotPublic:
+            await send_user_notification(update, context, "出错了呜呜呜 ~ 查询的用户数据未公开")
+            return ConversationHandler.END
         except GenshinException as exc:
             if "[-130]" in str(exc):
                 await send_user_notification(update, context, "出错了呜呜呜 ~ 未设置默认角色，请尝试重新绑定默认角色")
                 return ConversationHandler.END
-            logger.warning("GenshinException", exc)
+            logger.warning("GenshinException")
+            logger.exception(exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ 获取账号信息发生错误")
             return ConversationHandler.END
         except BadRequest as exc:
