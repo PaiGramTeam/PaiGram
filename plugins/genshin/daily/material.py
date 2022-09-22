@@ -82,7 +82,11 @@ def get_material_serial_name(names: Iterable[str]) -> str:
         for sub_string in all_substrings(name_a):
             if sub_string in ArkoWrapper(all_substrings(name_b)):
                 result.append(sub_string)
-    return ArkoWrapper(result).sort(len, reverse=True)[0].strip('的')
+    result = ArkoWrapper(result).sort(len, reverse=True)[0]
+    chars = {'的': 0, '之': 0}
+    for char, k in chars.items():
+        result = result.split(char)[k]
+    return result
 
 
 class DailyMaterial(Plugin, BasePlugin):
@@ -183,7 +187,6 @@ class DailyMaterial(Plugin, BasePlugin):
             return
 
         notice = await update.message.reply_text("派蒙可能需要找找图标素材，还请耐心等待哦~")
-        self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
         await update.message.reply_chat_action(ChatAction.TYPING)
 
         # 获取已经缓存的秘境素材信息
@@ -251,6 +254,7 @@ class DailyMaterial(Plugin, BasePlugin):
 
         character_img_data, weapon_img_data = tuple(map(lambda x: x.result(), render_tasks))
 
+        self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
         await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         if full:  # 是否发送原图
             await update.message.reply_media_group([

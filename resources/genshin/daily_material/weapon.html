@@ -45,9 +45,11 @@
                 </div>
                 <div class="area-content">
                     {% for item in area.items %}
-                        <div class="item weapon"
+                        <div
                                 {% if data.uid != none and (item.level == none or item.level >= 81) %}
-                             style="filter: grayscale(80%);"
+                                class="item weapon item-not-owned"
+                                {% else %}
+                                class="item weapon"
                                 {% endif %}
                         >
                             {% if item.c_path != none %}

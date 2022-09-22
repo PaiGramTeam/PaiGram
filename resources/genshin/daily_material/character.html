@@ -45,9 +45,11 @@
                 </div>
                 <div class="area-content">
                     {% for item in area.items %}
-                        <div class="item character"
+                        <div
                                 {% if data.uid != none and item.level == none %}
-                             style="filter: grayscale(80%);"
+                                class="item character item-not-owned"
+                                {% else %}
+                                class="item character"
                                 {% endif %}
                         >
                             <div class="item-icon"
