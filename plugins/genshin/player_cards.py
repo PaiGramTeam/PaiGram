@@ -35,6 +35,7 @@ from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
 from utils.log import logger
 from utils.models.base import RegionEnum
+from utils.patch.aiohttp import AioHttpTimeoutException
 
 assets = Assets(lang="chs")
 
@@ -53,6 +54,8 @@ class PlayerCards(Plugin, BasePlugin):
             return "Enka.Network 服务请求错误，请稍后重试"
         except Forbidden:
             return "Enka.Network 服务请求被拒绝，请稍后重试"
+        except AioHttpTimeoutException:
+            return "Enka.Network 服务请求超时，请稍后重试"
         except HTTPException:
             return "Enka.Network HTTP 服务请求错误，请稍后重试"
         except UIDNotFounded:

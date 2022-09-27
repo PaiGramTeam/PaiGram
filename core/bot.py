@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import os
+import utils.patch  # noqa
 from asyncio import CancelledError
 from importlib import import_module
 from multiprocessing import RLock as Lock
