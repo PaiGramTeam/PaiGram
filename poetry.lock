@@ -315,7 +315,7 @@ resolved_reference = "46a73176acc8677147fe1599e4e89297bbec5881"
 
 [[package]]
 name = "fakeredis"
-version = "1.9.1"
+version = "1.9.3"
 description = "Fake implementation of redis API for testing purposes."
 category = "main"
 optional = false
@@ -323,7 +323,6 @@ python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 redis = "<4.4"
-six = ">=1.16.0,<2.0.0"
 sortedcontainers = ">=2.4.0,<3.0.0"
 
 [package.extras]
@@ -349,7 +348,7 @@ python-versions = ">=3.7"
 [[package]]
 name = "genshin"
 version = "1.2.4"
-description = "An API wrapper for Genshin Impact."
+description = ""
 category = "main"
 optional = false
 python-versions = ">=3.8"
@@ -369,7 +368,7 @@ geetest = ["rsa"]
 type = "git"
 url = "https://github.com/thesadru/genshin.py"
 reference = "HEAD"
-resolved_reference = "e195dea14a28450fe9ee819e6e77399a4111e785"
+resolved_reference = "7c155ec4dea6af87f5af7f2d7d8c2e684e921f96"
 
 [[package]]
 name = "greenlet"
@@ -1107,7 +1106,7 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "e07845db0064c672a77c971c2cd3017ec92205d831d057fd038fc67a1abcf5a9"
+content-hash = "47fe7ba65d03ef29f2aa466d424178ffc24d71bb1fdf8b49fc1788bcc785d906"
 
 [metadata.files]
 aiofiles = [
@@ -1335,8 +1334,8 @@ Deprecated = [
 ]
 "enkanetwork.py" = []
 fakeredis = [
-    {file = "fakeredis-1.9.1-py3-none-any.whl", hash = "sha256:b9830f68dafafc0abe6c037775765166e9e2ff6b0da8abd3838eb2c3910f8e65"},
-    {file = "fakeredis-1.9.1.tar.gz", hash = "sha256:e884776d7d0216e9c6c514527718259cfbd555777b36ba403ae680bd1489f7a1"},
+    {file = "fakeredis-1.9.3-py3-none-any.whl", hash = "sha256:74a2f1e5e8781014418fe734b156808d5d1a2d15edec982fada3d6e7603f8536"},
+    {file = "fakeredis-1.9.3.tar.gz", hash = "sha256:ea7e4ed076def2eea36188662586a9f2271946ae56ebc2de6a998c82b33df776"},
 ]
 flaky = [
     {file = "flaky-3.7.0-py2.py3-none-any.whl", hash = "sha256:d6eda73cab5ae7364504b7c44670f70abed9e75f77dd116352f662817592ec9c"},
