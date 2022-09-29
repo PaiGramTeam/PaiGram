@@ -20,7 +20,7 @@ class GachaInfo:
         self.cache_ttl = 12 * 60 * 60
 
     async def get_gacha_list_info(self) -> BaseResponseData:
-        if self.cache.get("time", 0) + self.cache_ttl > time.time():
+        if self.cache.get("time", 0) + self.cache_ttl < time.time():
             self.cache.clear()
         cache = self.cache.get("gacha_list_info")
         if cache is not None:
