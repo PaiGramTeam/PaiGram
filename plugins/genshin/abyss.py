@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from genshin import Client
 from telegram import Update
@@ -14,7 +14,7 @@ from core.user import UserService
 from core.user.error import UserNotFoundError
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.helpers import get_genshin_client, url_to_file
+from utils.helpers import get_genshin_client, url_to_file, get_public_genshin_client
 from utils.log import logger
 
 
@@ -46,10 +46,13 @@ class Abyss(Plugin, BasePlugin):
         else:
             raise ValueError("错误的数据")
 
-    async def _get_abyss_data(self, client: Client) -> Dict:
-        uid = client.uid
-        await client.get_record_cards()
-        spiral_abyss_info = await client.get_spiral_abyss(uid)
+    async def _get_abyss_data(self, client: Client, uid: Optional[int] = None) -> Dict:
+        if uid is None:
+            _uid = client.uid
+            await client.get_record_cards()
+        else:
+            _uid = client.uid
+        spiral_abyss_info = await client.get_spiral_abyss(_uid)
         if not spiral_abyss_info.unlocked:
             raise AbyssUnlocked
         ranks = spiral_abyss_info.ranks
@@ -103,9 +106,13 @@ class Abyss(Plugin, BasePlugin):
         logger.info(f"用户 {user.full_name}[{user.id}] 查深渊挑战命令请求")
         await message.reply_chat_action(ChatAction.TYPING)
         try:
-            client = await get_genshin_client(user.id)
-            abyss_data = await self._get_abyss_data(client)
-        except (UserNotFoundError, CookiesNotFoundError):
+            try:
+                client = await get_genshin_client(user.id)
+                abyss_data = await self._get_abyss_data(client)
+            except CookiesNotFoundError:
+                client, uid = await get_public_genshin_client(user.id)
+                abyss_data = await self._get_abyss_data(client, uid)
+        except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
