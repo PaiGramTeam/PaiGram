@@ -1,4 +1,5 @@
 import time
+
 import httpx
 
 from modules.apihelper.base import BaseResponseData
@@ -17,7 +18,7 @@ class GachaInfo:
         }
         self.client = httpx.AsyncClient(headers=self.headers)
         self.cache = {}
-        self.cache_ttl = 12 * 60 * 60
+        self.cache_ttl = 600
 
     async def get_gacha_list_info(self) -> BaseResponseData:
         if self.cache.get("time", 0) + self.cache_ttl < time.time():
