@@ -59,7 +59,7 @@ class Abyss(Plugin, BasePlugin):
         if len(spiral_abyss_info.ranks.most_kills) == 0:
             raise NoMostKills
         abyss_data = {
-            "uid": uid,
+            "uid": _uid,
             "max_floor": spiral_abyss_info.max_floor,
             "total_battles": spiral_abyss_info.total_battles,
             "total_stars": spiral_abyss_info.total_stars,
@@ -119,10 +119,7 @@ class Abyss(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
             return
         except (AbyssUnlocked, NoMostKills):
-            reply_message = await message.reply_text("本次深渊旅行者还没挑战呢，咕咕咕~~~")
-            if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+            await message.reply_text("本次深渊旅行者还没挑战呢，咕咕咕~~~")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         png_data = await self.template_service.render('genshin/abyss', "abyss.html", abyss_data,
