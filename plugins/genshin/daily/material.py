@@ -7,6 +7,7 @@ from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
 from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
+from functools import partial
 
 import ujson as json
 from aiofiles import open as async_open
@@ -21,6 +22,7 @@ from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
 
 from core.assets import AssetsService
+from core.assets.service import AssetsServiceType
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
@@ -33,6 +35,8 @@ from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
+
+INTERVAL = 1
 
 DATA_TYPE = Dict[str, List[List[str]]]
 DATA_FILE_PATH = Path(__file__).joinpath('../daily.json').resolve()
@@ -270,7 +274,12 @@ class DailyMaterial(Plugin, BasePlugin):
     @handler.command('refresh_daily_material', block=False)
     @bot_admins_rights_check
     async def refresh(self, update: Update, context: CallbackContext):
+        user = update.effective_user
         message = update.effective_message
+
+        logger.info(
+            f"用户 {user.full_name}[{user.id}] 刷新[bold]每日素材[/]缓存命令", extra={'markup': True}
+        )
         if self.locks[0].locked():
             notice = await message.reply_text("派蒙还在抄每日素材表呢，我有在好好工作哦~")
             self._add_delete_message_job(context, notice.chat_id, notice.message_id, 10)
@@ -290,12 +299,15 @@ class DailyMaterial(Plugin, BasePlugin):
                 parse_mode=ParseMode.HTML
             )
             self.data = data or self.data
-            await self._download_icon(notice)
-            notice = await notice.edit_text(
-                notice.text_html.split('\n')[0] + "\n每日素材图标搬运<b>完成！</b>",
+        time = await self._download_icon(notice)
+
+        async def job(_, n):
+            await n.edit_text(
+                n.text_html.split('\n')[0] + "\n每日素材图标搬运<b>完成！</b>",
                 parse_mode=ParseMode.HTML
             )
-            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 10)
+
+        context.application.job_queue.run_once(partial(job, n=notice), when=time + INTERVAL, name='delete_notice_job')
 
     async def _refresh_data(self, retry: int = 5) -> DATA_TYPE:
         """刷新来自 honey impact 的每日素材表"""
@@ -339,51 +351,58 @@ class DailyMaterial(Plugin, BasePlugin):
         # noinspection PyTypeChecker
         return result
 
-    async def _download_icon(self, message: Optional[Message] = None):
+    async def _download_icon(self, message: Optional[Message] = None) -> float:
         """下载素材图标"""
+        asset_list = []
+
         from time import time as time_
         lock = asyncio.Lock()
-        interval = 2
-        the_time = Value(c_double, time_() - interval)
 
-        async def task(_id, _item, _type):
-            logger.debug(f"正在开始下载 \"{_item[0]}\" 的图标素材")
+        the_time = Value(c_double, time_() - INTERVAL)
+
+        async def edit_message(text):
+            """修改提示消息"""
             async with lock:
-                if message is not None and time_() >= the_time.value + interval:  # 判定现在是否距离上次修改消息已经有了足够的时间
-                    text = '\n'.join(message.text_html.split('\n')[:2]) + f"\n正在搬运 <b>{_item[0]}</b> 的图标素材。。。"
+                if (
+                        message is not None
+                        and
+                        time_() >= (the_time.value + INTERVAL)
+                ):
                     try:
-                        await message.edit_text(text, parse_mode=ParseMode.HTML)
-                        the_time.value = time_()
-                    except (TimedOut, RetryAfter):  # 修改消息失败
-                        pass
-            asset = getattr(self.assets_service, _type)(_id)  # 获取素材对象
-            icon_types = list(filter(  # 找到该素材对象的所有图标类型
-                lambda x: not x.startswith('_') and x not in ['path'] and callable(getattr(asset, x)),
-                dir(asset)
-            ))
-            icon_coroutines = map(lambda x: getattr(asset, x), icon_types)  # 根据图标类型找到下载对应图标的函数
-            for coroutine in icon_coroutines:
-                await coroutine()  # 执行下载函数
-            logger.debug(f"\"{_item[0]}\" 的图标素材下载成功")
-            async with lock:
-                if message is not None and time_() >= the_time.value + interval:
-                    text = (
-                            '\n'.join(message.text_html.split('\n')[:2]) +
-                            f"\n正在搬运 <b>{_item[0]}</b> 的图标素材。。。<b>成功！</b>"
-                    )
-                    try:
-                        await message.edit_text(text, parse_mode=ParseMode.HTML)
+                        await message.edit_text(
+                            '\n'.join(message.text_html.split('\n')[:2] + [text]),
+                            parse_mode=ParseMode.HTML
+                        )
                         the_time.value = time_()
                     except (TimedOut, RetryAfter):
                         pass
 
-        for type_, items in HONEY_ID_MAP.items():  # 遍历每个对象
+        async def task(item_id, name, item_type):
+            logger.debug(f"正在开始下载 \"{name}\" 的图标素材")
+            await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。")
+            asset: AssetsServiceType = getattr(self.assets_service, item_type)(item_id)  # 获取素材对象
+            if asset.honey_id in asset_list:
+                breakpoint()
+            else:
+                asset_list.append(asset.honey_id)
+            # 找到该素材对象的所有图标类型
+            # 并根据图标类型找到下载对应图标的函数
+            for icon_type in asset.icon_types:
+                await getattr(asset, icon_type)(True)  # 执行下载函数
+            logger.debug(f"\"{name}\" 的图标素材下载成功")
+            await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。<b>成功！</b>")
+
+        for TYPE, ITEMS in HONEY_ID_MAP.items():  # 遍历每个对象
             task_list = []
-            for id_, item in items.items():
-                task_list.append(asyncio.create_task(task(id_, item, type_)))
+            new_items = []
+            for ID, DATA in ITEMS.items():
+                if (ITEM := [ID, DATA[0], TYPE]) not in new_items:
+                    new_items.append(ITEM)
+                    task_list.append(asyncio.create_task(task(*ITEM)))
             await asyncio.gather(*task_list)  # 等待所有任务执行完成
 
         logger.info("图标素材下载完成")
+        return the_time.value
 
 
 class ItemData(BaseModel):
