@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple, Union
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from modules.wiki.base import SCRAPE_HOST, WikiModel
+from modules.wiki.base import HONEY_HOST, WikiModel
 
 __all__ = ['Material']
 
@@ -28,8 +28,8 @@ class Material(WikiModel):
 
     @staticmethod
     def scrape_urls() -> List[URL]:
-        weapon = [SCRAPE_HOST.join(f'fam_wep_{i}/?lang=CHS') for i in ['primary', 'secondary', 'common']]
-        talent = [SCRAPE_HOST.join(f'fam_talent_{i}/?lang=CHS') for i in ['book', 'boss', 'common', 'reward']]
+        weapon = [HONEY_HOST.join(f'fam_wep_{i}/?lang=CHS') for i in ['primary', 'secondary', 'common']]
+        talent = [HONEY_HOST.join(f'fam_talent_{i}/?lang=CHS') for i in ['book', 'boss', 'common', 'reward']]
         return weapon + talent
 
     @classmethod
@@ -77,4 +77,4 @@ class Material(WikiModel):
 
     @property
     def icon(self) -> str:
-        return str(SCRAPE_HOST.join(f'/img/{self.id}.webp'))
+        return str(HONEY_HOST.join(f'/img/{self.id}.webp'))

@@ -1,13 +1,14 @@
 import hashlib
 import os
 from pathlib import Path
-from typing import Optional, Tuple, Union, cast
+from typing import Optional, Tuple, TypeVar, Union, cast
 
 import aiofiles
 import genshin
 import httpx
 from genshin import Client, types
 from httpx import UnsupportedProtocol
+from typing_extensions import ParamSpec
 
 from core.bot import bot
 from core.cookies.services import CookiesService, PublicCookiesService

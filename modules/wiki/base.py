@@ -16,9 +16,9 @@ from pydantic import (
 )
 from typing_extensions import Self
 
-__all__ = ['Model', 'WikiModel', 'SCRAPE_HOST']
+__all__ = ['Model', 'WikiModel', 'HONEY_HOST']
 
-SCRAPE_HOST = URL("https://genshin.honeyhunterworld.com/")
+HONEY_HOST = URL("https://genshin.honeyhunterworld.com/")
 
 
 class Model(PydanticBaseModel):
@@ -186,7 +186,7 @@ class WikiModel(Model):
         Returns:
             返回对应的 url
         """
-        return SCRAPE_HOST.join(f"{id_}/?lang=CHS")
+        return HONEY_HOST.join(f"{id_}/?lang=CHS")
 
     @classmethod
     async def _name_list_generator(cls, *, with_url: bool = False) -> AsyncIterator[Union[str, Tuple[str, URL]]]:
@@ -210,7 +210,7 @@ class WikiModel(Model):
             for data in json_data:  # 遍历 json
                 data_name = re.findall(r'>(.*)<', data[1])[0]  # 获取 Model 的名称
                 if with_url:  # 如果需要返回对应的 url
-                    data_url = SCRAPE_HOST.join(re.findall(r'\"(.*?)\"', data[0])[0])
+                    data_url = HONEY_HOST.join(re.findall(r'\"(.*?)\"', data[0])[0])
                     await queue.put((data_name, data_url))
                 else:
                     await queue.put(data_name)

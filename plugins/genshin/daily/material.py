@@ -28,7 +28,7 @@ from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user.error import UserNotFoundError
-from metadata.honey import HONEY_ID_MAP, HONEY_ROLE_NAME_MAP
+from metadata.genshin import HONEY_ID_MAP, HONEY_ROLE_NAME_MAP
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
@@ -135,7 +135,7 @@ class DailyMaterial(Plugin, BasePlugin):
                     ItemData(
                         id=cid, name=character.name, rarity=character.rarity, level=character.level,
                         constellation=character.constellation,
-                        icon=(await self.assets_service.character(cid).icon()).as_uri()
+                        icon=(await self.assets_service.avatar(cid).icon()).as_uri()
                     )
                 )
                 user_data['weapon'].append(
@@ -145,7 +145,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         icon=(await getattr(  # 判定武器的突破次数是否大于 2 ;若是, 则将图标替换为 awakened (觉醒) 的图标
                             self.assets_service.weapon(wid), 'icon' if weapon.ascension < 2 else 'awakened'
                         )()).as_uri(),
-                        c_path=(await self.assets_service.character(cid).side()).as_uri()
+                        c_path=(await self.assets_service.avatar(cid).side()).as_uri()
                     )
                 )
         except (UserNotFoundError, CookiesNotFoundError):

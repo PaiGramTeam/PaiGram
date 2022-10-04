@@ -3,7 +3,7 @@ from typing import Optional
 
 from typing_extensions import Self
 
-from modules.wiki.base import SCRAPE_HOST
+from modules.wiki.base import HONEY_HOST
 
 __all__ = [
     'Element',
@@ -26,11 +26,11 @@ class Element(Enum):
 
 
 _WEAPON_ICON_MAP = {
-    'Sword': SCRAPE_HOST.join('img/s_23101.png'),
-    'Claymore': SCRAPE_HOST.join('img/s_163101.png'),
-    'Polearm': SCRAPE_HOST.join('img/s_233101.png'),
-    'Catalyst': SCRAPE_HOST.join('img/s_43101.png'),
-    'Bow': SCRAPE_HOST.join('img/s_213101.png'),
+    'Sword': HONEY_HOST.join('img/s_23101.png'),
+    'Claymore': HONEY_HOST.join('img/s_163101.png'),
+    'Polearm': HONEY_HOST.join('img/s_233101.png'),
+    'Catalyst': HONEY_HOST.join('img/s_43101.png'),
+    'Bow': HONEY_HOST.join('img/s_213101.png'),
 }
 
 

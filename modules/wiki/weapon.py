@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Union
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from modules.wiki.base import Model, SCRAPE_HOST, WikiModel
+from modules.wiki.base import Model, HONEY_HOST, WikiModel
 from modules.wiki.other import AttributeType, WeaponType
 
 __all__ = ['Weapon', 'WeaponAffix', 'WeaponAttribute']
@@ -66,7 +66,7 @@ class Weapon(WikiModel):
 
     @staticmethod
     def scrape_urls() -> List[URL]:
-        return [SCRAPE_HOST.join(f"fam_{i.lower()}/?lang=CHS") for i in WeaponType.__members__]
+        return [HONEY_HOST.join(f"fam_{i.lower()}/?lang=CHS") for i in WeaponType.__members__]
 
     @classmethod
     async def _parse_soup(cls, soup: BeautifulSoup) -> 'Weapon':
@@ -137,7 +137,7 @@ class Weapon(WikiModel):
     @property
     def icon(self) -> WeaponIcon:
         return WeaponIcon(
-            icon=str(SCRAPE_HOST.join(f'/img/{self.id}.webp')),
-            awakened=str(SCRAPE_HOST.join(f'/img/{self.id}_awaken_icon.webp')),
-            gacha=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_icon.webp')),
+            icon=str(HONEY_HOST.join(f'/img/{self.id}.webp')),
+            awakened=str(HONEY_HOST.join(f'/img/{self.id}_awaken_icon.webp')),
+            gacha=str(HONEY_HOST.join(f'/img/{self.id}_gacha_icon.webp')),
         )

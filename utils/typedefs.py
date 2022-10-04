@@ -7,7 +7,7 @@ from httpx import URL
 __all__ = [
     'StrOrPath', 'StrOrURL', 'StrOrInt',
     'SysExcInfoType', 'ExceptionInfoType',
-    'JSONDict',
+    'JSONDict', 'JSONType'
 ]
 
 StrOrPath = Union[str, Path]
@@ -20,3 +20,4 @@ SysExcInfoType = Union[
 ]
 ExceptionInfoType = Union[bool, SysExcInfoType, BaseException]
 JSONDict = Dict[str, Any]
+JSONType = Union[JSONDict, list]
