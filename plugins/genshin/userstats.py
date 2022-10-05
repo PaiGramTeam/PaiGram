@@ -140,7 +140,8 @@ class UserStatsPlugins(Plugin, BasePlugin):
             await message.reply_text("角色尘歌壶未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
             return ConversationHandler.END
         except AttributeError as exc:
-            logger.warning("角色数据有误", exc)
+            logger.error("角色数据有误")
+            logger.exception(exc)
             await message.reply_text("角色数据有误 估计是派蒙晕了")
             return ConversationHandler.END
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
