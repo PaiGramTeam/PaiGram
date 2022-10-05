@@ -120,7 +120,7 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
             user_info = await client.get_record_card(hoyolab_uid)
         except DataNotPublic:
             await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())
-            logger.error(f"获取账号信息发生错误 hoyolab_uid[{hoyolab_uid}] 账户信息未公开")
+            logger.warning(f"获取账号信息发生错误 hoyolab_uid[{hoyolab_uid}] 账户信息未公开")
             return ConversationHandler.END
         except GenshinException as exc:
             await message.reply_text("获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
