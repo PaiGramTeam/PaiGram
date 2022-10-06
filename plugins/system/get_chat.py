@@ -1,6 +1,7 @@
 from typing import List
 
 from telegram import Update, Chat, ChatMember, ChatMemberOwner, ChatMemberAdministrator
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import CommandHandler, CallbackContext
 
 from core.plugin import Plugin, handler
@@ -12,12 +13,12 @@ from utils.log import logger
 class GetChat(Plugin):
     @staticmethod
     def parse_chat(chat: Chat, admins: List[ChatMember]) -> str:
-        text = """
-群 ID：<code>{}</code>
-群名称：<code>{}</code>
-群用户名：@{}
-群简介：<code>{}</code>
-""".format(chat.id, chat.title, chat.username or "", chat.description)
+        text = f"群 ID：<code>{chat.id}</code>\n" \
+               f"群名称：<code>{chat.title}</code>\n"
+        if chat.username:
+            text += f"群用户名：<code>{chat.username}</code>\n"
+        if chat.description:
+            text += f"群简介：<code>{chat.description}</code>\n"
         if admins:
             for admin in admins:
                 text += f"<a href=\"tg://user?id={admin.user.id}\">{admin.user.full_name}</a> "
@@ -57,6 +58,6 @@ class GetChat(Plugin):
             chat = await message.get_bot().get_chat(args[0])
             admins = await chat.get_administrators()
             await message.reply_text(self.parse_chat(chat, admins), parse_mode="HTML")
-        except Exception as e:
-            await message.reply_text(f"获取群信息失败，API 返回：{e}")
+        except (BadRequest, Forbidden) as exc:
+            await message.reply_text(f"获取群信息失败，API 返回：{exc}")
             return
