@@ -329,12 +329,11 @@ class DailyMaterial(Plugin, BasePlugin):
                             result[key][day][0] = []
                             for a in div.find_all('a'):
                                 honey_id = re.findall(r"/(.*)?/", a['href'])[0]
-                                mid: str = list(
-                                    filter(
-                                        lambda x: x[1][0] == honey_id,  # pylint: disable=PYL-W0640
-                                        HONEY_DATA['material'].items()
-                                    )
-                                )[0][0]
+                                mid: str = [
+                                    i[1][0]
+                                    for i in HONEY_DATA['material'].items()
+                                    if i[1][0] == honey_id
+                                ][0]
                                 result[key][day][0].append(mid)
                     else:  # 如果是角色或武器
                         id_ = re.findall(r"/(.*)?/", tag['href'])[0]

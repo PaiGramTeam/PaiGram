@@ -1,8 +1,8 @@
-from metadata.scripts import update_honey_metadata, update_metadata_from_ambr, update_metadata_from_github
 from telegram import Update
-from telegram.ext import CallbackContext
 
 from core.plugin import Plugin, handler
+from metadata.scripts.honey import update_honey_metadata
+from metadata.scripts.metadata import update_metadata_from_ambr, update_metadata_from_github
 from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger
 

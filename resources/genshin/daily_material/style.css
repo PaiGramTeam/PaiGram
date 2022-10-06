@@ -319,15 +319,3 @@ body {
     transform: translateX(-50%);
     bottom: 0;
 }
-
-.item-not-owned > .role:before {
-    content: "";
-    background-color: rgb(0 0 0 / 50%);
-    width: 46px;
-    height: 46px;
-    position: absolute;
-    left: -3px;
-    top: -3px;
-    z-index: 9;
-    border-radius: 100px;
-}

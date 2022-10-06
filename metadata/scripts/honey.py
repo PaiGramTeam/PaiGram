@@ -57,7 +57,7 @@ async def get_weapon_data() -> DATA_TYPE:
 
     result = {}
     urls = [HONEY_HOST.join(f"fam_{i.lower()}/?lang=CHS") for i in WeaponType.__members__]
-    for i, url in enumerate(urls):
+    for url in urls:
         response = await request(url)
         chaos_data = re.findall(r'sortable_data\.push\((.*)\);\s*sortable_cur_page', response.text)[0]
         json_data = json.loads(chaos_data)  # 转为 json
