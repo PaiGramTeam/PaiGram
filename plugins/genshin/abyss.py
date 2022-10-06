@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.assets import AssetsService
+from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService

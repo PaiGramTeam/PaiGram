@@ -11,7 +11,7 @@ class MetadataPlugin(Plugin):
 
     @handler.command('refresh_metadata')
     @bot_admins_rights_check
-    async def refresh(self, update: Update, context: CallbackContext) -> None:
+    async def refresh(self, update: Update, _) -> None:
         user = update.effective_user
         message = update.effective_message
 

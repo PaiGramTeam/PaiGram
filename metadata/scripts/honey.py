@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import asyncio
 import re
-from multiprocessing import RLock
 from typing import Dict, List, Optional
 
 import ujson as json
@@ -20,22 +21,13 @@ __all__ = [
 DATA_TYPE = Dict[StrOrInt, List[str]]
 FULL_DATA_TYPE = Dict[str, DATA_TYPE]
 
-_lock = RLock()
-_client: Optional[AsyncClient] = None
-
-
-def client() -> AsyncClient:
-    global _client
-    with _lock:
-        if _client is None or _client.is_closed:
-            _client = AsyncClient()
-    return _client
+client = AsyncClient()
 
 
 async def request(url: str, retry: int = 5) -> Optional[Response]:
     for time in range(retry):
         try:
-            return await client().get(url)
+            return await client.get(url)
         except HTTPError:
             if time != retry - 1:
                 await asyncio.sleep(1)
@@ -152,7 +144,10 @@ async def get_namecard_data() -> DATA_TYPE:
     return result
 
 
-async def update_honey_metadata() -> FULL_DATA_TYPE:
+async def update_honey_metadata(overwrite: bool = True) -> FULL_DATA_TYPE | None:
+    path = PROJECT_ROOT.joinpath('metadata/data/honey.json')
+    if not overwrite and path.exists():
+        return
     avatar_data = await get_avatar_data()
     logger.success("Avatar data is done.")
     weapon_data = await get_weapon_data()
@@ -171,27 +166,7 @@ async def update_honey_metadata() -> FULL_DATA_TYPE:
         'artifact': artifact_data,
         'namecard': namecard_data,
     }
-    path = PROJECT_ROOT.joinpath('metadata/data/honey.json')
     path.parent.mkdir(parents=True, exist_ok=True)
     async with async_open(path, mode='w', encoding='utf-8') as file:
         await file.write(json.dumps(result, ensure_ascii=False))
     return result
-
-
-async def main():
-    await update_honey_metadata()
-
-
-def __main__():
-    import asyncio
-    import sys
-
-    if sys.version_info >= (3, 8) and sys.platform.startswith('win'):
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(main())
-
-
-if __name__ == '__main__':
-    __main__()

@@ -17,9 +17,9 @@ from enkanetwork.model.assets import CharacterAsset as EnkaCharacterAsset
 from httpx import AsyncClient, HTTPError, URL
 from typing_extensions import Self
 
-from core.assets.errors import AssetsCouldNotFound
 from core.service import Service
-from metadata.genshin import *
+from metadata.genshin import AVATAR_DATA, HONEY_DATA, MATERIAL_DATA, NAMECARD_DATA, WEAPON_DATA
+from metadata.scripts import update_honey_metadata, update_metadata_from_ambr, update_metadata_from_github
 from metadata.shortname import roleToId, weaponToId
 from modules.wiki.base import HONEY_HOST
 from utils.const import AMBR_HOST, ENKA_HOST, PROJECT_ROOT
@@ -39,6 +39,14 @@ ASSETS_PATH = PROJECT_ROOT.joinpath('resources/assets')
 ASSETS_PATH.mkdir(exist_ok=True, parents=True)
 
 DATA_MAP = {'avatar': AVATAR_DATA, 'weapon': WEAPON_DATA, 'material': MATERIAL_DATA}
+
+
+class AssetsServiceError(Exception):
+    pass
+
+
+class AssetsCouldNotFound(AssetsServiceError):
+    pass
 
 
 class _AssetsService(ABC):
@@ -113,7 +121,7 @@ class _AssetsService(ABC):
         for time in range(retry):
             try:
                 response = await self.client.get(url, follow_redirects=False, headers=headers)
-            except Exception as error:
+            except Exception as error:  # pylint: disable=PYL-W0703
                 if not isinstance(error, (HTTPError, SSLZeroReturnError)):
                     logger.error(error)  # 打印未知错误
                 if time != retry - 1:  # 未达到重试次数
@@ -127,10 +135,10 @@ class _AssetsService(ABC):
                 await file.write(response.content)  # 保存图标
             return path.resolve()
 
-    async def _get_from_ambr(self, item: str) -> Path | None:
+    async def _get_from_ambr(self, item: str) -> Path | None:  # pylint: disable=PYL-W0613, PYL-R0201
         return None
 
-    async def _get_from_enka(self, item: str) -> Path | None:
+    async def _get_from_enka(self, item: str) -> Path | None:  # pylint: disable=PYL-W0613, PYL-R0201
         return None
 
     async def _get_from_honey(self, item: str) -> Path | None:
@@ -304,7 +312,7 @@ class _WeaponAssets(_AssetsService):
         return result
 
     async def _get_from_enka(self, item: str) -> Path | None:
-        if item in self.game_name_map.keys():
+        if item in self.game_name_map:
             url = ENKA_HOST.join(f'ui/{self.game_name_map.get(item)}.png')
             path = self.path.joinpath(f"{item}.png")
             return await self._download(url, path)
@@ -385,13 +393,13 @@ class _ArtifactAssets(_AssetsService):
         return f"UI_RelicIcon_{self.id}"
 
     async def _get_from_enka(self, item: str) -> Path | None:
-        if item in self.game_name_map.keys():
+        if item in self.game_name_map:
             url = ENKA_HOST.join(f'ui/{self.game_name_map.get(item)}.png')
             path = self.path.joinpath(f"{item}.png")
             return await self._download(url, path)
 
     async def _get_from_ambr(self, item: str) -> Path | None:
-        if item in self.game_name_map.keys():
+        if item in self.game_name_map:
             url = AMBR_HOST.join(f"assets/UI/reliquary/{self.game_name_map[item]}.png")
             return await self._download(url, self.path.joinpath(f"{item}.png"))
 
@@ -499,6 +507,13 @@ class AssetsService(Service):
                 self.__annotations__.items()
         ):
             setattr(self, attr, globals()[assets_type_name]())
+
+    async def start(self):
+        logger.info("正在刷新元数据")
+        await update_metadata_from_github(False)
+        await update_metadata_from_ambr(False)
+        await update_honey_metadata(False)
+        logger.info("刷新元数据成功")
 
 
 AssetsServiceType = TypeVar('AssetsServiceType', bound=_AssetsService)

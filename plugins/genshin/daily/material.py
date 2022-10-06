@@ -21,8 +21,7 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
 
-from core.assets import AssetsService
-from core.assets.service import AssetsServiceType
+from core.base.assets import AssetsService, AssetsServiceType
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
@@ -331,7 +330,10 @@ class DailyMaterial(Plugin, BasePlugin):
                             for a in div.find_all('a'):
                                 honey_id = re.findall(r"/(.*)?/", a['href'])[0]
                                 mid: str = list(
-                                    filter(lambda x: x[1][0] == honey_id, HONEY_DATA['material'].items())
+                                    filter(
+                                        lambda x: x[1][0] == honey_id,  # pylint: disable=PYL-W0640
+                                        HONEY_DATA['material'].items()
+                                    )
                                 )[0][0]
                                 result[key][day][0].append(mid)
                     else:  # 如果是角色或武器

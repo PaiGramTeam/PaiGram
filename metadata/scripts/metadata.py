@@ -9,12 +9,14 @@ __all__ = ['update_metadata_from_ambr', 'update_metadata_from_github']
 client = AsyncClient()
 
 
-async def update_metadata_from_ambr():
+async def update_metadata_from_ambr(overwrite: bool = True):
     result = []
     targets = ['material', 'weapon', 'avatar', 'reliquary']
     for target in targets:
-        url = AMBR_HOST.join(f"v2/chs/{target}")
         path = PROJECT_ROOT.joinpath(f'metadata/data/{target}.json')
+        if not overwrite and path.exists():
+            continue
+        url = AMBR_HOST.join(f"v2/chs/{target}")
         path.parent.mkdir(parents=True, exist_ok=True)
         response = await client.get(url)
         json_data = json.loads(response.text)['data']['items']
@@ -25,8 +27,10 @@ async def update_metadata_from_ambr():
     return result
 
 
-async def update_metadata_from_github():
-    path = PROJECT_ROOT.joinpath(f'metadata/data/namecard.json')
+async def update_metadata_from_github(overwrite: bool = True):
+    path = PROJECT_ROOT.joinpath('metadata/data/namecard.json')
+    if not overwrite and path.exists():
+        return
 
     host = URL("https://raw.githubusercontent.com/Dimbreath/GenshinData/master/")
     # https://raw.githubusercontent.com/Dimbreath/GenshinData/master/TextMap/TextMapCHS.json
@@ -59,23 +63,3 @@ async def update_metadata_from_github():
         data = json.dumps(data, ensure_ascii=False)
         await file.write(data)
     return data
-
-
-async def main():
-    await update_metadata_from_ambr()
-    await update_metadata_from_github()
-
-
-def __main__():
-    import asyncio
-    import sys
-
-    if sys.version_info >= (3, 8) and sys.platform.startswith('win'):
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(main())
-
-
-if __name__ == '__main__':
-    __main__()
