@@ -180,7 +180,7 @@ body {
 }
 
 .material-icon > img {
-    height: calc(100% - 10px);
+    height: 100%;
 }
 
 .material-star {
@@ -225,7 +225,7 @@ body {
 
 .item-icon {
     width: inherit;
-    height: 152px;
+    height: 150px;
     background-size: 104% auto;
     background-position: center;
     overflow: hidden;
@@ -313,21 +313,21 @@ body {
 }
 
 .weapon > .role > img {
-    height: 50px;
+    height: 58px;
     position: absolute;
-    left: 58%;
+    left: 20px;
     transform: translateX(-50%);
     bottom: 0;
 }
 
 .item-not-owned > .role:before {
-	content: "";
-	background-color: rgb(0 0 0 / 50%);
-	width: 46px;
-	height: 46px;
-	position: absolute;
-	left: -3px;
-	top: -3px;
-	z-index: 9;
-	border-radius: 100px;
+    content: "";
+    background-color: rgb(0 0 0 / 50%);
+    width: 46px;
+    height: 46px;
+    position: absolute;
+    left: -3px;
+    top: -3px;
+    z-index: 9;
+    border-radius: 100px;
 }
