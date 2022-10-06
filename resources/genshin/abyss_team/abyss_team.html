@@ -22,6 +22,16 @@
             width: 32px;
             height: 32px;
         }
+
+        .item-not-owned:before {
+            content: "";
+            position: absolute;
+            width: 128px;
+            height: 152px;
+            background-color: rgb(0 0 0 / 50%);
+            z-index: 2;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -31,7 +41,7 @@
         <div class="text-center mr-auto text-yellow-500">第 12 层上半</div>
         <div class="mx-auto flex my-2">
             {% for i in up %}
-            <div class="rounded-lg mx-2 overflow-hidden" style="background-color: rgb(233, 229, 220)">
+            <div class="rounded-lg mx-2 overflow-hidden {% if not i.hava %}item-not-owned{% endif %}" style="background-color: rgb(233, 229, 220)">
                 <div class="character-icon rounded-br-3xl bg-cover overflow-hidden"
                      style="background: url({{i.background}});background-size: cover;">
                     <img src="{{i.icon}}" alt=""></div>
@@ -44,7 +54,7 @@
         <div class="text-center mr-auto text-yellow-500">第 12 层下半</div>
         <div class="mx-auto flex my-2">
             {% for i in down %}
-            <div class="rounded-lg mx-2 overflow-hidden" style="background-color: rgb(233, 229, 220)">
+            <div class="rounded-lg mx-2 overflow-hidden {% if not i.hava %}item-not-owned{% endif %}" style="background-color: rgb(233, 229, 220)">
                 <div class="character-icon rounded-br-3xl bg-cover overflow-hidden"
                      style="background: url({{i.background}});background-size: cover;">
                     <img src="{{i.icon}}" alt=""></div>

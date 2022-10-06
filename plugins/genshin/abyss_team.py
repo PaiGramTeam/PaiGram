@@ -18,7 +18,7 @@ from utils.log import logger
 
 
 class AbyssTeam(Plugin, BasePlugin):
-    """深渊数据查询"""
+    """深境螺旋推荐配队查询"""
 
     def __init__(self, user_service: UserService = None, template_service: TemplateService = None,
                  assets: AssetsService = None):
@@ -69,14 +69,16 @@ class AbyssTeam(Plugin, BasePlugin):
             temp = {
                 "icon": (await self.assets_service.character(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,
-                "background": self._get_role_star_bg(i.star)
+                "background": self._get_role_star_bg(i.star),
+                "hava": i.name in user_data,
             }
             abyss_team_data["up"].append(temp)
         for i in team_data.rateListDown[0].formation:
             temp = {
                 "icon": (await self.assets_service.character(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,
-                "background": self._get_role_star_bg(i.star)
+                "background": self._get_role_star_bg(i.star),
+                "hava": i.name in user_data,
             }
             abyss_team_data["down"].append(temp)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
