@@ -18,6 +18,9 @@ from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 from utils.models.base import RegionEnum
 
+T = TypeVar('T')
+P = ParamSpec('P')
+
 USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
                   "Chrome/90.0.4430.72 Safari/537.36"
 REQUEST_HEADERS: dict = {'User-Agent': USER_AGENT}

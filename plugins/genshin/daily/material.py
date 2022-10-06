@@ -390,10 +390,7 @@ class DailyMaterial(Plugin, BasePlugin):
             logger.debug(f"正在开始下载 \"{name}\" 的图标素材")
             await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。")
             asset: AssetsServiceType = getattr(self.assets_service, item_type)(item_id)  # 获取素材对象
-            if asset.honey_id in asset_list:
-                breakpoint()
-            else:
-                asset_list.append(asset.honey_id)
+            asset_list.append(asset.honey_id)
             # 找到该素材对象的所有图标类型
             # 并根据图标类型找到下载对应图标的函数
             for icon_type in asset.icon_types:

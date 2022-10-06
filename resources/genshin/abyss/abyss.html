@@ -19,30 +19,45 @@
         }
 
         .character-side-icon {
-            width: 32px;
+            position: absolute;
+            right: 0;
+            bottom: 1px;
+            width: 48px;
+            height: 48px;
+        }
+
+        div:has(> img.character-side-icon) {
+            position: relative;
             height: 32px;
         }
+
+        div:has(> img.character-side-icon) > div {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
     </style>
 </head>
 <body>
 <div class="mx-auto flex flex-col h-full bg-no-repeat bg-cover" id="container">
     <div class="title text-2xl my-4 text-yellow-500 mx-auto">深境螺旋</div>
     <div class="base-info flex flex-row px-20 py-1 my-1 text-white bg-white bg-opacity-10">
-        <div class="uid text-center mx-auto">UID {{uid}}</div>
-        <div class="text-center mx-auto">最深抵达 {{max_floor}}</div>
-        <div class="text-center mx-auto">战斗次数 {{total_battles}}</div>
-        <div class="text-center mx-auto">获得星级 {{total_stars}}</div>
+        <div class="uid text-center mx-auto">UID {{ uid }}</div>
+        <div class="text-center mx-auto">最深抵达 {{ max_floor }}</div>
+        <div class="text-center mx-auto">战斗次数 {{ total_battles }}</div>
+        <div class="text-center mx-auto">获得星级 {{ total_stars }}</div>
     </div>
     <div class="base-info flex flex-col px-20 py-1 text-black my-1">
         <div class="text-center mr-auto text-yellow-500">出战次数</div>
         <div class="mx-auto flex my-2">
             {% for most_played in most_played_list %}
-            <div class="rounded-lg mx-2 overflow-hidden" style="background-color: rgb(233, 229, 220)">
-                <div class="character-icon rounded-br-3xl bg-cover overflow-hidden"
-                     style="background: url({{most_played.background}});background-size: cover;">
-                    <img src="{{most_played.icon}}" alt=""></div>
-                <div class="text-center">{{most_played.value}}次</div>
-            </div>
+                <div class="rounded-lg mx-2 overflow-hidden" style="background-color: rgb(233, 229, 220)">
+                    <div class="character-icon rounded-br-3xl bg-cover overflow-hidden"
+                         style="background: url({{ most_played.background }});background-size: cover;">
+                        <img src="{{ most_played.icon }}" alt=""></div>
+                    <div class="text-center">{{ most_played.value }}次</div>
+                </div>
             {% endfor %}
         </div>
     </div>
@@ -53,28 +68,28 @@
         <div>
             <div class="base-info flex flex-row px-20 py-1 my-1 text-white bg-black bg-opacity-10 ">
                 <div class="text-center flex flex-row flex-1 mr-6">
-                    <div class="my-auto">最多击破数：{{most_kills.value}}</div>
-                    <img class="character-side-icon ml-auto" src="{{most_kills.icon}}" alt="">
+                    <div class="my-auto">最多击破数：{{ most_kills.value }}</div>
+                    <img class="character-side-icon ml-auto" src="{{ most_kills.icon }}" alt="">
                 </div>
                 <div class="text-center  flex flex-row flex-1 mr-6">
-                    <div class="my-auto">最强一击：{{strongest_strike.value}}</div>
-                    <img class="character-side-icon ml-auto" src="{{strongest_strike.icon}}" alt="">
+                    <div class="my-auto">最强一击：{{ strongest_strike.value }}</div>
+                    <img class="character-side-icon ml-auto" src="{{ strongest_strike.icon }}" alt="">
                 </div>
             </div>
             <div class="base-info flex flex-row px-20 py-1 my-1 text-white">
                 <div class="text-center flex flex-row flex-1 mr-6">
-                    <div class="my-auto">承受最多伤害：{{most_damage_taken.value}}</div>
-                    <img class="character-side-icon ml-auto" src="{{most_damage_taken.icon}}" alt="">
+                    <div class="my-auto">承受最多伤害：{{ most_damage_taken.value }}</div>
+                    <img class="character-side-icon ml-auto" src="{{ most_damage_taken.icon }}" alt="">
                 </div>
                 <div class="text-center  flex flex-row flex-1 mr-6">
-                    <div class="my-auto">元素爆发数：{{most_bursts_used.value}}</div>
-                    <img class="character-side-icon ml-auto" src="{{most_bursts_used.icon}}" alt="">
+                    <div class="my-auto">元素爆发数：{{ most_bursts_used.value }}</div>
+                    <img class="character-side-icon ml-auto" src="{{ most_bursts_used.icon }}" alt="">
                 </div>
             </div>
             <div class="base-info flex flex-row px-20 py-1 my-1 text-white bg-black bg-opacity-10 ">
                 <div class="text-center flex flex-row flex-1 mr-6">
-                    <div class="my-auto">元素战技释放次数：{{most_skills_used.value}}</div>
-                    <img class="character-side-icon ml-auto" src="{{most_skills_used.icon}}" alt="">
+                    <div class="my-auto">元素战技释放次数：{{ most_skills_used.value }}</div>
+                    <img class="character-side-icon ml-auto" src="{{ most_skills_used.icon }}" alt="">
                 </div>
                 <div class="text-center flex flex-row flex-1 mr-6"></div>
             </div>
