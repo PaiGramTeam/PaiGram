@@ -63,3 +63,6 @@ class AbyssTeamData:
                                        userCount=data_up_json["userCount"])
             self.time = time.time()
         return self.data.copy(deep=True)
+
+    async def close(self):
+        await self.client.aclose()
