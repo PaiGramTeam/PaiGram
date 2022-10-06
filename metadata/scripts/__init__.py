@@ -1,2 +1,2 @@
 from metadata.scripts.honey import update_honey_metadata
-from metadata.scripts.metadata import update_metadata_from_ambr
+from metadata.scripts.metadata import update_metadata_from_ambr, update_metadata_from_github

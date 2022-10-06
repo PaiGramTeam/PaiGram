@@ -4,7 +4,7 @@ from httpx import AsyncClient, URL
 
 from utils.const import AMBR_HOST, PROJECT_ROOT
 
-__all__ = ['update_metadata_from_ambr']
+__all__ = ['update_metadata_from_ambr', 'update_metadata_from_github']
 
 client = AsyncClient()
 
