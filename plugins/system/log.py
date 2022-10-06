@@ -18,7 +18,7 @@ class Log(Plugin):
     @bot_admins_rights_check
     async def send_log(self, update: Update, _: CallbackContext):
         user = update.effective_user
-        logger.info(f"用户 {user.full_name}[{user.id}] send_log命令请求")
+        logger.info(f"用户 {user.full_name}[{user.id}] send_log 命令请求")
         message = update.effective_message
         if os.path.exists(error_log):
             await message.reply_document(open(error_log, mode='rb+'), caption="Error Log")
