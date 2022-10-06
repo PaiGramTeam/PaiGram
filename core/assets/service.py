@@ -19,7 +19,7 @@ from typing_extensions import Self
 
 from core.assets.errors import AssetsCouldNotFound
 from core.service import Service
-from metadata.genshin import AVATAR_DATA, HONEY_DATA, MATERIAL_DATA, WEAPON_DATA
+from metadata.genshin import *
 from metadata.shortname import roleToId, weaponToId
 from modules.wiki.base import HONEY_HOST
 from utils.const import AMBR_HOST, ENKA_HOST, PROJECT_ROOT
@@ -335,22 +335,59 @@ class _MaterialAssets(_AssetsService):
 
 class _ArtifactAssets(_AssetsService):
     flower: ICON_TYPE
+    """生之花"""
+
     plume: ICON_TYPE
+    """死之羽"""
+
     sands: ICON_TYPE
+    """时之沙"""
+
     goblet: ICON_TYPE
+    """空之杯"""
+
     circlet: ICON_TYPE
+    """理之冠"""
+
+    @cached_property
+    def honey_id(self) -> str:
+        return HONEY_DATA['artifact'][str(self.id)][0]
 
     @cached_property
     def game_name(self) -> str:
-        pass
+        return f"UI_RelicIcon_{self.id}"
+
+    async def _get_from_enka(self, item: str) -> Path | None:
+        if item in self.game_name_map.keys():
+            url = ENKA_HOST.join(f'ui/{self.game_name_map.get(item)}.png')
+            path = self.path.joinpath(f"{item}.png")
+            return await self._download(url, path)
+
+    async def _get_from_ambr(self, item: str) -> Path | None:
+        if item in self.game_name_map.keys():
+            url = AMBR_HOST.join(f"assets/UI/reliquary/{self.game_name_map[item]}.png")
+            return await self._download(url, self.path.joinpath(f"{item}.png"))
 
     @cached_property
     def game_name_map(self) -> dict[str, str]:
-        pass
+        return {
+            "flower": f"UI_RelicIcon_{self.id}_4",
+            "plume": f"UI_RelicIcon_{self.id}_2",
+            "sands": f"UI_RelicIcon_{self.id}_5",
+            "goblet": f"UI_RelicIcon_{self.id}_1",
+            "circlet": f"UI_RelicIcon_{self.id}_3",
+        }
 
     @cached_property
     def honey_name_map(self) -> dict[str, str]:
-        pass
+        first_id = int(re.findall(r'\d+', HONEY_DATA['artifact'][str(self.id)][-1])[0])
+        return {
+            "flower": f"i_n{first_id + 30}",
+            "plume": f"i_n{first_id + 10}",
+            "sands": f"i_n{first_id + 40}",
+            "goblet": f"i_n{first_id}",
+            "circlet": f"i_n{first_id + 20}",
+        }
 
 
 class AssetsService(Service):

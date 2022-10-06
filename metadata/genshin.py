@@ -10,7 +10,7 @@ from utils.typedefs import JSONType, StrOrInt
 
 __all__ = [
     'HONEY_DATA',
-    'AVATAR_DATA', 'WEAPON_DATA', 'MATERIAL_DATA', 'RELIQUARY_DATA',
+    'AVATAR_DATA', 'WEAPON_DATA', 'MATERIAL_DATA', 'ARTIFACT_DATA',
 ]
 
 data_dir = PROJECT_ROOT.joinpath('metadata/data/')
@@ -34,4 +34,4 @@ HONEY_DATA: dict[str, dict[StrOrInt, list[str]]] = _get_content('honey')
 AVATAR_DATA: dict[str, dict[str, int | str | list[int]]] = _get_content('avatar')
 WEAPON_DATA: dict[str, dict[str, int | str]] = _get_content('weapon')
 MATERIAL_DATA: dict[str, dict[str, int | str]] = _get_content('material')
-RELIQUARY_DATA: dict[str, dict[str, int | str | list[int] | dict[str, str]]] = _get_content('reliquary')
+ARTIFACT_DATA: dict[str, dict[str, int | str | list[int] | dict[str, str]]] = _get_content('reliquary')

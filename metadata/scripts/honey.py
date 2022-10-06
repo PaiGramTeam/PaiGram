@@ -104,6 +104,12 @@ async def _material() -> DATA_TYPE:
 
 
 async def _artifact() -> DATA_TYPE:
+    async def get_first_id(_link) -> str:
+        _response = await request(_link)
+        _chaos_data = re.findall(r'sortable_data\.push\((.*)\);\s*sortable_cur_page', _response.text)[0]
+        _json_data = json.loads(_chaos_data)
+        return re.findall(r"/(.*?)/", _json_data[-1][1])[0]
+
     result = {}
     url = "https://genshin.honeyhunterworld.com/fam_art_set/?lang=CHS"
 
@@ -115,13 +121,15 @@ async def _artifact() -> DATA_TYPE:
     json_data = json.loads(chaos_data)  # 转为 json
     for data in json_data:
         honey_id = re.findall(r'/(.*?)/', data[1])[0]
-        name = re.findall(r'>(.*)<', data[1])[0]
-        mid = None
-        for mid, item in ambr_data.items():
+        name = re.findall(r"alt=\"(.*?)\"", data[0])[0]
+        link = HONEY_HOST.join(re.findall(r'href="(.*?)"', data[0])[0])
+        first_id = await get_first_id(link)
+        aid = None
+        for aid, item in ambr_data.items():
             if name == item['name']:
                 break
-        mid = int(mid) or int(re.findall(r'\d+', data[1])[0])
-        result.update({mid: [honey_id, name]})
+        aid = aid or re.findall(r'\d+', data[1])[0]
+        result.update({aid: [honey_id, name, first_id]})
 
     return result
 
@@ -139,7 +147,7 @@ async def update_honey_metadata() -> FULL_DATA_TYPE:
         'avatar': avatar_data,
         'weapon': weapon_data,
         'material': material_data,
-        'reliquary': artifact_data,
+        'artifact': artifact_data,
     }
     path = PROJECT_ROOT.joinpath('metadata/data/honey.json')
     path.parent.mkdir(parents=True, exist_ok=True)
