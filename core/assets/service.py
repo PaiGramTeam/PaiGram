@@ -52,6 +52,7 @@ class _AssetsService(ABC):
     type: str
 
     icon: ICON_TYPE
+    """图标"""
 
     @abstractmethod
     @cached_property
@@ -171,9 +172,16 @@ class _AvatarAssets(_AssetsService):
     enka: EnkaCharacterAsset | None
 
     side: ICON_TYPE
+    """侧视图图标"""
+
     card: ICON_TYPE
+    """卡片图标"""
+
     gacha: ICON_TYPE
+    """抽卡立绘"""
+
     gacha_card: ICON_TYPE
+    """抽卡卡片"""
 
     @cached_property
     def game_name(self) -> str:
@@ -255,7 +263,10 @@ class _AvatarAssets(_AssetsService):
 
 class _WeaponAssets(_AssetsService):
     awaken: ICON_TYPE
+    """突破后图标"""
+
     gacha: ICON_TYPE
+    """抽卡立绘"""
 
     @cached_property
     def game_name(self) -> str:
@@ -396,7 +407,10 @@ class _NamecardAssets(_AssetsService):
     enka: EnkaCharacterAsset | None
 
     navbar: ICON_TYPE
+    """好友名片背景"""
+
     profile: ICON_TYPE
+    """个人资料名片背景"""
 
     @cached_property
     def honey_id(self) -> str:
@@ -449,10 +463,19 @@ class AssetsService(Service):
     """
 
     avatar: _AvatarAssets
+    """角色"""
+
     weapon: _WeaponAssets
+    """武器"""
+
     material: _MaterialAssets
+    """素材"""
+
     artifact: _ArtifactAssets
+    """圣遗物"""
+
     namecard: _NamecardAssets
+    """名片"""
 
     def __init__(self):
         for attr, assets_type_name in filter(
