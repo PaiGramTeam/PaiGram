@@ -3,11 +3,11 @@ import re
 from asyncio import Lock
 from ctypes import c_double
 from datetime import datetime
+from functools import partial
 from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
 from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
-from functools import partial
 
 import ujson as json
 from aiofiles import open as async_open
@@ -28,7 +28,7 @@ from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user.error import UserNotFoundError
-from metadata.genshin import HONEY_ID_MAP, HONEY_ROLE_NAME_MAP
+from metadata.genshin import AVATAR_DATA, HONEY_DATA
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
@@ -122,16 +122,18 @@ class DailyMaterial(Plugin, BasePlugin):
     async def _get_data_from_user(self, user: User) -> Tuple[Optional[Client], Dict[str, List[Any]]]:
         """获取已经绑定的账号的角色、武器信息"""
         client = None
-        user_data = {'character': [], 'weapon': []}
+        user_data = {'avatar': [], 'weapon': []}
         try:
             logger.debug("尝试获取已绑定的原神账号")
             client = await get_genshin_client(user.id)
-            logger.debug(f"获取成功, UID: {client.uid}")
+            logger.debug(f"获取玩家数据成功成功: UID={client.uid}")
             characters = await client.get_genshin_characters(client.uid)
             for character in characters:
-                cid = HONEY_ROLE_NAME_MAP[character.id][0]
+                if character.name == '旅行者':  # 跳过主角
+                    continue
+                cid = AVATAR_DATA[str(character.id)]['id']
                 weapon = character.weapon
-                user_data['character'].append(
+                user_data['avatar'].append(
                     ItemData(
                         id=cid, name=character.name, rarity=character.rarity, level=character.level,
                         constellation=character.constellation,
@@ -140,10 +142,10 @@ class DailyMaterial(Plugin, BasePlugin):
                 )
                 user_data['weapon'].append(
                     ItemData(
-                        id=(wid := f"i_n{weapon.id}"), name=weapon.name, level=weapon.level, rarity=weapon.rarity,
+                        id=str(weapon.id), name=weapon.name, level=weapon.level, rarity=weapon.rarity,
                         refinement=weapon.refinement,
                         icon=(await getattr(  # 判定武器的突破次数是否大于 2 ;若是, 则将图标替换为 awakened (觉醒) 的图标
-                            self.assets_service.weapon(wid), 'icon' if weapon.ascension < 2 else 'awakened'
+                            self.assets_service.weapon(weapon.id), 'icon' if weapon.ascension < 2 else 'awaken'
                         )()).as_uri(),
                         c_path=(await self.assets_service.avatar(cid).side()).as_uri()
                     )
@@ -194,13 +196,13 @@ class DailyMaterial(Plugin, BasePlugin):
         await update.message.reply_chat_action(ChatAction.TYPING)
 
         # 获取已经缓存的秘境素材信息
-        local_data = {'character': [], 'weapon': []}
+        local_data = {'avatar': [], 'weapon': []}
         if not self.data:  # 若没有缓存每日素材表的数据
             logger.info("正在获取每日素材缓存")
-            await self._refresh_data()
+            self.data = await self._refresh_data()
         for domain, sche in self.data.items():
             area = DOMAIN_AREA_MAP[domain]  # 获取秘境所在的区域
-            type_ = 'character' if DOMAINS.index(domain) < 4 else 'weapon'  # 获取秘境的培养素材的类型：是天赋书还是武器突破材料
+            type_ = 'avatar' if DOMAINS.index(domain) < 4 else 'weapon'  # 获取秘境的培养素材的类型：是天赋书还是武器突破材料
             # 将读取到的数据存入 local_data 中
             local_data[type_].append({'name': area, 'materials': sche[weekday][0], 'items': sche[weekday][1]})
 
@@ -209,36 +211,36 @@ class DailyMaterial(Plugin, BasePlugin):
 
         await update.message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
-        for type_ in ['character', 'weapon']:
+        for type_ in ['avatar', 'weapon']:
             areas = []
             for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
                 items = []
                 for id_ in area_data['items']:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
                     added = False
                     for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
-                        if id_ == i.id:
+                        if id_ == str(i.id):
                             if i.rarity > 3:  # 跳过 3 星及以下的武器
                                 items.append(i)
                             added = True
                     if added:
                         continue
-                    item = HONEY_ID_MAP[type_][id_]
-                    if item[1] < 4:  # 跳过 3 星及以下的武器
+                    item = HONEY_DATA[type_][id_]
+                    if item[2] < 4:  # 跳过 3 星及以下的武器
                         continue
                     items.append(ItemData(  # 添加角色数据中未找到的
-                        id=id_, name=item[0], rarity=item[1],
+                        id=id_, name=item[1], rarity=item[2],
                         icon=(await getattr(self.assets_service, f'{type_}')(id_).icon()).as_uri()
                     ))
                 materials = []
                 for mid in area_data['materials']:  # 添加这个区域当天（weekday）的培养素材
                     path = (await self.assets_service.material(mid).icon()).as_uri()
-                    material = HONEY_ID_MAP['material'][mid]
-                    materials.append(ItemData(id=mid, icon=path, name=material[0], rarity=material[1]))
+                    material = HONEY_DATA['material'][mid]
+                    materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
                 areas.append(AreaData(
                     name=area_data['name'], materials=materials, items=sort_item(items),
                     material_name=get_material_serial_name(map(lambda x: x.name, materials))
                 ))
-            setattr(render_data, type_, areas)
+            setattr(render_data, {'avatar': 'character'}.get(type_, type_), areas)
 
         await update.message.reply_chat_action(ChatAction.TYPING)
         render_tasks = [
@@ -325,11 +327,18 @@ class DailyMaterial(Plugin, BasePlugin):
                         key = tag.find('a').text
                         result[key] = [[[], []] for _ in range(7)]
                         for day, div in enumerate(tag.find_all('div')):
-                            result[key][day][0] = [re.findall(r"/(.*)?/", a['href'])[0] for a in div.find_all('a')]
+                            result[key][day][0] = []
+                            for a in div.find_all('a'):
+                                honey_id = re.findall(r"/(.*)?/", a['href'])[0]
+                                mid: str = list(
+                                    filter(lambda x: x[1][0] == honey_id, HONEY_DATA['material'].items())
+                                )[0][0]
+                                result[key][day][0].append(mid)
                     else:  # 如果是角色或武器
                         id_ = re.findall(r"/(.*)?/", tag['href'])[0]
                         if tag.text.strip() == '旅行者':  # 忽略主角
                             continue
+                        id_ = ("10000" if not id_.startswith('i_n') else "") + re.findall(r'\d+', id_)[0]
                         for day in map(int, tag.find('div')['data-days']):  # 获取该角色/武器的可培养天
                             result[key][day][1].append(id_)
                 for stage, schedules in result.items():
@@ -392,7 +401,7 @@ class DailyMaterial(Plugin, BasePlugin):
             logger.debug(f"\"{name}\" 的图标素材下载成功")
             await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。<b>成功！</b>")
 
-        for TYPE, ITEMS in HONEY_ID_MAP.items():  # 遍历每个对象
+        for TYPE, ITEMS in HONEY_DATA.items():  # 遍历每个对象
             task_list = []
             new_items = []
             for ID, DATA in ITEMS.items():

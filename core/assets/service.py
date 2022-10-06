@@ -127,6 +127,12 @@ class _AssetsService(ABC):
                 await file.write(response.content)  # 保存图标
             return path.resolve()
 
+    async def _get_from_ambr(self, item: str) -> Path | None:
+        return None
+
+    async def _get_from_enka(self, item: str) -> Path | None:
+        return None
+
     async def _get_from_honey(self, item: str) -> Path | None:
         """从 honey 获取图标"""
         if (url := self.honey_name_map.get(item, None)) is not None:
@@ -214,9 +220,9 @@ class _AvatarAssets(_AssetsService):
         temp = target
         result = _AvatarAssets(self.client)
         if isinstance(target, str):
-            if target.isnumeric():
+            try:
                 target = int(target)
-            else:
+            except ValueError:
                 target = roleToId(target)
         if isinstance(target, str) or target is None:
             raise AssetsCouldNotFound(f"找不到对应的角色: target={temp}")
@@ -334,14 +340,24 @@ class _MaterialAssets(_AssetsService):
             else:
                 target = {v['name']: int(k) for k, v in MATERIAL_DATA.items()}.get(target, None)
         if isinstance(target, str) or target is None:
-            raise AssetsCouldNotFound(f"找不到对应的武器: target={temp}")
+            raise AssetsCouldNotFound(f"找不到对应的素材: target={temp}")
         result.id = target
         return result
 
+    async def _get_from_ambr(self, item: str) -> Path | None:
+        if item == 'icon':
+            url = AMBR_HOST.join(f"assets/UI/{self.game_name_map.get(item)}.png")
+            path = self.path.joinpath(f"{item}.png")
+            return await self._download(url, path)
+
     async def _get_from_honey(self, item: str) -> Path | None:
-        path = self.path.joinpath(f"{item}.webp")
-        url = HONEY_HOST.join(f'/img/{self.honey_url_map.get(item)}')
-        return await self._download(url, path)
+        path = self.path.joinpath(f"{item}.png")
+        url = HONEY_HOST.join(f'/img/{self.honey_name_map.get(item)}.png')
+        if (result := await self._download(url, path)) is None:
+            path = self.path.joinpath(f"{item}.webp")
+            url = HONEY_HOST.join(f'/img/{self.honey_name_map.get(item)}.webp')
+            return await self._download(url, path)
+        return result
 
 
 class _ArtifactAssets(_AssetsService):

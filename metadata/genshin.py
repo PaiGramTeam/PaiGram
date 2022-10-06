@@ -29,7 +29,7 @@ def _get_content(file_name: str) -> JSONType:
         return json.loads(file.read())
 
 
-HONEY_DATA: dict[str, dict[StrOrInt, list[str]]] = _get_content('honey')
+HONEY_DATA: dict[str, dict[StrOrInt, list[str | int]]] = _get_content('honey')
 
 AVATAR_DATA: dict[str, dict[str, int | str | list[int]]] = _get_content('avatar')
 WEAPON_DATA: dict[str, dict[str, int | str]] = _get_content('weapon')
