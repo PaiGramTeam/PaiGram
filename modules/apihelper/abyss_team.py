@@ -1,8 +1,7 @@
 import time
-import httpx
-
-from metadata.shortname import roleToId
 from typing import List, Optional
+
+import httpx
 from pydantic import BaseModel, validator, parse_obj_as
 
 
@@ -18,7 +17,7 @@ class TeamRate(BaseModel):
     ownerNum: Optional[int]
 
     @validator('rate', pre=True)
-    def str2float(cls, v):
+    def str2float(cls, v): # pylint: disable=R0201
         return float(v.replace('%', '')) / 100.0 if isinstance(v, str) else v
 
 
