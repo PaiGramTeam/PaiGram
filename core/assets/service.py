@@ -168,7 +168,7 @@ class _AssetsService(ABC):
 
 
 class _AvatarAssets(_AssetsService):
-    enka: Optional[EnkaCharacterAsset]
+    enka: EnkaCharacterAsset | None
 
     side: ICON_TYPE
     card: ICON_TYPE
@@ -371,6 +371,7 @@ class _ArtifactAssets(_AssetsService):
     @cached_property
     def game_name_map(self) -> dict[str, str]:
         return {
+            "icon": f"UI_RelicIcon_{self.id}_4",
             "flower": f"UI_RelicIcon_{self.id}_4",
             "plume": f"UI_RelicIcon_{self.id}_2",
             "sands": f"UI_RelicIcon_{self.id}_5",
@@ -382,11 +383,60 @@ class _ArtifactAssets(_AssetsService):
     def honey_name_map(self) -> dict[str, str]:
         first_id = int(re.findall(r'\d+', HONEY_DATA['artifact'][str(self.id)][-1])[0])
         return {
+            "icon": f"i_n{first_id + 30}",
             "flower": f"i_n{first_id + 30}",
             "plume": f"i_n{first_id + 10}",
             "sands": f"i_n{first_id + 40}",
             "goblet": f"i_n{first_id}",
             "circlet": f"i_n{first_id + 20}",
+        }
+
+
+class _NamecardAssets(_AssetsService):
+    enka: EnkaCharacterAsset | None
+
+    navbar: ICON_TYPE
+    profile: ICON_TYPE
+
+    @cached_property
+    def honey_id(self) -> str:
+        return HONEY_DATA['namecard'][NAMECARD_DATA[str(self.id)]['name']][0]
+
+    @cached_property
+    def game_name(self) -> str:
+        return NAMECARD_DATA[str(self.id)]['icon']
+
+    def __call__(self, target: int) -> "_NamecardAssets":
+        result = _NamecardAssets(self.client)
+        result.id = target
+        result.enka = EnkaAssets().namecards(target)
+        return result
+
+    async def _get_from_ambr(self, item: str) -> Path | None:
+        if item == 'profile':
+            url = AMBR_HOST.join(f"assets/UI/namecard/{self.game_name_map[item]}.png.png")
+            return await self._download(url, self.path.joinpath(f"{item}.png"))
+
+    async def _get_from_enka(self, item: str) -> Path | None:
+        path = self.path.joinpath(f"{item}.png")
+        url = getattr(self.enka, {'profile': 'banner'}.get(item, item), None)
+        if url is not None:
+            return await self._download(url.url, path)
+
+    @cached_property
+    def game_name_map(self) -> dict[str, str]:
+        return {
+            'icon': self.game_name,
+            'navbar': NAMECARD_DATA[str(self.id)]['navbar'],
+            'profile': NAMECARD_DATA[str(self.id)]['profile']
+        }
+
+    @cached_property
+    def honey_name_map(self) -> dict[str, str]:
+        return {
+            'icon': self.honey_id,
+            'navbar': f"{self.honey_id}_back",
+            'profile': f"{self.honey_id}_profile",
         }
 
 
@@ -402,12 +452,14 @@ class AssetsService(Service):
     weapon: _WeaponAssets
     material: _MaterialAssets
     artifact: _ArtifactAssets
+    namecard: _NamecardAssets
 
     def __init__(self):
-        self.avatar = _AvatarAssets()
-        self.weapon = _WeaponAssets()
-        self.material = _MaterialAssets()
-        self.artifact = _ArtifactAssets()
+        for attr, assets_type_name in filter(
+                lambda x: (not x[0].startswith('_')) and x[1].endswith('Assets'),
+                self.__annotations__.items()
+        ):
+            setattr(self, attr, globals()[assets_type_name]())
 
 
 AssetsServiceType = TypeVar('AssetsServiceType', bound=_AssetsService)

@@ -12,7 +12,10 @@ from utils.const import PROJECT_ROOT
 from utils.log import logger
 from utils.typedefs import StrOrInt
 
-__all__ = ['update_honey_metadata']
+__all__ = [
+    'get_avatar_data', 'get_artifact_data', 'get_material_data', 'get_namecard_data', 'get_weapon_data',
+    'update_honey_metadata',
+]
 
 DATA_TYPE = Dict[StrOrInt, List[str]]
 FULL_DATA_TYPE = Dict[str, DATA_TYPE]
@@ -42,7 +45,7 @@ async def request(url: str, retry: int = 5) -> Optional[Response]:
             raise e
 
 
-async def _avatar() -> DATA_TYPE:
+async def get_avatar_data() -> DATA_TYPE:
     result = {}
     url = "https://genshin.honeyhunterworld.com/fam_chars/?lang=CHS"
     response = await request(url)
@@ -57,7 +60,7 @@ async def _avatar() -> DATA_TYPE:
     return result
 
 
-async def _weapon() -> DATA_TYPE:
+async def get_weapon_data() -> DATA_TYPE:
     from modules.wiki.other import WeaponType
 
     result = {}
@@ -75,7 +78,7 @@ async def _weapon() -> DATA_TYPE:
     return result
 
 
-async def _material() -> DATA_TYPE:
+async def get_material_data() -> DATA_TYPE:
     result = {}
 
     weapon = [HONEY_HOST.join(f'fam_wep_{i}/?lang=CHS') for i in ['primary', 'secondary', 'common']]
@@ -103,7 +106,7 @@ async def _material() -> DATA_TYPE:
     return result
 
 
-async def _artifact() -> DATA_TYPE:
+async def get_artifact_data() -> DATA_TYPE:
     async def get_first_id(_link) -> str:
         _response = await request(_link)
         _chaos_data = re.findall(r'sortable_data\.push\((.*)\);\s*sortable_cur_page', _response.text)[0]
@@ -134,20 +137,39 @@ async def _artifact() -> DATA_TYPE:
     return result
 
 
+async def get_namecard_data() -> DATA_TYPE:
+    url = HONEY_HOST.join("fam_nameplate/?lang=CHS")
+    result = {}
+
+    response = await request(url)
+    chaos_data = re.findall(r'sortable_data\.push\((.*)\);\s*sortable_cur_page', response.text)[0]
+    json_data = json.loads(chaos_data)
+    for data in json_data:
+        honey_id = re.findall(r'/(.*?)/', data[1])[0]
+        name = re.findall(r"alt=\"(.*?)\"", data[0])[0]
+        result.update({name: [honey_id]})
+
+    return result
+
+
 async def update_honey_metadata() -> FULL_DATA_TYPE:
-    avatar_data = await _avatar()
+    avatar_data = await get_avatar_data()
     logger.success("Avatar data is done.")
-    weapon_data = await _weapon()
+    weapon_data = await get_weapon_data()
     logger.success("Weapon data is done.")
-    material_data = await _material()
+    material_data = await get_material_data()
     logger.success("Material data is done.")
-    artifact_data = await _artifact()
+    artifact_data = await get_artifact_data()
     logger.success("Artifact data is done.")
+    namecard_data = await get_namecard_data()
+    logger.success("Namecard data is done.")
+
     result = {
         'avatar': avatar_data,
         'weapon': weapon_data,
         'material': material_data,
         'artifact': artifact_data,
+        'namecard': namecard_data,
     }
     path = PROJECT_ROOT.joinpath('metadata/data/honey.json')
     path.parent.mkdir(parents=True, exist_ok=True)
