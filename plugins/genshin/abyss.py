@@ -65,23 +65,23 @@ class Abyss(Plugin, BasePlugin):
             "total_stars": spiral_abyss_info.total_stars,
             "most_played_list": [],
             "most_kills": {
-                "icon": await url_to_file(ranks.most_kills[0].icon),
+                "icon": await url_to_file(ranks.most_kills[0].side_icon),
                 "value": ranks.most_kills[0].value,
             },
             "strongest_strike": {
-                "icon": await url_to_file(ranks.strongest_strike[0].icon),
+                "icon": await url_to_file(ranks.strongest_strike[0].side_icon),
                 "value": ranks.strongest_strike[0].value
             },
             "most_damage_taken": {
-                "icon": await url_to_file(ranks.most_damage_taken[0].icon),
+                "icon": await url_to_file(ranks.most_damage_taken[0].side_icon),
                 "value": ranks.most_damage_taken[0].value
             },
             "most_bursts_used": {
-                "icon": await url_to_file(ranks.most_bursts_used[0].icon),
+                "icon": await url_to_file(ranks.most_bursts_used[0].side_icon),
                 "value": ranks.most_bursts_used[0].value
             },
             "most_skills_used": {
-                "icon": await url_to_file(ranks.most_skills_used[0].icon),
+                "icon": await url_to_file(ranks.most_skills_used[0].side_icon),
                 "value": ranks.most_skills_used[0].value
             }
         }
