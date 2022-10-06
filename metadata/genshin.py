@@ -11,6 +11,7 @@ from utils.typedefs import JSONType, StrOrInt
 __all__ = [
     'HONEY_DATA',
     'AVATAR_DATA', 'WEAPON_DATA', 'MATERIAL_DATA', 'ARTIFACT_DATA', 'NAMECARD_DATA',
+    'honey_id_to_game_id'
 ]
 
 data_dir = PROJECT_ROOT.joinpath('metadata/data/')
@@ -35,3 +36,7 @@ WEAPON_DATA: dict[str, dict[str, int | str]] = _get_content('weapon')
 MATERIAL_DATA: dict[str, dict[str, int | str]] = _get_content('material')
 ARTIFACT_DATA: dict[str, dict[str, int | str | list[int] | dict[str, str]]] = _get_content('reliquary')
 NAMECARD_DATA: dict[str, dict[str, int | str]] = _get_content('namecard')
+
+
+def honey_id_to_game_id(honey_id: str, item_type: str) -> str | None:
+    return next((key for key, value in HONEY_DATA[item_type].items() if value[0] == honey_id), None)
