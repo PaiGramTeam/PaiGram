@@ -202,6 +202,11 @@ class Bot:
     async def _post_init(self, context: CallbackContext) -> NoReturn:
         logger.info('开始初始化 genshin.py 相关资源')
         try:
+            # 替换为 fastgit 镜像源
+            for i in dir(genshin.utility.extdb):
+                if "_URL" in i:
+                    setattr(genshin.utility.extdb, i,
+                            getattr(genshin.utility.extdb, i).replace("githubusercontent.com", "fastgit.org"))
             await genshin.utility.update_characters_enka()
         except Exception as exc:
             logger.error("初始化 genshin.py 相关资源失败")
