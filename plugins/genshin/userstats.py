@@ -78,11 +78,16 @@ class UserStatsPlugins(Plugin, BasePlugin):
             }
             for offering in exploration.offerings:
                 # 修复上游奇怪的问题
-                offering_name = offering.name
+                if isinstance(offering, dict):
+                    offering_name = offering["name"]
+                    offering_level = offering["level"]
+                else:
+                    offering_name = offering.name
+                    offering_level = offering.level
                 if offering_name == "Reputation":
                     offering_name = "声望等级"
                 offering_data = {
-                    "data": f"{offering_name}：{offering.level}级"
+                    "data": f"{offering_name}：{offering_level}级"
                 }
                 exploration_data["offerings"].append(offering_data)
             user_data["world_exploration_list"].append(exploration_data)
