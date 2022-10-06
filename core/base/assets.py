@@ -320,9 +320,9 @@ class _WeaponAssets(_AssetsService):
     @cached_property
     def honey_name_map(self) -> dict[str, str]:
         return {
-            'icon': f'img/{self.honey_id}',
-            'awaken': f'img/{self.honey_id}_awaken_icon',
-            'gacha': f'img/{self.honey_id}_gacha_icon',
+            'icon': f'{self.honey_id}',
+            'awaken': f'{self.honey_id}_awaken_icon',
+            'gacha': f'{self.honey_id}_gacha_icon',
         }
 
 

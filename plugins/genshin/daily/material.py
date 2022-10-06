@@ -228,7 +228,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         continue
                     items.append(ItemData(  # 添加角色数据中未找到的
                         id=id_, name=item[1], rarity=item[2],
-                        icon=(await getattr(self.assets_service, f'{type_}')(id_).icon()).as_uri()
+                        icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri()
                     ))
                 materials = []
                 for mid in area_data['materials']:  # 添加这个区域当天（weekday）的培养素材
@@ -334,7 +334,7 @@ class DailyMaterial(Plugin, BasePlugin):
                             for a in div.find_all('a'):
                                 honey_id = re.findall(r"/(.*)?/", a['href'])[0]
                                 mid: str = [
-                                    i[1][0]
+                                    i[0]
                                     for i in HONEY_DATA['material'].items()
                                     if i[1][0] == honey_id
                                 ][0]

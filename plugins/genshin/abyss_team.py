@@ -2,7 +2,7 @@ from telegram import Update, User
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.assets import AssetsService
+from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
@@ -67,7 +67,7 @@ class AbyssTeam(Plugin, BasePlugin):
         }
         for i in team_data.rateListUp[0].formation:
             temp = {
-                "icon": (await self.assets_service.character(roleToId(i.name)).icon()).as_uri(),
+                "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,
                 "background": self._get_role_star_bg(i.star),
                 "hava": i.name in user_data,
@@ -75,7 +75,7 @@ class AbyssTeam(Plugin, BasePlugin):
             abyss_team_data["up"].append(temp)
         for i in team_data.rateListDown[0].formation:
             temp = {
-                "icon": (await self.assets_service.character(roleToId(i.name)).icon()).as_uri(),
+                "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,
                 "background": self._get_role_star_bg(i.star),
                 "hava": i.name in user_data,
