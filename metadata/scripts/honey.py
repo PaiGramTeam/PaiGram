@@ -62,9 +62,11 @@ async def get_weapon_data() -> DATA_TYPE:
         chaos_data = re.findall(r'sortable_data\.push\((.*)\);\s*sortable_cur_page', response.text)[0]
         json_data = json.loads(chaos_data)  # 转为 json
         for data in json_data:
+            name = re.findall(r'>(.*)<', data[1])[0]
+            if name in ['「一心传」名刀', '石英大剑', '琥珀玥', '黑檀弓']:  # 跳过特殊的武器
+                continue
             wid = int(re.findall(r'\d+', data[1])[0])
             honey_id = re.findall(r"/(.*?)/", data[1])[0]
-            name = re.findall(r'>(.*)<', data[1])[0]
             rarity = int(re.findall(r">(\d)<", data[2])[0])
             result.update({wid: [honey_id, name, rarity]})
     return result
@@ -130,6 +132,15 @@ async def get_artifact_data() -> DATA_TYPE:
 
 
 async def get_namecard_data() -> DATA_TYPE:
+    from metadata.genshin import NAMECARD_DATA
+
+    if not NAMECARD_DATA:
+        # noinspection PyProtectedMember
+        from metadata.genshin import _get_content
+        from metadata.scripts.metadatas import update_metadata_from_github
+        await update_metadata_from_github()
+        # noinspection PyPep8Naming
+        NAMECARD_DATA = _get_content('namecard')
     url = HONEY_HOST.join("fam_nameplate/?lang=CHS")
     result = {}
 
@@ -139,7 +150,12 @@ async def get_namecard_data() -> DATA_TYPE:
     for data in json_data:
         honey_id = re.findall(r'/(.*?)/', data[1])[0]
         name = re.findall(r"alt=\"(.*?)\"", data[0])[0]
-        result.update({name: [honey_id]})
+        try:
+            nid = [key for key, value in NAMECARD_DATA.items() if value['name'] == name][0]
+        except IndexError:  # 暂不支持 beta 的名片
+            continue
+        rarity = int(re.findall(r">(\d)<", data[2])[0])
+        result.update({nid: [honey_id, name, rarity]})
 
     return result
 

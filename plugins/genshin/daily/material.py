@@ -307,8 +307,12 @@ class DailyMaterial(Plugin, BasePlugin):
                 n.text_html.split('\n')[0] + "\n每日素材图标搬运<b>完成！</b>",
                 parse_mode=ParseMode.HTML
             )
+            await asyncio.sleep(INTERVAL)
+            await notice.delete()
 
-        context.application.job_queue.run_once(partial(job, n=notice), when=time + INTERVAL, name='delete_notice_job')
+        context.application.job_queue.run_once(
+            partial(job, n=notice), when=time + INTERVAL, name='notice_msg_final_job'
+        )
 
     async def _refresh_data(self, retry: int = 5) -> DATA_TYPE:
         """刷新来自 honey impact 的每日素材表"""
@@ -403,7 +407,7 @@ class DailyMaterial(Plugin, BasePlugin):
             task_list = []
             new_items = []
             for ID, DATA in ITEMS.items():
-                if (ITEM := [ID, DATA[0], TYPE]) not in new_items:
+                if (ITEM := [ID, DATA[1], TYPE]) not in new_items:
                     new_items.append(ITEM)
                     task_list.append(asyncio.create_task(task(*ITEM)))
             await asyncio.gather(*task_list)  # 等待所有任务执行完成

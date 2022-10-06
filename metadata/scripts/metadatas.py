@@ -33,15 +33,15 @@ async def update_metadata_from_github(overwrite: bool = True):
         return
 
     host = URL("https://raw.githubusercontent.com/Dimbreath/GenshinData/master/")
-    # https://raw.githubusercontent.com/Dimbreath/GenshinData/master/TextMap/TextMapCHS.json
-    material_url = host.join("ExcelBinOutput/MaterialExcelConfigData.json")
-    text_map_url = host.join("TextMap/TextMapCHS.json")
 
-    material_json_data = json.loads((await client.get(material_url)).text)
+    text_map_url = host.join("TextMap/TextMapCHS.json")
+    material_url = host.join("ExcelBinOutput/MaterialExcelConfigData.json")
+
     text_map_json_data = json.loads((await client.get(text_map_url)).text)
+    material_json_data = json.loads((await client.get(material_url)).text)
 
     data = {}
-    for namecard_data in filter(lambda x: x['icon'].startswith('UI_NameCardIcon'), material_json_data):
+    for namecard_data in filter(lambda x: x.get('materialType', None) == 'MATERIAL_NAMECARD', material_json_data):
         name = text_map_json_data[str(namecard_data['nameTextMapHash'])]
         icon = namecard_data['icon']
         navbar = namecard_data['picPath'][0]

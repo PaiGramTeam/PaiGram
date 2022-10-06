@@ -20,7 +20,7 @@ from typing_extensions import Self
 from core.service import Service
 from metadata.genshin import AVATAR_DATA, HONEY_DATA, MATERIAL_DATA, NAMECARD_DATA, WEAPON_DATA
 from metadata.scripts.honey import update_honey_metadata
-from metadata.scripts.metadata import update_metadata_from_ambr, update_metadata_from_github
+from metadata.scripts.metadatas import update_metadata_from_ambr, update_metadata_from_github
 from metadata.shortname import roleToId, weaponToId
 from modules.wiki.base import HONEY_HOST
 from utils.const import AMBR_HOST, ENKA_HOST, PROJECT_ROOT
@@ -438,7 +438,7 @@ class _NamecardAssets(_AssetsService):
 
     @cached_property
     def honey_id(self) -> str:
-        return HONEY_DATA['namecard'][NAMECARD_DATA[str(self.id)]['name']][0]
+        return HONEY_DATA['namecard'][str(self.id)][0]
 
     @cached_property
     def game_name(self) -> str:
