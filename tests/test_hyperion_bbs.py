@@ -28,7 +28,7 @@ async def test_get_post_info(hyperion):
     post_info = await hyperion.get_post_info(2, 29023709)
     assert post_info
     assert isinstance(post_info, PostInfo)
-    assert post_info["post"]["post_id"] == 29023709
+    assert post_info["post"]["post"]["post_id"] == '29023709'
     assert post_info.post_id == 29023709
 
 
