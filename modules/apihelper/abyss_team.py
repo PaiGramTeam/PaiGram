@@ -22,10 +22,13 @@ class TeamRate(BaseModel):
 
 
 class FullTeamRate(BaseModel):
-    rate: float
     up: TeamRate
     down: TeamRate
     ownerNum: Optional[int]
+
+    @property
+    def rate(self) -> float:
+        return self.up.rate + self.down.rate
 
 
 class TeamRateResult(BaseModel):
