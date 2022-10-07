@@ -14,7 +14,7 @@ class Member(BaseModel):
 class TeamRate(BaseModel):
     rate: float
     formation: List[Member]
-    ownerNum: Optional[int]
+    owner_num: Optional[int]
 
     @validator('rate', pre=True)
     def str2float(cls, v):  # pylint: disable=R0201
@@ -24,7 +24,7 @@ class TeamRate(BaseModel):
 class FullTeamRate(BaseModel):
     up: TeamRate
     down: TeamRate
-    ownerNum: Optional[int]
+    owner_num: Optional[int]
 
     @property
     def rate(self) -> float:
@@ -32,23 +32,23 @@ class FullTeamRate(BaseModel):
 
 
 class TeamRateResult(BaseModel):
-    rateListUp: List[TeamRate]
-    rateListDown: List[TeamRate]
-    rateListFull: List[FullTeamRate] = []
-    userCount: int
+    rate_list_up: List[TeamRate]
+    rate_list_down: List[TeamRate]
+    rate_list_full: List[FullTeamRate] = []
+    user_count: int
 
     def __init__(self, **data: Any):
         super().__init__(**data)
-        for teamUp in self.rateListUp:
-            for teamDown in self.rateListDown:
-                if {member.name for member in teamUp.formation} & {member.name for member in teamDown.formation}:
+        for team_up in self.rate_list_up:
+            for team_down in self.rate_list_down:
+                if {member.name for member in team_up.formation} & {member.name for member in team_down.formation}:
                     continue
-                self.rateListFull.append(FullTeamRate(up=teamUp, down=teamDown))
+                self.rate_list_full.append(FullTeamRate(up=team_up, down=team_down))
 
     def sort(self, characters: List[str]):
-        for team in self.rateListFull:
-            team.ownerNum = sum(member.name in characters for member in team.up.formation + team.down.formation)
-        self.rateListFull.sort(key=lambda x: (x.ownerNum / 4 * x.rate), reverse=True)
+        for team in self.rate_list_full:
+            team.owner_num = sum(member.name in characters for member in team.up.formation + team.down.formation)
+        self.rate_list_full.sort(key=lambda x: (x.owner_num / 4 * x.rate), reverse=True)
 
 
 class AbyssTeamData:
@@ -74,9 +74,9 @@ class AbyssTeamData:
             data_up_json = data_up.json()["result"]
             data_down = await self.client.post(self.TEAM_RATE_API, json={"version": self.VERSION, "layer": 2})
             data_down_json = data_down.json()["result"]
-            self.data = TeamRateResult(rateListUp=parse_obj_as(List[TeamRate], data_up_json["rateList"]),
-                                       rateListDown=parse_obj_as(List[TeamRate], data_down_json["rateList"]),
-                                       userCount=data_up_json["userCount"])
+            self.data = TeamRateResult(rate_list_up=parse_obj_as(List[TeamRate], data_up_json["rateList"]),
+                                       rate_list_down=parse_obj_as(List[TeamRate], data_down_json["rateList"]),
+                                       user_count=data_up_json["userCount"])
             self.time = time.time()
         return self.data.copy(deep=True)
 
