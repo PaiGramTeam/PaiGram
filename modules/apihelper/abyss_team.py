@@ -48,7 +48,7 @@ class TeamRateResult(BaseModel):
     def sort(self, characters: List[str]):
         for team in self.rate_list_full:
             team.owner_num = sum(member.name in characters for member in team.up.formation + team.down.formation)
-        self.rate_list_full.sort(key=lambda x: (x.owner_num / 4 * x.rate), reverse=True)
+        self.rate_list_full.sort(key=lambda x: (x.owner_num / 8 * x.rate), reverse=True)
 
 
 class AbyssTeamData:
