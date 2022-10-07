@@ -2,10 +2,14 @@ import json
 import os
 from io import BytesIO
 
+import genshin
 from pyppeteer import launch
+from genshin.models import BannerType
 from telegram import Update, User
+from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
 
+from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler, conversation
@@ -24,13 +28,14 @@ INPUT_URL, INPUT_FILE = 10100, 10101
 class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
     """ 抽卡记录导入/导出/分析"""
 
-    def __init__(self, template_service: TemplateService = None):
+    def __init__(self, template_service: TemplateService = None, assets: AssetsService = None):
         self.template_service = template_service
         self.browser: launch = None
         self.current_dir = os.getcwd()
         self.resources_dir = os.path.join(self.current_dir, "resources")
         self.character_gacha_card = {}
         self.user_time = {}
+        self.assets_service = assets
 
     @staticmethod
     def from_url_get_authkey(url: str) -> str:
@@ -135,6 +140,37 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件")
             else:
                 await message.reply_text(text)
+        except (UserNotFoundError, CookiesNotFoundError):
+            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+            await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号")
+            return
+
+    @handler(CommandHandler, command="gacha_log", filters=filters.ChatType.PRIVATE, block=True)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡记录(.*)") & filters.ChatType.PRIVATE, block=True)
+    @restricts()
+    @error_callable
+    async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
+        message = update.effective_message
+        user = update.effective_user
+        pool_type = BannerType.CHARACTER1
+        if args := get_all_args(context):
+            if "武器" in args:
+                pool_type = BannerType.WEAPON
+            elif "常驻" in args:
+                pool_type = BannerType.STANDARD
+        try:
+            client = await get_genshin_client(user.id)
+            data = await GachaLogService.get_analysis(user.id, client, pool_type, self.assets_service)
+            if isinstance(data, str):
+                reply_message = await message.reply_text(data)
+            else:
+                await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+                png_data = await self.template_service.render('genshin/gachaLog', "gachaLog.html", data,
+                                                              {"width": 770, "height": 900}, True)
+                reply_message = await message.reply_photo(png_data)
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
         except (UserNotFoundError, CookiesNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号")

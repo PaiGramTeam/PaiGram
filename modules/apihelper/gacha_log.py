@@ -10,6 +10,8 @@ from genshin import Client, InvalidAuthkey
 from genshin.models import BannerType
 from pydantic import BaseModel
 
+from core.base.assets import AssetsService
+from metadata.shortname import roleToId
 from utils.const import PROJECT_ROOT
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("modules", "apihelper", "gacha_log")
@@ -28,6 +30,7 @@ class FiveStarItem(BaseModel):
     icon: str
     count: int
     type: str
+    isUp: bool
 
 
 class FourStarItem(BaseModel):
@@ -203,3 +206,96 @@ class GachaLog:
         gacha_log.update_time = datetime.datetime.now()
         await GachaLog.save_gacha_log_info(str(user_id), str(client.uid), gacha_log)
         return '更新完成，本次没有新增数据' if new_num == 0 else f'更新完成，本次共新增{new_num}条抽卡记录'
+
+    @staticmethod
+    async def get_all_5_star_avatar(data: List[GachaItem], assets: AssetsService):
+        """
+        获取所有5星角色
+        :param data: 抽卡记录
+        :param assets: 资源服务
+        :return: 5星角色列表
+        """
+        count = 0
+        result = []
+        for item in data:
+            count += 1
+            if item.rank_type == '5' and item.item_type == '角色':
+                result.append(FiveStarItem(name=item.name,
+                                           icon=(await assets.avatar(roleToId(item.name)).icon()).as_uri(),
+                                           count=count,
+                                           type="角色",
+                                           isUp=True))
+                count = 0
+        result.reverse()
+        return result, count
+
+    @staticmethod
+    async def get_no_four_star(data: List[GachaItem]):
+        """
+        获取 no_fout_star
+        :param data: 抽卡记录
+        :return: no_fout_star
+        """
+        no_fout_star = 0
+        for item in data:
+            if item.rank_type == '4' and item.item_type == '角色':
+                break
+            no_fout_star += 1
+        return no_fout_star
+
+    @staticmethod
+    async def get_analysis(user_id: int, client: Client, pool: BannerType, assets: AssetsService):
+        """
+        获取抽卡记录分析数据
+        :param user_id: 用户id
+        :param client: genshin client
+        :param pool: 池子类型
+        :param assets: 资源服务
+        :return: 分析数据
+        """
+        gacha_log, status = await GachaLog.load_history_info(str(user_id), str(client.uid))
+        if not status:
+            return "获取数据失败，未找到抽卡记录"
+        pool_name = GACHA_TYPE_LIST[pool]
+        data = gacha_log.item_list[pool_name]
+        total = len(data)
+        if total == 0:
+            return "获取数据失败，未找到抽卡记录"
+        # 未出五星
+        all_five, no_five_star = await GachaLog.get_all_5_star_avatar(data, assets)
+        # 总共五星
+        five_star = len([i for i in data if i.rank_type == '5' and i.item_type == "角色"])
+        # 五星平均
+        five_star_avg = round(total / five_star, 2) if five_star != 0 else 0
+        # 小保底不歪
+        small_protect = 0
+        # 未出四星
+        no_four_star = await GachaLog.get_no_four_star(data)
+        # 五星常驻
+        five_star_const = 0
+        # UP 平均
+        up_avg = 0
+        # UP 花费原石
+        up_cost = 0
+        summon_data = [
+            [
+                {"num": no_five_star, "unit": "抽", "lable": "未出五星"},
+                {"num": five_star, "unit": "个", "lable": "五星"},
+            ],
+            [
+                {"num": no_four_star, "unit": "抽", "lable": "未出四星"},
+                {"num": five_star_avg, "unit": "抽", "lable": "五星平均"}
+            ]
+        ]
+        last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
+        first_time = data[-1].time.strftime("%Y-%m-%d %H:%M")
+        return {
+            "uid": client.uid,
+            "allNum": total,
+            "type": pool.value,
+            "typeName": pool_name,
+            "line": summon_data,
+            "firstTime": first_time,
+            "lastTime": last_time,
+            "fiveLog": all_five,
+        }

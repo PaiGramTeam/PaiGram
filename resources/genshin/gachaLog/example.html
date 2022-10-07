@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8"/>
+  <link rel="shortcut icon" href="#"/>
+  <link rel="stylesheet" type="text/css" href="gachaLog.css"/>
+  <link rel="preload" href="./../../fonts/tttgbnumber.ttf" as="font">
+  <link rel="preload" href="./img/提纳里.png" as="image">
+  <link rel="preload" href="./../abyss/background/roleStarBg5.png" as="image">
+  <style> 
+    .head_box { 
+      background: url(./img/提纳里.png) #fff; 
+      background-position-x: 42px; 
+      background-repeat: no-repeat; 
+      background-size: auto 101%; 
+      }
+  </style>
+</head>
+<body id="container" class="body_box">
+<div class="container">
+  <div class="info_box">
+
+    <div class="head_box">
+      <div class="id_text">
+        ID: 10001
+      </div>
+      <h2 class="day_text">
+        81抽
+        <span class="label label_301">角色祈愿池</span>
+      </h2>
+      <img class="genshin_logo" src="./../../bot/help/background/genshin.png"/>
+    </div>
+
+    <div class="data_box">
+      <div class="tab_lable">数据总览</div>
+      <div class="data_line">
+        <div class="data_line_item">
+          <div class="num">1<span class="unit">抽</span></div>
+          <div class="lable">未出五星</div>
+        </div>
+      </div>
+
+      <div class="line_box">
+        <span class="line"></span>
+        <span class="text">五星历史 2022-10-07 01:10 ~ 2022-10-07 23:10</span>
+        <span class="line"></span>
+      </div>
+
+
+      <div class="card_list">
+        <div class="item star5">
+            <span class="minimum">UP</span>
+          <img class="role"
+               src=""
+               onerror="whenError(this,'role')"/>
+          <!-- <div class="num">{{val.num}}</div>-->
+          <div class="num_name">80</div>
+        </div>
+      </div>
+        <div class="hasMore">*完整数据请私聊查看</div>
+    </div>
+    <div class="logo"> Template By Yunzai-Bot</div>
+  </div>
+</div>
+</body>
+<script type="text/javascript">
+  function whenError(a, type) {
+      // a.onerror = null;
+      // if(type=="role"){
+      //   a.src = "{{_res_path}}/genshin/logo/role/荧.png";
+      // }else{
+      //   a.src = "{{_res_path}}/genshin/logo/weapon/旅行剑.png";
+      // }
+  }
+</script>
+</html>
