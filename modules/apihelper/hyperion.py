@@ -1,10 +1,11 @@
 import asyncio
 import re
+import time
 from typing import List
 
 from httpx import AsyncClient
 
-from modules.apihelper.base import PostFullInCollectionInfo, ArtworkImage
+from modules.apihelper.base import ArtworkImage, PostInfo
 from modules.apihelper.helpers import get_device_id
 from modules.apihelper.request.hoyorequest import HOYORequest
 from utils.typedefs import JSONDict
@@ -91,14 +92,14 @@ class Hyperion:
         response = await self.client.get(url=self.POST_FULL_IN_COLLECTION_URL, params=params)
         return response
 
-    async def get_artwork_info(self, gids: int, post_id: int, read: int = 1) -> PostFullInCollectionInfo:
+    async def get_artwork_info(self, gids: int, post_id: int, read: int = 1) -> PostInfo:
         params = {
             "gids": gids,
             "post_id": post_id,
             "read": read
         }
         response = await self.client.get(self.POST_FULL_URL, params=params)
-        return PostFullInCollectionInfo(data=response)
+        return PostInfo.paste_data(data=response)
 
     async def get_post_full_info(self, gids: int, post_id: int, read: int = 1) -> JSONDict:
         params = {
@@ -110,11 +111,11 @@ class Hyperion:
         return response
 
     async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
-        artwork_info = await self.get_artwork_info(gids, post_id)
-        urls = artwork_info.results.image_url_list
+        post_info = await self.get_artwork_info(gids, post_id)
         art_list = []
         task_list = [
-            self.download_image(artwork_info.post_id, urls[page], page) for page in range(len(urls))
+            self.download_image(post_info.post_id, post_info.image_urls[page], page)
+            for page in range(len(post_info.image_urls))
         ]
         result_list = await asyncio.gather(*task_list)
         for result in result_list:
@@ -129,7 +130,7 @@ class Hyperion:
 
     async def download_image(self, art_id: int, url: str, page: int = 0) -> ArtworkImage:
         response = await self.client.get(url, params=self.get_images_params(resize=2000), timeout=10, de_json=False)
-        return ArtworkImage(art_id, page, data=response)
+        return ArtworkImage(art_id=art_id, page=page, data=response)
 
     async def get_new_list(self, gids: int, type_id: int, page_size: int = 20):
         """
@@ -146,6 +147,41 @@ class Hyperion:
 
     async def close(self):
         await self.client.shutdown()
+
+
+class GachaInfo:
+    GACHA_LIST_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/gacha/list.json"
+    GACHA_INFO_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/%s/zh-cn.json"
+
+    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
+                 "Chrome/90.0.4430.72 Safari/537.36"
+
+    def __init__(self):
+        self.headers = {
+            'User-Agent': self.USER_AGENT,
+        }
+        self.client = HOYORequest(headers=self.headers)
+        self.cache = {}
+        self.cache_ttl = 600
+
+    async def get_gacha_list_info(self) -> dict:
+        if self.cache.get("time", 0) + self.cache_ttl < time.time():
+            self.cache.clear()
+        cache = self.cache.get("gacha_list_info")
+        if cache is not None:
+            return cache
+        req = await self.client.get(self.GACHA_LIST_URL)
+        self.cache["gacha_list_info"] = req
+        self.cache["time"] = time.time()
+        return req
+
+    async def get_gacha_info(self, gacha_id: str) -> dict:
+        cache = self.cache.get(gacha_id)
+        if cache is not None:
+            return cache
+        req = await self.client.get(self.GACHA_INFO_URL % gacha_id)
+        self.cache[gacha_id] = req
+        return req
 
 
 class SignIn:
