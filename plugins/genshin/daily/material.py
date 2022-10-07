@@ -1,8 +1,10 @@
 import asyncio
+import contextlib
 import re
 from asyncio import Lock
 from ctypes import c_double
 from datetime import datetime
+from functools import partial
 from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
@@ -20,19 +22,21 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
 
-from core.assets import AssetsService
+from core.base.assets import AssetsService, AssetsServiceType
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user.error import UserNotFoundError
-from metadata.honey import HONEY_ID_MAP, HONEY_ROLE_NAME_MAP
+from metadata.genshin import AVATAR_DATA, HONEY_DATA
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
+
+INTERVAL = 1
 
 DATA_TYPE = Dict[str, List[List[str]]]
 DATA_FILE_PATH = Path(__file__).joinpath('../daily.json').resolve()
@@ -118,30 +122,32 @@ class DailyMaterial(Plugin, BasePlugin):
     async def _get_data_from_user(self, user: User) -> Tuple[Optional[Client], Dict[str, List[Any]]]:
         """获取已经绑定的账号的角色、武器信息"""
         client = None
-        user_data = {'character': [], 'weapon': []}
+        user_data = {'avatar': [], 'weapon': []}
         try:
             logger.debug("尝试获取已绑定的原神账号")
             client = await get_genshin_client(user.id)
-            logger.debug(f"获取成功, UID: {client.uid}")
+            logger.debug(f"获取账号数据成功: UID={client.uid}")
             characters = await client.get_genshin_characters(client.uid)
             for character in characters:
-                cid = HONEY_ROLE_NAME_MAP[character.id][0]
+                if character.name == '旅行者':  # 跳过主角
+                    continue
+                cid = AVATAR_DATA[str(character.id)]['id']
                 weapon = character.weapon
-                user_data['character'].append(
+                user_data['avatar'].append(
                     ItemData(
                         id=cid, name=character.name, rarity=character.rarity, level=character.level,
                         constellation=character.constellation,
-                        icon=(await self.assets_service.character(cid).icon()).as_uri()
+                        icon=(await self.assets_service.avatar(cid).icon()).as_uri()
                     )
                 )
                 user_data['weapon'].append(
                     ItemData(
-                        id=(wid := f"i_n{weapon.id}"), name=weapon.name, level=weapon.level, rarity=weapon.rarity,
+                        id=str(weapon.id), name=weapon.name, level=weapon.level, rarity=weapon.rarity,
                         refinement=weapon.refinement,
                         icon=(await getattr(  # 判定武器的突破次数是否大于 2 ;若是, 则将图标替换为 awakened (觉醒) 的图标
-                            self.assets_service.weapon(wid), 'icon' if weapon.ascension < 2 else 'awakened'
+                            self.assets_service.weapon(weapon.id), 'icon' if weapon.ascension < 2 else 'awaken'
                         )()).as_uri(),
-                        c_path=(await self.assets_service.character(cid).side()).as_uri()
+                        c_path=(await self.assets_service.avatar(cid).side()).as_uri()
                     )
                 )
         except (UserNotFoundError, CookiesNotFoundError):
@@ -190,13 +196,13 @@ class DailyMaterial(Plugin, BasePlugin):
         await update.message.reply_chat_action(ChatAction.TYPING)
 
         # 获取已经缓存的秘境素材信息
-        local_data = {'character': [], 'weapon': []}
+        local_data = {'avatar': [], 'weapon': []}
         if not self.data:  # 若没有缓存每日素材表的数据
             logger.info("正在获取每日素材缓存")
-            await self._refresh_data()
+            self.data = await self._refresh_data()
         for domain, sche in self.data.items():
             area = DOMAIN_AREA_MAP[domain]  # 获取秘境所在的区域
-            type_ = 'character' if DOMAINS.index(domain) < 4 else 'weapon'  # 获取秘境的培养素材的类型：是天赋书还是武器突破材料
+            type_ = 'avatar' if DOMAINS.index(domain) < 4 else 'weapon'  # 获取秘境的培养素材的类型：是天赋书还是武器突破材料
             # 将读取到的数据存入 local_data 中
             local_data[type_].append({'name': area, 'materials': sche[weekday][0], 'items': sche[weekday][1]})
 
@@ -205,36 +211,36 @@ class DailyMaterial(Plugin, BasePlugin):
 
         await update.message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
-        for type_ in ['character', 'weapon']:
+        for type_ in ['avatar', 'weapon']:
             areas = []
             for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
                 items = []
                 for id_ in area_data['items']:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
                     added = False
                     for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
-                        if id_ == i.id:
+                        if id_ == str(i.id):
                             if i.rarity > 3:  # 跳过 3 星及以下的武器
                                 items.append(i)
                             added = True
                     if added:
                         continue
-                    item = HONEY_ID_MAP[type_][id_]
-                    if item[1] < 4:  # 跳过 3 星及以下的武器
+                    item = HONEY_DATA[type_][id_]
+                    if item[2] < 4:  # 跳过 3 星及以下的武器
                         continue
                     items.append(ItemData(  # 添加角色数据中未找到的
-                        id=id_, name=item[0], rarity=item[1],
-                        icon=(await getattr(self.assets_service, f'{type_}')(id_).icon()).as_uri()
+                        id=id_, name=item[1], rarity=item[2],
+                        icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri()
                     ))
                 materials = []
                 for mid in area_data['materials']:  # 添加这个区域当天（weekday）的培养素材
                     path = (await self.assets_service.material(mid).icon()).as_uri()
-                    material = HONEY_ID_MAP['material'][mid]
-                    materials.append(ItemData(id=mid, icon=path, name=material[0], rarity=material[1]))
+                    material = HONEY_DATA['material'][mid]
+                    materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
                 areas.append(AreaData(
                     name=area_data['name'], materials=materials, items=sort_item(items),
                     material_name=get_material_serial_name(map(lambda x: x.name, materials))
                 ))
-            setattr(render_data, type_, areas)
+            setattr(render_data, {'avatar': 'character'}.get(type_, type_), areas)
 
         await update.message.reply_chat_action(ChatAction.TYPING)
         render_tasks = [
@@ -270,7 +276,12 @@ class DailyMaterial(Plugin, BasePlugin):
     @handler.command('refresh_daily_material', block=False)
     @bot_admins_rights_check
     async def refresh(self, update: Update, context: CallbackContext):
+        user = update.effective_user
         message = update.effective_message
+
+        logger.info(
+            f"用户 {user.full_name}[{user.id}] 刷新[bold]每日素材[/]缓存命令", extra={'markup': True}
+        )
         if self.locks[0].locked():
             notice = await message.reply_text("派蒙还在抄每日素材表呢，我有在好好工作哦~")
             self._add_delete_message_job(context, notice.chat_id, notice.message_id, 10)
@@ -290,12 +301,19 @@ class DailyMaterial(Plugin, BasePlugin):
                 parse_mode=ParseMode.HTML
             )
             self.data = data or self.data
-            await self._download_icon(notice)
-            notice = await notice.edit_text(
-                notice.text_html.split('\n')[0] + "\n每日素材图标搬运<b>完成！</b>",
+        time = await self._download_icon(notice)
+
+        async def job(_, n):
+            await n.edit_text(
+                n.text_html.split('\n')[0] + "\n每日素材图标搬运<b>完成！</b>",
                 parse_mode=ParseMode.HTML
             )
-            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 10)
+            await asyncio.sleep(INTERVAL)
+            await notice.delete()
+
+        context.application.job_queue.run_once(
+            partial(job, n=notice), when=time + INTERVAL, name='notice_msg_final_job'
+        )
 
     async def _refresh_data(self, retry: int = 5) -> DATA_TYPE:
         """刷新来自 honey impact 的每日素材表"""
@@ -313,11 +331,20 @@ class DailyMaterial(Plugin, BasePlugin):
                         key = tag.find('a').text
                         result[key] = [[[], []] for _ in range(7)]
                         for day, div in enumerate(tag.find_all('div')):
-                            result[key][day][0] = [re.findall(r"/(.*)?/", a['href'])[0] for a in div.find_all('a')]
+                            result[key][day][0] = []
+                            for a in div.find_all('a'):
+                                honey_id = re.findall(r"/(.*)?/", a['href'])[0]
+                                mid: str = [
+                                    i[0]
+                                    for i in HONEY_DATA['material'].items()
+                                    if i[1][0] == honey_id
+                                ][0]
+                                result[key][day][0].append(mid)
                     else:  # 如果是角色或武器
                         id_ = re.findall(r"/(.*)?/", tag['href'])[0]
                         if tag.text.strip() == '旅行者':  # 忽略主角
                             continue
+                        id_ = ("" if id_.startswith('i_n') else "10000") + re.findall(r'\d+', id_)[0]
                         for day in map(int, tag.find('div')['data-days']):  # 获取该角色/武器的可培养天
                             result[key][day][1].append(id_)
                 for stage, schedules in result.items():
@@ -339,51 +366,53 @@ class DailyMaterial(Plugin, BasePlugin):
         # noinspection PyTypeChecker
         return result
 
-    async def _download_icon(self, message: Optional[Message] = None):
+    async def _download_icon(self, message: Optional[Message] = None) -> float:
         """下载素材图标"""
+        asset_list = []
+
         from time import time as time_
         lock = asyncio.Lock()
-        interval = 2
-        the_time = Value(c_double, time_() - interval)
 
-        async def task(_id, _item, _type):
-            logger.debug(f"正在开始下载 \"{_item[0]}\" 的图标素材")
-            async with lock:
-                if message is not None and time_() >= the_time.value + interval:  # 判定现在是否距离上次修改消息已经有了足够的时间
-                    text = '\n'.join(message.text_html.split('\n')[:2]) + f"\n正在搬运 <b>{_item[0]}</b> 的图标素材。。。"
-                    try:
-                        await message.edit_text(text, parse_mode=ParseMode.HTML)
-                        the_time.value = time_()
-                    except (TimedOut, RetryAfter):  # 修改消息失败
-                        pass
-            asset = getattr(self.assets_service, _type)(_id)  # 获取素材对象
-            icon_types = list(filter(  # 找到该素材对象的所有图标类型
-                lambda x: not x.startswith('_') and x not in ['path'] and callable(getattr(asset, x)),
-                dir(asset)
-            ))
-            icon_coroutines = map(lambda x: getattr(asset, x), icon_types)  # 根据图标类型找到下载对应图标的函数
-            for coroutine in icon_coroutines:
-                await coroutine()  # 执行下载函数
-            logger.debug(f"\"{_item[0]}\" 的图标素材下载成功")
-            async with lock:
-                if message is not None and time_() >= the_time.value + interval:
-                    text = (
-                            '\n'.join(message.text_html.split('\n')[:2]) +
-                            f"\n正在搬运 <b>{_item[0]}</b> 的图标素材。。。<b>成功！</b>"
-                    )
-                    try:
-                        await message.edit_text(text, parse_mode=ParseMode.HTML)
-                        the_time.value = time_()
-                    except (TimedOut, RetryAfter):
-                        pass
+        the_time = Value(c_double, time_() - INTERVAL)
 
-        for type_, items in HONEY_ID_MAP.items():  # 遍历每个对象
+        async def edit_message(text):
+            """修改提示消息"""
+            async with lock:
+                if (
+                        message is not None
+                        and
+                        time_() >= (the_time.value + INTERVAL)
+                ):
+                    with contextlib.suppress(TimedOut, RetryAfter):
+                        await message.edit_text(
+                            '\n'.join(message.text_html.split('\n')[:2] + [text]),
+                            parse_mode=ParseMode.HTML
+                        )
+                        the_time.value = time_()
+
+        async def task(item_id, name, item_type):
+            logger.debug(f"正在开始下载 \"{name}\" 的图标素材")
+            await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。")
+            asset: AssetsServiceType = getattr(self.assets_service, item_type)(item_id)  # 获取素材对象
+            asset_list.append(asset.honey_id)
+            # 找到该素材对象的所有图标类型
+            # 并根据图标类型找到下载对应图标的函数
+            for icon_type in asset.icon_types:
+                await getattr(asset, icon_type)(True)  # 执行下载函数
+            logger.debug(f"\"{name}\" 的图标素材下载成功")
+            await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。<b>成功！</b>")
+
+        for TYPE, ITEMS in HONEY_DATA.items():  # 遍历每个对象
             task_list = []
-            for id_, item in items.items():
-                task_list.append(asyncio.create_task(task(id_, item, type_)))
+            new_items = []
+            for ID, DATA in ITEMS.items():
+                if (ITEM := [ID, DATA[1], TYPE]) not in new_items:
+                    new_items.append(ITEM)
+                    task_list.append(asyncio.create_task(task(*ITEM)))
             await asyncio.gather(*task_list)  # 等待所有任务执行完成
 
         logger.info("图标素材下载完成")
+        return the_time.value
 
 
 class ItemData(BaseModel):

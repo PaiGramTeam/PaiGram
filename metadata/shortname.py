@@ -1,8 +1,10 @@
-from typing import Optional
+from __future__ import annotations
+
+from metadata.genshin import WEAPON_DATA
 
 __all__ = [
     'roles', 'weapons',
-    'roleToId', 'roleToName', 'weaponToName',
+    'roleToId', 'roleToName', 'weaponToName', 'weaponToId'
 ]
 
 # noinspection SpellCheckingInspection
@@ -89,7 +91,8 @@ roles = {
     10000067: ['柯莱', 'Collei', 'collei', '柯来', '科莱', '科来', '小天使', '须弥安柏', '须弥飞行冠军', '见习巡林员',
                '克莱', '草安伯'],
     10000068: ['多莉', 'Dori', 'dori', '多利', '多力', '多丽', '奸商'],
-    10000069: ['提纳里', 'Tighnari', 'tighnari', '小提', '提那里', '缇娜里', '提哪里', '驴', '柯莱老师', '柯莱师傅', '巡林官',
+    10000069: ['提纳里', 'Tighnari', 'tighnari', '小提', '提那里', '缇娜里', '提哪里', '驴', '柯莱老师', '柯莱师傅',
+               '巡林官',
                '提那里'],
     10000070: ['妮露', 'Nilou', 'nilou', '尼露', '尼禄'],
     10000071: ['赛诺', 'Cyno', 'cyno', '赛洛'],
@@ -109,7 +112,7 @@ weapons = {
     "松籁响起之时": ["松籁", "乐团大剑", "松剑"],
     "苍古自由之誓": ["苍古", "乐团剑"],
 
-    "渔获": ["鱼叉"],
+    "「渔获」": ["鱼叉", "渔叉"],
     "衔珠海皇": ["海皇", "咸鱼剑", "咸鱼大剑"],
 
     "匣里日月": ["日月"],
@@ -185,7 +188,7 @@ def roleToName(shortname: str) -> str:
 
 
 # noinspection PyPep8Naming
-def roleToId(name: str) -> Optional[int]:
+def roleToId(name: str) -> int | None:
     """获取角色ID"""
     return next((key for key, value in roles.items() for n in value if n == name), None)
 
@@ -194,3 +197,9 @@ def roleToId(name: str) -> Optional[int]:
 def weaponToName(shortname: str) -> str:
     """讲武器昵称转为正式名"""
     return next((key for key, value in weapons.items() if shortname == key or shortname in value), shortname)
+
+
+# noinspection PyPep8Naming
+def weaponToId(name: str) -> int | None:
+    """获取武器ID"""
+    return next((int(key) for key, value in WEAPON_DATA.items() if weaponToName(name) in value['name']), None)

@@ -5,6 +5,7 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
+from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
@@ -14,7 +15,7 @@ from core.user import UserService
 from core.user.error import UserNotFoundError
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.helpers import get_genshin_client, url_to_file, get_public_genshin_client
+from utils.helpers import get_genshin_client, get_public_genshin_client
 from utils.log import logger
 
 
@@ -31,11 +32,17 @@ class NoMostKills(Exception):
 class Abyss(Plugin, BasePlugin):
     """深渊数据查询"""
 
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
-                 template_service: TemplateService = None):
+    def __init__(
+            self,
+            user_service: UserService = None,
+            cookies_service: CookiesService = None,
+            template_service: TemplateService = None,
+            assets_service: AssetsService = None
+    ):
         self.template_service = template_service
         self.cookies_service = cookies_service
         self.user_service = user_service
+        self.assets_service = assets_service
 
     @staticmethod
     def _get_role_star_bg(value: int):
@@ -65,23 +72,23 @@ class Abyss(Plugin, BasePlugin):
             "total_stars": spiral_abyss_info.total_stars,
             "most_played_list": [],
             "most_kills": {
-                "icon": await url_to_file(ranks.most_kills[0].side_icon),
+                "icon": await self.assets_service.avatar(ranks.most_kills[0].id).side(),
                 "value": ranks.most_kills[0].value,
             },
             "strongest_strike": {
-                "icon": await url_to_file(ranks.strongest_strike[0].side_icon),
+                "icon": await self.assets_service.avatar(ranks.strongest_strike[0].id).side(),
                 "value": ranks.strongest_strike[0].value
             },
             "most_damage_taken": {
-                "icon": await url_to_file(ranks.most_damage_taken[0].side_icon),
+                "icon": await self.assets_service.avatar(ranks.most_damage_taken[0].id).side(),
                 "value": ranks.most_damage_taken[0].value
             },
             "most_bursts_used": {
-                "icon": await url_to_file(ranks.most_bursts_used[0].side_icon),
+                "icon": await self.assets_service.avatar(ranks.most_bursts_used[0].id).side(),
                 "value": ranks.most_bursts_used[0].value
             },
             "most_skills_used": {
-                "icon": await url_to_file(ranks.most_skills_used[0].side_icon),
+                "icon": await self.assets_service.avatar(ranks.most_skills_used[0].id).side(),
                 "value": ranks.most_skills_used[0].value
             }
         }
@@ -89,7 +96,7 @@ class Abyss(Plugin, BasePlugin):
         most_played_list = ranks.most_played
         for most_played in most_played_list:
             temp = {
-                "icon": await url_to_file(most_played.icon),
+                "icon": await self.assets_service.avatar(most_played.id).icon(),
                 "value": most_played.value,
                 "background": self._get_role_star_bg(most_played.rarity)
             }

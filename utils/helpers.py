@@ -1,13 +1,14 @@
 import hashlib
 import os
 from pathlib import Path
-from typing import Optional, Tuple, Union, cast
+from typing import Optional, Tuple, TypeVar, Union, cast
 
 import aiofiles
 import genshin
 import httpx
 from genshin import Client, types
 from httpx import UnsupportedProtocol
+from typing_extensions import ParamSpec
 
 from core.bot import bot
 from core.cookies.services import CookiesService, PublicCookiesService
@@ -16,6 +17,9 @@ from core.user.services import UserService
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 from utils.models.base import RegionEnum
+
+T = TypeVar('T')
+P = ParamSpec('P')
 
 USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
                   "Chrome/90.0.4430.72 Safari/537.36"
