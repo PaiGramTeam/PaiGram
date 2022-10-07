@@ -248,8 +248,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         except InvalidCookies:
             await message.reply_text("Cookies已经过期，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        except GenshinException as error:
-            await message.reply_text(f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常",
+        except GenshinException as exc:
+            await message.reply_text(f"获取账号信息发生错误，错误信息为 {str(exc)}，请检查Cookie或者账号是否正常",
                                      reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except (AttributeError, ValueError):
