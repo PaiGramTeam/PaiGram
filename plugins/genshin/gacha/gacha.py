@@ -19,6 +19,13 @@ from utils.decorators.restricts import restricts
 from utils.log import logger
 
 
+class GachaNotFound(Exception):
+    """卡池未找到"""
+
+    def __init__(self, gacha_name):
+        super().__init__(f"{gacha_name} gacha not found")
+
+
 class Gacha(Plugin, BasePlugin):
     """抽卡模拟器（非首模拟器/减寿模拟器）"""
 
@@ -41,13 +48,12 @@ class Gacha(Plugin, BasePlugin):
             if default and len(gacha_list_info.data["list"]) > 0:
                 gacha_id = gacha_list_info.data["list"][0]["gacha_id"]
             else:
-                return {}
+                raise GachaNotFound(gacha_name)
         gacha_info = await self.gacha.get_gacha_info(gacha_id)
         gacha_info["gacha_id"] = gacha_id
         return gacha_info
 
     @handler(CommandHandler, command="gacha", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^深渊数据查询(.*)"), block=False)
     @handler(MessageHandler, filters=filters.Regex("^非首模拟器(.*)"), block=False)
     @restricts(restricts_time=3, restricts_time_of_groups=20)
     @error_callable
@@ -63,8 +69,9 @@ class Gacha(Plugin, BasePlugin):
                     if key == gacha_name:
                         gacha_name = value
                         break
-            gacha_info = await self.gacha_info(gacha_name)
-            if gacha_info.get("gacha_id") is None:
+            try:
+                gacha_info = await self.gacha_info(gacha_name)
+            except GachaNotFound:
                 await message.reply_text(f"没有找到名为 {gacha_name} 的卡池")
                 return
         else:

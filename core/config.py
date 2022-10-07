@@ -48,6 +48,8 @@ class BotConfig(BaseSettings):
     logger_traceback_max_frames: int = 20
     logger_render_keywords: List[str] = ['BOT']
 
+    enka_network_api_agent: str = ""
+
     class Config:
         case_sensitive = False
         json_loads = json.loads

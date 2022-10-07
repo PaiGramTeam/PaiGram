@@ -22,8 +22,14 @@ from utils.helpers import get_genshin_client
 from utils.log import logger
 
 
+def get_now() -> datetime:
+    now = datetime.now()
+    return (now - timedelta(days=1)) if now.day == 1 and now.hour <= 4 else now
+
+
 def check_ledger_month(context: CallbackContext) -> int:
-    month = datetime.now().month
+    now_time = get_now()
+    month = now_time.month
     args = get_all_args(context)
     if len(args) >= 1:
         month = args[0]
@@ -36,8 +42,7 @@ def check_ledger_month(context: CallbackContext) -> int:
                     "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
         month = sum(num_dict.get(i, 0) for i in str(month))
     # check right
-    now_time = datetime.now()
-    allow_month = [datetime.now().month]
+    allow_month = [now_time.month]
     last_month = now_time.replace(day=1) - timedelta(days=1)
     allow_month.append(last_month.month)
     last_month = last_month.replace(day=1) - timedelta(days=1)

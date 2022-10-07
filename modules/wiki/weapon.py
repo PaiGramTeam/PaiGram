@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Union
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from modules.wiki.base import Model, SCRAPE_HOST, WikiModel
+from modules.wiki.base import Model, HONEY_HOST, WikiModel
 from modules.wiki.other import AttributeType, WeaponType
 
 __all__ = ['Weapon', 'WeaponAffix', 'WeaponAttribute']
@@ -45,7 +45,7 @@ class Weapon(WikiModel):
     """武器
 
     Attributes:
-        type: 武器类型
+        weapon_type: 武器类型
         attack: 基础攻击力
         attribute:
         affix: 武器技能
@@ -66,7 +66,7 @@ class Weapon(WikiModel):
 
     @staticmethod
     def scrape_urls() -> List[URL]:
-        return [SCRAPE_HOST.join(f"fam_{i.lower()}/?lang=CHS") for i in WeaponType.__members__]
+        return [HONEY_HOST.join(f"fam_{i.lower()}/?lang=CHS") for i in WeaponType.__members__]
 
     @classmethod
     async def _parse_soup(cls, soup: BeautifulSoup) -> 'Weapon':
@@ -99,10 +99,7 @@ class Weapon(WikiModel):
             affix = WeaponAffix(name=get_table_text(7), description=[
                 i.find_all('td')[1].text for i in tables[3].find_all('tr')[1:]
             ])
-            if len(tables) < 11:
-                description = get_table_text(-1)
-            else:
-                description = get_table_text(9)
+            description = get_table_text(-1) if len(tables) < 11 else get_table_text(9)
             if story_table := find_table('quotes'):
                 story = story_table[0].text.strip()
             else:
@@ -137,7 +134,7 @@ class Weapon(WikiModel):
     @property
     def icon(self) -> WeaponIcon:
         return WeaponIcon(
-            icon=str(SCRAPE_HOST.join(f'/img/{self.id}.webp')),
-            awakened=str(SCRAPE_HOST.join(f'/img/{self.id}_awaken_icon.webp')),
-            gacha=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_icon.webp')),
+            icon=str(HONEY_HOST.join(f'/img/{self.id}.webp')),
+            awakened=str(HONEY_HOST.join(f'/img/{self.id}_awaken_icon.webp')),
+            gacha=str(HONEY_HOST.join(f'/img/{self.id}_gacha_icon.webp')),
         )

@@ -1,4 +1,4 @@
-<h1 align="center" style="margin-left='50px'">TGPaimonBot</h1>
+<h1 align="center">TGPaimonBot</h1>
 
 <div align="center">
 <img src="https://img.shields.io/badge/python-3.8%2B-blue">
@@ -11,11 +11,12 @@
 <p>
 <img src="https://user-images.githubusercontent.com/70872201/190447002-119a8819-b111-4a96-a0b3-701c5e256137.png" align="right" width="100px">
 <h2 align="left">简介</h2>
-</p>
 
 基于 [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) 的 Paimon BOT
 
 项目仅供学习交流使用，严禁用于任何商业用途和非法行为
+
+![Alt](https://repobeats.axiom.co/api/embed/1c5f63b06e06654bd87076b9b1bc677cf96dac24.svg "Repobeats analytics image")
 
 ## 环境需求
 

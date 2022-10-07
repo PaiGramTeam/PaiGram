@@ -23,6 +23,7 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
 from core.baseplugin import BasePlugin
+from core.config import config
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user import UserService
@@ -35,6 +36,7 @@ from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
 from utils.log import logger
 from utils.models.base import RegionEnum
+from utils.patch.aiohttp import AioHttpTimeoutException
 
 assets = Assets(lang="chs")
 
@@ -42,7 +44,7 @@ assets = Assets(lang="chs")
 class PlayerCards(Plugin, BasePlugin):
     def __init__(self, user_service: UserService = None, template_service: TemplateService = None):
         self.user_service = user_service
-        self.client = EnkaNetworkAPI(lang="chs", agent="TGPaimonBot/3.0")
+        self.client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
         self.template_service = template_service
         self.temp_photo = open("resources/img/kitsune.png", "rb")
 
@@ -53,6 +55,8 @@ class PlayerCards(Plugin, BasePlugin):
             return "Enka.Network 服务请求错误，请稍后重试"
         except Forbidden:
             return "Enka.Network 服务请求被拒绝，请稍后重试"
+        except AioHttpTimeoutException:
+            return "Enka.Network 服务请求超时，请稍后重试"
         except HTTPException:
             return "Enka.Network HTTP 服务请求错误，请稍后重试"
         except UIDNotFounded:
