@@ -70,7 +70,7 @@ class AbyssTeam(Plugin, BasePlugin):
                 "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,
                 "background": self._get_role_star_bg(i.star),
-                "hava": i.name in user_data,
+                "hava": (i.name in user_data) if user_data else True,
             }
             abyss_team_data["up"].append(temp)
         for i in team_data.rateListDown[0].formation:
@@ -78,7 +78,7 @@ class AbyssTeam(Plugin, BasePlugin):
                 "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,
                 "background": self._get_role_star_bg(i.star),
-                "hava": i.name in user_data,
+                "hava": (i.name in user_data) if user_data else True,
             }
             abyss_team_data["down"].append(temp)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
