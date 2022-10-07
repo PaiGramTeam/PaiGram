@@ -219,7 +219,7 @@ class _AvatarAssets(_AssetsService):
 
     def __init__(self, client: Optional[AsyncClient] = None, enka: Optional[EnkaAssets] = None):
         super().__init__(client)
-        self._enka_api = enka or EnkaAssets()
+        self._enka_api = enka or EnkaAssets(lang='chs')
 
     def __call__(self, target: StrOrInt) -> "_AvatarAssets":
         temp = target
@@ -441,7 +441,7 @@ class _NamecardAssets(_AssetsService):
     def __call__(self, target: int) -> "_NamecardAssets":
         result = _NamecardAssets(self.client)
         result.id = target
-        result.enka = EnkaAssets().namecards(target)
+        result.enka = EnkaAssets(lang='chs').namecards(target)
         return result
 
     async def _get_from_ambr(self, item: str) -> Path | None:
