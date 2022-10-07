@@ -2,7 +2,7 @@
 name = "tgpaimonbot"
 version = "0.3.0"
 description = "Telegarm robot, query the official genshin information."
-authors = ["洛水居室", "zhxy-CN", "Chuangbo Li", "kotoriのねこ", "omg-xtao", "艾迪", "Karako"]
+authors = ["洛水居室", "zhxy-CN", "Chuangbo Li", "kotoriのねこ", "omg-xtao", "艾迪", "Karako", "SiHuaN"]
 license = "AGPL-3.0"
 readme = "README.md"
 
