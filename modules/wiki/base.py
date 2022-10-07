@@ -130,10 +130,7 @@ class WikiModel(Model):
             返回对应的 WikiModel
         """
         url = await cls.get_url_by_name(name)
-        if url is None:
-            return None
-        else:
-            return await cls._scrape(url)
+        return None if url is None else await cls._scrape(url)
 
     @classmethod
     async def get_full_data(cls) -> List[Self]:

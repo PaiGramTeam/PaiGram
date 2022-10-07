@@ -148,9 +148,8 @@ class _AssetsService(ABC):
             path = self.path.joinpath(f"{item}.png")
             if (result := await self._download(HONEY_HOST.join(f"img/{url}.png"), path)) is not None:
                 return result
-            else:
-                path = self.path.joinpath(f"{item}.webp")
-                return await self._download(HONEY_HOST.join(f"img/{url}.webp"), path)
+            path = self.path.joinpath(f"{item}.webp")
+            return await self._download(HONEY_HOST.join(f"img/{url}.webp"), path)
 
     async def _get_img(self, overwrite: bool = False, *, item: str) -> Path | None:
         """获取图标"""
@@ -216,9 +215,7 @@ class _AvatarAssets(_AssetsService):
     def enka(self) -> Optional[EnkaCharacterAsset]:
         api = getattr(self, '_enka_api', None)
         cid = getattr(self, 'id', None)
-        if api is None or cid is None:
-            return None
-        return api.character(cid)
+        return None if api is None or cid is None else api.character(cid)
 
     def __init__(self, client: Optional[AsyncClient] = None, enka: Optional[EnkaAssets] = None):
         super().__init__(client)
@@ -239,7 +236,7 @@ class _AvatarAssets(_AssetsService):
         return result
 
     async def _get_from_ambr(self, item: str) -> Path | None:
-        if item in ['icon', 'side', 'gacha']:
+        if item in {'icon', 'side', 'gacha'}:
             url = AMBR_HOST.join(f"assets/UI/{self.game_name_map[item]}.png")
             return await self._download(url, self.path.joinpath(f"{item}.png"))
 
@@ -302,10 +299,7 @@ class _WeaponAssets(_AssetsService):
         temp = target
         result = _WeaponAssets(self.client)
         if isinstance(target, str):
-            if target.isnumeric():
-                target = int(target)
-            else:
-                target = weaponToId(target)
+            target = int(target) if target.isnumeric() else weaponToId(target)
         if isinstance(target, str) or target is None:
             raise AssetsCouldNotFound(f"找不到对应的武器: target={temp}")
         result.id = target
@@ -346,7 +340,7 @@ class _MaterialAssets(_AssetsService):
             if target.isnumeric():
                 target = int(target)
             else:
-                target = {v['name']: int(k) for k, v in MATERIAL_DATA.items()}.get(target, None)
+                target = {v['name']: int(k) for k, v in MATERIAL_DATA.items()}.get(target)
         if isinstance(target, str) or target is None:
             raise AssetsCouldNotFound(f"找不到对应的素材: target={temp}")
         result.id = target

@@ -48,7 +48,7 @@ async def get_avatar_data() -> DATA_TYPE:
         honey_id = re.findall(r"/(.*?)/", data[1])[0]
         name = re.findall(r'>(.*)<', data[1])[0]
         rarity = int(re.findall(r">(\d)<", data[2])[0])
-        result.update({cid: [honey_id, name, rarity]})
+        result[cid] = [honey_id, name, rarity]
     return result
 
 
@@ -68,7 +68,7 @@ async def get_weapon_data() -> DATA_TYPE:
             wid = int(re.findall(r'\d+', data[1])[0])
             honey_id = re.findall(r"/(.*?)/", data[1])[0]
             rarity = int(re.findall(r">(\d)<", data[2])[0])
-            result.update({wid: [honey_id, name, rarity]})
+            result[wid] = [honey_id, name, rarity]
     return result
 
 
@@ -96,7 +96,7 @@ async def get_material_data() -> DATA_TYPE:
                 if name == item['name']:
                     break
             mid = int(mid) or int(re.findall(r'\d+', data[1])[0])
-            result.update({mid: [honey_id, name, rarity]})
+            result[mid] = [honey_id, name, rarity]
     return result
 
 
@@ -126,7 +126,7 @@ async def get_artifact_data() -> DATA_TYPE:
             if name == item['name']:
                 break
         aid = aid or re.findall(r'\d+', data[1])[0]
-        result.update({aid: [honey_id, name, first_id]})
+        result[aid] = [honey_id, name, first_id]
 
     return result
 
@@ -155,7 +155,7 @@ async def get_namecard_data() -> DATA_TYPE:
         except IndexError:  # 暂不支持 beta 的名片
             continue
         rarity = int(re.findall(r">(\d)<", data[2])[0])
-        result.update({nid: [honey_id, name, rarity]})
+        result[nid] = [honey_id, name, rarity]
 
     return result
 

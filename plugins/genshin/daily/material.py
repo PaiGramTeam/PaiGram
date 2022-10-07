@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import re
 from asyncio import Lock
 from ctypes import c_double
@@ -343,7 +344,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         id_ = re.findall(r"/(.*)?/", tag['href'])[0]
                         if tag.text.strip() == '旅行者':  # 忽略主角
                             continue
-                        id_ = ("10000" if not id_.startswith('i_n') else "") + re.findall(r'\d+', id_)[0]
+                        id_ = ("" if id_.startswith('i_n') else "10000") + re.findall(r'\d+', id_)[0]
                         for day in map(int, tag.find('div')['data-days']):  # 获取该角色/武器的可培养天
                             result[key][day][1].append(id_)
                 for stage, schedules in result.items():
@@ -382,14 +383,12 @@ class DailyMaterial(Plugin, BasePlugin):
                         and
                         time_() >= (the_time.value + INTERVAL)
                 ):
-                    try:
+                    with contextlib.suppress(TimedOut, RetryAfter):
                         await message.edit_text(
                             '\n'.join(message.text_html.split('\n')[:2] + [text]),
                             parse_mode=ParseMode.HTML
                         )
                         the_time.value = time_()
-                    except (TimedOut, RetryAfter):
-                        pass
 
         async def task(item_id, name, item_type):
             logger.debug(f"正在开始下载 \"{name}\" 的图标素材")

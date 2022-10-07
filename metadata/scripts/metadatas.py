@@ -32,7 +32,7 @@ async def update_metadata_from_github(overwrite: bool = True):
     if not overwrite and path.exists():
         return
 
-    host = URL("https://raw.githubusercontent.com/Dimbreath/GenshinData/master/")
+    host = URL("https://raw.fastgit.org/Dimbreath/GenshinData/master/")
 
     text_map_url = host.join("TextMap/TextMapCHS.json")
     material_url = host.join("ExcelBinOutput/MaterialExcelConfigData.json")
