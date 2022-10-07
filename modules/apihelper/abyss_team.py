@@ -41,7 +41,7 @@ class TeamRateResult(BaseModel):
         rateListFull = []
         for teamUp in self.rateListUp:
             for teamDown in self.rateListDown:
-                if set(teamUp.formation) & set(teamDown.formation):
+                if {member.name for member in teamUp.formation} & {member.name for member in teamDown.formation}:
                     continue
                 self.rateListFull.append(FullTeamRate(up=teamUp, down=teamDown))
         return rateListFull
