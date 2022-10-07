@@ -136,11 +136,11 @@ async def get_namecard_data() -> DATA_TYPE:
 
     if not NAMECARD_DATA:
         # noinspection PyProtectedMember
-        from metadata.genshin import _get_content
+        from metadata.genshin import Data
         from metadata.scripts.metadatas import update_metadata_from_github
         await update_metadata_from_github()
         # noinspection PyPep8Naming
-        NAMECARD_DATA = _get_content('namecard')
+        NAMECARD_DATA = Data('namecard')
     url = HONEY_HOST.join("fam_nameplate/?lang=CHS")
     result = {}
 
