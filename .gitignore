@@ -36,6 +36,7 @@ report/
 plugins/genshin/daily/daily.json
 metadata/data/
 resources/assets/
+modules/apihelper/gacha_log/
 
 ### DotEnv ###
 .env
