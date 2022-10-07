@@ -58,7 +58,7 @@ class Abyss(Plugin, BasePlugin):
             _uid = client.uid
             await client.get_record_cards()
         else:
-            _uid = client.uid
+            _uid = uid
         spiral_abyss_info = await client.get_spiral_abyss(_uid)
         if not spiral_abyss_info.unlocked:
             raise AbyssUnlocked
