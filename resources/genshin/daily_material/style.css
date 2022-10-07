@@ -214,7 +214,7 @@ body {
     position: relative;
 }
 
-.item-not-owned:after {
+.item-not-owned::after {
     content: "";
     position: absolute;
     top: 0;
