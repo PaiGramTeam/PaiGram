@@ -47,7 +47,7 @@ class TeamRateResult(BaseModel):
 
     def sort(self, characters: List[str]):
         for team in self.rateListFull:
-            team.ownerNum = sum([1 for member in team.up.formation + team.down.formation if member.name in characters])
+            team.ownerNum = sum(member.name in characters for member in team.up.formation + team.down.formation)
         self.rateListFull.sort(key=lambda x: (x.ownerNum / 4 * x.rate), reverse=True)
 
 
