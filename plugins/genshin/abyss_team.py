@@ -65,7 +65,7 @@ class AbyssTeam(Plugin, BasePlugin):
             "up": [],
             "down": []
         }
-        for i in team_data.rateListUp[0].formation:
+        for i in team_data.rate_list_full[0].up.formation:
             temp = {
                 "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,
@@ -73,7 +73,7 @@ class AbyssTeam(Plugin, BasePlugin):
                 "hava": (i.name in user_data) if user_data else True,
             }
             abyss_team_data["up"].append(temp)
-        for i in team_data.rateListDown[0].formation:
+        for i in team_data.rate_list_full[0].down.formation:
             temp = {
                 "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,
