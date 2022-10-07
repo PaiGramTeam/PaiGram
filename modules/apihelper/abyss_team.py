@@ -20,20 +20,38 @@ class TeamRate(BaseModel):
     def str2float(cls, v):  # pylint: disable=R0201
         return float(v.replace('%', '')) / 100.0 if isinstance(v, str) else v
 
+class FullTeamRate(BaseModel):
+    rate: float
+    up: TeamRate
+    down: TeamRate
+    ownerNum: Optional[int]
+
+    def __init__(self, up: TeamRate, down: TeamRate):
+        self.up = up
+        self.down = down
+        self.rate = self.up.rate + self.down.rate
 
 class TeamRateResult(BaseModel):
     rateListUp: List[TeamRate]
     rateListDown: List[TeamRate]
+    rateListFull: List[FullTeamRate]
     userCount: int
 
-    def sort(self, characters: List[str]):
-        for team in self.rateListUp:
-            team.ownerNum = len(set(characters) & {member.name for member in team.formation})
-        for team in self.rateListDown:
-            team.ownerNum = len(set(characters) & {member.name for member in team.formation})
-        self.rateListUp.sort(key=lambda x: (x.ownerNum / 4 * x.rate), reverse=True)
-        self.rateListDown.sort(key=lambda x: (x.ownerNum / 4 * x.rate), reverse=True)
+    def __init__(self,rateListUp:List[TeamRate],rateListDown:List[TeamRate],userCount:int) -> None:
+        self.rateListUp = rateListUp
+        self.rateListDown = rateListDown
+        self.userCount = userCount
+        self.rateListFull = []
+        for teamUp in self.rateListUp:
+            for teamDown in self.rateListDown:
+                if set(teamUp.formation) & set(teamDown.formation):
+                    continue
+                self.rateListFull.append(FullTeamRate(up=teamUp, down=teamDown))
 
+    def sort(self, characters: List[str]):
+        for team in self.rateListFull:
+            team.ownerNum = sum([1 for member in team.up.formation + team.down.formation if member.name in characters])
+        self.rateListFull.sort(key=lambda x: (x.ownerNum / 4 * x.rate), reverse=True)
 
 class AbyssTeamData:
     TEAM_RATE_API = "https://www.youchuang.fun/gamerole/formationRate"
