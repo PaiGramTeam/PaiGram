@@ -4,15 +4,24 @@ from telegram import Update, Chat, ChatMember, ChatMemberOwner, ChatMemberAdmini
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CommandHandler, CallbackContext
 
+from core.cookies import CookiesService
+from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
+from core.user import UserService
+from core.user.error import UserNotFoundError
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger
+from utils.models.base import RegionEnum
 
 
 class GetChat(Plugin):
+    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None):
+        self.cookies_service = cookies_service
+        self.user_service = user_service
+
     @staticmethod
-    def parse_chat(chat: Chat, admins: List[ChatMember]) -> str:
+    def parse_group_chat(chat: Chat, admins: List[ChatMember]) -> str:
         text = f"群 ID：<code>{chat.id}</code>\n" \
                f"群名称：<code>{chat.title}</code>\n"
         if chat.username:
@@ -36,6 +45,26 @@ class GetChat(Plugin):
                 text += "\n"
         return text
 
+    async def parse_private_chat(self, chat: Chat) -> str:
+        text = f"用户 ID：<code>{chat.id}</code>\n" \
+                   f"用户名称：<code>{chat.full_name}</code>\n"
+        if chat.username:
+            text += f"用户名：@{chat.username}\n"
+        try:
+            user_info = await self.user_service.get_user_by_id(chat.id)
+        except UserNotFoundError:
+            user_info = None
+        if user_info is not None:
+            text += "米游社绑定：" if user_info.region == RegionEnum.HYPERION else "HOYOLAB 绑定："
+            temp = "Cookie 绑定"
+            try:
+                await self.cookies_service.get_cookies(chat.id, user_info.region)
+            except CookiesNotFoundError:
+                temp = "UID 绑定"
+            text += f"<code>{temp}</code>\n" \
+                    f"游戏 ID：<code>{user_info.genshin_uid or user_info.yuanshen_uid}</code>"
+        return text
+
     @handler(CommandHandler, command="get_chat", block=False)
     @bot_admins_rights_check
     async def get_chat(self, update: Update, context: CallbackContext):
@@ -48,16 +77,17 @@ class GetChat(Plugin):
             return
         try:
             chat_id = int(args[0])
-            if chat_id > 0:
-                await message.reply_text("参数错误，请指定群 id ！")
-                return
         except ValueError:
             await message.reply_text("参数错误，请指定群 id ！")
             return
         try:
             chat = await message.get_bot().get_chat(args[0])
-            admins = await chat.get_administrators()
-            await message.reply_text(self.parse_chat(chat, admins), parse_mode="HTML")
+            if chat_id < 0:
+                admins = await chat.get_administrators() if chat_id < 0 else None
+                text = self.parse_group_chat(chat, admins)
+            else:
+                text = await self.parse_private_chat(chat)
+            await message.reply_text(text, parse_mode="HTML")
         except (BadRequest, Forbidden) as exc:
-            await message.reply_text(f"获取群信息失败，API 返回：{exc}")
+            await message.reply_text(f"通过 id 获取会话信息失败，API 返回：{exc}")
             return
