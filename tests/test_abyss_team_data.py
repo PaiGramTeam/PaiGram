@@ -33,5 +33,6 @@ async def test_abyss_team_data(abyss_team_data: AbyssTeamData):
         LOGGER.info("rate up info:name %s star %s", i.name, i.star)
     assert isinstance(team_data.rateListFull[0], FullTeamRate)
     assert isinstance(team_data.rateListFull[-1], FullTeamRate)
-    assert team_data.rateListFull[0].rate > 1
-    assert team_data.rateListFull[-1].rate > 1
+    memberUp = { i.name for i in team_data.rateListFull[0].up.formation }
+    memberDown = { i.name for i in team_data.rateListFull[0].down.formation }
+    assert memberUp & memberDown == set()
