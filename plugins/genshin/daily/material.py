@@ -125,7 +125,7 @@ class DailyMaterial(Plugin, BasePlugin):
         try:
             logger.debug("尝试获取已绑定的原神账号")
             client = await get_genshin_client(user.id)
-            logger.debug(f"获取玩家数据成功成功: UID={client.uid}")
+            logger.debug(f"获取账号数据成功: UID={client.uid}")
             characters = await client.get_genshin_characters(client.uid)
             for character in characters:
                 if character.name == '旅行者':  # 跳过主角
