@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Generic, Iterator, KeysView, TypeVar
+from typing import Any, Generic, ItemsView, Iterator, KeysView, TypeVar
 
 import ujson as json
 
@@ -32,20 +32,20 @@ class Data(dict, Generic[K, V]):
 
     @property
     def data(self) -> dict[K, V]:
-        if not (result := _cache.get(self._file_name, None)):
+        if (result := _cache.get(self._file_name)) not in [None, {}]:
             self._dict = result
-            super(Data, self).__init__(result)
-        path = data_dir.joinpath(self._file_name).with_suffix('.json')
-        if not path.exists():
-            logger.error(
-                f"暂未找到名为 \"{self._file_name}.json\" 的 metadata , "
-                "请先使用 [yellow bold]/refresh_metadata[/] 命令下载",
-                extra={'markup': True}
-            )
-            self._dict = {}
-        with open(path, encoding='utf-8') as file:
-            self._dict = json.load(file)
-        _cache.update({self._file_name: self._dict})
+        else:
+            path = data_dir.joinpath(self._file_name).with_suffix('.json')
+            if not path.exists():
+                logger.error(
+                    f"暂未找到名为 \"{self._file_name}.json\" 的 metadata , "
+                    "请先使用 [yellow bold]/refresh_metadata[/] 命令下载",
+                    extra={'markup': True}
+                )
+                self._dict = {}
+            with open(path, encoding='utf-8') as file:
+                self._dict = json.load(file)
+            _cache.update({self._file_name: self._dict})
         return self._dict
 
     def __init__(self, file_name: str):
@@ -53,8 +53,8 @@ class Data(dict, Generic[K, V]):
         self._dict = {}
         super(Data, self).__init__()
 
-    def get(self, key: K) -> V | None:
-        return self.data.get(key)
+    def get(self, key: K, value: Any = None) -> V | None:
+        return self.data.get(key, value)
 
     def __getitem__(self, key: K) -> V:
         return self.data.__getitem__(key)
@@ -70,6 +70,9 @@ class Data(dict, Generic[K, V]):
 
     def keys(self) -> KeysView[K, V]:
         return self.data.keys()
+
+    def items(self) -> ItemsView[K, V]:
+        return self.data.items()
 
 
 HONEY_DATA: dict[str, dict[StrOrInt, list[str | int]]] = Data('honey')
