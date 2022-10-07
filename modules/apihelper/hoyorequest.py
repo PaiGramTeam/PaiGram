@@ -2,7 +2,7 @@ from typing import Union
 
 from modules.apihelper.error import NetworkError, ResponseError, DataNotFindError
 from modules.apihelper.httpxrequest import HTTPXRequest
-from modules.apihelper.types import POST_DATA, JSON_DATA
+from modules.apihelper.typedefs import POST_DATA, JSON_DATA
 
 
 class HOYORequest(HTTPXRequest):

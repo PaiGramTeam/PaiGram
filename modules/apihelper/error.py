@@ -6,6 +6,10 @@ class NetworkError(APIHelperError):
     pass
 
 
+class TimedOut(APIHelperError):
+    pass
+
+
 class ResponseError(APIHelperError):
     pass
 

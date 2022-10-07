@@ -79,26 +79,9 @@ class ArtworkInfo:
 
 class PostFullInCollectionInfo:
 
-    def __init__(self, response: Dict[str, Any]):
-        """PostFullInCollectionInfo
-        :param response: 相应请求
-        """
-        self.response: dict = response
-        self.code = response["retcode"]
-        if self.code == 0:
-            self.error = False
-        else:
-            if self.code == 1102:
-                self.message = "作品不存在"
-            self.error = True
-            return
-        if response["data"] is None:
-            self.error = True
-        self.message: str = response["message"]
-        if self.error:
-            return
+    def __init__(self, data: Dict[str, Any]):
         try:
-            self._data_post = response["data"]["post"]
+            self._data_post = data["post"]
             post = self._data_post["post"]  # 投稿信息
             post_id = post["post_id"]
             subject = post["subject"]  # 介绍，类似title标题

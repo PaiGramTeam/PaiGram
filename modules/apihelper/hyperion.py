@@ -4,8 +4,8 @@ from typing import List
 
 from httpx import AsyncClient
 
-from modules.apihelper.base import PostFullInCollectionInfo, ArtworkImage, BaseResponseData
-from modules.apihelper.helpers import get_ds, get_device_id
+from modules.apihelper.base import PostFullInCollectionInfo, ArtworkImage
+from modules.apihelper.helpers import get_device_id
 from modules.apihelper.hoyorequest import HOYORequest
 from utils.typedefs import JSONDict
 
@@ -98,7 +98,7 @@ class Hyperion:
             "read": read
         }
         response = await self.client.get(self.POST_FULL_URL, params=params)
-        return PostFullInCollectionInfo(response=response)
+        return PostFullInCollectionInfo(data=response)
 
     async def get_post_full_info(self, gids: int, post_id: int, read: int = 1) -> JSONDict:
         params = {
@@ -111,8 +111,6 @@ class Hyperion:
 
     async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
         artwork_info = await self.get_artwork_info(gids, post_id)
-        if artwork_info.error:
-            return []
         urls = artwork_info.results.image_url_list
         art_list = []
         task_list = [
@@ -150,213 +148,122 @@ class Hyperion:
         await self.client.shutdown()
 
 
-class YuanShen:
-    SIGN_INFO_URL = "https://api-takumi.mihoyo.com/event/bbs_sign_reward/info"
-    SIGN_URL = "https://api-takumi.mihoyo.com/event/bbs_sign_reward/sign"
-    SIGN_HOME_URL = "https://api-takumi.mihoyo.com/event/bbs_sign_reward/home"
+class SignIn:
+    LOGIN_URL = "https://webapi.account.mihoyo.com/Api/login_by_mobilecaptcha"
+    S_TOKEN_URL = "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?" \
+                  "login_ticket={0}&token_types=3&uid={1}"
+    BBS_URL = "https://api-takumi.mihoyo.com/account/auth/api/webLoginByMobile"
+    USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " \
+                 "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+    HEADERS = {
+        "Host": "webapi.account.mihoyo.com",
+        "Connection": "keep-alive",
+        "sec-ch-ua": "\".Not/A)Brand\";v=\"99\", \"Microsoft Edge\";v=\"103\", \"Chromium\";v=\"103\"",
+        "DNT": "1",
+        "x-rpc-device_model": "OS X 10.15.7",
+        "sec-ch-ua-mobile": "?0",
+        "User-Agent": USER_AGENT,
+        'x-rpc-device_id': get_device_id(USER_AGENT),
+        "Accept": "application/json, text/plain, */*",
+        "x-rpc-device_name": "Microsoft Edge 103.0.1264.62",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "x-rpc-client_type": "4",
+        "sec-ch-ua-platform": "\"macOS\"",
+        "Origin": "https://user.mihoyo.com",
+        "Sec-Fetch-Site": "same-site",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Dest": "empty",
+        "Referer": "https://user.mihoyo.com/",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"
+    }
+    BBS_HEADERS = {
+        "Host": "api-takumi.mihoyo.com",
+        "Content-Type": "application/json;charset=utf-8",
+        "Origin": "https://bbs.mihoyo.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Accept": "application/json, text/plain, */*",
+        "User-Agent": USER_AGENT,
+        "Referer": "https://bbs.mihoyo.com/",
+        "Accept-Language": "zh-CN,zh-Hans;q=0.9"
+    }
 
-    APP_VERSION = "2.3.0"
-    USER_AGENT = "Mozilla/5.0 (Linux; Android 9; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) " \
-                 "Version/4.0 Chrome/39.0.0.0 Mobile Safari/537.36 miHoYoBBS/2.3.0"
-    REFERER = "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?" \
-              "bbs_auth_required=true&act_id=e202009291139501&utm_source=hyperion&utm_medium=mys&utm_campaign=icon"
-    ORIGIN = "https://webstatic.mihoyo.com"
+    def __init__(self, phone: int):
+        self.phone = phone
+        self.client = AsyncClient()
+        self.uid = 0
+        self.cookie = {}
 
-    ACT_ID = "e202009291139501"
-    DS_SALT = "h8w582wxwgqvahcdkpvdhbh2w9casgfl"
-
-    def __init__(self):
-        self.headers = {
-            "Origin": self.ORIGIN,
-            'DS': get_ds(self.DS_SALT),
-            'x-rpc-app_version': self.APP_VERSION,
-            'User-Agent': self.USER_AGENT,
-            'x-rpc-client_type': '5',  # 1为ios 2为安卓 4为pc_web 5为mobile_web
-            'Referer': self.REFERER,
-            'x-rpc-device_id': get_device_id(self.USER_AGENT)}
-        self.client = AsyncClient(headers=self.headers)
-
-    async def is_sign(self, uid: int, region: str = "cn_gf01", cookies: dict = None):
+    def parse_uid(self):
         """
-        检查是否签到
-        :param uid: 游戏UID
-        :param region: 服务器
-        :param cookies: cookie
+        从cookie中获取uid
+        :param self:
         :return:
         """
-        params = {
-            "act_id": self.ACT_ID,
-            "region": region,
-            "uid": uid
-        }
-        req = await self.client.get(self.SIGN_INFO_URL, params=params, cookies=cookies)
-        if req.is_error:
-            return BaseResponseData(error_message="请求错误")
-        return BaseResponseData(req.json())
-
-    async def sign(self, uid: int, region: str = "cn_gf01", cookies: dict = None):
-        """
-        执行签到
-        :param uid: 游戏UID
-        :param region: 服务器
-        :param cookies: cookie
-        :return:
-        """
-        data = {
-            "act_id": self.ACT_ID,
-            "region": region,
-            "uid": uid
-        }
-        req = await self.client.post(self.SIGN_URL, json=data, cookies=cookies)
-        if req.is_error:
-            return BaseResponseData(error_message="签到失败")
-        return BaseResponseData(req.json())
-
-    async def get_sign_give(self, cookies: dict = None):
-        """
-        返回今日签到信息
-        :param cookies:
-        :return:
-        """
-        params = {
-            "act_id": self.ACT_ID
-        }
-        req = await self.client.get(self.SIGN_HOME_URL, params=params, cookies=cookies)
-        if req.is_error:
+        if "login_ticket" not in self.cookie:
             return
-        return BaseResponseData(req.json())
+        for item in ["login_uid", "stuid", "ltuid", "account_id"]:
+            if item in self.cookie:
+                self.uid = self.cookie[item]
+                break
+        for item in ["login_uid", "stuid", "ltuid", "account_id"]:
+            self.cookie[item] = self.uid
 
-    async def __aenter__(self):
+    @staticmethod
+    def check_error(data: dict) -> bool:
         """
+        检查是否有错误
+        :param data:
         :return:
         """
-        pass
+        res_data = data.get("data", {})
+        return res_data.get("msg") == "验证码错误" or res_data.get("info") == "Captcha not match Err"
 
-    async def __aexit__(self, exc_type, exc, tb):
-        """
-        :param exc_type:
-        :param exc:
-        :param tb:
-        :return:
-        """
-        await self.client.aclose()
+    async def login(self, captcha: int) -> bool:
+        data = await self.client.post(
+            self.LOGIN_URL,
+            data={"mobile": str(self.phone), "mobile_captcha": str(captcha), "source": "user.mihoyo.com"},
+            headers=self.HEADERS
+        )
+        res_json = data.json()
+        if self.check_error(res_json):
+            return False
 
-    class SignIn:
-        LOGIN_URL = "https://webapi.account.mihoyo.com/Api/login_by_mobilecaptcha"
-        S_TOKEN_URL = "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?" \
-                      "login_ticket={0}&token_types=3&uid={1}"
-        BBS_URL = "https://api-takumi.mihoyo.com/account/auth/api/webLoginByMobile"
-        USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " \
-                     "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
-        HEADERS = {
-            "Host": "webapi.account.mihoyo.com",
-            "Connection": "keep-alive",
-            "sec-ch-ua": "\".Not/A)Brand\";v=\"99\", \"Microsoft Edge\";v=\"103\", \"Chromium\";v=\"103\"",
-            "DNT": "1",
-            "x-rpc-device_model": "OS X 10.15.7",
-            "sec-ch-ua-mobile": "?0",
-            "User-Agent": USER_AGENT,
-            'x-rpc-device_id': get_device_id(USER_AGENT),
-            "Accept": "application/json, text/plain, */*",
-            "x-rpc-device_name": "Microsoft Edge 103.0.1264.62",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "x-rpc-client_type": "4",
-            "sec-ch-ua-platform": "\"macOS\"",
-            "Origin": "https://user.mihoyo.com",
-            "Sec-Fetch-Site": "same-site",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Dest": "empty",
-            "Referer": "https://user.mihoyo.com/",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"
-        }
-        BBS_HEADERS = {
-            "Host": "api-takumi.mihoyo.com",
-            "Content-Type": "application/json;charset=utf-8",
-            "Origin": "https://bbs.mihoyo.com",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "keep-alive",
-            "Accept": "application/json, text/plain, */*",
-            "User-Agent": USER_AGENT,
-            "Referer": "https://bbs.mihoyo.com/",
-            "Accept-Language": "zh-CN,zh-Hans;q=0.9"
-        }
+        for k, v in data.cookies.items():
+            self.cookie[k] = v
 
-        def __init__(self, phone: int):
-            self.phone = phone
-            self.client = AsyncClient()
-            self.uid = 0
-            self.cookie = {}
+        self.parse_uid()
+        return bool(self.uid)
 
-        def parse_uid(self):
-            """
-            从cookie中获取uid
-            :param self:
-            :return:
-            """
-            if "login_ticket" not in self.cookie:
-                return
-            for item in ["login_uid", "stuid", "ltuid", "account_id"]:
-                if item in self.cookie:
-                    self.uid = self.cookie[item]
-                    break
-            for item in ["login_uid", "stuid", "ltuid", "account_id"]:
-                self.cookie[item] = self.uid
+    async def get_s_token(self):
+        data = await self.client.get(
+            self.S_TOKEN_URL.format(self.cookie["login_ticket"], self.uid),
+            headers={"User-Agent": self.USER_AGENT}
+        )
+        res_json = data.json()
+        res_data = res_json.get("data", {}).get("list", [])
+        for i in res_data:
+            if i.get("name") and i.get("token"):
+                self.cookie[i.get("name")] = i.get("token")
 
-        @staticmethod
-        def check_error(data: dict) -> bool:
-            """
-            检查是否有错误
-            :param data:
-            :return:
-            """
-            res_data = data.get("data", {})
-            return res_data.get("msg") == "验证码错误" or res_data.get("info") == "Captcha not match Err"
+    async def get_token(self, captcha: int) -> bool:
+        data = await self.client.post(
+            self.BBS_URL,
+            headers=self.BBS_HEADERS,
+            json={
+                "is_bh2": False,
+                "mobile": str(self.phone),
+                "captcha": str(captcha),
+                "action_type": "login",
+                "token_type": 6
+            }
+        )
+        res_json = data.json()
+        if self.check_error(res_json):
+            return False
 
-        async def login(self, captcha: int) -> bool:
-            data = await self.client.post(
-                self.LOGIN_URL,
-                data={"mobile": str(self.phone), "mobile_captcha": str(captcha), "source": "user.mihoyo.com"},
-                headers=self.HEADERS
-            )
-            res_json = data.json()
-            if self.check_error(res_json):
-                return False
+        for k, v in data.cookies.items():
+            self.cookie[k] = v
 
-            for k, v in data.cookies.items():
-                self.cookie[k] = v
-
-            self.parse_uid()
-            return bool(self.uid)
-
-        async def get_s_token(self):
-            data = await self.client.get(
-                self.S_TOKEN_URL.format(self.cookie["login_ticket"], self.uid),
-                headers={"User-Agent": self.USER_AGENT}
-            )
-            res_json = data.json()
-            res_data = res_json.get("data", {}).get("list", [])
-            for i in res_data:
-                if i.get("name") and i.get("token"):
-                    self.cookie[i.get("name")] = i.get("token")
-
-        async def get_token(self, captcha: int) -> bool:
-            data = await self.client.post(
-                self.BBS_URL,
-                headers=self.BBS_HEADERS,
-                json={
-                    "is_bh2": False,
-                    "mobile": str(self.phone),
-                    "captcha": str(captcha),
-                    "action_type": "login",
-                    "token_type": 6
-                }
-            )
-            res_json = data.json()
-            if self.check_error(res_json):
-                return False
-
-            for k, v in data.cookies.items():
-                self.cookie[k] = v
-
-            return "cookie_token" in self.cookie
+        return "cookie_token" in self.cookie
