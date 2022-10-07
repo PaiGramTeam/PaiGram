@@ -1,7 +1,7 @@
 from typing import Union
 
 from modules.apihelper.error import NetworkError, ResponseError, DataNotFindError
-from modules.apihelper.httpxrequest import HTTPXRequest
+from modules.apihelper.request.httpxrequest import HTTPXRequest
 from modules.apihelper.typedefs import POST_DATA, JSON_DATA
 
 
@@ -30,7 +30,6 @@ class HOYORequest(HTTPXRequest):
                 raise ResponseError(f"response error in return code: {return_code}")
             else:
                 raise ResponseError(f"response error: {message}[{return_code}]")
-        if not re_json_data:
-            if data is not None:
-                return data
+        if not re_json_data and data is not None:
+            return data
         return json_data

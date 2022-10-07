@@ -1,4 +1,3 @@
-import datetime
 from typing import Optional, List
 
 from bs4 import BeautifulSoup
@@ -8,10 +7,9 @@ from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
-from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.bot import bot
-from core.plugin import Plugin, conversation, handler, job
+from core.plugin import Plugin, conversation, handler
 from modules.apihelper.base import ArtworkImage
 from modules.apihelper.hyperion import Hyperion
 from utils.decorators.admins import bot_admins_rights_check
@@ -41,11 +39,6 @@ class Post(Plugin.Conversation, BasePlugin):
 
     def __init__(self):
         self.bbs = Hyperion()
-
-    @job.run_repeating(interval=datetime.timedelta(minutes=10), name="PostRefresh")
-    async def refresh(self, _: CallbackContext):
-        pass
-
 
     @conversation.entry_point
     @handler.command(command='post', filters=filters.ChatType.PRIVATE, block=True)
@@ -295,8 +288,3 @@ class Post(Plugin.Conversation, BasePlugin):
         await message.reply_text("推送成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
-
-class PostRedis:
-
-    def __int__(self, redis: RedisDB):
-        self.client = redis.client

@@ -7,7 +7,7 @@ import httpx
 
 class HTTPXRequest(AbstractAsyncContextManager):
 
-    def __init__(self, headers=None, *args, **kwargs):
+    def __init__(self, *args, headers=None, **kwargs):
         self._client = httpx.AsyncClient(headers=headers, *args, **kwargs)
 
     async def __aenter__(self):

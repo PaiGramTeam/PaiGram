@@ -1,14 +1,12 @@
+"""Test Url
+https://bbs.mihoyo.com/ys/article/29023709
+"""
 import pytest
 import pytest_asyncio
 from bs4 import BeautifulSoup
 from flaky import flaky
 
 from modules.apihelper.hyperion import Hyperion
-
-"""
-Test Url
-https://bbs.mihoyo.com/ys/article/29023709
-"""
 
 
 @pytest_asyncio.fixture

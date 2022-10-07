@@ -6,7 +6,7 @@ from httpx import AsyncClient
 
 from modules.apihelper.base import PostFullInCollectionInfo, ArtworkImage
 from modules.apihelper.helpers import get_device_id
-from modules.apihelper.hoyorequest import HOYORequest
+from modules.apihelper.request.hoyorequest import HOYORequest
 from utils.typedefs import JSONDict
 
 
