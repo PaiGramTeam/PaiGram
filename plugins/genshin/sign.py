@@ -39,29 +39,31 @@ class Sign(Plugin, BasePlugin):
         try:
             rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
         except GenshinException as error:
-            logger.error(f"UID {client.uid} 获取签到信息失败，API返回信息为 {str(error)}")
+            logger.warning(f"UID {client.uid} 获取签到信息失败，API返回信息为 {str(error)}")
             return f"获取签到信息失败，API返回信息为 {str(error)}"
         try:
             daily_reward_info = await client.get_reward_info(game=Game.GENSHIN, lang="zh-cn")  # 获取签到信息失败
         except GenshinException as error:
-            logger.error(f"UID {client.uid} 获取签到状态失败，API返回信息为 {str(error)}")
+            logger.warning(f"UID {client.uid} 获取签到状态失败，API返回信息为 {str(error)}")
             return f"获取签到状态失败，API返回信息为 {str(error)}"
         if not daily_reward_info.signed_in:
             try:
                 request_daily_reward = await client.request_daily_reward("sign", method="POST",
                                                                          game=Game.GENSHIN, lang="zh-cn")
-                logger.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
                     logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                     return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
             except AlreadyClaimed:
+                logger.info(f"UID {client.uid} 已经签到")
                 result = "今天旅行者已经签到过了~"
             except GenshinException as error:
-                logger.error(f"UID {client.uid} 签到失败，API返回信息为 {str(error)}")
+                logger.warning(f"UID {client.uid} 签到失败，API返回信息为 {str(error)}")
                 return f"获取签到状态失败，API返回信息为 {str(error)}"
             else:
+                logger.info(f"UID {client.uid} 签到成功")
                 result = "OK"
         else:
+            logger.info(f"UID {client.uid} 已经签到")
             result = "今天旅行者已经签到过了~"
         logger.info(f"UID {client.uid} 签到结果 {result}")
         reward = rewards[daily_reward_info.claimed_rewards - (1 if daily_reward_info.signed_in else 0)]

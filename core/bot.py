@@ -7,6 +7,7 @@ from multiprocessing import RLock as Lock
 from pathlib import Path
 from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Optional, TYPE_CHECKING, Type, TypeVar
 
+import genshin
 import pytz
 from async_timeout import timeout
 from telegram.error import NetworkError, TimedOut
@@ -199,6 +200,19 @@ class Bot:
                     logger.exception(f"服务 \"{service.__class__.__name__}\" 关闭失败: \n{type(e).__name__}: {e}")
 
     async def _post_init(self, context: CallbackContext) -> NoReturn:
+        logger.info('开始初始化 genshin.py 相关资源')
+        try:
+            # 替换为 fastgit 镜像源
+            for i in dir(genshin.utility.extdb):
+                if "_URL" in i:
+                    setattr(genshin.utility.extdb, i,
+                            getattr(genshin.utility.extdb, i).replace("githubusercontent.com", "fastgit.org"))
+            await genshin.utility.update_characters_enka()
+        except Exception as exc:
+            logger.error("初始化 genshin.py 相关资源失败")
+            logger.exception(exc)
+        else:
+            logger.success("初始化 genshin.py 相关资源成功")
         self._services.update({CallbackContext: context})
         logger.info('开始初始化服务')
         await self.start_services()

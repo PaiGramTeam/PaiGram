@@ -28,3 +28,6 @@ class MySQL(Service):
         """获取会话"""
         async with self.Session() as session:
             yield session
+
+    async def stop(self):
+        self.Session.close_all()

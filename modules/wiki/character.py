@@ -4,7 +4,7 @@ from typing import List, Optional
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from modules.wiki.base import Model, SCRAPE_HOST
+from modules.wiki.base import Model, HONEY_HOST
 from modules.wiki.base import WikiModel
 from modules.wiki.other import Association, Element, WeaponType
 
@@ -94,7 +94,7 @@ class Character(WikiModel):
 
     @classmethod
     def scrape_urls(cls) -> List[URL]:
-        return [SCRAPE_HOST.join("fam_chars/?lang=CHS")]
+        return [HONEY_HOST.join("fam_chars/?lang=CHS")]
 
     @classmethod
     async def _parse_soup(cls, soup: BeautifulSoup) -> 'Character':
@@ -170,8 +170,8 @@ class Character(WikiModel):
     @property
     def icon(self) -> CharacterIcon:
         return CharacterIcon(
-            icon=str(SCRAPE_HOST.join(f'/img/{self.id}_icon.webp')),
-            side=str(SCRAPE_HOST.join(f'/img/{self.id}_side_icon.webp')),
-            gacha=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_card.webp')),
-            splash=str(SCRAPE_HOST.join(f'/img/{self.id}_gacha_splash.webp'))
+            icon=str(HONEY_HOST.join(f'/img/{self.id}_icon.webp')),
+            side=str(HONEY_HOST.join(f'/img/{self.id}_side_icon.webp')),
+            gacha=str(HONEY_HOST.join(f'/img/{self.id}_gacha_card.webp')),
+            splash=str(HONEY_HOST.join(f'/img/{self.id}_gacha_splash.webp'))
         )

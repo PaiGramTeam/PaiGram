@@ -1,8 +1,10 @@
-from typing import Optional
+from __future__ import annotations
+
+from metadata.genshin import WEAPON_DATA
 
 __all__ = [
     'roles', 'weapons',
-    'roleToId', 'roleToName', 'weaponToName',
+    'roleToId', 'roleToName', 'weaponToName', 'weaponToId'
 ]
 
 # noinspection SpellCheckingInspection
@@ -86,12 +88,17 @@ roles = {
                '阿忍', '忍姐'],
     10000066: ['神里绫人', 'Ayato', 'ayato', 'Kamisato Ayato', '绫人', '神里凌人', '凌人', '0人', '神人', '零人',
                '大舅哥'],
-    10000067: ['柯莱', 'Collei', 'collei', '克莱', '科莱', '须弥飞行冠军', '草安伯'],
-    10000068: ['多莉', 'Dori', 'dori', '多利', '多丽'],
-    10000069: ['提纳里', 'Tighnari', 'tighnari', '巡林官', '小提', '缇娜里', '提哪里', '提那里'],
-    10000070: ['妮露', 'Nilou', 'nilou'],
-    10000071: ['赛诺', 'Cyno', 'cyno'],
-    10000072: ['坎蒂丝', 'Candace', 'candace'],
+    10000067: ['柯莱', 'Collei', 'collei', '柯来', '科莱', '科来', '小天使', '须弥安柏', '须弥飞行冠军', '见习巡林员',
+               '克莱', '草安伯'],
+    10000068: ['多莉', 'Dori', 'dori', '多利', '多力', '多丽', '奸商'],
+    10000069: ['提纳里', 'Tighnari', 'tighnari', '小提', '提那里', '缇娜里', '提哪里', '驴', '柯莱老师', '柯莱师傅',
+               '巡林官',
+               '提那里'],
+    10000070: ['妮露', 'Nilou', 'nilou', '尼露', '尼禄'],
+    10000071: ['赛诺', 'Cyno', 'cyno', '赛洛'],
+    10000072: ['坎蒂丝', 'Candace', 'candace', '坎迪斯'],
+    10000073: ['纳西妲', 'Nahida', 'nahida', '草王', '草神', '小吉祥草王', '草萝莉', '纳西坦'],
+    10000074: ['莱依拉', 'Layla', 'layla', '拉一拉'],
 }
 weapons = {
     "磐岩结绿": ["绿箭", "绿剑"],
@@ -105,7 +112,7 @@ weapons = {
     "松籁响起之时": ["松籁", "乐团大剑", "松剑"],
     "苍古自由之誓": ["苍古", "乐团剑"],
 
-    "渔获": ["鱼叉"],
+    "「渔获」": ["鱼叉", "渔叉"],
     "衔珠海皇": ["海皇", "咸鱼剑", "咸鱼大剑"],
 
     "匣里日月": ["日月"],
@@ -181,7 +188,7 @@ def roleToName(shortname: str) -> str:
 
 
 # noinspection PyPep8Naming
-def roleToId(name: str) -> Optional[int]:
+def roleToId(name: str) -> int | None:
     """获取角色ID"""
     return next((key for key, value in roles.items() for n in value if n == name), None)
 
@@ -190,3 +197,9 @@ def roleToId(name: str) -> Optional[int]:
 def weaponToName(shortname: str) -> str:
     """讲武器昵称转为正式名"""
     return next((key for key, value in weapons.items() if shortname == key or shortname in value), shortname)
+
+
+# noinspection PyPep8Naming
+def weaponToId(name: str) -> int | None:
+    """获取武器ID"""
+    return next((int(key) for key, value in WEAPON_DATA.items() if weaponToName(name) in value['name']), None)

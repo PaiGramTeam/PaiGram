@@ -1,3 +1,4 @@
+import contextlib
 from telegram import Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
@@ -60,14 +61,11 @@ class AdminPlugin(Plugin):
             await message.reply_text("输入错误")
             return
         try:
-            try:
-                char = await context.bot.get_chat(chat_id)
-                await message.reply_text(f"正在尝试退出群 {char.title}[{char.id}]")
-            except (BadRequest, Forbidden):
-                pass
+            with contextlib.suppress(BadRequest, Forbidden):
+                chat = await context.bot.get_chat(chat_id)
+                await message.reply_text(f"正在尝试退出群 {chat.title}[{chat.id}]")
             await context.bot.leave_chat(chat_id)
-        except (BadRequest, Forbidden) as error:
-            logger.error(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 \n", error)
-            await message.reply_text(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 {str(error)}")
+        except (BadRequest, Forbidden) as exc:
+            await message.reply_text(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 {str(exc)}")
             return
         await message.reply_text(f"退出 chat_id[{chat_id}] 成功！")

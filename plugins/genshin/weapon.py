@@ -2,11 +2,12 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.assets import AssetsService
+from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.wiki.services import WikiService
+from metadata.genshin import honey_id_to_game_id
 from metadata.shortname import weaponToName
 from modules.wiki.weapon import Weapon
 from utils.bot import get_all_args
@@ -27,11 +28,11 @@ class WeaponPlugin(Plugin, BasePlugin):
             self,
             template_service: TemplateService = None,
             wiki_service: WikiService = None,
-            assert_service: AssetsService = None
+            assets_service: AssetsService = None
     ):
         self.wiki_service = wiki_service
         self.template_service = template_service
-        self.assert_service = assert_service
+        self.assets_service = assets_service
 
     @handler(CommandHandler, command="weapon", block=False)
     @handler(MessageHandler, filters=filters.Regex("^武器查询(.*)"), block=False)
@@ -78,11 +79,13 @@ class WeaponPlugin(Plugin, BasePlugin):
                     "weapon_info_type_img": await url_to_file(_weapon_data.weapon_type.icon_url()),
                     "progression_secondary_stat_value": bonus,
                     "progression_secondary_stat_name": _weapon_data.attribute.type.value,
-                    "weapon_info_source_img": (await self.assert_service.weapon(_weapon_data.id).icon()).as_uri(),
+                    "weapon_info_source_img": (
+                        await self.assets_service.weapon(honey_id_to_game_id(_weapon_data.id, 'weapon')).icon()
+                    ).as_uri(),
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        (await self.assert_service.material(mid).icon()).as_uri()
+                        (await self.assets_service.material(honey_id_to_game_id(mid, 'material')).icon()).as_uri()
                         for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": _weapon_data.affix.name,
@@ -94,11 +97,13 @@ class WeaponPlugin(Plugin, BasePlugin):
                     "weapon_info_type_img": await url_to_file(_weapon_data.weapon_type.icon_url()),
                     "progression_secondary_stat_value": ' ',
                     "progression_secondary_stat_name": '无其它属性加成',
-                    "weapon_info_source_img": (await self.assert_service.weapon(_weapon_data.id).icon()).as_uri(),
+                    "weapon_info_source_img": (
+                        await self.assets_service.weapon(honey_id_to_game_id(_weapon_data.id, 'weapon')).icon()
+                    ).as_uri(),
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        (await self.assert_service.material(mid).icon()).as_uri()
+                        (await self.assets_service.material(honey_id_to_game_id(mid, 'material')).icon()).as_uri()
                         for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": '',

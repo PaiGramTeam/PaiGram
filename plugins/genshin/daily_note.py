@@ -97,10 +97,10 @@ class DailyNote(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
         except DataNotPublic:
-            reply_message = await update.message.reply_text("查询失败惹，可能是便签功能被禁用了？")
+            reply_message = await message.reply_text("查询失败惹，可能是便签功能被禁用了？")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
             return ConversationHandler.END
-        await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await update.message.reply_photo(png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True)
+        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        await message.reply_photo(png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True)
