@@ -36,4 +36,4 @@ async def test_abyss_team_data(abyss_team_data: AbyssTeamData):
     assert isinstance(team_data.rate_list_full[-1], FullTeamRate)
     memberUp = {i.name for i in team_data.rate_list_full[0].up.formation}
     memberDown = {i.name for i in team_data.rate_list_full[0].down.formation}
-    assert memberUp & memberDown == set()
+    assert not memberUp & memberDown
