@@ -35,5 +35,5 @@ async def test_abyss_team_data(abyss_team_data: AbyssTeamData):
     assert not memberUp & memberDown
     for i in team_data.rate_list_full[0].down.formation:
         LOGGER.info("rate down info:name %s star %s", i.name, i.star)
-    for i in team_data.rate_list_full[0].down.formation:
+    for i in team_data.rate_list_full[0].up.formation:
         LOGGER.info("rate up info:name %s star %s", i.name, i.star)
