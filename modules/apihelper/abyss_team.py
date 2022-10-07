@@ -1,5 +1,5 @@
 import time
-from typing import List, Optional
+from typing import List, Optional, Any
 
 import httpx
 from pydantic import BaseModel, parse_obj_as, validator
@@ -34,17 +34,16 @@ class FullTeamRate(BaseModel):
 class TeamRateResult(BaseModel):
     rateListUp: List[TeamRate]
     rateListDown: List[TeamRate]
+    rateListFull: List[FullTeamRate] = []
     userCount: int
 
-    @property
-    def rateListFull(self) -> List[FullTeamRate]:
-        rateListFull = []
+    def __init__(self, **data: Any):
+        super().__init__(**data)
         for teamUp in self.rateListUp:
             for teamDown in self.rateListDown:
                 if {member.name for member in teamUp.formation} & {member.name for member in teamDown.formation}:
                     continue
-                rateListFull.append(FullTeamRate(up=teamUp, down=teamDown))
-        return rateListFull
+                self.rateListFull.append(FullTeamRate(up=teamUp, down=teamDown))
 
     def sort(self, characters: List[str]):
         for team in self.rateListFull:
