@@ -31,7 +31,6 @@ class FullTeamRate(BaseModel):
 class TeamRateResult(BaseModel):
     rateListUp: List[TeamRate]
     rateListDown: List[TeamRate]
-    rateListFull: List[FullTeamRate]
     userCount: int
 
     @property
