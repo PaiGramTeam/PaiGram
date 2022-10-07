@@ -92,14 +92,14 @@ class Hyperion:
         response = await self.client.get(url=self.POST_FULL_IN_COLLECTION_URL, params=params)
         return response
 
-    async def get_artwork_info(self, gids: int, post_id: int, read: int = 1) -> PostInfo:
+    async def get_post_info(self, gids: int, post_id: int, read: int = 1) -> PostInfo:
         params = {
             "gids": gids,
             "post_id": post_id,
             "read": read
         }
         response = await self.client.get(self.POST_FULL_URL, params=params)
-        return PostInfo.paste_data(data=response)
+        return PostInfo.paste_data(response)
 
     async def get_post_full_info(self, gids: int, post_id: int, read: int = 1) -> JSONDict:
         params = {
@@ -111,7 +111,7 @@ class Hyperion:
         return response
 
     async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
-        post_info = await self.get_artwork_info(gids, post_id)
+        post_info = await self.get_post_info(gids, post_id)
         art_list = []
         task_list = [
             self.download_image(post_info.post_id, post_info.image_urls[page], page)

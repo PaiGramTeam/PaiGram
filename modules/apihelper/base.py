@@ -1,7 +1,7 @@
 import imghdr
-from typing import List
+from typing import List, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 
 
 class ArtworkImage(BaseModel):
@@ -19,25 +19,29 @@ class ArtworkImage(BaseModel):
 
 
 class PostInfo(BaseModel):
-    _data: dict
+    _data: dict = PrivateAttr()
     post_id: int
     user_uid: int
-    image_urls: List[str] = []
+    image_urls: List[str]
     created_at: int
 
+    def __init__(self, _data: dict, **data: Any):
+        super().__init__(**data)
+        self._data = _data
+
     @classmethod
-    def paste_data(cls, data: dict):
-        image_url_list = []
+    def paste_data(cls, data: dict) -> "PostInfo":
+        image_urls = []
         _data_post = data["post"]
         post = _data_post["post"]
         post_id = post["post_id"]
         image_list = _data_post["image_list"]
         for image in image_list:
-            image_url_list.append(image["url"])
+            image_urls.append(image["url"])
         created_at = post["created_at"]
         user = _data_post["user"]  # 用户数据
         user_uid = user["uid"]  # 用户ID
-        return cls(_data=data, post_id=post_id, user_uid=user_uid, image_urls=image_url_list, created_at=created_at)
+        return PostInfo(_data=data, post_id=post_id, user_uid=user_uid, image_urls=image_urls, created_at=created_at)
 
-    def __dict__(self):
-        return self._data
+    def __getitem__(self, item):
+        return self._data[item]

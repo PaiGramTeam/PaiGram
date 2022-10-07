@@ -38,9 +38,9 @@ class GameStrategyService:
         else:
             return ""
 
-        artwork_info = await self._hyperion.get_artwork_info(2, post_id)
-        await self._cache.set_url_list(character_name, artwork_info.results.image_url_list)
-        return artwork_info.results.image_url_list[0]
+        artwork_info = await self._hyperion.get_post_info(2, post_id)
+        await self._cache.set_url_list(character_name, artwork_info.image_urls)
+        return artwork_info.image_urls[0]
 
 
 class GameMaterialService:
@@ -80,9 +80,9 @@ class GameMaterialService:
         else:
             return ""
 
-        artwork_info = await self._hyperion.get_artwork_info(2, post_id)
-        await self._cache.set_url_list(character_name, artwork_info.results.image_url_list)
-        image_url_list = artwork_info.results.image_url_list
+        artwork_info = await self._hyperion.get_post_info(2, post_id)
+        await self._cache.set_url_list(character_name, artwork_info.image_urls)
+        image_url_list = artwork_info.image_urls
         if len(image_url_list) == 0:
             return ""
         elif len(image_url_list) == 1:
