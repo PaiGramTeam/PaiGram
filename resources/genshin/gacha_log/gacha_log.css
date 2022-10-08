@@ -148,7 +148,7 @@ body {
     background-image: url(./../abyss/background/roleStarBg5.png);
     width: 100%;
     height: 70px;
-    /*filter: brightness(1.1);*/
+    /* filter: brightness(1.1); */
     background-size: 100%;
     background-repeat: no-repeat;
 }
@@ -215,7 +215,7 @@ body {
 }
 
 .label_302 {
-    background-color: #E69449;
+    background-color: #e69449;
 }
 
 .label_200 {
