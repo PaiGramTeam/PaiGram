@@ -1,0 +1,76 @@
+:root {
+    --dark: #e0dad3;
+    --light: #f0ece8;
+    --white: #f5f5f5;
+    --grey: #6c6c6c;
+}
+
+body {
+    background-color: rgba(253, 253, 253, 0.75);
+}
+
+.header {
+    background-image: url(../background/liyue.png);
+    box-shadow: 0 0 16px rgb(255 233 144 / 50%);
+}
+
+.box {
+    border: 2px solid rgb(255, 233, 144, 0.5);
+    background-color: #9c433d;
+    box-shadow: 0 0 16px rgb(255 233 144 / 50%);
+}
+
+.box-title {
+    background-color: rgb(255, 200, 122, 0.1);
+    text-align: center;
+    line-height: 3rem;
+    --tw-ring-color: #ff9966;
+}
+
+
+.box-title h1 {
+    text-shadow: 0 0 1px #fff;
+}
+
+.stats-box {
+    color: #ffeabd;
+}
+
+.world-exploration-icon {
+    
+}
+
+.world-exploration {
+    border: 1px solid rgb(255, 233, 144, 1);
+    background-color: rgb(255, 255, 255, 0.01);
+}
+
+.pointer-bar {
+    width: 95%;
+    height: 8px;
+    display: inline-block;
+    background-color: rgb(0, 0, 0, 0.1);
+    border-radius: 0.25rem;
+}
+
+.pointer-progress-bar {
+    border-radius: 0.25rem;
+    height: 100%;
+    background: linear-gradient(to bottom, #f5efcd, #f8eabd, #ffdf90);
+}
+
+.test {
+    background: linear-gradient(to bottom, #ffffff, #ffeabd, #ffdf90);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.test-1 {
+    color: #ffeabd;
+    background: linear-gradient(to right, rgb(0, 0, 0, 0), #cc6666, rgb(0, 0, 0, 0));
+}
+
+.about {
+    background-color: #e0dad3;
+    color: #8a4d30;
+}
