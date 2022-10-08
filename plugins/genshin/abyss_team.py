@@ -60,29 +60,39 @@ class AbyssTeam(Plugin, BasePlugin):
         team_data = await self.team_data.get_data()
         # 尝试获取用户已绑定的原神账号信息
         user_data = await self._get_data_from_user(user)
-        random_team = team_data.random_team(user_data)
-        abyss_team_data = {
-            "up": [],
-            "down": []
+        team_data.sort(user_data)
+        # random_team = team_data.random_team(user_data)
+        abyss_teams_data = {
+            "teams":[]
         }
-        for i in random_team.up.formation:
-            temp = {
-                "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
-                "name": i.name,
-                "background": self._get_role_star_bg(i.star),
-                "hava": (i.name in user_data) if user_data else True,
+        for i in range(3):
+            team = {
+                "up": [],
+                "up_rate": f'{team_data.rate_list_full[i].up.rate * 100: .2f}%',
+                "down": [],
+                "down_rate": f'{team_data.rate_list_full[i].down.rate * 100: .2f}%',
             }
-            abyss_team_data["up"].append(temp)
-        for i in random_team.down.formation:
-            temp = {
-                "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
-                "name": i.name,
-                "background": self._get_role_star_bg(i.star),
-                "hava": (i.name in user_data) if user_data else True,
-            }
-            abyss_team_data["down"].append(temp)
+            for member in team_data.rate_list_full[i].up.formation:
+                temp = {
+                    "icon": (await self.assets_service.avatar(roleToId(member.name)).icon()).as_uri(),
+                    "name": member.name,
+                    "background": self._get_role_star_bg(member.star),
+                    "hava": (member.name in user_data) if user_data else True,
+                }
+                team["up"].append(temp)
+            for member in team_data.rate_list_full[i].down.formation:
+                temp = {
+                    "icon": (await self.assets_service.avatar(roleToId(member.name)).icon()).as_uri(),
+                    "name": member.name,
+                    "background": self._get_role_star_bg(member.star),
+                    "hava": (member.name in user_data) if user_data else True,
+                }
+                team["down"].append(temp)
+
+            abyss_teams_data["teams"].append(team)
+
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        png_data = await self.template_service.render('genshin/abyss_team', "abyss_team.html", abyss_team_data,
-                                                      {"width": 865, "height": 504}, full_page=False)
+        png_data = await self.template_service.render('genshin/abyss_team', "abyss_team.html", abyss_teams_data,
+                                                      {"width": 865, "height": 1300}, full_page=False)
         await message.reply_photo(png_data, filename=f"abyss_team_{user.id}.png",
                                   allow_sending_without_reply=True)

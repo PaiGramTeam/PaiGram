@@ -8,9 +8,9 @@
     <style>
         #container {
             width: 865px;
-            height: 504px;
+            height: 1300px;
             background: url("./../abyss/background/lookback-bg.png");
-            background-size: cover;
+            background-size: contain;
         }
 
         .character-icon {
@@ -35,12 +35,13 @@
     </style>
 </head>
 <body>
-<div class="mx-auto flex flex-col h-full bg-no-repeat bg-cover" id="container">
+<div class="mx-auto flex flex-col h-full bg-cover" id="container">
     <div class="title text-2xl my-4 text-yellow-500 mx-auto">深境螺旋 - 推荐配队</div>
-    <div class="base-info flex flex-col px-20 py-1 text-black my-1">
-        <div class="text-center mr-auto text-yellow-500">第 12 层上半</div>
+    {% for team in teams %}
+    <div class="relative base-info flex flex-col px-20 py-1 text-black my-1">
+        <div class="text-center mr-auto text-yellow-500" style="font-size: 19px;">推荐配队 {{ loop.index }}</div>
         <div class="mx-auto flex my-2">
-            {% for i in up %}
+            {% for i in team.up %}
             <div class="rounded-lg mx-2 overflow-hidden {% if not i.hava %}item-not-owned{% endif %}" style="background-color: rgb(233, 229, 220)">
                 <div class="character-icon rounded-br-3xl bg-cover overflow-hidden"
                      style="background: url({{i.background}});background-size: cover;">
@@ -48,12 +49,12 @@
                 <div class="text-center">{{i.name}}</div>
             </div>
             {% endfor %}
+            <div class="absolute bottom-7 right-10 text-yellow-500" style="font-size: 14px" >{{team.up_rate}}</div>
         </div>
     </div>
-    <div class="base-info flex flex-col px-20 py-1 text-black my-1">
-        <div class="text-center mr-auto text-yellow-500">第 12 层下半</div>
+    <div class="relative base-info flex flex-col px-20 py-1 text-black my-1">
         <div class="mx-auto flex my-2">
-            {% for i in down %}
+            {% for i in team.down %}
             <div class="rounded-lg mx-2 overflow-hidden {% if not i.hava %}item-not-owned{% endif %}" style="background-color: rgb(233, 229, 220)">
                 <div class="character-icon rounded-br-3xl bg-cover overflow-hidden"
                      style="background: url({{i.background}});background-size: cover;">
@@ -61,8 +62,10 @@
                 <div class="text-center">{{i.name}}</div>
             </div>
             {% endfor %}
+            <div class="absolute bottom-7 right-10 text-yellow-500" style="font-size: 14px" >{{team.down_rate}}</div>
         </div>
     </div>
+    {% endfor %}
     <div class="my-2"></div>
 </div>
 </body>
