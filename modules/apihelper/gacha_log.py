@@ -3,7 +3,7 @@ import datetime
 import json
 import time
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Union
 
 import aiofiles
 from genshin import Client, InvalidAuthkey
@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from core.base.assets import AssetsService
 from metadata.shortname import roleToId, weaponToId
+from metadata.pool.pool import get_pool_by_id
 from utils.const import PROJECT_ROOT
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
@@ -32,13 +33,15 @@ class FiveStarItem(BaseModel):
     type: str
     isUp: bool
     isBig: bool
+    time: datetime.datetime
 
 
 class FourStarItem(BaseModel):
     name: str
     icon: str
-    type: str
     count: int
+    type: str
+    time: datetime.datetime
 
 
 class GachaItem(BaseModel):
@@ -61,6 +64,45 @@ class GachaLogInfo(BaseModel):
         '新手祈愿': [],
     }
 
+
+class Pool:
+    def __init__(self, five: List[str], four: List[str], name: str, to: str, **kwargs):
+        self.five = five
+        self.real_name = name
+        self.name = "、".join(self.five)
+        self.four = four
+        self.from_ = kwargs.get("from")
+        self.to = to
+        self.from_time = datetime.datetime.strptime(self.from_, "%Y-%m-%d %H:%M:%S")
+        self.to_time = datetime.datetime.strptime(self.to, "%Y-%m-%d %H:%M:%S")
+        self.start = self.from_time
+        self.start_init = False
+        self.end = self.to_time
+        self.dict = {}
+        self.count = 0
+
+    def parse(self, item: Union[FiveStarItem, FourStarItem]):
+        if self.from_time <= item.time <= self.to_time:
+            if self.dict.get(item.name):
+                self.dict[item.name]["count"] += 1
+            else:
+                self.dict[item.name] = {
+                    "name": item.name,
+                    "icon": item.icon,
+                    "count": 1,
+                    "rank_type": 5 if isinstance(item, FiveStarItem) else 4,
+                }
+
+    def count_item(self, item: List[GachaItem]):
+        for i in item:
+            if self.from_time <= i.time <= self.to_time:
+                self.count += 1
+                if not self.start_init:
+                    self.start = i.time
+                self.end = i.time
+
+    def to_list(self):
+        return list(self.dict.values())
 
 class GachaLog:
     @staticmethod
@@ -241,7 +283,8 @@ class GachaLog:
                             count=count,
                             type="角色",
                             isUp=GachaLog.check_avatar_up(item.name, item.time) if pool_name == "角色祈愿" else False,
-                            isBig=(not result[-1].isUp) if result and pool_name == "角色祈愿" else False
+                            isBig=(not result[-1].isUp) if result and pool_name == "角色祈愿" else False,
+                            time=item.time,
                         )
                     )
                 elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿"}:
@@ -252,7 +295,8 @@ class GachaLog:
                             count=count,
                             type="武器",
                             isUp=False,
-                            isBig=False
+                            isBig=False,
+                            time=item.time,
                         )
                     )
                 count = 0
@@ -279,6 +323,7 @@ class GachaLog:
                             icon=(await assets.avatar(roleToId(item.name)).icon()).as_uri(),
                             count=count,
                             type="角色",
+                            time=item.time,
                         )
                     )
                 elif item.item_type == "武器":
@@ -288,6 +333,7 @@ class GachaLog:
                             icon=(await assets.weapon(weaponToId(item.name)).icon()).as_uri(),
                             count=count,
                             type="武器",
+                            time=item.time,
                         )
                     )
                 count = 0
@@ -433,4 +479,49 @@ class GachaLog:
             "lastTime": last_time,
             "fiveLog": all_five,
             "fourLog": all_four[:18],
+        }
+
+    @staticmethod
+    async def get_pool_analysis(user_id: int, client: Client, pool: BannerType, assets: AssetsService, group: bool):
+        """
+        获取抽卡记录分析数据
+        :param user_id: 用户id
+        :param client: genshin client
+        :param pool: 池子类型
+        :param assets: 资源服务
+        :param group: 是否群组
+        :return: 分析数据
+        """
+        gacha_log, status = await GachaLog.load_history_info(str(user_id), str(client.uid))
+        if not status:
+            return "获取数据失败，未找到抽卡记录"
+        pool_name = GACHA_TYPE_LIST[pool]
+        data = gacha_log.item_list[pool_name]
+        total = len(data)
+        if total == 0:
+            return "获取数据失败，未找到抽卡记录"
+        all_five, _ = await GachaLog.get_all_5_star_items(data, assets, pool_name)
+        all_four, _ = await GachaLog.get_all_4_star_items(data, assets)
+        pool_data = []
+        up_pool_data = [Pool(**i) for i in get_pool_by_id(pool.value)]
+        for up_pool in up_pool_data:
+            for item in all_five:
+                up_pool.parse(item)
+            for item in all_four:
+                up_pool.parse(item)
+            up_pool.count_item(data)
+        for up_pool in up_pool_data:
+            pool_data.append({
+                "count": up_pool.count,
+                "list": up_pool.to_list(),
+                "name": up_pool.name,
+                "start": up_pool.start.strftime("%Y-%m-%d"),
+                "end": up_pool.end.strftime("%Y-%m-%d"),
+            })
+        pool_data = [i for i in pool_data if i["count"] > 0]
+        return {
+            "uid": client.uid,
+            "typeName": pool_name,
+            "pool": pool_data[:6] if group else pool_data,
+            "hasMore": len(pool_data) > 6,
         }
