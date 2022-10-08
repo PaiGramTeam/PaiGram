@@ -1,5 +1,7 @@
 import hashlib
 import os
+from asyncio import create_subprocess_shell
+from asyncio.subprocess import PIPE
 from pathlib import Path
 from typing import Optional, Tuple, TypeVar, Union, cast
 
@@ -134,3 +136,28 @@ def region_server(uid: Union[int, str]) -> RegionEnum:
         return region
     else:
         raise TypeError(f"UID {uid} isn't associated with any region")
+
+
+async def execute(command, pass_error=True):
+    """ Executes command and returns output, with the option of enabling stderr. """
+    executor = await create_subprocess_shell(
+        command,
+        stdout=PIPE,
+        stderr=PIPE,
+        stdin=PIPE
+    )
+
+    stdout, stderr = await executor.communicate()
+    if pass_error:
+        try:
+            result = str(stdout.decode().strip()) \
+                     + str(stderr.decode().strip())
+        except UnicodeDecodeError:
+            result = str(stdout.decode('gbk').strip()) \
+                     + str(stderr.decode('gbk').strip())
+    else:
+        try:
+            result = str(stdout.decode().strip())
+        except UnicodeDecodeError:
+            result = str(stdout.decode('gbk').strip())
+    return result
