@@ -1,4 +1,4 @@
-import time, random
+import time, secrets
 from typing import List, Optional, Any
 
 import httpx
@@ -55,7 +55,7 @@ class TeamRateResult(BaseModel):
     def randomTeam(self) -> FullTeamRate:
         niceTeam = max(self.rate_list_full, key=lambda x: x.nice)
         niceTeams = [team for team in self.rate_list_full if team.nice == niceTeam.nice]
-        return random.choice(niceTeams)
+        return secrets.choice(niceTeams)
 
 
 class AbyssTeamData:
