@@ -4,6 +4,7 @@
 <img src="https://img.shields.io/badge/python-3.8%2B-blue">
 <img src="https://img.shields.io/badge/works%20on-my%20machine-brightgreen">
 <img src="https://img.shields.io/badge/status-%E5%92%95%E5%92%95%E5%92%95-blue">
+<a href="https://black.readthedocs.io/en/stable/index.html"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="code_style" /></a>
 <a href="https://www.codacy.com/gh/luoshuijs/TGPaimonBot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=luoshuijs/TGPaimonBot&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/810a80be4cbe4b7284ab7634941423c4"/></a>
 </div>
 
