@@ -11,8 +11,8 @@ from genshin.models import BannerType
 from pydantic import BaseModel
 
 from core.base.assets import AssetsService
-from metadata.shortname import roleToId, weaponToId
 from metadata.pool.pool import get_pool_by_id
+from metadata.shortname import roleToId, weaponToId
 from utils.const import PROJECT_ROOT
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
@@ -104,6 +104,7 @@ class Pool:
     def to_list(self):
         return list(self.dict.values())
 
+
 class GachaLog:
     @staticmethod
     async def load_json(path):
@@ -119,8 +120,7 @@ class GachaLog:
 
     @staticmethod
     async def load_history_info(user_id: str, uid: str) -> Tuple[GachaLogInfo, bool]:
-        """
-        读取历史抽卡记录数据
+        """读取历史抽卡记录数据
         :param user_id: 用户id
         :param uid: 原神uid
         :return: 抽卡记录数据
@@ -135,8 +135,7 @@ class GachaLog:
 
     @staticmethod
     async def save_gacha_log_info(user_id: str, uid: str, info: GachaLogInfo):
-        """
-        保存抽卡记录数据
+        """保存抽卡记录数据
         :param user_id: 用户id
         :param uid: 原神uid
         :param info: 抽卡记录数据
@@ -154,6 +153,11 @@ class GachaLog:
 
     @staticmethod
     async def gacha_log_to_uigf(user_id: str, uid: str) -> Tuple[bool, str, Optional[Path]]:
+        """抽卡日记转换为 UIGF 格式
+        :param user_id: 用户ID
+        :param uid: 游戏UID
+        :return: 转换是否成功、转换信息、UIGF文件目录
+        """
         data, state = await GachaLog.load_history_info(user_id, uid)
         if not state:
             return False, f'UID{uid} 还没有导入任何抽卡记录数据。', None
