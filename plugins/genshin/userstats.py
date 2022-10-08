@@ -1,7 +1,7 @@
 import secrets
 from typing import Optional
 
-from genshin import GenshinException, Client
+from genshin import Client
 from genshin.models import GenshinUserStats
 from telegram import Update
 from telegram.constants import ChatAction
@@ -42,23 +42,20 @@ class UserStatsPlugins(Plugin, BasePlugin):
         user = update.effective_user
         message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] 查询游戏用户命令请求")
-        uid: int = -1
+        uid: Optional[int] = None
         try:
             args = context.args
             if args is not None and len(args) >= 1:
                 uid = int(args[0])
         except ValueError as exc:
-            logger.error("获取 uid 发生错误！ 错误信息为")
-            logger.exception(exc)
+            logger.warning(f"获取 uid 发生错误！ 错误信息为 {repr(exc)}")
             await message.reply_text("输入错误")
             return ConversationHandler.END
         try:
             try:
                 client = await get_genshin_client(user.id)
             except CookiesNotFoundError:
-                client, _uid = await get_public_genshin_client(user.id)
-                if uid == -1:
-                    uid = _uid
+                client, uid = await get_public_genshin_client(user.id)
             png_data = await self.render(client, uid)
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
@@ -84,15 +81,12 @@ class UserStatsPlugins(Plugin, BasePlugin):
             png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True
         )
 
-    async def render(self, client: Client, uid: int = -1) -> bytes:
-        if uid == -1 and client.uid:
+    async def render(self, client: Client, uid: Optional[int] = None) -> bytes:
+        if uid is None:
             uid = client.uid
 
-        try:
-            user_info = await client.get_genshin_user(uid)
-            logger.debug(user_info)
-        except GenshinException as exc:
-            raise exc
+        user_info = await client.get_genshin_user(uid)
+        logger.debug(user_info)
 
         # 因为需要替换线上图片地址为本地地址，先克隆数据，避免修改原数据
         user_info = user_info.copy(deep=True)
