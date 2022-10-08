@@ -59,13 +59,17 @@ class GetChat(Plugin):
         except UserNotFoundError:
             user_info = None
         if user_info is not None:
-            text += "米游社绑定：" if user_info.region == RegionEnum.HYPERION else "HOYOLAB 绑定："
+            if user_info.region == RegionEnum.HYPERION:
+                text += "米游社绑定："
+                uid = user_info.yuanshen_uid
+            else:
+                text += "原神绑定："
+                uid = user_info.genshin_uid
             temp = "Cookie 绑定"
             try:
                 await get_genshin_client(chat.id)
             except CookiesNotFoundError:
                 temp = "UID 绑定"
-            uid = user_info.genshin_uid or user_info.yuanshen_uid
             text += f"<code>{temp}</code>\n" \
                     f"游戏 ID：<code>{uid}</code>"
             with contextlib.suppress(Exception):
