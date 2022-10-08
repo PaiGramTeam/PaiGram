@@ -11,7 +11,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
-from modules.apihelper.gacha import GachaInfo
+from modules.apihelper.hyperion import GachaInfo
 from plugins.genshin.gacha.wish import WishCountInfo, get_one
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
@@ -41,12 +41,12 @@ class Gacha(Plugin, BasePlugin):
     async def gacha_info(self, gacha_name: str = "角色活动", default: bool = False):
         gacha_list_info = await self.gacha.get_gacha_list_info()
         gacha_id = ""
-        for gacha in gacha_list_info.data["list"]:
+        for gacha in gacha_list_info["list"]:
             if gacha["gacha_name"] == gacha_name:
                 gacha_id = gacha["gacha_id"]
         if gacha_id == "":
-            if default and len(gacha_list_info.data["list"]) > 0:
-                gacha_id = gacha_list_info.data["list"][0]["gacha_id"]
+            if default and len(gacha_list_info["list"]) > 0:
+                gacha_id = gacha_list_info["list"][0]["gacha_id"]
             else:
                 raise GachaNotFound(gacha_name)
         gacha_info = await self.gacha.get_gacha_info(gacha_id)

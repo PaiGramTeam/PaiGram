@@ -9,6 +9,7 @@ from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest, TimedOut, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
 
+from modules.apihelper.error import APIHelperException, ReturnCodeError
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 
@@ -103,6 +104,14 @@ def error_callable(func: Callable) -> Callable:
             logger.warning("GenshinException")
             logger.exception(exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ 获取账号信息发生错误")
+            return ConversationHandler.END
+        except ReturnCodeError as exc:
+            await send_user_notification(update, context, f"出错了呜呜呜 ~ API请求错误 错误信息为 {exc.message}")
+            return ConversationHandler.END
+        except APIHelperException as exc:
+            logger.error("APIHelperException")
+            logger.exception(exc)
+            await send_user_notification(update, context, "出错了呜呜呜 ~ API请求错误")
             return ConversationHandler.END
         except BadRequest as exc:
             logger.warning("python-telegram-bot 请求错误")
