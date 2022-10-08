@@ -224,7 +224,11 @@ class DailyMaterial(Plugin, BasePlugin):
                             added = True
                     if added:
                         continue
-                    item = HONEY_DATA[type_][id_]
+                    try:
+                        item = HONEY_DATA[type_][id_]
+                    except KeyError:  # 跳过不存在或者已忽略的角色、武器
+                        logger.warning(f"未在 honey 数据中找到 {type_} {id_} 的信息")
+                        continue
                     if item[2] < 4:  # 跳过 3 星及以下的武器
                         continue
                     items.append(ItemData(  # 添加角色数据中未找到的
