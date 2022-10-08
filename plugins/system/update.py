@@ -1,14 +1,36 @@
-from telegram import Update
+import json
+import os
+
+from aiofiles import open as async_open
+from telegram import Update, Message
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
+from core.bot import bot
 from core.plugin import handler, Plugin
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import execute
 from utils.log import logger
 
+current_dir = os.getcwd()
+
+UPDATE_DATA = os.path.join(current_dir, "data", "update.json")
+
 
 class UpdatePlugin(Plugin):
+
+    async def __async_init__(self):
+        if os.path.exists(UPDATE_DATA):
+            async with async_open(UPDATE_DATA) as file:
+                data = json.loads(await file.read())
+            try:
+                reply_text = Message.de_json(data, bot.app.bot)
+                await reply_text.edit_text("重启成功")
+            except (BadRequest, Forbidden, KeyError) as exc:
+                logger.error("UpdatePlugin 编辑消息出现错误")
+                logger.exception(exc)
+            os.remove(UPDATE_DATA)
 
     @handler(CommandHandler, command="update", block=False)
     @bot_admins_rights_check
@@ -25,4 +47,6 @@ class UpdatePlugin(Plugin):
         if len(args) > 0:
             await execute("poetry install --extras all")
         await reply_text.edit_text("自动更新成功 正在重启")
+        async with async_open(UPDATE_DATA, mode='w', encoding='utf-8') as file:
+            await file.write(reply_text.to_json())
         raise SystemExit
