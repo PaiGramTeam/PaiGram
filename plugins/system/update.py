@@ -1,5 +1,7 @@
+import asyncio
 import json
 import os
+from sys import executable
 
 from aiofiles import open as async_open
 from telegram import Update, Message
@@ -20,6 +22,9 @@ UPDATE_DATA = os.path.join(current_dir, "data", "update.json")
 
 class UpdatePlugin(Plugin):
 
+    def __init__(self):
+        self._lock = asyncio.Lock()
+
     @staticmethod
     async def __async_init__():
         if os.path.exists(UPDATE_DATA):
@@ -33,21 +38,26 @@ class UpdatePlugin(Plugin):
                 logger.exception(exc)
             os.remove(UPDATE_DATA)
 
-    @handler(CommandHandler, command="update")
+    @handler(CommandHandler, command="update", block=False)
     @bot_admins_rights_check
     async def update(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
         args = get_all_args(context)
         logger.info(f"用户 {user.full_name}[{user.id}] update命令请求")
-        reply_text = await message.reply_text("正在更新")
-        await execute("git fetch --all")
-        if len(args) > 0:
-            await execute("git reset --hard origin/main")
-        await execute("git pull --all")
-        if len(args) > 0:
-            await execute("poetry install --extras all")
-        await reply_text.edit_text("自动更新成功 正在重启")
-        async with async_open(UPDATE_DATA, mode='w', encoding='utf-8') as file:
-            await file.write(reply_text.to_json())
+        if self._lock.locked():
+            await message.reply_text("程序正在更新 请勿重复操作")
+        async with self._lock:
+            reply_text = await message.reply_text("正在更新")
+            logger.info(f"正在更新代码")
+            await execute("git fetch --all")
+            if len(args) > 0:
+                await execute("git reset --hard origin/main")
+            await execute("git pull --all")
+            if len(args) > 0:
+                await execute(f"{executable} -m poetry install --extras all")
+            logger.info(f"更新成功 正在重启")
+            await reply_text.edit_text("更新成功 正在重启")
+            async with async_open(UPDATE_DATA, mode='w', encoding='utf-8') as file:
+                await file.write(reply_text.to_json())
         raise SystemExit
