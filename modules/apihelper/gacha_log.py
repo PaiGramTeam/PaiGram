@@ -31,17 +31,14 @@ class FiveStarItem(BaseModel):
     count: int
     type: str
     isUp: bool
+    isBig: bool
 
 
 class FourStarItem(BaseModel):
     name: str
     icon: str
     type: str
-    num: Dict[str, int] = {
-        '角色祈愿': 0,
-        '武器祈愿': 0,
-        '常驻祈愿': 0,
-        '新手祈愿': 0}
+    count: int
 
 
 class GachaItem(BaseModel):
@@ -208,6 +205,22 @@ class GachaLog:
         return '更新完成，本次没有新增数据' if new_num == 0 else f'更新完成，本次共新增{new_num}条抽卡记录'
 
     @staticmethod
+    def check_avatar_up(name: str, gacha_time: datetime.datetime) -> bool:
+        if name in {'莫娜', '七七', '迪卢克', '琴'}:
+            return False
+        elif name == "刻晴":
+            start_time = datetime.datetime.strptime("2021-02-17 18:00:00", "%Y-%m-%d %H:%M:%S")
+            end_time = datetime.datetime.strptime("2021-03-02 15:59:59", "%Y-%m-%d %H:%M:%S")
+            if not (start_time < gacha_time < end_time):
+                return False
+        elif name == "提纳里":
+            start_time = datetime.datetime.strptime("2022-08-24 06:00:00", "%Y-%m-%d %H:%M:%S")
+            end_time = datetime.datetime.strptime("2022-09-09 17:59:59", "%Y-%m-%d %H:%M:%S")
+            if not (start_time < gacha_time < end_time):
+                return False
+        return True
+
+    @staticmethod
     async def get_all_5_star_avatar(data: List[GachaItem], assets: AssetsService):
         """
         获取所有5星角色
@@ -219,29 +232,45 @@ class GachaLog:
         result = []
         for item in data:
             count += 1
-            if item.rank_type == '5' and item.item_type == '角色':
-                result.append(FiveStarItem(name=item.name,
-                                           icon=(await assets.avatar(roleToId(item.name)).icon()).as_uri(),
-                                           count=count,
-                                           type="角色",
-                                           isUp=True))
+            if item.rank_type == '5' and item.item_type == "角色":
+                result.append(
+                    FiveStarItem(
+                        name=item.name,
+                        icon=(await assets.avatar(roleToId(item.name)).icon()).as_uri(),
+                        count=count,
+                        type="角色",
+                        isUp=GachaLog.check_avatar_up(item.name, item.time),
+                        isBig=(not result[-1].isUp) if result else False
+                    )
+                )
                 count = 0
         result.reverse()
         return result, count
 
     @staticmethod
-    async def get_no_four_star(data: List[GachaItem]):
+    async def get_no_four_star(data: List[GachaItem], assets: AssetsService):
         """
         获取 no_fout_star
         :param data: 抽卡记录
+        :param assets: 资源服务
         :return: no_fout_star
         """
-        no_fout_star = 0
+        count = 0
+        result = []
         for item in data:
-            if item.rank_type == '4' and item.item_type == '角色':
-                break
-            no_fout_star += 1
-        return no_fout_star
+            count += 1
+            if item.rank_type == '4' and item.item_type == "角色":
+                result.append(
+                    FourStarItem(
+                        name=item.name,
+                        icon=(await assets.avatar(roleToId(item.name)).icon()).as_uri(),
+                        count=count,
+                        type="角色",
+                    )
+                )
+                count = 0
+        result.reverse()
+        return result, count
 
     @staticmethod
     async def get_analysis(user_id: int, client: Client, pool: BannerType, assets: AssetsService):
@@ -264,27 +293,35 @@ class GachaLog:
         # 未出五星
         all_five, no_five_star = await GachaLog.get_all_5_star_avatar(data, assets)
         # 总共五星
-        five_star = len([i for i in data if i.rank_type == '5' and i.item_type == "角色"])
+        five_star = len(all_five)
+        five_star_up = len([i for i in all_five if i.isUp])
+        five_star_big = len([i for i in all_five if i.isBig])
         # 五星平均
         five_star_avg = round(total / five_star, 2) if five_star != 0 else 0
         # 小保底不歪
-        small_protect = 0
+        small_protect = round((five_star_up - five_star_big) / (five_star - five_star_big) * 100.0, 1) if \
+            five_star - five_star_big != 0 else "0.0"
         # 未出四星
-        no_four_star = await GachaLog.get_no_four_star(data)
+        all_four, no_four_star = await GachaLog.get_no_four_star(data, assets)
         # 五星常驻
-        five_star_const = 0
+        five_star_const = five_star - five_star_up
         # UP 平均
-        up_avg = 0
+        up_avg = round(total / five_star_up, 2) if five_star_up != 0 else 0
         # UP 花费原石
-        up_cost = 0
+        up_cost = sum(i.count * 160 for i in all_five if i.isUp)
+        up_cost = f"{round(up_cost / 10000, 2)}w" if up_cost >= 10000 else up_cost
         summon_data = [
             [
                 {"num": no_five_star, "unit": "抽", "lable": "未出五星"},
                 {"num": five_star, "unit": "个", "lable": "五星"},
+                {"num": five_star_avg, "unit": "抽", "lable": "五星平均"},
+                {"num": small_protect, "unit": "%", "lable": "小保底不歪"},
             ],
             [
                 {"num": no_four_star, "unit": "抽", "lable": "未出四星"},
-                {"num": five_star_avg, "unit": "抽", "lable": "五星平均"}
+                {"num": five_star_const, "unit": "个", "lable": "五星常驻"},
+                {"num": up_avg, "unit": "抽", "lable": "UP平均"},
+                {"num": up_cost, "unit": "", "lable": "UP花费原石"},
             ]
         ]
         last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
@@ -298,4 +335,5 @@ class GachaLog:
             "firstTime": first_time,
             "lastTime": last_time,
             "fiveLog": all_five,
+            "fourLog": all_four[:18],
         }

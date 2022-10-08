@@ -64,6 +64,23 @@
         </div>
         {% endfor %}
       </div>
+
+      <div class="line_box">
+        <span class="line"></span>
+        <span class="text">四星历史</span>
+        <span class="line"></span>
+      </div>
+
+      <div class="card_list">
+        {% for val in fourLog %}
+        <div class="item star4">
+          <img class="role"
+               src="{{ val.icon }}" />
+          <!-- <div class="num">{{val.num}}</div>-->
+          <div class="num_name">{{ val.count }}</div>
+        </div>
+        {% endfor %}
+      </div>
     </div>
     <div class="logo"> Template By Yunzai-Bot</div>
   </div>
