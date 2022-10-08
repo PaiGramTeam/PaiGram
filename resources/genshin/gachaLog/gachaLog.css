@@ -18,18 +18,18 @@ body {
   font-family: PingFangSC-Medium, PingFang SC, sans-serif;
   transform: scale(1.5);
   transform-origin: 0 0;
-  width: 465px;
+  width: 510px;
 }
 
 .container {
-  width: 465px;
+  width: 510px;
   padding: 20px 15px 10px 15px;
   background-color: #f5f6fb;
 }
 
 .head_box {
   border-radius: 15px;
-  font-family: tttgbnumber;
+  font-family: tttgbnumber, sans-serif;
   padding: 10px 20px;
   position: relative;
   box-shadow: 0 5px 10px 0 rgb(0 0 0 / 15%);
@@ -59,11 +59,10 @@ body {
   padding-left: 10px;
 }
 
-
 .data_box {
   border-radius: 15px;
   margin-top: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   padding: 20px 0px 5px 10px;
   background: #fff;
   box-shadow: 0 5px 10px 0 rgb(0 0 0 / 15%);
@@ -78,7 +77,7 @@ body {
   color: #fff;
   font-size: 14px;
   padding: 3px 10px;
-  border-radius: 15px 0px 15px 15px;
+  border-radius: 15px 0 15px 15px;
   z-index: 20;
 }
 
@@ -92,7 +91,8 @@ body {
 .data_line_item {
   width: 100px;
   text-align: center;
-  /*margin: 0 20px;*/
+
+  /* margin: 0 20px; */
 }
 
 .num {
@@ -111,20 +111,9 @@ body {
   margin-top: 3px;
 }
 
-body {
-  width: 510px;
-}
-
-.container {
-  width: 510px;
-}
-
-.data_box {
-  margin-bottom: 10px;
-}
-
-.info_box_border{
+.info_box_border {
   border-radius: 15px;
+
   /* margin-top: 20px; */
   margin-bottom: 20px;
   padding: 6px 0px 5px 10px;
@@ -140,7 +129,7 @@ body {
 }
 
 .card_list .item {
-  margin: 0px 8px 10px 0px;
+  margin: 0 8px 10px 0;
   border-radius: 7px;
   box-shadow: 0 2px 6px 0 rgb(132 93 90 / 30%);
   height: 90px;
@@ -174,8 +163,8 @@ body {
 
 .card_list .item .num {
   position: absolute;
-  top: 0px;
-  right: 0px;
+  top: 0;
+  right: 0;
   z-index: 9;
   font-size: 18px;
   text-align: center;
@@ -211,7 +200,7 @@ body {
   margin: 5px 10px;
 }
 
-.uid:before {
+.uid::before {
   content: " ";
   position: absolute;
   width: 5px;
@@ -231,7 +220,7 @@ body {
 }
 
 .label_200 {
-  background-color: #757CC8;
+  background-color: #757cc8;
 }
 
 .label {
@@ -251,7 +240,7 @@ body {
 .info_role {
   display: flex;
   flex-wrap: wrap;
-  padding: 0 0px 5px 9px;
+  padding: 0 0 5px 9px;
 }
 
 .ritem .role {
@@ -331,7 +320,8 @@ body {
 .purple {
   color: #7500ff;
 }
-.minimum{
+
+.minimum {
   position: absolute;
   top: 0px;
   right: 0px;
@@ -344,6 +334,7 @@ body {
   background-color: rgb(0 0 0 / 80%);
   font-family: "tttgbnumber";
 }
+
 .hasMore{
   font-size: 12px;
   margin: 6px 0;
