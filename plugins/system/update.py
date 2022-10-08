@@ -32,7 +32,7 @@ class UpdatePlugin(Plugin):
                 logger.exception(exc)
             os.remove(UPDATE_DATA)
 
-    @handler(CommandHandler, command="update", block=False)
+    @handler(CommandHandler, command="update")
     @bot_admins_rights_check
     async def update(self, update: Update, context: CallbackContext):
         user = update.effective_user
