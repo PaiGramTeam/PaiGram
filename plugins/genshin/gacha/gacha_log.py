@@ -1,8 +1,7 @@
 import json
-
 from io import BytesIO
-from genshin.models import BannerType
 
+from genshin.models import BannerType
 from telegram import Update, User, Message, Document
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
@@ -68,8 +67,8 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             document = message.document
         if not document.file_name.endswith(".json"):
             await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件")
-        if document.file_size > 50 * 1024 * 1024:
-            await message.reply_text("文件过大，请发送小于 50MB 的文件")
+        if document.file_size > 0.2 * 1024 * 1024:
+            await message.reply_text("文件过大，请发送小于 256kb 的文件")
         try:
             data = BytesIO()
             await (await document.get_file()).download(out=data)
