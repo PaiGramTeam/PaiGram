@@ -38,13 +38,23 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
 
     @staticmethod
     def from_url_get_authkey(url: str) -> str:
+        """从 UEL 解析 authkey
+        :param url: URL
+        :return: authkey
+        """
         try:
             return url.split("authkey=")[1].split("&")[0]
         except IndexError:
             return url
 
     @staticmethod
-    async def _refresh_user_data(user: User, data: dict = None, authkey: str = None):
+    async def _refresh_user_data(user: User, data: dict = None, authkey: str = None) -> str:
+        """刷新用户数据
+        :param user: 用户
+        :param data: 数据
+        :param authkey: 认证密钥
+        :return: 返回信息
+        """
         try:
             logger.debug("尝试获取已绑定的原神账号")
             client = await get_genshin_client(user.id)
@@ -113,13 +123,15 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             # bytesio to json
             data = data.getvalue().decode("utf-8")
             data = json.loads(data)
-        except Exception:
+        except Exception as exc:
+            logger.error(f"文件解析失败：{repr(exc)}")
             await message.reply_text("文件解析失败，请检查文件是否符合 UIGF 标准")
             return
         reply = await message.reply_text("文件解析成功，正在导入数据")
         try:
             text = await self._refresh_user_data(user, data=data)
-        except Exception:
+        except Exception as exc:
+            logger.error(f"文件解析失败：{repr(exc)}")
             await reply.edit_text("文件解析失败，请检查文件是否符合 UIGF 标准")
             return
         await reply.edit_text(text)
