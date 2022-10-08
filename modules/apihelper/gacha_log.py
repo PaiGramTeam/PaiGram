@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import json
 import time
@@ -5,7 +6,6 @@ from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 
 import aiofiles
-import contextlib
 from genshin import Client, InvalidAuthkey
 from genshin.models import BannerType
 from pydantic import BaseModel
@@ -14,7 +14,7 @@ from core.base.assets import AssetsService
 from metadata.shortname import roleToId
 from utils.const import PROJECT_ROOT
 
-GACHA_LOG_PATH = PROJECT_ROOT.joinpath("modules", "apihelper", "gacha_log")
+GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 GACHA_TYPE_LIST = {
     BannerType.NOVICE: '新手祈愿',
