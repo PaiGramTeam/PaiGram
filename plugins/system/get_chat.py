@@ -9,8 +9,10 @@ from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from modules.apihelper.gacha_log import GachaLog
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
+from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.models.base import RegionEnum
 
@@ -58,11 +60,19 @@ class GetChat(Plugin):
             text += "米游社绑定：" if user_info.region == RegionEnum.HYPERION else "HOYOLAB 绑定："
             temp = "Cookie 绑定"
             try:
-                await self.cookies_service.get_cookies(chat.id, user_info.region)
+                await get_genshin_client(chat.id)
             except CookiesNotFoundError:
                 temp = "UID 绑定"
+            uid = user_info.genshin_uid or user_info.yuanshen_uid
             text += f"<code>{temp}</code>\n" \
-                    f"游戏 ID：<code>{user_info.genshin_uid or user_info.yuanshen_uid}</code>"
+                    f"游戏 ID：<code>{uid}</code>"
+            gacha_log, status = await GachaLog.load_history_info(str(chat.id), str(uid))
+            if status:
+                text += f"\n抽卡记录："
+                for key, value in gacha_log.item_list.items():
+                    text += f"\n   - {key}：{len(value)} 条"
+            else:
+                text += f"\n抽卡记录：<code>未导入</code>"
         return text
 
     @handler(CommandHandler, command="get_chat", block=False)
