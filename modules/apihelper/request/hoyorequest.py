@@ -2,7 +2,7 @@ from typing import Union
 
 import httpx
 
-from modules.apihelper.error import NetworkException, ResponseException, DataNotFoundError, TimedOut
+from modules.apihelper.error import NetworkException, ResponseException, TimedOut
 from modules.apihelper.request.httpxrequest import HTTPXRequest
 from modules.apihelper.typedefs import POST_DATA, JSON_DATA
 
@@ -26,8 +26,6 @@ class HOYORequest(HTTPXRequest):
         data = json_data.get("data", None)
         message = json_data.get("message", None)
         if return_code is None:
-            if data is None:
-                raise DataNotFoundError
             return json_data
         if return_code != 0:
             if message is None:
