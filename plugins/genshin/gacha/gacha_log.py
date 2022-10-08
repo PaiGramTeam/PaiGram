@@ -158,6 +158,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
+        logger.info(f"用户 {user.full_name}[{user.id}] 抽卡记录命令请求 || 参数 {pool_type.name}")
         try:
             client = await get_genshin_client(user.id)
             data = await GachaLogService.get_analysis(user.id, client, pool_type, self.assets_service)
@@ -166,7 +167,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             else:
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                 png_data = await self.template_service.render('genshin/gachaLog', "gachaLog.html", data,
-                                                              None, True, query_selector=".body_box")
+                                                              full_page=True, query_selector=".body_box")
                 reply_message = await message.reply_photo(png_data)
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
