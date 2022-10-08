@@ -166,7 +166,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             else:
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                 png_data = await self.template_service.render('genshin/gachaLog', "gachaLog.html", data,
-                                                              {"width": 770, "height": 900}, True)
+                                                              None, True, query_selector=".body_box")
                 reply_message = await message.reply_photo(png_data)
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
