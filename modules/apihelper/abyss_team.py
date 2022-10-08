@@ -55,9 +55,9 @@ class TeamRateResult(BaseModel):
 
     @property
     def random_team(self) -> FullTeamRate:
-        niceTeam = max(self.rate_list_full, key=lambda x: x.nice)
-        niceTeams = [team for team in self.rate_list_full if team.nice == niceTeam.nice]
-        return secrets.choice(niceTeams)
+        nice_team = max(self.rate_list_full, key=lambda x: x.nice)
+        nice_teams = [team for team in self.rate_list_full if team.nice == nice_team.nice]
+        return secrets.choice(nice_teams)
 
 
 class AbyssTeamData:
