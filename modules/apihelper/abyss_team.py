@@ -1,3 +1,4 @@
+import secrets
 import time
 from typing import List, Optional, Any
 
@@ -25,6 +26,7 @@ class FullTeamRate(BaseModel):
     up: TeamRate
     down: TeamRate
     owner_num: Optional[int]
+    nice: Optional[float]
 
     @property
     def rate(self) -> float:
@@ -48,7 +50,18 @@ class TeamRateResult(BaseModel):
     def sort(self, characters: List[str]):
         for team in self.rate_list_full:
             team.owner_num = sum(member.name in characters for member in team.up.formation + team.down.formation)
-        self.rate_list_full.sort(key=lambda x: (x.owner_num / 8 * x.rate), reverse=True)
+            team.nice = team.owner_num / 8 * team.rate
+        self.rate_list_full.sort(key=lambda x: x.nice, reverse=True)
+
+    def random_team(self, characters: List[str]) -> FullTeamRate:
+        self.sort(characters)
+        max_nice = self.rate_list_full[0].nice
+        nice_teams: List[FullTeamRate] = []
+        for team in self.rate_list_full:
+            if team.nice < max_nice:
+                break
+            nice_teams.append(team)
+        return secrets.choice(nice_teams)
 
 
 class AbyssTeamData:

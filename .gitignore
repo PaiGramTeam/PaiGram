@@ -32,6 +32,7 @@ __pycache__/
 test_**.html
 logs/
 report/
+data/
 /resources/*/*/test/
 plugins/genshin/daily/daily.json
 metadata/data/
