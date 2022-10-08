@@ -20,7 +20,8 @@ UPDATE_DATA = os.path.join(current_dir, "data", "update.json")
 
 class UpdatePlugin(Plugin):
 
-    async def __async_init__(self):
+    @staticmethod
+    async def __async_init__():
         if os.path.exists(UPDATE_DATA):
             async with async_open(UPDATE_DATA) as file:
                 data = json.loads(await file.read())
