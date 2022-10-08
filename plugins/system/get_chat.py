@@ -1,3 +1,4 @@
+import contextlib
 from typing import List
 
 from telegram import Update, Chat, ChatMember, ChatMemberOwner, ChatMemberAdministrator
@@ -67,13 +68,15 @@ class GetChat(Plugin):
             uid = user_info.genshin_uid or user_info.yuanshen_uid
             text += f"<code>{temp}</code>\n" \
                     f"游戏 ID：<code>{uid}</code>"
-            gacha_log, status = await GachaLog.load_history_info(str(chat.id), str(uid))
-            if status:
-                text += f"\n抽卡记录："
-                for key, value in gacha_log.item_list.items():
-                    text += f"\n   - {key}：{len(value)} 条"
-            else:
-                text += f"\n抽卡记录：<code>未导入</code>"
+            with contextlib.suppress(Exception):
+                gacha_log, status = await GachaLog.load_history_info(str(chat.id), str(uid))
+                if status:
+                    text += f"\n抽卡记录："
+                    for key, value in gacha_log.item_list.items():
+                        text += f"\n   - {key}：{len(value)} 条"
+                    text += f"\n   - 最后更新：{gacha_log.update_time.strftime('%Y-%m-%d %H:%M:%S')}"
+                else:
+                    text += f"\n抽卡记录：<code>未导入</code>"
         return text
 
     @handler(CommandHandler, command="get_chat", block=False)

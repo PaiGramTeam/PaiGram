@@ -8,11 +8,11 @@ from typing import List, Dict, Tuple, Optional, Union
 import aiofiles
 from genshin import Client, InvalidAuthkey
 from genshin.models import BannerType
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from core.base.assets import AssetsService
 from metadata.pool.pool import get_pool_by_id
-from metadata.shortname import roleToId, weaponToId
+from metadata.shortname import roleToId, weaponToId, not_real_roles
 from utils.const import PROJECT_ROOT
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
@@ -51,6 +51,30 @@ class GachaItem(BaseModel):
     item_type: str
     rank_type: str
     time: datetime.datetime
+
+    @validator('name')
+    def name_validator(cls, v):
+        if (roleToId(v) or weaponToId(v)) and not not_real_roles(v):
+            return v
+        raise ValueError('Invalid name')
+
+    @validator('gacha_type')
+    def check_gacha_type(cls, v):
+        if v not in {"200", "301", "302", "400"}:
+            raise ValueError("gacha_type must be 200, 301, 302 or 400")
+        return v
+
+    @validator('item_type')
+    def check_item_type(cls, item):
+        if item not in {'角色', '武器'}:
+            raise ValueError('error item type')
+        return item
+
+    @validator('rank_type')
+    def check_rank_type(cls, rank):
+        if rank not in {'5', '4', '3'}:
+            raise ValueError('error rank type')
+        return rank
 
 
 class GachaLogInfo(BaseModel):
@@ -119,19 +143,48 @@ class GachaLog:
             await f.write(data)
 
     @staticmethod
-    async def load_history_info(user_id: str, uid: str) -> Tuple[GachaLogInfo, bool]:
+    async def load_history_info(user_id: str, uid: str, only_status: bool = False) -> Tuple[Optional[GachaLogInfo], bool]:
         """读取历史抽卡记录数据
         :param user_id: 用户id
         :param uid: 原神uid
+        :param only_status: 是否只读取状态
         :return: 抽卡记录数据
         """
         file_path = GACHA_LOG_PATH / f'{user_id}-{uid}.json'
-        if file_path.exists():
+        if only_status:
+            return None, file_path.exists()
+        if not file_path.exists():
+            return GachaLogInfo(
+                user_id=user_id,
+                uid=uid,
+                update_time=datetime.datetime.now()
+            ), False
+        try:
             return GachaLogInfo.parse_obj(await GachaLog.load_json(file_path)), True
-        else:
-            return GachaLogInfo(user_id=user_id,
-                                uid=uid,
-                                update_time=datetime.datetime.now()), False
+        except json.decoder.JSONDecodeError:
+            return GachaLogInfo(user_id=user_id, uid=uid, update_time=datetime.datetime.now()), False
+
+    @staticmethod
+    async def remove_history_info(user_id: str, uid: str) -> bool:
+        """删除历史抽卡记录数据
+        :param user_id: 用户id
+        :param uid: 原神uid
+        :return: 是否删除成功
+        """
+        file_path = GACHA_LOG_PATH / f'{user_id}-{uid}.json'
+        file_bak_path = GACHA_LOG_PATH / f'{user_id}-{uid}.json.bak'
+        file_export_path = GACHA_LOG_PATH / f'{user_id}-{uid}-uigf.json'
+        with contextlib.suppress(Exception):
+            file_bak_path.unlink(missing_ok=True)
+        with contextlib.suppress(Exception):
+            file_export_path.unlink(missing_ok=True)
+        if file_path.exists():
+            try:
+                file_path.unlink()
+            except PermissionError:
+                return False
+            return True
+        return False
 
     @staticmethod
     async def save_gacha_log_info(user_id: str, uid: str, info: GachaLogInfo):
@@ -160,7 +213,7 @@ class GachaLog:
         """
         data, state = await GachaLog.load_history_info(user_id, uid)
         if not state:
-            return False, f'派蒙还没有找到你导入的任何抽卡记录哦，快试试导入吧~', None
+            return False, '派蒙还没有找到你导入的任何抽卡记录哦，快试试导入吧~', None
         save_path = GACHA_LOG_PATH / f'{user_id}-{uid}-uigf.json'
         uigf_dict = {
             'info': {
@@ -191,10 +244,30 @@ class GachaLog:
         return True, '', save_path
 
     @staticmethod
+    async def verify_data(data: List[GachaItem]):
+        try:
+            total = len(data)
+            five_star = len([i for i in data if i.rank_type == "5"])
+            four_star = len([i for i in data if i.rank_type == "4"])
+            if total > 50:
+                if total <= five_star * 15:
+                    return False, "检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。"
+                if four_star < five_star:
+                    return False, "检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。"
+            return True, ""
+        except Exception:
+            return False, "导入失败，数据格式错误"
+
+    @staticmethod
     async def import_gacha_log_data(user_id: int, data: dict):
         new_num = 0
         try:
+            # 检查导入数据是否合法
+            status, text = await GachaLog.verify_data([GachaItem(**i) for i in data['list']])
+            if not status:
+                return text
             uid = data['info']['uid']
+            int(uid)
             gacha_log, _ = await GachaLog.load_history_info(str(user_id), uid)
             for item in data['list']:
                 pool_name = GACHA_TYPE_LIST[BannerType(int(item['gacha_type']))]
@@ -203,6 +276,10 @@ class GachaLog:
                     gacha_log.item_list[pool_name].append(item_info)
                     new_num += 1
             for i in gacha_log.item_list.values():
+                # 检查导入后的数据是否合法
+                status, text = await GachaLog.verify_data(i)
+                if not status:
+                    return text
                 i.sort(key=lambda x: (x.time, x.id))
             gacha_log.update_time = datetime.datetime.now()
             await GachaLog.save_gacha_log_info(str(user_id), uid, gacha_log)

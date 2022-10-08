@@ -15,12 +15,13 @@ from core.user import UserService
 from core.user.error import UserNotFoundError
 from modules.apihelper.gacha_log import GachaLog as GachaLogService
 from utils.bot import get_all_args
+from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
 
-INPUT_URL, INPUT_FILE = 10100, 10101
+INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
 
 class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
@@ -67,8 +68,8 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             document = message.document
         if not document.file_name.endswith(".json"):
             await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件")
-        if document.file_size > 0.2 * 1024 * 1024:
-            await message.reply_text("文件过大，请发送小于 256kb 的文件")
+        if document.file_size > 1 * 1024 * 1024:
+            await message.reply_text("文件过大，请发送小于 1 MB 的文件")
         try:
             data = BytesIO()
             await (await document.get_file()).download(out=data)
@@ -105,10 +106,14 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             elif message.reply_to_message and message.reply_to_message.document:
                 await self.import_from_file(user, message, document=message.reply_to_message.document)
                 return ConversationHandler.END
-            await message.reply_text("<b>导入祈愿历史记录</b>\n\n"
-                                     "请直接向派蒙发送从游戏中获取到的抽卡记录链接\n\n"
-                                     "获取抽卡记录链接可以参考：https://paimon.moe/wish/import",
-                                     parse_mode="html")
+            await message.reply_text(
+                "<b>导入祈愿历史记录</b>\n\n"
+                "1.请发送从其他工具导出的 UIGF JSON 标准的记录文件\n"
+                "2.你还可以向派蒙发送从游戏中获取到的抽卡记录链接\n\n"
+                "<b>注意：导入的数据将会与旧数据进行合并。</b>\n"
+                "获取抽卡记录链接可以参考：https://paimon.moe/wish/import",
+                parse_mode="html"
+            )
             return INPUT_URL
         authkey = self.from_url_get_authkey(args[0])
         data = await self._refresh_user_data(user, authkey=authkey)
@@ -129,6 +134,66 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         text = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(text)
         return ConversationHandler.END
+
+    @conversation.entry_point
+    @handler(CommandHandler, command="gacha_log_delete", filters=filters.ChatType.PRIVATE, block=False)
+    @handler(MessageHandler, filters=filters.Regex("^删除抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
+    @restricts()
+    @error_callable
+    async def command_start_delete(self, update: Update, context: CallbackContext) -> int:
+        message = update.effective_message
+        user = update.effective_user
+        logger.info(f"用户 {user.full_name}[{user.id}] 删除抽卡记录命令请求")
+        try:
+            client = await get_genshin_client(user.id, need_cookie=False)
+            context.chat_data["uid"] = client.uid
+        except UserNotFoundError:
+            await message.reply_text("你还没有导入抽卡记录哦~")
+            return ConversationHandler.END
+        _, status = await GachaLogService.load_history_info(str(user.id), str(client.uid), only_status=True)
+        if not status:
+            await message.reply_text("你还没有导入抽卡记录哦~")
+            return ConversationHandler.END
+        await message.reply_text("你确定要删除抽卡记录吗？（此项操作无法恢复），如果确定请发送 ”确定“，发送其他内容取消")
+        return CONFIRM_DELETE
+
+    @conversation.state(state=CONFIRM_DELETE)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
+    @restricts()
+    @error_callable
+    async def command_confirm_delete(self, update: Update, context: CallbackContext) -> int:
+        message = update.effective_message
+        user = update.effective_user
+        if message.text == "确定":
+            status = await GachaLogService.remove_history_info(str(user.id), str(context.chat_data["uid"]))
+            await message.reply_text("抽卡记录已删除" if status else "抽卡记录删除失败")
+            return ConversationHandler.END
+        await message.reply_text("已取消")
+        return ConversationHandler.END
+
+    @handler(CommandHandler, command="gacha_log_force_delete", block=False)
+    @bot_admins_rights_check
+    async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
+        message = update.effective_message
+        args = get_all_args(context)
+        if not args:
+            await message.reply_text("请指定用户ID")
+            return
+        try:
+            cid = int(args[0])
+            if cid < 0:
+                raise ValueError("Invalid cid")
+            client = await get_genshin_client(cid, need_cookie=False)
+            _, status = await GachaLogService.load_history_info(str(cid), str(client.uid), only_status=True)
+            if not status:
+                await message.reply_text("该用户还没有导入抽卡记录")
+                return
+            status = await GachaLogService.remove_history_info(str(cid), str(client.uid))
+            await message.reply_text("抽卡记录已强制删除" if status else "抽卡记录删除失败")
+        except UserNotFoundError:
+            await message.reply_text("该用户暂未绑定账号")
+        except (ValueError, IndexError):
+            await message.reply_text("用户ID 不合法")
 
     @handler(CommandHandler, command="gacha_log_export", filters=filters.ChatType.PRIVATE, block=False)
     @handler(MessageHandler, filters=filters.Regex("^导出抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
