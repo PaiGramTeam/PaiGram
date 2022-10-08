@@ -78,17 +78,15 @@ def error_callable(func: Callable) -> Callable:
             await send_user_notification(update, context, "出错了呜呜呜 ~ 资源未找到 ~ ")
             return ConversationHandler.END
         except InvalidCookies as exc:
-            if "[10001]" in str(exc):
+            if exc.retcode == 10001 or exc.retcode == -100:
                 await send_user_notification(update, context, "出错了呜呜呜 ~ Cookies无效，请尝试重新绑定账户")
-            elif "[-100]" in str(exc):
-                await send_user_notification(update, context, "出错了呜呜呜 ~ Cookies无效，请尝试重新绑定账户")
-            elif "[10103]" in str(exc):
+            elif exc.retcode == 10103:
                 await send_user_notification(update, context, "出错了呜呜呜 ~ Cookie有效，但没有绑定到游戏帐户，"
                                                               "请尝试重新绑定邮游戏账户")
             else:
                 logger.warning("Cookie错误")
                 logger.exception(exc)
-                await send_user_notification(update, context, "出错了呜呜呜 ~ Cookies无效，具体原因未知")
+                await send_user_notification(update, context, f"出错了呜呜呜 ~ Cookies无效 错误信息为 {exc.msg}")
             return ConversationHandler.END
         except TooManyRequests as exc:
             logger.warning("查询次数太多（操作频繁）", exc)
@@ -98,12 +96,12 @@ def error_callable(func: Callable) -> Callable:
             await send_user_notification(update, context, "出错了呜呜呜 ~ 查询的用户数据未公开")
             return ConversationHandler.END
         except GenshinException as exc:
-            if "[-130]" in str(exc):
+            if exc.retcode == -130:
                 await send_user_notification(update, context, "出错了呜呜呜 ~ 未设置默认角色，请尝试重新绑定默认角色")
                 return ConversationHandler.END
-            logger.warning("GenshinException")
+            logger.error("GenshinException")
             logger.exception(exc)
-            await send_user_notification(update, context, "出错了呜呜呜 ~ 获取账号信息发生错误")
+            await send_user_notification(update, context, f"出错了呜呜呜 ~ 获取账号信息发生错误 错误信息为 {exc.msg}")
             return ConversationHandler.END
         except ReturnCodeError as exc:
             await send_user_notification(update, context, f"出错了呜呜呜 ~ API请求错误 错误信息为 {exc.message}")
