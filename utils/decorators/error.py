@@ -111,7 +111,7 @@ def error_callable(func: Callable) -> Callable:
         except APIHelperException as exc:
             logger.error("APIHelperException")
             logger.exception(exc)
-            await send_user_notification(update, context, f"出错了呜呜呜 ~ API请求错误")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ API请求错误")
             return ConversationHandler.END
         except BadRequest as exc:
             logger.warning("python-telegram-bot 请求错误")
