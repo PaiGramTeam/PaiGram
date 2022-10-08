@@ -1,0 +1,53 @@
+body {
+    background-color: #f5f6fb;
+}
+
+.header {
+    background-image: url(background/liyue.png);
+    box-shadow: 0 0 16px rgb(255 233 144 / 50%);
+}
+
+.box {
+    background-color: #9c433d;
+    box-shadow: 0 0 16px rgb(255 233 144 / 50%);
+}
+
+.box-title {
+    background-color: rgb(255, 200, 122, 0.1);
+    --tw-ring-color: #ff9966;
+}
+
+.pointer-bar {
+    width: 95%;
+    height: 8px;
+    display: inline-block;
+    background-color: rgb(0, 0, 0, 0.1);
+    border-radius: 0.25rem;
+}
+
+.pointer-progress-bar {
+    border-radius: 0.25rem;
+    height: 100%;
+    background: linear-gradient(to bottom, #f5efcd, #f8eabd, #ffdf90);
+}
+
+.name {
+    background: linear-gradient(to bottom, #ffffff, #ffeabd, #ffdf90);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.uid {
+    color: #ffeabd;
+    background: linear-gradient(to right, rgb(0, 0, 0, 0), #cc6666, rgb(0, 0, 0, 0));
+}
+
+.about {
+    background-color: #e0dad3;
+    color: #8a4d30;
+}
+
+.box-stats {
+    color: #ffeabd;
+}
