@@ -84,7 +84,7 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
     return Path(file_dir).as_uri()
 
 
-async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None) -> Client:
+async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True) -> Client:
     if user_service is None:
         raise ServiceNotFoundError(UserService)
     if cookies_service is None:
@@ -92,13 +92,16 @@ async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None) 
     user = await user_service.get_user_by_id(user_id)
     if region is None:
         region = user.region
-    cookies = await cookies_service.get_cookies(user_id, region)
+    cookies = None
+    if need_cookie:
+        cookies = await cookies_service.get_cookies(user_id, region)
+        cookies = cookies.cookies
     if region == RegionEnum.HYPERION:
         uid = user.yuanshen_uid
-        client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
+        client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
     elif region == RegionEnum.HOYOLAB:
         uid = user.genshin_uid
-        client = genshin.Client(cookies=cookies.cookies,
+        client = genshin.Client(cookies=cookies,
                                 game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid)
     else:
         raise TypeError("region is not RegionEnum.NULL")

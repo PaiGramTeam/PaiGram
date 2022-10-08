@@ -160,7 +160,7 @@ class GachaLog:
         """
         data, state = await GachaLog.load_history_info(user_id, uid)
         if not state:
-            return False, f'UID{uid} 还没有导入任何抽卡记录数据。', None
+            return False, f'派蒙还没有找到你导入的任何抽卡记录哦，快试试导入吧~', None
         save_path = GACHA_LOG_PATH / f'{user_id}-{uid}-uigf.json'
         uigf_dict = {
             'info': {
@@ -456,12 +456,12 @@ class GachaLog:
         """
         gacha_log, status = await GachaLog.load_history_info(str(user_id), str(client.uid))
         if not status:
-            return "获取数据失败，未找到抽卡记录"
+            return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"
         pool_name = GACHA_TYPE_LIST[pool]
         data = gacha_log.item_list[pool_name]
         total = len(data)
         if total == 0:
-            return "获取数据失败，未找到抽卡记录"
+            return "派蒙没有找到这个卡池的抽卡记录，快来私聊派蒙导入吧~"
         all_five, no_five_star = await GachaLog.get_all_5_star_items(data, assets, pool_name)
         all_four, no_four_star = await GachaLog.get_all_4_star_items(data, assets)
         summon_data = None
@@ -498,12 +498,12 @@ class GachaLog:
         """
         gacha_log, status = await GachaLog.load_history_info(str(user_id), str(client.uid))
         if not status:
-            return "获取数据失败，未找到抽卡记录"
+            return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"
         pool_name = GACHA_TYPE_LIST[pool]
         data = gacha_log.item_list[pool_name]
         total = len(data)
         if total == 0:
-            return "获取数据失败，未找到抽卡记录"
+            return "派蒙没有找到这个卡池的抽卡记录，快来私聊派蒙导入吧~"
         all_five, _ = await GachaLog.get_all_5_star_items(data, assets, pool_name)
         all_four, _ = await GachaLog.get_all_4_star_items(data, assets)
         pool_data = []
