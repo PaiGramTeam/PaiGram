@@ -48,8 +48,9 @@ class GetChat(Plugin):
         return text
 
     async def parse_private_chat(self, chat: Chat) -> str:
-        text = f"用户 ID：<code>{chat.id}</code>\n" \
-                   f"用户名称：<code>{chat.full_name}</code>\n"
+        text = f"<a href=\"tg://user?id={chat.id}\">MENTION</a>\n" \
+               f"用户 ID：<code>{chat.id}</code>\n" \
+               f"用户名称：<code>{chat.full_name}</code>\n"
         if chat.username:
             text += f"用户名：@{chat.username}\n"
         try:
