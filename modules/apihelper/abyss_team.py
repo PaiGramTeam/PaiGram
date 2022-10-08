@@ -1,4 +1,5 @@
-import time, secrets
+import secrets
+import time
 from typing import List, Optional, Any
 
 import httpx
@@ -52,7 +53,8 @@ class TeamRateResult(BaseModel):
             team.nice = team.owner_num / 8 * team.rate
         self.rate_list_full.sort(key=lambda x: x.nice, reverse=True)
 
-    def randomTeam(self) -> FullTeamRate:
+    @property
+    def random_team(self) -> FullTeamRate:
         niceTeam = max(self.rate_list_full, key=lambda x: x.nice)
         niceTeams = [team for team in self.rate_list_full if team.nice == niceTeam.nice]
         return secrets.choice(niceTeams)

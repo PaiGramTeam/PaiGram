@@ -61,7 +61,7 @@ class AbyssTeam(Plugin, BasePlugin):
         # 尝试获取用户已绑定的原神账号信息
         user_data = await self._get_data_from_user(user)
         team_data.sort(user_data)
-        random_team = team_data.randomTeam()
+        random_team = team_data.random_team
         abyss_team_data = {
             "up": [],
             "down": []
