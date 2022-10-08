@@ -43,7 +43,7 @@ class UpdatePlugin(Plugin):
         reply_text = await message.reply_text("正在更新")
         await execute("git fetch --all")
         if len(args) > 0:
-            await execute("git reset --hard origin/master")
+            await execute("git reset --hard origin/main")
         await execute("git pull --all")
         if len(args) > 0:
             await execute("poetry install --extras all")
