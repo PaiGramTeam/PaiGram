@@ -7,7 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <link href="./example/mondstadt.css" rel="stylesheet" />
+    <link href="./{{style}}.css" rel="stylesheet" />
     <link type="text/css" href="../../styles/public.css" rel="stylesheet" />
     <script src="../../js/tailwindcss-3.1.8.js"></script>
   </head>
@@ -30,7 +30,7 @@
           <div class="p-6 grid grid-cols-4 gap-4 text-center">
             {% for label, key in stats_labels %}
             <div class="">
-              <div class="text-xl">{{ stats[key] }}</div>
+              <div class="text-xl box-stats">{{ stats[key] }}</div>
               <div class="text-neutral-400">{{ label }}</div>
             </div>
             {% endfor %}

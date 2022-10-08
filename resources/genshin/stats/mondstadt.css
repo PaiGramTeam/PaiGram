@@ -3,7 +3,7 @@ body {
 }
 
 .header {
-    background-image: url(../background/mondstadt.png);
+    background-image: url(background/mondstadt.png);
     box-shadow: 0 0 8px rgb(123 242 248 / 50%);
 }
 

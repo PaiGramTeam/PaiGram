@@ -1,3 +1,4 @@
+import secrets
 from typing import Optional
 
 from genshin import GenshinException, Client
@@ -37,9 +38,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
     @handler(MessageHandler, filters=filters.Regex("^玩家统计查询(.*)"), block=False)
     @restricts(return_data=ConversationHandler.END)
     @error_callable
-    async def command_start(
-        self, update: Update, context: CallbackContext
-    ) -> Optional[int]:
+    async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
         message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] 查询游戏用户命令请求")
@@ -121,6 +120,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
                 ("雷神瞳", "electroculi"),
                 ("草神瞳", "dendroculi"),
             ],
+            "style": secrets.choice(["mondstadt", "liyue"])
         }
 
         # html = await self.template_service.render_async(
@@ -138,7 +138,8 @@ class UserStatsPlugins(Plugin, BasePlugin):
             full_page=True,
         )
 
-    async def cache_images(self, data: GenshinUserStats) -> None:
+    @staticmethod
+    async def cache_images(data: GenshinUserStats) -> None:
         """缓存所有图片到本地"""
         # TODO: 并发下载所有资源
 
