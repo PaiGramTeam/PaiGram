@@ -1,3 +1,5 @@
+from os import nice
+from re import L
 import secrets
 import time
 from typing import List, Optional, Any
@@ -53,10 +55,14 @@ class TeamRateResult(BaseModel):
             team.nice = team.owner_num / 8 * team.rate
         self.rate_list_full.sort(key=lambda x: x.nice, reverse=True)
 
-    @property
-    def random_team(self) -> FullTeamRate:
-        nice_team = max(self.rate_list_full, key=lambda x: x.nice)
-        nice_teams = [team for team in self.rate_list_full if team.nice == nice_team.nice]
+    def random_team(self, characters: List[str]) -> FullTeamRate:
+        self.sort(characters)
+        max_nice = self.rate_list_full[0].nice
+        nice_teams: List[FullTeamRate] = []
+        for team in self.rate_list_full:
+            if team.nice < max_nice:
+                break
+            nice_teams.append(team)
         return secrets.choice(nice_teams)
 
 
