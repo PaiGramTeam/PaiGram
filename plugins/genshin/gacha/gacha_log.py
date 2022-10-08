@@ -2,7 +2,6 @@ import json
 import os
 from io import BytesIO
 
-import genshin
 from pyppeteer import launch
 from genshin.models import BannerType
 from telegram import Update, User

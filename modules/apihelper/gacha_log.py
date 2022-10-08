@@ -161,8 +161,7 @@ class GachaLog:
             gacha_log.update_time = datetime.datetime.now()
             await GachaLog.save_gacha_log_info(str(user_id), uid, gacha_log)
             return "导入完成，本次没有新增数据" if new_num == 0 else f"导入完成，本次共新增{new_num}条抽卡记录"
-        except Exception as e:
-            breakpoint()
+        except Exception:
             return "导入失败，数据格式错误"
 
     @staticmethod
@@ -241,8 +240,8 @@ class GachaLog:
                             icon=(await assets.avatar(roleToId(item.name)).icon()).as_uri(),
                             count=count,
                             type="角色",
-                            isUp=GachaLog.check_avatar_up(item.name, item.time),
-                            isBig=(not result[-1].isUp) if result else False
+                            isUp=GachaLog.check_avatar_up(item.name, item.time) if pool_name == "角色祈愿" else False,
+                            isBig=(not result[-1].isUp) if result and pool_name == "角色祈愿" else False
                         )
                     )
                 elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿"}:
