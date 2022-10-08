@@ -116,7 +116,7 @@ body {
 
     /* margin-top: 20px; */
     margin-bottom: 20px;
-    padding: 6px 0px 5px 10px;
+    padding: 6px 0 5px 10px;
     background: #fff;
     box-shadow: 0 5px 10px 0 rgb(0 0 0 / 15%);
     position: relative;
@@ -297,7 +297,7 @@ body {
     height: 2px;
     flex-grow: 1;
     background-color: #ebebeb;
-    margin: 0px 10px;
+    margin: 0 10px;
 }
 
 .red {
@@ -313,7 +313,7 @@ body {
 }
 
 .blue {
-    color: #4169E1;
+    color: #4169e1;
 }
 
 .purple {
@@ -322,8 +322,8 @@ body {
 
 .minimum {
     position: absolute;
-    top: 0px;
-    right: 0px;
+    top: 0;
+    right: 0;
     z-index: 9;
     font-size: 12px;
     text-align: center;
