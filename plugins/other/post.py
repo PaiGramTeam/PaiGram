@@ -74,9 +74,9 @@ class Post(Plugin.Conversation, BasePlugin):
         if post_id == -1:
             await message.reply_text("获取作品ID错误，请检查连接是否合法", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        post_full_info = await self.bbs.get_post_full_info(2, post_id)
+        post_info = await self.bbs.get_post_info(2, post_id)
         post_images = await self.bbs.get_images_by_post_id(2, post_id)
-        post_data = post_full_info["post"]["post"]
+        post_data = post_info["post"]["post"]
         post_subject = post_data['subject']
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
         post_p = post_soup.find_all('p')

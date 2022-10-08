@@ -1,6 +1,8 @@
 from typing import Union
 
-from modules.apihelper.error import NetworkError, ResponseError, DataNotFindError
+import httpx
+
+from modules.apihelper.error import NetworkException, ResponseException, DataNotFoundError, TimedOut
 from modules.apihelper.request.httpxrequest import HTTPXRequest
 from modules.apihelper.typedefs import POST_DATA, JSON_DATA
 
@@ -11,10 +13,12 @@ class HOYORequest(HTTPXRequest):
             -> Union[POST_DATA, JSON_DATA, bytes]:
         try:
             response = await self._client.get(url=url, *args, **kwargs)
-        except Exception as exc:
-            raise NetworkError(f"Unknown error in HTTP implementation: {repr(exc)}") from exc
+        except httpx.TimeoutException as err:
+            raise TimedOut from err
+        except httpx.HTTPError as exc:
+            raise NetworkException(f"Unknown error in HTTP implementation: {repr(exc)}") from exc
         if response.is_error:
-            raise ResponseError(f"response error in status code: {response.status_code}")
+            raise ResponseException(message=f"response error in status code: {response.status_code}")
         if not de_json:
             return response.content
         json_data = response.json()
@@ -23,13 +27,13 @@ class HOYORequest(HTTPXRequest):
         message = json_data.get("message", None)
         if return_code is None:
             if data is None:
-                raise DataNotFindError
+                raise DataNotFoundError
             return json_data
         if return_code != 0:
             if message is None:
-                raise ResponseError(f"response error in return code: {return_code}")
+                raise ResponseException(message=f"response error in return code: {return_code}")
             else:
-                raise ResponseError(f"response error: {message}[{return_code}]")
+                raise ResponseException(response=json_data)
         if not re_json_data and data is not None:
             return data
         return json_data

@@ -101,15 +101,6 @@ class Hyperion:
         response = await self.client.get(self.POST_FULL_URL, params=params)
         return PostInfo.paste_data(response)
 
-    async def get_post_full_info(self, gids: int, post_id: int, read: int = 1) -> JSONDict:
-        params = {
-            "gids": gids,
-            "post_id": post_id,
-            "read": read
-        }
-        response = await self.client.get(self.POST_FULL_URL, params=params)
-        return response
-
     async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
         post_info = await self.get_post_info(gids, post_id)
         art_list = []

@@ -30,17 +30,10 @@ async def test_get_post_info(hyperion):
     assert isinstance(post_info, PostInfo)
     assert post_info["post"]["post"]["post_id"] == '29023709'
     assert post_info.post_id == 29023709
-
-
-# noinspection PyShadowingNames
-@pytest.mark.asyncio
-@flaky(3, 1)
-async def test_get_post_full_info(hyperion):
-    post_full_info = await hyperion.get_post_full_info(2, 29023709)
-    assert post_full_info
-    assert post_full_info["post"]["post"]["subject"] == "《原神》长期项目启动·概念PV"
-    assert len(post_full_info["post"]["post"]["images"]) == 1
-    post_soup = BeautifulSoup(post_full_info["post"]["post"]["content"], features="html.parser")
+    assert post_info["post"]["post"]["subject"] == "《原神》长期项目启动·概念PV"
+    assert post_info.subject == "《原神》长期项目启动·概念PV"
+    assert len(post_info["post"]["post"]["images"]) == 1
+    post_soup = BeautifulSoup(post_info["post"]["post"]["content"], features="html.parser")
     assert post_soup.find_all('p')
 
 

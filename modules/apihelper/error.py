@@ -1,22 +1,41 @@
-class APIHelperError(Exception):
+from typing import Mapping, Any, Optional
+
+
+class APIHelperException(Exception):
     pass
 
 
-class NetworkError(APIHelperError):
+class NetworkException(APIHelperException):
     pass
 
 
-class TimedOut(APIHelperError):
+class TimedOut(APIHelperException):
     pass
 
 
-class ResponseError(APIHelperError):
-    pass
+class ResponseException(APIHelperException):
+    code: int = 0
+    message: str = ""
+
+    def __init__(self, response: Optional[Mapping[str, Any]] = None, message: Optional[str] = None) -> None:
+        if response is None:
+            self.message = message
+            _message = message
+        else:
+            self.code = response.get("retcode", self.code)
+            self.message = response.get("message", "")
+            _message = f"[{self.code}] {self.message}"
+
+        super().__init__(_message)
 
 
-class DataNotFindError(APIHelperError):
-    pass
+class DataNotFoundError(ResponseException):
+    def __init__(self):
+        message = "response data not find"
+        super().__init__(message=message)
 
 
-class ReturnCodeError(APIHelperError):
-    pass
+class ReturnCodeError(ResponseException):
+    def __init__(self):
+        message = "response return code error"
+        super().__init__(message=message)
