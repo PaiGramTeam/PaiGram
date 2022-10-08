@@ -54,7 +54,8 @@ class TemplateService:
         return html
 
     async def render(self, template_path: str, template_name: str, template_data: dict,
-                     viewport: ViewportSize, full_page: bool = True, evaluate: Optional[str] = None) -> bytes:
+                     viewport: ViewportSize = None, full_page: bool = True, evaluate: Optional[str] = None,
+                     query_selector: str = None) -> bytes:
         """模板渲染成图片
         :param template_path: 模板目录
         :param template_name: 模板文件名
@@ -62,6 +63,7 @@ class TemplateService:
         :param viewport: 截图大小
         :param full_page: 是否长截图
         :param evaluate: 页面加载后运行的 js
+        :param query_selector: 截图选择器
         :return:
         """
         start_time = time.time()
@@ -76,7 +78,16 @@ class TemplateService:
         await page.set_content(html, wait_until="networkidle")
         if evaluate:
             await page.evaluate(evaluate)
-        png_data = await page.screenshot(full_page=full_page)
+        clip = None
+        if query_selector:
+            try:
+                card = await page.query_selector(query_selector)
+                assert card
+                clip = await card.bounding_box()
+                assert clip
+            except AssertionError:
+                logger.warning(f"未找到 {query_selector} 元素")
+        png_data = await page.screenshot(clip=clip, full_page=full_page)
         await page.close()
         logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
         return png_data

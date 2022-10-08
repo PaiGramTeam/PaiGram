@@ -278,6 +278,7 @@ class RenderTemplate:
             data,
             {"width": 950, "height": 1080},
             full_page=True,
+            query_selector=".text-neutral-200"
         )
 
     async def de_stats(self) -> List[Tuple[str, Any]]:

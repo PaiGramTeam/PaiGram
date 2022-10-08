@@ -60,12 +60,12 @@ class AbyssTeam(Plugin, BasePlugin):
         team_data = await self.team_data.get_data()
         # 尝试获取用户已绑定的原神账号信息
         user_data = await self._get_data_from_user(user)
-        team_data.sort(user_data)
+        random_team = team_data.random_team(user_data)
         abyss_team_data = {
             "up": [],
             "down": []
         }
-        for i in team_data.rate_list_full[0].up.formation:
+        for i in random_team.up.formation:
             temp = {
                 "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,
@@ -73,7 +73,7 @@ class AbyssTeam(Plugin, BasePlugin):
                 "hava": (i.name in user_data) if user_data else True,
             }
             abyss_team_data["up"].append(temp)
-        for i in team_data.rate_list_full[0].down.formation:
+        for i in random_team.down.formation:
             temp = {
                 "icon": (await self.assets_service.avatar(roleToId(i.name)).icon()).as_uri(),
                 "name": i.name,

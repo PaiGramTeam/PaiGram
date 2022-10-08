@@ -47,6 +47,7 @@ class UpdatePlugin(Plugin):
         logger.info(f"用户 {user.full_name}[{user.id}] update命令请求")
         if self._lock.locked():
             await message.reply_text("程序正在更新 请勿重复操作")
+            return
         async with self._lock:
             reply_text = await message.reply_text("正在更新")
             logger.info(f"正在更新代码")

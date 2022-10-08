@@ -78,7 +78,7 @@ def error_callable(func: Callable) -> Callable:
             await send_user_notification(update, context, "出错了呜呜呜 ~ 资源未找到 ~ ")
             return ConversationHandler.END
         except InvalidCookies as exc:
-            if exc.retcode == 10001 or exc.retcode == -100:
+            if exc.retcode in (10001, -100):
                 await send_user_notification(update, context, "出错了呜呜呜 ~ Cookies无效，请尝试重新绑定账户")
             elif exc.retcode == 10103:
                 await send_user_notification(update, context, "出错了呜呜呜 ~ Cookie有效，但没有绑定到游戏帐户，"
@@ -112,12 +112,12 @@ def error_callable(func: Callable) -> Callable:
             await send_user_notification(update, context, "出错了呜呜呜 ~ API请求错误")
             return ConversationHandler.END
         except BadRequest as exc:
-            logger.warning("python-telegram-bot 请求错误")
+            logger.error("python-telegram-bot 请求错误")
             logger.exception(exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ telegram-bot-api请求错误")
             return ConversationHandler.END
         except Forbidden as exc:
-            logger.warning("python-telegram-bot返回 Forbidden")
+            logger.error("python-telegram-bot返回 Forbidden")
             logger.exception(exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ telegram-bot-api请求错误")
             return ConversationHandler.END
