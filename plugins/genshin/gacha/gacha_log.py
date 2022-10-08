@@ -2,8 +2,8 @@ import json
 import os
 from io import BytesIO
 
-from pyppeteer import launch
 from genshin.models import BannerType
+from pyppeteer import launch
 from telegram import Update, User
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
@@ -165,7 +165,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 reply_message = await message.reply_text(data)
             else:
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-                png_data = await self.template_service.render('genshin/gachaLog', "gachaLog.html", data,
+                png_data = await self.template_service.render('genshin/gacha_log', "gacha_log.html", data,
                                                               full_page=True, query_selector=".body_box")
                 reply_message = await message.reply_photo(png_data)
             if filters.ChatType.GROUPS.filter(message):
@@ -202,7 +202,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 if data["hasMore"] and not group:
                     document = True
                     data["hasMore"] = False
-                png_data = await self.template_service.render('genshin/gachaCount', "gachaCount.html", data,
+                png_data = await self.template_service.render('genshin/gacha_count', "gacha_count.html", data,
                                                               full_page=True, query_selector=".body_box")
                 if document:
                     reply_message = await message.reply_document(png_data, filename="抽卡统计.png")
