@@ -1,4 +1,4 @@
-import time
+import time, random
 from typing import List, Optional, Any
 
 import httpx
@@ -25,6 +25,7 @@ class FullTeamRate(BaseModel):
     up: TeamRate
     down: TeamRate
     owner_num: Optional[int]
+    nice: Optional[float]
 
     @property
     def rate(self) -> float:
@@ -48,7 +49,13 @@ class TeamRateResult(BaseModel):
     def sort(self, characters: List[str]):
         for team in self.rate_list_full:
             team.owner_num = sum(member.name in characters for member in team.up.formation + team.down.formation)
-        self.rate_list_full.sort(key=lambda x: (x.owner_num / 8 * x.rate), reverse=True)
+            team.nice = team.owner_num / 8 * team.rate
+        self.rate_list_full.sort(key=lambda x: x.nice, reverse=True)
+
+    def randomTeam(self) -> FullTeamRate:
+        niceTeam = max(self.rate_list_full, key=lambda x: x.nice)
+        niceTeams = [team for team in self.rate_list_full if team.nice == niceTeam.nice]
+        return random.choice(niceTeams)
 
 
 class AbyssTeamData:
