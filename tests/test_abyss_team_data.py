@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from flaky import flaky
 
-from modules.apihelper.abyss_team import AbyssTeamData, TeamRateResult, TeamRate
+from modules.apihelper.abyss_team import AbyssTeamData, TeamRateResult, TeamRate, FullTeamRate
 
 LOGGER = logging.getLogger(__name__)
 
@@ -22,12 +22,18 @@ async def abyss_team_data():
 async def test_abyss_team_data(abyss_team_data: AbyssTeamData):
     team_data = await abyss_team_data.get_data()
     assert isinstance(team_data, TeamRateResult)
-    assert isinstance(team_data.rateListUp[0], TeamRate)
-    assert isinstance(team_data.rateListUp[-1], TeamRate)
-    assert isinstance(team_data.rateListDown[0], TeamRate)
-    assert isinstance(team_data.rateListDown[-1], TeamRate)
-    assert team_data.userCount > 0
-    for i in team_data.rateListUp[0].formation:
+    assert isinstance(team_data.rate_list_up[0], TeamRate)
+    assert isinstance(team_data.rate_list_up[-1], TeamRate)
+    assert isinstance(team_data.rate_list_down[0], TeamRate)
+    assert isinstance(team_data.rate_list_down[-1], TeamRate)
+    assert team_data.user_count > 0
+    team_data.sort(["迪奥娜", "芭芭拉", "凯亚", "琴"])
+    assert isinstance(team_data.rate_list_full[0], FullTeamRate)
+    assert isinstance(team_data.rate_list_full[-1], FullTeamRate)
+    memberUp = {i.name for i in team_data.rate_list_full[0].up.formation}
+    memberDown = {i.name for i in team_data.rate_list_full[0].down.formation}
+    assert not memberUp & memberDown
+    for i in team_data.rate_list_full[0].down.formation:
         LOGGER.info("rate down info:name %s star %s", i.name, i.star)
-    for i in team_data.rateListDown[0].formation:
+    for i in team_data.rate_list_full[0].up.formation:
         LOGGER.info("rate up info:name %s star %s", i.name, i.star)

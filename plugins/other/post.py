@@ -74,9 +74,9 @@ class Post(Plugin.Conversation, BasePlugin):
         if post_id == -1:
             await message.reply_text("获取作品ID错误，请检查连接是否合法", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        post_full_info = await self.bbs.get_post_full_info(2, post_id)
+        post_info = await self.bbs.get_post_info(2, post_id)
         post_images = await self.bbs.get_images_by_post_id(2, post_id)
-        post_data = post_full_info.data["post"]["post"]
+        post_data = post_info["post"]["post"]
         post_subject = post_data['subject']
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
         post_p = post_soup.find_all('p')
@@ -93,6 +93,9 @@ class Post(Plugin.Conversation, BasePlugin):
             if len(post_images) > 1:
                 media = [InputMediaPhoto(img_info.data) for img_info in post_images]
                 media[0] = InputMediaPhoto(post_images[0].data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
+                if len(media) > 10:
+                    media = media[0:10]
+                    await message.reply_text("获取到的图片已经超过10张，为了保证发送成功，已经删除一部分图片")
                 await message.reply_media_group(media)
             elif len(post_images) == 1:
                 image = post_images[0]
@@ -284,3 +287,4 @@ class Post(Plugin.Conversation, BasePlugin):
             return ConversationHandler.END
         await message.reply_text("推送成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
+

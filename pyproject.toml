@@ -2,7 +2,7 @@
 name = "tgpaimonbot"
 version = "0.3.0"
 description = "Telegarm robot, query the official genshin information."
-authors = ["洛水居室", "zhxy-CN", "Chuangbo Li", "kotoriのねこ", "omg-xtao", "艾迪", "Karako"]
+authors = ["洛水居室", "zhxy-CN", "Chuangbo Li", "kotoriのねこ", "omg-xtao", "艾迪", "Karako", "SiHuaN"]
 license = "AGPL-3.0"
 readme = "README.md"
 
@@ -25,7 +25,7 @@ aiofiles = "^22.1.0"
 python-dotenv = "^0.21.0"
 PyMySQL = "^1.0.2"
 alembic = "^1.8.1"
-black = "^22.8.0"
+black = "^22.10.0"
 rich = "^12.6.0"
 enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
 TgCrypto = { version = "^1.2.3", optional = true }

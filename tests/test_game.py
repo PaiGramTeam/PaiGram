@@ -21,9 +21,7 @@ async def test_get_strategy(hyperion):
 
     async def get_post_id(_collection_id: int, character_name: str) -> str:
         post_full_in_collection = await hyperion.get_post_full_in_collection(_collection_id)
-        if post_full_in_collection.error:
-            raise RuntimeError(f"获取收藏信息错误，错误信息为：{post_full_in_collection.message}")
-        for post_data in post_full_in_collection.data["posts"]:
+        for post_data in post_full_in_collection["posts"]:
             topics = post_data["topics"]
             for topic in topics:
                 if character_name == topic["name"]:

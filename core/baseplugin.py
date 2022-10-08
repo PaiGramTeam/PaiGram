@@ -14,18 +14,18 @@ async def clean_message(context: CallbackContext):
         await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
     except BadRequest as exc:
         if "not found" in str(exc):
-            logger.warning(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息不存在")
+            logger.warning(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息不存在")
         elif "Message can't be deleted" in str(exc):
             logger.warning(
-                f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息无法删除 可能是没有授权")
+                f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息无法删除 可能是没有授权")
         else:
-            logger.error(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败")
+            logger.error(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败")
             logger.exception(exc)
     except Forbidden as exc:
         if "bot was kicked" in str(exc):
-            logger.warning(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 已经被踢出群")
+            logger.warning(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 已经被踢出群")
         else:
-            logger.error(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败")
+            logger.error(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败")
             logger.exception(exc)
 
 

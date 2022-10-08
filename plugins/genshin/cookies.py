@@ -15,7 +15,7 @@ from core.plugin import Plugin, handler, conversation
 from core.user.error import UserNotFoundError
 from core.user.models import User
 from core.user.services import UserService
-from modules.apihelper.hyperion import YuanShen
+from modules.apihelper.hyperion import SignIn
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -29,7 +29,7 @@ class AddUserCommandData(TelegramObject):
     cookies: dict = {}
     game_uid: int = 0
     phone: int = 0
-    sign_in_client: Optional[YuanShen.SignIn] = None
+    sign_in_client: Optional[SignIn] = None
 
 
 CHECK_SERVER, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10105)
@@ -171,7 +171,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if not add_user_command_data.sign_in_client:
             phone = add_user_command_data.phone
-            client = YuanShen.SignIn(phone)
+            client = SignIn(phone)
             try:
                 success = await client.login(captcha)
                 if not success:
@@ -248,8 +248,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         except InvalidCookies:
             await message.reply_text("Cookies已经过期，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        except GenshinException as error:
-            await message.reply_text(f"获取账号信息发生错误，错误信息为 {str(error)}，请检查Cookie或者账号是否正常",
+        except GenshinException as exc:
+            await message.reply_text(f"获取账号信息发生错误，错误信息为 {str(exc)}，请检查Cookie或者账号是否正常",
                                      reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except (AttributeError, ValueError):

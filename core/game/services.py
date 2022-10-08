@@ -16,9 +16,7 @@ class GameStrategyService:
     async def _get_strategy_from_hyperion(self, collection_id: int, character_name: str) -> int:
         post_id: int = -1
         post_full_in_collection = await self._hyperion.get_post_full_in_collection(collection_id)
-        if post_full_in_collection.error:
-            return post_id
-        for post_data in post_full_in_collection.data["posts"]:
+        for post_data in post_full_in_collection["posts"]:
             topics = post_data["topics"]
             for topic in topics:
                 if character_name == topic["name"]:
@@ -40,9 +38,9 @@ class GameStrategyService:
         else:
             return ""
 
-        artwork_info = await self._hyperion.get_artwork_info(2, post_id)
-        await self._cache.set_url_list(character_name, artwork_info.results.image_url_list)
-        return artwork_info.results.image_url_list[0]
+        artwork_info = await self._hyperion.get_post_info(2, post_id)
+        await self._cache.set_url_list(character_name, artwork_info.image_urls)
+        return artwork_info.image_urls[0]
 
 
 class GameMaterialService:
@@ -55,9 +53,7 @@ class GameMaterialService:
     async def _get_material_from_hyperion(self, collection_id: int, character_name: str) -> int:
         post_id: int = -1
         post_full_in_collection = await self._hyperion.get_post_full_in_collection(collection_id)
-        if post_full_in_collection.error:
-            return post_id
-        for post_data in post_full_in_collection.data["posts"]:
+        for post_data in post_full_in_collection["posts"]:
             topics = post_data["topics"]
             for topic in topics:
                 if character_name == topic["name"]:
@@ -84,9 +80,9 @@ class GameMaterialService:
         else:
             return ""
 
-        artwork_info = await self._hyperion.get_artwork_info(2, post_id)
-        await self._cache.set_url_list(character_name, artwork_info.results.image_url_list)
-        image_url_list = artwork_info.results.image_url_list
+        artwork_info = await self._hyperion.get_post_info(2, post_id)
+        await self._cache.set_url_list(character_name, artwork_info.image_urls)
+        image_url_list = artwork_info.image_urls
         if len(image_url_list) == 0:
             return ""
         elif len(image_url_list) == 1:
