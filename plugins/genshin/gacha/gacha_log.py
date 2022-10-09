@@ -59,7 +59,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             if authkey:
                 return await GachaLogService.get_gacha_log_data(user.id, client, authkey)
             if data:
-                return await GachaLogService.import_gacha_log_data(user.id, data)
+                return await GachaLogService.import_gacha_log_data(user.id, client, data)
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
@@ -83,6 +83,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             return
         await message.reply_chat_action(ChatAction.TYPING)
         reply = await message.reply_text("文件解析成功，正在导入数据")
+        await message.reply_chat_action(ChatAction.TYPING)
         try:
             text = await self._refresh_user_data(user, data=data)
         except Exception as exc:

@@ -13,7 +13,9 @@ from pydantic import BaseModel, validator
 from core.base.assets import AssetsService
 from metadata.pool.pool import get_pool_by_id
 from metadata.shortname import roleToId, weaponToId, not_real_roles
+from modules.apihelper.error import GachaLogAccountNotFound
 from utils.const import PROJECT_ROOT
+from utils.log import logger
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
@@ -60,7 +62,7 @@ class GachaItem(BaseModel):
 
     @validator("gacha_type")
     def check_gacha_type(cls, v):
-        if v not in {"200", "301", "302", "400"}:
+        if v not in {"100", "200", "301", "302", "400"}:
             raise ValueError("gacha_type must be 200, 301, 302 or 400")
         return v
 
@@ -144,7 +146,7 @@ class GachaLog:
 
     @staticmethod
     async def load_history_info(
-        user_id: str, uid: str, only_status: bool = False
+            user_id: str, uid: str, only_status: bool = False
     ) -> Tuple[Optional[GachaLogInfo], bool]:
         """读取历史抽卡记录数据
         :param user_id: 用户id
@@ -259,21 +261,27 @@ class GachaLog:
             return False, "导入失败，数据格式错误"
 
     @staticmethod
-    async def import_gacha_log_data(user_id: int, data: dict):
+    async def import_gacha_log_data(user_id: int, client: Client, data: dict):
         new_num = 0
         try:
+            uid = data["info"]["uid"]
+            if int(uid) != client.uid:
+                raise GachaLogAccountNotFound
             # 检查导入数据是否合法
-            status, text = await GachaLog.verify_data([GachaItem(**i) for i in data["list"]])
+            all_items = [GachaItem(**i) for i in data["list"]]
+            status, text = await GachaLog.verify_data(all_items)
             if not status:
                 return text
-            uid = data["info"]["uid"]
-            int(uid)
             gacha_log, _ = await GachaLog.load_history_info(str(user_id), uid)
-            for item in data["list"]:
-                pool_name = GACHA_TYPE_LIST[BannerType(int(item["gacha_type"]))]
-                item_info = GachaItem.parse_obj(item)
-                if item_info not in gacha_log.item_list[pool_name]:
+            # 将唯一 id 放入临时数据中，加快查找速度
+            temp_id_data = {
+                pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()
+            }
+            for item_info in all_items:
+                pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
+                if item_info.id not in temp_id_data[pool_name]:
                     gacha_log.item_list[pool_name].append(item_info)
+                    temp_id_data[pool_name].append(item_info.id)
                     new_num += 1
             for i in gacha_log.item_list.values():
                 # 检查导入后的数据是否合法
@@ -284,7 +292,10 @@ class GachaLog:
             gacha_log.update_time = datetime.datetime.now()
             await GachaLog.save_gacha_log_info(str(user_id), uid, gacha_log)
             return "导入完成，本次没有新增数据" if new_num == 0 else f"导入完成，本次共新增{new_num}条抽卡记录"
-        except Exception:
+        except GachaLogAccountNotFound:
+            return "导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同"
+        except Exception as exc:
+            logger.warning(f"导入失败，数据格式错误 {repr(exc)}")
             return "导入失败，数据格式错误"
 
     @staticmethod
@@ -298,6 +309,8 @@ class GachaLog:
         """
         new_num = 0
         gacha_log, _ = await GachaLog.load_history_info(str(user_id), str(client.uid))
+        # 将唯一 id 放入临时数据中，加快查找速度
+        temp_id_data = {pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()}
         try:
             for pool_id, pool_name in GACHA_TYPE_LIST.items():
                 async for data in client.wish_history(pool_id, authkey=authkey):
@@ -317,8 +330,9 @@ class GachaLog:
                         ),
                     )
 
-                    if item not in gacha_log.item_list[pool_name]:
+                    if item.id not in temp_id_data[pool_name]:
                         gacha_log.item_list[pool_name].append(item)
+                        temp_id_data[pool_name].append(item.id)
                         new_num += 1
         except InvalidAuthkey:
             return "更新数据失败，authkey 无效"
@@ -461,7 +475,7 @@ class GachaLog:
 
     @staticmethod
     def get_200_pool_data(
-        total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
+            total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
     ):
         # 总共五星
         five_star = len(all_five)
@@ -494,7 +508,7 @@ class GachaLog:
 
     @staticmethod
     def get_302_pool_data(
-        total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
+            total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
     ):
         # 总共五星
         five_star = len(all_five)
