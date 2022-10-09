@@ -22,6 +22,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
+from core.base.assets import DEFAULT_EnkaAssets
 from core.baseplugin import BasePlugin
 from core.config import config
 from core.plugin import Plugin, handler
@@ -37,8 +38,6 @@ from utils.helpers import url_to_file
 from utils.log import logger
 from utils.models.base import RegionEnum
 from utils.patch.aiohttp import AioHttpTimeoutException
-
-assets = Assets(lang="chs")
 
 
 class PlayerCards(Plugin, BasePlugin):
@@ -82,12 +81,8 @@ class PlayerCards(Plugin, BasePlugin):
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(
-                    context, reply_message.chat_id, reply_message.message_id, 30
-                )
-                self._add_delete_message_job(
-                    context, message.chat_id, message.message_id, 30
-                )
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
         data = await self._fetch_user(uid)
         if isinstance(data, str):
@@ -98,25 +93,26 @@ class PlayerCards(Plugin, BasePlugin):
             return
         if len(args) == 1:
             character_name = roleToName(args[0])
-            logger.info(
-                f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]"
-            )
+            logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
         else:
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求")
             buttons = []
             temp = []
             for index, value in enumerate(data.characters):
-                temp.append(InlineKeyboardButton(
-                    value.name,
-                    callback_data=f"get_player_card|{user.id}|{uid}|{value.name}",
-                ))
+                temp.append(
+                    InlineKeyboardButton(
+                        value.name,
+                        callback_data=f"get_player_card|{user.id}|{uid}|{value.name}",
+                    )
+                )
                 if index == 3:
                     buttons.append(temp)
                     temp = []
             if len(temp) > 0:
                 buttons.append(temp)
-            reply_message = await message.reply_photo(photo=self.temp_photo, caption="请选择你要查询的角色",
-                                                      reply_markup=InlineKeyboardMarkup(buttons))
+            reply_message = await message.reply_photo(
+                photo=self.temp_photo, caption="请选择你要查询的角色", reply_markup=InlineKeyboardMarkup(buttons)
+            )
             if reply_message.photo:
                 self.temp_photo = reply_message.photo[-1].file_id
             return
@@ -148,8 +144,7 @@ class PlayerCards(Plugin, BasePlugin):
 
         result, user_id, uid = await get_player_card_callback(callback_query.data)
         if user.id != user_id:
-            await callback_query.answer(text="这不是你的按钮！\n"
-                                             "再乱点再按我叫西风骑士团、千岩军、天领奉和教令院了！", show_alert=True)
+            await callback_query.answer(text="这不是你的按钮！\n" "再乱点再按我叫西风骑士团、千岩军、天领奉和教令院了！", show_alert=True)
             return
         logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{result}] uid[{uid}]")
         data = await self._fetch_user(uid)
@@ -190,15 +185,17 @@ class Artifact(BaseModel):
             self.score += substat_scores
         self.score = round(self.score, 1)
 
-        for r in (("D", 10),
-                  ("C", 16.5),
-                  ("B", 23.1),
-                  ("A", 29.7),
-                  ("S", 36.3),
-                  ("SS", 42.9),
-                  ("SSS", 49.5),
-                  ("ACE", 56.1),
-                  ("ACE²", 66)):
+        for r in (
+            ("D", 10),
+            ("C", 16.5),
+            ("B", 23.1),
+            ("A", 29.7),
+            ("S", 36.3),
+            ("SS", 42.9),
+            ("SSS", 49.5),
+            ("ACE", 56.1),
+            ("ACE²", 66),
+        ):
             if self.score >= r[1]:
                 self.score_label = r[0]
                 self.score_class = self.get_score_class(r[0])
@@ -236,15 +233,17 @@ class RenderTemplate:
         artifact_total_score = round(artifact_total_score, 1)
 
         artifact_total_score_label: str = "E"
-        for r in (("D", 10),
-                  ("C", 16.5),
-                  ("B", 23.1),
-                  ("A", 29.7),
-                  ("S", 36.3),
-                  ("SS", 42.9),
-                  ("SSS", 49.5),
-                  ("ACE", 56.1),
-                  ("ACE²", 66)):
+        for r in (
+            ("D", 10),
+            ("C", 16.5),
+            ("B", 23.1),
+            ("A", 29.7),
+            ("S", 36.3),
+            ("SS", 42.9),
+            ("SSS", 49.5),
+            ("ACE", 56.1),
+            ("ACE²", 66),
+        ):
             if artifact_total_score / 5 >= r[1]:
                 artifact_total_score_label = r[0]
 
@@ -262,7 +261,6 @@ class RenderTemplate:
             # 圣遗物评级颜色
             "artifact_total_score_class": Artifact.get_score_class(artifact_total_score_label),
             "artifacts": artifacts,
-
             # 需要在模板中使用的 enum 类型
             "DigitType": DigitType,
         }
@@ -278,7 +276,7 @@ class RenderTemplate:
             data,
             {"width": 950, "height": 1080},
             full_page=True,
-            query_selector=".text-neutral-200"
+            query_selector=".text-neutral-200",
         )
 
     async def de_stats(self) -> List[Tuple[str, Any]]:
@@ -317,14 +315,10 @@ class RenderTemplate:
                 pass
             elif stat[1].id != 26:  # 治疗加成
                 continue
-            value = (
-                stat[1].to_rounded()
-                if isinstance(stat[1], Stats)
-                else stat[1].to_percentage_symbol()
-            )
+            value = stat[1].to_rounded() if isinstance(stat[1], Stats) else stat[1].to_percentage_symbol()
             if value in ("0%", 0):
                 continue
-            name = assets.get_hash_map(stat[0])
+            name = DEFAULT_EnkaAssets.get_hash_map(stat[0])
             if name is None:
                 continue
             items.append((name, value))
