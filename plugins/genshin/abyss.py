@@ -1,11 +1,10 @@
 """深渊数据查询"""
 import re
-from datetime import datetime
-from pathlib import Path
-from typing import Iterable, List, Tuple
+from functools import partial
+from typing import Match, Tuple
 
+import ujson as json
 from genshin import Client
-from genshin.models import CharacterRanks
 from pytz import timezone
 from telegram import Update
 from telegram.constants import ChatAction, ParseMode
@@ -19,16 +18,28 @@ from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from modules.wiki.base import Model
+from metadata.shortname import roleToId
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.helpers import get_genshin_client, get_public_genshin_client
+from utils.helpers import async_re_sub, get_genshin_client, get_public_genshin_client
 from utils.log import logger
-from utils.typedefs import StrOrInt
 
 TZ = timezone("Asia/Shanghai")
 cmd_pattern = r"^/abyss\s*(?:(\d+)|(all))?\s*(pre)?"
 msg_pattern = r"^深渊数据((?:查询)|(?:总览))(上期){0,1}\D*(\d+)?.*$"
+
+regex_01 = r"['\"]icon['\"]:\s*['\"](.*?)['\"]"
+regex_02 = r"['\"]side_icon['\"]:\s*['\"](.*?)['\"]"
+
+
+async def replace_01(match: Match, assets_service: AssetsService) -> str:
+    aid = roleToId(re.findall(r"UI_AvatarIcon_(.*?).png", match.groups()[0])[0])
+    return (await assets_service.avatar(aid).icon()).as_uri()
+
+
+async def replace_02(match: Match, assets_service: AssetsService) -> str:
+    aid = roleToId(re.findall(r"UI_AvatarIcon_Side_(.*?).png", match.groups()[0])[0])
+    return (await assets_service.avatar(aid).side()).as_uri()
 
 
 def get_args(text: str) -> Tuple[int, bool, bool]:
@@ -150,6 +161,7 @@ class Abyss(Plugin, BasePlugin):
         Returns:
             bytes格式的图片
         """
+
         abyss_data = await client.get_spiral_abyss(uid, previous=previous)
         if not abyss_data.unlocked:
             raise AbyssUnlocked()
@@ -157,114 +169,18 @@ class Abyss(Plugin, BasePlugin):
             raise NoMostKills()
         end_time = abyss_data.end_time.replace(tzinfo=TZ)
         time = end_time.strftime("%Y年%m月") + "上" if end_time.day <= 15 else "下" + "期"
+
         render_data = {}
+        result = await async_re_sub(
+            regex_01, partial(replace_01, assets_service=self.assets_service), abyss_data.json()
+        )
+        result = await async_re_sub(regex_02, partial(replace_02, assets_service=self.assets_service), result)
+        render_data["abyss_data"] = json.loads(result)
+        render_data["time"] = time
         if overview:
-            most_played: List[Avatar] = []
-            ranks: CharacterRanks = abyss_data.ranks
-            for avatar in ranks.most_played:
-                most_played.append(Avatar(img=await self.assets_service.avatar(avatar.id).icon(), value=avatar.value))
-            most_kills = Avatar(
-                img=await self.assets_service.avatar(ranks.most_kills[0].id).side(), value=ranks.most_kills[0].value
-            )
-            strongest_strike = Avatar(
-                img=await self.assets_service.avatar(ranks.strongest_strike[0].id).side(),
-                value=ranks.strongest_strike[0].value,
-            )
-            most_damage_taken = Avatar(
-                img=await self.assets_service.avatar(ranks.most_damage_taken[0].id).side(),
-                value=ranks.most_damage_taken[0].value,
-            )
-            most_bursts_used = Avatar(
-                img=await self.assets_service.avatar(ranks.most_bursts_used[0].id).side(),
-                value=ranks.most_bursts_used[0].value,
-            )
-            most_skills_used = Avatar(
-                img=await self.assets_service.avatar(ranks.most_skills_used[0].id).side(),
-                value=ranks.most_skills_used[0].value,
-            )
-            total = Total(
-                time=time,
-                season=abyss_data.season,
-                stars=abyss_data.total_stars,
-                deep=abyss_data.max_floor,
-                battles=abyss_data.total_battles,
-                most_played=most_played,
-                most_kills=most_kills,
-                strongest_strike=strongest_strike,
-                most_damage_taken=most_damage_taken,
-                most_bursts_used=most_bursts_used,
-                most_skills_used=most_skills_used,
-            )
-            floors: List[Floor] = []
-            for floor in abyss_data.floors:
-                rooms: List[Room] = []
-                for room in floor.chambers:
-                    time = room.battles[0].timestamp.replace(tzinfo=TZ)
-                    stars = room.stars
-                    avatar_lists = []
-                    for battle in room.battles:
-                        avatars = []
-                        for avatar in battle.characters:
-                            avatars.append(
-                                Avatar(
-                                    img=await self.assets_service.avatar(avatar.id).icon(),
-                                    value=avatar.level or avatar.name,
-                                    extra={"element": avatar.element},
-                                )
-                            )
-                        avatar_lists.append(avatars)
-                    rooms.append(Room(time=time, stars=stars, avatar_lists=avatar_lists))
-                floors.append(Floor(num=floor.floor, rooms=rooms))
-            return await self.template_service.render(
-                "genshin/abyss", "overview.html", {"data": Overview(total=total, floors=floors)}
-            )
+            return await self.template_service.render("genshin/abyss", "overview.html", render_data)
         elif floor < 1:
+            render_data["floor"] = floor
             return await self.template_service.render("genshin/abyss", "total.html", render_data)
         else:
             return await self.template_service.render("genshin/abyss", "abyss.html", render_data)
-
-
-class Avatar(Model):
-    img: Path
-    value: StrOrInt
-    extra: dict = {}
-
-
-class Room(Model):
-    time: datetime
-    stars: int
-    avatar_lists: Iterable[Iterable[Avatar]]
-
-
-class Floor(Model):
-    num: int
-    rooms: Iterable[Room]
-
-
-class Total(Model):
-    time: str
-    season: int
-    stars: int
-    deep: str
-    battles: int
-    most_played: Iterable[Avatar]
-
-    most_kills: Avatar
-    """最多击破"""
-
-    strongest_strike: Avatar
-    """最强一击"""
-
-    most_damage_taken: Avatar
-    """最多承伤"""
-
-    most_bursts_used: Avatar
-    """最多Q"""
-
-    most_skills_used: Avatar
-    """最多E"""
-
-
-class Overview(Model):
-    total: Total
-    floors: Iterable[Floor]
