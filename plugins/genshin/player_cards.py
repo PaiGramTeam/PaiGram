@@ -208,9 +208,9 @@ class Artifact(BaseModel):
         mapping = {
             "D": "text-neutral-400",
             "C": "text-neutral-200",
-            "B": "text-neutral-200",
+            "B": "text-violet-400",
             "A": "text-violet-400",
-            "S": "text-violet-400",
+            "S": "text-yellow-400",
             "SS": "text-yellow-400",
             "SSS": "text-yellow-400",
             "ACE": "text-red-500",
