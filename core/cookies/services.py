@@ -26,7 +26,6 @@ class CookiesService:
 
 
 class PublicCookiesService:
-
     def __init__(self, cookies_repository: CookiesRepository, public_cookies_cache: PublicCookiesCache):
         self._cache = public_cookies_cache
         self._repository: CookiesRepository = cookies_repository
@@ -60,7 +59,7 @@ class PublicCookiesService:
         """
         user_times = await self._cache.incr_by_user_times(user_id)
         if int(user_times) > self.user_times_limiter:
-            raise TooManyRequestPublicCookies
+            raise TooManyRequestPublicCookies(user_id)
         while True:
             public_id, count = await self._cache.get_public_cookies(region)
             try:
@@ -71,16 +70,15 @@ class PublicCookiesService:
             if region == RegionEnum.HYPERION:
                 client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)
             elif region == RegionEnum.HOYOLAB:
-                client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS,
-                                        lang="zh-cn")
+                client = genshin.Client(
+                    cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
+                )
             else:
                 raise CookieServiceError
             try:
                 await client.get_record_card()
             except InvalidCookies as exc:
-                if "[10001]" in str(exc):
-                    logger.warning(f"用户 [{public_id}] Cookies无效")
-                elif "[-100]" in str(exc):
+                if "[10001]" in str(exc) or "[-100]" in str(exc):
                     logger.warning(f"用户 [{public_id}] Cookies无效")
                 elif "[10103]" in str(exc):
                     logger.warning(f"用户 [{public_id}] Cookie有效，但没有绑定到游戏帐户")
@@ -101,6 +99,5 @@ class PublicCookiesService:
                 logger.warning(f"用户 [{public_id}] 获取账号信息发生错误，错误信息为")
                 logger.exception(exc)
                 continue
-            logger.info(f"用户 user_id[{user_id}] 请求"
-                        f"用户 user_id[{public_id}] 的公共Cookies 该Cookie使用次数为[{count}]次 ")
+            logger.info(f"用户 user_id[{user_id}] 请求" f"用户 user_id[{public_id}] 的公共Cookies 该Cookie使用次数为[{count}]次 ")
             return cookies
