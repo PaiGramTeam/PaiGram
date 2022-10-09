@@ -59,6 +59,7 @@ class PublicCookiesService:
         """
         user_times = await self._cache.incr_by_user_times(user_id)
         if int(user_times) > self.user_times_limiter:
+            logger.warning(f"用户 [{user_id}] 使用公共Cookie次数已经到达上限")
             raise TooManyRequestPublicCookies(user_id)
         while True:
             public_id, count = await self._cache.get_public_cookies(region)

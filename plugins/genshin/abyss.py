@@ -7,7 +7,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError
+from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template import TemplateService
@@ -124,6 +124,9 @@ class Abyss(Plugin, BasePlugin):
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+            return
+        except TooManyRequestPublicCookies:
+            await message.reply_text("用户查询次数过多 请稍后重试")
             return
         except (AbyssUnlocked, NoMostKills):
             await message.reply_text("本次深渊旅行者还没挑战呢，咕咕咕~~~")
