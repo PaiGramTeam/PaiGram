@@ -60,7 +60,7 @@ class GachaItem(BaseModel):
 
     @validator("gacha_type")
     def check_gacha_type(cls, v):
-        if v not in {"200", "301", "302", "400"}:
+        if v not in {"100", "200", "301", "302", "400"}:
             raise ValueError("gacha_type must be 200, 301, 302 or 400")
         return v
 
@@ -263,17 +263,25 @@ class GachaLog:
         new_num = 0
         try:
             # 检查导入数据是否合法
-            status, text = await GachaLog.verify_data([GachaItem(**i) for i in data["list"]])
+            all_items = [GachaItem(**i) for i in data["list"]]
+            status, text = await GachaLog.verify_data(all_items)
             if not status:
                 return text
             uid = data["info"]["uid"]
             int(uid)
             gacha_log, _ = await GachaLog.load_history_info(str(user_id), uid)
-            for item in data["list"]:
-                pool_name = GACHA_TYPE_LIST[BannerType(int(item["gacha_type"]))]
-                item_info = GachaItem.parse_obj(item)
-                if item_info not in gacha_log.item_list[pool_name]:
+            # 将唯一 id 放入临时数据中，加快查找速度
+            temp_id_data = {
+                "角色祈愿": [i.id for i in gacha_log.item_list["角色祈愿"]],
+                "武器祈愿": [i.id for i in gacha_log.item_list["武器祈愿"]],
+                "常驻祈愿": [i.id for i in gacha_log.item_list["常驻祈愿"]],
+                "新手祈愿": [i.id for i in gacha_log.item_list["新手祈愿"]],
+            }
+            for item_info in all_items:
+                pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
+                if item_info.id not in temp_id_data[pool_name]:
                     gacha_log.item_list[pool_name].append(item_info)
+                    temp_id_data[pool_name].append(item_info.id)
                     new_num += 1
             for i in gacha_log.item_list.values():
                 # 检查导入后的数据是否合法
@@ -298,6 +306,13 @@ class GachaLog:
         """
         new_num = 0
         gacha_log, _ = await GachaLog.load_history_info(str(user_id), str(client.uid))
+        # 将唯一 id 放入临时数据中，加快查找速度
+        temp_id_data = {
+            "角色祈愿": [i.id for i in gacha_log.item_list["角色祈愿"]],
+            "武器祈愿": [i.id for i in gacha_log.item_list["武器祈愿"]],
+            "常驻祈愿": [i.id for i in gacha_log.item_list["常驻祈愿"]],
+            "新手祈愿": [i.id for i in gacha_log.item_list["新手祈愿"]],
+        }
         try:
             for pool_id, pool_name in GACHA_TYPE_LIST.items():
                 async for data in client.wish_history(pool_id, authkey=authkey):
@@ -317,8 +332,9 @@ class GachaLog:
                         ),
                     )
 
-                    if item not in gacha_log.item_list[pool_name]:
+                    if item.id not in temp_id_data[pool_name]:
                         gacha_log.item_list[pool_name].append(item)
+                        temp_id_data[pool_name].append(item.id)
                         new_num += 1
         except InvalidAuthkey:
             return "更新数据失败，authkey 无效"
