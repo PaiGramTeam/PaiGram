@@ -147,7 +147,7 @@ class GachaLog:
 
     @staticmethod
     async def load_history_info(
-            user_id: str, uid: str, only_status: bool = False
+        user_id: str, uid: str, only_status: bool = False
     ) -> Tuple[Optional[GachaLogInfo], bool]:
         """读取历史抽卡记录数据
         :param user_id: 用户id
@@ -445,7 +445,7 @@ class GachaLog:
         five_star_up = len([i for i in all_five if i.isUp])
         five_star_big = len([i for i in all_five if i.isBig])
         # 五星平均
-        five_star_avg = round(total / five_star, 2) if five_star != 0 else 0
+        five_star_avg = round((total - no_five_star) / five_star, 2) if five_star != 0 else 0
         # 小保底不歪
         small_protect = (
             round((five_star_up - five_star_big) / (five_star - five_star_big) * 100.0, 1)
@@ -455,7 +455,7 @@ class GachaLog:
         # 五星常驻
         five_star_const = five_star - five_star_up
         # UP 平均
-        up_avg = round(total / five_star_up, 2) if five_star_up != 0 else 0
+        up_avg = round((total - no_five_star) / five_star_up, 2) if five_star_up != 0 else 0
         # UP 花费原石
         up_cost = sum(i.count * 160 for i in all_five if i.isUp)
         up_cost = f"{round(up_cost / 10000, 2)}w" if up_cost >= 10000 else up_cost
@@ -476,18 +476,18 @@ class GachaLog:
 
     @staticmethod
     def get_200_pool_data(
-            total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
+        total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
     ):
         # 总共五星
         five_star = len(all_five)
         # 五星平均
-        five_star_avg = round(total / five_star, 2) if five_star != 0 else 0
+        five_star_avg = round((total - no_five_star) / five_star, 2) if five_star != 0 else 0
         # 五星武器
         five_star_weapon = len([i for i in all_five if i.type == "武器"])
         # 总共四星
         four_star = len(all_four)
         # 四星平均
-        four_star_avg = round(total / four_star, 2) if four_star != 0 else 0
+        four_star_avg = round((total - no_four_star) / four_star, 2) if four_star != 0 else 0
         # 四星最多
         four_star_name_list = [i.name for i in all_four]
         four_star_max = max(four_star_name_list, key=four_star_name_list.count)
@@ -509,18 +509,18 @@ class GachaLog:
 
     @staticmethod
     def get_302_pool_data(
-            total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
+        total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
     ):
         # 总共五星
         five_star = len(all_five)
         # 五星平均
-        five_star_avg = round(total / five_star, 2) if five_star != 0 else 0
+        five_star_avg = round((total - no_five_star) / five_star, 2) if five_star != 0 else 0
         # 四星武器
         four_star_weapon = len([i for i in all_four if i.type == "武器"])
         # 总共四星
         four_star = len(all_four)
         # 四星平均
-        four_star_avg = round(total / four_star, 2) if four_star != 0 else 0
+        four_star_avg = round((total - no_four_star) / four_star, 2) if four_star != 0 else 0
         # 四星最多
         four_star_name_list = [i.name for i in all_four]
         four_star_max = max(four_star_name_list, key=four_star_name_list.count)
@@ -539,6 +539,32 @@ class GachaLog:
                 {"num": four_star_max_count, "unit": four_star_max, "lable": "四星最多"},
             ],
         ]
+
+    @staticmethod
+    def count_fortune(pool_name: str, summon_data, weapon: bool = False):
+        """
+            角色  武器
+        欧 50以下 45以下
+        吉 50-60 45-55
+        中 60-70 55-65
+        非 70以上 65以上
+        """
+        data = [45, 55, 65] if weapon else [50, 60, 70]
+        for i in summon_data:
+            for j in i:
+                if j.get("lable") == "五星平均":
+                    num = j.get("num", 0)
+                    if num == 0:
+                        return pool_name
+                    elif num <= data[0]:
+                        return f"{pool_name} · 欧"
+                    elif num <= data[1]:
+                        return f"{pool_name} · 吉"
+                    elif num <= data[2]:
+                        return f"{pool_name} · 普通"
+                    else:
+                        return f"{pool_name} · 非"
+        return pool_name
 
     @staticmethod
     async def get_analysis(user_id: int, client: Client, pool: BannerType, assets: AssetsService):
@@ -563,10 +589,13 @@ class GachaLog:
         summon_data = None
         if pool == BannerType.CHARACTER1:
             summon_data = GachaLog.get_301_pool_data(total, all_five, no_five_star, no_four_star)
+            pool_name = GachaLog.count_fortune(pool_name, summon_data)
         elif pool == BannerType.WEAPON:
             summon_data = GachaLog.get_302_pool_data(total, all_five, all_four, no_five_star, no_four_star)
+            pool_name = GachaLog.count_fortune(pool_name, summon_data, True)
         elif pool == BannerType.PERMANENT:
             summon_data = GachaLog.get_200_pool_data(total, all_five, all_four, no_five_star, no_four_star)
+            pool_name = GachaLog.count_fortune(pool_name, summon_data)
         last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
         first_time = data[-1].time.strftime("%Y-%m-%d %H:%M")
         return {
