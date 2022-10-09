@@ -259,16 +259,16 @@ class GachaLog:
             return False, "导入失败，数据格式错误"
 
     @staticmethod
-    async def import_gacha_log_data(user_id: int, data: dict):
+    async def import_gacha_log_data(user_id: int, client: Client, data: dict):
         new_num = 0
         try:
+            uid = data["info"]["uid"]
+            assert int(uid) == client.uid
             # 检查导入数据是否合法
             all_items = [GachaItem(**i) for i in data["list"]]
             status, text = await GachaLog.verify_data(all_items)
             if not status:
                 return text
-            uid = data["info"]["uid"]
-            int(uid)
             gacha_log, _ = await GachaLog.load_history_info(str(user_id), uid)
             # 将唯一 id 放入临时数据中，加快查找速度
             temp_id_data = {
@@ -289,6 +289,8 @@ class GachaLog:
             gacha_log.update_time = datetime.datetime.now()
             await GachaLog.save_gacha_log_info(str(user_id), uid, gacha_log)
             return "导入完成，本次没有新增数据" if new_num == 0 else f"导入完成，本次共新增{new_num}条抽卡记录"
+        except AssertionError:
+            return "导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同"
         except Exception:
             return "导入失败，数据格式错误"
 
