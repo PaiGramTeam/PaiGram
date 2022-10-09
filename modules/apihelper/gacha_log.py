@@ -272,10 +272,7 @@ class GachaLog:
             gacha_log, _ = await GachaLog.load_history_info(str(user_id), uid)
             # 将唯一 id 放入临时数据中，加快查找速度
             temp_id_data = {
-                "角色祈愿": [i.id for i in gacha_log.item_list["角色祈愿"]],
-                "武器祈愿": [i.id for i in gacha_log.item_list["武器祈愿"]],
-                "常驻祈愿": [i.id for i in gacha_log.item_list["常驻祈愿"]],
-                "新手祈愿": [i.id for i in gacha_log.item_list["新手祈愿"]],
+                pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()
             }
             for item_info in all_items:
                 pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
@@ -307,12 +304,7 @@ class GachaLog:
         new_num = 0
         gacha_log, _ = await GachaLog.load_history_info(str(user_id), str(client.uid))
         # 将唯一 id 放入临时数据中，加快查找速度
-        temp_id_data = {
-            "角色祈愿": [i.id for i in gacha_log.item_list["角色祈愿"]],
-            "武器祈愿": [i.id for i in gacha_log.item_list["武器祈愿"]],
-            "常驻祈愿": [i.id for i in gacha_log.item_list["常驻祈愿"]],
-            "新手祈愿": [i.id for i in gacha_log.item_list["新手祈愿"]],
-        }
+        temp_id_data = {pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()}
         try:
             for pool_id, pool_name in GACHA_TYPE_LIST.items():
                 async for data in client.wish_history(pool_id, authkey=authkey):
