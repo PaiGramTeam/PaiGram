@@ -56,8 +56,9 @@ class GachaItem(BaseModel):
 
     @validator("name")
     def name_validator(cls, v):
-        if (roleToId(v) or weaponToId(v)) and v not in not_real_roles:
-            return v
+        if item_id := (roleToId(v) or weaponToId(v)):
+            if item_id not in not_real_roles:
+                return v
         raise ValueError("Invalid name")
 
     @validator("gacha_type")
