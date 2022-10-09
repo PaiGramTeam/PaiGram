@@ -13,7 +13,9 @@ from pydantic import BaseModel, validator
 from core.base.assets import AssetsService
 from metadata.pool.pool import get_pool_by_id
 from metadata.shortname import roleToId, weaponToId, not_real_roles
+from modules.apihelper.error import GachaLogAccountNotFound
 from utils.const import PROJECT_ROOT
+from utils.log import logger
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
@@ -144,7 +146,7 @@ class GachaLog:
 
     @staticmethod
     async def load_history_info(
-        user_id: str, uid: str, only_status: bool = False
+            user_id: str, uid: str, only_status: bool = False
     ) -> Tuple[Optional[GachaLogInfo], bool]:
         """读取历史抽卡记录数据
         :param user_id: 用户id
@@ -263,7 +265,8 @@ class GachaLog:
         new_num = 0
         try:
             uid = data["info"]["uid"]
-            assert int(uid) == client.uid
+            if int(uid) != client.uid:
+                raise GachaLogAccountNotFound
             # 检查导入数据是否合法
             all_items = [GachaItem(**i) for i in data["list"]]
             status, text = await GachaLog.verify_data(all_items)
@@ -289,9 +292,10 @@ class GachaLog:
             gacha_log.update_time = datetime.datetime.now()
             await GachaLog.save_gacha_log_info(str(user_id), uid, gacha_log)
             return "导入完成，本次没有新增数据" if new_num == 0 else f"导入完成，本次共新增{new_num}条抽卡记录"
-        except AssertionError:
+        except GachaLogAccountNotFound:
             return "导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同"
-        except Exception:
+        except Exception as exc:
+            logger.warning(f"导入失败，数据格式错误 {repr(exc)}")
             return "导入失败，数据格式错误"
 
     @staticmethod
@@ -471,7 +475,7 @@ class GachaLog:
 
     @staticmethod
     def get_200_pool_data(
-        total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
+            total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
     ):
         # 总共五星
         five_star = len(all_five)
@@ -504,7 +508,7 @@ class GachaLog:
 
     @staticmethod
     def get_302_pool_data(
-        total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
+            total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
     ):
         # 总共五星
         five_star = len(all_five)
