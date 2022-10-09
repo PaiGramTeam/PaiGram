@@ -25,10 +25,11 @@ INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
 
 class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
-    """ 抽卡记录导入/导出/分析"""
+    """抽卡记录导入/导出/分析"""
 
-    def __init__(self, template_service: TemplateService = None, user_service: UserService = None,
-                 assets: AssetsService = None):
+    def __init__(
+        self, template_service: TemplateService = None, user_service: UserService = None, assets: AssetsService = None
+    ):
         self.template_service = template_service
         self.user_service = user_service
         self.assets_service = assets
@@ -68,8 +69,8 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             document = message.document
         if not document.file_name.endswith(".json"):
             await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件")
-        if document.file_size > 1 * 1024 * 1024:
-            await message.reply_text("文件过大，请发送小于 1 MB 的文件")
+        if document.file_size > 2 * 1024 * 1024:
+            await message.reply_text("文件过大，请发送小于 2 MB 的文件")
         try:
             data = BytesIO()
             await (await document.get_file()).download(out=data)
@@ -112,7 +113,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 "2.你还可以向派蒙发送从游戏中获取到的抽卡记录链接\n\n"
                 "<b>注意：导入的数据将会与旧数据进行合并。</b>\n"
                 "获取抽卡记录链接可以参考：https://paimon.moe/wish/import",
-                parse_mode="html"
+                parse_mode="html",
             )
             return INPUT_URL
         authkey = self.from_url_get_authkey(args[0])
@@ -241,8 +242,9 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                     self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
             else:
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-                png_data = await self.template_service.render('genshin/gacha_log', "gacha_log.html", data,
-                                                              full_page=True, query_selector=".body_box")
+                png_data = await self.template_service.render(
+                    "genshin/gacha_log", "gacha_log.html", data, full_page=True, query_selector=".body_box"
+                )
                 await message.reply_photo(png_data)
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
@@ -277,8 +279,9 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 if data["hasMore"] and not group:
                     document = True
                     data["hasMore"] = False
-                png_data = await self.template_service.render('genshin/gacha_count', "gacha_count.html", data,
-                                                              full_page=True, query_selector=".body_box")
+                png_data = await self.template_service.render(
+                    "genshin/gacha_count", "gacha_count.html", data, full_page=True, query_selector=".body_box"
+                )
                 if document:
                     await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
                     await message.reply_document(png_data, filename="抽卡统计.png")
