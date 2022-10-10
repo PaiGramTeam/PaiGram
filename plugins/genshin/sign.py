@@ -100,7 +100,7 @@ class Sign(Plugin, BasePlugin):
                 RuntimeError,
             ) as exc:
                 logger.warning(f"ajax 自动通过失败：{repr(exc)}")
-        logger.warning(f"ajax 自动通过失败")
+        logger.warning("ajax 自动通过失败")
         if not config.pass_challenge_api:
             return None
         pass_challenge_params = {
