@@ -9,12 +9,11 @@ from telegram.ext import (
     CallbackContext,
     CommandHandler,
     MessageHandler,
-    ConversationHandler,
     filters,
 )
 
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError
+from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
 from core.plugin import Plugin, handler
 from core.template.services import TemplateService
 from core.user.error import UserNotFoundError
@@ -22,10 +21,6 @@ from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file, get_genshin_client, get_public_genshin_client
 from utils.log import logger
-
-
-class TeapotUnlocked(Exception):
-    """尘歌壶未解锁"""
 
 
 class UserStatsPlugins(Plugin, BasePlugin):
@@ -36,7 +31,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
 
     @handler(CommandHandler, command="stats", block=False)
     @handler(MessageHandler, filters=filters.Regex("^玩家统计查询(.*)"), block=False)
-    @restricts(return_data=ConversationHandler.END)
+    @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
@@ -50,7 +45,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
         except ValueError as exc:
             logger.warning(f"获取 uid 发生错误！ 错误信息为 {repr(exc)}")
             await message.reply_text("输入错误")
-            return ConversationHandler.END
+            return
         try:
             try:
                 client = await get_genshin_client(user.id)
@@ -68,14 +63,14 @@ class UserStatsPlugins(Plugin, BasePlugin):
                     context, message.chat_id, message.message_id, 30
                 )
             return
-        except TeapotUnlocked:
-            await message.reply_text("角色尘歌壶未解锁 如果想要查看具体数据 嗯...... 咕咕咕~")
-            return ConversationHandler.END
+        except TooManyRequestPublicCookies:
+            await message.reply_text("用户查询次数过多 请稍后重试")
+            return
         except AttributeError as exc:
             logger.error("角色数据有误")
             logger.exception(exc)
             await message.reply_text("角色数据有误 估计是派蒙晕了")
-            return ConversationHandler.END
+            return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await message.reply_photo(
             png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True
