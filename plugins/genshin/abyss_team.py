@@ -20,8 +20,9 @@ from utils.log import logger
 class AbyssTeam(Plugin, BasePlugin):
     """深境螺旋推荐配队查询"""
 
-    def __init__(self, user_service: UserService = None, template_service: TemplateService = None,
-                 assets: AssetsService = None):
+    def __init__(
+        self, user_service: UserService = None, template_service: TemplateService = None, assets: AssetsService = None
+    ):
         self.template_service = template_service
         self.user_service = user_service
         self.assets_service = assets
@@ -52,20 +53,16 @@ class AbyssTeam(Plugin, BasePlugin):
         user_data = [character.name for character in characters]
         team_data.sort(user_data)
         # random_team = team_data.random_team(user_data)
-        abyss_teams_data = {
-            "uid": client.uid,
-            "version": team_data.version,
-            "teams":[]
-        }
+        abyss_teams_data = {"uid": client.uid, "version": team_data.version, "teams": []}
         for i in range(3):
             team = {
                 "up": [],
-                "up_rate": f'{team_data.rate_list_full[i].up.rate * 100: .2f}%',
+                "up_rate": f"{team_data.rate_list_full[i].up.rate * 100: .2f}%",
                 "down": [],
-                "down_rate": f'{team_data.rate_list_full[i].down.rate * 100: .2f}%',
+                "down_rate": f"{team_data.rate_list_full[i].down.rate * 100: .2f}%",
             }
 
-            for lane in ['up', 'down']:
+            for lane in ["up", "down"]:
                 for member in getattr(team_data.rate_list_full[i], lane).formation:
                     temp = {
                         "icon": (await self.assets_service.avatar(roleToId(member.name)).icon()).as_uri(),
@@ -83,7 +80,7 @@ class AbyssTeam(Plugin, BasePlugin):
         # logger.debug(html)
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        png_data = await self.template_service.render('genshin/abyss_team', "abyss_team.html", abyss_teams_data,
-                                                      {"width": 785, "height": 800}, full_page=True)
-        await message.reply_photo(png_data, filename=f"abyss_team_{user.id}.png",
-                                  allow_sending_without_reply=True)
+        png_data = await self.template_service.render(
+            "genshin/abyss_team", "abyss_team.html", abyss_teams_data, {"width": 785, "height": 800}, full_page=True
+        )
+        await message.reply_photo(png_data, filename=f"abyss_team_{user.id}.png", allow_sending_without_reply=True)
