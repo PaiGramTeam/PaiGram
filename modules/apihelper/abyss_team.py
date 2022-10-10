@@ -10,10 +10,6 @@ class Member(BaseModel):
     attr: str
     name: str
 
-    @validator("name")
-    def name_validator(cls, v):  # pylint: disable=R0201
-        return "空" if v == "旅行者" else v
-
 
 class TeamRate(BaseModel):
     rate: float

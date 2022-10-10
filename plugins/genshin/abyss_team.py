@@ -64,11 +64,12 @@ class AbyssTeam(Plugin, BasePlugin):
 
             for lane in ["up", "down"]:
                 for member in getattr(i, lane).formation:
+                    name = member.name
                     temp = {
-                        "icon": (await self.assets_service.avatar(roleToId(member.name)).icon()).as_uri(),
-                        "name": member.name.replace("空", "旅行者"),
+                        "icon": (await self.assets_service.avatar(roleToId(name.replace("旅行者", "空"))).icon()).as_uri(),
+                        "name": name,
                         "star": member.star,
-                        "hava": (member.name in user_data) if user_data else True,
+                        "hava": (name in user_data) if user_data else True,
                     }
                     team[lane].append(temp)
 
