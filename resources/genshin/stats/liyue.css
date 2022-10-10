@@ -1,9 +1,13 @@
+:root {
+    --primary: #ffeabd;
+}
+
 body {
     background-color: #f5f6fb;
 }
 
 .header {
-    background-image: url(background/liyue.png);
+    background-image: url(./background/liyue.png);
     box-shadow: 0 0 16px rgb(255 233 144 / 50%);
 }
 
@@ -39,7 +43,7 @@ body {
 }
 
 .uid {
-    color: #ffeabd;
+    color: var(--primary);
     background: linear-gradient(to right, rgb(0, 0, 0, 0), #cc6666, rgb(0, 0, 0, 0));
 }
 
@@ -49,5 +53,10 @@ body {
 }
 
 .box-stats {
-    color: #ffeabd;
+    color: var(--primary);
+}
+
+.box-stats-label {
+    color: var(--primary) !important;
+    opacity: 0.65;
 }
