@@ -96,20 +96,19 @@ class Sign(Plugin, BasePlugin):
             except (
                 JSONDecodeError,
                 KeyError,
-                AssertionError,
                 Timeout,
                 RuntimeError,
             ) as exc:
                 logger.warning(f"ajax 自动通过失败：{repr(exc)}")
         logger.warning(f"ajax 自动通过失败")
-        if not config.pass_challenge_api or config.pass_challenge_api == "":
+        if not config.pass_challenge_api:
             return None
         pass_challenge_params = {
             "gt": gt,
             "challenge": challenge,
             "referer": referer,
         }
-        if config.pass_challenge_app_key or config.pass_challenge_app_key != "":
+        if config.pass_challenge_app_key:
             pass_challenge_params["appkey"] = config.pass_challenge_app_key
         # custom api auto pass
         async with AsyncClient() as client:
@@ -128,7 +127,7 @@ class Sign(Plugin, BasePlugin):
                     "x-rpc-validate": data["data"]["validate"],
                     "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
                 }
-            except (JSONDecodeError, KeyError, AssertionError, Timeout, RuntimeError) as exc:
+            except (JSONDecodeError, KeyError, Timeout, RuntimeError) as exc:
                 logger.warning(f"签到自定义打码平台自动通过失败：{repr(exc)}")
         return None
 
