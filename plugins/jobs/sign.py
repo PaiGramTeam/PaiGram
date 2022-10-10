@@ -13,6 +13,7 @@ from core.plugin import Plugin, job
 from core.sign.models import SignStatusEnum
 from core.sign.services import SignServices
 from core.user import UserService
+from plugins.genshin.sign import Sign
 from utils.helpers import get_genshin_client
 from utils.log import logger
 
@@ -22,9 +23,12 @@ class NeedChallenge(Exception):
 
 
 class SignJob(Plugin):
-
-    def __init__(self, sign_service: SignServices = None, user_service: UserService = None,
-                 cookies_service: CookiesService = None):
+    def __init__(
+        self,
+        sign_service: SignServices = None,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+    ):
         self.sign_service = sign_service
         self.cookies_service = cookies_service
         self.user_service = user_service
@@ -44,11 +48,28 @@ class SignJob(Plugin):
                 if not daily_reward_info.signed_in:
                     request_daily_reward = await client.request_daily_reward("sign", method="POST", game=Game.GENSHIN)
                     if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                        logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
-                        raise NeedChallenge
+                        # 米游社国内签到自动打码
+                        headers = await Sign.pass_challenge(
+                            request_daily_reward.get("gt", ""),
+                            request_daily_reward.get("challenge", ""),
+                        )
+                        if not headers:
+                            logger.warning(f"UID {client.uid} 签到失败，触发验证码风控 | 打码平台打码失败，请检查")
+                            raise NeedChallenge
+                        request_daily_reward = await client.request_daily_reward(
+                            "sign",
+                            method="POST",
+                            game=Game.GENSHIN,
+                            lang="zh-cn",
+                            headers=headers,
+                        )
+                        if request_daily_reward and request_daily_reward.get("success", 0) == 1:
+                            logger.warning(f"UID {client.uid} 签到失败，触发验证码风控 | 打码平台打码失败，请检查")
+                            raise NeedChallenge
+                        logger.info(f"UID {client.uid} 签到请求 {request_daily_reward} | 通过自动打码签到成功")
                     else:
                         logger.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
-                        result = "OK"
+                    result = "OK"
                 else:
                     result = "今天旅行者已经签到过了~"
                 reward = rewards[daily_reward_info.claimed_rewards - (1 if daily_reward_info.signed_in else 0)]
@@ -58,12 +79,14 @@ class SignJob(Plugin):
                 missed_days = now.day - daily_reward_info.claimed_rewards
                 if not daily_reward_info.signed_in:
                     missed_days -= 1
-                text = f"########### 定时签到 ###########\n" \
-                       f"#### {today} (UTC+8) ####\n" \
-                       f"UID: {client.uid}\n" \
-                       f"今日奖励: {reward.name} × {reward.amount}\n" \
-                       f"本月漏签次数：{missed_days}\n" \
-                       f"签到结果: {result}"
+                text = (
+                    f"########### 定时签到 ###########\n"
+                    f"#### {today} (UTC+8) ####\n"
+                    f"UID: {client.uid}\n"
+                    f"今日奖励: {reward.name} × {reward.amount}\n"
+                    f"本月漏签次数：{missed_days}\n"
+                    f"签到结果: {result}"
+                )
             except InvalidCookies:
                 text = "自动签到执行失败，Cookie无效"
                 sign_db.status = SignStatusEnum.INVALID_COOKIES
@@ -84,7 +107,7 @@ class SignJob(Plugin):
                 logger.exception(exc)
                 text = "签到失败了呜呜呜 ~ 执行自动签到时发生错误"
             if sign_db.chat_id < 0:
-                text = f"<a href=\"tg://user?id={sign_db.user_id}\">NOTICE {sign_db.user_id}</a>\n\n{text}"
+                text = f'<a href="tg://user?id={sign_db.user_id}">NOTICE {sign_db.user_id}</a>\n\n{text}'
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
                 await asyncio.sleep(5)  # 回复延迟5S避免触发洪水防御

@@ -1,8 +1,12 @@
 import datetime
 import time
+from json import JSONDecodeError
+from typing import Optional, Dict, Any, Mapping
 
 from genshin import Game, GenshinException, AlreadyClaimed, Client
+from httpx import AsyncClient, HTTPError
 from telegram import Update
+from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, CallbackContext
 from telegram.ext import MessageHandler, filters
 
@@ -27,12 +31,53 @@ class Sign(Plugin, BasePlugin):
 
     CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
 
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
-                 sign_service: SignServices = None, bot_admin_service: BotAdminService = None):
+    def __init__(
+        self,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+        sign_service: SignServices = None,
+        bot_admin_service: BotAdminService = None,
+    ):
         self.bot_admin_service = bot_admin_service
         self.cookies_service = cookies_service
         self.user_service = user_service
         self.sign_service = sign_service
+
+    @staticmethod
+    async def pass_challenge(gt: str, challenge: str, referer: str = None) -> Optional[Dict]:
+        """
+        使用公益打码平台打码，感谢 @coolxitech 大佬提供的接口
+        https://github.com/coolxitech/mihoyo
+        """
+        if not gt or not challenge:
+            return None
+        if not referer:
+            referer = (
+                "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?"
+                "bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
+            )
+        async with AsyncClient() as client:
+            try:
+                resp = await client.post(
+                    "https://api.kuxi.tech/crack/geetest",
+                    params={
+                        "gt": gt,
+                        "challenge": challenge,
+                        "referer": referer,
+                    },
+                    timeout=45,
+                )
+                logger.info(f"打码平台返回：{resp.text}")
+                data = resp.json()
+                assert data["code"] == 0
+                return {
+                    "x-rpc-challenge": data.get("data", {}).get("challenge", ""),
+                    "x-rpc-validate": data.get("data", {}).get("validate", ""),
+                    "x-rpc-seccode": f'{data.get("data", {}).get("validate", "")}|jordan',
+                }
+            except (JSONDecodeError, KeyError, AssertionError, HTTPError) as e:
+                logger.warning(f"签到自动打码失败：{e}")
+                return None
 
     @staticmethod
     async def _start_sign(client: Client) -> str:
@@ -48,11 +93,29 @@ class Sign(Plugin, BasePlugin):
             return f"获取签到状态失败，API返回信息为 {str(error)}"
         if not daily_reward_info.signed_in:
             try:
-                request_daily_reward = await client.request_daily_reward("sign", method="POST",
-                                                                         game=Game.GENSHIN, lang="zh-cn")
+                request_daily_reward = await client.request_daily_reward(
+                    "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
+                )
                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                    logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
-                    return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
+                    # 米游社国内签到自动打码
+                    headers = await Sign.pass_challenge(
+                        request_daily_reward.get("gt", ""),
+                        request_daily_reward.get("challenge", ""),
+                    )
+                    if not headers:
+                        logger.warning(f"UID {client.uid} 签到失败，触发验证码风控 | 打码平台打码失败，请检查")
+                        return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
+                    request_daily_reward = await client.request_daily_reward(
+                        "sign",
+                        method="POST",
+                        game=Game.GENSHIN,
+                        lang="zh-cn",
+                        headers=headers,
+                    )
+                    if request_daily_reward and request_daily_reward.get("success", 0) == 1:
+                        logger.warning(f"UID {client.uid} 签到失败，触发验证码风控 | 打码平台打码失败，请检查")
+                        return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
+                    logger.info(f"UID {client.uid} 通过自动打码签到成功")
             except AlreadyClaimed:
                 logger.info(f"UID {client.uid} 已经签到")
                 result = "今天旅行者已经签到过了~"
@@ -73,11 +136,13 @@ class Sign(Plugin, BasePlugin):
         missed_days = now.day - daily_reward_info.claimed_rewards
         if not daily_reward_info.signed_in:
             missed_days -= 1
-        message = f"#### {today} (UTC+8) ####\n" \
-                  f"UID: {client.uid}\n" \
-                  f"今日奖励: {reward.name} × {reward.amount}\n" \
-                  f"本月漏签次数：{missed_days}\n" \
-                  f"签到结果: {result}"
+        message = (
+            f"#### {today} (UTC+8) ####\n"
+            f"UID: {client.uid}\n"
+            f"今日奖励: {reward.name} × {reward.amount}\n"
+            f"本月漏签次数：{missed_days}\n"
+            f"签到结果: {result}"
+        )
         return message
 
     async def _process_auto_sign(self, user_id: int, chat_id: int, method: str) -> str:
@@ -99,8 +164,12 @@ class Sign(Plugin, BasePlugin):
         elif method == "关闭":
             return "您还没有开启自动签到"
         elif method == "开启":
-            user = SignUser(user_id=user_id, chat_id=chat_id, time_created=datetime.datetime.now(),
-                            status=SignStatusEnum.STATUS_SUCCESS)
+            user = SignUser(
+                user_id=user_id,
+                chat_id=chat_id,
+                time_created=datetime.datetime.now(),
+                status=SignStatusEnum.STATUS_SUCCESS,
+            )
             await self.sign_service.add(user)
             return "开启自动签到成功"
 
@@ -134,6 +203,7 @@ class Sign(Plugin, BasePlugin):
             self._add_delete_message_job(context, message.chat_id, message.message_id)
         try:
             client = await get_genshin_client(user.id)
+            await message.reply_chat_action(ChatAction.TYPING)
             sign_text = await self._start_sign(client)
             reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
             if filters.ChatType.GROUPS.filter(reply_message):
