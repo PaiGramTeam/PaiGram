@@ -53,9 +53,16 @@ class TemplateService:
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
         return html
 
-    async def render(self, template_path: str, template_name: str, template_data: dict,
-                     viewport: ViewportSize = None, full_page: bool = True, evaluate: Optional[str] = None,
-                     query_selector: str = None) -> bytes:
+    async def render(
+        self,
+        template_path: str,
+        template_name: str,
+        template_data: dict,
+        viewport: ViewportSize = None,
+        full_page: bool = True,
+        evaluate: Optional[str] = None,
+        query_selector: str = None,
+    ) -> bytes:
         """模板渲染成图片
         :param template_path: 模板目录
         :param template_name: 模板文件名

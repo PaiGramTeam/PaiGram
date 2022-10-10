@@ -24,7 +24,6 @@ if not os.path.exists(report_dir):
 
 
 class ErrorHandler(Plugin):
-
     @error_handler(block=False)  # pylint: disable=E1123, E1120
     async def error_handler(self, update: object, context: CallbackContext) -> None:
         """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
@@ -52,20 +51,23 @@ class ErrorHandler(Plugin):
         file_name = f"error_{update.update_id if isinstance(update, Update) else int(time.time())}.txt"
         log_file = os.path.join(report_dir, file_name)
         try:
-            async with aiofiles.open(log_file, mode='w+', encoding='utf-8') as f:
+            async with aiofiles.open(log_file, mode="w+", encoding="utf-8") as f:
                 await f.write(error_text)
         except Exception as exc:
             logger.error("保存日记失败")
             logger.exception(exc)
         try:
-            if 'make sure that only one bot instance is running' in tb_string:
+            if "make sure that only one bot instance is running" in tb_string:
                 logger.error("其他机器人在运行，请停止！")
                 return
-            if 'Message is not modified' in tb_string:
+            if "Message is not modified" in tb_string:
                 logger.error("消息未修改")
                 return
-            await context.bot.send_document(chat_id=notice_chat_id, document=open(log_file, "rb"),
-                                            caption=f"Error: \"{context.error.__class__.__name__}\"")
+            await context.bot.send_document(
+                chat_id=notice_chat_id,
+                document=open(log_file, "rb"),
+                caption=f'Error: "{context.error.__class__.__name__}"',
+            )
         except (BadRequest, Forbidden) as exc:
             logger.error("发送日记失败")
             logger.exception(exc)
@@ -76,12 +78,15 @@ class ErrorHandler(Plugin):
         try:
             if effective_message is not None:
                 chat = effective_message.chat
-                logger.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
-                            f"在 {chat.full_name}[{chat.id}]"
-                            f"的 update_id[{update.update_id}] 错误信息")
+                logger.info(
+                    f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
+                    f"在 {chat.full_name}[{chat.id}]"
+                    f"的 update_id[{update.update_id}] 错误信息"
+                )
                 text = "出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！"
-                await context.bot.send_message(effective_message.chat_id, text, reply_markup=ReplyKeyboardRemove(),
-                                               parse_mode=ParseMode.HTML)
+                await context.bot.send_message(
+                    effective_message.chat_id, text, reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.HTML
+                )
         except (BadRequest, Forbidden) as exc:
             logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
             logger.exception(exc)

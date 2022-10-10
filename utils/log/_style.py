@@ -17,10 +17,23 @@ from pygments.token import (
 from rich.style import Style
 
 __all__ = [
-    'MonokaiProStyle', 'DEFAULT_STYLE',
-    'BACKGROUND', 'FOREGROUND',
-    'BLACK', 'DARK_GREY', 'LIGHT_GREY', 'GREY', 'RED', 'MAGENTA', 'GREEN',
-    'YELLOW', 'ORANGE', 'PURPLE', 'BLUE', 'CYAN', 'WHITE'
+    "MonokaiProStyle",
+    "DEFAULT_STYLE",
+    "BACKGROUND",
+    "FOREGROUND",
+    "BLACK",
+    "DARK_GREY",
+    "LIGHT_GREY",
+    "GREY",
+    "RED",
+    "MAGENTA",
+    "GREEN",
+    "YELLOW",
+    "ORANGE",
+    "PURPLE",
+    "BLUE",
+    "CYAN",
+    "WHITE",
 ]
 
 BACKGROUND = "#272822"
@@ -49,17 +62,12 @@ class MonokaiProStyle(PyStyle):
         # No corresponding class for the following:
         Text: WHITE,  # class:  ''
         Error: "#fc618d bg:#1e0010",  # class: 'err'
-
         Comment: LIGHT_GREY,  # class: 'c'
         Comment.Multiline: YELLOW,  # class: 'cm'
-
         Keyword: RED,  # class: 'k'
         Keyword.Namespace: GREEN,  # class: 'kn'
-
         Operator: RED,  # class: 'o'
-
         Punctuation: WHITE,  # class: 'p'
-
         Name: WHITE,  # class: 'n'
         Name.Attribute: GREEN,  # class: 'na' - to be revised
         Name.Builtin: CYAN,  # class: 'nb'
@@ -69,15 +77,11 @@ class MonokaiProStyle(PyStyle):
         Name.Exception: GREEN,  # class: 'ne'
         Name.Function: GREEN,  # class: 'nf'
         Name.Property: ORANGE,  # class: 'py'
-
         Number: PURPLE,  # class: 'm'
-
         Literal: PURPLE,  # class: 'l'
         Literal.Date: ORANGE,  # class: 'ld'
-
         String: YELLOW,  # class: 's'
         String.Regex: ORANGE,  # class: 'sr'
-
         Generic.Deleted: YELLOW,  # class: 'gd',
         Generic.Emph: "italic",  # class: 'ge'
         Generic.Inserted: GREEN,  # class: 'gi'
@@ -122,7 +126,6 @@ DEFAULT_STYLE: Dict[str, Style] = {
     "blue": Style(color=BLUE),
     "cyan": Style(color=CYAN),
     "white": Style(color=WHITE),
-
     # inspect
     "inspect.attr": Style(color=YELLOW, italic=True),
     "inspect.attr.dunder": Style(color=YELLOW, italic=True, dim=True),
@@ -134,31 +137,27 @@ DEFAULT_STYLE: Dict[str, Style] = {
     "inspect.help": Style(color=CYAN),
     "inspect.doc": Style(dim=True),
     "inspect.value.border": Style(color=GREEN),
-
     # live
     "live.ellipsis": Style(bold=True, color=RED),
-
     # layout
     "layout.tree.row": Style(dim=False, color=RED),
     "layout.tree.column": Style(dim=False, color=BLUE),
-
     # log
     "logging.keyword": Style(bold=True, color=ORANGE),
     "logging.level.notset": Style(color=DARK_GREY, dim=True),
     "logging.level.trace": Style(color=GREY),
     "logging.level.debug": Style(color=LIGHT_GREY, bold=True),
-    "logging.level.info": Style(color='white'),
-    "logging.level.plugin": Style(color='cyan'),
-    "logging.level.success": Style(color='green'),
-    "logging.level.warning": Style(color='yellow'),
-    "logging.level.error": Style(color='red'),
-    "logging.level.critical": Style(color='red', bgcolor='#1e0010', bold=True),
+    "logging.level.info": Style(color="white"),
+    "logging.level.plugin": Style(color="cyan"),
+    "logging.level.success": Style(color="green"),
+    "logging.level.warning": Style(color="yellow"),
+    "logging.level.error": Style(color="red"),
+    "logging.level.critical": Style(color="red", bgcolor="#1e0010", bold=True),
     "log.level": Style.null(),
     "log.time": Style(color=CYAN, dim=True),
     "log.message": Style.null(),
     "log.path": Style(dim=True),
     "log.line_no": Style(color=CYAN, bold=True, italic=False, dim=True),
-
     # repr
     "repr.ellipsis": Style(color=YELLOW),
     "repr.indent": Style(color=GREEN, dim=True),
@@ -182,16 +181,13 @@ DEFAULT_STYLE: Dict[str, Style] = {
     "repr.bool_true": Style(color="bright_green", italic=True),
     "repr.bool_false": Style(color="bright_red", italic=True),
     "repr.none": Style(color=MAGENTA, italic=True),
-    "repr.url": Style(
-        underline=True, color="bright_blue", italic=False, bold=False
-    ),
+    "repr.url": Style(underline=True, color="bright_blue", italic=False, bold=False),
     "repr.uuid": Style(color="bright_yellow", bold=False),
     "repr.call": Style(color=MAGENTA, bold=True),
     "repr.path": Style(color=MAGENTA),
     "repr.filename": Style(color="bright_magenta"),
     "rule.line": Style(color="bright_green"),
     "rule.text": Style.null(),
-
     # json
     "json.brace": Style(bold=True),
     "json.bool_true": Style(color="bright_green", italic=True),
@@ -200,30 +196,25 @@ DEFAULT_STYLE: Dict[str, Style] = {
     "json.number": Style(color=CYAN, bold=True, italic=False),
     "json.str": Style(color=GREEN, italic=False, bold=False),
     "json.key": Style(color=BLUE, bold=True),
-
     # prompt
     "prompt": Style.null(),
     "prompt.choices": Style(color=MAGENTA, bold=True),
     "prompt.default": Style(color=CYAN, bold=True),
     "prompt.invalid": Style(color=RED),
     "prompt.invalid.choice": Style(color=RED),
-
     # pretty
     "pretty": Style.null(),
-
     # scope
     "scope.border": Style(color=BLUE),
     "scope.key": Style(color=YELLOW, italic=True),
     "scope.key.special": Style(color=YELLOW, italic=True, dim=True),
     "scope.equals": Style(color=RED),
-
     # table
     "table.header": Style(bold=True),
     "table.footer": Style(bold=True),
     "table.cell": Style.null(),
     "table.title": Style(italic=True),
     "table.caption": Style(italic=True, dim=True),
-
     # traceback
     "traceback.error": Style(color=RED, italic=True),
     "traceback.border.syntax_error": Style(color="bright_red"),
@@ -233,13 +224,11 @@ DEFAULT_STYLE: Dict[str, Style] = {
     "traceback.exc_type": Style(color="bright_red", bold=True),
     "traceback.exc_value": Style.null(),
     "traceback.offset": Style(color="bright_red", bold=True),
-
     # bar
     "bar.back": Style(color="grey23"),
     "bar.complete": Style(color="rgb(249,38,114)"),
     "bar.finished": Style(color="rgb(114,156,31)"),
     "bar.pulse": Style(color="rgb(249,38,114)"),
-
     # progress
     "progress.description": Style.null(),
     "progress.filesize": Style(color=GREEN),
@@ -251,11 +240,9 @@ DEFAULT_STYLE: Dict[str, Style] = {
     "progress.data.speed": Style(color=RED),
     "progress.spinner": Style(color=GREEN),
     "status.spinner": Style(color=GREEN),
-
     # tree
     "tree": Style(),
     "tree.line": Style(),
-
     # markdown
     "markdown.paragraph": Style(),
     "markdown.text": Style(),

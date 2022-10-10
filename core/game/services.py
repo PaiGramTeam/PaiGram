@@ -48,7 +48,7 @@ class GameMaterialService:
         self._cache = cache
         self._hyperion = Hyperion()
         self._collections = [428421, 1164644] if collections is None else collections
-        self._special = ['雷电将军', '珊瑚宫心海', '菲谢尔', '托马', '八重神子', '九条裟罗', '辛焱', '神里绫华']
+        self._special = ["雷电将军", "珊瑚宫心海", "菲谢尔", "托马", "八重神子", "九条裟罗", "辛焱", "神里绫华"]
 
     async def _get_material_from_hyperion(self, collection_id: int, character_name: str) -> int:
         post_id: int = -1

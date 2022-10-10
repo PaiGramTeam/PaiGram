@@ -38,8 +38,7 @@ def check_ledger_month(context: CallbackContext) -> int:
     elif re_data := re.findall(r"\d+", str(month)):
         month = int(re_data[0])
     else:
-        num_dict = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
-                    "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+        num_dict = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
         month = sum(num_dict.get(i, 0) for i in str(month))
     # check right
     allow_month = [now_time.month]
@@ -58,8 +57,12 @@ def check_ledger_month(context: CallbackContext) -> int:
 class Ledger(Plugin, BasePlugin):
     """旅行札记"""
 
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
-                 template_service: TemplateService = None):
+    def __init__(
+        self,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+        template_service: TemplateService = None,
+    ):
         self.template_service = template_service
         self.cookies_service = cookies_service
         self.user_service = user_service
@@ -71,18 +74,26 @@ class Ledger(Plugin, BasePlugin):
         except GenshinException as error:
             raise error
         color = ["#73a9c6", "#d56565", "#70b2b4", "#bd9a5a", "#739970", "#7a6da7", "#597ea0"]
-        categories = [{"id": i.id,
-                       "name": i.name,
-                       "color": color[i.id % len(color)],
-                       "amount": i.amount,
-                       "percentage": i.percentage} for i in diary_info.month_data.categories]
+        categories = [
+            {
+                "id": i.id,
+                "name": i.name,
+                "color": color[i.id % len(color)],
+                "amount": i.amount,
+                "percentage": i.percentage,
+            }
+            for i in diary_info.month_data.categories
+        ]
         color = [i["color"] for i in categories]
 
         def format_amount(amount: int) -> str:
             return f"{round(amount / 10000, 2)}w" if amount >= 10000 else amount
 
-        evaluate = """const { Pie } = G2Plot;
-    const data = JSON.parse(`""" + json.dumps(categories) + """`);
+        evaluate = (
+            """const { Pie } = G2Plot;
+    const data = JSON.parse(`"""
+            + json.dumps(categories)
+            + """`);
     const piePlot = new Pie("chartContainer", {
       renderer: "svg",
       animation: false,
@@ -92,7 +103,9 @@ class Ledger(Plugin, BasePlugin):
       colorField: "name",
       radius: 1,
       innerRadius: 0.7,
-      color: JSON.parse(`""" + json.dumps(color) + """`),
+      color: JSON.parse(`"""
+            + json.dumps(color)
+            + """`),
       meta: {},
       label: {
         type: "inner",
@@ -121,6 +134,7 @@ class Ledger(Plugin, BasePlugin):
       legend:false,
     });
     piePlot.render();"""
+        )
         ledger_data = {
             "uid": client.uid,
             "day": diary_info.month,
@@ -132,9 +146,9 @@ class Ledger(Plugin, BasePlugin):
             "last_mora": format_amount(diary_info.month_data.last_mora),
             "categories": categories,
         }
-        png_data = await self.template_service.render('genshin/ledger', "ledger.html", ledger_data,
-                                                      {"width": 580, "height": 610},
-                                                      evaluate=evaluate)
+        png_data = await self.template_service.render(
+            "genshin/ledger", "ledger.html", ledger_data, {"width": 580, "height": 610}, evaluate=evaluate
+        )
         return png_data
 
     @handler(CommandHandler, command="ledger", block=False)

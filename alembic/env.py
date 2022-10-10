@@ -42,9 +42,7 @@ def import_models():
         try:
             import_module(pkg)  # 导入 models
         except Exception as e:  # pylint: disable=W0703
-            logger.error(
-                f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]'
-            )
+            logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
 
 
 # register our models for alembic to auto-generate migrations

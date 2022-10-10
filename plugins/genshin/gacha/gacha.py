@@ -125,8 +125,9 @@ class Gacha(Plugin, BasePlugin):
         data["items"].sort(key=take_rang, reverse=True)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         # 因为 gacha_info["title"] 返回的是 HTML 标签 尝试关闭自动转义
-        png_data = await self.template_service.render('genshin/gacha', "gacha.html", data,
-                                                      {"width": 1157, "height": 603}, False)
+        png_data = await self.template_service.render(
+            "genshin/gacha", "gacha.html", data, {"width": 1157, "height": 603}, False
+        )
 
         reply_message = await message.reply_photo(png_data)
         if filters.ChatType.GROUPS.filter(message):

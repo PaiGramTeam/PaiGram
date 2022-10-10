@@ -8,7 +8,6 @@ from utils.log import logger
 
 
 class PublicCookies(Plugin):
-
     def __init__(self, public_cookies_service: PublicCookiesService = None):
         self.public_cookies_service = public_cookies_service
 

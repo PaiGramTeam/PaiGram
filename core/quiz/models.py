@@ -7,23 +7,20 @@ from utils.typedefs import JSONDict
 
 
 class AnswerDB(SQLModel, table=True):
-    __tablename__ = 'answer'
-    __table_args__ = dict(mysql_charset='utf8mb4', mysql_collate="utf8mb4_general_ci")
+    __tablename__ = "answer"
+    __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
     id: int = Field(primary_key=True)
     question_id: Optional[int] = Field(
-        sa_column=Column(
-            Integer,
-            ForeignKey("question.id", ondelete="RESTRICT", onupdate="RESTRICT")
-        )
+        sa_column=Column(Integer, ForeignKey("question.id", ondelete="RESTRICT", onupdate="RESTRICT"))
     )
     is_correct: Optional[bool] = Field()
     text: Optional[str] = Field()
 
 
 class QuestionDB(SQLModel, table=True):
-    __tablename__ = 'question'
-    __table_args__ = dict(mysql_charset='utf8mb4', mysql_collate="utf8mb4_general_ci")
+    __tablename__ = "question"
+    __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
     id: int = Field(primary_key=True)
     text: Optional[str] = Field()

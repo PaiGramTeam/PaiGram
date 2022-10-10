@@ -7,7 +7,6 @@ from utils.decorators.restricts import restricts
 
 
 class StartPlugin(Plugin):
-
     @handler(CommandHandler, command="start", block=False)
     @restricts()
     async def start(self, update: Update, context: CallbackContext) -> None:
@@ -15,8 +14,10 @@ class StartPlugin(Plugin):
         message = update.effective_message
         args = context.args
         if args is not None and len(args) >= 1 and args[0] == "inline_message":
-            await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
-                                            f"{escape_markdown('发送 /help 命令即可查看命令帮助')}")
+            await message.reply_markdown_v2(
+                f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
+                f"{escape_markdown('发送 /help 命令即可查看命令帮助')}"
+            )
             return
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
 

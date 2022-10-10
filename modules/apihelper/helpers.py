@@ -16,7 +16,7 @@ RECOGNIZE_SERVER = {
 
 
 def get_device_id(name: str) -> str:
-    return str(uuid.uuid3(uuid.NAMESPACE_URL, name)).replace('-', '').upper()
+    return str(uuid.uuid3(uuid.NAMESPACE_URL, name)).replace("-", "").upper()
 
 
 def md5(text: str) -> str:
@@ -26,7 +26,7 @@ def md5(text: str) -> str:
 
 
 def random_text(num: int) -> str:
-    return ''.join(random.sample(string.ascii_lowercase + string.digits, num))
+    return "".join(random.sample(string.ascii_lowercase + string.digits, num))
 
 
 def timestamp() -> int:
@@ -58,6 +58,6 @@ def get_recognize_server(uid: int) -> str:
 def get_headers():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36",
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36",
     }
     return headers

@@ -20,8 +20,10 @@ class Hyperion:
     POST_FULL_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFull"
     POST_FULL_IN_COLLECTION_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection"
     GET_NEW_LIST_URL = "https://bbs-api.mihoyo.com/post/wapi/getNewsList"
-    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
-                 "Chrome/90.0.4430.72 Safari/537.36"
+    USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/90.0.4430.72 Safari/537.36"
+    )
 
     def __init__(self):
         self.client = HOYORequest(headers=self.get_headers())
@@ -42,34 +44,31 @@ class Hyperion:
         if entries is None:
             return -1
         try:
-            art_id = int(entries.get('article_id'))
+            art_id = int(entries.get("article_id"))
         except (IndexError, ValueError, TypeError):
             return -1
         return art_id
 
     def get_headers(self, referer: str = "https://bbs.mihoyo.com/"):
-        return {
-            "User-Agent": self.USER_AGENT,
-            "Referer": referer
-        }
+        return {"User-Agent": self.USER_AGENT, "Referer": referer}
 
     @staticmethod
-    def get_list_url_params(forum_id: int, is_good: bool = False, is_hot: bool = False,
-                            page_size: int = 20) -> dict:
+    def get_list_url_params(forum_id: int, is_good: bool = False, is_hot: bool = False, page_size: int = 20) -> dict:
         params = {
             "forum_id": forum_id,
             "gids": 2,
             "is_good": is_good,
             "is_hot": is_hot,
             "page_size": page_size,
-            "sort_type": 1
+            "sort_type": 1,
         }
 
         return params
 
     @staticmethod
-    def get_images_params(resize: int = 600, quality: int = 80, auto_orient: int = 0, interlace: int = 1,
-                          images_format: str = "jpg"):
+    def get_images_params(
+        resize: int = 600, quality: int = 80, auto_orient: int = 0, interlace: int = 1, images_format: str = "jpg"
+    ):
         """
         image/resize,s_600/quality,q_80/auto-orient,0/interlace,1/format,jpg
         :param resize: 图片大小
@@ -79,25 +78,19 @@ class Hyperion:
         :param images_format: 图片格式
         :return:
         """
-        params = f"image/resize,s_{resize}/quality,q_{quality}/auto-orient," \
-                 f"{auto_orient}/interlace,{interlace}/format,{images_format}"
+        params = (
+            f"image/resize,s_{resize}/quality,q_{quality}/auto-orient,"
+            f"{auto_orient}/interlace,{interlace}/format,{images_format}"
+        )
         return {"x-oss-process": params}
 
     async def get_post_full_in_collection(self, collection_id: int, gids: int = 2, order_type=1) -> JSONDict:
-        params = {
-            "collection_id": collection_id,
-            "gids": gids,
-            "order_type": order_type
-        }
+        params = {"collection_id": collection_id, "gids": gids, "order_type": order_type}
         response = await self.client.get(url=self.POST_FULL_IN_COLLECTION_URL, params=params)
         return response
 
     async def get_post_info(self, gids: int, post_id: int, read: int = 1) -> PostInfo:
-        params = {
-            "gids": gids,
-            "post_id": post_id,
-            "read": read
-        }
+        params = {"gids": gids, "post_id": post_id, "read": read}
         response = await self.client.get(self.POST_FULL_URL, params=params)
         return PostInfo.paste_data(response)
 
@@ -128,11 +121,7 @@ class Hyperion:
         ?gids=2&page_size=20&type=3
         :return:
         """
-        params = {
-            "gids": gids,
-            "page_size": page_size,
-            "type": type_id
-        }
+        params = {"gids": gids, "page_size": page_size, "type": type_id}
         response = await self.client.get(url=self.GET_NEW_LIST_URL, params=params)
         return response
 
@@ -144,12 +133,14 @@ class GachaInfo:
     GACHA_LIST_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/gacha/list.json"
     GACHA_INFO_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/%s/zh-cn.json"
 
-    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
-                 "Chrome/90.0.4430.72 Safari/537.36"
+    USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/90.0.4430.72 Safari/537.36"
+    )
 
     def __init__(self):
         self.headers = {
-            'User-Agent': self.USER_AGENT,
+            "User-Agent": self.USER_AGENT,
         }
         self.client = HOYORequest(headers=self.headers)
         self.cache = {}
@@ -177,32 +168,35 @@ class GachaInfo:
 
 class SignIn:
     LOGIN_URL = "https://webapi.account.mihoyo.com/Api/login_by_mobilecaptcha"
-    S_TOKEN_URL = "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?" \
-                  "login_ticket={0}&token_types=3&uid={1}"
+    S_TOKEN_URL = (
+        "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?" "login_ticket={0}&token_types=3&uid={1}"
+    )
     BBS_URL = "https://api-takumi.mihoyo.com/account/auth/api/webLoginByMobile"
-    USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " \
-                 "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+    USER_AGENT = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+    )
     HEADERS = {
         "Host": "webapi.account.mihoyo.com",
         "Connection": "keep-alive",
-        "sec-ch-ua": "\".Not/A)Brand\";v=\"99\", \"Microsoft Edge\";v=\"103\", \"Chromium\";v=\"103\"",
+        "sec-ch-ua": '".Not/A)Brand";v="99", "Microsoft Edge";v="103", "Chromium";v="103"',
         "DNT": "1",
         "x-rpc-device_model": "OS X 10.15.7",
         "sec-ch-ua-mobile": "?0",
         "User-Agent": USER_AGENT,
-        'x-rpc-device_id': get_device_id(USER_AGENT),
+        "x-rpc-device_id": get_device_id(USER_AGENT),
         "Accept": "application/json, text/plain, */*",
         "x-rpc-device_name": "Microsoft Edge 103.0.1264.62",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         "x-rpc-client_type": "4",
-        "sec-ch-ua-platform": "\"macOS\"",
+        "sec-ch-ua-platform": '"macOS"',
         "Origin": "https://user.mihoyo.com",
         "Sec-Fetch-Site": "same-site",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Dest": "empty",
         "Referer": "https://user.mihoyo.com/",
         "Accept-Encoding": "gzip, deflate, br",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
     }
     BBS_HEADERS = {
         "Host": "api-takumi.mihoyo.com",
@@ -213,7 +207,7 @@ class SignIn:
         "Accept": "application/json, text/plain, */*",
         "User-Agent": USER_AGENT,
         "Referer": "https://bbs.mihoyo.com/",
-        "Accept-Language": "zh-CN,zh-Hans;q=0.9"
+        "Accept-Language": "zh-CN,zh-Hans;q=0.9",
     }
 
     def __init__(self, phone: int):
@@ -251,7 +245,7 @@ class SignIn:
         data = await self.client.post(
             self.LOGIN_URL,
             data={"mobile": str(self.phone), "mobile_captcha": str(captcha), "source": "user.mihoyo.com"},
-            headers=self.HEADERS
+            headers=self.HEADERS,
         )
         res_json = data.json()
         if self.check_error(res_json):
@@ -265,8 +259,7 @@ class SignIn:
 
     async def get_s_token(self):
         data = await self.client.get(
-            self.S_TOKEN_URL.format(self.cookie["login_ticket"], self.uid),
-            headers={"User-Agent": self.USER_AGENT}
+            self.S_TOKEN_URL.format(self.cookie["login_ticket"], self.uid), headers={"User-Agent": self.USER_AGENT}
         )
         res_json = data.json()
         res_data = res_json.get("data", {}).get("list", [])
@@ -283,8 +276,8 @@ class SignIn:
                 "mobile": str(self.phone),
                 "captcha": str(captcha),
                 "action_type": "login",
-                "token_type": 6
-            }
+                "token_type": 6,
+            },
         )
         res_json = data.json()
         if self.check_error(res_json):
