@@ -98,13 +98,13 @@ class Sign(Plugin, BasePlugin):
                     "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
                 }
         except JSONDecodeError:
-            logger.warning(f"签到ajax自动通过JSON解析失败")
+            logger.warning("签到ajax自动通过JSON解析失败")
         except TimeoutException:
-            logger.warning(f"签到ajax自动通过请求超时")
+            logger.warning("签到ajax自动通过请求超时")
         except KeyError:
-            logger.warning(f"签到ajax自动通过数据错误")
+            logger.warning("签到ajax自动通过数据错误")
         except RuntimeError:
-            logger.warning(f"签到ajax自动通过请求错误")
+            logger.warning("签到ajax自动通过请求错误")
         logger.warning("ajax自动通过失败")
         if not config.pass_challenge_api:
             return None
@@ -137,13 +137,13 @@ class Sign(Plugin, BasePlugin):
                 "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
             }
         except JSONDecodeError:
-            logger.warning(f"签到自定义打码平台JSON解析失败")
+            logger.warning("签到自定义打码平台JSON解析失败")
         except TimeoutException:
-            logger.warning(f"签到自定义打码平台请求超时")
+            logger.warning("签到自定义打码平台请求超时")
         except KeyError:
-            logger.warning(f"签到自定义打码平台数据错误")
+            logger.warning("签到自定义打码平台数据错误")
         except RuntimeError:
-            logger.warning(f"签到自定义打码平台自动通过失败")
+            logger.warning("签到自定义打码平台自动通过失败")
         return None
 
     @staticmethod
