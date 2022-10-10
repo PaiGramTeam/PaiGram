@@ -10,6 +10,7 @@ from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, CallbackContext
 from telegram.ext import MessageHandler, filters
 
+from core.config import config
 from core.admin.services import BotAdminService
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
@@ -51,6 +52,8 @@ class Sign(Plugin, BasePlugin):
         """
         if not gt or not challenge:
             return None
+        if not config.pass_challenge_api:
+            return None
         if not referer:
             referer = (
                 "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?"
@@ -59,7 +62,7 @@ class Sign(Plugin, BasePlugin):
         async with AsyncClient() as client:
             try:
                 resp = await client.post(
-                    "https://api.kuxi.tech/crack/geetest",
+                    config.pass_challenge_api,
                     params={
                         "gt": gt,
                         "challenge": challenge,

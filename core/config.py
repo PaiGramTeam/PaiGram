@@ -12,7 +12,7 @@ from pydantic import (
     BaseSettings,
 )
 
-__all__ = ['BotConfig', 'config']
+__all__ = ["BotConfig", "config"]
 
 from utils.const import PROJECT_ROOT
 
@@ -38,17 +38,18 @@ class BotConfig(BaseSettings):
     api_id: Optional[int]
     api_hash: Optional[str]
 
-    channels: List['ConfigChannel'] = []
-    admins: List['ConfigUser'] = []
+    channels: List["ConfigChannel"] = []
+    admins: List["ConfigUser"] = []
     verify_groups: List[Union[int, str]] = []
 
     logger_width: int = 180
-    logger_log_path: str = './logs'
+    logger_log_path: str = "./logs"
     logger_time_format: str = "[%Y-%m-%d %X]"
     logger_traceback_max_frames: int = 20
-    logger_render_keywords: List[str] = ['BOT']
+    logger_render_keywords: List[str] = ["BOT"]
 
     enka_network_api_agent: str = ""
+    pass_challenge_api: str = ""
 
     class Config:
         case_sensitive = False
@@ -110,7 +111,7 @@ class MySqlConfig(BaseModel):
 
 
 class RedisConfig(BaseModel):
-    host: str = '127.0.0.1'
+    host: str = "127.0.0.1"
     port: int
     database: int = 0
 
@@ -119,8 +120,8 @@ class LoggerConfig(BaseModel):
     width: int = 180
     time_format: str = "[%Y-%m-%d %X]"
     traceback_max_frames: int = 20
-    path: Path = PROJECT_ROOT / 'logs'
-    render_keywords: List[str] = ['BOT']
+    path: Path = PROJECT_ROOT / "logs"
+    render_keywords: List[str] = ["BOT"]
 
 
 class MTProtoConfig(BaseModel):
