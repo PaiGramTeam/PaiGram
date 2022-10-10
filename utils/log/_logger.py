@@ -7,7 +7,7 @@ import traceback as traceback_
 from datetime import datetime
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import (Any, Callable, Dict, Iterable, List, Literal, Mapping, Optional, TYPE_CHECKING, Tuple, Union)
+from typing import Any, Callable, Dict, Iterable, List, Literal, Mapping, Optional, TYPE_CHECKING, Tuple, Union
 
 import ujson as json
 from rich.columns import Columns
@@ -65,22 +65,20 @@ __initialized__ = False
 FormatTimeCallable = Callable[[datetime], Text]
 
 config = BotConfig()
-logging.addLevelName(5, 'TRACE')
-logging.addLevelName(25, 'SUCCESS')
-color_system: Literal['windows', 'truecolor']
-if sys.platform == 'win32':
-    color_system = 'windows'
+logging.addLevelName(5, "TRACE")
+logging.addLevelName(25, "SUCCESS")
+color_system: Literal["windows", "truecolor"]
+if sys.platform == "win32":
+    color_system = "windows"
 else:
-    color_system = 'truecolor'
+    color_system = "truecolor"
 # noinspection SpellCheckingInspection
-log_console = Console(
-    color_system=color_system, theme=Theme(DEFAULT_STYLE), width=config.logger.width
-)
+log_console = Console(color_system=color_system, theme=Theme(DEFAULT_STYLE), width=config.logger.width)
 
 
 class Traceback(BaseTraceback):
     def __init__(self, *args, **kwargs):
-        kwargs.update({'show_locals': True, 'max_frames': config.logger.traceback_max_frames})
+        kwargs.update({"show_locals": True, "max_frames": config.logger.traceback_max_frames})
         super(Traceback, self).__init__(*args, **kwargs)
         self.theme = PygmentsSyntaxTheme(MonokaiProStyle)
 
@@ -99,9 +97,7 @@ class Traceback(BaseTraceback):
         def read_code(filename: str) -> str:
             code = code_cache.get(filename)
             if code is None:
-                with open(
-                        filename, "rt", encoding="utf-8", errors="replace"
-                ) as code_file:
+                with open(filename, "rt", encoding="utf-8", errors="replace") as code_file:
                     code = code_file.read()
                 code_cache[filename] = code
             return code
@@ -110,6 +106,7 @@ class Traceback(BaseTraceback):
         def render_locals(frame: Frame) -> Iterable["ConsoleRenderable"]:
             if frame.locals:
                 from rich.scope import render_scope
+
                 yield render_scope(
                     frame.locals,
                     title="locals",
@@ -144,8 +141,7 @@ class Traceback(BaseTraceback):
 
             first = frame_index == 0
             frame_filename = frame.filename
-            suppressed = any(
-                frame_filename.startswith(path) for path in self.suppress)
+            suppressed = any(frame_filename.startswith(path) for path in self.suppress)
 
             text = Text.assemble(
                 path_highlighter(Text(frame.filename, style="pygments.string")),
@@ -218,15 +214,15 @@ class LogRender(DefaultLogRender):
         self.time_format = config.logger.time_format
 
     def __call__(
-            self,
-            console: "Console",
-            renderables: Iterable["ConsoleRenderable"],
-            log_time: Optional[datetime] = None,
-            time_format: Optional[Union[str, FormatTimeCallable]] = None,
-            level: TextType = "",
-            path: Optional[str] = None,
-            line_no: Optional[int] = None,
-            link_path: Optional[str] = None,
+        self,
+        console: "Console",
+        renderables: Iterable["ConsoleRenderable"],
+        log_time: Optional[datetime] = None,
+        time_format: Optional[Union[str, FormatTimeCallable]] = None,
+        level: TextType = "",
+        path: Optional[str] = None,
+        line_no: Optional[int] = None,
+        link_path: Optional[str] = None,
     ) -> "Table":
         from rich.containers import Renderables
         from rich.table import Table
@@ -239,7 +235,7 @@ class LogRender(DefaultLogRender):
         if path:
             output.add_column(style="log.path")
         if line_no:
-            output.add_column(style='log.line_no', width=4)
+            output.add_column(style="log.line_no", width=4)
         row: List["RenderableType"] = []
         if self.show_time:
             log_time = log_time or log_console.get_datetime()
@@ -259,15 +255,11 @@ class LogRender(DefaultLogRender):
         row.append(Renderables(renderables))
         if path:
             path_text = Text()
-            path_text.append(
-                path, style=f"link file://{link_path}" if link_path else ""
-            )
+            path_text.append(path, style=f"link file://{link_path}" if link_path else "")
             row.append(path_text)
 
         line_no_text = Text()
-        line_no_text.append(
-            str(line_no), style=f"link file://{link_path}#{line_no}" if link_path else ""
-        )
+        line_no_text.append(str(line_no), style=f"link file://{link_path}#{line_no}" if link_path else "")
         row.append(line_no_text)
 
         output.add_row(*row)
@@ -284,18 +276,19 @@ class Handler(DefaultRichHandler):
         self.keywords = self.KEYWORDS + config.logger.render_keywords
 
     def render(
-            self,
-            *,
-            record: "LogRecord",
-            traceback: Optional[Traceback],
-            message_renderable: Optional["ConsoleRenderable"],
+        self,
+        *,
+        record: "LogRecord",
+        traceback: Optional[Traceback],
+        message_renderable: Optional["ConsoleRenderable"],
     ) -> "ConsoleRenderable":
-        if record.pathname != '<input>':
+        if record.pathname != "<input>":
             try:
                 path = str(Path(record.pathname).relative_to(PROJECT_ROOT))
-                path = path.split('.')[0].replace(os.sep, '.')
+                path = path.split(".")[0].replace(os.sep, ".")
             except ValueError:
                 import site
+
                 path = None
                 for s in site.getsitepackages():
                     try:
@@ -306,10 +299,10 @@ class Handler(DefaultRichHandler):
                 if path is None:
                     path = "<SITE>"
                 else:
-                    path = path.split('.')[0].replace(os.sep, '.')
+                    path = path.split(".")[0].replace(os.sep, ".")
         else:
-            path = '<INPUT>'
-        path = path.replace('lib.site-packages.', '')
+            path = "<INPUT>"
+        path = path.replace("lib.site-packages.", "")
         _level = self.get_level_text(record)
         time_format = None if self.formatter is None else self.formatter.datefmt
         log_time = datetime.fromtimestamp(record.created)
@@ -318,12 +311,8 @@ class Handler(DefaultRichHandler):
             self.console,
             (
                 [message_renderable]
-                if not traceback else
-                (
-                    [message_renderable, traceback]
-                    if message_renderable is not None else
-                    [traceback]
-                )
+                if not traceback
+                else ([message_renderable, traceback] if message_renderable is not None else [traceback])
             ),
             log_time=log_time,
             time_format=time_format,
@@ -334,18 +323,15 @@ class Handler(DefaultRichHandler):
         )
         return log_renderable
 
-    def render_message(
-            self, record: "LogRecord", message: Any
-    ) -> "ConsoleRenderable":
+    def render_message(self, record: "LogRecord", message: Any) -> "ConsoleRenderable":
         use_markup = getattr(record, "markup", self.markup)
         if isinstance(message, str):
-            message_text = (
-                Text.from_markup(message) if use_markup else Text(message)
-            )
+            message_text = Text.from_markup(message) if use_markup else Text(message)
             highlighter = getattr(record, "highlighter", self.highlighter)
         else:
             from rich.highlighter import JSONHighlighter
             from rich.json import JSON
+
             highlighter = JSONHighlighter()
             message_text = JSON.from_data(message, indent=4).text
 
@@ -364,11 +350,7 @@ class Handler(DefaultRichHandler):
     def emit(self, record: "LogRecord") -> None:
         message = self.format(record)
         _traceback = None
-        if (
-                self.rich_tracebacks
-                and record.exc_info
-                and record.exc_info != (None, None, None)
-        ):
+        if self.rich_tracebacks and record.exc_info and record.exc_info != (None, None, None):
             exc_type, exc_value, exc_traceback = record.exc_info
             if exc_type is None or exc_value is None:
                 raise ValueError(record)
@@ -430,28 +412,33 @@ class FileHandler(Handler):
 
 class Logger(logging.Logger):
     def success(
-            self,
-            msg: Any, *args: Any,
-            exc_info: Optional[ExceptionInfoType] = None,
-            stack_info: bool = False,
-            stacklevel: int = 1,
-            extra: Optional[Mapping[str, Any]] = None
+        self,
+        msg: Any,
+        *args: Any,
+        exc_info: Optional[ExceptionInfoType] = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Optional[Mapping[str, Any]] = None,
     ) -> None:
         return self.log(25, msg, *args, exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
 
     def exception(
-            self,
-            msg: Any = NOT_SET,
-            *args: Any,
-            exc_info: Optional[ExceptionInfoType] = True,
-            stack_info: bool = False,
-            stacklevel: int = 1,
-            extra: Optional[Mapping[str, Any]] = None,
-            **kwargs
+        self,
+        msg: Any = NOT_SET,
+        *args: Any,
+        exc_info: Optional[ExceptionInfoType] = True,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Optional[Mapping[str, Any]] = None,
+        **kwargs,
     ) -> None:
         super(Logger, self).exception(
-            "" if msg is NOT_SET else msg, *args,
-            exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra
+            "" if msg is NOT_SET else msg,
+            *args,
+            exc_info=exc_info,
+            stack_info=stack_info,
+            stacklevel=stacklevel,
+            extra=extra,
         )
 
     def findCaller(self, stack_info: bool = False, stacklevel: int = 1) -> Tuple[str, int, str, Optional[str]]:
@@ -470,17 +457,17 @@ class Logger(logging.Logger):
             filename = os.path.normcase(code.co_filename)
             if filename in [
                 os.path.normcase(Path(__file__).resolve()),
-                os.path.normcase(logging.addLevelName.__code__.co_filename)
+                os.path.normcase(logging.addLevelName.__code__.co_filename),
             ]:
                 frame = frame.f_back
                 continue
             sinfo = None
             if stack_info:
                 sio = io.StringIO()
-                sio.write('Stack (most recent call last):\n')
+                sio.write("Stack (most recent call last):\n")
                 traceback_.print_stack(frame, file=sio)
                 sinfo = sio.getvalue()
-                if sinfo[-1] == '\n':
+                if sinfo[-1] == "\n":
                     sinfo = sinfo[:-1]
                 sio.close()
             rv = (code.co_filename, frame.f_lineno, code.co_name, sinfo)
@@ -496,10 +483,10 @@ with _lock:
         handler, debug_handler, error_handler = (
             Handler(locals_max_length=4),
             FileHandler(level=10, path=config.logger.path.joinpath("debug/debug.log")),
-            FileHandler(level=40, path=config.logger.path.joinpath("error/error.log"))
+            FileHandler(level=40, path=config.logger.path.joinpath("error/error.log")),
         )
 
-        log_filter = logging.Filter('TGPaimon')
+        log_filter = logging.Filter("TGPaimon")
         handler.addFilter(log_filter)
         debug_handler.addFilter(log_filter)
 
@@ -514,7 +501,7 @@ with _lock:
         warnings_logger.addHandler(handler)
         warnings_logger.addHandler(debug_handler)
 
-        logger = Logger('TGPaimon', level_)
+        logger = Logger("TGPaimon", level_)
         logger.addHandler(handler)
         logger.addHandler(debug_handler)
         logger.addHandler(error_handler)

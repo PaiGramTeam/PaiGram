@@ -23,6 +23,7 @@ from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config  # pylint: disable=W0611
 from core.error import ServiceNotFoundError
+
 # noinspection PyProtectedMember
 from core.plugin import Plugin, _Plugin
 from core.service import Service
@@ -32,10 +33,10 @@ from utils.log import logger
 if TYPE_CHECKING:
     from telegram import Update
 
-__all__ = ['bot']
+__all__ = ["bot"]
 
-T = TypeVar('T')
-PluginType = TypeVar('PluginType', bound=_Plugin)
+T = TypeVar("T")
+PluginType = TypeVar("PluginType", bound=_Plugin)
 
 
 class Bot:
@@ -57,7 +58,7 @@ class Bot:
     def _inject(self, signature: inspect.Signature, target: Callable[..., T]) -> T:
         kwargs = {}
         for name, parameter in signature.parameters.items():
-            if name != 'self' and parameter.annotation != inspect.Parameter.empty:
+            if name != "self" and parameter.annotation != inspect.Parameter.empty:
                 if value := self._services.get(parameter.annotation):
                     kwargs[name] = value
         return target(**kwargs)
@@ -76,11 +77,11 @@ class Bot:
     def _gen_pkg(self, root: Path) -> Iterator[str]:
         """生成可以用于 import_module 导入的字符串"""
         for path in root.iterdir():
-            if not path.name.startswith('_'):
+            if not path.name.startswith("_"):
                 if path.is_dir():
                     yield from self._gen_pkg(path)
-                elif path.suffix == '.py':
-                    yield str(path.relative_to(PROJECT_ROOT).with_suffix('')).replace(os.sep, '.')
+                elif path.suffix == ".py":
+                    yield str(path.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")
 
     async def install_plugins(self):
         """安装插件"""
@@ -89,8 +90,7 @@ class Bot:
                 import_module(pkg)  # 导入插件
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(
-                    f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]',
-                    extra={'markup': True}
+                    f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True}
                 )
                 continue  # 如有错误则继续
         callback_dict: Dict[int, List[Callable]] = {}
@@ -98,7 +98,7 @@ class Bot:
             path = f"{plugin_cls.__module__}.{plugin_cls.__name__}"
             try:
                 plugin: PluginType = self.init_inject(plugin_cls)
-                if hasattr(plugin, '__async_init__'):
+                if hasattr(plugin, "__async_init__"):
                     await self.async_inject(plugin.__async_init__)
                 handlers = plugin.handlers
                 self.app.add_handlers(handlers)
@@ -115,46 +115,44 @@ class Bot:
                 for callback, block in error_handlers.items():
                     self.app.add_error_handler(callback, block)
                 if error_handlers:
-                    logger.debug(f"插件 \"{path}\" 添加了 {len(error_handlers)} 个 error handler")
+                    logger.debug(f'插件 "{path}" 添加了 {len(error_handlers)} 个 error handler')
 
                 if jobs := plugin.jobs:
                     logger.debug(f'插件 "{path}" 添加了 {len(jobs)} 个任务')
                 logger.success(f'插件 "{path}" 载入成功')
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(
-                    f'在安装插件 \"{path}\" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]',
-                    extra={'markup': True}
+                    f'在安装插件 "{path}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True}
                 )
         if callback_dict:
             num = sum(len(callback_dict[i]) for i in callback_dict)
 
-            async def _new_chat_member_callback(update: 'Update', context: 'CallbackContext'):
+            async def _new_chat_member_callback(update: "Update", context: "CallbackContext"):
                 nonlocal callback
                 for _, value in callback_dict.items():
                     for callback in value:
                         await callback(update, context)
 
-            self.app.add_handler(MessageHandler(
-                callback=_new_chat_member_callback, filters=StatusUpdate.NEW_CHAT_MEMBERS, block=False
-            ))
+            self.app.add_handler(
+                MessageHandler(callback=_new_chat_member_callback, filters=StatusUpdate.NEW_CHAT_MEMBERS, block=False)
+            )
             logger.success(
-                f'成功添加了 {num} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]',
-                extra={'markup': True}
+                f"成功添加了 {num} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]",
+                extra={"markup": True},
             )
 
     async def _start_base_services(self):
-        for pkg in self._gen_pkg(PROJECT_ROOT / 'core/base'):
+        for pkg in self._gen_pkg(PROJECT_ROOT / "core/base"):
             try:
                 import_module(pkg)
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(
-                    f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]',
-                    extra={'markup': True}
+                    f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True}
                 )
                 continue
         for base_service_cls in Service.__subclasses__():
             try:
-                if hasattr(base_service_cls, 'from_config'):
+                if hasattr(base_service_cls, "from_config"):
                     instance = base_service_cls.from_config(self._config)
                 else:
                     instance = self.init_inject(base_service_cls)
@@ -168,15 +166,14 @@ class Bot:
     async def start_services(self):
         """启动服务"""
         await self._start_base_services()
-        for path in (PROJECT_ROOT / 'core').iterdir():
-            if not path.name.startswith('_') and path.is_dir() and path.name != 'base':
-                pkg = str(path.relative_to(PROJECT_ROOT).with_suffix('')).replace(os.sep, '.')
+        for path in (PROJECT_ROOT / "core").iterdir():
+            if not path.name.startswith("_") and path.is_dir() and path.name != "base":
+                pkg = str(path.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")
                 try:
                     import_module(pkg)
                 except Exception as e:  # pylint: disable=W0703
                     logger.exception(
-                        f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]',
-                        extra={'markup': True}
+                        f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True}
                     )
                     continue
 
@@ -184,11 +181,11 @@ class Bot:
         """关闭服务"""
         if not self._services:
             return
-        logger.info('正在关闭服务')
+        logger.info("正在关闭服务")
         for _, service in filter(lambda x: not isinstance(x[1], TgApplication), self._services.items()):
             async with timeout(5):
                 try:
-                    if hasattr(service, 'stop'):
+                    if hasattr(service, "stop"):
                         if inspect.iscoroutinefunction(service.stop):
                             await service.stop()
                         else:
@@ -197,16 +194,19 @@ class Bot:
                 except CancelledError:
                     logger.warning(f'服务 "{service.__class__.__name__}" 关闭超时')
                 except Exception as e:  # pylint: disable=W0703
-                    logger.exception(f"服务 \"{service.__class__.__name__}\" 关闭失败: \n{type(e).__name__}: {e}")
+                    logger.exception(f'服务 "{service.__class__.__name__}" 关闭失败: \n{type(e).__name__}: {e}')
 
     async def _post_init(self, context: CallbackContext) -> NoReturn:
-        logger.info('开始初始化 genshin.py 相关资源')
+        logger.info("开始初始化 genshin.py 相关资源")
         try:
             # 替换为 fastgit 镜像源
             for i in dir(genshin.utility.extdb):
                 if "_URL" in i:
-                    setattr(genshin.utility.extdb, i,
-                            getattr(genshin.utility.extdb, i).replace("githubusercontent.com", "fastgit.org"))
+                    setattr(
+                        genshin.utility.extdb,
+                        i,
+                        getattr(genshin.utility.extdb, i).replace("githubusercontent.com", "fastgit.org"),
+                    )
             await genshin.utility.update_characters_enka()
         except Exception as exc:
             logger.error("初始化 genshin.py 相关资源失败")
@@ -214,16 +214,16 @@ class Bot:
         else:
             logger.success("初始化 genshin.py 相关资源成功")
         self._services.update({CallbackContext: context})
-        logger.info('开始初始化服务')
+        logger.info("开始初始化服务")
         await self.start_services()
-        logger.info('开始安装插件')
+        logger.info("开始安装插件")
         await self.install_plugins()
-        logger.info('BOT 初始化成功')
+        logger.info("BOT 初始化成功")
 
     def launch(self) -> NoReturn:
         """启动机器人"""
         self._running = True
-        logger.info('正在初始化BOT')
+        logger.info("正在初始化BOT")
         self.app = (
             TgApplication.builder()
             .rate_limiter(AIORateLimiter())
@@ -238,11 +238,11 @@ class Bot:
                     self.app.run_polling(close_loop=False)
                     break
                 except TimedOut:
-                    logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试", extra={'markup': True})
+                    logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试", extra={"markup": True})
                     continue
                 except NetworkError as e:
                     logger.exception()
-                    if 'SSLZeroReturnError' in str(e):
+                    if "SSLZeroReturnError" in str(e):
                         logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
                     else:
                         logger.error("网络连接出现问题, 请检查您的网络状况.")
@@ -267,7 +267,7 @@ class Bot:
     def add_service(self, service: T) -> NoReturn:
         """添加服务。若已经有同类型的服务，则会抛出异常"""
         if type(service) in self._services:
-            raise ValueError(f"Service \"{type(service)}\" is already existed.")
+            raise ValueError(f'Service "{type(service)}" is already existed.')
         self.update_service(service)
 
     def update_service(self, service: T):

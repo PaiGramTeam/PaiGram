@@ -31,14 +31,18 @@ CHECK_SERVER, CHECK_UID, COMMAND_RESULT = range(10100, 10103)
 class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
     """UID用户绑定"""
 
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
-                 public_cookies_service: PublicCookiesService = None):
+    def __init__(
+        self,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+        public_cookies_service: PublicCookiesService = None,
+    ):
         self.public_cookies_service = public_cookies_service
         self.cookies_service = cookies_service
         self.user_service = user_service
 
     @conversation.entry_point
-    @handler.command(command='setuid', filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command(command="setuid", filters=filters.ChatType.PRIVATE, block=True)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
@@ -49,9 +53,11 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
         if add_user_command_data is None:
             cookies_command_data = AddUserCommandData()
             context.chat_data["add_uid_command_data"] = cookies_command_data
-        text = f'你好 {user.mention_markdown_v2()} ' \
-               f'{escape_markdown("！请输入通行证UID（非游戏UID），BOT将会通过通行证UID查找游戏UID。请选择要绑定的服务器！或回复退出取消操作")}'
-        reply_keyboard = [['米游社', 'HoYoLab'], ["退出"]]
+        text = (
+            f"你好 {user.mention_markdown_v2()} "
+            f'{escape_markdown("！请输入通行证UID（非游戏UID），BOT将会通过通行证UID查找游戏UID。请选择要绑定的服务器！或回复退出取消操作")}'
+        )
+        reply_keyboard = [["米游社", "HoYoLab"], ["退出"]]
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return CHECK_SERVER
 
@@ -112,8 +118,9 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
         if region == RegionEnum.HYPERION:
             client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)
         elif region == RegionEnum.HOYOLAB:
-            client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS,
-                                    lang="zh-cn")
+            client = genshin.Client(
+                cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
+            )
         else:
             return ConversationHandler.END
         try:
@@ -128,22 +135,20 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
             logger.exception(exc)
             return ConversationHandler.END
         if user_info.game != types.Game.GENSHIN:
-            await message.reply_text("角色信息查询返回非原神游戏信息，"
-                                     "请设置展示主界面为原神", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text("角色信息查询返回非原神游戏信息，" "请设置展示主界面为原神", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        reply_keyboard = [['确认', '退出']]
+        reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
         logger.info(f"用户 {user.full_name}[{user.id}] 获取账号 {user_info.nickname}[{user_info.uid}] 信息成功")
-        text = f"*角色信息*\n" \
-               f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n" \
-               f"角色等级：{user_info.level}\n" \
-               f"UID：`{user_info.uid}`\n" \
-               f"服务器名称：`{user_info.server_name}`\n"
-        add_user_command_data.game_uid = user_info.uid
-        await message.reply_markdown_v2(
-            text,
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+        text = (
+            f"*角色信息*\n"
+            f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n"
+            f"角色等级：{user_info.level}\n"
+            f"UID：`{user_info.uid}`\n"
+            f"服务器名称：`{user_info.server_name}`\n"
         )
+        add_user_command_data.game_uid = user_info.uid
+        await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return COMMAND_RESULT
 
     @conversation.state(state=COMMAND_RESULT)
@@ -159,11 +164,15 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
         elif message.text == "确认":
             if add_user_command_data.user is None:
                 if add_user_command_data.region == RegionEnum.HYPERION:
-                    user_db = User(user_id=user.id, yuanshen_uid=add_user_command_data.game_uid,
-                                   region=add_user_command_data.region)
+                    user_db = User(
+                        user_id=user.id,
+                        yuanshen_uid=add_user_command_data.game_uid,
+                        region=add_user_command_data.region,
+                    )
                 elif add_user_command_data.region == RegionEnum.HOYOLAB:
-                    user_db = User(user_id=user.id, genshin_uid=add_user_command_data.game_uid,
-                                   region=add_user_command_data.region)
+                    user_db = User(
+                        user_id=user.id, genshin_uid=add_user_command_data.game_uid, region=add_user_command_data.region
+                    )
                 else:
                     await message.reply_text("数据错误")
                     return ConversationHandler.END

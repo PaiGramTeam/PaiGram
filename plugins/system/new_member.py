@@ -7,7 +7,6 @@ from utils.log import logger
 
 
 class BotJoiningGroupsVerification(Plugin):
-
     def __init__(self, bot_admin_service: BotAdminService = None):
         self.bot_admin_service = bot_admin_service
 
@@ -25,8 +24,7 @@ class BotJoiningGroupsVerification(Plugin):
                     logger.info(f"用户 {from_user.full_name}[{from_user.id}] 在群 {chat.title}[{chat.id}] 邀请BOT")
                     admin_list = await self.bot_admin_service.get_admin_list()
                     if from_user.id in admin_list:
-                        await context.bot.send_message(message.chat_id,
-                                                       '感谢邀请小派蒙到本群！请使用 /help 查看咱已经学会的功能。')
+                        await context.bot.send_message(message.chat_id, "感谢邀请小派蒙到本群！请使用 /help 查看咱已经学会的功能。")
                         quit_status = False
                 else:
                     logger.info(f"未知用户 在群 {chat.title}[{chat.id}] 邀请BOT")

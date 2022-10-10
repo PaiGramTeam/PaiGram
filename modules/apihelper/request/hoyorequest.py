@@ -8,9 +8,9 @@ from modules.apihelper.typedefs import POST_DATA, JSON_DATA
 
 
 class HOYORequest(HTTPXRequest):
-
-    async def get(self, url: str, *args, de_json: bool = True, re_json_data: bool = False, **kwargs) \
-            -> Union[POST_DATA, JSON_DATA, bytes]:
+    async def get(
+        self, url: str, *args, de_json: bool = True, re_json_data: bool = False, **kwargs
+    ) -> Union[POST_DATA, JSON_DATA, bytes]:
         try:
             response = await self._client.get(url=url, *args, **kwargs)
         except httpx.TimeoutException as err:

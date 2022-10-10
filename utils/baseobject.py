@@ -22,8 +22,7 @@ class BaseObject:
             return getattr(self, item)
         except AttributeError as exc:
             raise KeyError(
-                f"Objects of type {self.__class__.__name__} don't have an attribute called "
-                f"`{item}`."
+                f"Objects of type {self.__class__.__name__} don't have an attribute called " f"`{item}`."
             ) from exc
 
     def __getstate__(self) -> Dict[str, Union[str, object]]:
@@ -47,7 +46,11 @@ class BaseObject:
     # 添加插槽可减少内存使用，并允许更快的属性访问
     __slots__ = ()
 
-    def _get_attrs(self, include_private: bool = False, recursive: bool = False, ) -> Dict[str, Union[str, object]]:
+    def _get_attrs(
+        self,
+        include_private: bool = False,
+        recursive: bool = False,
+    ) -> Dict[str, Union[str, object]]:
         data = {}
         if not recursive:
             try:

@@ -43,7 +43,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         self.user_service = user_service
 
     @conversation.entry_point
-    @handler.command(command='setcookies', filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=True)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
@@ -56,12 +56,12 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             context.chat_data["add_user_command_data"] = cookies_command_data
 
         text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！请选择要绑定的服务器！或回复退出取消操作")}'
-        reply_keyboard = [['米游社', 'HoYoLab'], ["退出"]]
+        reply_keyboard = [["米游社", "HoYoLab"], ["退出"]]
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return CHECK_SERVER
 
     @conversation.entry_point
-    @handler.command(command='mlogin', filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command(command="mlogin", filters=filters.ChatType.PRIVATE, block=True)
     @error_callable
     async def choose_method(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
@@ -112,21 +112,25 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         add_user_command_data.user = user_info
         add_user_command_data.region = region
         await message.reply_text(f"请输入{bbs_name}的Cookies！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
-        javascript = "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a[" \
-                     "0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的Cookie,请重新登录!');c&&confirm(" \
-                     "'将Cookie复制到剪贴板?')&&copy(document.cookie)})(); "
+        javascript = (
+            "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a["
+            "0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的Cookie,请重新登录!');c&&confirm("
+            "'将Cookie复制到剪贴板?')&&copy(document.cookie)})(); "
+        )
         javascript_android = "javascript:(()=>{prompt('',document.cookie)})();"
-        help_message = f"*关于如何获取Cookies*\n\n" \
-                       f"PC：\n" \
-                       f"[1、打开{bbs_name}并登录]({bbs_url})\n" \
-                       f"2、按F12打开开发者工具\n" \
-                       f"3、{escape_markdown('将开发者工具切换至控制台(Console)页签', version=2)}\n" \
-                       f"4、复制下方的代码，并将其粘贴在控制台中，按下回车\n" \
-                       f"`{escape_markdown(javascript, version=2, entity_type='code')}`\n\n" \
-                       f"Android：\n" \
-                       f"[1、通过 Via 浏览器打开{bbs_name}并登录]({bbs_url})\n" \
-                       f"2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n" \
-                       f"`{escape_markdown(javascript_android, version=2, entity_type='code')}`"
+        help_message = (
+            f"*关于如何获取Cookies*\n\n"
+            f"PC：\n"
+            f"[1、打开{bbs_name}并登录]({bbs_url})\n"
+            f"2、按F12打开开发者工具\n"
+            f"3、{escape_markdown('将开发者工具切换至控制台(Console)页签', version=2)}\n"
+            f"4、复制下方的代码，并将其粘贴在控制台中，按下回车\n"
+            f"`{escape_markdown(javascript, version=2, entity_type='code')}`\n\n"
+            f"Android：\n"
+            f"[1、通过 Via 浏览器打开{bbs_name}并登录]({bbs_url})\n"
+            f"2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n"
+            f"`{escape_markdown(javascript_android, version=2, entity_type='code')}`"
+        )
         await message.reply_markdown_v2(help_message, disable_web_page_preview=True)
         return INPUT_COOKIES
 
@@ -149,8 +153,9 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             return CHECK_PHONE
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         add_user_command_data.phone = phone
-        await message.reply_text("请打开 https://user.mihoyo.com/#/login/captcha ，输入手机号并获取验证码，"
-                                 "然后将收到的验证码发送给我（请不要在网页上进行登录）")
+        await message.reply_text(
+            "请打开 https://user.mihoyo.com/#/login/captcha ，输入手机号并获取验证码，" "然后将收到的验证码发送给我（请不要在网页上进行登录）"
+        )
         return CHECK_CAPTCHA
 
     @conversation.state(state=CHECK_CAPTCHA)
@@ -175,8 +180,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             try:
                 success = await client.login(captcha)
                 if not success:
-                    await message.reply_text(
-                        "登录失败：可能是验证码错误，注意不要在登录页面使用掉验证码，如果验证码已经使用，请重新获取验证码！")
+                    await message.reply_text("登录失败：可能是验证码错误，注意不要在登录页面使用掉验证码，如果验证码已经使用，请重新获取验证码！")
                     return ConversationHandler.END
                 await client.get_s_token()
             except Exception:
@@ -184,16 +188,15 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 return ConversationHandler.END
             add_user_command_data.sign_in_client = client
             await message.reply_text(
-                "请再次打开 https://user.mihoyo.com/#/login/captcha ，输入手机号并获取验证码（需要等待一分钟），"
-                "然后将收到的验证码发送给我（请不要在网页上进行登录）")
+                "请再次打开 https://user.mihoyo.com/#/login/captcha ，输入手机号并获取验证码（需要等待一分钟），" "然后将收到的验证码发送给我（请不要在网页上进行登录）"
+            )
             return CHECK_CAPTCHA
         else:
             client = add_user_command_data.sign_in_client
             try:
                 success = await client.get_token(captcha)
                 if not success:
-                    await message.reply_text(
-                        "登录失败：可能是验证码错误，注意不要在登录页面使用掉验证码，如果验证码已经使用，请重新获取验证码！")
+                    await message.reply_text("登录失败：可能是验证码错误，注意不要在登录页面使用掉验证码，如果验证码已经使用，请重新获取验证码！")
                     return ConversationHandler.END
             except Exception:
                 await message.reply_text("登录失败：米游社返回了错误的数据，请稍后再试！")
@@ -249,21 +252,24 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("Cookies已经过期，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except GenshinException as exc:
-            await message.reply_text(f"获取账号信息发生错误，错误信息为 {str(exc)}，请检查Cookie或者账号是否正常",
-                                     reply_markup=ReplyKeyboardRemove())
+            await message.reply_text(
+                f"获取账号信息发生错误，错误信息为 {str(exc)}，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove()
+            )
             return ConversationHandler.END
         except (AttributeError, ValueError):
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         add_user_command_data.game_uid = user_info.uid
-        reply_keyboard = [['确认', '退出']]
+        reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
         logger.info(f"用户 {user.full_name}[{user.id}] 获取账号 {user_info.nickname}[{user_info.uid}] 信息成功")
-        text = f"*角色信息*\n" \
-               f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n" \
-               f"角色等级：{user_info.level}\n" \
-               f"UID：`{user_info.uid}`\n" \
-               f"服务器名称：`{user_info.server_name}`\n"
+        text = (
+            f"*角色信息*\n"
+            f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n"
+            f"角色等级：{user_info.level}\n"
+            f"UID：`{user_info.uid}`\n"
+            f"服务器名称：`{user_info.server_name}`\n"
+        )
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return COMMAND_RESULT
 
@@ -280,11 +286,15 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         elif message.text == "确认":
             if add_user_command_data.user is None:
                 if add_user_command_data.region == RegionEnum.HYPERION:
-                    user_db = User(user_id=user.id, yuanshen_uid=add_user_command_data.game_uid,
-                                   region=add_user_command_data.region)
+                    user_db = User(
+                        user_id=user.id,
+                        yuanshen_uid=add_user_command_data.game_uid,
+                        region=add_user_command_data.region,
+                    )
                 elif add_user_command_data.region == RegionEnum.HOYOLAB:
-                    user_db = User(user_id=user.id, genshin_uid=add_user_command_data.game_uid,
-                                   region=add_user_command_data.region)
+                    user_db = User(
+                        user_id=user.id, genshin_uid=add_user_command_data.game_uid, region=add_user_command_data.region
+                    )
                 else:
                     await message.reply_text("数据错误")
                     return ConversationHandler.END
@@ -301,11 +311,13 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                     return ConversationHandler.END
                 await self.user_service.update_user(user_db)
             if add_user_command_data.cookies_database_data is None:
-                await self.cookies_service.add_cookies(user.id, add_user_command_data.cookies,
-                                                       add_user_command_data.region)
+                await self.cookies_service.add_cookies(
+                    user.id, add_user_command_data.cookies, add_user_command_data.region
+                )
             else:
-                await self.cookies_service.update_cookies(user.id, add_user_command_data.cookies,
-                                                          add_user_command_data.region)
+                await self.cookies_service.update_cookies(
+                    user.id, add_user_command_data.cookies, add_user_command_data.region
+                )
             logger.info(f"用户 {user.full_name}[{user.id}] 绑定账号成功")
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END

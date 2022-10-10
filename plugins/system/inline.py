@@ -36,9 +36,11 @@ class Inline(Plugin):
                             id=str(uuid4()),
                             title=weapons_name,
                             description=f"查看武器列表并查询 {weapons_name}",
-                            input_message_content=InputTextMessageContent(f"武器查询{weapons_name}",
-                                                                          parse_mode=ParseMode.MARKDOWN_V2)
-                        ))
+                            input_message_content=InputTextMessageContent(
+                                f"武器查询{weapons_name}", parse_mode=ParseMode.MARKDOWN_V2
+                            ),
+                        )
+                    )
             elif "查看角色攻略列表并查询" == args[0]:
                 characters_list = await self.wiki_service.get_characters_name_list()
                 for role_name in characters_list:
@@ -47,9 +49,11 @@ class Inline(Plugin):
                             id=str(uuid4()),
                             title=role_name,
                             description=f"查看角色攻略列表并查询 {role_name}",
-                            input_message_content=InputTextMessageContent(f"角色攻略查询{role_name}",
-                                                                          parse_mode=ParseMode.MARKDOWN_V2)
-                        ))
+                            input_message_content=InputTextMessageContent(
+                                f"角色攻略查询{role_name}", parse_mode=ParseMode.MARKDOWN_V2
+                            ),
+                        )
+                    )
             elif "查看角色培养素材列表并查询" == args[0]:
                 characters_list = await self.wiki_service.get_characters_name_list()
                 for role_name in characters_list:
@@ -58,9 +62,11 @@ class Inline(Plugin):
                             id=str(uuid4()),
                             title=role_name,
                             description=f"查看角色培养素材列表并查询 {role_name}",
-                            input_message_content=InputTextMessageContent(f"角色培养素材查询{role_name}",
-                                                                          parse_mode=ParseMode.MARKDOWN_V2)
-                        ))
+                            input_message_content=InputTextMessageContent(
+                                f"角色培养素材查询{role_name}", parse_mode=ParseMode.MARKDOWN_V2
+                            ),
+                        )
+                    )
 
         if not results_list:
             results_list.append(
@@ -69,7 +75,8 @@ class Inline(Plugin):
                     title="好像找不到问题呢",
                     description="这个问题我也不知道，因为我就是个应急食品。",
                     input_message_content=InputTextMessageContent("这个问题我也不知道，因为我就是个应急食品。"),
-                ))
+                )
+            )
         try:
             await ilq.answer(
                 results=results_list,

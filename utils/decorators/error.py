@@ -22,9 +22,9 @@ async def send_user_notification(update: Update, _: CallbackContext, text: str):
         logger.warning("错误的消息类型\n" + json.dumps(update_str, indent=2, ensure_ascii=False))
         return
     chat = message.chat
-    logger.info(f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
-                f"在 {chat.full_name}[{chat.id}]"
-                f"的 错误信息[{text}]")
+    logger.info(
+        f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] " f"在 {chat.full_name}[{chat.id}]" f"的 错误信息[{text}]"
+    )
     try:
         await message.reply_text(text, reply_markup=ReplyKeyboardRemove(), allow_sending_without_reply=True)
     except BadRequest as exc:
@@ -81,8 +81,7 @@ def error_callable(func: Callable) -> Callable:
             if exc.retcode in (10001, -100):
                 await send_user_notification(update, context, "出错了呜呜呜 ~ Cookies无效，请尝试重新绑定账户")
             elif exc.retcode == 10103:
-                await send_user_notification(update, context, "出错了呜呜呜 ~ Cookie有效，但没有绑定到游戏帐户，"
-                                                              "请尝试重新绑定邮游戏账户")
+                await send_user_notification(update, context, "出错了呜呜呜 ~ Cookie有效，但没有绑定到游戏帐户，" "请尝试重新绑定邮游戏账户")
             else:
                 logger.warning("Cookie错误")
                 logger.exception(exc)

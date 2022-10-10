@@ -16,8 +16,7 @@ async def clean_message(context: CallbackContext):
         if "not found" in str(exc):
             logger.warning(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息不存在")
         elif "Message can't be deleted" in str(exc):
-            logger.warning(
-                f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息无法删除 可能是没有授权")
+            logger.warning(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息无法删除 可能是没有授权")
         else:
             logger.error(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败")
             logger.exception(exc)
@@ -30,10 +29,14 @@ async def clean_message(context: CallbackContext):
 
 
 def add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int, delete_seconds: int):
-    context.job_queue.run_once(callback=clean_message, when=delete_seconds, data=message_id,
-                               name=f"{chat_id}|{message_id}|clean_message", chat_id=chat_id,
-                               job_kwargs={"replace_existing": True,
-                                           "id": f"{chat_id}|{message_id}|clean_message"})
+    context.job_queue.run_once(
+        callback=clean_message,
+        when=delete_seconds,
+        data=message_id,
+        name=f"{chat_id}|{message_id}|clean_message",
+        chat_id=chat_id,
+        job_kwargs={"replace_existing": True, "id": f"{chat_id}|{message_id}|clean_message"},
+    )
 
 
 class _BasePlugin:
@@ -43,9 +46,8 @@ class _BasePlugin:
 
 
 class _Conversation(_BasePlugin):
-
     @conversation.fallback
-    @handler.command(command='cancel', block=True)
+    @handler.command(command="cancel", block=True)
     async def cancel(self, update: Update, _: CallbackContext) -> int:
         await update.effective_message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END

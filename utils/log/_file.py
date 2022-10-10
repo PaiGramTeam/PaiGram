@@ -4,7 +4,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import AnyStr, IO, Iterable, Iterator, List, Optional, Type
 
-__all__ = ['FileIO']
+__all__ = ["FileIO"]
 
 
 # noinspection SpellCheckingInspection
@@ -18,12 +18,12 @@ class FileIO(IO[str]):
         today = date.today()
         if self.file.exists():
             if not self.file.is_file():
-                raise RuntimeError(f'日志文件冲突, 请删除文件夹 \"{str(self.file.resolve())}\"')
+                raise RuntimeError(f'日志文件冲突, 请删除文件夹 "{str(self.file.resolve())}"')
             if self.file_stream is None or self.file_stream.closed:
-                self.file_stream = self.file.open(mode='a+', encoding='utf-8')
+                self.file_stream = self.file.open(mode="a+", encoding="utf-8")
             modify_date = date.fromtimestamp(os.stat(self.file).st_mtime)
         else:
-            self.file_stream = self.file.open(mode='a+', encoding='utf-8')
+            self.file_stream = self.file.open(mode="a+", encoding="utf-8")
             modify_date = today
         if modify_date < today:
             if self.file_stream is not None and not self.file_stream.closed:
@@ -31,13 +31,13 @@ class FileIO(IO[str]):
             log_path = self.path.joinpath(f'{modify_date.strftime("%Y-%m-%d")}.log')
             if log_path.exists():
                 # 转存日志
-                with open(log_path, mode='a+', encoding='utf-8') as file:
-                    file.write('\n')
-                    with open(self.file, mode='r+', encoding='utf-8') as f:
+                with open(log_path, mode="a+", encoding="utf-8") as file:
+                    file.write("\n")
+                    with open(self.file, mode="r+", encoding="utf-8") as f:
                         file.writelines(f.readlines())
             else:
                 self.file.rename(self.path.joinpath(f'{modify_date.strftime("%Y-%m-%d")}.log'))
-            self.file_stream = self.file.open(mode='a+', encoding='utf-8')
+            self.file_stream = self.file.open(mode="a+", encoding="utf-8")
         return self.file_stream
 
     def close(self) -> None:
@@ -94,6 +94,7 @@ class FileIO(IO[str]):
     def __enter__(self) -> IO[AnyStr]:
         return self._get_file().__enter__()
 
-    def __exit__(self, __t: Optional[Type[BaseException]], __value: Optional[BaseException],
-                 __traceback: Optional[TracebackType]) -> None:
+    def __exit__(
+        self, __t: Optional[Type[BaseException]], __value: Optional[BaseException], __traceback: Optional[TracebackType]
+    ) -> None:
         return self._get_file().__exit__(__t, __value, __traceback)

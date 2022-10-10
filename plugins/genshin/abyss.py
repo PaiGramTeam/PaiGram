@@ -21,11 +21,13 @@ from utils.log import logger
 
 class AbyssUnlocked(Exception):
     """根本没动"""
+
     pass
 
 
 class NoMostKills(Exception):
     """挑战了但是数据没刷新"""
+
     pass
 
 
@@ -33,11 +35,11 @@ class Abyss(Plugin, BasePlugin):
     """深渊数据查询"""
 
     def __init__(
-            self,
-            user_service: UserService = None,
-            cookies_service: CookiesService = None,
-            template_service: TemplateService = None,
-            assets_service: AssetsService = None
+        self,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+        template_service: TemplateService = None,
+        assets_service: AssetsService = None,
     ):
         self.template_service = template_service
         self.cookies_service = cookies_service
@@ -77,20 +79,20 @@ class Abyss(Plugin, BasePlugin):
             },
             "strongest_strike": {
                 "icon": await self.assets_service.avatar(ranks.strongest_strike[0].id).side(),
-                "value": ranks.strongest_strike[0].value
+                "value": ranks.strongest_strike[0].value,
             },
             "most_damage_taken": {
                 "icon": await self.assets_service.avatar(ranks.most_damage_taken[0].id).side(),
-                "value": ranks.most_damage_taken[0].value
+                "value": ranks.most_damage_taken[0].value,
             },
             "most_bursts_used": {
                 "icon": await self.assets_service.avatar(ranks.most_bursts_used[0].id).side(),
-                "value": ranks.most_bursts_used[0].value
+                "value": ranks.most_bursts_used[0].value,
             },
             "most_skills_used": {
                 "icon": await self.assets_service.avatar(ranks.most_skills_used[0].id).side(),
-                "value": ranks.most_skills_used[0].value
-            }
+                "value": ranks.most_skills_used[0].value,
+            },
         }
         # most_kills
         most_played_list = ranks.most_played
@@ -98,7 +100,7 @@ class Abyss(Plugin, BasePlugin):
             temp = {
                 "icon": await self.assets_service.avatar(most_played.id).icon(),
                 "value": most_played.value,
-                "background": self._get_role_star_bg(most_played.rarity)
+                "background": self._get_role_star_bg(most_played.rarity),
             }
             abyss_data["most_played_list"].append(temp)
         return abyss_data
@@ -132,7 +134,7 @@ class Abyss(Plugin, BasePlugin):
             await message.reply_text("本次深渊旅行者还没挑战呢，咕咕咕~~~")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        png_data = await self.template_service.render('genshin/abyss', "abyss.html", abyss_data,
-                                                      {"width": 865, "height": 504}, full_page=False)
-        await message.reply_photo(png_data, filename=f"abyss_{user.id}.png",
-                                  allow_sending_without_reply=True)
+        png_data = await self.template_service.render(
+            "genshin/abyss", "abyss.html", abyss_data, {"width": 865, "height": 504}, full_page=False
+        )
+        await message.reply_photo(png_data, filename=f"abyss_{user.id}.png", allow_sending_without_reply=True)

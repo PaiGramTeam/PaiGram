@@ -16,7 +16,7 @@ from pydantic import (
 )
 from typing_extensions import Self
 
-__all__ = ['Model', 'WikiModel', 'HONEY_HOST']
+__all__ = ["Model", "WikiModel", "HONEY_HOST"]
 
 HONEY_HOST = URL("https://genshin.honeyhunterworld.com/")
 
@@ -39,13 +39,13 @@ class WikiModel(Model):
     # noinspection PyUnresolvedReferences
     """wiki所用到的基类
 
-        Attributes:
-            id (:obj:`int`): ID
-            name (:obj:`str`): 名称
-            rarity (:obj:`int`): 星级
+    Attributes:
+        id (:obj:`int`): ID
+        name (:obj:`str`): 名称
+        rarity (:obj:`int`): 星级
 
-            _client (:class:`httpx.AsyncClient`): 发起 http 请求的 client
-        """
+        _client (:class:`httpx.AsyncClient`): 发起 http 请求的 client
+    """
     _client: ClassVar[AsyncClient] = AsyncClient()
 
     id: str
@@ -107,7 +107,7 @@ class WikiModel(Model):
             返回对应的 WikiModel
         """
         response = await cls._client_get(url)
-        return await cls._parse_soup(BeautifulSoup(response.text, 'lxml'))
+        return await cls._parse_soup(BeautifulSoup(response.text, "lxml"))
 
     @classmethod
     async def get_by_id(cls, id_: str) -> Self:
@@ -152,7 +152,7 @@ class WikiModel(Model):
             返回能爬到的所有的 WikiModel 所组成的 List
         """
         queue: Queue[Self] = Queue()  # 存放 Model 的队列
-        signal = Value('i', 0)  # 一个用于异步任务同步的信号
+        signal = Value("i", 0)  # 一个用于异步任务同步的信号
 
         async def task(u):
             # 包装的爬虫任务
@@ -196,18 +196,18 @@ class WikiModel(Model):
         """
         urls = cls.scrape_urls()
         queue: Queue[Union[str, Tuple[str, URL]]] = Queue()  # 存放 Model 的队列
-        signal = Value('i', len(urls))  # 一个用于异步任务同步的信号，初始值为存放所需要爬取的页面数
+        signal = Value("i", len(urls))  # 一个用于异步任务同步的信号，初始值为存放所需要爬取的页面数
 
         async def task(page: URL):
             """包装的爬虫任务"""
             response = await cls._client_get(page)
             # 从页面中获取对应的 chaos data (未处理的json格式字符串)
-            chaos_data = re.findall(r'sortable_data\.push\((.*)\);\s*sortable_cur_page', response.text)[0]
+            chaos_data = re.findall(r"sortable_data\.push\((.*)\);\s*sortable_cur_page", response.text)[0]
             json_data = json.loads(chaos_data)  # 转为 json
             for data in json_data:  # 遍历 json
-                data_name = re.findall(r'>(.*)<', data[1])[0]  # 获取 Model 的名称
+                data_name = re.findall(r">(.*)<", data[1])[0]  # 获取 Model 的名称
                 if with_url:  # 如果需要返回对应的 url
-                    data_url = HONEY_HOST.join(re.findall(r'\"(.*?)\"', data[0])[0])
+                    data_url = HONEY_HOST.join(re.findall(r"\"(.*?)\"", data[0])[0])
                     await queue.put((data_name, data_url))
                 else:
                     await queue.put(data_name)

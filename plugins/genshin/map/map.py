@@ -60,6 +60,6 @@ class Map(Plugin, BasePlugin):
             return
         img = Image.open(f"cache{sep}map.jpg")
         if img.size[0] > 2048 or img.size[1] > 2048:
-            await message.reply_document(open(f"cache{sep}map.jpg", mode='rb+'), caption=text)
+            await message.reply_document(open(f"cache{sep}map.jpg", mode="rb+"), caption=text)
         else:
-            await message.reply_photo(open(f"cache{sep}map.jpg", mode='rb+'), caption=text)
+            await message.reply_photo(open(f"cache{sep}map.jpg", mode="rb+"), caption=text)

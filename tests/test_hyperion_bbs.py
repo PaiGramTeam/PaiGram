@@ -28,13 +28,13 @@ async def test_get_post_info(hyperion):
     post_info = await hyperion.get_post_info(2, 29023709)
     assert post_info
     assert isinstance(post_info, PostInfo)
-    assert post_info["post"]["post"]["post_id"] == '29023709'
+    assert post_info["post"]["post"]["post_id"] == "29023709"
     assert post_info.post_id == 29023709
     assert post_info["post"]["post"]["subject"] == "《原神》长期项目启动·概念PV"
     assert post_info.subject == "《原神》长期项目启动·概念PV"
     assert len(post_info["post"]["post"]["images"]) == 1
     post_soup = BeautifulSoup(post_info["post"]["post"]["content"], features="html.parser")
-    assert post_soup.find_all('p')
+    assert post_soup.find_all("p")
 
 
 # noinspection PyShadowingNames

@@ -19,7 +19,6 @@ from utils.log import logger
 
 
 class PostHandlerData:
-
     def __init__(self):
         self.post_text: str = ""
         self.post_images: Optional[List[ArtworkImage]] = None
@@ -41,7 +40,7 @@ class Post(Plugin.Conversation, BasePlugin):
         self.bbs = Hyperion()
 
     @conversation.entry_point
-    @handler.command(command='post', filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command(command="post", filters=filters.ChatType.PRIVATE, block=True)
     @restricts()
     @bot_admins_rights_check
     @error_callable
@@ -53,10 +52,8 @@ class Post(Plugin.Conversation, BasePlugin):
         if post_handler_data is None:
             post_handler_data = PostHandlerData()
             context.chat_data["post_handler_data"] = post_handler_data
-        text = f"✿✿ヽ（°▽°）ノ✿ 你好！ {user.username} ，\n" \
-               "只需复制URL回复即可 \n" \
-               "退出投稿只需回复退出"
-        reply_keyboard = [['退出']]
+        text = f"✿✿ヽ（°▽°）ノ✿ 你好！ {user.username} ，\n" "只需复制URL回复即可 \n" "退出投稿只需回复退出"
+        reply_keyboard = [["退出"]]
         await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return CHECK_POST
 
@@ -77,17 +74,16 @@ class Post(Plugin.Conversation, BasePlugin):
         post_info = await self.bbs.get_post_info(2, post_id)
         post_images = await self.bbs.get_images_by_post_id(2, post_id)
         post_data = post_info["post"]["post"]
-        post_subject = post_data['subject']
+        post_subject = post_data["subject"]
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
-        post_p = post_soup.find_all('p')
-        post_text = f"*{escape_markdown(post_subject, version=2)}*\n" \
-                    f"\n"
+        post_p = post_soup.find_all("p")
+        post_text = f"*{escape_markdown(post_subject, version=2)}*\n" f"\n"
         for p in post_p:
             post_text += f"{escape_markdown(p.get_text(), version=2)}\n"
         post_text += f"[source](https://bbs.mihoyo.com/ys/article/{post_id})"
         if len(post_text) >= MessageLimit.CAPTION_LENGTH:
             await message.reply_markdown_v2(post_text)
-            post_text = post_text[0:MessageLimit.CAPTION_LENGTH]
+            post_text = post_text[0 : MessageLimit.CAPTION_LENGTH]
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割并发送原文本")
         try:
             if len(post_images) > 1:
@@ -138,8 +134,7 @@ class Post(Plugin.Conversation, BasePlugin):
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         photo_len = len(post_handler_data.post_images)
         message = update.effective_message
-        await message.reply_text("请回复你要删除的图片的序列，从1开始，如果删除多张图片回复的序列请以空格作为分隔符，"
-                                 f"当前一共有 {photo_len} 张图片")
+        await message.reply_text("请回复你要删除的图片的序列，从1开始，如果删除多张图片回复的序列请以空格作为分隔符，" f"当前一共有 {photo_len} 张图片")
         return GTE_DELETE_PHOTO
 
     @conversation.state(state=GTE_DELETE_PHOTO)
@@ -175,8 +170,7 @@ class Post(Plugin.Conversation, BasePlugin):
             logger.error("从配置文件获取频道信息发生错误，退出任务", error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        await message.reply_text("请选择你要推送的频道",
-                                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
+        await message.reply_text("请选择你要推送的频道", reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return GET_POST_CHANNEL
 
     @conversation.state(state=GET_POST_CHANNEL)
@@ -200,8 +194,7 @@ class Post(Plugin.Conversation, BasePlugin):
             return ConversationHandler.END
         post_handler_data.channel_id = channel_id
         reply_keyboard = [["确认", "退出"]]
-        await message.reply_text("请核对你修改的信息",
-                                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
+        await message.reply_text("请核对你修改的信息", reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return SEND_POST
 
     async def add_tags(self, update: Update, _: CallbackContext) -> int:
@@ -273,8 +266,9 @@ class Post(Plugin.Conversation, BasePlugin):
                 await context.bot.send_media_group(channel_id, media=media)
             elif len(post_images) == 1:
                 image = post_images[0]
-                await context.bot.send_photo(channel_id, photo=image.data, caption=post_text,
-                                             parse_mode=ParseMode.MARKDOWN_V2)
+                await context.bot.send_photo(
+                    channel_id, photo=image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2
+                )
             elif len(post_images) == 0:
                 await context.bot.send_message(channel_id, post_text, parse_mode=ParseMode.MARKDOWN_V2)
             else:
@@ -287,4 +281,3 @@ class Post(Plugin.Conversation, BasePlugin):
             return ConversationHandler.END
         await message.reply_text("推送成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
-

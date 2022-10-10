@@ -6,7 +6,6 @@ import httpx
 
 
 class HTTPXRequest(AbstractAsyncContextManager):
-
     def __init__(self, *args, headers=None, **kwargs):
         self._client = httpx.AsyncClient(headers=headers, *args, **kwargs)
 
@@ -18,8 +17,9 @@ class HTTPXRequest(AbstractAsyncContextManager):
             await self.shutdown()
             raise exc
 
-    async def __aexit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException],
-                        exc_tb: Optional[TracebackType]) -> None:
+    async def __aexit__(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
 
         await self.initialize()
 

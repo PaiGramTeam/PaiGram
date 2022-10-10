@@ -7,7 +7,6 @@ from .models import Answer, Question
 
 
 class QuizCache:
-
     def __init__(self, redis: RedisDB):
         self.client = redis.client
         self.question_qname = "quiz:question"
@@ -16,8 +15,7 @@ class QuizCache:
     async def get_all_question(self) -> List[Question]:
         temp_list = []
         qname = self.question_qname + "id_list"
-        data_list = [self.question_qname + f":{question_id}" for question_id in
-                     await self.client.lrange(qname, 0, -1)]
+        data_list = [self.question_qname + f":{question_id}" for question_id in await self.client.lrange(qname, 0, -1)]
         data = await self.client.mget(data_list)
         for i in data:
             temp_list.append(Question.de_json(ujson.loads(i)))
