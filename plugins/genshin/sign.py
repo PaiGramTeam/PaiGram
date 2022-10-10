@@ -1,5 +1,6 @@
 import datetime
 import time
+import json
 from json import JSONDecodeError
 from typing import Optional, Dict
 
@@ -83,10 +84,11 @@ class Sign(Plugin, BasePlugin):
                     headers=header,
                     timeout=20,
                 )
-                logger.info(f"ajax 返回：{req.text}")
+                text = req.text
+                logger.info(f"ajax 返回：{text}")
                 if req.status_code != 200:
                     raise RuntimeError
-                data = req.json()
+                data = json.loads(text[text.find("(") + 1:text.find(")")])
                 if "success" in data["status"] and "success" in data["data"]["result"]:
                     return {
                         "x-rpc-challenge": challenge,
