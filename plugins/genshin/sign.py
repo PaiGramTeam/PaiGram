@@ -1,18 +1,18 @@
 import datetime
 import time
 from json import JSONDecodeError
-from typing import Optional, Dict, Any, Mapping
+from typing import Optional, Dict
 
 from genshin import Game, GenshinException, AlreadyClaimed, Client
-from httpx import AsyncClient, HTTPError
+from httpx import AsyncClient, Timeout
 from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, CallbackContext
 from telegram.ext import MessageHandler, filters
 
-from core.config import config
 from core.admin.services import BotAdminService
 from core.baseplugin import BasePlugin
+from core.config import config
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
@@ -46,8 +46,8 @@ class Sign(Plugin, BasePlugin):
 
     @staticmethod
     async def pass_challenge(gt: str, challenge: str, referer: str = None) -> Optional[Dict]:
-        """
-        尝试自动通过验证，感谢 @coolxitech 大佬提供的接口
+        """尝试自动通过验证，感谢 @coolxitech 大佬提供的方案
+
         https://github.com/coolxitech/mihoyo
         """
         if not gt or not challenge:
@@ -68,14 +68,24 @@ class Sign(Plugin, BasePlugin):
         # ajax auto pass
         async with AsyncClient() as client:
             try:
+                # gt={gt}&challenge={challenge}&lang=zh-cn&pt=3
+                # client_type=web_mobile&callback=geetest_{int(time.time() * 1000)}
                 req = await client.get(
-                    f"https://api.geetest.com/ajax.php?gt={gt}&challenge={challenge}"
-                    f"&lang=zh-cn&pt=3&client_type=web_mobile&callback=geetest_{int(time.time() * 1000)}",
+                    "https://api.geetest.com/ajax.php",
+                    params={
+                        "gt": gt,
+                        "challenge": challenge,
+                        "lang": "zh-cn",
+                        "pt": 3,
+                        "client_type": "web_mobile",
+                        "callback": f"geetest_{int(time.time() * 1000)}",
+                    },
                     headers=header,
                     timeout=20,
                 )
-                logger.info(f"签到 ajax 返回：{req.text}")
-                assert req.status_code == 200
+                logger.info(f"ajax 返回：{req.text}")
+                if req.status_code != 200:
+                    raise RuntimeError
                 data = req.json()
                 if "success" in data["status"] and "success" in data["data"]["result"]:
                     return {
@@ -83,32 +93,43 @@ class Sign(Plugin, BasePlugin):
                         "x-rpc-validate": data["data"]["validate"],
                         "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
                     }
-            except (JSONDecodeError, KeyError, AssertionError, HTTPError) as e:
-                logger.warning(f"签到 ajax 自动通过失败：{e}")
-        if not config.pass_challenge_api:
+            except (
+                JSONDecodeError,
+                KeyError,
+                AssertionError,
+                Timeout,
+                RuntimeError,
+            ) as exc:
+                logger.warning(f"ajax 自动通过失败：{repr(exc)}")
+        logger.warning(f"ajax 自动通过失败")
+        if not config.pass_challenge_api or config.pass_challenge_api == "":
             return None
+        pass_challenge_params = {
+            "gt": gt,
+            "challenge": challenge,
+            "referer": referer,
+        }
+        if config.pass_challenge_app_key or config.pass_challenge_app_key != "":
+            pass_challenge_params["appkey"] = config.pass_challenge_app_key
         # custom api auto pass
         async with AsyncClient() as client:
             try:
                 resp = await client.post(
                     config.pass_challenge_api,
-                    params={
-                        "gt": gt,
-                        "challenge": challenge,
-                        "referer": referer,
-                    },
+                    params=pass_challenge_params,
                     timeout=45,
                 )
                 logger.info(f"签到自定义打码平台返回：{resp.text}")
                 data = resp.json()
-                assert data["code"] == 0
+                if data["code"] != 0:
+                    raise RuntimeError
                 return {
                     "x-rpc-challenge": data["data"]["challenge"],
                     "x-rpc-validate": data["data"]["validate"],
                     "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
                 }
-            except (JSONDecodeError, KeyError, AssertionError, HTTPError) as e:
-                logger.warning(f"签到自定义打码平台自动通过失败：{e}")
+            except (JSONDecodeError, KeyError, AssertionError, Timeout, RuntimeError) as exc:
+                logger.warning(f"签到自定义打码平台自动通过失败：{repr(exc)}")
         return None
 
     @staticmethod
@@ -135,7 +156,7 @@ class Sign(Plugin, BasePlugin):
                         request_daily_reward.get("challenge", ""),
                     )
                     if not headers:
-                        logger.warning(f"UID {client.uid} 签到失败，触发验证码风控 | 打码平台打码失败，请检查")
+                        logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                         return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
                     request_daily_reward = await client.request_daily_reward(
                         "sign",
@@ -145,7 +166,7 @@ class Sign(Plugin, BasePlugin):
                         headers=headers,
                     )
                     if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                        logger.warning(f"UID {client.uid} 签到失败，触发验证码风控 | 打码平台打码失败，请检查")
+                        logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                         return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
                     logger.info(f"UID {client.uid} 通过自动打码签到成功")
             except AlreadyClaimed:
