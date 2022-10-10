@@ -47,18 +47,47 @@ class Sign(Plugin, BasePlugin):
     @staticmethod
     async def pass_challenge(gt: str, challenge: str, referer: str = None) -> Optional[Dict]:
         """
-        使用公益打码平台打码，感谢 @coolxitech 大佬提供的接口
+        尝试自动通过验证，感谢 @coolxitech 大佬提供的接口
         https://github.com/coolxitech/mihoyo
         """
         if not gt or not challenge:
-            return None
-        if not config.pass_challenge_api:
             return None
         if not referer:
             referer = (
                 "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?"
                 "bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
             )
+        header = {
+            "Accept": "*/*",
+            "X-Requested-With": "com.mihoyo.hyperion",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 12; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/2.37.1",
+            "Referer": referer,
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        }
+        # ajax auto pass
+        async with AsyncClient() as client:
+            try:
+                req = await client.get(
+                    f"https://api.geetest.com/ajax.php?gt={gt}&challenge={challenge}"
+                    f"&lang=zh-cn&pt=3&client_type=web_mobile&callback=geetest_{int(time.time() * 1000)}",
+                    headers=header,
+                    timeout=20,
+                )
+                logger.info(f"签到 ajax 返回：{req.text}")
+                assert req.status_code == 200
+                data = req.json()
+                if "success" in data["status"] and "success" in data["data"]["result"]:
+                    return {
+                        "x-rpc-challenge": challenge,
+                        "x-rpc-validate": data["data"]["validate"],
+                        "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
+                    }
+            except (JSONDecodeError, KeyError, AssertionError, HTTPError) as e:
+                logger.warning(f"签到 ajax 自动通过失败：{e}")
+        if not config.pass_challenge_api:
+            return None
+        # custom api auto pass
         async with AsyncClient() as client:
             try:
                 resp = await client.post(
@@ -70,17 +99,17 @@ class Sign(Plugin, BasePlugin):
                     },
                     timeout=45,
                 )
-                logger.info(f"打码平台返回：{resp.text}")
+                logger.info(f"签到自定义打码平台返回：{resp.text}")
                 data = resp.json()
                 assert data["code"] == 0
                 return {
-                    "x-rpc-challenge": data.get("data", {}).get("challenge", ""),
-                    "x-rpc-validate": data.get("data", {}).get("validate", ""),
-                    "x-rpc-seccode": f'{data.get("data", {}).get("validate", "")}|jordan',
+                    "x-rpc-challenge": data["data"]["challenge"],
+                    "x-rpc-validate": data["data"]["validate"],
+                    "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
                 }
             except (JSONDecodeError, KeyError, AssertionError, HTTPError) as e:
-                logger.warning(f"签到自动打码失败：{e}")
-                return None
+                logger.warning(f"签到自定义打码平台自动通过失败：{e}")
+        return None
 
     @staticmethod
     async def _start_sign(client: Client) -> str:
