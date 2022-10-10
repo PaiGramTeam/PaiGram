@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 from typing import Any, Generic, ItemsView, Iterator, KeysView, TypeVar
 
 import ujson as json
@@ -11,16 +12,20 @@ from utils.log import logger
 from utils.typedefs import StrOrInt
 
 __all__ = [
-    'HONEY_DATA',
-    'AVATAR_DATA', 'WEAPON_DATA', 'MATERIAL_DATA', 'ARTIFACT_DATA', 'NAMECARD_DATA',
-    'honey_id_to_game_id',
-    'Data'
+    "HONEY_DATA",
+    "AVATAR_DATA",
+    "WEAPON_DATA",
+    "MATERIAL_DATA",
+    "ARTIFACT_DATA",
+    "NAMECARD_DATA",
+    "honey_id_to_game_id",
+    "Data",
 ]
 
-K = TypeVar('K')
-V = TypeVar('V')
+K = TypeVar("K")
+V = TypeVar("V")
 
-data_dir = PROJECT_ROOT.joinpath('metadata/data/')
+data_dir = PROJECT_ROOT.joinpath("metadata/data/")
 data_dir.mkdir(parents=True, exist_ok=True)
 
 _cache = {}
@@ -35,15 +40,14 @@ class Data(dict, Generic[K, V]):
         if (result := _cache.get(self._file_name)) not in [None, {}]:
             self._dict = result
         else:
-            path = data_dir.joinpath(self._file_name).with_suffix('.json')
+            path = data_dir.joinpath(self._file_name).with_suffix(".json")
             if not path.exists():
                 logger.error(
-                    f"暂未找到名为 \"{self._file_name}.json\" 的 metadata , "
-                    "请先使用 [yellow bold]/refresh_metadata[/] 命令下载",
-                    extra={'markup': True}
+                    f'暂未找到名为 "{self._file_name}.json" 的 metadata , ' "请先使用 [yellow bold]/refresh_metadata[/] 命令下载",
+                    extra={"markup": True},
                 )
                 self._dict = {}
-            with open(path, encoding='utf-8') as file:
+            with open(path, encoding="utf-8") as file:
                 self._dict = json.load(file)
             _cache.update({self._file_name: self._dict})
         return self._dict
@@ -75,14 +79,15 @@ class Data(dict, Generic[K, V]):
         return self.data.items()
 
 
-HONEY_DATA: dict[str, dict[StrOrInt, list[str | int]]] = Data('honey')
+HONEY_DATA: dict[str, dict[StrOrInt, list[str | int]]] = Data("honey")
 
-AVATAR_DATA: dict[str, dict[str, int | str | list[int]]] = Data('avatar')
-WEAPON_DATA: dict[str, dict[str, int | str]] = Data('weapon')
-MATERIAL_DATA: dict[str, dict[str, int | str]] = Data('material')
-ARTIFACT_DATA: dict[str, dict[str, int | str | list[int] | dict[str, str]]] = Data('reliquary')
-NAMECARD_DATA: dict[str, dict[str, int | str]] = Data('namecard')
+AVATAR_DATA: dict[str, dict[str, int | str | list[int]]] = Data("avatar")
+WEAPON_DATA: dict[str, dict[str, int | str]] = Data("weapon")
+MATERIAL_DATA: dict[str, dict[str, int | str]] = Data("material")
+ARTIFACT_DATA: dict[str, dict[str, int | str | list[int] | dict[str, str]]] = Data("reliquary")
+NAMECARD_DATA: dict[str, dict[str, int | str]] = Data("namecard")
 
 
+@functools.lru_cache()
 def honey_id_to_game_id(honey_id: str, item_type: str) -> str | None:
     return next((key for key, value in HONEY_DATA[item_type].items() if value[0] == honey_id), None)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+
 from metadata.genshin import WEAPON_DATA
 
 __all__ = [
@@ -183,24 +185,28 @@ weapons = {
 
 
 # noinspection PyPep8Naming
+@functools.lru_cache()
 def roleToName(shortname: str) -> str:
     """讲角色昵称转为正式名"""
     return next((value[0] for value in roles.values() for name in value if name == shortname), shortname)
 
 
 # noinspection PyPep8Naming
+@functools.lru_cache()
 def roleToId(name: str) -> int | None:
     """获取角色ID"""
     return next((key for key, value in roles.items() for n in value if n == name), None)
 
 
 # noinspection PyPep8Naming
+@functools.lru_cache()
 def weaponToName(shortname: str) -> str:
     """讲武器昵称转为正式名"""
     return next((key for key, value in weapons.items() if shortname == key or shortname in value), shortname)
 
 
 # noinspection PyPep8Naming
+@functools.lru_cache()
 def weaponToId(name: str) -> int | None:
     """获取武器ID"""
     return next((int(key) for key, value in WEAPON_DATA.items() if weaponToName(name) in value['name']), None)

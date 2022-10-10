@@ -374,29 +374,27 @@ class GachaLog:
             count += 1
             if item.rank_type == "5":
                 if item.item_type == "角色" and pool_name in {"角色祈愿", "常驻祈愿"}:
-                    result.append(
-                        FiveStarItem(
-                            name=item.name,
-                            icon=(await assets.avatar(roleToId(item.name)).icon()).as_uri(),
-                            count=count,
-                            type="角色",
-                            isUp=GachaLog.check_avatar_up(item.name, item.time) if pool_name == "角色祈愿" else False,
-                            isBig=(not result[-1].isUp) if result and pool_name == "角色祈愿" else False,
-                            time=item.time,
-                        )
-                    )
+                    data = {
+                        "name": item.name,
+                        "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri(),
+                        "count": count,
+                        "type": "角色",
+                        "isUp": GachaLog.check_avatar_up(item.name, item.time) if pool_name == "角色祈愿" else False,
+                        "isBig": (not result[-1].isUp) if result and pool_name == "角色祈愿" else False,
+                        "time": item.time,
+                    }
+                    result.append(FiveStarItem.construct(**data))
                 elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿"}:
-                    result.append(
-                        FiveStarItem(
-                            name=item.name,
-                            icon=(await assets.weapon(weaponToId(item.name)).icon()).as_uri(),
-                            count=count,
-                            type="武器",
-                            isUp=False,
-                            isBig=False,
-                            time=item.time,
-                        )
-                    )
+                    data = {
+                        "name": item.name,
+                        "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri(),
+                        "count": count,
+                        "type": "武器",
+                        "isUp": False,
+                        "isBig": False,
+                        "time": item.time,
+                    }
+                    result.append(FiveStarItem.construct(**data))
                 count = 0
         result.reverse()
         return result, count
@@ -415,25 +413,23 @@ class GachaLog:
             count += 1
             if item.rank_type == "4":
                 if item.item_type == "角色":
-                    result.append(
-                        FourStarItem(
-                            name=item.name,
-                            icon=(await assets.avatar(roleToId(item.name)).icon()).as_uri(),
-                            count=count,
-                            type="角色",
-                            time=item.time,
-                        )
-                    )
+                    data = {
+                        "name": item.name,
+                        "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri(),
+                        "count": count,
+                        "type": "角色",
+                        "time": item.time,
+                    }
+                    result.append(FourStarItem.construct(**data))
                 elif item.item_type == "武器":
-                    result.append(
-                        FourStarItem(
-                            name=item.name,
-                            icon=(await assets.weapon(weaponToId(item.name)).icon()).as_uri(),
-                            count=count,
-                            type="武器",
-                            time=item.time,
-                        )
-                    )
+                    data = {
+                        "name": item.name,
+                        "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri(),
+                        "count": count,
+                        "type": "武器",
+                        "time": item.time,
+                    }
+                    result.append(FourStarItem.construct(**data))
                 count = 0
         result.reverse()
         return result, count
