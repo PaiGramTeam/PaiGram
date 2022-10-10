@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+
 from metadata.genshin import WEAPON_DATA
 
 __all__ = [
@@ -100,6 +102,7 @@ roles = {
     10000073: ['纳西妲', 'Nahida', 'nahida', '草王', '草神', '小吉祥草王', '草萝莉', '纳西坦'],
     10000074: ['莱依拉', 'Layla', 'layla', '拉一拉'],
 }
+not_real_roles = [10000073, 10000074]
 weapons = {
     "磐岩结绿": ["绿箭", "绿剑"],
     "斫峰之刃": ["斫峰", "盾剑"],
@@ -182,24 +185,28 @@ weapons = {
 
 
 # noinspection PyPep8Naming
+@functools.lru_cache()
 def roleToName(shortname: str) -> str:
-    """讲角色昵称转为正式名"""
+    """将角色昵称转为正式名"""
     return next((value[0] for value in roles.values() for name in value if name == shortname), shortname)
 
 
 # noinspection PyPep8Naming
+@functools.lru_cache()
 def roleToId(name: str) -> int | None:
     """获取角色ID"""
     return next((key for key, value in roles.items() for n in value if n == name), None)
 
 
 # noinspection PyPep8Naming
+@functools.lru_cache()
 def weaponToName(shortname: str) -> str:
-    """讲武器昵称转为正式名"""
+    """将武器昵称转为正式名"""
     return next((key for key, value in weapons.items() if shortname == key or shortname in value), shortname)
 
 
 # noinspection PyPep8Naming
+@functools.lru_cache()
 def weaponToId(name: str) -> int | None:
     """获取武器ID"""
     return next((int(key) for key, value in WEAPON_DATA.items() if weaponToName(name) in value['name']), None)

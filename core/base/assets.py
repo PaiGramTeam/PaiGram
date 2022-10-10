@@ -29,16 +29,15 @@ from utils.typedefs import StrOrInt, StrOrURL
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock
-ICON_TYPE = Union[
-    Callable[[bool], Awaitable[Optional[Path]]],
-    Callable[..., Awaitable[Optional[Path]]]
-]
+ICON_TYPE = Union[Callable[[bool], Awaitable[Optional[Path]]], Callable[..., Awaitable[Optional[Path]]]]
 NAME_MAP_TYPE = Dict[str, StrOrURL]
 
-ASSETS_PATH = PROJECT_ROOT.joinpath('resources/assets')
+ASSETS_PATH = PROJECT_ROOT.joinpath("resources/assets")
 ASSETS_PATH.mkdir(exist_ok=True, parents=True)
 
-DATA_MAP = {'avatar': AVATAR_DATA, 'weapon': WEAPON_DATA, 'material': MATERIAL_DATA}
+DATA_MAP = {"avatar": AVATAR_DATA, "weapon": WEAPON_DATA, "material": MATERIAL_DATA}
+
+DEFAULT_EnkaAssets = EnkaAssets(lang="chs")
 
 
 class AssetsServiceError(Exception):
@@ -50,7 +49,7 @@ class AssetsCouldNotFound(AssetsServiceError):
 
 
 class _AssetsService(ABC):
-    _lock: ClassVar['RLock'] = Lock()
+    _lock: ClassVar["RLock"] = Lock()
     _dir: ClassVar[Path]
     icon_types: ClassVar[list[str]]
 
@@ -70,7 +69,7 @@ class _AssetsService(ABC):
     @cached_property
     def honey_id(self) -> str:
         """当前资源在 Honey Impact 所对应的 ID"""
-        return HONEY_DATA[self.type].get(str(self.id), [''])[0]
+        return HONEY_DATA[self.type].get(str(self.id), [""])[0]
 
     @property
     def path(self) -> Path:
@@ -98,26 +97,20 @@ class _AssetsService(ABC):
     def __init_subclass__(cls, **kwargs) -> None:
         """初始化一些类变量"""
         from itertools import chain
+
         cls.icon_types = [  # 支持的图标类型
             k
-            for k, v in
-            chain(
-                cls.__annotations__.items(),
-                *map(
-                    lambda x: x.__annotations__.items(),
-                    cls.__bases__
-                )
-            )
-            if v in [ICON_TYPE, 'ICON_TYPE']
+            for k, v in chain(cls.__annotations__.items(), *map(lambda x: x.__annotations__.items(), cls.__bases__))
+            if v in [ICON_TYPE, "ICON_TYPE"]
         ]
-        cls.type = cls.__name__.lstrip('_').split('Assets')[0].lower()  # 当前 assert 的类型
+        cls.type = cls.__name__.lstrip("_").split("Assets")[0].lower()  # 当前 assert 的类型
         cls._dir = ASSETS_PATH.joinpath(cls.type)  # 图标保存的文件夹
         cls._dir.mkdir(exist_ok=True, parents=True)
 
     async def _download(self, url: StrOrURL, path: Path, retry: int = 5) -> Path | None:
         """从 url 下载图标至 path"""
         logger.debug(f"正在从 {url} 下载图标至 {path}")
-        headers = {'user-agent': 'TGPaimonBot/3.0'} if URL(url).host == 'enka.network' else None
+        headers = {"user-agent": "TGPaimonBot/3.0"} if URL(url).host == "enka.network" else None
         for time in range(retry):
             try:
                 response = await self.client.get(url, follow_redirects=False, headers=headers)
@@ -131,7 +124,7 @@ class _AssetsService(ABC):
                 continue
             if response.status_code != 200:  # 判定页面是否正常
                 return None
-            async with async_open(path, 'wb') as file:
+            async with async_open(path, "wb") as file:
                 await file.write(response.content)  # 保存图标
             return path.resolve()
 
@@ -159,7 +152,7 @@ class _AssetsService(ABC):
         if overwrite and path is not None and path.exists():
             await async_remove(path)
         # 依次从使用当前 assets class 中的爬虫下载图标，顺序为爬虫名的字母顺序
-        for func in map(lambda x: getattr(self, x), sorted(filter(lambda x: x.startswith('_get_from_'), dir(self)))):
+        for func in map(lambda x: getattr(self, x), sorted(filter(lambda x: x.startswith("_get_from_"), dir(self)))):
             if (path := await func(item)) is not None:
                 return path
 
@@ -200,26 +193,26 @@ class _AvatarAssets(_AssetsService):
     def game_name(self) -> str:
         icon = "UI_AvatarIcon_"
         if (avatar := AVATAR_DATA.get(str(self.id), None)) is not None:
-            icon = avatar['icon']
+            icon = avatar["icon"]
         else:
             for aid, avatar in AVATAR_DATA.items():
                 if aid.startswith(str(self.id)):
-                    icon = avatar['icon']
+                    icon = avatar["icon"]
         return re.findall(r"UI_AvatarIcon_(.*)", icon)[0]
 
     @cached_property
     def honey_id(self) -> str:
-        return HONEY_DATA['avatar'].get(str(self.id), '')[0]
+        return HONEY_DATA["avatar"].get(str(self.id), "")[0]
 
     @cached_property
     def enka(self) -> Optional[EnkaCharacterAsset]:
-        api = getattr(self, '_enka_api', None)
-        cid = getattr(self, 'id', None)
+        api = getattr(self, "_enka_api", None)
+        cid = getattr(self, "id", None)
         return None if api is None or cid is None else api.character(cid)
 
     def __init__(self, client: Optional[AsyncClient] = None, enka: Optional[EnkaAssets] = None):
         super().__init__(client)
-        self._enka_api = enka or EnkaAssets(lang='chs')
+        self._enka_api = enka or DEFAULT_EnkaAssets
 
     def __call__(self, target: StrOrInt) -> "_AvatarAssets":
         temp = target
@@ -236,39 +229,33 @@ class _AvatarAssets(_AssetsService):
         return result
 
     async def _get_from_ambr(self, item: str) -> Path | None:
-        if item in {'icon', 'side', 'gacha'}:
+        if item in {"icon", "side", "gacha"}:
             url = AMBR_HOST.join(f"assets/UI/{self.game_name_map[item]}.png")
             return await self._download(url, self.path.joinpath(f"{item}.png"))
 
     async def _get_from_enka(self, item: str) -> Path | None:
         path = self.path.joinpath(f"{item}.png")
-        item = 'banner' if item == 'gacha' else item
+        item = "banner" if item == "gacha" else item
         # noinspection PyUnboundLocalVariable
-        if (
-                self.enka is not None
-                and
-                item in (data := self.enka.images.dict()).keys()
-                and
-                (url := data[item]['url'])
-        ):
+        if self.enka is not None and item in (data := self.enka.images.dict()).keys() and (url := data[item]["url"]):
             return await self._download(url, path)
 
     @cached_property
     def honey_name_map(self) -> dict[str, str]:
         return {
-            'icon': f"{self.honey_id}_icon",
-            'side': f"{self.honey_id}_side_icon",
-            'gacha': f"{self.honey_id}_gacha_splash",
-            'gacha_card': f"{self.honey_id}_gacha_card",
+            "icon": f"{self.honey_id}_icon",
+            "side": f"{self.honey_id}_side_icon",
+            "gacha": f"{self.honey_id}_gacha_splash",
+            "gacha_card": f"{self.honey_id}_gacha_card",
         }
 
     @cached_property
     def game_name_map(self) -> dict[str, str]:
         return {
-            'icon': f"UI_AvatarIcon_{self.game_name}",
-            'card': f"UI_AvatarIcon_{self.game_name}_Card",
-            'side': f"UI_AvatarIcon_Side_{self.game_name}",
-            'gacha': f"UI_Gacha_AvatarImg_{self.game_name}",
+            "icon": f"UI_AvatarIcon_{self.game_name}",
+            "card": f"UI_AvatarIcon_{self.game_name}_Card",
+            "side": f"UI_AvatarIcon_Side_{self.game_name}",
+            "gacha": f"UI_Gacha_AvatarImg_{self.game_name}",
         }
 
 
@@ -281,14 +268,14 @@ class _WeaponAssets(_AssetsService):
 
     @cached_property
     def game_name(self) -> str:
-        return re.findall(r"UI_EquipIcon_(.*)", WEAPON_DATA[str(self.id)]['icon'])[0]
+        return re.findall(r"UI_EquipIcon_(.*)", WEAPON_DATA[str(self.id)]["icon"])[0]
 
     @cached_property
     def game_name_map(self) -> dict[str, str]:
         return {
-            'icon': f"UI_EquipIcon_{self.game_name}",
-            'awaken': f"UI_EquipIcon_{self.game_name}_Awaken",
-            'gacha': f"UI_Gacha_EquipIcon_{self.game_name}"
+            "icon": f"UI_EquipIcon_{self.game_name}",
+            "awaken": f"UI_EquipIcon_{self.game_name}_Awaken",
+            "gacha": f"UI_Gacha_EquipIcon_{self.game_name}",
         }
 
     @cached_property
@@ -307,16 +294,16 @@ class _WeaponAssets(_AssetsService):
 
     async def _get_from_enka(self, item: str) -> Path | None:
         if item in self.game_name_map:
-            url = ENKA_HOST.join(f'ui/{self.game_name_map.get(item)}.png')
+            url = ENKA_HOST.join(f"ui/{self.game_name_map.get(item)}.png")
             path = self.path.joinpath(f"{item}.png")
             return await self._download(url, path)
 
     @cached_property
     def honey_name_map(self) -> dict[str, str]:
         return {
-            'icon': f'{self.honey_id}',
-            'awaken': f'{self.honey_id}_awaken_icon',
-            'gacha': f'{self.honey_id}_gacha_icon',
+            "icon": f"{self.honey_id}",
+            "awaken": f"{self.honey_id}_awaken_icon",
+            "gacha": f"{self.honey_id}_gacha_icon",
         }
 
 
@@ -327,11 +314,11 @@ class _MaterialAssets(_AssetsService):
 
     @cached_property
     def game_name_map(self) -> dict[str, str]:
-        return {'icon': f"UI_ItemIcon_{self.game_name}"}
+        return {"icon": f"UI_ItemIcon_{self.game_name}"}
 
     @cached_property
     def honey_name_map(self) -> dict[str, str]:
-        return {'icon': self.honey_id}
+        return {"icon": self.honey_id}
 
     def __call__(self, target: StrOrInt) -> Self:
         temp = target
@@ -340,24 +327,24 @@ class _MaterialAssets(_AssetsService):
             if target.isnumeric():
                 target = int(target)
             else:
-                target = {v['name']: int(k) for k, v in MATERIAL_DATA.items()}.get(target)
+                target = {v["name"]: int(k) for k, v in MATERIAL_DATA.items()}.get(target)
         if isinstance(target, str) or target is None:
             raise AssetsCouldNotFound(f"找不到对应的素材: target={temp}")
         result.id = target
         return result
 
     async def _get_from_ambr(self, item: str) -> Path | None:
-        if item == 'icon':
+        if item == "icon":
             url = AMBR_HOST.join(f"assets/UI/{self.game_name_map.get(item)}.png")
             path = self.path.joinpath(f"{item}.png")
             return await self._download(url, path)
 
     async def _get_from_honey(self, item: str) -> Path | None:
         path = self.path.joinpath(f"{item}.png")
-        url = HONEY_HOST.join(f'/img/{self.honey_name_map.get(item)}.png')
+        url = HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.png")
         if (result := await self._download(url, path)) is None:
             path = self.path.joinpath(f"{item}.webp")
-            url = HONEY_HOST.join(f'/img/{self.honey_name_map.get(item)}.webp')
+            url = HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.webp")
             return await self._download(url, path)
         return result
 
@@ -380,7 +367,7 @@ class _ArtifactAssets(_AssetsService):
 
     @cached_property
     def honey_id(self) -> str:
-        return HONEY_DATA['artifact'][str(self.id)][0]
+        return HONEY_DATA["artifact"][str(self.id)][0]
 
     @cached_property
     def game_name(self) -> str:
@@ -388,7 +375,7 @@ class _ArtifactAssets(_AssetsService):
 
     async def _get_from_enka(self, item: str) -> Path | None:
         if item in self.game_name_map:
-            url = ENKA_HOST.join(f'ui/{self.game_name_map.get(item)}.png')
+            url = ENKA_HOST.join(f"ui/{self.game_name_map.get(item)}.png")
             path = self.path.joinpath(f"{item}.png")
             return await self._download(url, path)
 
@@ -410,7 +397,7 @@ class _ArtifactAssets(_AssetsService):
 
     @cached_property
     def honey_name_map(self) -> dict[str, str]:
-        first_id = int(re.findall(r'\d+', HONEY_DATA['artifact'][str(self.id)][-1])[0])
+        first_id = int(re.findall(r"\d+", HONEY_DATA["artifact"][str(self.id)][-1])[0])
         return {
             "icon": f"i_n{first_id + 30}",
             "flower": f"i_n{first_id + 30}",
@@ -432,43 +419,43 @@ class _NamecardAssets(_AssetsService):
 
     @cached_property
     def honey_id(self) -> str:
-        return HONEY_DATA['namecard'][str(self.id)][0]
+        return HONEY_DATA["namecard"][str(self.id)][0]
 
     @cached_property
     def game_name(self) -> str:
-        return NAMECARD_DATA[str(self.id)]['icon']
+        return NAMECARD_DATA[str(self.id)]["icon"]
 
     def __call__(self, target: int) -> "_NamecardAssets":
         result = _NamecardAssets(self.client)
         result.id = target
-        result.enka = EnkaAssets(lang='chs').namecards(target)
+        result.enka = DEFAULT_EnkaAssets.namecards(target)
         return result
 
     async def _get_from_ambr(self, item: str) -> Path | None:
-        if item == 'profile':
+        if item == "profile":
             url = AMBR_HOST.join(f"assets/UI/namecard/{self.game_name_map[item]}.png.png")
             return await self._download(url, self.path.joinpath(f"{item}.png"))
 
     async def _get_from_enka(self, item: str) -> Path | None:
         path = self.path.joinpath(f"{item}.png")
-        url = getattr(self.enka, {'profile': 'banner'}.get(item, item), None)
+        url = getattr(self.enka, {"profile": "banner"}.get(item, item), None)
         if url is not None:
             return await self._download(url.url, path)
 
     @cached_property
     def game_name_map(self) -> dict[str, str]:
         return {
-            'icon': self.game_name,
-            'navbar': NAMECARD_DATA[str(self.id)]['navbar'],
-            'profile': NAMECARD_DATA[str(self.id)]['profile']
+            "icon": self.game_name,
+            "navbar": NAMECARD_DATA[str(self.id)]["navbar"],
+            "profile": NAMECARD_DATA[str(self.id)]["profile"],
         }
 
     @cached_property
     def honey_name_map(self) -> dict[str, str]:
         return {
-            'icon': self.honey_id,
-            'navbar': f"{self.honey_id}_back",
-            'profile': f"{self.honey_id}_profile",
+            "icon": self.honey_id,
+            "navbar": f"{self.honey_id}_back",
+            "profile": f"{self.honey_id}_profile",
         }
 
 
@@ -497,8 +484,7 @@ class AssetsService(Service):
 
     def __init__(self):
         for attr, assets_type_name in filter(
-                lambda x: (not x[0].startswith('_')) and x[1].endswith('Assets'),
-                self.__annotations__.items()
+            lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
         ):
             setattr(self, attr, globals()[assets_type_name]())
 
@@ -510,4 +496,4 @@ class AssetsService(Service):
         logger.info("刷新元数据成功")
 
 
-AssetsServiceType = TypeVar('AssetsServiceType', bound=_AssetsService)
+AssetsServiceType = TypeVar("AssetsServiceType", bound=_AssetsService)

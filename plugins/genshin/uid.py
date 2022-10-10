@@ -107,7 +107,7 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
         try:
             cookies = await self.public_cookies_service.get_cookies(user.id, region)
         except TooManyRequestPublicCookies:
-            await message.reply_text("Cookies公共池已经使用完，请稍后重试", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if region == RegionEnum.HYPERION:
             client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)

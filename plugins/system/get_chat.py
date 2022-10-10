@@ -1,3 +1,4 @@
+import contextlib
 from typing import List
 
 from telegram import Update, Chat, ChatMember, ChatMemberOwner, ChatMemberAdministrator
@@ -9,8 +10,10 @@ from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from modules.apihelper.gacha_log import GachaLog
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
+from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.models.base import RegionEnum
 
@@ -46,8 +49,9 @@ class GetChat(Plugin):
         return text
 
     async def parse_private_chat(self, chat: Chat) -> str:
-        text = f"用户 ID：<code>{chat.id}</code>\n" \
-                   f"用户名称：<code>{chat.full_name}</code>\n"
+        text = f"<a href=\"tg://user?id={chat.id}\">MENTION</a>\n" \
+               f"用户 ID：<code>{chat.id}</code>\n" \
+               f"用户名称：<code>{chat.full_name}</code>\n"
         if chat.username:
             text += f"用户名：@{chat.username}\n"
         try:
@@ -55,14 +59,28 @@ class GetChat(Plugin):
         except UserNotFoundError:
             user_info = None
         if user_info is not None:
-            text += "米游社绑定：" if user_info.region == RegionEnum.HYPERION else "HOYOLAB 绑定："
+            if user_info.region == RegionEnum.HYPERION:
+                text += "米游社绑定："
+                uid = user_info.yuanshen_uid
+            else:
+                text += "原神绑定："
+                uid = user_info.genshin_uid
             temp = "Cookie 绑定"
             try:
-                await self.cookies_service.get_cookies(chat.id, user_info.region)
+                await get_genshin_client(chat.id)
             except CookiesNotFoundError:
                 temp = "UID 绑定"
             text += f"<code>{temp}</code>\n" \
-                    f"游戏 ID：<code>{user_info.genshin_uid or user_info.yuanshen_uid}</code>"
+                    f"游戏 ID：<code>{uid}</code>"
+            with contextlib.suppress(Exception):
+                gacha_log, status = await GachaLog.load_history_info(str(chat.id), str(uid))
+                if status:
+                    text += f"\n抽卡记录："
+                    for key, value in gacha_log.item_list.items():
+                        text += f"\n   - {key}：{len(value)} 条"
+                    text += f"\n   - 最后更新：{gacha_log.update_time.strftime('%Y-%m-%d %H:%M:%S')}"
+                else:
+                    text += f"\n抽卡记录：<code>未导入</code>"
         return text
 
     @handler(CommandHandler, command="get_chat", block=False)
