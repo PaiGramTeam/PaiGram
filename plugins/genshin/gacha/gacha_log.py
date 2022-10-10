@@ -145,16 +145,21 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text(
                 "<b>导入祈愿历史记录</b>\n\n"
                 "1.请发送从其他工具导出的 UIGF JSON 标准的记录文件\n"
-                "2.你还可以向派蒙发送从游戏中获取到的抽卡记录链接\n\n"
+                "2.你还可以向派蒙发送从游戏中获取到的抽卡记录链接\n"
+                "3.你还可以在绑定时手动添加 stoken 来自动刷新抽卡记录（仅限国服）\n"
                 "<b>注意：导入的数据将会与旧数据进行合并。</b>\n"
                 "获取抽卡记录链接可以参考：https://paimon.moe/wish/import",
                 parse_mode="html",
             )
             return INPUT_URL
-        reply = await message.reply_text("小派蒙正在从米哈游服务器获取数据，请稍后")
+        text = "小派蒙正在从米哈游服务器获取数据，请稍后"
+        if not args:
+            text += "\n\n> 由于你绑定的 Cookie 中存在 Stoken ，本次通过 Stoken 自动刷新数据"
+        reply = await message.reply_text(text)
         await message.reply_chat_action(ChatAction.TYPING)
         data = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(data)
+        return ConversationHandler.END
 
     @conversation.state(state=INPUT_URL)
     @handler.message(filters=~filters.COMMAND, block=False)
