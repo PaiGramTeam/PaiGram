@@ -88,7 +88,8 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             data = data.getvalue().decode("utf-8")
             data = json.loads(data)
         except Exception as exc:
-            logger.error(f"文件解析失败：{repr(exc)}")
+            if not isinstance(exc, UnicodeDecodeError):
+                logger.error(f"文件解析失败：{repr(exc)}")
             await message.reply_text("文件解析失败，请检查文件是否符合 UIGF 标准")
             return
         await message.reply_chat_action(ChatAction.TYPING)
@@ -143,18 +144,17 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                         authkey = await SignIn.get_authkey_by_stoken(client)
         if not authkey:
             await message.reply_text(
-                "<b>导入祈愿历史记录</b>\n\n"
-                "1.请发送从其他工具导出的 UIGF JSON 标准的记录文件\n"
-                "2.你还可以向派蒙发送从游戏中获取到的抽卡记录链接\n"
-                "3.你还可以在绑定时手动添加 stoken 来自动刷新抽卡记录（仅限国服）\n"
-                "<b>注意：导入的数据将会与旧数据进行合并。</b>\n"
-                "获取抽卡记录链接可以参考：https://paimon.moe/wish/import",
+                "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
+                "（非 paimon.moe 导出的文件数据）</b>\n\n"
+                "> 你还可以向派蒙发送从其他工具导出的 UIGF JSON 标准的记录文件\n"
+                "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
+                "<b>注意：导入的数据将会与旧数据进行合并。</b>",
                 parse_mode="html",
             )
             return INPUT_URL
         text = "小派蒙正在从米哈游服务器获取数据，请稍后"
         if not args:
-            text += "\n\n> 由于你绑定的 Cookie 中存在 Stoken ，本次通过 Stoken 自动刷新数据"
+            text += "\n\n> 由于你绑定的 Cookie 中存在 stoken ，本次通过 stoken 自动刷新数据"
         reply = await message.reply_text(text)
         await message.reply_chat_action(ChatAction.TYPING)
         data = await self._refresh_user_data(user, authkey=authkey)
