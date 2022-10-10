@@ -32,7 +32,7 @@ class AbyssTeam(Plugin, BasePlugin):
     @handler(MessageHandler, filters=filters.Regex("^深渊推荐配队(.*)"), block=False)
     @restricts()
     @error_callable
-    async def command_start(self, update: Update, _: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] 查深渊推荐配队命令请求")
