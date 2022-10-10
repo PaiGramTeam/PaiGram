@@ -50,6 +50,8 @@ class Sign(Plugin, BasePlugin):
     async def pass_challenge(gt: str, challenge: str, referer: str = None) -> Optional[Dict]:
         """尝试自动通过验证，感谢项目 AutoMihoyoBBS 的贡献者 和 @coolxitech 大佬提供的方案
 
+        https://github.com/Womsxd/AutoMihoyoBBS
+
         https://github.com/coolxitech/mihoyo
         """
         if not gt or not challenge:
@@ -63,7 +65,7 @@ class Sign(Plugin, BasePlugin):
             "Accept": "*/*",
             "X-Requested-With": "com.mihoyo.hyperion",
             "User-Agent": "Mozilla/5.0 (Linux; Android 12; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/2.37.1",
+            "Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/2.37.1",
             "Referer": referer,
             "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
         }
@@ -86,7 +88,7 @@ class Sign(Plugin, BasePlugin):
                     timeout=20,
                 )
             text = req.text
-            logger.info(f"ajax 返回：{text}")
+            logger.debug(f"ajax 返回：{text}")
             if req.status_code != 200:
                 raise RuntimeError
             text = re.findall(r"^.*?\((\{.*?)\)$", text)[0]
@@ -101,7 +103,7 @@ class Sign(Plugin, BasePlugin):
             logger.warning("签到ajax自动通过JSON解析失败")
         except TimeoutException:
             logger.warning("签到ajax自动通过请求超时")
-        except KeyError:
+        except (KeyError, IndexError):
             logger.warning("签到ajax自动通过数据错误")
         except RuntimeError:
             logger.warning("签到ajax自动通过请求错误")
@@ -129,7 +131,7 @@ class Sign(Plugin, BasePlugin):
             if status is not None:
                 if status != 0:
                     logger.error(f"签到自定义打码平台解析错误：{data.get('msg')}")
-            if data.get("code") != 0:
+            if data.get("code", 0) != 0:
                 raise RuntimeError
             return {
                 "x-rpc-challenge": data["data"]["challenge"],
