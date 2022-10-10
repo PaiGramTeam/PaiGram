@@ -30,7 +30,7 @@ async def test_abyss_team_data(abyss_team_data: AbyssTeamData):
     team_data.sort(["迪奥娜", "芭芭拉", "凯亚", "琴"])
     assert isinstance(team_data.rate_list_full[0], FullTeamRate)
     assert isinstance(team_data.rate_list_full[-1], FullTeamRate)
-    random_team = team_data.random_team(["迪奥娜", "芭芭拉", "凯亚", "琴"])
+    random_team = team_data.random_team()[0]
     assert isinstance(random_team, FullTeamRate)
     member_up = {i.name for i in random_team.up.formation}
     member_down = {i.name for i in random_team.down.formation}
