@@ -41,13 +41,12 @@ class SignJob(Plugin):
         if not daily_reward_info.signed_in:
             request_daily_reward = await client.request_daily_reward("sign", method="POST", game=Game.GENSHIN)
             if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                # 米游社国内签到自动打码
                 headers = await Sign.pass_challenge(
                     request_daily_reward.get("gt", ""),
                     request_daily_reward.get("challenge", ""),
                 )
                 if not headers:
-                    logger.warning(f"UID {client.uid} 签到失败，触发验证码风控 | 打码平台打码失败，请检查")
+                    logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                     raise NeedChallenge
                 request_daily_reward = await client.request_daily_reward(
                     "sign",
@@ -57,9 +56,9 @@ class SignJob(Plugin):
                     headers=headers,
                 )
                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                    logger.warning(f"UID {client.uid} 签到失败，触发验证码风控 | 打码平台打码失败，请检查")
+                    logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                     raise NeedChallenge
-                logger.info(f"UID {client.uid} 签到请求 {request_daily_reward} | 通过自动打码签到成功")
+                logger.info(f"UID {client.uid} 签到请求 {request_daily_reward} | 签到成功")
             else:
                 logger.info(f"UID {client.uid} 签到请求 {request_daily_reward}")
             result = "OK"
