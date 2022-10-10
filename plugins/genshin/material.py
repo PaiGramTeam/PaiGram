@@ -16,9 +16,7 @@ from utils.log import logger
 class Material(Plugin, BasePlugin):
     """角色培养素材查询"""
 
-    KEYBOARD = [[InlineKeyboardButton(
-        text="查看角色培养素材列表并查询",
-        switch_inline_query_current_chat="查看角色培养素材列表并查询")]]
+    KEYBOARD = [[InlineKeyboardButton(text="查看角色培养素材列表并查询", switch_inline_query_current_chat="查看角色培养素材列表并查询")]]
 
     def __init__(self, game_material_service: GameMaterialService = None):
         self.game_material_service = game_material_service
@@ -34,8 +32,9 @@ class Material(Plugin, BasePlugin):
         if len(args) >= 1:
             character_name = args[0]
         else:
-            reply_message = await message.reply_text("请回复你要查询的培养素材的角色名",
-                                                     reply_markup=InlineKeyboardMarkup(self.KEYBOARD))
+            reply_message = await message.reply_text(
+                "请回复你要查询的培养素材的角色名", reply_markup=InlineKeyboardMarkup(self.KEYBOARD)
+            )
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
@@ -43,8 +42,9 @@ class Material(Plugin, BasePlugin):
         character_name = roleToName(character_name)
         url = await self.game_material_service.get_material(character_name)
         if not url:
-            reply_message = await message.reply_text(f"没有找到 {character_name} 的培养素材",
-                                                     reply_markup=InlineKeyboardMarkup(self.KEYBOARD))
+            reply_message = await message.reply_text(
+                f"没有找到 {character_name} 的培养素材", reply_markup=InlineKeyboardMarkup(self.KEYBOARD)
+            )
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
@@ -52,7 +52,11 @@ class Material(Plugin, BasePlugin):
         logger.info(f"用户 {user.full_name}[{user.id}] 查询角色培养素材命令请求 || 参数 {character_name}")
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         file_path = await url_to_file(url, return_path=True)
-        caption = "From 米游社 " \
-                  f"查看 [原图]({url})"
-        await message.reply_photo(photo=open(file_path, "rb"), caption=caption, filename=f"{character_name}.png",
-                                  allow_sending_without_reply=True, parse_mode=ParseMode.MARKDOWN_V2)
+        caption = "From 米游社 " f"查看 [原图]({url})"
+        await message.reply_photo(
+            photo=open(file_path, "rb"),
+            caption=caption,
+            filename=f"{character_name}.png",
+            allow_sending_without_reply=True,
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )

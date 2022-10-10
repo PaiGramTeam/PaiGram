@@ -25,15 +25,14 @@ class GetChat(Plugin):
 
     @staticmethod
     def parse_group_chat(chat: Chat, admins: List[ChatMember]) -> str:
-        text = f"群 ID：<code>{chat.id}</code>\n" \
-               f"群名称：<code>{chat.title}</code>\n"
+        text = f"群 ID：<code>{chat.id}</code>\n" f"群名称：<code>{chat.title}</code>\n"
         if chat.username:
             text += f"群用户名：<code>{chat.username}</code>\n"
         if chat.description:
             text += f"群简介：<code>{chat.description}</code>\n"
         if admins:
             for admin in admins:
-                text += f"<a href=\"tg://user?id={admin.user.id}\">{admin.user.full_name}</a> "
+                text += f'<a href="tg://user?id={admin.user.id}">{admin.user.full_name}</a> '
                 if isinstance(admin, ChatMemberAdministrator):
                     text += "C" if admin.can_change_info else "_"
                     text += "D" if admin.can_delete_messages else "_"
@@ -49,9 +48,11 @@ class GetChat(Plugin):
         return text
 
     async def parse_private_chat(self, chat: Chat) -> str:
-        text = f"<a href=\"tg://user?id={chat.id}\">MENTION</a>\n" \
-               f"用户 ID：<code>{chat.id}</code>\n" \
-               f"用户名称：<code>{chat.full_name}</code>\n"
+        text = (
+            f'<a href="tg://user?id={chat.id}">MENTION</a>\n'
+            f"用户 ID：<code>{chat.id}</code>\n"
+            f"用户名称：<code>{chat.full_name}</code>\n"
+        )
         if chat.username:
             text += f"用户名：@{chat.username}\n"
         try:
@@ -70,8 +71,7 @@ class GetChat(Plugin):
                 await get_genshin_client(chat.id)
             except CookiesNotFoundError:
                 temp = "UID 绑定"
-            text += f"<code>{temp}</code>\n" \
-                    f"游戏 ID：<code>{uid}</code>"
+            text += f"<code>{temp}</code>\n" f"游戏 ID：<code>{uid}</code>"
             with contextlib.suppress(Exception):
                 gacha_log, status = await GachaLog.load_history_info(str(chat.id), str(uid))
                 if status:

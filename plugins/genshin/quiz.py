@@ -50,8 +50,13 @@ class QuizPlugin(Plugin, BasePlugin):
             return None
         random.shuffle(_options)
         index = _options.index(correct_option)
-        poll_message = await update.effective_message.reply_poll(question.text, _options,
-                                                                 correct_option_id=index, is_anonymous=False,
-                                                                 open_period=self.time_out, type=Poll.QUIZ)
+        poll_message = await update.effective_message.reply_poll(
+            question.text,
+            _options,
+            correct_option_id=index,
+            is_anonymous=False,
+            open_period=self.time_out,
+            type=Poll.QUIZ,
+        )
         self._add_delete_message_job(context, update.message.chat_id, update.message.message_id, 300)
         self._add_delete_message_job(context, poll_message.chat_id, poll_message.message_id, 300)

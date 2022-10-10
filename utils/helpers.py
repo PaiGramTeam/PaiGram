@@ -20,12 +20,14 @@ from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 from utils.models.base import RegionEnum
 
-T = TypeVar('T')
-P = ParamSpec('P')
+T = TypeVar("T")
+P = ParamSpec("P")
 
-USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
-                  "Chrome/90.0.4430.72 Safari/537.36"
-REQUEST_HEADERS: dict = {'User-Agent': USER_AGENT}
+USER_AGENT: str = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/90.0.4430.72 Safari/537.36"
+)
+REQUEST_HEADERS: dict = {"User-Agent": USER_AGENT}
 current_dir = os.getcwd()
 cache_dir = os.path.join(current_dir, "cache")
 if not os.path.exists(cache_dir):
@@ -74,7 +76,7 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
         if data.status_code != 200:
             logger.error(f"url_to_file 获取url[{url}] 错误 status_code[f{data.status_code}]")
             raise UrlResourcesNotFoundError(url)
-        async with aiofiles.open(file_dir, mode='wb') as f:
+        async with aiofiles.open(file_dir, mode="wb") as f:
             await f.write(data.content)
     logger.debug(f"url_to_file 获取url[{url}] 并下载到 file_dir[{file_dir}]")
 
@@ -101,8 +103,9 @@ async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, 
         client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
     elif region == RegionEnum.HOYOLAB:
         uid = user.genshin_uid
-        client = genshin.Client(cookies=cookies,
-                                game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid)
+        client = genshin.Client(
+            cookies=cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid
+        )
     else:
         raise TypeError("region is not RegionEnum.NULL")
     return client
@@ -121,8 +124,9 @@ async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]
         client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)
     elif region == RegionEnum.HOYOLAB:
         uid = user.genshin_uid
-        client = genshin.Client(cookies=cookies.cookies,
-                                game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn")
+        client = genshin.Client(
+            cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
+        )
     else:
         raise TypeError("region is not RegionEnum.NULL")
     return client, uid
@@ -142,25 +146,18 @@ def region_server(uid: Union[int, str]) -> RegionEnum:
 
 
 async def execute(command, pass_error=True):
-    """ Executes command and returns output, with the option of enabling stderr. """
-    executor = await create_subprocess_shell(
-        command,
-        stdout=PIPE,
-        stderr=PIPE,
-        stdin=PIPE
-    )
+    """Executes command and returns output, with the option of enabling stderr."""
+    executor = await create_subprocess_shell(command, stdout=PIPE, stderr=PIPE, stdin=PIPE)
 
     stdout, stderr = await executor.communicate()
     if pass_error:
         try:
-            result = str(stdout.decode().strip()) \
-                     + str(stderr.decode().strip())
+            result = str(stdout.decode().strip()) + str(stderr.decode().strip())
         except UnicodeDecodeError:
-            result = str(stdout.decode('gbk').strip()) \
-                     + str(stderr.decode('gbk').strip())
+            result = str(stdout.decode("gbk").strip()) + str(stderr.decode("gbk").strip())
     else:
         try:
             result = str(stdout.decode().strip())
         except UnicodeDecodeError:
-            result = str(stdout.decode('gbk').strip())
+            result = str(stdout.decode("gbk").strip())
     return result

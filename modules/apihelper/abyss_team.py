@@ -1,4 +1,3 @@
-import secrets
 import time
 from typing import List, Optional, Any
 
@@ -17,9 +16,9 @@ class TeamRate(BaseModel):
     formation: List[Member]
     owner_num: Optional[int]
 
-    @validator('rate', pre=True)
+    @validator("rate", pre=True)
     def str2float(cls, v):  # pylint: disable=R0201
-        return float(v.replace('%', '')) / 100.0 if isinstance(v, str) else v
+        return float(v.replace("%", "")) / 100.0 if isinstance(v, str) else v
 
 
 class FullTeamRate(BaseModel):
@@ -30,10 +29,11 @@ class FullTeamRate(BaseModel):
 
     @property
     def rate(self) -> float:
-        return self.up.rate + self.down.rate
+        return (self.up.rate + self.down.rate) / 2
 
 
 class TeamRateResult(BaseModel):
+    version: str
     rate_list_up: List[TeamRate]
     rate_list_down: List[TeamRate]
     rate_list_full: List[FullTeamRate] = []
@@ -50,28 +50,35 @@ class TeamRateResult(BaseModel):
     def sort(self, characters: List[str]):
         for team in self.rate_list_full:
             team.owner_num = sum(member.name in characters for member in team.up.formation + team.down.formation)
-            team.nice = team.owner_num / 8 * team.rate
+            team.nice = team.owner_num / 8 + team.rate
         self.rate_list_full.sort(key=lambda x: x.nice, reverse=True)
 
-    def random_team(self, characters: List[str]) -> FullTeamRate:
-        self.sort(characters)
-        max_nice = self.rate_list_full[0].nice
-        nice_teams: List[FullTeamRate] = []
+    def random_team(self) -> List[FullTeamRate]:
+        data: List[FullTeamRate] = []
         for team in self.rate_list_full:
-            if team.nice < max_nice:
-                break
-            nice_teams.append(team)
-        return secrets.choice(nice_teams)
+            add = True
+            for team_ in data:
+                if {member.name for member in team.up.formation} & {member.name for member in team_.up.formation}:
+                    add = False
+                    break
+                if {member.name for member in team.down.formation} & {member.name for member in team_.down.formation}:
+                    add = False
+                    break
+            if add:
+                data.append(team)
+                if len(data) >= 3:
+                    break
+        return data
 
 
 class AbyssTeamData:
     TEAM_RATE_API = "https://www.youchuang.fun/gamerole/formationRate"
     HEADERS = {
-        'Host': 'www.youchuang.fun',
-        'Referer': 'https://servicewechat.com/wxce4dbe0cb0f764b3/91/page-frame.html',
-        'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 15_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) '
-                      'Mobile/15E148 MicroMessenger/8.0.20(0x1800142f) NetType/WIFI Language/zh_CN',
-        'content-type': 'application/json'
+        "Host": "www.youchuang.fun",
+        "Referer": "https://servicewechat.com/wxce4dbe0cb0f764b3/91/page-frame.html",
+        "User-Agent": "Mozilla/5.0 (iPad; CPU OS 15_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) "
+        "Mobile/15E148 MicroMessenger/8.0.20(0x1800142f) NetType/WIFI Language/zh_CN",
+        "content-type": "application/json",
     }
     VERSION = "3.1"
 
@@ -87,9 +94,12 @@ class AbyssTeamData:
             data_up_json = data_up.json()["result"]
             data_down = await self.client.post(self.TEAM_RATE_API, json={"version": self.VERSION, "layer": 2})
             data_down_json = data_down.json()["result"]
-            self.data = TeamRateResult(rate_list_up=parse_obj_as(List[TeamRate], data_up_json["rateList"]),
-                                       rate_list_down=parse_obj_as(List[TeamRate], data_down_json["rateList"]),
-                                       user_count=data_up_json["userCount"])
+            self.data = TeamRateResult(
+                version=self.VERSION,
+                rate_list_up=parse_obj_as(List[TeamRate], data_up_json["rateList"]),
+                rate_list_down=parse_obj_as(List[TeamRate], data_down_json["rateList"]),
+                user_count=data_up_json["userCount"],
+            )
             self.time = time.time()
         return self.data.copy(deep=True)
 

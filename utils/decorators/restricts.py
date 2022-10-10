@@ -11,8 +11,12 @@ from utils.log import logger
 _lock = asyncio.Lock()
 
 
-def restricts(restricts_time: int = 9, restricts_time_of_groups: Optional[int] = None, return_data: Any = None,
-              without_overlapping: bool = False):
+def restricts(
+    restricts_time: int = 9,
+    restricts_time_of_groups: Optional[int] = None,
+    return_data: Any = None,
+    without_overlapping: bool = False,
+):
     """用于装饰在指定函数预防洪水攻击的装饰器
 
     被修饰的函数生声明必须为

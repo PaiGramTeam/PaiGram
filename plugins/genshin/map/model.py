@@ -16,9 +16,9 @@ RESOURCE_ICON_OFFSET = (-int(150 * 0.5 * ZOOM), -int(150 * ZOOM))
 
 
 class MapHelper:
-    LABEL_URL = 'https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/label/tree?app_sn=ys_obc'
-    POINT_LIST_URL = 'https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/point/list?map_id=2&app_sn=ys_obc'
-    MAP_URL = 'https://api-static.mihoyo.com/common/map_user/ys_obc/v1/map/info?map_id=2&app_sn=ys_obc&lang=zh-cn'
+    LABEL_URL = "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/label/tree?app_sn=ys_obc"
+    POINT_LIST_URL = "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/point/list?map_id=2&app_sn=ys_obc"
+    MAP_URL = "https://api-static.mihoyo.com/common/map_user/ys_obc/v1/map/info?map_id=2&app_sn=ys_obc&lang=zh-cn"
 
     def __init__(self, cache_dir_name: str = "cache"):
         self._current_dir = os.getcwd()
@@ -109,11 +109,11 @@ class MapHelper:
         map_info = map_info["data"]["info"]["detail"]
         map_info = ujson.loads(map_info)
 
-        map_url_list = map_info['slices'][0]
+        map_url_list = map_info["slices"][0]
         origin = map_info["origin"]
 
-        x_start = map_info['total_size'][1]
-        y_start = map_info['total_size'][1]
+        x_start = map_info["total_size"][1]
+        y_start = map_info["total_size"][1]
         x_end = 0
         y_end = 0
         for resource_point in self.all_resource_point_list:
@@ -223,7 +223,6 @@ class MapHelper:
 
 
 class ResourceMap:
-
     def __init__(self, all_resource_point_list: List[dict], map_icon: Image, center: List[float], resource_id: int):
         self.all_resource_point_list = all_resource_point_list
         self.resource_id = resource_id
@@ -263,8 +262,9 @@ class ResourceMap:
             # 这时地图已经裁切过了，要以裁切后的地图左上角为中心再转换一次坐标
             x -= self.x_start
             y -= self.y_start
-            self.map_image.paste(self.resource_icon, (x + RESOURCE_ICON_OFFSET[0], y + RESOURCE_ICON_OFFSET[1]),
-                                 self.resource_icon)
+            self.map_image.paste(
+                self.resource_icon, (x + RESOURCE_ICON_OFFSET[0], y + RESOURCE_ICON_OFFSET[1]), self.resource_icon
+            )
 
     def crop(self):
         # 把大地图裁切到只保留资源图标位置
@@ -291,8 +291,7 @@ class ResourceMap:
             self.y_start = center - 500
             self.y_end = center + 500
 
-        self.map_image = self.map_image.crop((self.x_start, self.y_start,
-                                              self.x_end, self.y_end))
+        self.map_image = self.map_image.crop((self.x_start, self.y_start, self.x_end, self.y_end))
 
     def gen_jpg(self):
         if not self.resource_xy_list:
@@ -301,7 +300,7 @@ class ResourceMap:
             os.mkdir("cache")  # 查找 cache 目录 (缓存目录) 是否存在，如果不存在则创建
         self.crop()
         self.paste()
-        self.map_image.save(f'cache{os.sep}map.jpg', format='JPEG')
+        self.map_image.save(f"cache{os.sep}map.jpg", format="JPEG")
 
     def get_resource_count(self):
         return len(self.resource_xy_list)

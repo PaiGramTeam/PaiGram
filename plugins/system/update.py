@@ -21,7 +21,6 @@ UPDATE_DATA = os.path.join(current_dir, "data", "update.json")
 
 
 class UpdatePlugin(Plugin):
-
     def __init__(self):
         self._lock = asyncio.Lock()
 
@@ -59,6 +58,6 @@ class UpdatePlugin(Plugin):
                 await execute(f"{executable} -m poetry install --extras all")
             logger.info(f"更新成功 正在重启")
             await reply_text.edit_text("更新成功 正在重启")
-            async with async_open(UPDATE_DATA, mode='w', encoding='utf-8') as file:
+            async with async_open(UPDATE_DATA, mode="w", encoding="utf-8") as file:
                 await file.write(reply_text.to_json())
         raise SystemExit

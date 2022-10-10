@@ -5,8 +5,7 @@ from typing import Optional
 from genshin import DataNotPublic
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, \
-    CallbackContext
+from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, CallbackContext
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
@@ -24,8 +23,12 @@ from utils.log import logger
 class DailyNote(Plugin, BasePlugin):
     """每日便签"""
 
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None,
-                 template_service: TemplateService = None):
+    def __init__(
+        self,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+        template_service: TemplateService = None,
+    ):
         self.template_service = template_service
         self.cookies_service = cookies_service
         self.user_service = user_service
@@ -34,11 +37,18 @@ class DailyNote(Plugin, BasePlugin):
     async def _get_daily_note(self, client) -> bytes:
         daily_info = await client.get_genshin_notes(client.uid)
         day = datetime.datetime.now().strftime("%m-%d %H:%M") + " 星期" + "一二三四五六日"[datetime.datetime.now().weekday()]
-        resin_recovery_time = daily_info.resin_recovery_time.strftime("%m-%d %H:%M") if \
-            daily_info.max_resin - daily_info.current_resin else None
-        realm_recovery_time = (datetime.datetime.now().astimezone() +
-                               daily_info.remaining_realm_currency_recovery_time).strftime("%m-%d %H:%M") if \
-            daily_info.max_realm_currency - daily_info.current_realm_currency else None
+        resin_recovery_time = (
+            daily_info.resin_recovery_time.strftime("%m-%d %H:%M")
+            if daily_info.max_resin - daily_info.current_resin
+            else None
+        )
+        realm_recovery_time = (
+            (datetime.datetime.now().astimezone() + daily_info.remaining_realm_currency_recovery_time).strftime(
+                "%m-%d %H:%M"
+            )
+            if daily_info.max_realm_currency - daily_info.current_realm_currency
+            else None
+        )
         remained_time = None
         for i in daily_info.expeditions:
             if remained_time:
@@ -73,10 +83,11 @@ class DailyNote(Plugin, BasePlugin):
             "max_resin_discounts": daily_info.max_resin_discounts,
             "transformer": transformer,
             "transformer_ready": transformer_ready,
-            "transformer_recovery_time": transformer_recovery_time
+            "transformer_recovery_time": transformer_recovery_time,
         }
-        png_data = await self.template_service.render('genshin/daily_note', "daily_note.html", daily_data,
-                                                      {"width": 600, "height": 548}, full_page=False)
+        png_data = await self.template_service.render(
+            "genshin/daily_note", "daily_note.html", daily_data, {"width": 600, "height": 548}, full_page=False
+        )
         return png_data
 
     @handler(CommandHandler, command="dailynote", block=False)

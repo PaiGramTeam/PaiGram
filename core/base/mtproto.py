@@ -20,13 +20,12 @@ from core.service import Service
 
 
 class MTProto(Service):
-
     async def get_session(self):
-        async with aiofiles.open(self.session_path, mode='r') as f:
+        async with aiofiles.open(self.session_path, mode="r") as f:
             return await f.read()
 
     async def set_session(self, b: str):
-        async with aiofiles.open(self.session_path, mode='w+') as f:
+        async with aiofiles.open(self.session_path, mode="w+") as f:
             await f.write(b)
 
     def session_exists(self):
@@ -53,8 +52,13 @@ class MTProto(Service):
         if bot.config.mtproto.api_hash is None:
             logger.info("MTProto 服务需要的 api_hash 未配置 本次服务 client 为 None")
             return
-        self.client = Client(api_id=bot.config.mtproto.api_id, api_hash=bot.config.mtproto.api_hash, name=self.name,
-                             bot_token=bot.config.bot_token, proxy=self.proxy)
+        self.client = Client(
+            api_id=bot.config.mtproto.api_id,
+            api_hash=bot.config.mtproto.api_hash,
+            name=self.name,
+            bot_token=bot.config.bot_token,
+            proxy=self.proxy,
+        )
         await self.client.start()
 
     async def stop(self):  # pylint: disable=W0221

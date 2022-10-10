@@ -55,13 +55,9 @@ class UserStatsPlugins(Plugin, BasePlugin):
         except UserNotFoundError:
             reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(
-                    context, reply_message.chat_id, reply_message.message_id, 30
-                )
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
 
-                self._add_delete_message_job(
-                    context, message.chat_id, message.message_id, 30
-                )
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多 请稍后重试")
@@ -72,9 +68,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
             await message.reply_text("角色数据有误 估计是派蒙晕了")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await message.reply_photo(
-            png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True
-        )
+        await message.reply_photo(png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True)
 
     async def render(self, client: Client, uid: Optional[int] = None) -> bytes:
         if uid is None:
@@ -109,7 +103,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
                 ("雷神瞳", "electroculi"),
                 ("草神瞳", "dendroculi"),
             ],
-            "style": secrets.choice(["mondstadt", "liyue"])
+            "style": secrets.choice(["mondstadt", "liyue"]),
         }
 
         # html = await self.template_service.render_async(

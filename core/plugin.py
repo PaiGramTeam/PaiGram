@@ -7,43 +7,42 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Un
 
 # noinspection PyProtectedMember
 from telegram._utils.defaultvalue import DEFAULT_TRUE
+
 # noinspection PyProtectedMember
 from telegram._utils.types import DVInput, JSONDict
 from telegram.ext import BaseHandler, ConversationHandler, Job
+
 # noinspection PyProtectedMember
 from telegram.ext._utils.types import JobCallback
 from telegram.ext.filters import BaseFilter
 from typing_extensions import ParamSpec
 
-__all__ = [
-    'Plugin', 'handler', 'conversation', 'job', 'error_handler'
-]
+__all__ = ["Plugin", "handler", "conversation", "job", "error_handler"]
 
-P = ParamSpec('P')
-T = TypeVar('T')
-HandlerType = TypeVar('HandlerType', bound=BaseHandler)
+P = ParamSpec("P")
+T = TypeVar("T")
+HandlerType = TypeVar("HandlerType", bound=BaseHandler)
 TimeType = Union[float, datetime.timedelta, datetime.datetime, datetime.time]
 
-_Module = import_module('telegram.ext')
+_Module = import_module("telegram.ext")
 
 _NORMAL_HANDLER_ATTR_NAME = "_handler_data"
 _CONVERSATION_HANDLER_ATTR_NAME = "_conversation_data"
 _JOB_ATTR_NAME = "_job_data"
 
-_EXCLUDE_ATTRS = ['handlers', 'jobs', 'error_handlers']
+_EXCLUDE_ATTRS = ["handlers", "jobs", "error_handlers"]
 
 
 class _Plugin:
-
     def _make_handler(self, datas: Union[List[Dict], Dict]) -> List[HandlerType]:
         result = []
         if isinstance(datas, list):
             for data in filter(lambda x: x, datas):
-                func = getattr(self, data.pop('func'))
-                result.append(data.pop('type')(callback=func, **data.pop('kwargs')))
+                func = getattr(self, data.pop("func"))
+                result.append(data.pop("type")(callback=func, **data.pop("kwargs")))
         else:
-            func = getattr(self, datas.pop('func'))
-            result.append(datas.pop('type')(callback=func, **datas.pop('kwargs')))
+            func = getattr(self, datas.pop("func"))
+            result.append(datas.pop("type")(callback=func, **datas.pop("kwargs")))
         return result
 
     @property
@@ -52,14 +51,12 @@ class _Plugin:
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                    not (attr.startswith('_') or attr in _EXCLUDE_ATTRS)
-                    and
-                    isinstance(func := getattr(self, attr), MethodType)
-                    and
-                    (datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+                not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                and isinstance(func := getattr(self, attr), MethodType)
+                and (datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
                 for data in datas:
-                    if data['type'] not in ['error', 'new_chat_member']:
+                    if data["type"] not in ["error", "new_chat_member"]:
                         result.extend(self._make_handler(data))
         return result
 
@@ -69,15 +66,13 @@ class _Plugin:
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                    not (attr.startswith('_') or attr in _EXCLUDE_ATTRS)
-                    and
-                    isinstance(func := getattr(self, attr), MethodType)
-                    and
-                    (datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+                not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                and isinstance(func := getattr(self, attr), MethodType)
+                and (datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
                 for data in datas:
-                    if data and data['type'] == 'new_chat_member':
-                        result.append((data['priority'], func))
+                    if data and data["type"] == "new_chat_member":
+                        result.append((data["priority"], func))
 
         return result
 
@@ -87,34 +82,30 @@ class _Plugin:
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                    not (attr.startswith('_') or attr in _EXCLUDE_ATTRS)
-                    and
-                    isinstance(func := getattr(self, attr), MethodType)
-                    and
-                    (datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+                not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                and isinstance(func := getattr(self, attr), MethodType)
+                and (datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
                 for data in datas:
-                    if data and data['type'] == 'error':
-                        result.update({func: data['block']})
+                    if data and data["type"] == "error":
+                        result.update({func: data["block"]})
         return result
 
     @property
     def jobs(self) -> List[Job]:
         from core.bot import bot
+
         result = []
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                    not (attr.startswith('_') or attr in _EXCLUDE_ATTRS)
-                    and
-                    isinstance(func := getattr(self, attr), MethodType)
-                    and
-                    (datas := getattr(func, _JOB_ATTR_NAME, None))
+                not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                and isinstance(func := getattr(self, attr), MethodType)
+                and (datas := getattr(func, _JOB_ATTR_NAME, None))
             ):
                 for data in datas:
-                    _job = getattr(bot.job_queue, data.pop('type'))(
-                        callback=func, **data.pop('kwargs'),
-                        **{key: data.pop(key) for key in list(data.keys())}
+                    _job = getattr(bot.job_queue, data.pop("type"))(
+                        callback=func, **data.pop("kwargs"), **{key: data.pop(key) for key in list(data.keys())}
                     )
                     result.append(_job)
         return result
@@ -138,30 +129,27 @@ class _Conversation(_Plugin):
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                    not (attr.startswith('_') or attr == 'handlers')
-                    and
-                    isinstance(func := getattr(self, attr), Callable)
-                    and
-                    (handler_datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
+                not (attr.startswith("_") or attr == "handlers")
+                and isinstance(func := getattr(self, attr), Callable)
+                and (handler_datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
                 _handlers = self._make_handler(handler_datas)
                 if conversation_data := getattr(func, _CONVERSATION_HANDLER_ATTR_NAME, None):
-                    if (_type := conversation_data.pop('type')) == 'entry':
+                    if (_type := conversation_data.pop("type")) == "entry":
                         entry_points.extend(_handlers)
-                    elif _type == 'state':
-                        if (key := conversation_data.pop('state')) in states:
+                    elif _type == "state":
+                        if (key := conversation_data.pop("state")) in states:
                             states[key].extend(_handlers)
                         else:
                             states[key] = _handlers
-                    elif _type == 'fallback':
+                    elif _type == "fallback":
                         fallbacks.extend(_handlers)
                 else:
                     result.extend(_handlers)
         if entry_points or states or fallbacks:
             result.append(
                 ConversationHandler(
-                    entry_points, states, fallbacks,
-                    **self.__class__._conversation_kwargs  # pylint: disable=W0212
+                    entry_points, states, fallbacks, **self.__class__._conversation_kwargs  # pylint: disable=W0212
                 )
             )
         return result
@@ -180,7 +168,7 @@ class _Handler:
         return getattr(_Module, f"{self.__class__.__name__.strip('_')}Handler")
 
     def __call__(self, func: Callable[P, T]) -> Callable[P, T]:
-        data = {'type': self._type, 'func': func.__name__, 'kwargs': self.kwargs}
+        data = {"type": self._type, "func": func.__name__, "kwargs": self.kwargs}
         if hasattr(func, _NORMAL_HANDLER_ATTR_NAME):
             handler_datas = getattr(func, _NORMAL_HANDLER_ATTR_NAME)
             handler_datas.append(data)
@@ -192,9 +180,9 @@ class _Handler:
 
 class _CallbackQuery(_Handler):
     def __init__(
-            self,
-            pattern: Union[str, Pattern, type, Callable[[object], Optional[bool]]] = None,
-            block: DVInput[bool] = DEFAULT_TRUE,
+        self,
+        pattern: Union[str, Pattern, type, Callable[[object], Optional[bool]]] = None,
+        block: DVInput[bool] = DEFAULT_TRUE,
     ):
         super(_CallbackQuery, self).__init__(pattern=pattern, block=block)
 
@@ -221,10 +209,7 @@ class _Command(_Handler):
 
 class _InlineQuery(_Handler):
     def __init__(
-            self,
-            pattern: Union[str, Pattern] = None,
-            block: DVInput[bool] = DEFAULT_TRUE,
-            chat_types: List[str] = None
+        self, pattern: Union[str, Pattern] = None, block: DVInput[bool] = DEFAULT_TRUE, chat_types: List[str] = None
     ):
         super().__init__(pattern=pattern, block=block, chat_types=chat_types)
 
@@ -237,7 +222,7 @@ class _MessageNewChatMembers(_Handler):
 
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
         self.func = self.func or func
-        data = {'type': 'new_chat_member', 'priority': self.priority}
+        data = {"type": "new_chat_member", "priority": self.priority}
         if hasattr(func, _NORMAL_HANDLER_ATTR_NAME):
             handler_datas = getattr(func, _NORMAL_HANDLER_ATTR_NAME)
             handler_datas.append(data)
@@ -248,7 +233,11 @@ class _MessageNewChatMembers(_Handler):
 
 
 class _Message(_Handler):
-    def __init__(self, filters: "BaseFilter", block: DVInput[bool] = DEFAULT_TRUE, ):
+    def __init__(
+        self,
+        filters: "BaseFilter",
+        block: DVInput[bool] = DEFAULT_TRUE,
+    ):
         super(_Message, self).__init__(filters=filters, block=block)
 
     new_chat_members = _MessageNewChatMembers
@@ -271,11 +260,11 @@ class _PreCheckoutQuery(_Handler):
 
 class _Prefix(_Handler):
     def __init__(
-            self,
-            prefix: str,
-            command: str,
-            filters: BaseFilter = None,
-            block: DVInput[bool] = DEFAULT_TRUE,
+        self,
+        prefix: str,
+        command: str,
+        filters: BaseFilter = None,
+        block: DVInput[bool] = DEFAULT_TRUE,
     ):
         super(_Prefix, self).__init__(prefix=prefix, command=command, filters=filters, block=block)
 
@@ -298,10 +287,7 @@ class _StringRegex(_Handler):
 class _Type(_Handler):
     # noinspection PyShadowingBuiltins
     def __init__(
-            self,
-            type: Type,  # pylint: disable=redefined-builtin
-            strict: bool = False,
-            block: DVInput[bool] = DEFAULT_TRUE
+        self, type: Type, strict: bool = False, block: DVInput[bool] = DEFAULT_TRUE  # pylint: disable=redefined-builtin
     ):
         super(_Type, self).__init__(type=type, strict=strict, block=block)
 
@@ -342,7 +328,7 @@ class error_handler:
 
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
         self._func = func or self._func
-        data = {'type': 'error', 'block': self._block}
+        data = {"type": "error", "block": self._block}
         if hasattr(func, _NORMAL_HANDLER_ATTR_NAME):
             handler_datas = getattr(func, _NORMAL_HANDLER_ATTR_NAME)
             handler_datas.append(data)
@@ -353,7 +339,7 @@ class error_handler:
 
 
 def _entry(func: Callable[P, T]) -> Callable[P, T]:
-    setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {'type': 'entry'})
+    setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {"type": "entry"})
     return func
 
 
@@ -362,12 +348,12 @@ class _State:
         self.state = state
 
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
-        setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {'type': 'state', 'state': self.state})
+        setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {"type": "state", "state": self.state})
         return func
 
 
 def _fallback(func: Callable[P, T]) -> Callable[P, T]:
-    setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {'type': 'fallback'})
+    setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {"type": "fallback"})
     return func
 
 
@@ -382,8 +368,13 @@ class _Job:
     kwargs: Dict = {}
 
     def __init__(
-            self, name: str = None, data: object = None, chat_id: int = None,
-            user_id: int = None, job_kwargs: JSONDict = None, **kwargs
+        self,
+        name: str = None,
+        data: object = None,
+        chat_id: int = None,
+        user_id: int = None,
+        job_kwargs: JSONDict = None,
+        **kwargs,
     ):
         self.name = name
         self.data = data
@@ -394,9 +385,13 @@ class _Job:
 
     def __call__(self, func: JobCallback) -> JobCallback:
         data = {
-            'name': self.name, 'data': self.data, 'chat_id': self.chat_id, 'user_id': self.user_id,
-            'job_kwargs': self.job_kwargs, 'kwargs': self.kwargs,
-            'type': re.sub(r'([A-Z])', lambda x: '_' + x.group().lower(), self.__class__.__name__).lstrip('_')
+            "name": self.name,
+            "data": self.data,
+            "chat_id": self.chat_id,
+            "user_id": self.user_id,
+            "job_kwargs": self.job_kwargs,
+            "kwargs": self.kwargs,
+            "type": re.sub(r"([A-Z])", lambda x: "_" + x.group().lower(), self.__class__.__name__).lstrip("_"),
         }
         if hasattr(func, _JOB_ATTR_NAME):
             job_datas = getattr(func, _JOB_ATTR_NAME)
@@ -409,39 +404,69 @@ class _Job:
 
 class _RunOnce(_Job):
     def __init__(
-            self, when: TimeType,
-            data: object = None, name: str = None, chat_id: int = None, user_id: int = None, job_kwargs: JSONDict = None
+        self,
+        when: TimeType,
+        data: object = None,
+        name: str = None,
+        chat_id: int = None,
+        user_id: int = None,
+        job_kwargs: JSONDict = None,
     ):
         super().__init__(name, data, chat_id, user_id, job_kwargs, when=when)
 
 
 class _RunRepeating(_Job):
     def __init__(
-            self, interval: Union[float, datetime.timedelta], first: TimeType = None, last: TimeType = None,
-            data: object = None, name: str = None, chat_id: int = None, user_id: int = None, job_kwargs: JSONDict = None
+        self,
+        interval: Union[float, datetime.timedelta],
+        first: TimeType = None,
+        last: TimeType = None,
+        data: object = None,
+        name: str = None,
+        chat_id: int = None,
+        user_id: int = None,
+        job_kwargs: JSONDict = None,
     ):
         super().__init__(name, data, chat_id, user_id, job_kwargs, interval=interval, first=first, last=last)
 
 
 class _RunMonthly(_Job):
     def __init__(
-            self, when: datetime.time, day: int,
-            data: object = None, name: str = None, chat_id: int = None, user_id: int = None, job_kwargs: JSONDict = None
+        self,
+        when: datetime.time,
+        day: int,
+        data: object = None,
+        name: str = None,
+        chat_id: int = None,
+        user_id: int = None,
+        job_kwargs: JSONDict = None,
     ):
         super().__init__(name, data, chat_id, user_id, job_kwargs, when=when, day=day)
 
 
 class _RunDaily(_Job):
     def __init__(
-            self, time: datetime.time, days: Tuple[int, ...] = tuple(range(7)),
-            data: object = None, name: str = None, chat_id: int = None, user_id: int = None, job_kwargs: JSONDict = None
+        self,
+        time: datetime.time,
+        days: Tuple[int, ...] = tuple(range(7)),
+        data: object = None,
+        name: str = None,
+        chat_id: int = None,
+        user_id: int = None,
+        job_kwargs: JSONDict = None,
     ):
         super().__init__(name, data, chat_id, user_id, job_kwargs, time=time, days=days)
 
 
 class _RunCustom(_Job):
-    def __init__(self, data: object = None, name: str = None, chat_id: int = None, user_id: int = None,
-                 job_kwargs: JSONDict = None):
+    def __init__(
+        self,
+        data: object = None,
+        name: str = None,
+        chat_id: int = None,
+        user_id: int = None,
+        job_kwargs: JSONDict = None,
+    ):
         super().__init__(name, data, chat_id, user_id, job_kwargs)
 
 

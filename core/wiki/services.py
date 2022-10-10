@@ -7,7 +7,6 @@ from utils.log import logger
 
 
 class WikiService:
-
     def __init__(self, cache: WikiCache):
         self._cache = cache
         """Redis 在这里的作用是作为持久化"""

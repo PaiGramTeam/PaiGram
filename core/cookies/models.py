@@ -11,7 +11,7 @@ class CookiesStatusEnum(int, enum.Enum):
 
 
 class Cookies(SQLModel):
-    __table_args__ = dict(mysql_charset='utf8mb4', mysql_collate="utf8mb4_general_ci")
+    __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
     id: int = Field(primary_key=True)
     user_id: Optional[int] = Field(foreign_key="user.user_id")
@@ -20,8 +20,8 @@ class Cookies(SQLModel):
 
 
 class HyperionCookie(Cookies, table=True):
-    __tablename__ = 'mihoyo_cookies'
+    __tablename__ = "mihoyo_cookies"
 
 
 class HoyolabCookie(Cookies, table=True):
-    __tablename__ = 'hoyoverse_cookies'
+    __tablename__ = "hoyoverse_cookies"

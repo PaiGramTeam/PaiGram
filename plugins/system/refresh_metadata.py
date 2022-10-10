@@ -8,16 +8,13 @@ from utils.log import logger
 
 
 class MetadataPlugin(Plugin):
-
-    @handler.command('refresh_metadata')
+    @handler.command("refresh_metadata")
     @bot_admins_rights_check
     async def refresh(self, update: Update, _) -> None:
         user = update.effective_user
         message = update.effective_message
 
-        logger.info(
-            f"用户 {user.full_name}[{user.id}] 刷新[bold]metadata[/]缓存命令", extra={'markup': True}
-        )
+        logger.info(f"用户 {user.full_name}[{user.id}] 刷新[bold]metadata[/]缓存命令", extra={"markup": True})
 
         msg = await message.reply_text("正在刷新元数据，请耐心等待...")
         logger.info("正在从 github 上获取元数据")

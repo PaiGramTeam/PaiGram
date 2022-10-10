@@ -3,7 +3,6 @@ from .repositories import UserRepository
 
 
 class UserService:
-
     def __init__(self, user_repository: UserRepository) -> None:
         self._repository: UserRepository = user_repository
 

@@ -43,8 +43,14 @@ class PostInfo(BaseModel):
         created_at = post["created_at"]
         user = _data_post["user"]  # 用户数据
         user_uid = user["uid"]  # 用户ID
-        return PostInfo(_data=data, post_id=post_id, user_uid=user_uid, subject=subject, image_urls=image_urls,
-                        created_at=created_at)
+        return PostInfo(
+            _data=data,
+            post_id=post_id,
+            user_uid=user_uid,
+            subject=subject,
+            image_urls=image_urls,
+            created_at=created_at,
+        )
 
     def __getitem__(self, item):
         return self._data[item]
