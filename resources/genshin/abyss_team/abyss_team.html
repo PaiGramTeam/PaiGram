@@ -1,72 +1,90 @@
 <!DOCTYPE html>
 <html lang="zh-ch">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>abyss</title>
-    <link type="text/css" href="../../styles/tailwind.min.css" rel="stylesheet">
-    <link type="text/css" href="../../styles/public.css" rel="stylesheet">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <script src="../../js/tailwindcss-3.1.8.js"></script>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet" />
     <style>
-        #container {
-            width: 865px;
-            height: 1300px;
-            background: url("./../abyss/background/lookback-bg.png");
-            background-size: contain;
-        }
+      #container {
+        max-width: 865px;
+        background-image: url("./../abyss/background/abyss-bg-grad.png");
+        background-color: rgb(11, 23, 44);
+      }
 
-        .character-icon {
-            width: 128px;
-            height: 128px;
-        }
+      .item-not-owned {
+        position: relative;
+      }
 
-        .character-side-icon {
-            width: 32px;
-            height: 32px;
-        }
-
-        .item-not-owned:before {
-            content: "";
-            position: absolute;
-            width: 128px;
-            height: 152px;
-            background-color: rgb(0 0 0 / 50%);
-            z-index: 2;
-            border-radius: 5px;
-        }
+      .item-not-owned::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgb(0 0 0 / 50%);
+        border-radius: 5px;
+      }
     </style>
-</head>
-<body>
-<div class="mx-auto flex flex-col h-full bg-cover" id="container">
-    <div class="title text-2xl my-4 text-yellow-500 mx-auto">深境螺旋 - 推荐配队</div>
-    {% for team in teams %}
-    <div class="relative base-info flex flex-col px-20 py-1 text-black my-1">
-        <div class="text-center mr-auto text-yellow-500" style="font-size: 19px;">推荐配队 {{ loop.index }}</div>
-        <div class="mx-auto flex my-2">
-            {% for i in team.up %}
-            <div class="rounded-lg mx-2 overflow-hidden {% if not i.hava %}item-not-owned{% endif %}" style="background-color: rgb(233, 229, 220)">
-                <div class="character-icon rounded-br-3xl bg-cover overflow-hidden"
-                     style="background: url({{i.background}});background-size: cover;">
-                    <img src="{{i.icon}}" alt=""></div>
-                <div class="text-center">{{i.name}}</div>
-            </div>
-            {% endfor %}
-            <div class="absolute bottom-7 right-10 text-yellow-500" style="font-size: 14px" >{{team.up_rate}}</div>
+  </head>
+  <body>
+    <div
+      class="mx-auto flex flex-col h-full bg-contain bg-no-repeat py-6"
+      id="container"
+    >
+      <div class="title text-2xl my-4 text-yellow-500 text-center">
+        深境螺旋 - 推荐配队
+      </div>
+
+      <div
+        class="flex flex-row px-6 py-1 my-1 text-neutral-100 bg-white bg-opacity-10 justify-evenly text-sm"
+      >
+        <div>UID {{ uid }}</div>
+        <div>版本 {{ version }}</div>
+      </div>
+
+      {% for team in teams %}
+      <div class="mx-auto flex flex-col px-6 py-1 text-black my-1">
+        <div class="text-center mr-auto text-yellow-500">
+          推荐配队 {{ loop.index }}
         </div>
-    </div>
-    <div class="relative base-info flex flex-col px-20 py-1 text-black my-1">
-        <div class="mx-auto flex my-2">
-            {% for i in team.down %}
-            <div class="rounded-lg mx-2 overflow-hidden {% if not i.hava %}item-not-owned{% endif %}" style="background-color: rgb(233, 229, 220)">
-                <div class="character-icon rounded-br-3xl bg-cover overflow-hidden"
-                     style="background: url({{i.background}});background-size: cover;">
-                    <img src="{{i.icon}}" alt=""></div>
-                <div class="text-center">{{i.name}}</div>
+        {% for lane in ["up", "down"] %}
+        <div class="flex my-2 space-x-4">
+          {% for i in team[lane] %}
+          <div
+            class="bg-neutral-200 flex-shrink-0 rounded-lg overflow-hidden {% if not i.hava %}item-not-owned{% endif %}"
+          >
+            <div
+              class="w-32 h-32 rounded-br-2xl bg-cover overflow-hidden"
+              style="background-image: url('./../abyss/background/roleStarBg{{ i.star }}.png');"
+            >
+              <img src="{{ i.icon }}" alt="" />
             </div>
-            {% endfor %}
-            <div class="absolute bottom-7 right-10 text-yellow-500" style="font-size: 14px" >{{team.down_rate}}</div>
+            <div class="text-center">{{ i.name }}</div>
+          </div>
+          {% endfor %}
+
+          <div>
+            <div class="text-neutral-300">
+              {{ lane == 'up' and '上' or '下' }}半
+            </div>
+            <div class="text-neutral-400 text-sm">
+              使用率 {{ team[lane + "_rate"] }}
+            </div>
+          </div>
         </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+
+      <div class="mt-6 text-center p-1 text-neutral-400 text-xs">
+        数据来源：游创工坊
+      </div>
     </div>
-    {% endfor %}
-    <div class="my-2"></div>
-</div>
-</body>
+  </body>
 </html>

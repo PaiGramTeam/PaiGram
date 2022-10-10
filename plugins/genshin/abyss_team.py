@@ -1,4 +1,4 @@
-from telegram import Update, User
+from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
@@ -27,27 +27,6 @@ class AbyssTeam(Plugin, BasePlugin):
         self.assets_service = assets
         self.team_data = AbyssTeamData()
 
-    @staticmethod
-    def _get_role_star_bg(value: int):
-        if value == 4:
-            return "./../abyss/background/roleStarBg4.png"
-        elif value == 5:
-            return "./../abyss/background/roleStarBg5.png"
-        else:
-            raise ValueError("错误的数据")
-
-    @staticmethod
-    async def _get_data_from_user(user: User):
-        try:
-            logger.debug("尝试获取已绑定的原神账号")
-            client = await get_genshin_client(user.id)
-            logger.debug(f"获取成功, UID: {client.uid}")
-            characters = await client.get_genshin_characters(client.uid)
-            return [character.name for character in characters]
-        except (UserNotFoundError, CookiesNotFoundError):
-            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            return []
-
     @handler(CommandHandler, command="abyss_team", block=False)
     @handler(MessageHandler, filters=filters.Regex("^深渊推荐配队(.*)"), block=False)
     @restricts()
@@ -56,13 +35,26 @@ class AbyssTeam(Plugin, BasePlugin):
         user = update.effective_user
         message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] 查深渊推荐配队命令请求")
+
+        try:
+            client = await get_genshin_client(user.id)
+        except (CookiesNotFoundError, UserNotFoundError):
+            reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+            return
+
         await message.reply_chat_action(ChatAction.TYPING)
         team_data = await self.team_data.get_data()
         # 尝试获取用户已绑定的原神账号信息
-        user_data = await self._get_data_from_user(user)
+        characters = await client.get_genshin_characters(client.uid)
+        user_data = [character.name for character in characters]
         team_data.sort(user_data)
         # random_team = team_data.random_team(user_data)
         abyss_teams_data = {
+            "uid": client.uid,
+            "version": team_data.version,
             "teams":[]
         }
         for i in range(3):
@@ -72,27 +64,26 @@ class AbyssTeam(Plugin, BasePlugin):
                 "down": [],
                 "down_rate": f'{team_data.rate_list_full[i].down.rate * 100: .2f}%',
             }
-            for member in team_data.rate_list_full[i].up.formation:
-                temp = {
-                    "icon": (await self.assets_service.avatar(roleToId(member.name)).icon()).as_uri(),
-                    "name": member.name,
-                    "background": self._get_role_star_bg(member.star),
-                    "hava": (member.name in user_data) if user_data else True,
-                }
-                team["up"].append(temp)
-            for member in team_data.rate_list_full[i].down.formation:
-                temp = {
-                    "icon": (await self.assets_service.avatar(roleToId(member.name)).icon()).as_uri(),
-                    "name": member.name,
-                    "background": self._get_role_star_bg(member.star),
-                    "hava": (member.name in user_data) if user_data else True,
-                }
-                team["down"].append(temp)
+
+            for lane in ['up', 'down']:
+                for member in getattr(team_data.rate_list_full[i], lane).formation:
+                    temp = {
+                        "icon": (await self.assets_service.avatar(roleToId(member.name)).icon()).as_uri(),
+                        "name": member.name,
+                        "star": member.star,
+                        "hava": (member.name in user_data) if user_data else True,
+                    }
+                    team[lane].append(temp)
 
             abyss_teams_data["teams"].append(team)
 
+        # html = await self.template_service.render_async(
+        #     "genshin/abyss_team", "abyss_team.html", abyss_teams_data
+        # )
+        # logger.debug(html)
+
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         png_data = await self.template_service.render('genshin/abyss_team', "abyss_team.html", abyss_teams_data,
-                                                      {"width": 865, "height": 1300}, full_page=False)
+                                                      {"width": 785, "height": 800}, full_page=True)
         await message.reply_photo(png_data, filename=f"abyss_team_{user.id}.png",
                                   allow_sending_without_reply=True)

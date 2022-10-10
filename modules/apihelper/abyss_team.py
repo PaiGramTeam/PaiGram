@@ -34,6 +34,7 @@ class FullTeamRate(BaseModel):
 
 
 class TeamRateResult(BaseModel):
+    version: str
     rate_list_up: List[TeamRate]
     rate_list_down: List[TeamRate]
     rate_list_full: List[FullTeamRate] = []
@@ -87,7 +88,7 @@ class AbyssTeamData:
             data_up_json = data_up.json()["result"]
             data_down = await self.client.post(self.TEAM_RATE_API, json={"version": self.VERSION, "layer": 2})
             data_down_json = data_down.json()["result"]
-            self.data = TeamRateResult(rate_list_up=parse_obj_as(List[TeamRate], data_up_json["rateList"]),
+            self.data = TeamRateResult(version=self.VERSION, rate_list_up=parse_obj_as(List[TeamRate], data_up_json["rateList"]),
                                        rate_list_down=parse_obj_as(List[TeamRate], data_down_json["rateList"]),
                                        user_count=data_up_json["userCount"])
             self.time = time.time()
