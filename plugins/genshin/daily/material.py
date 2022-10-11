@@ -367,7 +367,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         # noinspection PyUnresolvedReferences
                         result[stage][day][1] = list(set(result[stage][day][1]))  # 去重
                 async with async_open(DATA_FILE_PATH, "w", encoding="utf-8") as file:
-                    await file.write(json.dumps(result))  # pylint: disable=PY-W0079
+                    await file.write(json.dumps(result))  # skipcq: PY-W0079
                 logger.info("每日素材刷新成功")
                 break
             except (HTTPError, SSLZeroReturnError):

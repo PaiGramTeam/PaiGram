@@ -23,7 +23,6 @@ from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config  # pylint: disable=W0611
 from core.error import ServiceNotFoundError
-
 # noinspection PyProtectedMember
 from core.plugin import Plugin, _Plugin
 from core.service import Service
@@ -208,7 +207,7 @@ class Bot:
                         getattr(genshin.utility.extdb, i).replace("githubusercontent.com", "fastgit.org"),
                     )
             await genshin.utility.update_characters_enka()
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=W0703
             logger.error("初始化 genshin.py 相关资源失败")
             logger.exception(exc)
         else:

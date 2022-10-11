@@ -258,7 +258,8 @@ class GachaLog:
                 if four_star < five_star:
                     return False, "检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。"
             return True, ""
-        except Exception:
+        except Exception as exc:  # pylint: disable=W0703
+            logger.warning(f"抽卡记录数据验证失败 {repr(exc)}")
             return False, "导入失败，数据格式错误"
 
     @staticmethod

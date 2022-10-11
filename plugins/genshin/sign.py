@@ -100,14 +100,14 @@ class Sign(Plugin, BasePlugin):
                     "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
                 }
         except JSONDecodeError:
-            logger.warning("签到ajax自动通过JSON解析失败")
+            logger.warning("签到 ajax 请求 JSON 解析失败")
         except TimeoutException:
-            logger.warning("签到ajax自动通过请求超时")
+            logger.warning("签到 ajax 请求超时")
         except (KeyError, IndexError):
-            logger.warning("签到ajax自动通过数据错误")
+            logger.warning("签到 ajax 请求数据错误")
         except RuntimeError:
-            logger.warning("签到ajax自动通过请求错误")
-        logger.warning("ajax自动通过失败")
+            logger.warning("签到 ajax 请求错误")
+        logger.warning("签到 ajax 请求失败")
         if not config.pass_challenge_api:
             return None
         pass_challenge_params = {
@@ -125,12 +125,11 @@ class Sign(Plugin, BasePlugin):
                     params=pass_challenge_params,
                     timeout=45,
                 )
-            logger.info(f"签到自定义打码平台返回：{resp.text}")
+            logger.info(f"签到请求返回：{resp.text}")
             data = resp.json()
             status = data.get("status")
-            if status is not None:
-                if status != 0:
-                    logger.error(f"签到自定义打码平台解析错误：{data.get('msg')}")
+            if status is not None and status != 0:
+                logger.error(f"签到请求解析错误：{data.get('msg')}")
             if data.get("code", 0) != 0:
                 raise RuntimeError
             return {
@@ -139,13 +138,13 @@ class Sign(Plugin, BasePlugin):
                 "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
             }
         except JSONDecodeError:
-            logger.warning("签到自定义打码平台JSON解析失败")
+            logger.warning("签到请求 JSON 解析失败")
         except TimeoutException:
-            logger.warning("签到自定义打码平台请求超时")
+            logger.warning("签到请求超时")
         except KeyError:
-            logger.warning("签到自定义打码平台数据错误")
+            logger.warning("签到请求数据错误")
         except RuntimeError:
-            logger.warning("签到自定义打码平台自动通过失败")
+            logger.warning("签到请求失败")
         return None
 
     @staticmethod
@@ -166,7 +165,6 @@ class Sign(Plugin, BasePlugin):
                     "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
                 )
                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                    # 米游社国内签到自动打码
                     headers = await Sign.pass_challenge(
                         request_daily_reward.get("gt", ""),
                         request_daily_reward.get("challenge", ""),
@@ -184,7 +182,7 @@ class Sign(Plugin, BasePlugin):
                     if request_daily_reward and request_daily_reward.get("success", 0) == 1:
                         logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                         return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
-                    logger.info(f"UID {client.uid} 通过自动打码签到成功")
+                    logger.info(f"UID {client.uid} 签到成功")
             except AlreadyClaimed:
                 logger.info(f"UID {client.uid} 已经签到")
                 result = "今天旅行者已经签到过了~"

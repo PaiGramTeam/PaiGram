@@ -31,7 +31,7 @@ CHECK_POST, SEND_POST, CHECK_COMMAND, GTE_DELETE_PHOTO = range(10900, 10904)
 GET_POST_CHANNEL, GET_TAGS, GET_TEXT = range(10904, 10907)
 
 
-class Post(Plugin.Conversation, BasePlugin):
+class Post(Plugin.Conversation, BasePlugin.Conversation):
     """文章推送"""
 
     MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]], True, True)
@@ -83,14 +83,14 @@ class Post(Plugin.Conversation, BasePlugin):
         post_text += f"[source](https://bbs.mihoyo.com/ys/article/{post_id})"
         if len(post_text) >= MessageLimit.CAPTION_LENGTH:
             await message.reply_markdown_v2(post_text)
-            post_text = post_text[0 : MessageLimit.CAPTION_LENGTH]
+            post_text = post_text[:MessageLimit.CAPTION_LENGTH]
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割并发送原文本")
         try:
             if len(post_images) > 1:
                 media = [InputMediaPhoto(img_info.data) for img_info in post_images]
                 media[0] = InputMediaPhoto(post_images[0].data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
                 if len(media) > 10:
-                    media = media[0:10]
+                    media = media[:10]
                     await message.reply_text("获取到的图片已经超过10张，为了保证发送成功，已经删除一部分图片")
                 await message.reply_media_group(media)
             elif len(post_images) == 1:
@@ -130,7 +130,8 @@ class Post(Plugin.Conversation, BasePlugin):
             return await self.delete_photo(update, context)
         return ConversationHandler.END
 
-    async def delete_photo(self, update: Update, context: CallbackContext) -> int:
+    @staticmethod
+    async def delete_photo(update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         photo_len = len(post_handler_data.post_images)
         message = update.effective_message
@@ -159,7 +160,8 @@ class Post(Plugin.Conversation, BasePlugin):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
 
-    async def get_channel(self, update: Update, _: CallbackContext) -> int:
+    @staticmethod
+    async def get_channel(update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         reply_keyboard = []
         try:
@@ -197,7 +199,8 @@ class Post(Plugin.Conversation, BasePlugin):
         await message.reply_text("请核对你修改的信息", reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return SEND_POST
 
-    async def add_tags(self, update: Update, _: CallbackContext) -> int:
+    @staticmethod
+    async def add_tags(update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符，不用添加 # 作为开头，推送时程序会自动添加")
         return GET_TAGS
@@ -214,7 +217,8 @@ class Post(Plugin.Conversation, BasePlugin):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
 
-    async def edit_text(self, update: Update, _: CallbackContext) -> int:
+    @staticmethod
+    async def edit_text(update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         await message.reply_text("请回复替换的文本")
         return GET_TEXT
@@ -269,7 +273,7 @@ class Post(Plugin.Conversation, BasePlugin):
                 await context.bot.send_photo(
                     channel_id, photo=image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2
                 )
-            elif len(post_images) == 0:
+            elif not post_images:
                 await context.bot.send_message(channel_id, post_text, parse_mode=ParseMode.MARKDOWN_V2)
             else:
                 await message.reply_text("图片获取错误", reply_markup=ReplyKeyboardRemove())  # excuse?

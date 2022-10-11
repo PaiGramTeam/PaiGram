@@ -22,21 +22,21 @@ dotenv.load_dotenv()
 class BotConfig(BaseSettings):
     debug: bool = False
 
-    db_host: str
-    db_port: int
-    db_username: str
-    db_password: str
-    db_database: str
+    db_host: str = ""
+    db_port: int = 0
+    db_username: str = ""
+    db_password: str = ""
+    db_database: str = ""
 
-    redis_host: str
-    redis_port: int
-    redis_db: int
+    redis_host: str = ""
+    redis_port: int = 0
+    redis_db: int = 0
 
-    bot_token: str
-    error_notification_chat_id: str
+    bot_token: str = ""
+    error_notification_chat_id: str = ""
 
-    api_id: Optional[int]
-    api_hash: Optional[str]
+    api_id: Optional[int] = None
+    api_hash: Optional[str] = None
 
     channels: List["ConfigChannel"] = []
     admins: List["ConfigUser"] = []
