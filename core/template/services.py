@@ -116,7 +116,7 @@ class TemplatePreviewer:
         path = urljoin("/preview/", template)
         query = {}
 
-        # 如果有数据，需要暂存在内存中
+        # 如果有数据，暂存在 redis 中
         if data:
             id = str(uuid4())
             await self.cache.set_data(id, data)
