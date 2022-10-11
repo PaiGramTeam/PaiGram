@@ -1,5 +1,5 @@
-import datetime
 import asyncio
+import datetime
 
 from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, AlreadyClaimed, GenshinException
@@ -57,7 +57,7 @@ class SignAll(Plugin):
             except NeedChallenge:
                 text = "签到失败，触发验证码风控，自动签到自动关闭"
                 sign_db.status = SignStatusEnum.NEED_CHALLENGE
-            except BaseException as exc:
+            except Exception as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
                 text = "签到失败了呜呜呜 ~ 执行自动签到时发生错误"
@@ -75,7 +75,7 @@ class SignAll(Plugin):
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
                 sign_db.status = SignStatusEnum.FORBIDDEN
-            except BaseException as exc:
+            except Exception as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
                 continue
