@@ -1,11 +1,10 @@
 import time
 from typing import Optional
-from collections import OrderedDict
 from urllib.parse import urlencode, urljoin, urlsplit
-from uuid import uuid4
 
 from jinja2 import Environment, FileSystemLoader, Template
 from playwright.async_api import ViewportSize
+from uuid import uuid4
 
 from fastapi import HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
@@ -17,6 +16,7 @@ from core.bot import bot
 from core.base.webserver import webapp
 from utils.const import PROJECT_ROOT
 from utils.log import logger
+from core.template.cache import TemplatePreviewCache
 
 
 class _QuerySelectorNotFound(Exception):
@@ -24,7 +24,7 @@ class _QuerySelectorNotFound(Exception):
 
 
 class TemplateService:
-    def __init__(self, browser: AioBrowser, template_dir: str = "resources"):
+    def __init__(self, browser: AioBrowser, preview_cache: TemplatePreviewCache, template_dir: str = "resources"):
         self._browser = browser
         self.template_dir = PROJECT_ROOT / template_dir
 
@@ -35,7 +35,7 @@ class TemplateService:
             auto_reload=bot.config.debug,
         )
 
-        self.previewer = TemplatePreviewer(self)
+        self.previewer = TemplatePreviewer(self, preview_cache)
 
     def get_template(self, template_name: str) -> Template:
         return self._jinja2_env.get_template(template_name)
@@ -76,7 +76,7 @@ class TemplateService:
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
 
         if bot.config.debug:
-            preview_url = self.previewer.get_preview_url(template_name, template_data)
+            preview_url = await self.previewer.get_preview_url(template_name, template_data)
             logger.debug(f"调试模板 URL: {preview_url}")
 
         browser = await self._browser.get_browser()
@@ -105,30 +105,24 @@ class TemplateService:
 
 
 class TemplatePreviewer:
-    # 在内存中保留最近n个预览模板 data
-    preview_data: OrderedDict[str, dict] = OrderedDict()
-
-    def __init__(self, template_service: TemplateService):
+    def __init__(self, template_service: TemplateService, cache: TemplatePreviewCache):
         self.template_service = template_service
+        self.cache = cache
         self.register_routes()
 
-    def get_preview_url(self, template: str, data: dict):
+    async def get_preview_url(self, template: str, data: dict):
         """获取预览 URL"""
         components = urlsplit(bot.config.web_url)
         path = urljoin("/preview/", template)
-        query = ""
+        query = {}
 
         # 如果有数据，需要暂存在内存中
         if data:
-            # 只保存最新的 100 个预览数据
-            if len(self.preview_data) > 100:
-                self.preview_data.popitem(last=False)
-
             id = str(uuid4())
-            self.preview_data[id] = data
-            query = urlencode({"id": id})
+            await self.cache.set_data(id, data)
+            query["id"] = id
 
-        return components._replace(path=path, query=query).geturl()
+        return components._replace(path=path, query=urlencode(query)).geturl()
 
     def register_routes(self):
         """注册预览用到的路由"""
@@ -143,10 +137,9 @@ class TemplatePreviewer:
                 return FileResponse(full_path)
 
             # 取回暂存的渲染数据
-            if id and id not in self.preview_data:
-                raise HTTPException(status_code=404, detail=f"Preview id {id} not found, possible server restarted")
-
-            data = self.preview_data[id] if id else {}
+            data = await self.cache.get_data(id) if id else {}
+            if id and data is None:
+                raise HTTPException(status_code=404, detail=f"Preview id {id} not found")
 
             # 渲染 jinja2 模板
             try:
