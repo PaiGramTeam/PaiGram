@@ -33,7 +33,7 @@ async def send_user_notification(update: Update, _: CallbackContext, text: str):
     except Forbidden as exc:
         logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
         logger.exception(exc)
-    except BaseException as exc:
+    except Exception as exc:
         logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
         logger.exception(exc)
     finally:

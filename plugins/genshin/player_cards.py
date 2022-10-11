@@ -1,7 +1,6 @@
 from typing import Any, List, Tuple, Union
 
 from enkanetwork import (
-    Assets,
     CharacterInfo,
     DigitType,
     EnkaNetworkAPI,
@@ -123,7 +122,7 @@ class PlayerCards(Plugin, BasePlugin):
             await message.reply_text(f"角色展柜中未找到 {character_name}")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
+        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
         await message.reply_photo(pnd_data, filename=f"player_card_{uid}_{character_name}.png")
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
@@ -162,7 +161,7 @@ class PlayerCards(Plugin, BasePlugin):
             return
         await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
+        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
         await message.edit_media(InputMediaPhoto(pnd_data, filename=f"player_card_{uid}_{result}.png"))
 
 

@@ -26,7 +26,7 @@ class WikiCache:
         # noinspection PyBroadException
         try:
             result = json.loads(await self.client.get(qname))
-        except Exception:
+        except Exception:  # pylint: disable=W0703
             result = []
         if isinstance(result, list) and len(result) > 0:
             for num, item in enumerate(result):
