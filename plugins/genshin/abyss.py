@@ -206,6 +206,20 @@ class Abyss(Plugin, BasePlugin):
                 omit_background=True,
             )
         elif floor > 0:
+            render_data["floors-color"] = {
+                1: "#374952",
+                2: "#374952",
+                3: "#374952",
+                4: "#55464B",
+                5: "#55464B",
+                6: "#1D2A5D",
+                7: "#1D2A5D",
+                8: "#1D2A5D",
+                9: "#292B58",
+                10: "#382024",
+                11: "#252550",
+                12: "#1D2A4A",
+            }
             render_data["floor"] = floor
             return await self.template_service.render("genshin/abyss", "floor.html", render_data)
         return await self.template_service.render("genshin/abyss", "total.html", render_data)

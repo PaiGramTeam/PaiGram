@@ -1,12 +1,18 @@
 :root {
-    --white: rgb(246, 248, 249);
+    --white: rgb(246 248 249);
     --bg-color: rgb(233 229 220);
-    --h-color: rgb(203, 189, 162);
+    --h-color: rgb(203 189 162);
 }
 
 body {
     margin: 0;
     padding: 10px;
+}
+
+.hr {
+    width: 100%;
+    height: 3px;
+    background-color: rgb(246 248 249 / 50%);
 }
 
 .container {
@@ -28,6 +34,8 @@ body {
     font-size: 20px;
 }
 
+/* 概览 */
+
 .overview {
     height: 540px;
     padding: 20px 40px;
@@ -36,8 +44,8 @@ body {
     background-position: center;
     background-image: linear-gradient(to top, rgb(0 0 0 / 10%), rgb(0 0 0 / 10%)), url("./background/lookback-bg.png");
     background-attachment: local;
-    overflow: hidden;
     border-radius: 15px;
+    overflow: hidden;
 }
 
 .summarize {
@@ -46,14 +54,15 @@ body {
     height: calc(100px - 20px);
     margin: 20px 0;
     padding: 10px 0 10px 80px;
-    background-color: rgb(74, 82, 101);
     border-radius: 5px;
     border: 2px solid rgb(118 121 120 / 80%);
     outline: 4px solid rgb(74, 82, 101);
+    background-color: rgb(74 82 101 / 60%);
     background-image: url("./background/banner 01.png"), url("./background/banner 02.png");
     background-repeat: no-repeat, no-repeat;
     background-position: right, left;
     background-size: auto 100%, auto 100%;
+    backdrop-filter: blur(5px);
 }
 
 .summarize > div {
@@ -192,4 +201,81 @@ body {
     position: absolute;
     right: 0;
     bottom: -5px;
+}
+
+/* 层数 */
+
+.floors {
+    margin-top: 20px;
+}
+
+.floor {
+    width: calc(100% - 60px);
+    height: 1200px;
+    padding: 30px;
+    border-radius: 20px;
+    overflow: hidden;
+    outline: rgb(233 229 220 / 30%) solid 3px;
+    outline-offset: -7px;
+    background-position: top center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.head {
+    width: 100%;
+    height: 125px;
+    display: flex;
+}
+
+.floor-name {
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    color: var(--white);
+}
+
+.floor-name > span {
+    font-size: 25px;
+    margin-left: 15px;
+}
+
+.floor-num {
+    font-size: 28px;
+    color: black;
+    width: 100px;
+    height: 100px;
+    background-image: url("./background/floor-num.png");
+    background-size: contain;
+    position: relative;
+}
+
+.floor-num > div {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+}
+
+.head > .star {
+    margin-left: auto;
+    float: right;
+    color: var(--white);
+    font-size: 25px;
+}
+
+.head > .star::before {
+    width: 50px;
+    height: 50px;
+}
+
+.chamber {
+    margin: 10px 0;
+    height: 300px;
+    background-color: #28384D;
+}
+
+.chamber-info {
+    height: 100px;
+    background-color: #462E22;
 }
