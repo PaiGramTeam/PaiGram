@@ -6,12 +6,55 @@
 }
 
 @font-face {
-    font-family: "hywh";
-    src: url("../fonts/汉仪文黑-85W.ttf");
+    font-family: "HYWH";
+    src: url("../fonts/HYWenHei-35W.ttf") format("truetype");
+    font-weight: 200;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "HYWH";
+    src: url("../fonts/HYWenHei-45W.ttf") format("truetype");
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "HYWH";
+    src: url("../fonts/HYWenHei-55W.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "HYWH";
+    src: url("../fonts/HYWenHei-65W.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "HYWH";
+    src: url("../fonts/HYWenHei-75W.ttf") format("truetype");
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "HYWH";
+    src: url("../fonts/HYWenHei-85W.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+}
+
+
+@font-face {
+    font-family: "Number";
+    src: url("../fonts/tttgbnumber.ttf") format("truetype");
     font-weight: normal;
     font-style: normal;
 }
 
 body {
-    font-family: "hywh", "seguiemj", emoji, system-ui;
+    font-family: "Number", "HYWH", "seguiemj", emoji, serif, system-ui;
 }

@@ -19,6 +19,7 @@ __all__ = [
     "ARTIFACT_DATA",
     "NAMECARD_DATA",
     "honey_id_to_game_id",
+    "game_id_to_role_id",
     "Data",
 ]
 
@@ -91,3 +92,10 @@ NAMECARD_DATA: dict[str, dict[str, int | str]] = Data("namecard")
 @functools.lru_cache()
 def honey_id_to_game_id(honey_id: str, item_type: str) -> str | None:
     return next((key for key, value in HONEY_DATA[item_type].items() if value[0] == honey_id), None)
+
+
+@functools.lru_cache
+def game_id_to_role_id(gid: str) -> int | None:
+    return next(
+        (int(key.split("-")[0]) for key, value in AVATAR_DATA.items() if value["icon"].split("_")[-1] == gid), None
+    )

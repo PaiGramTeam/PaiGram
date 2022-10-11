@@ -3,114 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <title>abyss</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        #container {
-            width: 865px;
-            height: 504px;
-            background: url("./background/lookback-bg.png");
-            background-size: cover;
-        }
-
-        .character-icon {
-            width: 128px;
-            height: 128px;
-        }
-
-        .character-side-icon {
-            position: absolute;
-            right: 0;
-            bottom: 1px;
-            width: 48px;
-            height: 48px;
-        }
-
-        div:has(> img.character-side-icon) {
-            position: relative;
-            height: 32px;
-        }
-
-        div:has(> img.character-side-icon) > div {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-    </style>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
 </head>
 <body>
-<div class="mx-auto flex flex-col h-full bg-no-repeat bg-cover" id="container">
-    <div class="title text-2xl my-4 text-yellow-500 mx-auto">深境螺旋</div>
-    <div class="base-info flex flex-row px-20 py-1 my-1 text-white bg-white bg-opacity-10">
-        <div class="uid text-center mx-auto">UID 1414514</div>
-        <div class="text-center mx-auto">最深抵达 12-3</div>
-        <div class="text-center mx-auto">战斗次数 12</div>
-        <div class="text-center mx-auto">获得星级 36</div>
-    </div>
-    <div class="base-info flex flex-col px-20 py-1 text-black my-1">
-        <div class="text-center mr-auto text-yellow-500">出战次数</div>
-        <div class="mx-auto flex my-2">
-            <div class="bg-white rounded-lg mx-2 overflow-hidden">
-                <div class="character-icon rounded-br-3xl bg-cover"
-                     style="background: url('./background/roleStarBg4.png');background-size: cover;">
-                    <img src="./../../img/example/256x256.png" alt=""></div>
-                <div class="text-center">12次</div>
+<div class="container">
+    <div class="overview">
+        <div class="title">挑战回顾</div>
+        <div class="summarize">
+            <div>
+                <div>UID: 100206192</div>
+                <div class="star">
+                    <span>36 (9-9-9-9)</span>
+                </div>
             </div>
-            <div class="bg-white rounded-lg mx-2 overflow-hidden">
-                <div class="character-icon rounded-br-3xl bg-cover"
-                     style="background: url('./background/roleStarBg4.png');background-size: cover;">
-                    <img src="./../../img/example/256x256.png" alt=""></div>
-                <div class="text-center">12次</div>
-            </div>
-            <div class="bg-white rounded-lg mx-2 overflow-hidden">
-                <div class="character-icon rounded-br-3xl bg-cover"
-                     style="background: url('./background/roleStarBg5.png');background-size: cover;">
-                    <img src="./../../img/example/256x256.png" alt=""></div>
-                <div class="text-center">12次</div>
-            </div>
-            <div class="bg-white rounded-lg mx-2 overflow-hidden">
-                <div class="character-icon rounded-br-3xl bg-cover"
-                     style="background: url('./background/roleStarBg5.png');background-size: cover;">
-                    <img src="./../../img/example/256x256.png" alt=""></div>
-                <div class="text-center">12次</div>
+            <div>
+                <div>时间: 2022年10月上</div>
+                <div>最深抵达: 12-3</div>
             </div>
         </div>
-    </div>
-    <div class="flex flex-col my-1">
-        <div class="flex flex-col px-20 py-1 text-black my-1">
-            <div class="text-center mr-auto text-yellow-500">战斗数据榜</div>
+        <div class="most-played">
+            <div class="caption">出战次数</div>
+            <div class="characters">
+                <div class="character">
+                    <div class="icon" style="background-image: url('./background/roleStarBg5.png')">
+                        <img src="../../assets/avatar/10000002/icon.png" alt="神里绫华"/>
+                    </div>
+                    <div class="caption">15次</div>
+                </div>
+                <i class="four-star"></i>
+                <div class="character">
+                    <div class="icon" style="background-image: url('./background/roleStarBg5.png')">
+                        <img src="../../assets/avatar/10000002/icon.png" alt="神里绫华"/>
+                    </div>
+                    <div class="caption">15次</div>
+                </div>
+                <i class="four-star"></i>
+                <div class="character">
+                    <div class="icon" style="background-image: url('./background/roleStarBg5.png')">
+                        <img src="../../assets/avatar/10000002/icon.png" alt="神里绫华"/>
+                    </div>
+                    <div class="caption">15次</div>
+                </div>
+                <i class="four-star"></i>
+                <div class="character">
+                    <div class="icon" style="background-image: url('./background/roleStarBg5.png')">
+                        <img src="../../assets/avatar/10000002/icon.png" alt="神里绫华"/>
+                    </div>
+                    <div class="caption">15次</div>
+                </div>
+            </div>
         </div>
         <div>
-            <div class="base-info flex flex-row px-20 py-1 my-1 text-white bg-black bg-opacity-10 ">
-                <div class="text-center flex flex-row flex-1 mr-6">
-                    <div class="my-auto">最多击破数：21</div>
-                    <img class="character-side-icon" src="./../../img/example/256x256.png" alt="">
+            <div class="caption">战斗数据</div>
+            <div class="ranks">
+                <div style="background-color: rgb(61 76 86 / 60%);">
+                    <div class="rank">战斗次数: 12</div>
+                    <div class="rank">
+                        <span>最多击破：999</span>
+                        <img src="../../assets/avatar/10000002/side.png" alt="神里绫华"/>
+                    </div>
                 </div>
-                <div class="text-center  flex flex-row flex-1 mr-6">
-                    <div class="my-auto">最强一击：21</div>
-                    <img class="character-side-icon ml-auto" src="./../../img/example/256x256.png" alt="">
+                <div>
+                    <div class="rank">
+                        <span>最强一击: 999,999</span>
+                        <img src="../../assets/avatar/10000002/side.png" alt="神里绫华"/>
+                    </div>
+                    <div class="rank">
+                        <span>最多承伤: 114,514</span>
+                        <img src="../../assets/avatar/10000002/side.png" alt="神里绫华"/>
+                    </div>
                 </div>
-            </div>
-            <div class="base-info flex flex-row px-20 py-1 my-1 text-white">
-                <div class="text-center flex flex-row flex-1 mr-6">
-                    <div class="my-auto">承受最多伤害：21</div>
-                    <img class="character-side-icon ml-auto" src="./../../img/example/256x256.png" alt="">
+                <div style="background-color: rgb(61 76 86 / 60%);">
+                    <div class="rank">
+                        <span>元素爆发: 26</span>
+                        <img src="../../assets/avatar/10000002/side.png" alt="神里绫华"/>
+                    </div>
+                    <div class="rank">
+                        <span>元素战技: 48</span>
+                        <img src="../../assets/avatar/10000002/side.png" alt="神里绫华"/>
+                    </div>
                 </div>
-                <div class="text-center  flex flex-row flex-1 mr-6">
-                    <div class="my-auto">元素爆发数：21</div>
-                    <img class="character-side-icon ml-auto" src="./../../img/example/256x256.png" alt="">
-                </div>
-            </div>
-            <div class="base-info flex flex-row px-20 py-1 my-1 text-white bg-black bg-opacity-10 ">
-                <div class="text-center flex flex-row flex-1 mr-6">
-                    <div class="my-auto">元素战技释放次数：21</div>
-                    <img class="character-side-icon ml-auto" src="./../../img/example/256x256.png" alt="">
-                </div>
-                <div class="text-center flex flex-row flex-1 mr-6"></div>
             </div>
         </div>
     </div>
-    <div class="my-2"></div>
 </div>
 </body>
 </html>

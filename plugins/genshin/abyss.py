@@ -18,14 +18,14 @@ from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from metadata.shortname import roleToId
+from metadata.genshin import game_id_to_role_id
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import async_re_sub, get_genshin_client, get_public_genshin_client
 from utils.log import logger
 
 TZ = timezone("Asia/Shanghai")
-cmd_pattern = r"^/abyss\s*(?:(\d+)|(all))?\s*(pre)?"
+cmd_pattern = r"^/abyss\s*((?:\d+)|(?:all))?\s*(pre)?"
 msg_pattern = r"^深渊数据((?:查询)|(?:总览))(上期){0,1}\D*(\d+)?.*$"
 
 regex_01 = r"['\"]icon['\"]:\s*['\"](.*?)['\"]"
@@ -33,19 +33,23 @@ regex_02 = r"['\"]side_icon['\"]:\s*['\"](.*?)['\"]"
 
 
 async def replace_01(match: Match, assets_service: AssetsService) -> str:
-    aid = roleToId(re.findall(r"UI_AvatarIcon_(.*?).png", match.groups()[0])[0])
+    aid = game_id_to_role_id(re.findall(r"UI_AvatarIcon_(.*?).png", match.group(1))[0])
     return (await assets_service.avatar(aid).icon()).as_uri()
 
 
 async def replace_02(match: Match, assets_service: AssetsService) -> str:
-    aid = roleToId(re.findall(r"UI_AvatarIcon_Side_(.*?).png", match.groups()[0])[0])
+    aid = game_id_to_role_id(re.findall(r"UI_AvatarIcon_Side_(.*?).png", match.group(1))[0])
     return (await assets_service.avatar(aid).side()).as_uri()
 
 
 def get_args(text: str) -> Tuple[int, bool, bool]:
     if text.startswith("/"):
         result = re.match(cmd_pattern, text).groups()
-        return int(result[0] or 0), bool(result[1]), bool(result[2])
+        try:
+            floor = int(result[0] or 0)
+        except ValueError:
+            floor = 0
+        return floor, result[0] == "all", bool(result[1])
     else:
         result = re.match(msg_pattern, text).groups()
         return int(result[2] or 0), result[0] == "查询", result[1] == "上期"
@@ -97,11 +101,11 @@ class Abyss(Plugin, BasePlugin):
             return
 
         # 解析参数
-        floor, overview, previous = get_args(message.text)
+        floor, total, previous = get_args(message.text)
 
         logger.info(
             f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]请求: "
-            f"floor={floor} overview={overview} previous={previous}",
+            f"floor={floor} overview={total} previous={previous}",
             extra={"markup": True},
         )
 
@@ -123,7 +127,7 @@ class Abyss(Plugin, BasePlugin):
         await message.reply_chat_action(ChatAction.TYPING)
 
         try:
-            image = await self.get_rendered_pic(client, uid, floor, overview, previous)
+            image = await self.get_rendered_pic(client, uid, floor, total, previous)
         except AbyssUnlocked:  # 若深渊未解锁
             user = await client.get_genshin_user(uid)
             reply_msg = await message.reply_text(
@@ -147,7 +151,8 @@ class Abyss(Plugin, BasePlugin):
 
         await message.reply_photo(image, filename=f"abyss_{user.id}.png", allow_sending_without_reply=True)
 
-    async def get_rendered_pic(self, client: Client, uid: int, floor: int, overview: bool, previous: bool) -> bytes:
+    async def get_rendered_pic(self, client: Client, uid: int, floor: int, total: bool, previous: bool) -> bytes:
+
         """
         获取渲染后的图片
 
@@ -155,7 +160,7 @@ class Abyss(Plugin, BasePlugin):
             client (Client): 获取 genshin 数据的 client
             uid (int): 需要查询的 uid
             floor (int): 层数
-            overview (bool): 是否为总览
+            total (bool): 是否为总览
             previous (bool): 是否为上期
 
         Returns:
@@ -169,18 +174,36 @@ class Abyss(Plugin, BasePlugin):
             raise NoMostKills()
         end_time = abyss_data.end_time.replace(tzinfo=TZ)
         time = end_time.strftime("%Y年%m月") + "上" if end_time.day <= 15 else "下" + "期"
+        stars = [i.stars for i in filter(lambda x: x.floor > 8, abyss_data.floors)]
+        total_stars = f"{sum(stars)} ({'-'.join(map(str, stars))})"
 
         render_data = {}
         result = await async_re_sub(
             regex_01, partial(replace_01, assets_service=self.assets_service), abyss_data.json()
         )
         result = await async_re_sub(regex_02, partial(replace_02, assets_service=self.assets_service), result)
-        render_data["abyss_data"] = json.loads(result)
+
+        render_data["data"] = json.loads(result)
         render_data["time"] = time
-        if overview:
-            return await self.template_service.render("genshin/abyss", "overview.html", render_data)
+        render_data["stars"] = total_stars
+        render_data["uid"] = uid
+        if total:
+            return await self.template_service.render(
+                "genshin/abyss",
+                "overview.html",
+                render_data,
+                viewport={"width": 770, "height": 600},
+                omit_background=True,
+            )
         elif floor < 1:
+            return await self.template_service.render(
+                "genshin/abyss",
+                "overview.html",
+                render_data,
+                viewport={"width": 750, "height": 580},
+                omit_background=True,
+            )
+        elif floor > 0:
             render_data["floor"] = floor
-            return await self.template_service.render("genshin/abyss", "total.html", render_data)
-        else:
-            return await self.template_service.render("genshin/abyss", "abyss.html", render_data)
+            return await self.template_service.render("genshin/abyss", "floor.html", render_data)
+        return await self.template_service.render("genshin/abyss", "total.html", render_data)

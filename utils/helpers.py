@@ -168,11 +168,11 @@ async def execute(command, pass_error=True):
 
 
 async def async_re_sub(
-    pattern: str | Pattern,
-    repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
-    string: str,
-    count: int = 0,
-    flags: int = 0,
+        pattern: str | Pattern,
+        repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
+        string: str,
+        count: int = 0,
+        flags: int = 0,
 ) -> str:
     """
     一个支持 repl 参数为 async 函数的 re.sub
@@ -191,24 +191,24 @@ async def async_re_sub(
     if count != 0:
         for _ in range(count):
             match = re.search(pattern, temp, flags=flags)
-            if iscoroutinefunction(repl):
-                # noinspection PyUnresolvedReferences
-                repl = await repl(match)
-            elif callable(repl):
-                # noinspection PyCallingNonCallable
-                repl = repl(match)
-            if not result:
-                result = temp[0 : match.span(1)[0]]
-            result += temp[0 : match.span(1)[0]] + repl
-            temp = temp[match.span(1)[1] :]
-    else:
-        while match := re.search(pattern, temp, flags=flags):
+            replaced = None
             if iscoroutinefunction(repl):
                 # noinspection PyUnresolvedReferences,PyCallingNonCallable
-                repl = await repl(match)
+                replaced = await repl(match)
             elif callable(repl):
                 # noinspection PyCallingNonCallable
-                repl = repl(match)
-            result += temp[0 : match.span(1)[0]] + repl
-            temp = temp[match.span(1)[1] :]
+                replaced = repl(match)
+            result += temp[0: match.span(1)[0]] + (replaced or repl)
+            temp = temp[match.span(1)[1]:]
+    else:
+        while match := re.search(pattern, temp, flags=flags):
+            replaced = None
+            if iscoroutinefunction(repl):
+                # noinspection PyUnresolvedReferences,PyCallingNonCallable
+                replaced = await repl(match)
+            elif callable(repl):
+                # noinspection PyCallingNonCallable
+                replaced = repl(match)
+            result += temp[0: match.span(1)[0]] + (replaced or repl)
+            temp = temp[match.span(1)[1]:]
     return result + temp
