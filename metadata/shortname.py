@@ -9,7 +9,7 @@ __all__ = ["roles", "weapons", "roleToId", "roleToName", "weaponToName", "weapon
 # noinspection SpellCheckingInspection
 roles = {
     20000000: ["主角", "旅行者", "卑鄙的外乡人", "荣誉骑士", "爷", "风主", "岩主", "雷主", "草主", "履刑者", "抽卡不歪真君"],
-    10000002: ["神里绫华", "Ayaka", "ayaka", "Kamisato Ayaka", "神里", "绫华", "神里凌华", "凌华", "白鹭公主", "神里大小 姐"],
+    10000002: ["神里绫华", "Ayaka", "ayaka", "Kamisato Ayaka", "神里", "绫华", "神里凌华", "凌华", "白鹭公主", "神里大小姐"],
     10000003: ["琴", "Jean", "jean", "团长", "代理团长", "琴团长", "蒲公英骑士"],
     10000005: ["空", "Aether", "aether", "男主", "男主角", "龙哥", "空哥"],
     10000006: ["丽莎", "Lisa", "lisa", "图书管理员", "图书馆管理员", "蔷薇魔女"],
