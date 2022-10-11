@@ -1,7 +1,6 @@
 from typing import Any, List, Tuple, Union
 
 from enkanetwork import (
-    Assets,
     CharacterInfo,
     DigitType,
     EnkaNetworkAPI,
