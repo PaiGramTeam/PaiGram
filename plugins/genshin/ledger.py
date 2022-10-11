@@ -147,7 +147,7 @@ class Ledger(Plugin, BasePlugin):
             "categories": categories,
         }
         png_data = await self.template_service.render(
-            "genshin/ledger", "ledger.html", ledger_data, {"width": 580, "height": 610}, evaluate=evaluate
+            "genshin/ledger/ledger.html", ledger_data, {"width": 580, "height": 610}, evaluate=evaluate
         )
         return png_data
 

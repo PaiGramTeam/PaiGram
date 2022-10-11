@@ -1,7 +1,6 @@
 from typing import Any, List, Tuple, Union
 
 from enkanetwork import (
-    Assets,
     CharacterInfo,
     DigitType,
     EnkaNetworkAPI,
@@ -266,13 +265,12 @@ class RenderTemplate:
         }
 
         # html = await self.template_service.render_async(
-        #     "genshin/player_card", "player_card.html", data
+        #     "genshin/player_card/player_card.html", data
         # )
         # logger.debug(html)
 
         return await self.template_service.render(
-            "genshin/player_card",
-            "player_card.html",
+            "genshin/player_card/player_card.html",
             data,
             {"width": 950, "height": 1080},
             full_page=True,

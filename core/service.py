@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from types import FunctionType
+from typing import Callable
 
 from utils.log import logger
 
@@ -18,7 +18,7 @@ class Service(ABC):
         """关闭 service"""
 
 
-def init_service(func: FunctionType):
+def init_service(func: Callable):
     from core.bot import bot
 
     if bot.is_running:

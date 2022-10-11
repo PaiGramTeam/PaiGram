@@ -135,6 +135,6 @@ class Abyss(Plugin, BasePlugin):
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         png_data = await self.template_service.render(
-            "genshin/abyss", "abyss.html", abyss_data, {"width": 865, "height": 504}, full_page=False
+            "genshin/abyss/abyss.html", abyss_data, {"width": 865, "height": 504}, full_page=False
         )
         await message.reply_photo(png_data, filename=f"abyss_{user.id}.png", allow_sending_without_reply=True)

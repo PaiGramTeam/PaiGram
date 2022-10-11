@@ -268,12 +268,12 @@ class DailyMaterial(Plugin, BasePlugin):
         render_tasks = [
             asyncio.create_task(
                 self.template_service.render(  # 渲染角色素材页
-                    "genshin/daily_material", "character.html", {"data": render_data}, {"width": 1164, "height": 500}
+                    "genshin/daily_material/character.html", {"data": render_data}, {"width": 1164, "height": 500}
                 )
             ),
             asyncio.create_task(
                 self.template_service.render(  # 渲染武器素材页
-                    "genshin/daily_material", "weapon.html", {"data": render_data}, {"width": 1164, "height": 500}
+                    "genshin/daily_material/weapon.html", {"data": render_data}, {"width": 1164, "height": 500}
                 )
             ),
         ]
