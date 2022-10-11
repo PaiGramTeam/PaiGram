@@ -8,7 +8,7 @@
     <link href="help.css" rel="stylesheet" />
 </head>
 <body>
-<div class="container mx-auto px-5 py-10 max-w-3xl">
+<div class="container mx-auto px-5 py-10 max-w-6xl">
     <div class="header p-6 flex mb-8 rounded-xl bg-cover justify-between">
         <div>
             <h1 class="text-4xl italic">TGPaimonBot</h1>
@@ -21,17 +21,17 @@
     <div class="box pt-4 rounded-xl space-y-4 overflow-hidden">
         <div>
             <div class="command-background pointer-events-none">
-                <img src="background/2015.png" />
+                <img src="background/2015.png"  alt=""/>
             </div>
             <div class="genshin-background pointer-events-none">
-                <img src="background/genshin.png" />
+                <img src="background/genshin.png"  alt=""/>
             </div>
 
             <div class="command-title text-2xl mx-1">
                 <h1>查询命令</h1>
             </div>
 
-            <div class="grid grid-cols-2 py-4 px-2">
+            <div class="grid grid-cols-4 py-4 px-2">
                 <div class="command">
                     <div class="command-name">/weapon</div>
                     <div class="command-description">查询武器</div>
@@ -93,7 +93,28 @@
                     <div class="command-name">/abyss_team</div>
                     <div class="command-description">深渊推荐配队</div>
                 </div>
-
+                <!--! gacha_log 相关 -->
+                <div class="command">
+                    <div class="command-name">/gacha_log</div>
+                    <div class="command-description">抽卡记录</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/gacha_count</div>
+                    <div class="command-description">抽卡统计</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/gacha_log_import</div>
+                    <div class="command-description">导入抽卡记录</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/gacha_log_export</div>
+                    <div class="command-description">导出抽卡记录</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/gacha_log_delete</div>
+                    <div class="command-description">删除抽卡记录</div>
+                </div>
+                <!--! 其他 -->
                 <div class="command">
                     <div class="command-name">/hilichurls</div>
                     <div class="command-description">丘丘语字典</div>
@@ -108,7 +129,7 @@
             <div class="command-title text-2xl mx-1">
                 <h1>其他命令</h1>
             </div>
-            <div class="grid grid-cols-2 py-4 px-2">
+            <div class="grid grid-cols-4 py-4 px-2">
                 <div class="command">
                     <div class="command-name">/gacha</div>
                     <div class="command-description">抽卡模拟器（非洲人模拟器）</div>
