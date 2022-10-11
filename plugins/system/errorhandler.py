@@ -53,7 +53,7 @@ class ErrorHandler(Plugin):
         try:
             async with aiofiles.open(log_file, mode="w+", encoding="utf-8") as f:
                 await f.write(error_text)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=W0703
             logger.error("保存日记失败")
             logger.exception(exc)
         try:

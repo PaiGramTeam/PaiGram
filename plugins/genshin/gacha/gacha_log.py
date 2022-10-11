@@ -1,8 +1,7 @@
 import json
-import genshin
-
 from io import BytesIO
 
+import genshin
 from genshin.models import BannerType
 from telegram import Update, User, Message, Document
 from telegram.constants import ChatAction
@@ -10,8 +9,8 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError
 from core.cookies import CookiesService
+from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler, conversation
 from core.template import TemplateService
 from core.user import UserService
@@ -87,9 +86,11 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             # bytesio to json
             data = data.getvalue().decode("utf-8")
             data = json.loads(data)
+        except UnicodeDecodeError:
+            await message.reply_text("文件解析失败，请检查文件编码是否正确或符合 UIGF 标准")
+            return
         except Exception as exc:
-            if not isinstance(exc, UnicodeDecodeError):
-                logger.error(f"文件解析失败：{repr(exc)}")
+            logger.error(f"文件解析失败：{repr(exc)}")
             await message.reply_text("文件解析失败，请检查文件是否符合 UIGF 标准")
             return
         await message.reply_chat_action(ChatAction.TYPING)
@@ -97,7 +98,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             text = await self._refresh_user_data(user, data=data)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=W0703
             logger.error(f"文件解析失败：{repr(exc)}")
             text = "文件解析失败，请检查文件是否符合 UIGF 标准"
         await reply.edit_text(text)

@@ -130,7 +130,8 @@ class Post(Plugin.Conversation, BasePlugin):
             return await self.delete_photo(update, context)
         return ConversationHandler.END
 
-    async def delete_photo(self, update: Update, context: CallbackContext) -> int:
+    @staticmethod
+    async def delete_photo(update: Update, context: CallbackContext) -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         photo_len = len(post_handler_data.post_images)
         message = update.effective_message
@@ -159,7 +160,8 @@ class Post(Plugin.Conversation, BasePlugin):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
 
-    async def get_channel(self, update: Update, _: CallbackContext) -> int:
+    @staticmethod
+    async def get_channel(update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         reply_keyboard = []
         try:
@@ -197,7 +199,8 @@ class Post(Plugin.Conversation, BasePlugin):
         await message.reply_text("请核对你修改的信息", reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
         return SEND_POST
 
-    async def add_tags(self, update: Update, _: CallbackContext) -> int:
+    @staticmethod
+    async def add_tags(update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符，不用添加 # 作为开头，推送时程序会自动添加")
         return GET_TAGS
@@ -214,7 +217,8 @@ class Post(Plugin.Conversation, BasePlugin):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
 
-    async def edit_text(self, update: Update, _: CallbackContext) -> int:
+    @staticmethod
+    async def edit_text(update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         await message.reply_text("请回复替换的文本")
         return GET_TEXT

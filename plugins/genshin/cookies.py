@@ -162,6 +162,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     @error_callable
     async def check_captcha(self, update: Update, context: CallbackContext) -> int:
+        user = update.effective_user
         message = update.effective_message
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
@@ -183,7 +184,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                     await message.reply_text("登录失败：可能是验证码错误，注意不要在登录页面使用掉验证码，如果验证码已经使用，请重新获取验证码！")
                     return ConversationHandler.END
                 await client.get_s_token()
-            except Exception:
+            except Exception as exc:  # pylint: disable=W0703
+                logger.error(f"用户 {user.full_name}[{user.id}] 登录失败 {repr(exc)}")
                 await message.reply_text("登录失败：米游社返回了错误的数据，请稍后再试！")
                 return ConversationHandler.END
             add_user_command_data.sign_in_client = client
@@ -198,7 +200,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 if not success:
                     await message.reply_text("登录失败：可能是验证码错误，注意不要在登录页面使用掉验证码，如果验证码已经使用，请重新获取验证码！")
                     return ConversationHandler.END
-            except Exception:
+            except Exception as exc:  # pylint: disable=W0703
+                logger.error(f"用户 {user.full_name}[{user.id}] 登录失败 {repr(exc)}")
                 await message.reply_text("登录失败：米游社返回了错误的数据，请稍后再试！")
                 return ConversationHandler.END
             add_user_command_data.cookies = client.cookie

@@ -430,7 +430,7 @@ class Logger(logging.Logger):
         stacklevel: int = 1,
         extra: Optional[Mapping[str, Any]] = None,
         **kwargs,
-    ) -> None:
+    ) -> None:  # pylint: disable=W1113
         super(Logger, self).exception(
             "" if msg is NOT_SET else msg,
             *args,
