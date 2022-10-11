@@ -151,6 +151,8 @@ class Abyss(Plugin, BasePlugin):
 
         await message.reply_photo(image, filename=f"abyss_{user.id}.png", allow_sending_without_reply=True)
 
+        logger.info(f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]: 成功发送图片")
+
     async def get_rendered_pic(self, client: Client, uid: int, floor: int, total: bool, previous: bool) -> bytes:
 
         """
