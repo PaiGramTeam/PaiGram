@@ -10,6 +10,10 @@ from core.bot import bot
 from utils.log import logger
 
 
+class _QuerySelectorNotFound(Exception):
+    pass
+
+
 class TemplateService:
     def __init__(self, browser: AioBrowser, template_package_name: str = "resources", cache_dir_name: str = "cache"):
         self._browser = browser
@@ -89,10 +93,12 @@ class TemplateService:
         if query_selector:
             try:
                 card = await page.query_selector(query_selector)
-                assert card
+                if not card:
+                    raise _QuerySelectorNotFound
                 clip = await card.bounding_box()
-                assert clip
-            except AssertionError:
+                if not clip:
+                    raise _QuerySelectorNotFound
+            except _QuerySelectorNotFound:
                 logger.warning(f"未找到 {query_selector} 元素")
         png_data = await page.screenshot(clip=clip, full_page=full_page)
         await page.close()
