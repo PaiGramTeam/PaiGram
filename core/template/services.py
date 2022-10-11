@@ -146,7 +146,7 @@ class TemplatePreviewer:
             if id and id not in self.preview_data:
                 raise HTTPException(status_code=404, detail=f"Preview id {id} not found, possible server restarted")
 
-            data = id and self.preview_data[id] or {}
+            data = self.preview_data[id] if id else {}
 
             # 渲染 jinja2 模板
             try:

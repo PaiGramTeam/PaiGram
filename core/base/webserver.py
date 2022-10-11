@@ -2,12 +2,12 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI
 
-from core.config import BotConfig, config
+from core.config import BotConfig, config as botConfig
 from core.service import Service
 
 __all__ = ["webapp", "WebServer"]
 
-webapp = FastAPI(debug=config.debug)
+webapp = FastAPI(debug=botConfig.debug)
 
 
 @webapp.get("/")
