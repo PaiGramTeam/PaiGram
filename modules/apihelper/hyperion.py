@@ -2,7 +2,7 @@ import asyncio
 import re
 import time
 from json import JSONDecodeError
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from genshin import Client, InvalidCookies
 from genshin.utility.uid import recognize_genshin_server
@@ -228,11 +228,15 @@ class SignIn:
         "Host": "api-takumi.mihoyo.com",
     }
 
-    def __init__(self, phone: int = 0):
+    def __init__(self, phone: int = 0, uid: int = 0, cookie: Dict = None):
         self.phone = phone
         self.client = AsyncClient()
-        self.uid = 0
-        self.cookie = {}
+        self.uid = uid
+        self.cookie = cookie if cookie is not None else {}
+        for key, value in cookie.items():
+            if key in ["account_id", "ltuid", "login_uid"]:
+                self.uid = value
+                break
 
     def parse_uid(self):
         """
@@ -276,6 +280,8 @@ class SignIn:
         return bool(self.uid)
 
     async def get_s_token(self):
+        if not self.cookie.get("login_ticket") or not self.uid:
+            return
         data = await self.client.get(
             self.S_TOKEN_URL.format(self.cookie["login_ticket"], self.uid), headers={"User-Agent": self.USER_AGENT}
         )
