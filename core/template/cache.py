@@ -15,6 +15,7 @@ class TemplatePreviewCache:
     async def get_data(self, id: str) -> Any:
         data = await self.client.get(self.get_key(id))
         if data:
+            # skipcq: BAN-B301
             return pickle.loads(gzip.decompress(data))
 
     async def set_data(self, id: str, data: Any, ttl: int = 8 * 60 * 60):
