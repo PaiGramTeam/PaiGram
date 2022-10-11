@@ -1,8 +1,9 @@
 import asyncio
-import aiohttp
+from typing import Optional
+
+import aiohttp  # pylint: disable=W0406
 
 from utils.patch.methods import patch, patchable
-from typing import Optional
 
 
 class AioHttpTimeoutException(asyncio.TimeoutError):
