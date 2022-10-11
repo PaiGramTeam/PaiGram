@@ -233,10 +233,7 @@ class SignIn:
         self.client = AsyncClient()
         self.uid = uid
         self.cookie = cookie if cookie is not None else {}
-        for key, value in cookie.items():
-            if key in ["account_id", "ltuid", "login_uid"]:
-                self.uid = value
-                break
+        self.parse_uid()
 
     def parse_uid(self):
         """
@@ -244,7 +241,7 @@ class SignIn:
         :param self:
         :return:
         """
-        if "login_ticket" not in self.cookie:
+        if not self.cookie:
             return
         for item in ["login_uid", "stuid", "ltuid", "account_id"]:
             if item in self.cookie:
@@ -276,6 +273,8 @@ class SignIn:
         for k, v in data.cookies.items():
             self.cookie[k] = v
 
+        if "login_ticket" not in self.cookie:
+            return False
         self.parse_uid()
         return bool(self.uid)
 
