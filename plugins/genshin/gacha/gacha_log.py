@@ -1,4 +1,6 @@
 import json
+import genshin
+
 from io import BytesIO
 
 from genshin.models import BannerType
@@ -9,17 +11,20 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
+from core.cookies import CookiesService
 from core.plugin import Plugin, handler, conversation
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from modules.apihelper.gacha_log import GachaLog as GachaLogService
+from modules.apihelper.hyperion import SignIn
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
+from utils.models.base import RegionEnum
 
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
@@ -28,11 +33,16 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
     """抽卡记录导入/导出/分析"""
 
     def __init__(
-        self, template_service: TemplateService = None, user_service: UserService = None, assets: AssetsService = None
+        self,
+        template_service: TemplateService = None,
+        user_service: UserService = None,
+        assets: AssetsService = None,
+        cookie_service: CookiesService = None,
     ):
         self.template_service = template_service
         self.user_service = user_service
         self.assets_service = assets
+        self.cookie_service = cookie_service
 
     @staticmethod
     def from_url_get_authkey(url: str) -> str:
@@ -78,7 +88,8 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             data = data.getvalue().decode("utf-8")
             data = json.loads(data)
         except Exception as exc:
-            logger.error(f"文件解析失败：{repr(exc)}")
+            if not isinstance(exc, UnicodeDecodeError):
+                logger.error(f"文件解析失败：{repr(exc)}")
             await message.reply_text("文件解析失败，请检查文件是否符合 UIGF 标准")
             return
         await message.reply_chat_action(ChatAction.TYPING)
@@ -101,6 +112,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         user = update.effective_user
         args = get_all_args(context)
         logger.info(f"用户 {user.full_name}[{user.id}] 导入抽卡记录命令请求")
+        authkey = self.from_url_get_authkey(args[0] if args else "")
         if not args:
             if message.document:
                 await self.import_from_file(user, message)
@@ -108,18 +120,46 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             elif message.reply_to_message and message.reply_to_message.document:
                 await self.import_from_file(user, message, document=message.reply_to_message.document)
                 return ConversationHandler.END
+            try:
+                user_info = await self.user_service.get_user_by_id(user.id)
+            except UserNotFoundError:
+                user_info = None
+            if user_info and user_info.region == RegionEnum.HYPERION:
+                try:
+                    cookies = await self.cookie_service.get_cookies(user_info.user_id, user_info.region)
+                except CookiesNotFoundError:
+                    cookies = None
+                if cookies and cookies.cookies and "stoken" in cookies.cookies:
+                    if stuid := next(
+                        (value for key, value in cookies.cookies.items() if key in ["ltuid", "login_uid"]), None
+                    ):
+                        cookies.cookies["stuid"] = stuid
+                        client = genshin.Client(
+                            cookies=cookies.cookies,
+                            game=genshin.types.Game.GENSHIN,
+                            region=genshin.Region.CHINESE,
+                            lang="zh-cn",
+                            uid=user_info.yuanshen_uid,
+                        )
+                        authkey = await SignIn.get_authkey_by_stoken(client)
+        if not authkey:
             await message.reply_text(
-                "<b>导入祈愿历史记录</b>\n\n"
-                "1.请发送从其他工具导出的 UIGF JSON 标准的记录文件\n"
-                "2.你还可以向派蒙发送从游戏中获取到的抽卡记录链接\n\n"
-                "<b>注意：导入的数据将会与旧数据进行合并。</b>\n"
-                "获取抽卡记录链接可以参考：https://paimon.moe/wish/import",
+                "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
+                "（非 paimon.moe 导出的文件数据）</b>\n\n"
+                "> 你还可以向派蒙发送从其他工具导出的 UIGF JSON 标准的记录文件\n"
+                "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
+                "<b>注意：导入的数据将会与旧数据进行合并。</b>",
                 parse_mode="html",
             )
             return INPUT_URL
-        authkey = self.from_url_get_authkey(args[0])
+        text = "小派蒙正在从米哈游服务器获取数据，请稍后"
+        if not args:
+            text += "\n\n> 由于你绑定的 Cookie 中存在 stoken ，本次通过 stoken 自动刷新数据"
+        reply = await message.reply_text(text)
+        await message.reply_chat_action(ChatAction.TYPING)
         data = await self._refresh_user_data(user, authkey=authkey)
-        await message.reply_text(data)
+        await reply.edit_text(data)
+        return ConversationHandler.END
 
     @conversation.state(state=INPUT_URL)
     @handler.message(filters=~filters.COMMAND, block=False)
@@ -133,6 +173,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         authkey = self.from_url_get_authkey(message.text)
         reply = await message.reply_text("小派蒙正在从米哈游服务器获取数据，请稍后")
+        await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(text)
         return ConversationHandler.END

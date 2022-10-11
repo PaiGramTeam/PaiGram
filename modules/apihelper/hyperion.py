@@ -1,13 +1,18 @@
 import asyncio
 import re
 import time
-from typing import List
+from json import JSONDecodeError
+from typing import List, Optional
 
+from genshin import Client, InvalidCookies
+from genshin.utility.uid import recognize_genshin_server
+from genshin.utility.ds import generate_dynamic_secret
 from httpx import AsyncClient
 
 from modules.apihelper.base import ArtworkImage, PostInfo
 from modules.apihelper.helpers import get_device_id
 from modules.apihelper.request.hoyorequest import HOYORequest
+from utils.log import logger
 from utils.typedefs import JSONDict
 
 
@@ -169,7 +174,7 @@ class GachaInfo:
 class SignIn:
     LOGIN_URL = "https://webapi.account.mihoyo.com/Api/login_by_mobilecaptcha"
     S_TOKEN_URL = (
-        "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?" "login_ticket={0}&token_types=3&uid={1}"
+        "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?login_ticket={0}&token_types=3&uid={1}"
     )
     BBS_URL = "https://api-takumi.mihoyo.com/account/auth/api/webLoginByMobile"
     USER_AGENT = (
@@ -209,8 +214,21 @@ class SignIn:
         "Referer": "https://bbs.mihoyo.com/",
         "Accept-Language": "zh-CN,zh-Hans;q=0.9",
     }
+    AUTHKEY_API = "https://api-takumi.mihoyo.com/binding/api/genAuthKey"
+    GACHA_HEADERS = {
+        "User-Agent": "okhttp/4.8.0",
+        "x-rpc-app_version": "2.28.1",
+        "x-rpc-sys_version": "12",
+        "x-rpc-client_type": "5",
+        "x-rpc-channel": "mihoyo",
+        "x-rpc-device_id": get_device_id(USER_AGENT),
+        "x-rpc-device_name": "Mi 10",
+        "x-rpc-device_model": "Mi 10",
+        "Referer": "https://app.mihoyo.com",
+        "Host": "api-takumi.mihoyo.com",
+    }
 
-    def __init__(self, phone: int):
+    def __init__(self, phone: int = 0):
         self.phone = phone
         self.client = AsyncClient()
         self.uid = 0
@@ -287,3 +305,27 @@ class SignIn:
             self.cookie[k] = v
 
         return "cookie_token" in self.cookie
+
+    @staticmethod
+    async def get_authkey_by_stoken(client: Client) -> Optional[str]:
+        """通过 stoken 获取 authkey"""
+        try:
+            headers = SignIn.GACHA_HEADERS.copy()
+            headers["DS"] = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
+            data = await client.cookie_manager.request(
+                SignIn.AUTHKEY_API,
+                method="POST",
+                json={
+                    "auth_appid": "webview_gacha",
+                    "game_biz": "hk4e_cn",
+                    "game_uid": client.uid,
+                    "region": recognize_genshin_server(client.uid),
+                },
+                headers=headers,
+            )
+            return data.get("authkey")
+        except JSONDecodeError:
+            logger.warning("Stoken 获取 Authkey JSON解析失败")
+        except InvalidCookies:
+            logger.warning("Stoken 获取 Authkey 失败 | 用户 Stoken 失效")
+        return None

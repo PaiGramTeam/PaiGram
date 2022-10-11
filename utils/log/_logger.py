@@ -35,7 +35,7 @@ from rich.traceback import (
 )
 from ujson import JSONDecodeError
 
-from core.config import BotConfig
+from core.config import config
 from utils.const import NOT_SET, PROJECT_ROOT
 from utils.log._file import FileIO
 from utils.log._style import (
@@ -64,7 +64,6 @@ __initialized__ = False
 
 FormatTimeCallable = Callable[[datetime], Text]
 
-config = BotConfig()
 logging.addLevelName(5, "TRACE")
 logging.addLevelName(25, "SUCCESS")
 color_system: Literal["windows", "truecolor"]
