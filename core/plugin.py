@@ -1,3 +1,4 @@
+import copy
 import datetime
 import re
 from importlib import import_module
@@ -133,8 +134,12 @@ class _Conversation(_Plugin):
                 and isinstance(func := getattr(self, attr), Callable)
                 and (handler_datas := getattr(func, _NORMAL_HANDLER_ATTR_NAME, None))
             ):
+                conversation_data = getattr(func, _CONVERSATION_HANDLER_ATTR_NAME, None)
+                if attr == "cancel":
+                    handler_datas = copy.deepcopy(handler_datas)
+                    conversation_data = copy.deepcopy(conversation_data)
                 _handlers = self._make_handler(handler_datas)
-                if conversation_data := getattr(func, _CONVERSATION_HANDLER_ATTR_NAME, None):
+                if conversation_data:
                     if (_type := conversation_data.pop("type")) == "entry":
                         entry_points.extend(_handlers)
                     elif _type == "state":
