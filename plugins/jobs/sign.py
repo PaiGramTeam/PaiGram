@@ -99,12 +99,6 @@ class SignJob(Plugin):
             elif context.job.name == "SignAgainJob":
                 if sign_db.status in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
                     continue
-            if sign_db.status != SignStatusEnum.STATUS_SUCCESS:
-                if sign_db.status == SignStatusEnum.TIMEOUT_ERROR:
-                    if context.job.name == "SignAgainJob":
-                        logger.info(f"用户 [{user_id}] 即将执行重签")
-                elif sign_db.status != SignStatusEnum.ALREADY_CLAIMED:
-                    continue
             try:
                 text = await self.single_sign(user_id)
             except InvalidCookies:
