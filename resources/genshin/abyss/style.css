@@ -2,6 +2,9 @@
     --white: rgb(246 248 249);
     --bg-color: rgb(233 229 220);
     --h-color: rgb(203 189 162);
+    --red: rgb(255 86 33/ 80%);
+    --blue: rgb(98 168 233/ 80%);
+    --green: rgb(67 185 124/ 80%);
 }
 
 body {
@@ -80,6 +83,7 @@ body {
 .star {
     display: inline-flex;
     align-items: center;
+    position: relative;
 }
 
 .star::before {
@@ -113,7 +117,7 @@ body {
     margin: 0 20px;
     background-color: rgb(233 229 220);
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 10px;
     position: relative;
 }
 
@@ -210,9 +214,9 @@ body {
 }
 
 .floor {
+    margin: 20px 0;
+    padding: 0 30px;
     width: calc(100% - 60px);
-    height: 1200px;
-    padding: 30px;
     border-radius: 20px;
     overflow: hidden;
     outline: rgb(233 229 220 / 30%) solid 3px;
@@ -224,29 +228,30 @@ body {
 
 .head {
     width: 100%;
-    height: 125px;
+    height: 160px;
     display: flex;
 }
 
 .floor-name {
+    font-size: 28px;
     display: flex;
     align-items: center;
     font-weight: bold;
     color: var(--white);
 }
 
-.floor-name > span {
-    font-size: 25px;
-    margin-left: 15px;
+.floor-name > div:not(.floor-num) {
+    text-shadow: 1px 1px 5px rgb(0 0 0/50%);
 }
 
 .floor-num {
-    font-size: 28px;
     color: black;
     width: 100px;
     height: 100px;
-    background-image: url("./background/floor-num.png");
+    /* background-image: url("./background/floor-num.png"); */
+    background-image: url("./background/abyss.png");
     background-size: contain;
+    filter: drop-shadow(0 0 5px rgb(0 0 0/80%)) grayscale(10%);
     position: relative;
 }
 
@@ -255,6 +260,7 @@ body {
     top: 50%;
     left: 50%;
     transform: translateX(-50%) translateY(-50%);
+    opacity: 0;
 }
 
 .head > .star {
@@ -262,6 +268,7 @@ body {
     float: right;
     color: var(--white);
     font-size: 25px;
+    text-shadow: 1px 1px 5px rgb(0 0 0/50%);
 }
 
 .head > .star::before {
@@ -271,11 +278,77 @@ body {
 
 .chamber {
     margin: 10px 0;
-    height: 300px;
-    background-color: #28384D;
+    display: flex;
+    flex-flow: column;
 }
 
 .chamber-info {
-    height: 100px;
-    background-color: #462E22;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    color: var(--white);
+    font-size: 22px;
+}
+
+.stars {
+    margin-left: auto;
+}
+
+.dim-star::before {
+    filter: brightness(50%);
+}
+
+.battle {
+    margin: 10px 0 20px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.battle > .character {
+    flex: 2;
+    max-width: 120px;
+    height: 145px;
+}
+
+.battle > .battle-info {
+    flex: 1;
+    color: var(--white);
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.battle > .character > div:first-child:not(.icon, .element) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 5px;
+    min-width: 27px;
+    text-align: center;
+    border-radius: 0 0 0 10px;
+    filter: drop-shadow(1px 1px 5px rgb(0 0 0/50%));
+    font-weight: 500;
+    color: var(--white);
+}
+
+.battle > .character > .element {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 30px;
+    height: 30px;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.battle > .character > .icon {
+    width: 100%;
+    height: fit-content;
+    border-radius: 0 0 28px 0;
+}
+
+.battle > .character > .caption {
+    font-size: 20px;
+    margin-top: 2px;
 }

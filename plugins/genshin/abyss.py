@@ -1,12 +1,15 @@
 """深渊数据查询"""
+
 import re
-from functools import partial
-from typing import Match, Tuple
+from datetime import datetime
+from functools import lru_cache, partial
+from typing import List, Match, Optional, Tuple
 
 import ujson as json
+from arkowrapper import ArkoWrapper
 from genshin import Client
 from pytz import timezone
-from telegram import Update
+from telegram import InputMediaPhoto, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -42,6 +45,7 @@ async def replace_02(match: Match, assets_service: AssetsService) -> str:
     return (await assets_service.avatar(aid).side()).as_uri()
 
 
+@lru_cache
 def get_args(text: str) -> Tuple[int, bool, bool]:
     if text.startswith("/"):
         result = re.match(cmd_pattern, text).groups()
@@ -67,11 +71,11 @@ class Abyss(Plugin, BasePlugin):
     """深渊数据查询"""
 
     def __init__(
-        self,
-        user_service: UserService = None,
-        cookies_service: CookiesService = None,
-        template_service: TemplateService = None,
-        assets_service: AssetsService = None,
+            self,
+            user_service: UserService = None,
+            cookies_service: CookiesService = None,
+            template_service: TemplateService = None,
+            assets_service: AssetsService = None,
     ):
         self.template_service = template_service
         self.cookies_service = cookies_service
@@ -90,10 +94,10 @@ class Abyss(Plugin, BasePlugin):
         if (message.text.startswith("/") and "help" in message.text) or "帮助" in message.text:
             await message.reply_text(
                 "<b>深渊挑战数据</b>功能使用帮助（中括号表示可选参数）\n\n"
-                "指令格式：\n<code>/abyss + [层数/all] + [pre]</code>\n（<pre>pre</pre>表示上期）\n\n"
+                "指令格式：\n<code>/abyss + [层数/all] + [pre]</code>\n（<code>pre</code>表示上期）\n\n"
                 "文本格式：\n<code>深渊数据 + 查询/总览 + [上期] + [层数]</code> \n\n"
                 "例如以下指令都正确：\n"
-                "<code>/abyss</code>\n<code>/abyss 12 pre</code>\n<code>/abyss all code</code>\n"
+                "<code>/abyss</code>\n<code>/abyss 12 pre</code>\n<code>/abyss all pre</code>\n"
                 "<code>深渊数据查询</code>\n<code>深渊数据查询上期第12层</code>\n<code>深渊数据总览上期</code>",
                 parse_mode=ParseMode.HTML,
             )
@@ -103,9 +107,16 @@ class Abyss(Plugin, BasePlugin):
         # 解析参数
         floor, total, previous = get_args(message.text)
 
+        if floor > 12 or floor < 0:
+            reply_msg = await message.reply_text("深渊层数输入错误，请重新输入")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+            return
+
         logger.info(
             f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]请求: "
-            f"floor={floor} overview={total} previous={previous}",
+            f"floor={floor} total={total} previous={previous}",
             extra={"markup": True},
         )
 
@@ -124,37 +135,42 @@ class Abyss(Plugin, BasePlugin):
         except CookiesNotFoundError:  # 若未找到cookie
             client, uid = await get_public_genshin_client(user.id)
 
+        async def reply_message(content: str) -> None:
+            _user = await client.get_genshin_user(uid)
+            _reply_msg = await message.reply_text(
+                f"旅行者 {_user.info.nickname}(<code>{uid}</code>) " + content, parse_mode=ParseMode.HTML
+            )
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, _reply_msg.chat_id, _reply_msg.message_id, 10)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+
+        if total:
+            reply_msg = await message.reply_text("派蒙需要时间整理下深渊数据，还请耐心等待哦~")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+
         await message.reply_chat_action(ChatAction.TYPING)
 
         try:
-            image = await self.get_rendered_pic(client, uid, floor, total, previous)
+            images = await self.get_rendered_pic(client, uid, floor, total, previous)
         except AbyssUnlocked:  # 若深渊未解锁
-            user = await client.get_genshin_user(uid)
-            reply_msg = await message.reply_text(
-                f"旅行者 <pre>{user.info.nickname}({uid})</pre> 还未解锁深渊哦~", parse_mode=ParseMode.HTML
-            )
-            if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
-            return
+            return await reply_message("还未解锁深渊哦~")
         except NoMostKills:  # 若深渊还未挑战
-            user = await client.get_genshin_user(uid)
-            reply_msg = await message.reply_text(
-                f"本次深渊旅行者 <pre>{user.info.nickname}({uid})</pre> 还没有挑战呢，咕咕咕~", parse_mode=ParseMode.HTML
-            )
-            if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
-            return
+            return await reply_message("还没有挑战本次深渊呢，咕咕咕~")
+        if images is None:
+            return await reply_message(f"还没有第 {floor} 层的挑战数据")
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
 
-        await message.reply_photo(image, filename=f"abyss_{user.id}.png", allow_sending_without_reply=True)
+        for group in ArkoWrapper(images).map(InputMediaPhoto).group(10):  # 每 10 张图片分一个组
+            await message.reply_media_group(list(group), allow_sending_without_reply=True)
 
-        logger.info(f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]: 成功发送图片")
+        logger.info(f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]: 成功发送图片", extra={"markup": True})
 
-    async def get_rendered_pic(self, client: Client, uid: int, floor: int, total: bool, previous: bool) -> bytes:
-
+    async def get_rendered_pic(
+            self, client: Client, uid: int, floor: int, total: bool, previous: bool
+    ) -> Optional[List[bytes]]:
         """
         获取渲染后的图片
 
@@ -169,57 +185,111 @@ class Abyss(Plugin, BasePlugin):
             bytes格式的图片
         """
 
-        abyss_data = await client.get_spiral_abyss(uid, previous=previous)
+        def json_encoder(value):
+            if isinstance(value, datetime):
+                return value.astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S")
+            return value
+
+        abyss_data = await client.get_spiral_abyss(uid, previous=previous, lang="zh-cn")
         if not abyss_data.unlocked:
             raise AbyssUnlocked()
         if not abyss_data.ranks.most_kills:
             raise NoMostKills()
-        end_time = abyss_data.end_time.replace(tzinfo=TZ)
-        time = end_time.strftime("%Y年%m月") + "上" if end_time.day <= 15 else "下" + "期"
+        end_time = abyss_data.end_time.astimezone(TZ)
+        time = end_time.strftime("%Y年%m月") + "上" if end_time.day <= 16 else "下" + "期"
         stars = [i.stars for i in filter(lambda x: x.floor > 8, abyss_data.floors)]
         total_stars = f"{sum(stars)} ({'-'.join(map(str, stars))})"
 
         render_data = {}
         result = await async_re_sub(
-            regex_01, partial(replace_01, assets_service=self.assets_service), abyss_data.json()
+            regex_01,
+            partial(replace_01, assets_service=self.assets_service),
+            abyss_data.json(encoder=json_encoder),
         )
         result = await async_re_sub(regex_02, partial(replace_02, assets_service=self.assets_service), result)
 
-        render_data["data"] = json.loads(result)
         render_data["time"] = time
         render_data["stars"] = total_stars
         render_data["uid"] = uid
+        render_data["floor_colors"] = {
+            1: "#374952",
+            2: "#374952",
+            3: "#55464B",
+            4: "#55464B",
+            5: "#55464B",
+            6: "#1D2A5D",
+            7: "#1D2A5D",
+            8: "#1D2A5D",
+            9: "#292B58",
+            10: "#382024",
+            11: "#252550",
+            12: "#1D2A4A",
+        }
         if total:
-            return await self.template_service.render(
-                "genshin/abyss",
-                "overview.html",
-                render_data,
-                viewport={"width": 770, "height": 600},
-                omit_background=True,
-            )
+            avatars = await client.get_genshin_characters(uid, lang="zh-cn")
+            render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
+            data = json.loads(result)
+            render_data["data"] = data
+            return [
+                       await self.template_service.render(
+                           "genshin/abyss",
+                           "overview.html",
+                           render_data,
+                           viewport={"width": 750, "height": 580},
+                           omit_background=True,
+                       )
+                   ] + [
+                       await self.template_service.render(
+                           "genshin/abyss",
+                           "floor.html",
+                           {
+                               **render_data,
+                               "floor": floor_data,
+                               "total_stars": f"{floor_data['stars']}/{floor_data['max_stars']}",
+                           },
+                           viewport={"width": 690, "height": 500},
+                           full_page=True,
+                       )
+                       for floor_data in data["floors"]
+                       if floor_data["floor"] >= 9
+                   ]
         elif floor < 1:
-            return await self.template_service.render(
-                "genshin/abyss",
-                "overview.html",
-                render_data,
-                viewport={"width": 750, "height": 580},
-                omit_background=True,
-            )
-        elif floor > 0:
-            render_data["floors-color"] = {
-                1: "#374952",
-                2: "#374952",
-                3: "#374952",
-                4: "#55464B",
-                5: "#55464B",
-                6: "#1D2A5D",
-                7: "#1D2A5D",
-                8: "#1D2A5D",
-                9: "#292B58",
-                10: "#382024",
-                11: "#252550",
-                12: "#1D2A4A",
+            render_data["data"] = json.loads(result)
+            return [
+                await self.template_service.render(
+                    "genshin/abyss",
+                    "overview.html",
+                    render_data,
+                    viewport={"width": 750, "height": 580},
+                    omit_background=True,
+                )
+            ]
+        else:
+            dictionary = {
+                "0": "",
+                "1": "一",
+                "2": "二",
+                "3": "三",
+                "4": "四",
+                "5": "五",
+                "6": "六",
+                "7": "七",
+                "8": "八",
+                "9": "九",
             }
-            render_data["floor"] = floor
-            return await self.template_service.render("genshin/abyss", "floor.html", render_data)
-        return await self.template_service.render("genshin/abyss", "total.html", render_data)
+            if num := dictionary.get(str(floor), None):
+                render_data["floor-num"] = num
+            else:
+                render_data["floor-num"] = "十" + dictionary.get(str(floor % 10))
+            floors = json.loads(result)["floors"]
+            if (floor_data := list(filter(lambda x: x["floor"] == floor, floors))) is None:
+                return None
+            avatars = await client.get_genshin_characters(uid, lang="zh-cn")
+            render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
+            render_data["floor"] = floor_data[0]
+            render_data["total_stars"] = f"{floor_data[0]['stars']}/{floor_data[0]['max_stars']}"
+            return [
+                await self.template_service.render(
+                    "genshin/abyss", "floor.html", render_data, viewport={"width": 690, "height": 500}, full_page=True
+                )
+            ]
