@@ -188,7 +188,7 @@ class Sign(Plugin, BasePlugin):
                         return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
                     logger.info(f"UID {client.uid} 签到成功")
             except TimeoutException:
-                return f"签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
+                return "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
             except AlreadyClaimed:
                 logger.info(f"UID {client.uid} 已经签到")
                 result = "今天旅行者已经签到过了~"
