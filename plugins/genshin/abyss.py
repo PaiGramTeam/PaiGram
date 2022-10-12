@@ -258,7 +258,7 @@ class Abyss(Plugin, BasePlugin):
                     [
                         -1,
                         await self.template_service.render(
-                            "genshin/abyss", "overview.html", render_data, viewport={"width": 750, "height": 580}
+                            "genshin/abyss/overview.html", render_data, viewport={"width": 750, "height": 580}
                         ),
                     ]
                 )
@@ -269,8 +269,7 @@ class Abyss(Plugin, BasePlugin):
                     [
                         floor_d["floor"],
                         await self.template_service.render(
-                            "genshin/abyss",
-                            "floor.html",
+                            "genshin/abyss/floor.html",
                             {
                                 **render_data,
                                 "floor": floor_d,
@@ -293,8 +292,7 @@ class Abyss(Plugin, BasePlugin):
             render_data["data"] = json.loads(result)
             return [
                 await self.template_service.render(
-                    "genshin/abyss",
-                    "overview.html",
+                    "genshin/abyss/overview.html",
                     render_data,
                     viewport={"width": 750, "height": 580},
                 )
@@ -325,6 +323,6 @@ class Abyss(Plugin, BasePlugin):
             render_data["total_stars"] = f"{floor_data[0]['stars']}/{floor_data[0]['max_stars']}"
             return [
                 await self.template_service.render(
-                    "genshin/abyss", "floor.html", render_data, viewport={"width": 690, "height": 500}, full_page=True
+                    "genshin/abyss/floor.html", render_data, viewport={"width": 690, "height": 500}, full_page=True
                 )
             ]

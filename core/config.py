@@ -52,6 +52,10 @@ class BotConfig(BaseSettings):
     pass_challenge_api: str = ""
     pass_challenge_app_key: str = ""
 
+    web_url: str = "http://localhost:8080/"
+    web_host: str = "localhost"
+    web_port: int = 8080
+
     class Config:
         case_sensitive = False
         json_loads = json.loads
@@ -92,6 +96,13 @@ class BotConfig(BaseSettings):
             api_hash=self.api_hash,
         )
 
+    @property
+    def webserver(self) -> "WebServerConfig":
+        return WebServerConfig(
+            host=self.web_host,
+            port=self.web_port,
+        )
+
 
 class ConfigChannel(BaseModel):
     name: str
@@ -128,6 +139,11 @@ class LoggerConfig(BaseModel):
 class MTProtoConfig(BaseModel):
     api_id: Optional[int]
     api_hash: Optional[str]
+
+
+class WebServerConfig(BaseModel):
+    host: Optional[str]
+    port: Optional[int]
 
 
 BotConfig.update_forward_refs()

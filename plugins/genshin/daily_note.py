@@ -86,7 +86,7 @@ class DailyNote(Plugin, BasePlugin):
             "transformer_recovery_time": transformer_recovery_time,
         }
         png_data = await self.template_service.render(
-            "genshin/daily_note", "daily_note.html", daily_data, {"width": 600, "height": 548}, full_page=False
+            "genshin/daily_note/daily_note.html", daily_data, {"width": 600, "height": 548}, full_page=False
         )
         return png_data
 

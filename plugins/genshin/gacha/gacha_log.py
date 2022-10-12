@@ -290,7 +290,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             else:
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                 png_data = await self.template_service.render(
-                    "genshin/gacha_log", "gacha_log.html", data, full_page=True, query_selector=".body_box"
+                    "genshin/gacha_log/gacha_log.html", data, full_page=True, query_selector=".body_box"
                 )
                 await message.reply_photo(png_data)
         except UserNotFoundError:
@@ -336,7 +336,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                     document = True
                     data["hasMore"] = False
                 png_data = await self.template_service.render(
-                    "genshin/gacha_count", "gacha_count.html", data, full_page=True, query_selector=".body_box"
+                    "genshin/gacha_count/gacha_count.html", data, full_page=True, query_selector=".body_box"
                 )
                 if document:
                     await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)

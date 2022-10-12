@@ -126,7 +126,7 @@ class Gacha(Plugin, BasePlugin):
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         # 因为 gacha_info["title"] 返回的是 HTML 标签 尝试关闭自动转义
         png_data = await self.template_service.render(
-            "genshin/gacha", "gacha.html", data, {"width": 1157, "height": 603}, False
+            "genshin/gacha/gacha.html", data, {"width": 1157, "height": 603}, False
         )
 
         reply_message = await message.reply_photo(png_data)

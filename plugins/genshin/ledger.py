@@ -1,4 +1,3 @@
-import json
 import os
 import re
 from datetime import datetime, timedelta
@@ -89,52 +88,6 @@ class Ledger(Plugin, BasePlugin):
         def format_amount(amount: int) -> str:
             return f"{round(amount / 10000, 2)}w" if amount >= 10000 else amount
 
-        evaluate = (
-            """const { Pie } = G2Plot;
-    const data = JSON.parse(`"""
-            + json.dumps(categories)
-            + """`);
-    const piePlot = new Pie("chartContainer", {
-      renderer: "svg",
-      animation: false,
-      data: data,
-      appendPadding: 10,
-      angleField: "amount",
-      colorField: "name",
-      radius: 1,
-      innerRadius: 0.7,
-      color: JSON.parse(`"""
-            + json.dumps(color)
-            + """`),
-      meta: {},
-      label: {
-        type: "inner",
-        offset: "-50%",
-        autoRotate: false,
-        style: {
-          textAlign: "center",
-          fontFamily: "tttgbnumber",
-        },
-        formatter: ({ percentage }) => {
-          return percentage > 2 ? `${percentage}%` : "";
-        },
-      },
-      statistic: {
-        title: {
-          offsetY: -18,
-          content: "总计",
-        },
-        content: {
-          offsetY: -10,
-          style: {
-            fontFamily: "tttgbnumber",
-          },
-        },
-      },
-      legend:false,
-    });
-    piePlot.render();"""
-        )
         ledger_data = {
             "uid": client.uid,
             "day": diary_info.month,
@@ -145,9 +98,10 @@ class Ledger(Plugin, BasePlugin):
             "last_gacha": int(diary_info.month_data.last_primogems / 160),
             "last_mora": format_amount(diary_info.month_data.last_mora),
             "categories": categories,
+            "color": color,
         }
         png_data = await self.template_service.render(
-            "genshin/ledger", "ledger.html", ledger_data, {"width": 580, "height": 610}, evaluate=evaluate
+            "genshin/ledger/ledger.html", ledger_data, {"width": 580, "height": 610}
         )
         return png_data
 

@@ -83,8 +83,7 @@ class AbyssTeam(Plugin, BasePlugin):
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         png_data = await self.template_service.render(
-            "genshin/abyss_team",
-            "abyss_team.html",
+            "genshin/abyss_team/abyss_team.html",
             abyss_teams_data,
             {"width": 785, "height": 800},
             full_page=True,
