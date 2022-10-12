@@ -3,7 +3,7 @@ from io import BytesIO
 
 import genshin
 from genshin.models import BannerType
-from telegram import Update, User, Message, Document
+from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
 
@@ -243,7 +243,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
     @handler(MessageHandler, filters=filters.Regex("^导出抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
     @restricts()
     @error_callable
-    async def command_start_export(self, update: Update, _: CallbackContext) -> None:
+    async def command_start_export(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info(f"用户 {user.full_name}[{user.id}] 导出抽卡记录命令请求")
@@ -258,7 +258,11 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text(text)
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号")
+            if filters.ChatType.GROUPS.filter(message):
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+                await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
 
     @handler(CommandHandler, command="gacha_log", block=False)
     @handler(MessageHandler, filters=filters.Regex("^抽卡记录(.*)"), block=False)
@@ -291,7 +295,16 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_photo(png_data)
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号")
+            if filters.ChatType.GROUPS.filter(message):
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookies")]]
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
 
     @handler(CommandHandler, command="gacha_count", block=True)
     @handler(MessageHandler, filters=filters.Regex("^抽卡统计(.*)"), block=True)
@@ -333,4 +346,13 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                     await message.reply_photo(png_data)
         except (UserNotFoundError, CookiesNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号")
+            if filters.ChatType.GROUPS.filter(message):
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookies")]]
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
