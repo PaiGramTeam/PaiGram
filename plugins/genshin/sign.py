@@ -104,7 +104,8 @@ class Sign(Plugin, BasePlugin):
             logger.warning("签到 ajax 请求 JSON 解析失败")
         except TimeoutException as exc:
             logger.warning("签到 ajax 请求超时")
-            raise exc
+            if not config.pass_challenge_api:
+                raise exc
         except (KeyError, IndexError):
             logger.warning("签到 ajax 请求数据错误")
         except RuntimeError:
