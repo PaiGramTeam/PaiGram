@@ -37,6 +37,14 @@ class SignRepository:
             results = await session.exec(statement)
             return sign[0] if (sign := results.first()) else None
 
+    async def get_by_chat_id(self, chat_id: int) -> Optional[List[Sign]]:
+        async with self.mysql.Session() as session:
+            session = cast(AsyncSession, session)
+            statement = select(Sign).where(Sign.chat_id == chat_id)
+            results = await session.exec(statement)
+            signs = results.all()
+            return [sign[0] for sign in signs]
+
     async def get_all(self) -> List[Sign]:
         async with self.mysql.Session() as session:
             query = select(Sign)

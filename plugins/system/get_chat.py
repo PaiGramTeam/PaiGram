@@ -8,6 +8,7 @@ from telegram.ext import CommandHandler, CallbackContext
 from core.cookies import CookiesService
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
+from core.sign import SignServices
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from modules.apihelper.gacha_log import GachaLog
@@ -19,15 +20,23 @@ from utils.models.base import RegionEnum
 
 
 class GetChat(Plugin):
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None):
+    def __init__(
+        self,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+        sign_service: SignServices = None,
+    ):
         self.cookies_service = cookies_service
         self.user_service = user_service
+        self.sign_service = sign_service
 
-    @staticmethod
-    def parse_group_chat(chat: Chat, admins: List[ChatMember]) -> str:
+    async def parse_group_chat(self, chat: Chat, admins: List[ChatMember]) -> str:
         text = f"群 ID：<code>{chat.id}</code>\n" f"群名称：<code>{chat.title}</code>\n"
         if chat.username:
-            text += f"群用户名：<code>{chat.username}</code>\n"
+            text += f"群用户名：@{chat.username}\n"
+        sign_info = await self.sign_service.get_by_chat_id(chat.id)
+        if sign_info:
+            text += f"自动签到推送人数：<code>{len(sign_info)}</code>\n"
         if chat.description:
             text += f"群简介：<code>{chat.description}</code>\n"
         if admins:
@@ -72,6 +81,17 @@ class GetChat(Plugin):
             except CookiesNotFoundError:
                 temp = "UID 绑定"
             text += f"<code>{temp}</code>\n" f"游戏 ID：<code>{uid}</code>"
+            sign_info = await self.sign_service.get_by_user_id(chat.id)
+            if sign_info is not None:
+                text += (
+                    f"\n自动签到：已开启"
+                    f"\n推送会话：<code>{sign_info.chat_id}</code>"
+                    f"\n开启时间：<code>{sign_info.time_created}</code>"
+                    f"\n更新时间：<code>{sign_info.time_updated}</code>"
+                    f"\n签到状态：<code>{sign_info.status.name}</code>"
+                )
+            else:
+                text += f"\n自动签到：未开启"
             with contextlib.suppress(Exception):
                 gacha_log, status = await GachaLog.load_history_info(str(chat.id), str(uid))
                 if status:
@@ -102,7 +122,7 @@ class GetChat(Plugin):
             chat = await message.get_bot().get_chat(args[0])
             if chat_id < 0:
                 admins = await chat.get_administrators() if chat_id < 0 else None
-                text = self.parse_group_chat(chat, admins)
+                text = await self.parse_group_chat(chat, admins)
             else:
                 text = await self.parse_private_chat(chat)
             await message.reply_text(text, parse_mode="HTML")
