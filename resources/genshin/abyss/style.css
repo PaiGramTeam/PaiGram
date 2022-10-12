@@ -248,7 +248,6 @@ body {
     color: black;
     width: 100px;
     height: 100px;
-    /* background-image: url("./background/floor-num.png"); */
     background-image: url("./background/abyss.png");
     background-size: contain;
     filter: drop-shadow(0 0 5px rgb(0 0 0/80%)) grayscale(10%);

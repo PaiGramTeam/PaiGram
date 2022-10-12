@@ -71,11 +71,11 @@ class Abyss(Plugin, BasePlugin):
     """深渊数据查询"""
 
     def __init__(
-            self,
-            user_service: UserService = None,
-            cookies_service: CookiesService = None,
-            template_service: TemplateService = None,
-            assets_service: AssetsService = None,
+        self,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+        template_service: TemplateService = None,
+        assets_service: AssetsService = None,
     ):
         self.template_service = template_service
         self.cookies_service = cookies_service
@@ -169,7 +169,7 @@ class Abyss(Plugin, BasePlugin):
         logger.info(f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]: 成功发送图片", extra={"markup": True})
 
     async def get_rendered_pic(
-            self, client: Client, uid: int, floor: int, total: bool, previous: bool
+        self, client: Client, uid: int, floor: int, total: bool, previous: bool
     ) -> Optional[List[bytes]]:
         """
         获取渲染后的图片
@@ -231,28 +231,28 @@ class Abyss(Plugin, BasePlugin):
             data = json.loads(result)
             render_data["data"] = data
             return [
-                       await self.template_service.render(
-                           "genshin/abyss",
-                           "overview.html",
-                           render_data,
-                           viewport={"width": 750, "height": 580},
-                           omit_background=True,
-                       )
-                   ] + [
-                       await self.template_service.render(
-                           "genshin/abyss",
-                           "floor.html",
-                           {
-                               **render_data,
-                               "floor": floor_data,
-                               "total_stars": f"{floor_data['stars']}/{floor_data['max_stars']}",
-                           },
-                           viewport={"width": 690, "height": 500},
-                           full_page=True,
-                       )
-                       for floor_data in data["floors"]
-                       if floor_data["floor"] >= 9
-                   ]
+                await self.template_service.render(
+                    "genshin/abyss",
+                    "overview.html",
+                    render_data,
+                    viewport={"width": 750, "height": 580},
+                    omit_background=True,
+                )
+            ] + [
+                await self.template_service.render(
+                    "genshin/abyss",
+                    "floor.html",
+                    {
+                        **render_data,
+                        "floor": floor_data,
+                        "total_stars": f"{floor_data['stars']}/{floor_data['max_stars']}",
+                    },
+                    viewport={"width": 690, "height": 500},
+                    full_page=True,
+                )
+                for floor_data in data["floors"]
+                if floor_data["floor"] >= 9
+            ]
         elif floor < 1:
             render_data["data"] = json.loads(result)
             return [
@@ -265,7 +265,7 @@ class Abyss(Plugin, BasePlugin):
                 )
             ]
         else:
-            dictionary = {
+            num_dic = {
                 "0": "",
                 "1": "一",
                 "2": "二",
@@ -277,10 +277,10 @@ class Abyss(Plugin, BasePlugin):
                 "8": "八",
                 "9": "九",
             }
-            if num := dictionary.get(str(floor), None):
+            if num := num_dic.get(str(floor)):
                 render_data["floor-num"] = num
             else:
-                render_data["floor-num"] = "十" + dictionary.get(str(floor % 10))
+                render_data["floor-num"] = "十" + num_dic.get(str(floor % 10))
             floors = json.loads(result)["floors"]
             if (floor_data := list(filter(lambda x: x["floor"] == floor, floors))) is None:
                 return None
