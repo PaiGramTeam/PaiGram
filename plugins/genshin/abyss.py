@@ -127,10 +127,10 @@ class Abyss(Plugin, BasePlugin):
         except UserNotFoundError:  # 若未找到账号
             if filters.ChatType.GROUPS.filter(message):
                 buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookies")]]
-                reply_message = await message.reply_text(
+                reply_msg = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
