@@ -112,8 +112,9 @@ class SignJob(Plugin):
             except TimeoutException:
                 text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
-            except ClientConnectorError:
-                text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
+            except ClientConnectorError as exc:
+                logger.warning(f"aiohttp 请求错误 {repr(exc)}")
+                text = "签到失败了呜呜呜 ~ 链接服务器发生错误 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
             except NeedChallenge:
                 text = "签到失败，触发验证码风控，自动签到自动关闭"
