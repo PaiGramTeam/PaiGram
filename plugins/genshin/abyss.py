@@ -250,10 +250,7 @@ class Abyss(Plugin, BasePlugin):
                     [
                         -1,
                         await self.template_service.render(
-                            "genshin/abyss",
-                            "overview.html",
-                            render_data,
-                            viewport={"width": 750, "height": 580}
+                            "genshin/abyss", "overview.html", render_data, viewport={"width": 750, "height": 580}
                         ),
                     ]
                 )
@@ -292,7 +289,6 @@ class Abyss(Plugin, BasePlugin):
                     "overview.html",
                     render_data,
                     viewport={"width": 750, "height": 580},
-                    omit_background=True,
                 )
             ]
         else:
