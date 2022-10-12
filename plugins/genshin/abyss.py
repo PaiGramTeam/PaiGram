@@ -253,8 +253,7 @@ class Abyss(Plugin, BasePlugin):
                             "genshin/abyss",
                             "overview.html",
                             render_data,
-                            viewport={"width": 750, "height": 580},
-                            omit_background=True,
+                            viewport={"width": 750, "height": 580}
                         ),
                     ]
                 )
