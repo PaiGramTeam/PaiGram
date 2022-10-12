@@ -77,7 +77,14 @@ log_console = Console(color_system=color_system, theme=Theme(DEFAULT_STYLE), wid
 
 class Traceback(BaseTraceback):
     def __init__(self, *args, **kwargs):
-        kwargs.update({"show_locals": True, "max_frames": config.logger.traceback_max_frames})
+        kwargs.update(
+            {
+                "show_locals": True,
+                "max_frames": config.logger.traceback_max_frames,
+                "locals_max_length": 3,
+                "locals_max_string": 80,
+            }
+        )
         super(Traceback, self).__init__(*args, **kwargs)
         self.theme = PygmentsSyntaxTheme(MonokaiProStyle)
 

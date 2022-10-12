@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-ch">
+<head>
+    <meta charset="UTF-8">
+    <title>overview</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .overview {
+            border-radius: unset;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="overview">
+        <div class="title">挑战回顾</div>
+        <div class="summarize">
+            <div>
+                <div>UID: {{ uid }}</div>
+                <div class="star">
+                    <span>{{ stars }}</span>
+                </div>
+            </div>
+            <div>
+                <div>时间: {{ time }}</div>
+                <div>最深抵达: {{ data.max_floor }}</div>
+            </div>
+        </div>
+        <div class="most-played">
+            <div class="caption">出战次数</div>
+            <div class="characters">
+                {% for avatar in data.ranks.most_played %}
+                    <div class="character">
+                        <div
+                                class="icon"
+                                style="background-image: url('../../background/rarity/half/{{ avatar.rarity }}.png')"
+                        >
+                            <img src="{{ avatar.icon }}" alt=""/>
+                        </div>
+                        <div class="caption">{{ avatar.value }} 次</div>
+                    </div>
+                    {% if loop.index != 4 %}
+                        <i class="four-star"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div>
+            <div class="caption">战斗数据</div>
+            <div class="ranks">
+                <div style="background-color: rgb(61 76 86 / 60%);">
+                    <div class="rank">战斗次数: {{ data.total_battles }}</div>
+                    <div class="rank">
+                        <span>最多击破：{{ data.ranks.most_kills[0].value }}</span>
+                        <img src="{{ data.ranks.most_kills[0].side_icon }}" alt=""/>
+                    </div>
+                </div>
+                <div>
+                    <div class="rank">
+                        <span>最强一击: {{ data.ranks.strongest_strike[0].value }}</span>
+                        <img src="{{ data.ranks.strongest_strike[0].side_icon }}" alt=""/>
+                    </div>
+                    <div class="rank">
+                        <span>最多承伤: {{ data.ranks.most_damage_taken[0].value }}</span>
+                        <img src="{{ data.ranks.most_damage_taken[0].side_icon }}" alt=""/>
+                    </div>
+                </div>
+                <div style="background-color: rgb(61 76 86 / 60%);">
+                    <div class="rank">
+                        <span>元素爆发: {{ data.ranks.most_bursts_used[0].value }}</span>
+                        <img src="{{ data.ranks.most_bursts_used[0].side_icon }}" alt=""/>
+                    </div>
+                    <div class="rank">
+                        <span>元素战技: {{ data.ranks.most_skills_used[0].value }}</span>
+                        <img src="{{ data.ranks.most_skills_used[0].side_icon }}" alt=""/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import hashlib
 import os
+import re
 from asyncio import create_subprocess_shell
 from asyncio.subprocess import PIPE
+from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import Optional, Tuple, TypeVar, Union, cast
+from typing import Awaitable, Callable, Match, Optional, Pattern, Tuple, TypeVar, Union, cast
 
 import aiofiles
 import genshin
@@ -80,10 +84,7 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
             await f.write(data.content)
     logger.debug(f"url_to_file 获取url[{url}] 并下载到 file_dir[{file_dir}]")
 
-    if return_path:
-        return file_dir
-
-    return Path(file_dir).as_uri()
+    return file_dir if return_path else Path(file_dir).as_uri()
 
 
 async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True) -> Client:
@@ -133,9 +134,7 @@ async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]
 
 
 def region_server(uid: Union[int, str]) -> RegionEnum:
-    if isinstance(uid, int):
-        region = REGION_MAP.get(str(uid)[0])
-    elif isinstance(uid, str):
+    if isinstance(uid, (int, str)):
         region = REGION_MAP.get(str(uid)[0])
     else:
         raise TypeError("UID variable type error")
@@ -161,3 +160,50 @@ async def execute(command, pass_error=True):
         except UnicodeDecodeError:
             result = str(stdout.decode("gbk").strip())
     return result
+
+
+async def async_re_sub(
+    pattern: str | Pattern,
+    repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
+    string: str,
+    count: int = 0,
+    flags: int = 0,
+) -> str:
+    """
+    一个支持 repl 参数为 async 函数的 re.sub
+    Args:
+        pattern (str | Pattern): 正则对象
+        repl (str | Callable[[Match], str] | Callable[[Match], Awaitable[str]]): 替换后的文本或函数
+        string (str): 目标文本
+        count (int): 要替换的最大次数
+        flags (int): 标志常量
+
+    Returns:
+        返回经替换后的字符串
+    """
+    result = ""
+    temp = string
+    if count != 0:
+        for _ in range(count):
+            match = re.search(pattern, temp, flags=flags)
+            replaced = None
+            if iscoroutinefunction(repl):
+                # noinspection PyUnresolvedReferences,PyCallingNonCallable
+                replaced = await repl(match)
+            elif callable(repl):
+                # noinspection PyCallingNonCallable
+                replaced = repl(match)
+            result += temp[: match.span(1)[0]] + (replaced or repl)
+            temp = temp[match.span(1)[1] :]
+    else:
+        while match := re.search(pattern, temp, flags=flags):
+            replaced = None
+            if iscoroutinefunction(repl):
+                # noinspection PyUnresolvedReferences,PyCallingNonCallable
+                replaced = await repl(match)
+            elif callable(repl):
+                # noinspection PyCallingNonCallable
+                replaced = repl(match)
+            result += temp[: match.span(1)[0]] + (replaced or repl)
+            temp = temp[match.span(1)[1] :]
+    return result + temp
