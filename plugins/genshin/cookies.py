@@ -1,3 +1,4 @@
+import contextlib
 from http.cookies import SimpleCookie, CookieError
 from typing import Optional
 
@@ -262,6 +263,11 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         except (AttributeError, ValueError):
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
+        with contextlib.suppress(Exception):
+            sign_in_client = SignIn(cookie=cookies)
+            await sign_in_client.get_s_token()
+            add_user_command_data.cookies = sign_in_client.cookie
+            logger.info(f"用户 {user.full_name}[{user.id}] 绑定时获取 stoken 成功")
         add_user_command_data.game_uid = user_info.uid
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
