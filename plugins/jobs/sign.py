@@ -126,7 +126,7 @@ class SignJob(Plugin):
                 text = f'<a href="tg://user?id={sign_db.user_id}">NOTICE {sign_db.user_id}</a>\n\n{text}'
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
-                await asyncio.sleep(10 + self.random.random() * 50)  # 回复延迟 [10. 60) 避免触发洪水防御
+                await asyncio.sleep(10 + self.random.random() * 50)  # 回复延迟 [10, 60) 避免触发洪水防御
             except BadRequest as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
