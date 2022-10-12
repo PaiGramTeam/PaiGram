@@ -84,10 +84,7 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
             await f.write(data.content)
     logger.debug(f"url_to_file 获取url[{url}] 并下载到 file_dir[{file_dir}]")
 
-    if return_path:
-        return file_dir
-
-    return Path(file_dir).as_uri()
+    return file_dir if return_path else Path(file_dir).as_uri()
 
 
 async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True) -> Client:
@@ -137,9 +134,7 @@ async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]
 
 
 def region_server(uid: Union[int, str]) -> RegionEnum:
-    if isinstance(uid, int):
-        region = REGION_MAP.get(str(uid)[0])
-    elif isinstance(uid, str):
+    if isinstance(uid, (int, str)):
         region = REGION_MAP.get(str(uid)[0])
     else:
         raise TypeError("UID variable type error")
@@ -168,11 +163,11 @@ async def execute(command, pass_error=True):
 
 
 async def async_re_sub(
-        pattern: str | Pattern,
-        repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
-        string: str,
-        count: int = 0,
-        flags: int = 0,
+    pattern: str | Pattern,
+    repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
+    string: str,
+    count: int = 0,
+    flags: int = 0,
 ) -> str:
     """
     一个支持 repl 参数为 async 函数的 re.sub
@@ -198,8 +193,8 @@ async def async_re_sub(
             elif callable(repl):
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
-            result += temp[0: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1]:]
+            result += temp[: match.span(1)[0]] + (replaced or repl)
+            temp = temp[match.span(1)[1] :]
     else:
         while match := re.search(pattern, temp, flags=flags):
             replaced = None
@@ -209,6 +204,6 @@ async def async_re_sub(
             elif callable(repl):
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
-            result += temp[0: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1]:]
+            result += temp[: match.span(1)[0]] + (replaced or repl)
+            temp = temp[match.span(1)[1] :]
     return result + temp

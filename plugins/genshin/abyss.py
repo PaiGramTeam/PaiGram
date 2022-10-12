@@ -113,6 +113,8 @@ class Abyss(Plugin, BasePlugin):
                 self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
             return
+        elif 0 < floor < 9:
+            previous = False
 
         logger.info(
             f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]请求: "
@@ -150,7 +152,7 @@ class Abyss(Plugin, BasePlugin):
         async def reply_message(content: str) -> None:
             _user = await client.get_genshin_user(uid)
             _reply_msg = await message.reply_text(
-                f"旅行者 {_user.info.nickname}(<code>{uid}</code>) " + content, parse_mode=ParseMode.HTML
+                f"旅行者 {_user.info.nickname}(<code>{uid}</code>) {content}", parse_mode=ParseMode.HTML
             )
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, _reply_msg.chat_id, _reply_msg.message_id, 10)
@@ -170,6 +172,8 @@ class Abyss(Plugin, BasePlugin):
             return await reply_message("还未解锁深渊哦~")
         except NoMostKills:  # 若深渊还未挑战
             return await reply_message("还没有挑战本次深渊呢，咕咕咕~")
+        except IndexError:  # 若深渊为挑战此层
+            return await reply_message("还没有挑战本层呢，咕咕咕~")
         if images is None:
             return await reply_message(f"还没有第 {floor} 层的挑战数据")
 
@@ -216,7 +220,7 @@ class Abyss(Plugin, BasePlugin):
         result = await async_re_sub(
             regex_01,
             partial(replace_01, assets_service=self.assets_service),
-            abyss_data.json(encoder=json_encoder),
+            abyss_data.json(),
         )
         result = await async_re_sub(regex_02, partial(replace_02, assets_service=self.assets_service), result)
 
@@ -307,7 +311,7 @@ class Abyss(Plugin, BasePlugin):
             if num := num_dic.get(str(floor)):
                 render_data["floor-num"] = num
             else:
-                render_data["floor-num"] = "十" + num_dic.get(str(floor % 10))
+                render_data["floor-num"] = f"十{num_dic.get(str(floor % 10))}"
             floors = json.loads(result)["floors"]
             if (floor_data := list(filter(lambda x: x["floor"] == floor, floors))) is None:
                 return None
