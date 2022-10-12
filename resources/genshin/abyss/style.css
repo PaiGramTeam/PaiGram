@@ -188,16 +188,16 @@ body {
     align-items: center;
 }
 
-.ranks > div > .rank:first-child {
-    margin-right: 10px;
-}
-
 .rank {
     flex: 1;
     position: relative;
     display: flex;
     margin-left: 80px;
     margin-right: 60px;
+}
+
+.ranks > div > .rank:first-child {
+    margin-right: 10px;
 }
 
 .rank > img {
@@ -241,6 +241,7 @@ body {
 }
 
 .floor-name > div:not(.floor-num) {
+    margin-left: 20px;
     text-shadow: 1px 1px 5px rgb(0 0 0/50%);
 }
 
@@ -252,14 +253,6 @@ body {
     background-size: contain;
     filter: drop-shadow(0 0 5px rgb(0 0 0/80%)) grayscale(10%);
     position: relative;
-}
-
-.floor-num > div {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-50%);
-    opacity: 0;
 }
 
 .head > .star {
