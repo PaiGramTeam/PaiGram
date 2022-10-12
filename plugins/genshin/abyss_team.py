@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
@@ -40,10 +40,16 @@ class AbyssTeam(Plugin, BasePlugin):
         try:
             client = await get_genshin_client(user.id)
         except (CookiesNotFoundError, UserNotFoundError):
-            reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return
 
         await message.reply_chat_action(ChatAction.TYPING)

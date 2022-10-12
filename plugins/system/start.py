@@ -13,12 +13,25 @@ class StartPlugin(Plugin):
         user = update.effective_user
         message = update.effective_message
         args = context.args
-        if args is not None and len(args) >= 1 and args[0] == "inline_message":
-            await message.reply_markdown_v2(
-                f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
-                f"{escape_markdown('发送 /help 命令即可查看命令帮助')}"
-            )
-            return
+        if args is not None and len(args) >= 1:
+            if args[0] == "inline_message":
+                await message.reply_markdown_v2(
+                    f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
+                    f"{escape_markdown('发送 /help 命令即可查看命令帮助')}"
+                )
+                return
+            elif args[0] == "set_cookie":
+                await message.reply_markdown_v2(
+                    f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
+                    f"{escape_markdown('发送 /setcookie 命令进入绑定账号流程')}"
+                )
+                return
+            elif args[0] == "set_uid":
+                await message.reply_markdown_v2(
+                    f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
+                    f"{escape_markdown('发送 /setuid 或 /setcookie 命令进入绑定账号流程')}"
+                )
+                return
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
 
     @staticmethod
