@@ -23,13 +23,13 @@ class StartPlugin(Plugin):
             elif args[0] == "set_cookie":
                 await message.reply_markdown_v2(
                     f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
-                    f"{escape_markdown('发送 /set_cookie 命令进入绑定账号流程')}"
+                    f"{escape_markdown('发送 /setcookie 命令进入绑定账号流程')}"
                 )
                 return
             elif args[0] == "set_uid":
                 await message.reply_markdown_v2(
                     f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
-                    f"{escape_markdown('发送 /set_uid 或 /set_cookie 命令进入绑定账号流程')}"
+                    f"{escape_markdown('发送 /setuid 或 /setcookie 命令进入绑定账号流程')}"
                 )
                 return
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")

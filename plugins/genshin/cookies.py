@@ -44,7 +44,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         self.user_service = user_service
 
     @conversation.entry_point
-    @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=True)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
