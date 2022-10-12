@@ -51,8 +51,8 @@
                 <div class="chamber">
                     <div class="chamber-info">
                         <div>
-                            第 {{ loop.index }} 间 <span
-                                style="color: #A3A3A3">{{ chamber.battles[0].timestamp }}</span>
+                            第 {{ chamber.chamber }} 间
+                            <span style="color: #A3A3A3">{{ chamber.battles[0].timestamp }}</span>
                         </div>
                         <div class="stars">
                             {% for n in range(chamber.stars) %}
@@ -83,7 +83,7 @@
                                     </div>
                                 {% endfor %}
                                 {% if loop.length > 1 %}
-                                    <div class="battle-info">{{ ['上', '下'][loop.index0] }}半</div>
+                                    <div class="battle-info">{{ ['上', '下'][battle.half - 1] }}半</div>
                                 {% endif %}
                             </div>
                         {% endfor %}

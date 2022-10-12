@@ -207,10 +207,14 @@ class Abyss(Plugin, BasePlugin):
             return value
 
         abyss_data = await client.get_spiral_abyss(uid, previous=previous, lang="zh-cn")
+
         if not abyss_data.unlocked:
             raise AbyssUnlocked()
         if not abyss_data.ranks.most_kills:
             raise NoMostKills()
+        if (total or (floor > 0)) and not abyss_data.floors[0].chambers[0].battles:
+            raise CookiesNotFoundError
+
         end_time = abyss_data.end_time.astimezone(TZ)
         time = end_time.strftime("%Y年%m月") + "上" if end_time.day <= 16 else "下" + "期"
         stars = [i.stars for i in filter(lambda x: x.floor > 8, abyss_data.floors)]
@@ -218,9 +222,7 @@ class Abyss(Plugin, BasePlugin):
 
         render_data = {}
         result = await async_re_sub(
-            regex_01,
-            partial(replace_01, assets_service=self.assets_service),
-            abyss_data.json(encoder=json_encoder),
+            regex_01, partial(replace_01, assets_service=self.assets_service), abyss_data.json(encoder=json_encoder)
         )
         result = await async_re_sub(regex_02, partial(replace_02, assets_service=self.assets_service), result)
 
