@@ -215,8 +215,8 @@ class Abyss(Plugin, BasePlugin):
         if (total or (floor > 0)) and not abyss_data.floors[0].chambers[0].battles:
             raise CookiesNotFoundError
 
-        end_time = abyss_data.end_time.astimezone(TZ)
-        time = end_time.strftime("%Y年%m月") + "上" if end_time.day <= 16 else "下" + "期"
+        start_time = abyss_data.start_time.astimezone(TZ)
+        time = start_time.strftime("%Y年%m月") + ("上" if start_time.day <= 15 else "下") + "期"
         stars = [i.stars for i in filter(lambda x: x.floor > 8, abyss_data.floors)]
         total_stars = f"{sum(stars)} ({'-'.join(map(str, stars))})"
 
