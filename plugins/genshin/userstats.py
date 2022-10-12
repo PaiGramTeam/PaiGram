@@ -3,7 +3,7 @@ from typing import Optional
 
 from genshin import Client
 from genshin.models import GenshinUserStats
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import (
     CallbackContext,
@@ -53,11 +53,16 @@ class UserStatsPlugins(Plugin, BasePlugin):
                 client, uid = await get_public_genshin_client(user.id)
             png_data = await self.render(client, uid)
         except UserNotFoundError:
-            reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多 请稍后重试")

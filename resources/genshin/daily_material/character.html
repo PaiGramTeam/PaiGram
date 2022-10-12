@@ -31,12 +31,12 @@
                         {% for material in area.materials %}
                             <div class="material">
                                 <div class="material-icon"
-                                     style="background-image: url(./bg/rarity/half/{{ material.rarity }}.png)">
+                                     style="background-image: url(../../background/rarity/half/{{ material.rarity }}.png)">
                                 <img alt="{{ material.name }}" src="{{ material.icon }}"/>
                                 </div>
                                 <div class="material-star">
                                     {% for _ in range(material.rarity) %}
-                                        <img alt="star" src="./bg/rarity/star.webp"/>
+                                        <img alt="star" src="../../background/rarity/star.webp"/>
                                     {% endfor %}
                                 </div>
                             </div>
@@ -53,7 +53,7 @@
                                 {% endif %}
                         >
                             <div class="item-icon"
-                                 style="background-image: url(./bg/rarity/full/{{ item.rarity }}.png)">
+                                 style="background-image: url(../../background/rarity/full/{{ item.rarity }}.png)">
                                 {% if item.level != none %}
                                     <div>Lv.{{ item.level }}</div>
                                 {% endif %}

@@ -1,9 +1,11 @@
 import asyncio
 import datetime
+import secrets
 import time
 
 from aiohttp import ClientConnectorError
 from genshin import Game, GenshinException, AlreadyClaimed, InvalidCookies
+from httpx import TimeoutException
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext
@@ -32,6 +34,7 @@ class SignJob(Plugin):
         self.sign_service = sign_service
         self.cookies_service = cookies_service
         self.user_service = user_service
+        self.random = secrets.SystemRandom()
 
     @staticmethod
     async def single_sign(user_id: int) -> str:
@@ -82,12 +85,19 @@ class SignJob(Plugin):
 
     @job.run_daily(time=datetime.time(hour=0, minute=1, second=0), name="SignJob")
     async def sign(self, context: CallbackContext):
-        logger.info("正在执行自动签到")
+        if context.job.name == "SignJob":
+            logger.info("正在执行自动签到")
+        if context.job.name == "SignAgainJob":
+            logger.info("正在执行自动重签")
         sign_list = await self.sign_service.get_all()
         for sign_db in sign_list:
-            if sign_db.status != SignStatusEnum.STATUS_SUCCESS:
-                continue
             user_id = sign_db.user_id
+            if sign_db.status != SignStatusEnum.STATUS_SUCCESS:
+                if sign_db.status == SignStatusEnum.TIMEOUT_ERROR:
+                    if context.job.name == "SignAgainJob":
+                        logger.info(f"用户 [{user_id}] 即将执行重签")
+                else:
+                    continue
             try:
                 text = await self.single_sign(user_id)
             except InvalidCookies:
@@ -99,8 +109,12 @@ class SignJob(Plugin):
             except GenshinException as exc:
                 text = f"自动签到执行失败，API返回信息为 {str(exc)}"
                 sign_db.status = SignStatusEnum.GENSHIN_EXCEPTION
-            except ClientConnectorError:
+            except TimeoutException:
                 text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
+                sign_db.status = SignStatusEnum.TIMEOUT_ERROR
+            except ClientConnectorError as exc:
+                logger.warning(f"aiohttp 请求错误 {repr(exc)}")
+                text = "签到失败了呜呜呜 ~ 链接服务器发生错误 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
             except NeedChallenge:
                 text = "签到失败，触发验证码风控，自动签到自动关闭"
@@ -113,7 +127,7 @@ class SignJob(Plugin):
                 text = f'<a href="tg://user?id={sign_db.user_id}">NOTICE {sign_db.user_id}</a>\n\n{text}'
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
-                await asyncio.sleep(5)  # 回复延迟5S避免触发洪水防御
+                await asyncio.sleep(10 + self.random.random() * 50)  # 回复延迟 [10, 60) 避免触发洪水防御
             except BadRequest as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
@@ -129,3 +143,5 @@ class SignJob(Plugin):
             sign_db.time_updated = datetime.datetime.now()
             await self.sign_service.update(sign_db)
         logger.info("执行自动签到完成")
+        if context.job.name == "SignJob":
+            context.job_queue.run_once(self.sign, when=datetime.time(hour=0, minute=1, second=0), name="SignAgainJob")

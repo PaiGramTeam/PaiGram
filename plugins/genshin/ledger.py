@@ -3,7 +3,7 @@ import re
 from datetime import datetime, timedelta
 
 from genshin import GenshinException, DataNotPublic
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
@@ -126,10 +126,16 @@ class Ledger(Plugin, BasePlugin):
             client = await get_genshin_client(user.id)
             png_data = await self._start_get_ledger(client, month)
         except (UserNotFoundError, CookiesNotFoundError):
-            reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return
         except DataNotPublic:
             reply_message = await message.reply_text("查询失败惹，可能是旅行札记功能被禁用了？")

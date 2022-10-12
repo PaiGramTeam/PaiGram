@@ -7,7 +7,7 @@ from typing import Optional, Dict
 
 from genshin import Game, GenshinException, AlreadyClaimed, Client
 from httpx import AsyncClient, TimeoutException
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, CallbackContext
 from telegram.ext import MessageHandler, filters
@@ -85,7 +85,7 @@ class Sign(Plugin, BasePlugin):
                         "callback": f"geetest_{int(time.time() * 1000)}",
                     },
                     headers=header,
-                    timeout=20,
+                    timeout=30,
                 )
             text = req.text
             logger.debug(f"ajax 返回：{text}")
@@ -94,6 +94,7 @@ class Sign(Plugin, BasePlugin):
             text = re.findall(r"^.*?\((\{.*?)\)$", text)[0]
             data = json.loads(text)
             if "success" in data["status"] and "success" in data["data"]["result"]:
+                logger.info("签到 ajax 请求成功")
                 return {
                     "x-rpc-challenge": challenge,
                     "x-rpc-validate": data["data"]["validate"],
@@ -101,8 +102,10 @@ class Sign(Plugin, BasePlugin):
                 }
         except JSONDecodeError:
             logger.warning("签到 ajax 请求 JSON 解析失败")
-        except TimeoutException:
+        except TimeoutException as exc:
             logger.warning("签到 ajax 请求超时")
+            if not config.pass_challenge_api:
+                raise exc
         except (KeyError, IndexError):
             logger.warning("签到 ajax 请求数据错误")
         except RuntimeError:
@@ -123,28 +126,30 @@ class Sign(Plugin, BasePlugin):
                 resp = await client.post(
                     config.pass_challenge_api,
                     params=pass_challenge_params,
-                    timeout=45,
+                    timeout=60,
                 )
-            logger.info(f"签到请求返回：{resp.text}")
+            logger.debug(f"签到 recognize 请求返回：{resp.text}")
             data = resp.json()
             status = data.get("status")
             if status is not None and status != 0:
-                logger.error(f"签到请求解析错误：{data.get('msg')}")
+                logger.error(f"签到 recognize 请求解析错误：{data.get('msg')}")
             if data.get("code", 0) != 0:
                 raise RuntimeError
+            logger.info("签到 recognize 请求 解析成功")
             return {
                 "x-rpc-challenge": data["data"]["challenge"],
                 "x-rpc-validate": data["data"]["validate"],
                 "x-rpc-seccode": f'{data["data"]["validate"]}|jordan',
             }
         except JSONDecodeError:
-            logger.warning("签到请求 JSON 解析失败")
-        except TimeoutException:
-            logger.warning("签到请求超时")
+            logger.warning("签到 recognize 请求 JSON 解析失败")
+        except TimeoutException as exc:
+            logger.warning("签到 recognize 请求超时")
+            raise exc
         except KeyError:
-            logger.warning("签到请求数据错误")
+            logger.warning("签到 recognize 请求数据错误")
         except RuntimeError:
-            logger.warning("签到请求失败")
+            logger.warning("签到 recognize 请求失败")
         return None
 
     @staticmethod
@@ -183,6 +188,8 @@ class Sign(Plugin, BasePlugin):
                         logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
                         return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。"
                     logger.info(f"UID {client.uid} 签到成功")
+            except TimeoutException:
+                return "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
             except AlreadyClaimed:
                 logger.info(f"UID {client.uid} 已经签到")
                 result = "今天旅行者已经签到过了~"
@@ -276,8 +283,14 @@ class Sign(Plugin, BasePlugin):
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
         except (UserNotFoundError, CookiesNotFoundError):
-            reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return

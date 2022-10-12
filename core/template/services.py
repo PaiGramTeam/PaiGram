@@ -57,7 +57,7 @@ class TemplateService:
         viewport: ViewportSize = None,
         full_page: bool = True,
         evaluate: Optional[str] = None,
-        query_selector: str = None,
+        query_selector: str = None
     ) -> bytes:
         """模板渲染成图片
         :param template_path: 模板目录
