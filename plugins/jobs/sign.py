@@ -26,10 +26,10 @@ class NeedChallenge(Exception):
 
 class SignJob(Plugin):
     def __init__(
-            self,
-            sign_service: SignServices = None,
-            user_service: UserService = None,
-            cookies_service: CookiesService = None,
+        self,
+        sign_service: SignServices = None,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
     ):
         self.sign_service = sign_service
         self.cookies_service = cookies_service
