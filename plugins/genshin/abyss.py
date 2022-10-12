@@ -1,5 +1,5 @@
 """深渊数据查询"""
-
+import asyncio
 import re
 from datetime import datetime
 from functools import lru_cache, partial
@@ -9,7 +9,7 @@ import ujson as json
 from arkowrapper import ArkoWrapper
 from genshin import Client
 from pytz import timezone
-from telegram import InputMediaPhoto, Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -29,7 +29,7 @@ from utils.log import logger
 
 TZ = timezone("Asia/Shanghai")
 cmd_pattern = r"^/abyss\s*((?:\d+)|(?:all))?\s*(pre)?"
-msg_pattern = r"^深渊数据((?:查询)|(?:总览))(上期){0,1}\D*(\d+)?.*$"
+msg_pattern = r"^深渊数据((?:查询)|(?:总览))(上期)?\D?(\d*)?.*?$"
 
 regex_01 = r"['\"]icon['\"]:\s*['\"](.*?)['\"]"
 regex_02 = r"['\"]side_icon['\"]:\s*['\"](.*?)['\"]"
@@ -56,7 +56,7 @@ def get_args(text: str) -> Tuple[int, bool, bool]:
         return floor, result[0] == "all", bool(result[1])
     else:
         result = re.match(msg_pattern, text).groups()
-        return int(result[2] or 0), result[0] == "查询", result[1] == "上期"
+        return int(result[2] or 0), result[0] == "总览", result[1] == "上期"
 
 
 class AbyssUnlocked(Exception):
@@ -144,7 +144,7 @@ class Abyss(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
 
         if total:
-            reply_msg = await message.reply_text("派蒙需要时间整理下深渊数据，还请耐心等待哦~")
+            reply_msg = await message.reply_text("派蒙需要时间整理深渊数据，还请耐心等待哦~")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
@@ -229,29 +229,49 @@ class Abyss(Plugin, BasePlugin):
             render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
             data = json.loads(result)
             render_data["data"] = data
-            return [
-                await self.template_service.render(
-                    "genshin/abyss",
-                    "overview.html",
-                    render_data,
-                    viewport={"width": 750, "height": 580},
-                    omit_background=True,
+
+            render_result = []
+
+            async def overview_task():
+                render_result.append(
+                    [
+                        -1,
+                        await self.template_service.render(
+                            "genshin/abyss",
+                            "overview.html",
+                            render_data,
+                            viewport={"width": 750, "height": 580},
+                            omit_background=True,
+                        ),
+                    ]
                 )
-            ] + [
-                await self.template_service.render(
-                    "genshin/abyss",
-                    "floor.html",
-                    {
-                        **render_data,
-                        "floor": floor_data,
-                        "total_stars": f"{floor_data['stars']}/{floor_data['max_stars']}",
-                    },
-                    viewport={"width": 690, "height": 500},
-                    full_page=True,
+
+            async def floor_task(floor_index: int):
+                floor_d = data["floors"][floor_index]
+                render_result.append(
+                    [
+                        floor_d["floor"],
+                        await self.template_service.render(
+                            "genshin/abyss",
+                            "floor.html",
+                            {
+                                **render_data,
+                                "floor": floor_d,
+                                "total_stars": f"{floor_d['stars']}/{floor_d['max_stars']}",
+                            },
+                            viewport={"width": 690, "height": 500},
+                            full_page=True,
+                        ),
+                    ]
                 )
-                for floor_data in data["floors"]
-                if floor_data["floor"] >= 9
-            ]
+
+            task_list = [asyncio.create_task(overview_task())]
+            for i, f in enumerate(data["floors"]):
+                if f["floor"] >= 9:
+                    task_list.append(asyncio.create_task(floor_task(i)))
+            await asyncio.gather(*task_list)
+
+            return list(map(lambda x: x[1], sorted(render_result, key=lambda x: x[0])))
         elif floor < 1:
             render_data["data"] = json.loads(result)
             return [
