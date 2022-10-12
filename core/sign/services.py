@@ -20,3 +20,6 @@ class SignServices:
 
     async def get_by_user_id(self, user_id: int):
         return await self._repository.get_by_user_id(user_id)
+
+    async def get_by_chat_id(self, chat_id: int):
+        return await self._repository.get_by_chat_id(chat_id)
