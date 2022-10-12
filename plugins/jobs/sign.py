@@ -16,6 +16,8 @@ from core.sign.models import SignStatusEnum
 from core.sign.services import SignServices
 from core.user import UserService
 from plugins.genshin.sign import Sign
+from plugins.system.errorhandler import notice_chat_id
+from plugins.system.sign_status import SignStatus
 from utils.helpers import get_genshin_client
 from utils.log import logger
 
@@ -85,18 +87,23 @@ class SignJob(Plugin):
 
     @job.run_daily(time=datetime.time(hour=0, minute=1, second=0), name="SignJob")
     async def sign(self, context: CallbackContext):
-        if context.job.name == "SignJob":
-            logger.info("正在执行自动签到")
-        if context.job.name == "SignAgainJob":
-            logger.info("正在执行自动重签")
+        logger.info("正在执行自动签到" if context.job.name == "SignJob" else "正在执行自动重签")
         sign_list = await self.sign_service.get_all()
         for sign_db in sign_list:
             user_id = sign_db.user_id
+            if sign_db.status in [SignStatusEnum.INVALID_COOKIES, SignStatusEnum.FORBIDDEN]:
+                continue
+            if context.job.name == "SignJob":
+                if sign_db.status not in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
+                    continue
+            elif context.job.name == "SignAgainJob":
+                if sign_db.status in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
+                    continue
             if sign_db.status != SignStatusEnum.STATUS_SUCCESS:
                 if sign_db.status == SignStatusEnum.TIMEOUT_ERROR:
                     if context.job.name == "SignAgainJob":
                         logger.info(f"用户 [{user_id}] 即将执行重签")
-                else:
+                elif sign_db.status != SignStatusEnum.ALREADY_CLAIMED:
                     continue
             try:
                 text = await self.single_sign(user_id)
@@ -142,6 +149,9 @@ class SignJob(Plugin):
                 continue
             sign_db.time_updated = datetime.datetime.now()
             await self.sign_service.update(sign_db)
-        logger.info("执行自动签到完成")
+        logger.info("执行自动签到完成" if context.job.name == "SignJob" else "执行自动重签完成")
         if context.job.name == "SignJob":
             context.job_queue.run_once(self.sign, when=datetime.time(hour=0, minute=1, second=0), name="SignAgainJob")
+        elif context.job.name == "SignAgainJob":
+            text = await SignStatus.get_sign_status(self.sign_service)
+            await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)
