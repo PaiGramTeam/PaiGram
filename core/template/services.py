@@ -65,8 +65,7 @@ class TemplateService:
         viewport: ViewportSize = None,
         full_page: bool = True,
         evaluate: Optional[str] = None,
-        query_selector: str = None,
-        **kwargs,
+        query_selector: str = None
     ) -> bytes:
         """模板渲染成图片
         :param template_path: 模板目录
@@ -101,7 +100,7 @@ class TemplateService:
                     raise _QuerySelectorNotFound
             except _QuerySelectorNotFound:
                 logger.warning(f"未找到 {query_selector} 元素")
-        png_data = await page.screenshot(clip=clip, full_page=full_page, **kwargs)
+        png_data = await page.screenshot(clip=clip, full_page=full_page)
         await page.close()
         logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
         return png_data
