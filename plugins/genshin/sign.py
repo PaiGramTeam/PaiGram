@@ -233,6 +233,7 @@ class Sign(Plugin, BasePlugin):
                 if user.chat_id == chat_id:
                     return "自动签到已经开启过了"
                 user.chat_id = chat_id
+                user.status = SignStatusEnum.STATUS_SUCCESS
                 await self.sign_service.update(user)
                 return "修改自动签到通知对话成功"
         elif method == "关闭":
