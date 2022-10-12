@@ -142,4 +142,5 @@ class SignJob(Plugin):
             sign_db.time_updated = datetime.datetime.now()
             await self.sign_service.update(sign_db)
         logger.info("执行自动签到完成")
-        context.job_queue.run_once(self.sign, when=datetime.time(hour=0, minute=1, second=0), name="SignAgainJob")
+        if context.job.name == "SignJob":
+            context.job_queue.run_once(self.sign, when=datetime.time(hour=0, minute=1, second=0), name="SignAgainJob")
