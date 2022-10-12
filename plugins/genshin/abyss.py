@@ -220,7 +220,7 @@ class Abyss(Plugin, BasePlugin):
         result = await async_re_sub(
             regex_01,
             partial(replace_01, assets_service=self.assets_service),
-            abyss_data.json(),
+            abyss_data.json(encoder=json_encoder),
         )
         result = await async_re_sub(regex_02, partial(replace_02, assets_service=self.assets_service), result)
 
