@@ -258,7 +258,8 @@ class DailyMaterial(Plugin, BasePlugin):
                     AreaData(
                         name=area_data["name"],
                         materials=materials,
-                        items=sort_item(items),
+                        # template previewer pickle cannot serialize generator
+                        items=list(sort_item(items)),
                         material_name=get_material_serial_name(map(lambda x: x.name, materials)),
                     )
                 )
