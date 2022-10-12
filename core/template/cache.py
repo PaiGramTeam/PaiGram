@@ -1,5 +1,5 @@
 from typing import Any
-import pickle
+import pickle # nosec B403
 import gzip
 
 from core.base.redisdb import RedisDB
@@ -12,17 +12,17 @@ class TemplatePreviewCache:
         self.client = redis.client
         self.qname = "bot:template:preview"
 
-    async def get_data(self, id: str) -> Any:
-        data = await self.client.get(self.get_key(id))
+    async def get_data(self, key: str) -> Any:
+        data = await self.client.get(self.cache_key(key))
         if data:
             # skipcq: BAN-B301
-            return pickle.loads(gzip.decompress(data))
+            return pickle.loads(gzip.decompress(data)) # nosec B301
 
-    async def set_data(self, id: str, data: Any, ttl: int = 8 * 60 * 60):
-        key = self.get_key(id)
-        await self.client.set(key, gzip.compress(pickle.dumps(data)))
+    async def set_data(self, key: str, data: Any, ttl: int = 8 * 60 * 60):
+        ck = self.cache_key(key)
+        await self.client.set(ck, gzip.compress(pickle.dumps(data)))
         if ttl != -1:
-            await self.client.expire(key, ttl)
-    
-    def get_key(self, id: str) -> str:
-        return f"{self.qname}:{id}"
+            await self.client.expire(ck, ttl)
+
+    def cache_key(self, key: str) -> str:
+        return f"{self.qname}:{key}"

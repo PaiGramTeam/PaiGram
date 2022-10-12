@@ -118,9 +118,9 @@ class TemplatePreviewer:
 
         # 如果有数据，暂存在 redis 中
         if data:
-            id = str(uuid4())
-            await self.cache.set_data(id, data)
-            query["id"] = id
+            key = str(uuid4())
+            await self.cache.set_data(key, data)
+            query["key"] = key
 
         return components._replace(path=path, query=urlencode(query)).geturl()
 
@@ -128,7 +128,7 @@ class TemplatePreviewer:
         """注册预览用到的路由"""
 
         @webapp.get("/preview/{path:path}")
-        async def preview_template(path: str, id: Optional[str] = None):
+        async def preview_template(path: str, key: Optional[str] = None): # pylint: disable=W0612
             # 如果是 /preview/ 开头的静态文件，直接返回内容。比如使用相对链接 ../ 引入的静态资源
             if not path.endswith(".html"):
                 full_path = self.template_service.template_dir / path
@@ -137,9 +137,9 @@ class TemplatePreviewer:
                 return FileResponse(full_path)
 
             # 取回暂存的渲染数据
-            data = await self.cache.get_data(id) if id else {}
-            if id and data is None:
-                raise HTTPException(status_code=404, detail=f"Preview id {id} not found")
+            data = await self.cache.get_data(key) if key else {}
+            if key and data is None:
+                raise HTTPException(status_code=404, detail=f"Template data {key} not found")
 
             # 渲染 jinja2 模板
             try:
