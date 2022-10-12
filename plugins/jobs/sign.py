@@ -145,7 +145,7 @@ class SignJob(Plugin):
             await self.sign_service.update(sign_db)
         logger.info("执行自动签到完成" if context.job.name == "SignJob" else "执行自动重签完成")
         if context.job.name == "SignJob":
-            context.job_queue.run_once(self.sign, when=datetime.time(hour=0, minute=1, second=0), name="SignAgainJob")
+            context.job_queue.run_once(self.sign, when=60, name="SignAgainJob")
         elif context.job.name == "SignAgainJob":
             text = await SignStatus.get_sign_status(self.sign_service)
             await context.bot.send_message(notice_chat_id, text, parse_mode=ParseMode.HTML)

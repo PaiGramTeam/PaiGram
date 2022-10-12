@@ -31,10 +31,8 @@ def check_ledger_month(context: CallbackContext) -> int:
     month = now_time.month
     args = get_all_args(context)
     if len(args) >= 1:
-        month = args[0]
-    elif isinstance(month, int):
-        pass
-    elif re_data := re.findall(r"\d+", str(month)):
+        month = args[0].replace("月", "")
+    if re_data := re.findall(r"\d+", str(month)):
         month = int(re_data[0])
     else:
         num_dict = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}

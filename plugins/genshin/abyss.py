@@ -179,7 +179,7 @@ class Abyss(Plugin, BasePlugin):
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
 
         for group in ArkoWrapper(images).map(InputMediaPhoto).group(10):  # 每 10 张图片分一个组
-            await message.reply_media_group(list(group), allow_sending_without_reply=True)
+            await message.reply_media_group(list(group), allow_sending_without_reply=True, write_timeout=60)
 
         if reply_text is not None:
             await reply_text.delete()
