@@ -9,7 +9,7 @@ import ujson as json
 from arkowrapper import ArkoWrapper
 from genshin import Client
 from pytz import timezone
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, Update, Message
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -128,12 +128,11 @@ class Abyss(Plugin, BasePlugin):
             uid = client.uid
         except UserNotFoundError:  # 若未找到账号
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookies")]]
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
                 reply_msg = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
                 self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
-
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号")
@@ -154,33 +153,36 @@ class Abyss(Plugin, BasePlugin):
             _reply_msg = await message.reply_text(
                 f"旅行者 {_user.info.nickname}(<code>{uid}</code>) {content}", parse_mode=ParseMode.HTML
             )
-            if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, _reply_msg.chat_id, _reply_msg.message_id, 10)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+
+        reply_text: Optional[Message] = None
 
         if total:
-            reply_msg = await message.reply_text("派蒙需要时间整理深渊数据，还请耐心等待哦~")
-            if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+            reply_text = await message.reply_text("派蒙需要时间整理深渊数据，还请耐心等待哦~")
 
         await message.reply_chat_action(ChatAction.TYPING)
 
         try:
             images = await self.get_rendered_pic(client, uid, floor, total, previous)
         except AbyssUnlocked:  # 若深渊未解锁
-            return await reply_message("还未解锁深渊哦~")
+            await reply_message("还未解锁深渊哦~")
+            return
         except NoMostKills:  # 若深渊还未挑战
-            return await reply_message("还没有挑战本次深渊呢，咕咕咕~")
+            await reply_message("还没有挑战本次深渊呢，咕咕咕~")
+            return
         except IndexError:  # 若深渊为挑战此层
-            return await reply_message("还没有挑战本层呢，咕咕咕~")
+            await reply_message("还没有挑战本层呢，咕咕咕~")
+            return
         if images is None:
-            return await reply_message(f"还没有第 {floor} 层的挑战数据")
+            await reply_message(f"还没有第 {floor} 层的挑战数据")
+            return
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
 
         for group in ArkoWrapper(images).map(InputMediaPhoto).group(10):  # 每 10 张图片分一个组
             await message.reply_media_group(list(group), allow_sending_without_reply=True)
+
+        if reply_text is not None:
+            await reply_text.delete()
 
         logger.info(f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]: 成功发送图片", extra={"markup": True})
 
@@ -215,8 +217,8 @@ class Abyss(Plugin, BasePlugin):
         if (total or (floor > 0)) and not abyss_data.floors[0].chambers[0].battles:
             raise CookiesNotFoundError
 
-        end_time = abyss_data.end_time.astimezone(TZ)
-        time = end_time.strftime("%Y年%m月") + "上" if end_time.day <= 16 else "下" + "期"
+        start_time = abyss_data.start_time.astimezone(TZ)
+        time = start_time.strftime("%Y年%m月") + ("上" if start_time.day <= 15 else "下")
         stars = [i.stars for i in filter(lambda x: x.floor > 8, abyss_data.floors)]
         total_stars = f"{sum(stars)} ({'-'.join(map(str, stars))})"
 
