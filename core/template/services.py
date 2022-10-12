@@ -9,7 +9,6 @@ from uuid import uuid4
 from fastapi import HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from jinja2.exceptions import TemplateNotFound
 
 from core.base.aiobrowser import AioBrowser
 from core.bot import bot
@@ -72,12 +71,13 @@ class TemplateService:
         """
         start_time = time.time()
         template = self.get_template(template_name)
-        html = await template.render_async(**template_data)
-        logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
 
         if bot.config.debug:
             preview_url = await self.previewer.get_preview_url(template_name, template_data)
             logger.debug(f"调试模板 URL: {preview_url}")
+
+        html = await template.render_async(**template_data)
+        logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
 
         browser = await self._browser.get_browser()
         start_time = time.time()
@@ -142,15 +142,11 @@ class TemplatePreviewer:
                 raise HTTPException(status_code=404, detail=f"Template data {key} not found")
 
             # 渲染 jinja2 模板
-            try:
-                html = await self.template_service.render_async(path, data)
-                # 将本地 URL file:// 修改为 HTTP url，因为浏览器内不允许加载本地文件
-                # file:///project_dir/cache/image.jpg => /cache/image.jpg
-                html = html.replace(PROJECT_ROOT.as_uri(), "")
-                return HTMLResponse(html)
-            except TemplateNotFound as e:
-                logger.error(e)
-                raise HTTPException(status_code=404, detail=f"Template '{path}' not found")
+            html = await self.template_service.render_async(path, data)
+            # 将本地 URL file:// 修改为 HTTP url，因为浏览器内不允许加载本地文件
+            # file:///project_dir/cache/image.jpg => /cache/image.jpg
+            html = html.replace(PROJECT_ROOT.as_uri(), "")
+            return HTMLResponse(html)
 
         # 其他静态资源
         for name in ["cache", "resources"]:
