@@ -9,7 +9,7 @@ import ujson as json
 from arkowrapper import ArkoWrapper
 from genshin import Client
 from pytz import timezone
-from telegram import InputMediaPhoto, Update
+from telegram import InputMediaPhoto, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -125,9 +125,8 @@ class Abyss(Plugin, BasePlugin):
             await client.get_record_cards()
             uid = client.uid
         except UserNotFoundError:  # 若未找到账号
-            reply_msg = await message.reply_text(
-                "未查询到账号信息，请先私聊<a href='https://t.me/PaimonMasterBot'>派蒙</a>", parse_mode=ParseMode.HTML
-            )
+            buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookies")]]
+            reply_msg = await message.reply_text("未查询到账号信息，请先私聊派蒙", reply_markup=InlineKeyboardMarkup(buttons))
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
