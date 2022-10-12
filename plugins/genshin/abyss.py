@@ -15,7 +15,7 @@ from telegram.ext import CallbackContext, filters
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError
+from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template import TemplateService
@@ -133,6 +133,14 @@ class Abyss(Plugin, BasePlugin):
             return
         except CookiesNotFoundError:  # 若未找到cookie
             client, uid = await get_public_genshin_client(user.id)
+        except TooManyRequestPublicCookies:
+            reply_msg = await message.reply_text(
+                "查询次数太多，请您稍后重试",
+            )
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+            return
 
         async def reply_message(content: str) -> None:
             _user = await client.get_genshin_user(uid)
