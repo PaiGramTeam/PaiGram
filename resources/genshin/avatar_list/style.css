@@ -1,0 +1,211 @@
+:root {
+    --white: rgb(246 248 249);
+    --bg-color: rgb(233 229 220);
+    --h-color: rgb(203 189 162);
+    --red: rgb(255 86 33/ 80%);
+    --blue: rgb(98 168 233/ 80%);
+    --green: rgb(67 185 124/ 80%);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 1000px;
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container > div {
+    box-shadow: 5px 5px 20px rgb(0 0 0 /20%);
+}
+
+
+.head {
+    width: 100%;
+    height: 150px;
+    margin-bottom: 20px;
+    background-color: var(--white);
+    background-repeat: no-repeat;
+    background-size: auto calc(100% + 2px);
+    background-position: center right;
+    border-radius: 50px 100px 100px 50px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.sign {
+    writing-mode: vertical-rl;
+    color: #A4A4A4;
+    position: relative;
+    flex: 0;
+}
+
+.avatar {
+    width: 100px;
+    height: 100px;
+    margin: 0 60px 0 80px;
+    border-radius: 0 0 50% 50%;
+    filter: drop-shadow(1px 1px 10px rgb(0 0 0/50%));
+}
+
+
+.avatar > div {
+    width: inherit;
+    height: 120px;
+    position: absolute;
+    bottom: 0;
+    z-index: 1;
+    border-radius: 0 0 45px 45px;
+    overflow: hidden;
+}
+
+.avatar > div::before {
+    content: '';
+    width: calc(100% - 6px);
+    height: calc(50px - 6px);
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    z-index: 3;
+    transform: translateX(-50%);
+    border-radius: 0 0 100px 100px;
+    border-bottom: 3px solid var(--white);
+    border-right: 3px solid var(--white);
+    border-left: 3px solid var(--white);
+}
+
+.avatar > div::after {
+    content: '';
+    width: calc(100% - 6px);
+    height: calc(100px - 6px);
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    z-index: 1;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    border-top: 3px solid var(--white);
+    border-right: 3px solid var(--white);
+    border-left: 3px solid var(--white);
+}
+
+.avatar > div > img {
+    width: inherit;
+    position: absolute;
+    bottom: 0;
+    z-index: 2;
+}
+
+.player {
+    text-shadow: 1px 1px 5px rgb(0 0 0/10%);
+}
+
+.nickname {
+    font-size: 40px;
+    font-weight: bold;
+}
+
+.uid {
+    font-size: 20px;
+    color: #5F5F5D;
+}
+
+.logo {
+    width: 200px;
+    height: 100%;
+    margin-left: auto;
+    margin-right: 8%;
+    background-image: url("../../img/logo.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center center;
+    filter: drop-shadow(5px 5px 10px rgb(0 0 0/50%));
+}
+
+.content {
+    width: 100%;
+    height: 500px;
+    background-color: var(--white);
+    border-radius: 20px;
+    position: relative;
+    display: flex;
+    flex-flow: column;
+    justify-items: center;
+    overflow: hidden;
+    font-size: 21px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.content > .row:first-child {
+    background-color: rgb(204, 204, 204);
+    font-weight: bold;
+}
+
+.row > div {
+    padding: 10px 0;
+    height: calc(1em + 4px);
+    flex: 1;
+    text-align: center;
+    border-style: solid;
+    border-width: 0 1px 1px 0;
+    border-color: rgb(208, 208, 208);
+    position: relative;
+}
+
+.row > div:first-child {
+    border-left-color: rgba(0, 0, 0, 0);
+}
+
+.row > div:last-child {
+    border-right-color: rgba(0, 0, 0, 0);
+}
+
+.role-icon {
+    border-right-color: rgba(0, 0, 0, 0) !important;
+
+}
+
+.role-icon > img {
+    height: calc(100% + 10px);
+    position: absolute;
+    left: 15px;
+    bottom: 4px;
+    filter: drop-shadow(1px 1px 5px rgb(0 0 0/33%));
+}
+
+.role-name {
+    flex: 2.5 !important;
+    text-align: left !important;
+}
+
+.weapon-cell {
+    text-align: left !important;
+}
+
+.weapon-cell > span:first-child {
+    margin-left: 30px;
+}
+
+.weapon-cell > span:last-child {
+    margin-left: 45px;
+}
+
+
+.weapon-cell > span > img {
+    height: calc(100% - 5px);
+    position: absolute;
+    bottom: 3px;
+}
