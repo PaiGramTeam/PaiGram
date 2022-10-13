@@ -5,8 +5,8 @@ from json import JSONDecodeError
 from typing import List, Optional, Dict
 
 from genshin import Client, InvalidCookies
-from genshin.utility.uid import recognize_genshin_server
 from genshin.utility.ds import generate_dynamic_secret
+from genshin.utility.uid import recognize_genshin_server
 from httpx import AsyncClient
 
 from modules.apihelper.base import ArtworkImage, PostInfo
@@ -25,6 +25,8 @@ class Hyperion:
     POST_FULL_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFull"
     POST_FULL_IN_COLLECTION_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection"
     GET_NEW_LIST_URL = "https://bbs-api.mihoyo.com/post/wapi/getNewsList"
+    GET_OFFICIAL_RECOMMENDED_POSTS_URL = "https://bbs-api.mihoyo.com/post/wapi/getOfficialRecommendedPosts"
+
     USER_AGENT = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/90.0.4430.72 Safari/537.36"
@@ -88,6 +90,11 @@ class Hyperion:
             f"{auto_orient}/interlace,{interlace}/format,{images_format}"
         )
         return {"x-oss-process": params}
+
+    async def get_official_recommended_posts(self, gids: int) -> JSONDict:
+        params = {"gids": gids}
+        response = await self.client.get(url=self.GET_OFFICIAL_RECOMMENDED_POSTS_URL, params=params)
+        return response
 
     async def get_post_full_in_collection(self, collection_id: int, gids: int = 2, order_type=1) -> JSONDict:
         params = {"collection_id": collection_id, "gids": gids, "order_type": order_type}

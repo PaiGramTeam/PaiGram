@@ -1,7 +1,15 @@
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from bs4 import BeautifulSoup
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InputMediaPhoto
+from telegram import (
+    Update,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+    InputMediaPhoto,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 from telegram.constants import ParseMode, MessageLimit
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
@@ -9,8 +17,10 @@ from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
 from core.bot import bot
+from core.config import config
 from core.plugin import Plugin, conversation, handler
 from modules.apihelper.base import ArtworkImage
+from modules.apihelper.error import APIHelperException
 from modules.apihelper.hyperion import Hyperion
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
@@ -38,6 +48,93 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
 
     def __init__(self):
         self.bbs = Hyperion()
+        self.last_post_id_list: List[int] = []
+        if config.channels is not None and len(config.channels) > 0:
+            logger.success("文章定时推送处理已经开启")
+            bot.app.job_queue.run_repeating(self.task, 60 * 3)
+
+    async def task(self, context: CallbackContext):
+        temp_post_id_list: List[int] = []
+
+        # 请求推荐POST列表并处理
+        try:
+            official_recommended_posts = await self.bbs.get_official_recommended_posts(2)
+        except APIHelperException as exc:
+            logger.error(f"获取首页推荐信息失败 {repr(exc)}")
+            return
+
+        for data_list in official_recommended_posts["data"]["list"]:
+            temp_post_id_list.append(data_list["post_id"])
+
+        # 判断是否为空
+        if len(self.last_post_id_list) == 0:
+            for temp_list in temp_post_id_list:
+                self.last_post_id_list.append(temp_list)
+            return
+
+        # 筛选出新推送的文章
+        new_post_id_list = set(temp_post_id_list).difference(set(self.last_post_id_list))
+
+        if len(new_post_id_list) == 0:
+            return
+
+        self.last_post_id_list = temp_post_id_list
+
+        for post_id in temp_post_id_list:
+            try:
+                post_info = await self.bbs.get_post_info(2, post_id)
+            except APIHelperException as exc:
+                logger.error(f"获取文章信息失败 {repr(exc)}")
+                text = f"获取 post_id[{post_id}] 文章信息失败 {repr(exc)}"
+                for user in config.admins:
+                    try:
+                        await context.bot.send_message(user.user_id, text)
+                    except BadRequest as exc:
+                        logger.error(f"发送消息失败 {repr(exc)}")
+                return
+            buttons = [
+                [
+                    InlineKeyboardButton("确认", callback_data=f"post_admin|confirm|{post_info.post_id}"),
+                    InlineKeyboardButton("取消", callback_data=f"post_admin|cancel|{post_info.post_id}"),
+                ]
+            ]
+            url = f"https://bbs.mihoyo.com/ys/article/{post_info.post_id}"
+            text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理"
+            for user in config.admins:
+                try:
+                    await context.bot.send_message(user.user_id, text, reply_markup=InlineKeyboardMarkup(buttons))
+                except BadRequest as exc:
+                    logger.error(f"发送消息失败 {repr(exc)}")
+
+    @conversation.entry_point
+    @handler.callback_query(pattern=r"^get_player_card\|", block=False)
+    @bot_admins_rights_check
+    @error_callable
+    async def callback_query_start(self, update: Update, context: CallbackContext) -> int:
+        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
+        callback_query = update.callback_query
+        user = callback_query.from_user
+        message = callback_query.message
+        logger.info(f"用户 {user.full_name}[{user.id}] POST命令请求")
+
+        async def get_post_admin_callback(callback_query_data: str) -> Tuple[str, int]:
+            _data = callback_query_data.split("|")
+            _result = _data[1]
+            _post_id = int(_data[2])
+            logger.debug(f"callback_query_data函数返回 result[{_result}] post_id[{_post_id}]")
+            return _result, _post_id
+
+        result, post_id = await get_post_admin_callback(callback_query.data)
+
+        if result == "cancel":
+            await message.reply_text("操作已经取消")
+            await message.delete()
+        elif result == "confirm":
+            await message.reply_text("正在处理")
+            return await self.send_post_info(post_handler_data, message, post_id)
+
+        await message.reply_text("非法参数")
+        return ConversationHandler.END
 
     @conversation.entry_point
     @handler.command(command="post", filters=filters.ChatType.PRIVATE, block=True)
@@ -71,6 +168,9 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
         if post_id == -1:
             await message.reply_text("获取作品ID错误，请检查连接是否合法", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
+        return await self.send_post_info(post_handler_data, message, post_id)
+
+    async def send_post_info(self, post_handler_data: PostHandlerData, message: Message, post_id: int) -> int:
         post_info = await self.bbs.get_post_info(2, post_id)
         post_images = await self.bbs.get_images_by_post_id(2, post_id)
         post_data = post_info["post"]["post"]
@@ -83,7 +183,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
         post_text += f"[source](https://bbs.mihoyo.com/ys/article/{post_id})"
         if len(post_text) >= MessageLimit.CAPTION_LENGTH:
             await message.reply_markdown_v2(post_text)
-            post_text = post_text[:MessageLimit.CAPTION_LENGTH]
+            post_text = post_text[: MessageLimit.CAPTION_LENGTH]
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割并发送原文本")
         try:
             if len(post_images) > 1:
