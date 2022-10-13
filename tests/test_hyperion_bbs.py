@@ -43,3 +43,16 @@ async def test_get_post_info(hyperion):
 async def test_get_images_by_post_id(hyperion):
     post_images = await hyperion.get_images_by_post_id(2, 29023709)
     assert len(post_images) == 1
+
+
+# noinspection PyShadowingNames
+@pytest.mark.asyncio
+@flaky(3, 1)
+async def test_official_recommended_posts(hyperion):
+    official_recommended_posts = await hyperion.get_official_recommended_posts(2)
+    assert len(official_recommended_posts["list"]) > 0
+    for data_list in official_recommended_posts["list"]:
+        post_info = await hyperion.get_post_info(2, data_list["post_id"])
+        assert post_info.post_id
+        assert post_info.subject
+        LOGGER.info("official_recommended_posts: post_id[%s] subject[%s]", post_info.post_id, post_info.subject)
