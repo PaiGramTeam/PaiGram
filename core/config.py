@@ -7,14 +7,11 @@ from typing import (
 
 import dotenv
 import ujson as json
-from pydantic import (
-    BaseModel,
-    BaseSettings,
-)
-
-__all__ = ["BotConfig", "config"]
+from pydantic import BaseModel, BaseSettings, validator
 
 from utils.const import PROJECT_ROOT
+
+__all__ = ["BotConfig", "config"]
 
 dotenv.load_dotenv()
 
@@ -47,6 +44,9 @@ class BotConfig(BaseSettings):
     logger_time_format: str = "[%Y-%m-%d %X]"
     logger_traceback_max_frames: int = 20
     logger_render_keywords: List[str] = ["BOT"]
+    logger_locals_max_depth: Optional[int] = 0
+    logger_locals_max_length: int = 10
+    logger_locals_max_string: int = 80
 
     enka_network_api_agent: str = ""
     pass_challenge_api: str = ""
@@ -87,6 +87,9 @@ class BotConfig(BaseSettings):
             path=PROJECT_ROOT.joinpath(self.logger_log_path).resolve(),
             time_format=self.logger_time_format,
             render_keywords=self.logger_render_keywords,
+            locals_max_length=self.logger_locals_max_length,
+            locals_max_string=self.logger_locals_max_string,
+            locals_max_depth=self.logger_locals_max_depth,
         )
 
     @property
@@ -134,6 +137,15 @@ class LoggerConfig(BaseModel):
     traceback_max_frames: int = 20
     path: Path = PROJECT_ROOT / "logs"
     render_keywords: List[str] = ["BOT"]
+    locals_max_length: int = 10
+    locals_max_string: int = 80
+    locals_max_depth: Optional[int] = None
+
+    @validator("locals_max_depth", pre=True, check_fields=False)
+    def locals_max_depth_validator(cls, value) -> Optional[int]:  # pylint: disable=R0201
+        if value <= 0:
+            return None
+        return value
 
 
 class MTProtoConfig(BaseModel):

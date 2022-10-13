@@ -1,4 +1,5 @@
 import asyncio
+
 import uvicorn
 from fastapi import FastAPI
 
@@ -35,12 +36,7 @@ class WebServer(Service):
         self.port = port
 
         self.server = uvicorn.Server(
-            uvicorn.Config(
-                app=webapp,
-                port=port,
-                use_colors=False,
-                host=host,
-            )
+            uvicorn.Config(app=webapp, port=port, use_colors=False, host=host, log_config=None)
         )
 
     async def start(self):
