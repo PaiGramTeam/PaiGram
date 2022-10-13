@@ -89,8 +89,8 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                 for user in config.admins:
                     try:
                         await context.bot.send_message(user.user_id, text)
-                    except BadRequest as exc:
-                        logger.error(f"发送消息失败 {repr(exc)}")
+                    except BadRequest as _exc:
+                        logger.error(f"发送消息失败 {repr(_exc)}")
                 return
             buttons = [
                 [
