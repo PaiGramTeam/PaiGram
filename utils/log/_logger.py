@@ -33,6 +33,7 @@ from rich.traceback import (
     Stack,
     Traceback as BaseTraceback,
 )
+from typing_extensions import Self
 from ujson import JSONDecodeError
 
 from core.config import config
@@ -81,8 +82,7 @@ class Traceback(BaseTraceback):
             {
                 "show_locals": True,
                 "max_frames": config.logger.traceback_max_frames,
-                "locals_max_length": 3,
-                "locals_max_string": 80,
+                "locals_max_string": 40,
             }
         )
         super(Traceback, self).__init__(*args, **kwargs)
@@ -273,11 +273,10 @@ class LogRender(DefaultLogRender):
 
 
 class Handler(DefaultRichHandler):
-    def __init__(self, *args, **kwargs):
-        super(Handler, self).__init__(*args, **kwargs)
+    def __init__(self, *args, rich_tracebacks: bool = True, **kwargs):
+        super(Handler, self).__init__(*args, rich_tracebacks=rich_tracebacks, **kwargs)
         self._log_render = LogRender()
         self.console = log_console
-        self.rich_tracebacks = True
         self.tracebacks_show_locals = True
         self.keywords = self.KEYWORDS + config.logger.render_keywords
 
@@ -481,6 +480,28 @@ class Logger(logging.Logger):
         return rv
 
 
+class LogFilter(logging.Filter):
+    _filter_list: List[Callable[["LogRecord"], bool]] = []
+
+    def __init__(self, name: str = ""):
+        super().__init__(name=name)
+
+    def add_filter(self, f: Callable[["LogRecord"], bool]) -> Self:
+        if f not in self._filter_list:
+            self._filter_list.append(f)
+        return self
+
+    def filter(self, record: "LogRecord") -> bool:
+        for f in self._filter_list:
+            if not f(record):
+                return False
+        return True
+
+
+def default_filter(record: "LogRecord") -> bool:
+    return record.name.split(".")[0] in ["TGPaimon", "uvicorn"]
+
+
 with _lock:
     if not __initialized__:
         if "PYCHARM_HOSTED" in os.environ:
@@ -492,9 +513,9 @@ with _lock:
             FileHandler(level=40, path=config.logger.path.joinpath("error/error.log")),
         )
 
-        log_filter = logging.Filter("TGPaimon")
-        handler.addFilter(log_filter)
-        debug_handler.addFilter(log_filter)
+        default_log_filter = LogFilter().add_filter(default_filter)
+        handler.addFilter(default_log_filter)
+        debug_handler.addFilter(default_log_filter)
 
         level_ = 10 if config.debug else 20
         logging.basicConfig(

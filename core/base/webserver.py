@@ -1,4 +1,5 @@
 import asyncio
+
 import uvicorn
 from fastapi import FastAPI
 
@@ -40,6 +41,7 @@ class WebServer(Service):
                 port=port,
                 use_colors=False,
                 host=host,
+                log_config=None,
             )
         )
 
