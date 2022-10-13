@@ -50,8 +50,8 @@ async def test_get_images_by_post_id(hyperion):
 @flaky(3, 1)
 async def test_official_recommended_posts(hyperion):
     official_recommended_posts = await hyperion.get_official_recommended_posts(2)
-    assert len(official_recommended_posts["data"]["list"]) > 0
-    for data_list in official_recommended_posts["data"]["list"]:
+    assert len(official_recommended_posts["list"]) > 0
+    for data_list in official_recommended_posts["list"]:
         post_info = await hyperion.get_post_info(2, data_list["post_id"])
         assert post_info.post_id
         assert post_info.subject

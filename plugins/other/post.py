@@ -63,7 +63,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             logger.error(f"获取首页推荐信息失败 {repr(exc)}")
             return
 
-        for data_list in official_recommended_posts["data"]["list"]:
+        for data_list in official_recommended_posts["list"]:
             temp_post_id_list.append(data_list["post_id"])
 
         # 判断是否为空
