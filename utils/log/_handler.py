@@ -216,10 +216,14 @@ class Handler(DefaultRichHandler):
                 width=self.tracebacks_width,
                 extra_lines=self.tracebacks_extra_lines,
                 word_wrap=self.tracebacks_word_wrap,
-                show_locals=self.tracebacks_show_locals,
-                locals_max_length=self.locals_max_length,
-                locals_max_string=self.locals_max_string,
-                locals_max_depth=self.locals_max_depth,
+                show_locals=getattr(record, "show_locals", None) or self.tracebacks_show_locals,
+                locals_max_length=getattr(record, "locals_max_length", None) or self.locals_max_length,
+                locals_max_string=getattr(record, "locals_max_string", None) or self.locals_max_string,
+                locals_max_depth=(
+                    getattr(record, "locals_max_depth")
+                    if hasattr(record, "locals_max_depth")
+                    else self.locals_max_depth
+                ),
                 suppress=self.tracebacks_suppress,
             )
             message = record.getMessage()

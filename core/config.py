@@ -142,7 +142,7 @@ class LoggerConfig(BaseModel):
     locals_max_depth: Optional[int] = None
 
     @validator("locals_max_depth", pre=True, check_fields=False)
-    def locals_max_depth_validator(cls, value) -> Optional[int]:
+    def locals_max_depth_validator(cls, value) -> Optional[int]:  # pylint: disable=R0201
         if value <= 0:
             return None
         return value
