@@ -55,4 +55,4 @@ async def test_official_recommended_posts(hyperion):
         post_info = await hyperion.get_post_info(2, data_list["post_id"])
         assert post_info.post_id
         assert post_info.subject
-        LOGGER.info(f"official_recommended_posts: post_id[%s] subject[%s]", post_info.post_id, post_info.subject)
+        LOGGER.info("official_recommended_posts: post_id[%s] subject[%s]", post_info.post_id, post_info.subject)
