@@ -75,7 +75,6 @@ class LogRender(DefaultLogRender):
         link_path: Optional[str] = None,
     ) -> Table:
         from rich.containers import Renderables
-        from rich.table import Table
 
         output = Table.grid(padding=(0, 1))
         output.expand = True

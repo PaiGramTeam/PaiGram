@@ -25,25 +25,25 @@ __initialized__ = False
 
 class Logger(logging.Logger):
     def success(
-            self,
-            msg: Any,
-            *args: Any,
-            exc_info: Optional[ExceptionInfoType] = None,
-            stack_info: bool = False,
-            stacklevel: int = 1,
-            extra: Optional[Mapping[str, Any]] = None,
+        self,
+        msg: Any,
+        *args: Any,
+        exc_info: Optional[ExceptionInfoType] = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Optional[Mapping[str, Any]] = None,
     ) -> None:
         return self.log(25, msg, *args, exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
 
     def exception(
-            self,
-            msg: Any = NOT_SET,
-            *args: Any,
-            exc_info: Optional[ExceptionInfoType] = True,
-            stack_info: bool = False,
-            stacklevel: int = 1,
-            extra: Optional[Mapping[str, Any]] = None,
-            **kwargs,
+        self,
+        msg: Any = NOT_SET,
+        *args: Any,
+        exc_info: Optional[ExceptionInfoType] = True,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Optional[Mapping[str, Any]] = None,
+        **kwargs,
     ) -> None:  # pylint: disable=W1113
         super(Logger, self).exception(
             "" if msg is NOT_SET else msg,
@@ -100,13 +100,11 @@ class LogFilter(logging.Filter):
         return self
 
     def filter(self, record: "LogRecord") -> bool:
-        for f in self._filter_list:
-            if not f(record):
-                return False
-        return True
+        return all(map(lambda func: func(record), self._filter_list))
 
 
 def default_filter(record: "LogRecord") -> bool:
+    """默认的过滤器"""
     return record.name.split(".")[0] in ["TGPaimon", "uvicorn"]
 
 

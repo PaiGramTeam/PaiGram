@@ -23,6 +23,7 @@ from rich.text import (
 )
 from rich.traceback import (
     Frame,
+    PathHighlighter,
     Stack,
     Trace,
     Traceback as BaseTraceback,
@@ -196,9 +197,8 @@ class Traceback(BaseTraceback):
 
             for frame_summary, line_no in traceback_.walk_tb(traceback):
                 filename = frame_summary.f_code.co_filename
-                if filename and not filename.startswith("<"):
-                    if not os.path.isabs(filename):
-                        filename = os.path.join(_IMPORT_CWD, filename)
+                if filename and not filename.startswith("<") and not os.path.isabs(filename):
+                    filename = os.path.join(_IMPORT_CWD, filename)
                 if frame_summary.f_locals.get("_rich_traceback_omit", False):
                     continue
                 frame = Frame(
@@ -246,11 +246,6 @@ class Traceback(BaseTraceback):
 
     @group()
     def _render_stack(self, stack: Stack) -> RenderResult:
-        from rich.traceback import (
-            PathHighlighter,
-            Frame,
-        )
-
         path_highlighter = PathHighlighter()
         theme = self.theme
         code_cache: Dict[str, str] = {}
