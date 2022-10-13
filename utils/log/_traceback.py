@@ -6,13 +6,13 @@ from typing import (
     Dict,
     Iterable,
     List,
-    Mapping,  # pylint: disable=W0611
+    Mapping,
     Optional,
     TYPE_CHECKING,
     Tuple,
     Type,
     Union,
-)  # pylint: disable=W0611
+)
 
 from rich import pretty
 from rich.columns import Columns
@@ -52,14 +52,14 @@ __all__ = ["render_scope", "Traceback"]
 
 
 def render_scope(
-        scope: "Mapping[str, Any]",
-        *,
-        title: Optional[TextType] = None,
-        sort_keys: bool = False,
-        indent_guides: bool = False,
-        max_length: Optional[int] = None,
-        max_string: Optional[int] = None,
-        max_depth: Optional[int] = None,
+    scope: Mapping[str, Any],
+    *,
+    title: Optional[TextType] = None,
+    sort_keys: bool = False,
+    indent_guides: bool = False,
+    max_length: Optional[int] = None,
+    max_string: Optional[int] = None,
+    max_depth: Optional[int] = None,
 ) -> "ConsoleRenderable":
     """在给定范围内渲染 python 变量
 
@@ -120,21 +120,21 @@ class Traceback(BaseTraceback):
 
     @classmethod
     def from_exception(
-            cls,
-            exc_type: Type[BaseException],
-            exc_value: BaseException,
-            traceback: Optional[TracebackType],
-            width: Optional[int] = 100,
-            extra_lines: int = 3,
-            theme: Optional[str] = None,
-            word_wrap: bool = False,
-            show_locals: bool = False,
-            indent_guides: bool = True,
-            locals_max_length: int = config.logger.locals_max_length,
-            locals_max_string: int = config.logger.locals_max_string,
-            locals_max_depth: Optional[int] = config.logger_locals_max_depth,
-            suppress: Iterable[Union[str, ModuleType]] = (),
-            max_frames: int = 100,
+        cls,
+        exc_type: Type[BaseException],
+        exc_value: BaseException,
+        traceback: Optional[TracebackType],
+        width: Optional[int] = 100,
+        extra_lines: int = 3,
+        theme: Optional[str] = None,
+        word_wrap: bool = False,
+        show_locals: bool = False,
+        indent_guides: bool = True,
+        locals_max_length: int = config.logger.locals_max_length,
+        locals_max_string: int = config.logger.locals_max_string,
+        locals_max_depth: Optional[int] = config.logger_locals_max_depth,
+        suppress: Iterable[Union[str, ModuleType]] = (),
+        max_frames: int = 100,
     ) -> "Traceback":
         rich_traceback = cls.extract(
             exc_type=exc_type,
@@ -162,14 +162,14 @@ class Traceback(BaseTraceback):
 
     @classmethod
     def extract(
-            cls,
-            exc_type: Type[BaseException],
-            exc_value: BaseException,
-            traceback: Optional[TracebackType],
-            show_locals: bool = False,
-            locals_max_length: int = 10,
-            locals_max_string: int = 80,
-            locals_max_depth: Optional[int] = None,
+        cls,
+        exc_type: Type[BaseException],
+        exc_value: BaseException,
+        traceback: Optional[TracebackType],
+        show_locals: bool = False,
+        locals_max_length: int = 10,
+        locals_max_string: int = 80,
+        locals_max_depth: Optional[int] = None,
     ) -> Trace:
         # noinspection PyProtectedMember
         from rich import _IMPORT_CWD
