@@ -107,7 +107,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                     logger.error(f"发送消息失败 {repr(exc)}")
 
     @conversation.entry_point
-    @handler.callback_query(pattern=r"^get_player_card\|", block=False)
+    @handler.callback_query(pattern=r"^post_admin\|", block=False)
     @bot_admins_rights_check
     @error_callable
     async def callback_query_start(self, update: Update, context: CallbackContext) -> int:
