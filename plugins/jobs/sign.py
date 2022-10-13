@@ -97,7 +97,7 @@ class SignJob(Plugin):
                 if sign_db.status not in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
                     continue
             elif context.job.name == "SignAgainJob":
-                if sign_db.status in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
+                if sign_db.status in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED, SignStatusEnum.INVALID_COOKIES]:
                     continue
             try:
                 text = await self.single_sign(user_id)
