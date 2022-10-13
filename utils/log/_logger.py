@@ -509,7 +509,7 @@ with _lock:
         logging.captureWarnings(True)
         handler, debug_handler, error_handler = (
             Handler(locals_max_length=4),
-            FileHandler(level=10, path=config.logger.path.joinpath("debug/debug.log")),
+            FileHandler(level=10, path=config.logger.path.joinpath("debug/debug.log"), rich_tracebacks=False),
             FileHandler(level=40, path=config.logger.path.joinpath("error/error.log")),
         )
 
