@@ -130,8 +130,10 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("操作已经取消")
             await message.delete()
         elif result == "confirm":
-            await message.reply_text("正在处理")
-            return await self.send_post_info(post_handler_data, message, post_id)
+            reply_text = await message.reply_text("正在处理")
+            status = await self.send_post_info(post_handler_data, message, post_id)
+            await reply_text.delete()
+            return status
 
         await message.reply_text("非法参数")
         return ConversationHandler.END
