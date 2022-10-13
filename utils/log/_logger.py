@@ -7,30 +7,38 @@ import traceback as traceback_
 from datetime import datetime
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Literal, Mapping, Optional, TYPE_CHECKING, Tuple, Union
+from types import ModuleType, TracebackType
+from typing import Any, Callable, Dict, Iterable, List, Literal, Mapping, Optional, TYPE_CHECKING, Tuple, Type, Union
 
 import ujson as json
+from rich import pretty
 from rich.columns import Columns
 from rich.console import (
     Console,
     RenderResult,
     group,
 )
+from rich.highlighter import ReprHighlighter
 from rich.logging import (
     LogRender as DefaultLogRender,
     RichHandler as DefaultRichHandler,
 )
+from rich.panel import Panel
+from rich.pretty import Pretty
 from rich.syntax import (
     PygmentsSyntaxTheme,
     Syntax,
 )
+from rich.table import Table
 from rich.text import (
     Text,
     TextType,
 )
 from rich.theme import Theme
 from rich.traceback import (
+    Frame,
     Stack,
+    Trace,
     Traceback as BaseTraceback,
 )
 from typing_extensions import Self
@@ -46,16 +54,10 @@ from utils.log._style import (
 from utils.typedefs import ExceptionInfoType
 
 if TYPE_CHECKING:
-    from rich.table import Table  # pylint: disable=unused-import
     from rich.console import (  # pylint: disable=unused-import
         ConsoleRenderable,
         RenderableType,
     )
-    from rich.console import (  # pylint: disable=unused-import
-        ConsoleRenderable,
-        RenderableType,
-    )
-    from rich.table import Table  # pylint: disable=unused-import
     from logging import LogRecord  # pylint: disable=unused-import
 
 __all__ = ["logger"]
@@ -76,17 +78,210 @@ else:
 log_console = Console(color_system=color_system, theme=Theme(DEFAULT_STYLE), width=config.logger.width)
 
 
-class Traceback(BaseTraceback):
-    def __init__(self, *args, **kwargs):
-        kwargs.update(
-            {
-                "show_locals": True,
-                "max_frames": config.logger.traceback_max_frames,
-                "locals_max_string": 40,
-            }
+def render_scope(
+    scope: "Mapping[str, Any]",
+    *,
+    title: Optional[TextType] = None,
+    sort_keys: bool = False,
+    indent_guides: bool = False,
+    max_length: Optional[int] = None,
+    max_string: Optional[int] = None,
+    max_depth: Optional[int] = None,
+) -> "ConsoleRenderable":
+    """在给定范围内渲染 python 变量
+
+    Args:
+        scope (Mapping): 包含变量名称和值的映射.
+        title (str, optional): 标题. 默认为 None.
+        sort_keys (bool, optional): 启用排序. 默认为 True.
+        indent_guides (bool, optional): 启用缩进线. 默认为 False.
+        max_length (int, optional): 缩写前容器的最大长度; 若为 None , 则表示没有缩写. 默认为 None.
+        max_string (int, optional): 截断前字符串的最大长度; 若为 None , 则表示不会截断. 默认为 None.
+        max_depth (int, optional): 嵌套数据结构的最大深度; 若为 None , 则表示会一直递归访问至最后一层. 默认为 None.
+
+    Returns:
+        ConsoleRenderable: 可被 rich 渲染的对象.
+    """
+    highlighter = ReprHighlighter()
+    items_table = Table.grid(padding=(0, 1), expand=False)
+    items_table.add_column(justify="right")
+
+    def sort_items(item: Tuple[str, Any]) -> Tuple[bool, str]:
+        # noinspection PyShadowingNames
+        key, _ = item
+        return not key.startswith("__"), key.lower()
+
+    # noinspection PyTypeChecker
+    items = sorted(scope.items(), key=sort_items) if sort_keys else scope.items()
+    for key, value in items:
+        key_text = Text.assemble(
+            (key, "scope.key.special" if key.startswith("__") else "scope.key"),
+            (" =", "scope.equals"),
         )
+        items_table.add_row(
+            key_text,
+            Pretty(
+                value,
+                highlighter=highlighter,
+                indent_guides=indent_guides,
+                max_length=max_length,
+                max_string=max_string,
+                max_depth=max_depth,
+            ),
+        )
+    return Panel.fit(
+        items_table,
+        title=title,
+        border_style="scope.border",
+        padding=(0, 1),
+    )
+
+
+class Traceback(BaseTraceback):
+    locals_max_depth: Optional[int]
+
+    def __init__(self, *args, locals_max_depth: Optional[int] = None, **kwargs):
+        kwargs.update({"show_locals": True, "max_frames": config.logger.traceback_max_frames})
         super(Traceback, self).__init__(*args, **kwargs)
-        self.theme = PygmentsSyntaxTheme(MonokaiProStyle)
+        self.locals_max_depth = locals_max_depth
+
+    @classmethod
+    def from_exception(
+        cls,
+        exc_type: Type[BaseException],
+        exc_value: BaseException,
+        traceback: Optional[TracebackType],
+        width: Optional[int] = 100,
+        extra_lines: int = 3,
+        theme: Optional[str] = None,
+        word_wrap: bool = False,
+        show_locals: bool = False,
+        indent_guides: bool = True,
+        locals_max_length: int = config.logger.locals_max_length,
+        locals_max_string: int = config.logger.locals_max_string,
+        locals_max_depth: Optional[int] = config.logger_locals_max_depth,
+        suppress: Iterable[Union[str, ModuleType]] = (),
+        max_frames: int = 100,
+    ) -> "Traceback":
+        rich_traceback = cls.extract(
+            exc_type=exc_type,
+            exc_value=exc_value,
+            traceback=traceback,
+            show_locals=show_locals,
+            locals_max_depth=locals_max_depth,
+            locals_max_string=locals_max_string,
+            locals_max_length=locals_max_length,
+        )
+        return cls(
+            rich_traceback,
+            width=width,
+            extra_lines=extra_lines,
+            theme=PygmentsSyntaxTheme(MonokaiProStyle),
+            word_wrap=word_wrap,
+            show_locals=show_locals,
+            indent_guides=indent_guides,
+            locals_max_length=locals_max_length,
+            locals_max_string=locals_max_string,
+            locals_max_depth=locals_max_depth,
+            suppress=suppress,
+            max_frames=max_frames,
+        )
+
+    @classmethod
+    def extract(
+        cls,
+        exc_type: Type[BaseException],
+        exc_value: BaseException,
+        traceback: Optional[TracebackType],
+        show_locals: bool = False,
+        locals_max_length: int = 10,
+        locals_max_string: int = 80,
+        locals_max_depth: Optional[int] = None,
+    ) -> Trace:
+        # noinspection PyProtectedMember
+        from rich import _IMPORT_CWD
+
+        stacks: List[Stack] = []
+        is_cause = False
+
+        def safe_str(_object: Any) -> str:
+            # noinspection PyBroadException
+            try:
+                return str(_object)
+            except Exception:
+                return "<exception str() failed>"
+
+        while True:
+            stack = Stack(
+                exc_type=safe_str(exc_type.__name__),
+                exc_value=safe_str(exc_value),
+                is_cause=is_cause,
+            )
+
+            if isinstance(exc_value, SyntaxError):
+                # noinspection PyProtectedMember
+                from rich.traceback import _SyntaxError
+
+                stack.syntax_error = _SyntaxError(
+                    offset=exc_value.offset or 0,
+                    filename=exc_value.filename or "?",
+                    lineno=exc_value.lineno or 0,
+                    line=exc_value.text or "",
+                    msg=exc_value.msg,
+                )
+
+            stacks.append(stack)
+            append = stack.frames.append
+
+            for frame_summary, line_no in traceback_.walk_tb(traceback):
+                filename = frame_summary.f_code.co_filename
+                if filename and not filename.startswith("<"):
+                    if not os.path.isabs(filename):
+                        filename = os.path.join(_IMPORT_CWD, filename)
+                if frame_summary.f_locals.get("_rich_traceback_omit", False):
+                    continue
+                frame = Frame(
+                    filename=filename or "?",
+                    lineno=line_no,
+                    name=frame_summary.f_code.co_name,
+                    locals={
+                        key: pretty.traverse(
+                            value,
+                            max_length=locals_max_length,
+                            max_string=locals_max_string,
+                            max_depth=locals_max_depth,
+                        )
+                        for key, value in frame_summary.f_locals.items()
+                    }
+                    if show_locals
+                    else None,
+                )
+                append(frame)
+                if frame_summary.f_locals.get("_rich_traceback_guard", False):
+                    del stack.frames[:]
+
+            cause = getattr(exc_value, "__cause__", None)
+            if cause:
+                exc_type = cause.__class__
+                exc_value = cause
+                # __traceback__ can be None, e.g. for exceptions raised by the
+                # 'multiprocessing' module
+                traceback = cause.__traceback__
+                is_cause = True
+                continue
+
+            cause = exc_value.__context__
+            if cause and not getattr(exc_value, "__suppress_context__", False):
+                exc_type = cause.__class__
+                exc_value = cause
+                traceback = cause.__traceback__
+                is_cause = False
+                continue
+            # No cover, code is reached but coverage doesn't recognize it.
+            break  # pragma: no cover
+
+        trace = Trace(stacks=stacks)
+        return trace
 
     @group()
     def _render_stack(self, stack: Stack) -> RenderResult:
@@ -111,14 +306,13 @@ class Traceback(BaseTraceback):
         # noinspection PyShadowingNames
         def render_locals(frame: Frame) -> Iterable["ConsoleRenderable"]:
             if frame.locals:
-                from rich.scope import render_scope
-
                 yield render_scope(
-                    frame.locals,
+                    scope=frame.locals,
                     title="locals",
                     indent_guides=self.indent_guides,
                     max_length=self.locals_max_length,
                     max_string=self.locals_max_string,
+                    max_depth=self.locals_max_depth,
                 )
 
         exclude_frames: Optional[range] = None
@@ -229,7 +423,7 @@ class LogRender(DefaultLogRender):
         path: Optional[str] = None,
         line_no: Optional[int] = None,
         link_path: Optional[str] = None,
-    ) -> "Table":
+    ) -> Table:
         from rich.containers import Renderables
         from rich.table import Table
 
@@ -273,12 +467,19 @@ class LogRender(DefaultLogRender):
 
 
 class Handler(DefaultRichHandler):
-    def __init__(self, *args, rich_tracebacks: bool = True, **kwargs):
+    def __init__(
+        self,
+        *args,
+        rich_tracebacks: bool = True,
+        locals_max_depth: Optional[int] = config.logger.locals_max_depth,
+        **kwargs,
+    ) -> None:
         super(Handler, self).__init__(*args, rich_tracebacks=rich_tracebacks, **kwargs)
         self._log_render = LogRender()
         self.console = log_console
         self.tracebacks_show_locals = True
         self.keywords = self.KEYWORDS + config.logger.render_keywords
+        self.locals_max_depth = locals_max_depth
 
     def render(
         self,
@@ -369,6 +570,7 @@ class Handler(DefaultRichHandler):
                 show_locals=self.tracebacks_show_locals,
                 locals_max_length=self.locals_max_length,
                 locals_max_string=self.locals_max_string,
+                locals_max_depth=self.locals_max_depth,
                 suppress=self.tracebacks_suppress,
             )
             message = record.getMessage()
@@ -508,9 +710,28 @@ with _lock:
             print()  # 针对 pycharm 的控制台 bug
         logging.captureWarnings(True)
         handler, debug_handler, error_handler = (
-            Handler(locals_max_length=4),
-            FileHandler(level=10, path=config.logger.path.joinpath("debug/debug.log"), rich_tracebacks=False),
-            FileHandler(level=40, path=config.logger.path.joinpath("error/error.log")),
+            # 控制台 log 配置
+            Handler(
+                locals_max_length=config.logger.locals_max_length,
+                locals_max_string=config.logger.locals_max_string,
+                locals_max_depth=config.logger.locals_max_depth,
+            ),
+            # debug.log 配置
+            FileHandler(
+                level=10,
+                path=config.logger.path.joinpath("debug/debug.log"),
+                locals_max_depth=1,
+                locals_max_length=config.logger.locals_max_length,
+                locals_max_string=config.logger.locals_max_string,
+            ),
+            # error.log 配置
+            FileHandler(
+                level=40,
+                path=config.logger.path.joinpath("error/error.log"),
+                locals_max_length=config.logger.locals_max_length,
+                locals_max_string=config.logger.locals_max_string,
+                locals_max_depth=config.logger.locals_max_depth,
+            ),
         )
 
         default_log_filter = LogFilter().add_filter(default_filter)
