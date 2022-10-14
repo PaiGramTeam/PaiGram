@@ -111,7 +111,10 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
     @bot_admins_rights_check
     @error_callable
     async def callback_query_start(self, update: Update, context: CallbackContext) -> int:
-        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
+        post_handler_data = context.chat_data.get("post_handler_data")
+        if post_handler_data is None:
+            post_handler_data = PostHandlerData()
+            context.chat_data["post_handler_data"] = post_handler_data
         callback_query = update.callback_query
         user = callback_query.from_user
         message = callback_query.message
