@@ -8,6 +8,8 @@ from genshin import Client, InvalidCookies
 from genshin.utility.ds import generate_dynamic_secret
 from genshin.utility.uid import recognize_genshin_server
 from httpx import AsyncClient
+from pydantic import BaseModel, validator
+from datetime import datetime
 
 from modules.apihelper.base import ArtworkImage, PostInfo
 from modules.apihelper.helpers import get_device_id
@@ -61,7 +63,7 @@ class Hyperion:
 
     @staticmethod
     def get_list_url_params(forum_id: int, is_good: bool = False, is_hot: bool = False, page_size: int = 20) -> dict:
-        params = {
+        return {
             "forum_id": forum_id,
             "gids": 2,
             "is_good": is_good,
@@ -69,8 +71,6 @@ class Hyperion:
             "page_size": page_size,
             "sort_type": 1,
         }
-
-        return params
 
     @staticmethod
     def get_images_params(
@@ -141,6 +141,18 @@ class Hyperion:
         await self.client.shutdown()
 
 
+class GachaInfoObject(BaseModel):
+    begin_time: datetime
+    end_time: datetime
+    gacha_id: str
+    gacha_name: str
+    gacha_type: int
+
+    @validator("begin_time", "end_time", pre=True, allow_reuse=True)
+    def validate_time(cls, v):
+        return datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
+
+
 class GachaInfo:
     GACHA_LIST_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/gacha/list.json"
     GACHA_INFO_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/%s/zh-cn.json"
@@ -158,16 +170,17 @@ class GachaInfo:
         self.cache = {}
         self.cache_ttl = 600
 
-    async def get_gacha_list_info(self) -> dict:
+    async def get_gacha_list_info(self) -> List[GachaInfoObject]:
         if self.cache.get("time", 0) + self.cache_ttl < time.time():
             self.cache.clear()
         cache = self.cache.get("gacha_list_info")
         if cache is not None:
             return cache
         req = await self.client.get(self.GACHA_LIST_URL)
-        self.cache["gacha_list_info"] = req
+        data = [GachaInfoObject(**i) for i in req["list"]]
+        self.cache["gacha_list_info"] = data
         self.cache["time"] = time.time()
-        return req
+        return data
 
     async def get_gacha_info(self, gacha_id: str) -> dict:
         cache = self.cache.get(gacha_id)

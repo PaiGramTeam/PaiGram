@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import datetime
 from typing import Dict
 
 from bs4 import BeautifulSoup
@@ -41,12 +42,13 @@ class Gacha(Plugin, BasePlugin):
     async def gacha_info(self, gacha_name: str = "角色活动", default: bool = False):
         gacha_list_info = await self.gacha.get_gacha_list_info()
         gacha_id = ""
-        for gacha in gacha_list_info["list"]:
-            if gacha["gacha_name"] == gacha_name:
-                gacha_id = gacha["gacha_id"]
+        now = datetime.now()
+        for gacha in gacha_list_info:
+            if gacha.gacha_name == gacha_name and gacha.begin_time <= now <= gacha.end_time:
+                gacha_id = gacha.gacha_id
         if gacha_id == "":
-            if default and len(gacha_list_info["list"]) > 0:
-                gacha_id = gacha_list_info["list"][0]["gacha_id"]
+            if default and len(gacha_list_info) > 0:
+                gacha_id = gacha_list_info[0].gacha_id
             else:
                 raise GachaNotFound(gacha_name)
         gacha_info = await self.gacha.get_gacha_info(gacha_id)
