@@ -102,7 +102,9 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理"
             for user in config.admins:
                 try:
-                    await context.bot.send_message(user.user_id, text, reply_markup=InlineKeyboardMarkup(buttons))
+                    await context.bot.send_message(
+                        user.user_id, text, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(buttons)
+                    )
                 except BadRequest as exc:
                     logger.error(f"发送消息失败 {repr(exc)}")
 
