@@ -67,6 +67,10 @@ class NoMostKills(Exception):
     """挑战了但是数据没刷新"""
 
 
+class AbyssNotFoundError(Exception):
+    """如果查询别人，是无法找到队伍详细，只有数据统计"""
+
+
 class Abyss(Plugin, BasePlugin):
     """深渊数据查询"""
 
@@ -169,6 +173,9 @@ class Abyss(Plugin, BasePlugin):
         except NoMostKills:  # 若深渊还未挑战
             await reply_message("还没有挑战本次深渊呢，咕咕咕~")
             return
+        except AbyssNotFoundError:
+            await reply_message("无法查询玩家挑战队伍详情，只能查询统计详情哦~")
+            return
         except IndexError:  # 若深渊为挑战此层
             await reply_message("还没有挑战本层呢，咕咕咕~")
             return
@@ -215,7 +222,7 @@ class Abyss(Plugin, BasePlugin):
         if not abyss_data.ranks.most_kills:
             raise NoMostKills()
         if (total or (floor > 0)) and not abyss_data.floors[0].chambers[0].battles:
-            raise CookiesNotFoundError
+            raise AbyssNotFoundError
 
         start_time = abyss_data.start_time.astimezone(TZ)
         time = start_time.strftime("%Y年%m月") + ("上" if start_time.day <= 15 else "下")
