@@ -17,11 +17,14 @@ class GameStrategyService:
         post_id: int = -1
         post_full_in_collection = await self._hyperion.get_post_full_in_collection(collection_id)
         for post_data in post_full_in_collection["posts"]:
+            title = post_data["post"]["subject"]
             topics = post_data["topics"]
             for topic in topics:
                 if character_name == topic["name"]:
                     post_id = int(post_data["post"]["post_id"])
                     break
+            if post_id == -1 and title and character_name in title:
+                post_id = int(post_data["post"]["post_id"])
             if post_id != -1:
                 break
         return post_id
