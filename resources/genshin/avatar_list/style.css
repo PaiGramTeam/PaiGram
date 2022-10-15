@@ -8,7 +8,7 @@
     --blue: rgb(98 168 233/ 80%);
     --cyan: rgb(4 150 255/80%);
     --green: rgb(67 185 124/ 80%);
-    --grey: rgb(189 191 190)
+    --grey: rgb(189 191 190);
 }
 
 .color::before {
@@ -25,27 +25,27 @@
 }
 
 .green::before {
-    background-image: linear-gradient(135deg, #81FBB8 10%, #28C76F 100%);
+    background-image: linear-gradient(135deg, rgb(129, 251, 184) 10%, rgb(40, 199, 111) 100%);
 }
 
 .cyan::before {
-    background-image: linear-gradient(135deg, #90F7EC 10%, #32CCBC 100%);
+    background-image: linear-gradient(135deg, rgb(144, 247, 236) 10%, rgb(50, 204, 188) 100%);
 }
 
 .blue::before {
-    background-image: linear-gradient(135deg, #ABDCFF 10%, #0396FF 100%);
+    background-image: linear-gradient(135deg, rgb(171, 220, 255) 10%, rgb(3, 150, 255) 100%);
 }
 
 .purple::before {
-    background-image: linear-gradient(135deg, #CE9FFC 10%, #7367F0 100%);
+    background-image: linear-gradient(135deg, rgb(206, 159, 252) 10%, rgb(115, 103, 240) 100%);
 }
 
 .pink::before {
-    background-image: linear-gradient(135deg, #F6CEEC 10%, #D939CD 100%);
+    background-image: linear-gradient(135deg, rgb(246, 206, 236) 10%, rgb(217, 57, 205) 100%);
 }
 
 .red::before {
-    background-image: linear-gradient(to top left, #FF0844 0%, #FFB199 100%);
+    background-image: linear-gradient(to top left, rgb(255, 8, 68) 0%, rgb(255, 177, 153) 100%);
 }
 
 body {
@@ -66,7 +66,6 @@ body {
     box-shadow: 1px 1px 15px rgb(0 0 0 /60%);
 }
 
-
 .head {
     width: 100%;
     height: 150px;
@@ -82,20 +81,12 @@ body {
     overflow: hidden;
 }
 
-.sign {
-    writing-mode: vertical-rl;
-    color: #A4A4A4;
-    position: relative;
-    flex: 0;
-}
-
 .avatar {
     width: 110px;
     height: 110px;
     margin: 0 60px 0 70px;
     filter: drop-shadow(1px 1px 10px rgb(0 0 0/50%));
 }
-
 
 .avatar > div {
     width: inherit;
@@ -231,14 +222,14 @@ body {
     z-index: 1;
 }
 
+.row > div:last-child {
+    border-right-width: 0;
+}
+
 .row > div:first-child:not(.content > .row:first-child > div:first-child),
 .row > div:nth-child(2):not(.content > .row:first-child > div:nth-child(2)) {
     border-right-color: rgb(203, 190, 148);
     border-left-color: rgba(0, 0, 0, 0);
-}
-
-.row > div:last-child {
-    border-right-width: 0;
 }
 
 .number {
@@ -388,7 +379,7 @@ body {
 }
 
 .talent-level-max {
-    background-image: linear-gradient(90deg, rgba(251, 129, 124, .8) 0%, rgba(255, 93, 85, 0.65) 50%, rgba(251, 129, 124, .8) 100%), url("../../img/crown.png") !important;
+    background-image: linear-gradient(90deg, rgba(251, 129, 124, 0.8) 0%, rgba(255, 93, 85, 0.65) 50%, rgba(251, 129, 124, 0.8) 100%), url("../../img/crown.png") !important;
 }
 
 .talent-level-max.talent-buffed {

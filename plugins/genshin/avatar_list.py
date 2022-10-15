@@ -90,7 +90,9 @@ class AvatarListPlugin(Plugin, BasePlugin):
             talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
             buffed_talents = []
             for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
-                if result := list(filter(lambda x: all([x.name in constellation.effect]), talents)):
+                if result := list(
+                    filter(lambda x: all([x.name in constellation.effect]), talents)
+                ):  # pylint: disable=W0640
                     buffed_talents.append(result[0].type)
             avatar_datas.append(
                 AvatarData(
@@ -114,10 +116,10 @@ class AvatarListPlugin(Plugin, BasePlugin):
             namecard = (await self.assets_service.namecard(response.player.namecard.id).navbar()).as_uri()
             avatar = (await self.assets_service.avatar(response.player.icon.id).icon()).as_uri()
             nickname = response.player.nickname
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0703
             logger.debug(f"enka 请求失败: {e}")
             choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)
-            if not len(choices):
+            if not [choices]:
                 choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
             namecard_choices = (
                 ArkoWrapper(choices)
