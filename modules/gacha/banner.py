@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import List, Tuple
 
+from pydantic import BaseModel
+
 from modules.gacha.error import GachaIllegalArgument
 from modules.gacha.utils import lerp
 
@@ -11,7 +13,7 @@ class BannerType(Enum):
     WEAPON = 2
 
 
-class GachaBanner:
+class GachaBanner(BaseModel):
     weight4 = ((1, 510), (8, 510), (10, 10000))
     weight5 = ((1, 60), (73, 60), (90, 10000))
     fallback_items3: List[int] = [

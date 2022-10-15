@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import secrets
 
 from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, AlreadyClaimed, GenshinException
@@ -28,6 +29,7 @@ class SignAll(Plugin):
         self.sign_service = sign_service
         self.cookies_service = cookies_service
         self.user_service = user_service
+        self.random = secrets.SystemRandom()
 
     @handler(CommandHandler, command="sign_all", block=False)
     @bot_admins_rights_check
@@ -61,12 +63,14 @@ class SignAll(Plugin):
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
                 text = "签到失败了呜呜呜 ~ 执行自动签到时发生错误"
+            else:
+                sign_db.status = SignStatusEnum.STATUS_SUCCESS
             if sign_db.chat_id < 0:
                 text = f'<a href="tg://user?id={sign_db.user_id}">NOTICE {sign_db.user_id}</a>\n\n{text}'
             try:
                 if "今天旅行者已经签到过了~" not in text:
                     await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
-                    await asyncio.sleep(5)  # 回复延迟5S避免触发洪水防御
+                    await asyncio.sleep(10 + self.random.random() * 50)  # 回复延迟 [10, 60) 避免触发洪水防御
             except BadRequest as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
@@ -79,6 +83,8 @@ class SignAll(Plugin):
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
                 continue
+            else:
+                sign_db.status = SignStatusEnum.STATUS_SUCCESS
             sign_db.time_updated = datetime.datetime.now()
             if sign_db.status != old_status:
                 await self.sign_service.update(sign_db)

@@ -60,27 +60,36 @@ class GachaHandle:
     async def de_banner(self, gacha_id: str, gacha_type: int) -> Optional[GachaBanner]:
         gacha_info = await self.hyperion.get_gacha_info(gacha_id)
         banner = GachaBanner()
+        banner.banner_id = gacha_id
         banner.title, banner.html_title = self.de_title(gacha_info["title"])
-        for r5_up_items in gacha_info["r5_up_items"]:
-            if r5_up_items["item_type"] == "角色":
-                banner.rate_up_items5.append(avatar_to_game_id(r5_up_items["item_name"]))
-            elif r5_up_items["item_type"] == "武器":
-                banner.rate_up_items5.append(weapon_to_game_id(r5_up_items["item_name"]))
-        for r5_prob_list in gacha_info["r5_prob_list"]:
-            if r5_prob_list["item_type"] == "角色":
-                banner.fallback_items5_pool1.append(avatar_to_game_id(r5_prob_list["item_name"]))
-            elif r5_prob_list["item_type"] == "武器":
-                banner.fallback_items5_pool1.append(weapon_to_game_id(r5_prob_list["item_name"]))
-        for r4_up_items in gacha_info["r4_up_items"]:
-            if r4_up_items["item_type"] == "角色":
-                banner.rate_up_items4.append(avatar_to_game_id(r4_up_items["item_name"]))
-            elif r4_up_items["item_type"] == "武器":
-                banner.rate_up_items4.append(weapon_to_game_id(r4_up_items["item_name"]))
-        for r4_prob_list in gacha_info["r4_prob_list"]:
-            if r4_prob_list["item_type"] == "角色":
-                banner.fallback_items4_pool1.append(avatar_to_game_id(r4_prob_list["item_name"]))
-            elif r4_prob_list["item_type"] == "武器":
-                banner.fallback_items4_pool1.append(weapon_to_game_id(r4_prob_list["item_name"]))
+        r5_up_items = gacha_info.get("r5_up_items")
+        if r5_up_items is not None:
+            for r5_up_item in r5_up_items:
+                if r5_up_item["item_type"] == "角色":
+                    banner.rate_up_items5.append(avatar_to_game_id(r5_up_item["item_name"]))
+                elif r5_up_item["item_type"] == "武器":
+                    banner.rate_up_items5.append(weapon_to_game_id(r5_up_item["item_name"]))
+        r5_prob_list = gacha_info.get("r5_prob_list")
+        if r5_prob_list is not None:
+            for r5_prob in gacha_info.get("r5_prob_list", []):
+                if r5_prob["item_type"] == "角色":
+                    banner.fallback_items5_pool1.append(avatar_to_game_id(r5_prob["item_name"]))
+                elif r5_prob["item_type"] == "武器":
+                    banner.fallback_items5_pool1.append(weapon_to_game_id(r5_prob["item_name"]))
+        r4_up_items = gacha_info.get("r4_up_items")
+        if r4_up_items is not None:
+            for r4_up_item in r4_up_items:
+                if r4_up_item["item_type"] == "角色":
+                    banner.rate_up_items4.append(avatar_to_game_id(r4_up_item["item_name"]))
+                elif r4_up_item["item_type"] == "武器":
+                    banner.rate_up_items4.append(weapon_to_game_id(r4_up_item["item_name"]))
+        r4_prob_list = gacha_info.get("r4_prob_list")
+        if r4_prob_list is not None:
+            for r4_prob in r4_prob_list:
+                if r4_prob["item_type"] == "角色":
+                    banner.fallback_items4_pool1.append(avatar_to_game_id(r4_prob["item_name"]))
+                elif r4_prob["item_type"] == "武器":
+                    banner.fallback_items4_pool1.append(weapon_to_game_id(r4_prob["item_name"]))
         if gacha_type in (301, 400):
             banner.wish_max_progress = 1
             banner.banner_type = BannerType.EVENT
@@ -196,6 +205,10 @@ class Gacha(Plugin, BasePlugin):
             "items": [],
             "wish_name": "",
         }
+        logger.debug(f"{banner.banner_id}")
+        logger.debug(f"{banner.banner_type}")
+        logger.debug(f"{banner.rate_up_items5}")
+        logger.debug(f"{banner.fallback_items5_pool1}")
         if player_gacha_banner_info.wish_item_id != 0:
             weapon = WEAPON_DATA.get(str(player_gacha_banner_info.wish_item_id))
             if weapon is not None:
