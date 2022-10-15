@@ -63,6 +63,8 @@ class SignAll(Plugin):
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
                 text = "签到失败了呜呜呜 ~ 执行自动签到时发生错误"
+            else:
+                sign_db.status = SignStatusEnum.STATUS_SUCCESS
             if sign_db.chat_id < 0:
                 text = f'<a href="tg://user?id={sign_db.user_id}">NOTICE {sign_db.user_id}</a>\n\n{text}'
             try:
@@ -81,6 +83,8 @@ class SignAll(Plugin):
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
                 continue
+            else:
+                sign_db.status = SignStatusEnum.STATUS_SUCCESS
             sign_db.time_updated = datetime.datetime.now()
             if sign_db.status != old_status:
                 await self.sign_service.update(sign_db)
