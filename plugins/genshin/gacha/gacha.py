@@ -26,7 +26,7 @@ from utils.log import logger
 class GachaNotFound(Exception):
     """卡池未找到"""
 
-    def __init__(self, gacha_name:str):
+    def __init__(self, gacha_name: str):
         self.gacha_name = gacha_name
         super().__init__(f"{gacha_name} gacha not found")
 
@@ -81,7 +81,7 @@ class GachaHandle:
         now = datetime.now()
         for gacha in gacha_list_info:
             if gacha.gacha_name == gacha_name and gacha.begin_time <= now <= gacha.end_time:
-                return gacha
+                return gacha  # pylint: disable=W0120
         else:
             if default and len(gacha_list_info) > 0:
                 return gacha_list_info[0]
