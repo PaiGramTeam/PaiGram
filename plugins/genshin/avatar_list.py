@@ -91,8 +91,8 @@ class AvatarListPlugin(Plugin, BasePlugin):
             buffed_talents = []
             for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
                 if result := list(
-                    filter(lambda x: all([x.name in constellation.effect]), talents)
-                ):  # pylint: disable=W0640
+                    filter(lambda x: all([x.name in constellation.effect]), talents)  # pylint: disable=W0640
+                ):
                     buffed_talents.append(result[0].type)
             avatar_datas.append(
                 AvatarData(
