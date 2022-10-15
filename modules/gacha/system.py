@@ -73,8 +73,8 @@ class BannerSystem:
             if weight < 0:
                 raise GachaIllegalArgument("Weights must be non-negative!")
             total += weight
-        random = secrets.SystemRandom()
-        roll = int(random.random() * min(total, cutoff))
+        secrets_random = secrets.SystemRandom()
+        roll = int(secrets_random.random() * min(total, cutoff))
         sub_total = 0
         for index, value in enumerate(weights):
             sub_total += value
@@ -148,11 +148,11 @@ class BannerSystem:
 
     @staticmethod
     def get_random(items) -> int:
-        random = secrets.SystemRandom()
-        roll = int(random.random() * len(items))
+        secrets_random = secrets.SystemRandom()
+        roll = int(secrets_random.random() * len(items))
         return items[roll]
 
     @staticmethod
     def random_range(_mix: int, _max: int) -> int:
-        random = secrets.SystemRandom()
-        return int(random.uniform(_mix, _max))
+        secrets_random = secrets.SystemRandom()
+        return int(secrets_random.uniform(_mix, _max))
