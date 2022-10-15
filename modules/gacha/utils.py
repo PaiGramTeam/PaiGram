@@ -5,8 +5,8 @@ def lerp(x: int, x_y_array) -> int:
     try:
         if x <= x_y_array[0][0]:
             return x_y_array[0][1]
-        elif x >= x_y_array[len(x_y_array) - 1][0]:
-            return x_y_array[len(x_y_array) - 1][1]
+        elif x >= x_y_array[-1][0]:
+            return x_y_array[-1][1]
         for index, _ in enumerate(x_y_array):
             if x == x_y_array[index + 1][0]:
                 return x_y_array[index + 1][1]
