@@ -402,4 +402,12 @@ body {
     background-color: rgb(204, 204, 204);
 }
 
+.hasMore {
+    padding: 5px 10px 5px 0;
+    text-align: left;
+    font-size: 14px;
+    font-style: italic;
+    background-color: rgb(204, 204, 204);
+}
+
 /* stylelint-enable */
