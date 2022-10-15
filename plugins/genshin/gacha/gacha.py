@@ -4,11 +4,13 @@ import re
 from datetime import datetime
 from typing import Optional, Union, Any, List
 
+import ujson as json
 from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
+from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
@@ -29,6 +31,22 @@ class GachaNotFound(Exception):
     def __init__(self, gacha_name: str):
         self.gacha_name = gacha_name
         super().__init__(f"{gacha_name} gacha not found")
+
+
+class GachaRedis:
+    def __init__(self, redis: RedisDB):
+        self.client = redis.client
+        self.qname = "plugin:gacha:"
+
+    async def get(self, user_id: int) -> PlayerGachaInfo:
+        data = await self.client.get(f"{self.qname}{user_id}")
+        if data is None:
+            return PlayerGachaInfo()
+        return PlayerGachaInfo(**json.loads(data))
+
+    async def set(self, user_id: int, player_gacha_info: PlayerGachaInfo):
+        value = player_gacha_info.json()
+        await self.client.set(f"{self.qname}{user_id}", value)
 
 
 class GachaHandle:
@@ -113,7 +131,8 @@ class GachaHandle:
 class Gacha(Plugin, BasePlugin):
     """抽卡模拟器（非首模拟器/减寿模拟器）"""
 
-    def __init__(self, template_service: TemplateService = None):
+    def __init__(self, template_service: TemplateService = None, redis: RedisDB = None):
+        self.gacha_db = GachaRedis(redis)
         self.handle = GachaHandle()
         self.banner_system = BannerSystem()
         self.template_service = template_service
@@ -154,10 +173,7 @@ class Gacha(Plugin, BasePlugin):
             if banner is None:
                 banner = await self.handle.de_banner(gacha_base_info.gacha_id, gacha_base_info.gacha_type)
                 self.banner_cache.setdefault(gacha_base_info.gacha_id, banner)
-        player_gacha_info = context.user_data.get("player_gacha_info")
-        if player_gacha_info is None:
-            player_gacha_info = PlayerGachaInfo()
-            context.user_data.setdefault("player_gacha_info", player_gacha_info)
+        player_gacha_info = await self.gacha_db.get(user.id)
         # 执行抽卡
         item_list = self.banner_system.do_pulls(player_gacha_info, banner, 10)
         data = await self.handle.de_item_list(item_list)
@@ -169,6 +185,7 @@ class Gacha(Plugin, BasePlugin):
             "player_gacha_info": player_gacha_info.get_banner_info(banner),
             "items": [],
         }
+        await self.gacha_db.set(user.id, player_gacha_info)
 
         def take_rang(elem: dict):
             return elem["rank"]
