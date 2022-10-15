@@ -15,6 +15,7 @@ from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from metadata.genshin import weapon_to_game_id, avatar_to_game_id, WEAPON_DATA, AVATAR_DATA
+from metadata.shortname import weaponToName
 from modules.apihelper.hyperion import GachaInfo, GachaInfoObject
 from modules.gacha.banner import BannerType, GachaBanner
 from modules.gacha.player.info import PlayerGachaInfo
@@ -141,6 +142,14 @@ class Gacha(Plugin, BasePlugin):
         self.banner_cache = {}
         self._look = asyncio.Lock()
 
+    async def get_banner(self, gacha_base_info: GachaInfoObject):
+        async with self._look:
+            banner = self.banner_cache.get(gacha_base_info.gacha_id)
+            if banner is None:
+                banner = await self.handle.de_banner(gacha_base_info.gacha_id, gacha_base_info.gacha_type)
+                self.banner_cache.setdefault(gacha_base_info.gacha_id, banner)
+            return banner
+
     @handler(CommandHandler, command="gacha", block=False)
     @handler(MessageHandler, filters=filters.Regex("^非首模拟器(.*)"), block=False)
     @restricts(restricts_time=3, restricts_time_of_groups=20)
@@ -167,24 +176,30 @@ class Gacha(Plugin, BasePlugin):
         logger.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
         # 用户数据储存和处理
         await message.reply_chat_action(ChatAction.TYPING)
-        await self.handle.hyperion.get_gacha_info(gacha_base_info.gacha_id)
-        async with self._look:
-            banner = self.banner_cache.get(gacha_base_info.gacha_id)
-            if banner is None:
-                banner = await self.handle.de_banner(gacha_base_info.gacha_id, gacha_base_info.gacha_type)
-                self.banner_cache.setdefault(gacha_base_info.gacha_id, banner)
+        banner = await self.get_banner(gacha_base_info)
         player_gacha_info = await self.gacha_db.get(user.id)
+        # 检查 wish_item_id
+        if gacha_base_info.gacha_type == 302:
+            if player_gacha_info.event_weapon_banner.wish_item_id not in banner.rate_up_items5:
+                player_gacha_info.event_weapon_banner.wish_item_id = 0
         # 执行抽卡
         item_list = self.banner_system.do_pulls(player_gacha_info, banner, 10)
         data = await self.handle.de_item_list(item_list)
+        player_gacha_banner_info = player_gacha_info.get_banner_info(banner)
         template_data = {
             "_res_path": f"file://{self.resources_dir}",
             "name": f"{user.full_name}",
             "info": gacha_name,
             "banner_name": banner.html_title,
-            "player_gacha_info": player_gacha_info.get_banner_info(banner),
+            "banner_type": gacha_base_info.gacha_type,
+            "player_gacha_banner_info": player_gacha_banner_info,
             "items": [],
+            "wish_name": "",
         }
+        if player_gacha_banner_info.wish_item_id != 0:
+            weapon = WEAPON_DATA.get(str(player_gacha_banner_info.wish_item_id))
+            if weapon is not None:
+                template_data["wish_name"] = weapon["name"]
         await self.gacha_db.set(user.id, player_gacha_info)
 
         def take_rang(elem: dict):
@@ -201,3 +216,43 @@ class Gacha(Plugin, BasePlugin):
         if filters.ChatType.GROUPS.filter(message):
             self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
             self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
+
+    @handler(CommandHandler, command="set_wish", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^非首模拟器定轨(.*)"), block=False)
+    @restricts(restricts_time=3, restricts_time_of_groups=20)
+    @error_callable
+    async def set_wish(self, update: Update, context: CallbackContext) -> None:
+        message = update.effective_message
+        user = update.effective_user
+        args = get_all_args(context)
+        gacha_base_info = await self.handle.gacha_base_info("武器活动")
+        banner = await self.get_banner(gacha_base_info)
+        if len(args) >= 1:
+            weapon_name = args[0]
+        else:
+            reply_message = await message.reply_text("参数错误")
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
+            return
+        weapon_name = weaponToName(weapon_name)
+        player_gacha_info = await self.gacha_db.get(user.id)
+        for rate_up_items5 in banner.rate_up_items5:
+            weapon = WEAPON_DATA.get(str(rate_up_items5))
+            if weapon is None:
+                continue
+            if weapon["name"] == weapon_name:
+                player_gacha_info.event_weapon_banner.wish_item_id = rate_up_items5
+                break
+        else:
+            reply_message = await message.reply_text(f"没有找到 {weapon_name} 武器或该武器不存在UP卡池中")
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
+            return
+        await self.gacha_db.set(user.id, player_gacha_info)
+        reply_message = await message.reply_text(f"抽卡模拟器定轨 {weapon_name} 武器成功")
+        if filters.ChatType.GROUPS.filter(reply_message):
+            self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+            self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
+        return

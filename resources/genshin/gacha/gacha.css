@@ -169,6 +169,20 @@ body {
     z-index: 120;
 }
 
+.poor-wish {
+    position: fixed;
+    top: 500px;
+    right: 55px;
+    z-index: 9999;
+}
+
+.poor-bing {
+    position: fixed;
+    top: 580px;
+    right: 55px;
+    z-index: 9999;
+}
+
 .logo {
     position: absolute;
     right: 55px;

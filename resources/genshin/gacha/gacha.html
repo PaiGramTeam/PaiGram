@@ -10,12 +10,20 @@
 <div class="container" id="container">
     <div class="info-bg info-name">{{name}}</div>
     <div class="info-bg info-count">{{info}}</div>
+    {% if banner_type == 302 %}
+        {% if wish_name %}
+            <div class="info-bg poor-wish">定轨：{{wish_name}}</div>
+            <div class="info-bg poor-bing">命定值：{{player_gacha_banner_info.failed_chosen_item_pulls}}</div>
+        {% else %}
+            <div class="info-bg poor-bing">当前卡池未定轨</div>
+        {% endif %}
+    {% endif %}
     <div class="info-bg poor-info">
         {% autoescape  off %}
         {{banner_name}}
         {% endautoescape %}
     </div>
-    <div class="info-bg pity5">距离上一个五星{{player_gacha_info.pity5}}抽</div>
+    <div class="info-bg pity5">距离上一个五星{{player_gacha_banner_info.pity5}}抽</div>
     <div class="list-box">
         {% for item in items %}
         <div class="item">
