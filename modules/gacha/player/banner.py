@@ -66,12 +66,12 @@ class PlayerGachaBannerInfo(BaseModel):
             if pool == 1:
                 self.pity4_pool1 = amount
             else:
-                self.pity4_pool1 = amount
+                self.pity4_pool2 = amount
         elif rarity == 5:
             if pool == 1:
                 self.pity5_pool1 = amount
             else:
-                self.pity5_pool1 = amount
+                self.pity5_pool2 = amount
         else:
             raise GachaIllegalArgument
 
