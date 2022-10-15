@@ -81,7 +81,7 @@ class GachaHandle:
                 banner.fallback_items4_pool1.append(avatar_to_game_id(r4_prob_list["item_name"]))
             elif r4_prob_list["item_type"] == "武器":
                 banner.fallback_items4_pool1.append(weapon_to_game_id(r4_prob_list["item_name"]))
-        if gacha_type in (310, 400):
+        if gacha_type in (301, 400):
             banner.wish_max_progress = 1
             banner.banner_type = BannerType.EVENT
             banner.weight4 = ((1, 510), (8, 510), (10, 10000))
