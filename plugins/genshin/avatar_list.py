@@ -1,3 +1,4 @@
+"""练度统计"""
 from typing import Iterable, List
 
 from arkowrapper import ArkoWrapper
@@ -37,7 +38,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
     @handler.command("avatars")
     @handler.message(filters.Regex(r"^练度统计$"))
-    @restricts()
+    @restricts(30)
     @error_callable
     async def avatar_list(self, update: Update, context: CallbackContext):
         user = update.effective_user
@@ -72,6 +73,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 await message.reply_text("此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定", parse_mode=ParseMode.HTML)
             return
 
+        notice = await message.reply_text("派蒙需要收集整理数据，还请耐心等待哦~")
         await message.reply_chat_action(ChatAction.TYPING)
 
         characters = await client.get_genshin_characters(client.uid)
@@ -113,7 +115,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             avatar = (await self.assets_service.avatar(response.player.icon.id).icon()).as_uri()
             nickname = response.player.nickname
         except Exception as e:
-            logger.debug(e)
+            logger.debug(f"enka 请求失败: {e}")
             choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)
             if not len(choices):
                 choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
@@ -142,6 +144,8 @@ class AvatarListPlugin(Plugin, BasePlugin):
         )
 
         await message.reply_document(InputFile(image, filename=f"{user.full_name}的练度统计.png"))
+        if filters.ChatType.GROUPS.filter(message):
+            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 10)
 
 
 class SkillData(Model):
