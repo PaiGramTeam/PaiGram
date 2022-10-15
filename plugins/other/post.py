@@ -102,7 +102,9 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理"
             for user in config.admins:
                 try:
-                    await context.bot.send_message(user.user_id, text, reply_markup=InlineKeyboardMarkup(buttons))
+                    await context.bot.send_message(
+                        user.user_id, text, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(buttons)
+                    )
                 except BadRequest as exc:
                     logger.error(f"发送消息失败 {repr(exc)}")
 
@@ -111,7 +113,10 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
     @bot_admins_rights_check
     @error_callable
     async def callback_query_start(self, update: Update, context: CallbackContext) -> int:
-        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
+        post_handler_data = context.chat_data.get("post_handler_data")
+        if post_handler_data is None:
+            post_handler_data = PostHandlerData()
+            context.chat_data["post_handler_data"] = post_handler_data
         callback_query = update.callback_query
         user = callback_query.from_user
         message = callback_query.message

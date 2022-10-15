@@ -97,10 +97,11 @@ class SignJob(Plugin):
                 if sign_db.status not in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
                     continue
             elif context.job.name == "SignAgainJob":
-                if sign_db.status in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED, SignStatusEnum.INVALID_COOKIES]:
+                if sign_db.status in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
                     continue
             try:
                 text = await self.single_sign(user_id)
+                sign_db.status = SignStatusEnum.STATUS_SUCCESS
             except InvalidCookies:
                 text = "自动签到执行失败，Cookie无效"
                 sign_db.status = SignStatusEnum.INVALID_COOKIES
