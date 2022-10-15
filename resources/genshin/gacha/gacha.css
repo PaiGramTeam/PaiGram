@@ -62,13 +62,6 @@ body {
 }
 
 
-.poor-bing {
-    position: fixed;
-    top: 85px;
-    right: 55px;
-    z-index: 9999;
-}
-
 .list-box {
     display: flex;
     padding-top: 130px;

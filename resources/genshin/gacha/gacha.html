@@ -10,7 +10,7 @@
 <div class="container" id="container">
     <div class="info-bg info-name">{{name}}</div>
     <div class="info-bg info-count">{{info}}</div>
-    {% if banner_type == 302 %}
+    {% if banner_type == "WEAPON" %}
         {% if wish_name %}
             <div class="info-bg poor-wish">定轨：{{wish_name}}</div>
             <div class="info-bg poor-bing">命定值：{{player_gacha_banner_info.failed_chosen_item_pulls}}</div>
