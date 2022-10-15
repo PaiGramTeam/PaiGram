@@ -87,7 +87,17 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 detail = CalculatorCharacterDetails.parse_obj(
                     await client.request(api, params={"uid": client.uid, "region": region, "avatar_id": character.id})
                 )
-            talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
+            if character.id == 10000007:
+                talents = []
+                for talent in detail.talents:
+                    if "普通攻击" in talent.name:
+                        talent.Config.allow_mutation = True
+                        # noinspection Pydantic
+                        talent.group_id = 1
+                    if talent.type in ["attack", "skill", "burst"]:
+                        talents.append(talent)
+            else:
+                talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
             buffed_talents = []
             for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
                 if result := list(
