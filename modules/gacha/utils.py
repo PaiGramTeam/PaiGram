@@ -1,8 +1,9 @@
+import contextlib
 from typing import List
 
 
 def lerp(x: int, x_y_array) -> int:
-    try:
+    with contextlib.suppress(KeyError, IndexError):
         if x <= x_y_array[0][0]:
             return x_y_array[0][1]
         elif x >= x_y_array[-1][0]:
@@ -18,16 +19,8 @@ def lerp(x: int, x_y_array) -> int:
                 prev_value = x_y_array[index][1]
                 full_delta = x_y_array[index + 1][1] - prev_value
                 return int(prev_value + ((position * full_delta) / full_dist))
-    except KeyError:
-        pass
-    except IndexError:
-        pass
     return 0
 
 
 def set_subtract(minuend: List[int], subtrahend: List[int]) -> List[int]:
-    temp: List[int] = []
-    for i in minuend:
-        if i not in subtrahend:
-            temp.append(i)
-    return temp
+    return [i for i in minuend if i not in subtrahend]

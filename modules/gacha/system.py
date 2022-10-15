@@ -83,15 +83,14 @@ class BannerSystem:
         return 0
 
     def do_rare_pull(
-            self,
-            featured: List[int],
-            fallback1: List[int],
-            fallback2: List[int],
-            rarity: int,
-            banner: GachaBanner,
-            gacha_info: PlayerGachaBannerInfo,
+        self,
+        featured: List[int],
+        fallback1: List[int],
+        fallback2: List[int],
+        rarity: int,
+        banner: GachaBanner,
+        gacha_info: PlayerGachaBannerInfo,
     ) -> int:
-        item_id = 0
         # 以下是防止点炒饭
         epitomized = (banner.has_epitomized()) and (rarity == 5) and (gacha_info.wish_item_id != 0)  # 判断定轨信息是否正确
         pity_epitomized = gacha_info.failed_chosen_item_pulls >= banner.wish_max_progress  # 判断定轨值
@@ -102,13 +101,12 @@ class BannerSystem:
         if epitomized and pity_epitomized:  # 给武器用的定轨代码
             gacha_info.set_failed_featured_item_pulls(rarity, 0)
             item_id = gacha_info.wish_item_id
-        else:
-            if pull_featured and len(featured) > 0:  # 是UP角色
-                gacha_info.set_failed_featured_item_pulls(rarity, 0)
-                item_id = self.get_random(featured)
-            else:  # 寄
-                gacha_info.add_failed_featured_item_pulls(rarity, 1)
-                item_id = self.do_fallback_rare_pull(fallback1, fallback2, rarity, banner, gacha_info)
+        elif pull_featured and featured:  # 是UP角色
+            gacha_info.set_failed_featured_item_pulls(rarity, 0)
+            item_id = self.get_random(featured)
+        else:  # 寄
+            gacha_info.add_failed_featured_item_pulls(rarity, 1)
+            item_id = self.do_fallback_rare_pull(fallback1, fallback2, rarity, banner, gacha_info)
         if epitomized:
             if item_id == gacha_info.wish_item_id:  # 判断当前UP是否为定轨的UP
                 gacha_info.failed_chosen_item_pulls = 0  # 是的话清除定轨
@@ -117,12 +115,12 @@ class BannerSystem:
         return item_id
 
     def do_fallback_rare_pull(
-            self,
-            fallback1: List[int],
-            fallback2: List[int],
-            rarity: int,
-            banner: GachaBanner,
-            gacha_info: PlayerGachaBannerInfo,
+        self,
+        fallback1: List[int],
+        fallback2: List[int],
+        rarity: int,
+        banner: GachaBanner,
+        gacha_info: PlayerGachaBannerInfo,
     ) -> int:
         if len(fallback1) < 1:
             if len(fallback2) < 1:

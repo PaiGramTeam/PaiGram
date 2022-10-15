@@ -13,8 +13,8 @@ class PlayerGachaInfo(BaseModel):
     event_weapon_banner: Optional[PlayerGachaBannerInfo] = None
     event_character_banner: Optional[PlayerGachaBannerInfo] = None
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         if self.standard_banner is None:
             self.standard_banner = PlayerGachaBannerInfo()
         if self.event_weapon_banner is None:

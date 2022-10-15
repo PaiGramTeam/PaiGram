@@ -52,13 +52,9 @@ class PlayerGachaBannerInfo(BaseModel):
 
     def get_pity_pool(self, rarity: int, param: int) -> int:
         if rarity == 4:
-            if param == 1:
-                return self.pity4_pool1
-            return self.pity4_pool2
+            return self.pity4_pool1 if param == 1 else self.pity4_pool2
         elif rarity == 5:
-            if param == 1:
-                return self.pity5_pool1
-            return self.pity5_pool2
+            return self.pity5_pool1 if param == 1 else self.pity5_pool2
         raise GachaIllegalArgument
 
     def set_pity_pool(self, rarity: int, pool: int, amount: int):
@@ -80,4 +76,3 @@ class PlayerGachaBannerInfo(BaseModel):
 
     def add_total_pulls(self, times: int):
         self.total_pulls += times
-
