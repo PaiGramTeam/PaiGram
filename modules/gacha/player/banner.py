@@ -76,7 +76,7 @@ class PlayerGachaBannerInfo(BaseModel):
             raise GachaIllegalArgument
 
     def add_failed_chosen_item_pulls(self, amount: int):
-        self.add_failed_chosen_item_pulls += amount
+        self.failed_chosen_item_pulls += amount
 
     def add_total_pulls(self, times: int):
         self.total_pulls += times
