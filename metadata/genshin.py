@@ -103,12 +103,14 @@ def game_id_to_role_id(gid: str) -> int | None:
     )
 
 
+@functools.lru_cache()
 def weapon_to_game_id(name: str) -> Optional[int]:
     return next(
         (int(key) for key, value in WEAPON_DATA.items() if value['name'] == name), None
     )
 
 
+@functools.lru_cache()
 def avatar_to_game_id(name: str) -> Optional[int]:
     return next(
         (int(key) for key, value in AVATAR_DATA.items() if value['name'] == name), None
