@@ -8,29 +8,10 @@
     --blue: rgb(98 168 233/ 80%);
     --cyan: rgb(4 150 255/80%);
     --green: rgb(67 185 124/ 80%);
+    --grey: rgb(189 191 190)
 }
 
-.green {
-    background-image: linear-gradient(135deg, #81FBB8 10%, #28C76F 100%);
-}
-
-.cyan {
-    background-image: linear-gradient(135deg, #90F7EC 10%, #32CCBC 100%);
-}
-
-.blue {
-    background-image: linear-gradient(135deg, #ABDCFF 10%, #0396FF 100%);
-}
-
-.purple {
-    background-image: linear-gradient(135deg, #CE9FFC 10%, #7367F0 100%);
-}
-
-.pink {
-    background-image: linear-gradient(135deg, #F6CEEC 10%, #D939CD 100%);
-}
-
-.red::before {
+.color::before {
     content: '';
     width: calc(1em + 3px);
     height: calc(1em + 12px);
@@ -41,7 +22,29 @@
     transform: translateX(-50%) translateY(-50%);
     border-radius: 8px;
     box-shadow: 1px 1px 10px rgb(0 0 0/20%);
-    /* background-image: linear-gradient(135deg, #FEB692 10%, #EA5455 100%); */
+}
+
+.green::before {
+    background-image: linear-gradient(135deg, #81FBB8 10%, #28C76F 100%);
+}
+
+.cyan::before {
+    background-image: linear-gradient(135deg, #90F7EC 10%, #32CCBC 100%);
+}
+
+.blue::before {
+    background-image: linear-gradient(135deg, #ABDCFF 10%, #0396FF 100%);
+}
+
+.purple::before {
+    background-image: linear-gradient(135deg, #CE9FFC 10%, #7367F0 100%);
+}
+
+.pink::before {
+    background-image: linear-gradient(135deg, #F6CEEC 10%, #D939CD 100%);
+}
+
+.red::before {
     background-image: linear-gradient(to top left, #FF0844 0%, #FFB199 100%);
 }
 
@@ -68,7 +71,7 @@ body {
     width: 100%;
     height: 150px;
     margin-bottom: 20px;
-    background-color: var(--white);
+    background-color: rgb(236, 229, 216);
     background-repeat: no-repeat;
     background-size: auto calc(100% + 2px);
     background-position: center right;
@@ -87,34 +90,33 @@ body {
 }
 
 .avatar {
-    width: 100px;
-    height: 100px;
+    width: 110px;
+    height: 110px;
     margin: 0 60px 0 80px;
-    border-radius: 0 0 50% 50%;
     filter: drop-shadow(1px 1px 10px rgb(0 0 0/50%));
 }
 
 
 .avatar > div {
     width: inherit;
-    height: 120px;
+    height: 200%;
     position: absolute;
     bottom: 0;
     z-index: 1;
-    border-radius: 0 0 45px 45px;
+    border-radius: 0 0 200px 200px;
     overflow: hidden;
 }
 
 .avatar > div::before {
     content: '';
     width: calc(100% - 6px);
-    height: calc(50px - 6px);
+    height: calc((100% / 2 - 6px) / 2);
     position: absolute;
     left: 50%;
     bottom: 0;
     z-index: 3;
     transform: translateX(-50%);
-    border-radius: 0 0 100px 100px;
+    border-radius: 0 0 200px 200px;
     border-bottom: 3px solid var(--white);
     border-right: 3px solid var(--white);
     border-left: 3px solid var(--white);
@@ -123,7 +125,7 @@ body {
 .avatar > div::after {
     content: '';
     width: calc(100% - 6px);
-    height: calc(100px - 6px);
+    height: calc(100% / 2 - 6px);
     position: absolute;
     left: 50%;
     bottom: 0;
@@ -195,7 +197,7 @@ body {
     height: 100%;
     position: absolute;
     z-index: 0;
-    background-color: rgb(200 200 200 /30%);
+    background-color: rgb(0 0 0/10%);
 }
 
 .second-row > div:first-child::before,
@@ -207,7 +209,7 @@ body {
     top: 0;
     left: 0;
     z-index: -1;
-    background-color: rgb(200 200 200 /50%);
+    background-color: rgb(200 200 200 /30%);
 }
 
 .content > .row:first-child {
@@ -221,7 +223,7 @@ body {
     flex: 1;
     text-align: center;
     border-style: solid;
-    border-width: 0 2px 1px 0;
+    border-width: 0 1px 1px 0;
     border-color: rgb(208, 208, 208);
     position: relative;
     z-index: 1;
@@ -240,6 +242,10 @@ body {
 .number {
     position: relative;
     z-index: 2;
+    color: rgb(102, 102, 102);
+}
+
+.color > .number {
     color: var(--white);
 }
 
@@ -258,7 +264,7 @@ body {
     position: absolute;
     left: 15px;
     bottom: 4px;
-    filter: drop-shadow(1px 1px 5px rgb(0 0 0/33%));
+    filter: drop-shadow(0 0 2px rgb(0 0 0/50%));
 }
 
 .role-name {
@@ -266,24 +272,71 @@ body {
     text-align: left !important;
 }
 
-.weapon-cell {
+.weapon {
+    position: relative;
+    display: flex;
     text-align: left !important;
 }
 
-.weapon-cell > span:first-child {
+.weapon > div {
+    position: relative;
+    z-index: 2;
+}
+
+.weapon > div:has(.number) {
+    margin-left: 10px !important;
+}
+
+.weapon > .color::before {
+    position: absolute;
+    top: 12px;
+    left: 5px;
+}
+
+.weapon > div:first-child {
     margin-left: 55px;
 }
 
-.weapon-cell > span:last-child {
+.weapon > div:last-child {
     margin-left: 50px;
 }
 
-
-.weapon-cell > span > img {
-    height: calc(100% - 5px);
-    position: absolute;
-    bottom: 3px;
+.weapon > div:has(img) {
+    filter: drop-shadow(1px 1px 2px rgb(0 0 0/80%));
 }
+
+.weapon > div > img {
+    height: 40px;
+    position: absolute;
+    left: 8px;
+    bottom: -6px;
+}
+
+.weapon-1-star {
+    background-color: rgb(250 250 250);
+    box-shadow: inset 0 0 10px 2px rgb(220 220 220);
+}
+
+.weapon-2-star {
+    background-color: rgb(250 250 250);
+    box-shadow: inset 0 0 10px 2px rgb(220 220 220);
+}
+
+.weapon-3-star {
+    background-color: rgb(228, 237, 252);
+    box-shadow: inset 0 0 10px 2px rgb(183, 190, 237);
+}
+
+.weapon-4-star {
+    background-color: rgb(250, 228, 241);
+    box-shadow: inset 0 0 10px 2px rgb(233, 182, 221);
+}
+
+.weapon-5-star {
+    background-color: rgb(255, 246, 221);
+    box-shadow: inset 0 0 10px 2px rgb(239, 215, 153);
+}
+
 
 .full-friendship {
     color: var(--white);
@@ -292,4 +345,58 @@ body {
     background-position: center center;
     background-image: url(data:image/svg+xml;base64,PHN2ZyB0PSIxNjY1NzE2OTc4NTM2IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjI3MTEiCiAgICAgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiPgogICAgPHBhdGggZD0iTTUzMy41MDQgMjY4LjI4OHEzMy43OTItNDEuOTg0IDcxLjY4LTc1Ljc3NiAzMi43NjgtMjcuNjQ4IDc0LjI0LTUwLjE3NnQ4Ni41MjgtMTkuNDU2cTYzLjQ4OCA1LjEyIDEwNS45ODQgMzAuMjA4dDY3LjU4NCA2My40ODggMzQuMzA0IDg3LjA0IDYuMTQ0IDk5Ljg0LTE3LjkyIDk3Ljc5Mi0zNi44NjQgODcuMDQtNDguNjQgNzQuNzUyLTUzLjI0OCA2MS45NTJxLTQwLjk2IDQxLjk4NC04NS41MDQgNzguMzM2dC04NC45OTIgNjIuNDY0LTczLjcyOCA0MS40NzItNTEuNzEyIDE1LjM2cS0yMC40OCAxLjAyNC01Mi4yMjQtMTQuMzM2dC02OS42MzItNDEuNDcyLTc5Ljg3Mi02MS45NTItODIuOTQ0LTc1Ljc3NnEtMjYuNjI0LTI1LjYtNTcuMzQ0LTU5LjM5MnQtNTcuODU2LTc0LjI0LTQ2LjU5Mi04Ny41NTItMjEuNTA0LTEwMC4zNTIgMTEuMjY0LTk5Ljg0IDM5LjkzNi04My40NTYgNjUuNTM2LTYxLjk1MiA4OC4wNjQtMzUuMzI4cTI0LjU3Ni01LjEyIDQ5LjE1Mi0xLjUzNnQ0OC4xMjggMTIuMjg4IDQ1LjA1NiAyMi4wMTYgNDAuOTYgMjcuNjQ4cTQ1LjA1NiAzMy43OTIgODYuMDE2IDgwLjg5NnoiCiAgICAgICAgICBwLWlkPSIyNzEyIiBmaWxsPSIjZGUyOTEwIj48L3BhdGg+Cjwvc3ZnPg==);
     filter: drop-shadow(1px 1px 5px rgb(0 0 0/20%));
+}
+
+.talent {
+    position: absolute;
+    background-size: contain, 1.6em;
+    background-repeat: no-repeat;
+    background-position: center center;
+    text-shadow: 1px 1px 2px rgb(0 0 0 /20%);
+    z-index: -1 !important;
+}
+
+.talent-level-1 {
+    background-color: rgb(189, 191, 190);
+}
+
+.talent-level-1.talent-buffed {
+    color: rgb(0, 108, 199);
+}
+
+.talent-level-2 {
+    background-color: var(--green);
+}
+
+.talent-level-2.talent-buffed {
+    color: rgb(0, 88, 0);
+}
+
+.talent-level-3 {
+    background-color: var(--blue);
+}
+
+.talent-level-3.talent-buffed {
+    color: rgb(0, 108, 199);
+}
+
+.talent-level-4 {
+    background-color: rgb(190, 160, 250);
+}
+
+.talent-level-4.talent-buffed {
+    color: rgb(114, 4, 101);
+}
+
+.talent-level-max {
+    background-image: linear-gradient(90deg, rgba(251, 129, 124, .8) 0%, rgba(255, 93, 85, 0.65) 50%, rgba(251, 129, 124, .8) 100%), url("../../img/crown.png");
+}
+
+.talent-level-max.talent-buffed {
+    color: rgb(183, 0, 0);
+    text-shadow: 0 0 4px white;
+}
+
+.talent-buffed {
+    font-weight: bold;
 }
