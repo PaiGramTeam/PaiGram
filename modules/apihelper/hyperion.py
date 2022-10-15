@@ -1,6 +1,7 @@
 import asyncio
 import re
 import time
+from datetime import datetime
 from json import JSONDecodeError
 from typing import List, Optional, Dict
 
@@ -9,7 +10,6 @@ from genshin.utility.ds import generate_dynamic_secret
 from genshin.utility.uid import recognize_genshin_server
 from httpx import AsyncClient
 from pydantic import BaseModel, validator
-from datetime import datetime
 
 from modules.apihelper.base import ArtworkImage, PostInfo
 from modules.apihelper.helpers import get_device_id
@@ -189,6 +189,9 @@ class GachaInfo:
         req = await self.client.get(self.GACHA_INFO_URL % gacha_id)
         self.cache[gacha_id] = req
         return req
+
+    async def close(self):
+        await self.client.shutdown()
 
 
 class SignIn:
