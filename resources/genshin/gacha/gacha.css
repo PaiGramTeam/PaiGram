@@ -54,6 +54,13 @@ body {
     z-index: 9999;
 }
 
+.pity5 {
+    position: fixed;
+    top: 85px;
+    right: 55px;
+    z-index: 9999;
+}
+
 
 .poor-bing {
     position: fixed;

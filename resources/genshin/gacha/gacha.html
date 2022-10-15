@@ -12,27 +12,33 @@
     <div class="info-bg info-count">{{info}}</div>
     <div class="info-bg poor-info">
         {% autoescape  off %}
-        {{poolName}}
+        {{banner_name}}
         {% endautoescape %}
     </div>
+    <div class="info-bg pity5">距离上一个五星{{player_gacha_info.pity5}}抽</div>
     <div class="list-box">
         {% for item in items %}
         <div class="item">
             <div class="item-bg-box">
-                <img class="item-bg" src="{{_res_path}}/genshin/gacha/items/bg.png"/>
+                <img class="item-bg" src="{{_res_path}}/genshin/gacha/items/bg.png" alt=""/>
             </div>
-            <img class="item-shadow" src="{{_res_path}}/genshin/gacha/items/shadow-{{item.rank}}.png"/>
-            <img class="item-shadow2" src="{{_res_path}}/genshin/gacha/items/bg2.png"/>
-            {% if item.item_type=='武器' %}
+            <img class="item-shadow" src="{{_res_path}}/genshin/gacha/items/shadow-{{item.rank}}.png" alt=""/>
+            <img class="item-shadow2" src="{{_res_path}}/genshin/gacha/items/bg2.png" alt=""/>
+            {% if item.id <= 100000 %}
             <div class="item-weapon-box">
-                <img class="item-weapon-img" src="{{_res_path}}/genshin/gacha/weapon/{{item.item_name}}.png"/>
+                <img class="item-weapon-img" src="{{_res_path}}/genshin/gacha/weapon/{{item.name}}.png" alt=""/>
             </div>
             {% else %}
             <div class="item-img-box">
-                <img class="item-character-img" src="{{_res_path}}/genshin/gacha/character/{{item.item_name}}.png"/>
+                <img class="item-character-img" src="{{_res_path}}/genshin/gacha/character/{{item.name}}.png" alt=""/>
             </div>
             {% endif %}
-            <img class="item-star" src="{{_res_path}}/genshin/gacha/items/s-{{item.rank}}.png"/>
+            {% if item.id <= 100000 %}
+                <img class="item-element"  src="{{_res_path}}/genshin/gacha/items/{{item.type}}.png" alt=""/>
+            {% else %}
+                <img class="item-element"  src="{{_res_path}}/genshin/gacha/items/{{item.element}}.png" alt=""/>
+            {% endif %}
+            <img class="item-star" src="{{_res_path}}/genshin/gacha/items/s-{{item.rank}}.png" alt=""/>
         </div>
         {% endfor %}
     </div>

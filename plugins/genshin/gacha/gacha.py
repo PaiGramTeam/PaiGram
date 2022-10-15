@@ -1,10 +1,10 @@
+import asyncio
 import os
 import re
 from datetime import datetime
-from typing import Dict
+from typing import Optional, Union, Any, List
 
 from bs4 import BeautifulSoup
-from pyppeteer import launch
 from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
@@ -12,8 +12,11 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
-from modules.apihelper.hyperion import GachaInfo
-from plugins.genshin.gacha.wish import WishCountInfo, get_one
+from metadata.genshin import weapon_to_game_id, avatar_to_game_id, WEAPON_DATA, AVATAR_DATA
+from modules.apihelper.hyperion import GachaInfo, GachaInfoObject
+from modules.gacha.banner import BannerType, GachaBanner
+from modules.gacha.player.info import PlayerGachaInfo
+from modules.gacha.system import BannerSystem
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -23,37 +26,101 @@ from utils.log import logger
 class GachaNotFound(Exception):
     """卡池未找到"""
 
-    def __init__(self, gacha_name):
+    def __init__(self, gacha_name:str):
+        self.gacha_name = gacha_name
         super().__init__(f"{gacha_name} gacha not found")
+
+
+class GachaHandle:
+    def __init__(self, hyperion: Optional[GachaInfo] = None):
+        if hyperion is None:
+            self.hyperion = GachaInfo()
+        else:
+            self.hyperion = hyperion
+
+    async def de_banner(self, gacha_id: str, gacha_type: int) -> Optional[GachaBanner]:
+        gacha_info = await self.hyperion.get_gacha_info(gacha_id)
+        banner = GachaBanner()
+        banner.title, banner.html_title = self.de_title(gacha_info["title"])
+        for r5_up_items in gacha_info["r5_up_items"]:
+            if r5_up_items["item_type"] == "角色":
+                banner.rate_up_items5.append(avatar_to_game_id(r5_up_items["item_name"]))
+            elif r5_up_items["item_type"] == "武器":
+                banner.rate_up_items5.append(weapon_to_game_id(r5_up_items["item_name"]))
+        for r5_prob_list in gacha_info["r5_prob_list"]:
+            if r5_prob_list["item_type"] == "角色":
+                banner.fallback_items5_pool1.append(avatar_to_game_id(r5_prob_list["item_name"]))
+            elif r5_prob_list["item_type"] == "武器":
+                banner.fallback_items5_pool1.append(weapon_to_game_id(r5_prob_list["item_name"]))
+        for r4_up_items in gacha_info["r4_up_items"]:
+            if r4_up_items["item_type"] == "角色":
+                banner.rate_up_items4.append(avatar_to_game_id(r4_up_items["item_name"]))
+            elif r4_up_items["item_type"] == "武器":
+                banner.rate_up_items4.append(weapon_to_game_id(r4_up_items["item_name"]))
+        for r4_prob_list in gacha_info["r4_prob_list"]:
+            if r4_prob_list["item_type"] == "角色":
+                banner.fallback_items4_pool1.append(avatar_to_game_id(r4_prob_list["item_name"]))
+            elif r4_prob_list["item_type"] == "武器":
+                banner.fallback_items4_pool1.append(weapon_to_game_id(r4_prob_list["item_name"]))
+        if gacha_type in (310, 400):
+            banner.wish_max_progress = 1
+            banner.banner_type = BannerType.EVENT
+            banner.weight4 = ((1, 510), (8, 510), (10, 10000))
+            banner.weight5 = ((1, 60), (73, 60), (90, 10000))
+        elif gacha_type == 302:
+            banner.wish_max_progress = 3
+            banner.banner_type = BannerType.WEAPON
+            banner.weight4 = ((1, 600), (7, 600), (10, 10000))
+            banner.weight5 = ((1, 70), (62, 70), (90, 10000))
+        else:
+            banner.banner_type = BannerType.STANDARD
+        return banner
+
+    async def gacha_base_info(self, gacha_name: str = "角色活动", default: bool = False) -> GachaInfoObject:
+        gacha_list_info = await self.hyperion.get_gacha_list_info()
+        now = datetime.now()
+        for gacha in gacha_list_info:
+            if gacha.gacha_name == gacha_name and gacha.begin_time <= now <= gacha.end_time:
+                return gacha
+        else:
+            if default and len(gacha_list_info) > 0:
+                return gacha_list_info[0]
+            else:
+                raise GachaNotFound(gacha_name)
+
+    @staticmethod
+    async def de_item_list(item_list: List[int]) -> List[dict]:
+        gacha_item: List[dict] = []
+        for item_id in item_list:
+            if 10000 <= item_id <= 100000:
+                gacha_item.append(WEAPON_DATA.get(str(item_id)))
+            if 10000000 <= item_id <= 19999999:
+                gacha_item.append(AVATAR_DATA.get(str(item_id)))
+        return gacha_item
+
+    @staticmethod
+    def de_title(title: str) -> Union[tuple[str, None], tuple[str, Any]]:
+        title_html = BeautifulSoup(title, "lxml")
+        re_color = re.search(r"<color=#(.*?)>", title, flags=0)
+        if re_color is None:
+            return title_html.text, None
+        color = re_color.group(1)
+        title_html.color.name = "span"
+        title_html.span["style"] = f"color:#{color};"
+        return title_html.text, title_html.p
 
 
 class Gacha(Plugin, BasePlugin):
     """抽卡模拟器（非首模拟器/减寿模拟器）"""
 
     def __init__(self, template_service: TemplateService = None):
-        self.gacha = GachaInfo()
+        self.handle = GachaHandle()
+        self.banner_system = BannerSystem()
         self.template_service = template_service
-        self.browser: launch = None
         self.current_dir = os.getcwd()
         self.resources_dir = os.path.join(self.current_dir, "resources")
-        self.character_gacha_card = {}
-        self.user_time = {}
-
-    async def gacha_info(self, gacha_name: str = "角色活动", default: bool = False):
-        gacha_list_info = await self.gacha.get_gacha_list_info()
-        gacha_id = ""
-        now = datetime.now()
-        for gacha in gacha_list_info:
-            if gacha.gacha_name == gacha_name and gacha.begin_time <= now <= gacha.end_time:
-                gacha_id = gacha.gacha_id
-        if gacha_id == "":
-            if default and len(gacha_list_info) > 0:
-                gacha_id = gacha_list_info[0].gacha_id
-            else:
-                raise GachaNotFound(gacha_name)
-        gacha_info = await self.gacha.get_gacha_info(gacha_id)
-        gacha_info["gacha_id"] = gacha_id
-        return gacha_info
+        self.banner_cache = {}
+        self._look = asyncio.Lock()
 
     @handler(CommandHandler, command="gacha", block=False)
     @handler(MessageHandler, filters=filters.Regex("^非首模拟器(.*)"), block=False)
@@ -72,63 +139,45 @@ class Gacha(Plugin, BasePlugin):
                         gacha_name = value
                         break
             try:
-                gacha_info = await self.gacha_info(gacha_name)
-            except GachaNotFound:
-                await message.reply_text(f"没有找到名为 {gacha_name} 的卡池")
+                gacha_base_info = await self.handle.gacha_base_info(gacha_name)
+            except GachaNotFound as exc:
+                await message.reply_text(f"没有找到名为 {exc.gacha_name} 的卡池")
                 return
         else:
-            gacha_info = await self.gacha_info(default=True)
+            gacha_base_info = await self.handle.gacha_base_info(default=True)
         logger.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
         # 用户数据储存和处理
-        gacha_id: str = gacha_info["gacha_id"]
-        user_gacha: Dict[str, WishCountInfo] = context.user_data.get("gacha")
-        if user_gacha is None:
-            user_gacha = context.user_data["gacha"] = {}
-        user_gacha_count: WishCountInfo = user_gacha.get(gacha_id)
-        if user_gacha_count is None:
-            user_gacha_count = user_gacha[gacha_id] = WishCountInfo(user_id=user.id)
-        # 用户数据储存和处理
-        title = gacha_info["title"]
-        re_color = re.search(r"<color=#(.*?)>", title, flags=0)
-        if re_color is None:
-            title_html = BeautifulSoup(title, "lxml")
-            pool_name = title_html.text
-            logger.warning(f"卡池信息 title 提取 color 失败 title[{title}]")
-        else:
-            color = re_color.group(1)
-            title_html = BeautifulSoup(title, "lxml")
-            title_html.color.name = "span"
-            title_html.span["style"] = f"color:#{color};"
-            pool_name = title_html.p
         await message.reply_chat_action(ChatAction.TYPING)
-        data = {
+        await self.handle.hyperion.get_gacha_info(gacha_base_info.gacha_id)
+        async with self._look:
+            banner = self.banner_cache.get(gacha_base_info.gacha_id)
+            if banner is None:
+                banner = await self.handle.de_banner(gacha_base_info.gacha_id, gacha_base_info.gacha_type)
+                self.banner_cache.setdefault(gacha_base_info.gacha_id, banner)
+        player_gacha_info = context.user_data.get("player_gacha_info")
+        if player_gacha_info is None:
+            player_gacha_info = PlayerGachaInfo()
+            context.user_data.setdefault("player_gacha_info", player_gacha_info)
+        # 执行抽卡
+        item_list = self.banner_system.do_pulls(player_gacha_info, banner, 10)
+        data = await self.handle.de_item_list(item_list)
+        template_data = {
             "_res_path": f"file://{self.resources_dir}",
             "name": f"{user.full_name}",
             "info": gacha_name,
-            "poolName": pool_name,
+            "banner_name": banner.html_title,
+            "player_gacha_info": player_gacha_info.get_banner_info(banner),
             "items": [],
         }
-        for _ in range(10):
-            item = get_one(user_gacha_count, gacha_info)
-            # 下面为忽略的代码，因为metadata未完善，具体武器和角色类型无法显示
-            # item_name = item["item_name"]
-            # item_type = item["item_type"]
-            # if item_type == "角色":
-            #     gacha_card = self.character_gacha_card.get(item_name)
-            #     if gacha_card is None:
-            #         await message.reply_text(f"获取角色 {item_name} GachaCard信息失败")
-            #         return
-            #     item["item_character_img"] = await url_to_file(gacha_card)
-            data["items"].append(item)
 
         def take_rang(elem: dict):
             return elem["rank"]
 
-        data["items"].sort(key=take_rang, reverse=True)
+        data.sort(key=take_rang, reverse=True)
+        template_data["items"] = data
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        # 因为 gacha_info["title"] 返回的是 HTML 标签 尝试关闭自动转义
         png_data = await self.template_service.render(
-            "genshin/gacha/gacha.html", data, {"width": 1157, "height": 603}, False
+            "genshin/gacha/gacha.html", template_data, {"width": 1157, "height": 603}, False
         )
 
         reply_message = await message.reply_photo(png_data)
