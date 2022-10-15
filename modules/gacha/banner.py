@@ -30,6 +30,9 @@ class GachaBanner:
         15304,
     ]
     # 硬编码三星武器
+    title: str = ""
+    html_title: str = ""
+    banner_id: str = ""
     banner_type: BannerType = BannerType.STANDARD
     wish_max_progress: int = 0
     pool_balance_weights4: Tuple[int] = ((1, 255), (17, 255), (21, 10455))

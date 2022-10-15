@@ -54,13 +54,13 @@ body {
     z-index: 9999;
 }
 
-
-.poor-bing {
+.pity5 {
     position: fixed;
     top: 85px;
     right: 55px;
     z-index: 9999;
 }
+
 
 .list-box {
     display: flex;
@@ -160,6 +160,20 @@ body {
     left: 16px;
     top: 389px;
     z-index: 120;
+}
+
+.poor-wish {
+    position: fixed;
+    top: 500px;
+    right: 55px;
+    z-index: 9999;
+}
+
+.poor-bing {
+    position: fixed;
+    top: 580px;
+    right: 55px;
+    z-index: 9999;
 }
 
 .logo {
