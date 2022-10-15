@@ -243,6 +243,7 @@ class Gacha(Plugin, BasePlugin):
                 continue
             if weapon["name"] == weapon_name:
                 player_gacha_info.event_weapon_banner.wish_item_id = rate_up_items5
+                player_gacha_info.event_weapon_banner.failed_chosen_item_pulls = 0
                 break
         else:
             reply_message = await message.reply_text(f"没有找到 {weapon_name} 武器或该武器不存在UP卡池中")
