@@ -179,7 +179,7 @@ class Gacha(Plugin, BasePlugin):
         banner = await self.get_banner(gacha_base_info)
         player_gacha_info = await self.gacha_db.get(user.id)
         # 检查 wish_item_id
-        if gacha_base_info.gacha_type == 302:
+        if banner.banner_type == BannerType.WEAPON:
             if player_gacha_info.event_weapon_banner.wish_item_id not in banner.rate_up_items5:
                 player_gacha_info.event_weapon_banner.wish_item_id = 0
         # 执行抽卡
@@ -191,7 +191,7 @@ class Gacha(Plugin, BasePlugin):
             "name": f"{user.full_name}",
             "info": gacha_name,
             "banner_name": banner.html_title,
-            "banner_type": gacha_base_info.gacha_type,
+            "banner_type": banner.banner_type.name,
             "player_gacha_banner_info": player_gacha_banner_info,
             "items": [],
             "wish_name": "",
