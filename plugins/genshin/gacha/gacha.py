@@ -81,8 +81,8 @@ class GachaHandle:
         now = datetime.now()
         for gacha in gacha_list_info:
             if gacha.gacha_name == gacha_name and gacha.begin_time <= now <= gacha.end_time:
-                return gacha  # pylint: disable=W0120
-        else:
+                return gacha
+        else:  # pylint: disable=W0120
             if default and len(gacha_list_info) > 0:
                 return gacha_list_info[0]
             else:
