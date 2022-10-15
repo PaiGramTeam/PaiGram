@@ -33,7 +33,7 @@ class BannerSystem:
 
     def do_pulls(self, player_gacha_info: PlayerGachaInfo, banner: GachaBanner, times: int) -> List[int]:
         item_list: List[int] = []
-        if times != 10 and times != 1:
+        if times not in (10, 1):
             raise GachaInvalidTimes
 
         gacha_info = player_gacha_info.get_banner_info(banner)
@@ -83,13 +83,13 @@ class BannerSystem:
         return 0
 
     def do_rare_pull(
-        self,
-        featured: List[int],
-        fallback1: List[int],
-        fallback2: List[int],
-        rarity: int,
-        banner: GachaBanner,
-        gacha_info: PlayerGachaBannerInfo,
+            self,
+            featured: List[int],
+            fallback1: List[int],
+            fallback2: List[int],
+            rarity: int,
+            banner: GachaBanner,
+            gacha_info: PlayerGachaBannerInfo,
     ) -> int:
         item_id = 0
         # 以下是防止点炒饭
@@ -117,12 +117,12 @@ class BannerSystem:
         return item_id
 
     def do_fallback_rare_pull(
-        self,
-        fallback1: List[int],
-        fallback2: List[int],
-        rarity: int,
-        banner: GachaBanner,
-        gacha_info: PlayerGachaBannerInfo,
+            self,
+            fallback1: List[int],
+            fallback2: List[int],
+            rarity: int,
+            banner: GachaBanner,
+            gacha_info: PlayerGachaBannerInfo,
     ) -> int:
         if len(fallback1) < 1:
             if len(fallback2) < 1:
