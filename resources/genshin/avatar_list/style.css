@@ -92,7 +92,7 @@ body {
 .avatar {
     width: 110px;
     height: 110px;
-    margin: 0 60px 0 80px;
+    margin: 0 60px 0 70px;
     filter: drop-shadow(1px 1px 10px rgb(0 0 0/50%));
 }
 
@@ -150,12 +150,15 @@ body {
 
 .nickname {
     font-size: 40px;
-    font-weight: bold;
+    font-weight: bolder;
+    color: var(--white);
+    text-shadow: 1px 1px 10px rgb(0 0 0/30%);
 }
 
 .uid {
     font-size: 20px;
-    color: #5F5F5D;
+    color: var(--white);
+    text-shadow: 1px 1px 10px rgb(0 0 0/30%);
 }
 
 .logo {
@@ -172,7 +175,6 @@ body {
 
 .content {
     width: 100%;
-    height: 500px;
     background-color: var(--white);
     border-radius: 20px;
     position: relative;
@@ -236,7 +238,7 @@ body {
 }
 
 .row > div:last-child {
-    border-right-color: rgba(0, 0, 0, 0);
+    border-right-width: 0;
 }
 
 .number {
@@ -274,7 +276,8 @@ body {
 
 .weapon {
     position: relative;
-    display: flex;
+    display: inline-flex;
+    justify-content: center;
     text-align: left !important;
 }
 
@@ -284,21 +287,16 @@ body {
 }
 
 .weapon > div:has(.number) {
-    margin-left: 10px !important;
-}
-
-.weapon > .color::before {
-    position: absolute;
-    top: 12px;
-    left: 5px;
+    margin: 0 10px !important;
 }
 
 .weapon > div:first-child {
-    margin-left: 55px;
+    width: 80px;
+    text-align: right;
 }
 
 .weapon > div:last-child {
-    margin-left: 50px;
+    width: 140px;
 }
 
 .weapon > div:has(img) {
@@ -307,9 +305,8 @@ body {
 
 .weapon > div > img {
     height: 40px;
-    position: absolute;
-    left: 8px;
-    bottom: -6px;
+    position: relative;
+    bottom: 8px;
 }
 
 .weapon-1-star {
@@ -354,6 +351,8 @@ body {
     background-position: center center;
     text-shadow: 1px 1px 2px rgb(0 0 0 /20%);
     z-index: -1 !important;
+    border-right-width: 0 !important;
+    border-left-width: 0 !important;
 }
 
 .talent-level-1 {
@@ -389,14 +388,26 @@ body {
 }
 
 .talent-level-max {
-    background-image: linear-gradient(90deg, rgba(251, 129, 124, .8) 0%, rgba(255, 93, 85, 0.65) 50%, rgba(251, 129, 124, .8) 100%), url("../../img/crown.png");
+    background-image: linear-gradient(90deg, rgba(251, 129, 124, .8) 0%, rgba(255, 93, 85, 0.65) 50%, rgba(251, 129, 124, .8) 100%), url("../../img/crown.png") !important;
 }
 
 .talent-level-max.talent-buffed {
-    color: rgb(183, 0, 0);
-    text-shadow: 0 0 4px white;
+    color: rgb(183, 0, 0) !important;
+    text-shadow: 0 0 4px white !important;
 }
 
 .talent-buffed {
     font-weight: bold;
+}
+
+.content > .row:nth-last-child(2) > div {
+    border-bottom-width: 0 !important;
+}
+
+.notice {
+    padding: 5px 20px 5px 0;
+    text-align: right;
+    font-size: 14px;
+    font-style: italic;
+    background-color: rgb(204, 204, 204);
 }
