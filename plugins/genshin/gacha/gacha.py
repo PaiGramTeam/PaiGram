@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 from datetime import datetime
-from typing import Optional, Union, Any, List
+from typing import Any, List, Optional, Tuple, Union
 
 import ujson as json
 from bs4 import BeautifulSoup
@@ -14,7 +14,7 @@ from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
-from metadata.genshin import weapon_to_game_id, avatar_to_game_id, WEAPON_DATA, AVATAR_DATA
+from metadata.genshin import AVATAR_DATA, WEAPON_DATA, avatar_to_game_id, weapon_to_game_id
 from metadata.shortname import weaponToName
 from modules.apihelper.hyperion import GachaInfo, GachaInfoObject
 from modules.gacha.banner import BannerType, GachaBanner
@@ -127,7 +127,7 @@ class GachaHandle:
         return gacha_item
 
     @staticmethod
-    def de_title(title: str) -> Union[tuple[str, None], tuple[str, Any]]:
+    def de_title(title: str) -> Union[Tuple[str, None], Tuple[str, Any]]:
         title_html = BeautifulSoup(title, "lxml")
         re_color = re.search(r"<color=#(.*?)>", title, flags=0)
         if re_color is None:
