@@ -4,7 +4,6 @@ from typing import Iterable, List, Optional, Sequence
 from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
 from genshin import Client
-from genshin.client import routes
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
@@ -24,11 +23,6 @@ from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
-
-routes.CALCULATOR_URL = routes.InternationalRoute(
-    overseas="https://sg-public-api.hoyoverse.com/event/calculateos/",
-    chinese="https://api-takumi.mihoyo.com/event/e20200928calculate/v1/",
-)
 
 
 class AvatarListPlugin(Plugin, BasePlugin):
@@ -179,7 +173,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             query_selector=".container",
         )
         self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
-        if all_avatars:
+        if all_avatars and len(characters) > 20:
             await message.reply_document(InputFile(image, filename="练度统计.png"))
         else:
             await message.reply_photo(image)
