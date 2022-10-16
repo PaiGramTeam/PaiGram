@@ -3,7 +3,7 @@ from typing import Iterable, List, Optional, Sequence
 
 from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
-from genshin import Client
+from genshin import Client, GenshinException
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
@@ -122,7 +122,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
         except Exception as e:  # pylint: disable=W0703
             logger.debug(f"enka 请求失败: {e}")
             choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
-            if not choices:  # 若没有满好感角色、则以好感等级排序
+            if choices.length == 0:  # 若没有满好感角色、则以好感等级排序
                 choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
             namecard_choices = (  # 找到与角色对应的满好感名片ID
                 ArkoWrapper(choices)
@@ -162,7 +162,17 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
         characters = await client.get_genshin_characters(client.uid)
 
-        avatar_datas: List[AvatarData] = await self.get_avatars_data(characters, client, None if all_avatars else 20)
+        try:
+            avatar_datas: List[AvatarData] = await self.get_avatars_data(
+                characters, client, None if all_avatars else 20
+            )
+        except GenshinException as e:
+            if e.retcode == -502002:
+                self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
+                notice = await message.reply_text("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~", parse_mode=ParseMode.HTML)
+                self._add_delete_message_job(context, notice.chat_id, notice.message_id, 20)
+                return
+            raise e
 
         namecard, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
 
