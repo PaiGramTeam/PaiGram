@@ -9,11 +9,7 @@
         .avatar > div::after {
             background-position: center center;
             background-size: cover;
-            background-image: url("../../background/rarity/half/5.png");
-        }
-
-        .weapon > div:last-child {
-            width: 140px;
+            background-image: url("../../background/rarity/half/{{ rarity }}.png");
         }
     </style>
 </head>
@@ -143,7 +139,14 @@
                 </div>
             </div>
         {% endfor %}
-        <div class="notice">{% if has_more %}*完整数据请私聊查看{% endif %}  ※技能列表每 <span style="font-weight: bold">6</span> 个小时更新一次</div>
+        <div class="notice">
+            {% if has_more %}
+                <div>
+                    *想查看完整数据请在指令中加上<code>all</code>或者<code>全部</code>: <code>/avatars all</code>、<code>全部练度查询</code>
+                </div>
+            {% endif %}
+            <div>※技能列表每 <span style="font-weight: bold">6</span> 个小时更新一次</div>
+        </div>
     </div>
 </div>
 </body>

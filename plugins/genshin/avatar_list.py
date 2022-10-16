@@ -5,7 +5,7 @@ from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
 from genshin import Client
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Update, User, Message
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -17,7 +17,7 @@ from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template import TemplateService
 from core.user.error import UserNotFoundError
-from metadata.genshin import NAMECARD_DATA
+from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -74,9 +74,11 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
     async def get_avatars_data(self, characters: Sequence[Character], client: Client, max_length: int = None):
         avatar_datas: List[AvatarData] = []
-        for character in characters:
+        for num, character in enumerate(characters):
+            if num == max_length:
+                break
             detail = await self.get_character_details(client, character)
-            if character.id == 10000005:
+            if character.id == 10000005:  # 针对男草主
                 talents = []
                 for talent in detail.talents:
                     if "普通攻击" in talent.name:
@@ -109,8 +111,6 @@ class AvatarListPlugin(Plugin, BasePlugin):
                     ],
                 )
             )
-            if len(avatar_datas) == max_length:
-                break
         return avatar_datas
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
@@ -119,6 +119,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             namecard = (await self.assets_service.namecard(response.player.namecard.id).navbar()).as_uri()
             avatar = (await self.assets_service.avatar(response.player.icon.id).icon()).as_uri()
             nickname = response.player.nickname
+            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.icon.id)]
         except Exception as e:  # pylint: disable=W0703
             logger.debug(f"enka 请求失败: {e}")
             choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)
@@ -131,17 +132,22 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 .map(lambda x: x["id"])
             )
             namecard = (await self.assets_service.namecard(namecard_choices[0]).navbar()).as_uri()
-            avatar = (await self.assets_service.avatar(choices[0].id).icon()).as_uri()
+            avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
             nickname = update.effective_user.full_name
-        return namecard, avatar, nickname
+            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
+        return namecard, avatar, nickname, rarity
 
-    @handler.command("avatars")
-    @handler.message(filters.Regex(r"^练度统计$"))
+    @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"))
+    @handler.message(filters.Regex(r"^(全部)?练度统计$"))
     @restricts(30)
     @error_callable
     async def avatar_list(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
+
+        args = context.match
+
+        all_avatars = any(["all" in args.groups(), "全部" in args.groups()])  # 是否发送全部角色
 
         logger.info(f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]", extra={"markup": True})
 
@@ -154,26 +160,21 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
         characters = await client.get_genshin_characters(client.uid)
 
-        document, has_more = False, False
-        if filters.ChatType.GROUPS.filter(message):
-            document, has_more = False, True
-        else:
-            document = True
+        avatar_datas: List[AvatarData] = await self.get_avatars_data(characters, client, None if all_avatars else 20)
 
-        avatar_datas: List[AvatarData] = await self.get_avatars_data(characters, client, 20 if has_more else None)
-
-        namecard, avatar, nickname = await self.get_final_data(client, characters, update)
+        namecard, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
 
         render_data = {
             "uid": client.uid,
             "nickname": nickname,
             "avatar": avatar,
+            "rarity": rarity,
             "namecard": namecard,
             "avatar_datas": avatar_datas,
-            "has_more": has_more,
+            "has_more": len(characters) != len(avatar_datas),
         }
 
-        await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if document else ChatAction.UPLOAD_PHOTO)
+        await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if all_avatars else ChatAction.UPLOAD_PHOTO)
 
         image = await self.template_service.render(
             "genshin/avatar_list/main.html",
@@ -183,10 +184,15 @@ class AvatarListPlugin(Plugin, BasePlugin):
             query_selector=".container",
         )
         self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
-        if document:
+        if all_avatars:
             await message.reply_document(InputFile(image, filename="练度统计.png"))
         else:
             await message.reply_photo(image)
+
+        logger.info(
+            f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]发送{'文件' if all_avatars else '图片'}成功",
+            extra={"markup": True},
+        )
 
 
 class SkillData(Model):
