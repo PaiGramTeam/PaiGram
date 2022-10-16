@@ -66,7 +66,14 @@ class AvatarListPlugin(Plugin, BasePlugin):
         for num, character in enumerate(characters):
             if num == max_length:  # 若已经有 max_length 个角色
                 break
-            detail = await client.get_character_details(character)
+            try:
+                detail = await client.get_character_details(character)
+            except Exception as e:  # pylint: disable=W0703
+                if character.name == "旅行者":
+                    logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+                    continue
+                else:
+                    raise e
             if character.id == 10000005:  # 针对男草主
                 talents = []
                 for talent in detail.talents:
@@ -202,5 +209,5 @@ class AvatarData(Model):
     avatar: Character
     detail: CalculatorCharacterDetails
     icon: str
-    weapon: str
+    weapon: Optional[str]
     skills: Iterable[SkillData]
