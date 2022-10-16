@@ -75,7 +75,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
     async def get_avatars_data(self, characters: Sequence[Character], client: Client, max_length: int = None):
         avatar_datas: List[AvatarData] = []
         for num, character in enumerate(characters):
-            if num == max_length:
+            if num == max_length:  # 若已经有 max_length 个角色
                 break
             detail = await self.get_character_details(client, character)
             if character.id == 10000005:  # 针对男草主
@@ -122,10 +122,10 @@ class AvatarListPlugin(Plugin, BasePlugin):
             rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.icon.id)]
         except Exception as e:  # pylint: disable=W0703
             logger.debug(f"enka 请求失败: {e}")
-            choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)
-            if not choices:
+            choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
+            if not choices:  # 若没有满好感角色、则以好感等级排序
                 choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
-            namecard_choices = (
+            namecard_choices = (  # 找到与角色对应的满好感名片ID
                 ArkoWrapper(choices)
                 .map(lambda x: next(filter(lambda y: y["name"].split(".")[0] == x.name, NAMECARD_DATA.values()), None))
                 .filter(lambda x: x)
@@ -149,7 +149,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
         all_avatars = any(["all" in args.groups(), "全部" in args.groups()])  # 是否发送全部角色
 
-        logger.info(f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]", extra={"markup": True})
+        logger.info(f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]: all={all_avatars}", extra={"markup": True})
 
         client = await self.get_user_client(user, message, context)
         if not client:
@@ -165,13 +165,13 @@ class AvatarListPlugin(Plugin, BasePlugin):
         namecard, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
 
         render_data = {
-            "uid": client.uid,
-            "nickname": nickname,
-            "avatar": avatar,
-            "rarity": rarity,
-            "namecard": namecard,
-            "avatar_datas": avatar_datas,
-            "has_more": len(characters) != len(avatar_datas),
+            "uid": client.uid,  # 玩家uid
+            "nickname": nickname,  # 玩家昵称
+            "avatar": avatar,  # 玩家头像
+            "rarity": rarity,  # 玩家头像对应的角色星级
+            "namecard": namecard,  # 玩家名片
+            "avatar_datas": avatar_datas,  # 角色数据
+            "has_more": len(characters) != len(avatar_datas),  # 是否显示了全部角色
         }
 
         await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if all_avatars else ChatAction.UPLOAD_PHOTO)
@@ -196,8 +196,11 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
 
 class SkillData(Model):
+    """天赋数据"""
+
     skill: CalculatorTalent
     buffed: bool = False
+    """是否得到了命座加成"""
 
 
 class AvatarData(Model):

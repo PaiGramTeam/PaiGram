@@ -99,12 +99,16 @@
                 {% for skill_data in skill_datas %}
                     {% set skill = skill_data.skill %}
                     {% set talent_style = 'talent' %}
+                    {% set skill_level = skill.level %}
+
+                    {% if skill_level < 4 %}
+                        {% set talent_style = talent_style + ' talent-level-first' %}
+                    {% endif %}
 
                     {% if skill.max_level == skill.level %}
                         {% set talent_style = talent_style + ' talent-level-max' %}
                     {% endif %}
 
-                    {% set skill_level = skill.level %}
                     {% if skill_data.buffed %}
                         {% set talent_style = talent_style + ' talent-buffed' %}
                         {% set skill_level = skill_level + 3 %}

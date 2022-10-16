@@ -345,11 +345,19 @@ body {
     border-left-width: 0 !important;
 }
 
+.talent-buffed {
+    font-weight: bold;
+}
+
+.talent-level-first {
+    background-color: rgb(189, 191, 190) !important;
+}
+
 .talent-level-1 {
     background-color: rgb(189, 191, 190);
 }
 
-.talent-level-1.talent-buffed {
+.talent-level-first.talent-level-2.talent-buffed {
     color: rgb(0, 108, 199);
 }
 
@@ -357,37 +365,37 @@ body {
     background-color: var(--green);
 }
 
-.talent-level-2.talent-buffed {
-    color: rgb(0, 88, 0);
-}
-
 .talent-level-3 {
     background-color: var(--blue);
-}
-
-.talent-level-3.talent-buffed {
-    color: rgb(0, 108, 199);
 }
 
 .talent-level-4 {
     background-color: rgb(190, 160, 250);
 }
 
-.talent-level-4.talent-buffed {
-    color: rgb(114, 4, 101);
-}
-
 .talent-level-max {
     background-image: linear-gradient(90deg, rgba(251, 129, 124, 0.8) 0%, rgba(255, 93, 85, 0.65) 50%, rgba(251, 129, 124, 0.8) 100%), url("../../img/crown.png") !important;
+}
+
+.talent-level-1.talent-buffed {
+    color: rgb(0, 108, 199);
+}
+
+.talent-level-2.talent-buffed {
+    color: rgb(0, 88, 0);
+}
+
+.talent-level-3.talent-buffed {
+    color: rgb(0, 108, 199);
+}
+
+.talent-level-4.talent-buffed {
+    color: rgb(114, 4, 101);
 }
 
 .talent-level-max.talent-buffed {
     color: rgb(183, 0, 0) !important;
     text-shadow: 0 0 4px white !important;
-}
-
-.talent-buffed {
-    font-weight: bold;
 }
 
 .content > .row:nth-last-child(2) > div {
