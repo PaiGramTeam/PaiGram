@@ -108,7 +108,10 @@ class AvatarListPlugin(Plugin, BasePlugin):
             namecard = (await self.assets_service.namecard(response.player.namecard.id).navbar()).as_uri()
             avatar = (await self.assets_service.avatar(response.player.icon.id).icon()).as_uri()
             nickname = response.player.nickname
-            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.icon.id)]
+            if response.player.icon.id in [10000005, 10000007]:
+                rarity = 5
+            else:
+                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.icon.id)]
         except Exception as e:  # pylint: disable=W0703
             logger.debug(f"enka 请求失败: {e}")
             choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
@@ -123,7 +126,10 @@ class AvatarListPlugin(Plugin, BasePlugin):
             namecard = (await self.assets_service.namecard(namecard_choices[0]).navbar()).as_uri()
             avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
             nickname = update.effective_user.full_name
-            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
+            if cid in [10000005, 10000007]:
+                rarity = 5
+            else:
+                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
         return namecard, avatar, nickname, rarity
 
     @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"))
