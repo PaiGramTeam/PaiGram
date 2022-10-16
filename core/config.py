@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import (
     List,
@@ -11,9 +12,15 @@ from pydantic import BaseModel, BaseSettings, validator
 
 from utils.const import PROJECT_ROOT
 
-__all__ = ["BotConfig", "config"]
+__all__ = ["BotConfig", "config", "JoinGroups"]
 
 dotenv.load_dotenv()
+
+
+class JoinGroups(str, Enum):
+    NO_ALLOW = "NO_ALLOW"
+    ALLOW_AUTH_USER = "ALLOW_AUTH_USER"
+    ALLOW_ALL = "ALLOW_ALL"
 
 
 class BotConfig(BaseSettings):
@@ -38,6 +45,7 @@ class BotConfig(BaseSettings):
     channels: List["ConfigChannel"] = []
     admins: List["ConfigUser"] = []
     verify_groups: List[Union[int, str]] = []
+    join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
 
     logger_width: int = 180
     logger_log_path: str = "./logs"
