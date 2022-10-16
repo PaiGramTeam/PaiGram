@@ -4,6 +4,7 @@ from typing import Iterable, List, Optional, Sequence
 from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
 from genshin import Client
+from genshin.client import routes
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
@@ -24,6 +25,11 @@ from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
 
+routes.CALCULATOR_URL = routes.InternationalRoute(
+    overseas="https://sg-public-api.hoyoverse.com/event/calculateos/",
+    chinese="https://api-takumi.mihoyo.com/event/e20200928calculate/v1/",
+)
+
 
 class AvatarListPlugin(Plugin, BasePlugin):
     def __init__(
@@ -34,7 +40,6 @@ class AvatarListPlugin(Plugin, BasePlugin):
         self.template_service = template_service
         self.enka_client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
         self.enka_assets = EnkaAssets(lang="chs")
-        self.api = "https://api-takumi.mihoyo.com/event/e20200928calculate/v1/sync/avatar/detail"
 
     async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
         try:
@@ -62,22 +67,12 @@ class AvatarListPlugin(Plugin, BasePlugin):
             else:
                 await message.reply_text("此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定", parse_mode=ParseMode.HTML)
 
-    async def get_character_details(self, client: Client, character: Character) -> CalculatorCharacterDetails:
-        try:
-            detail = await client.get_character_details(character)
-        except RuntimeError:
-            region = "cn_gf01" if str(client.uid)[0] in ["1", "2"] else "cn_qd01"
-            detail = CalculatorCharacterDetails.parse_obj(
-                await client.request(self.api, params={"uid": client.uid, "region": region, "avatar_id": character.id})
-            )
-        return detail
-
     async def get_avatars_data(self, characters: Sequence[Character], client: Client, max_length: int = None):
         avatar_datas: List[AvatarData] = []
         for num, character in enumerate(characters):
             if num == max_length:  # 若已经有 max_length 个角色
                 break
-            detail = await self.get_character_details(client, character)
+            detail = await client.get_character_details(character)
             if character.id == 10000005:  # 针对男草主
                 talents = []
                 for talent in detail.talents:
