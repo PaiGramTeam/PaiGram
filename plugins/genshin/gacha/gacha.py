@@ -96,7 +96,7 @@ class GachaHandle:
             banner.weight4 = ((1, 510), (8, 510), (10, 10000))
             banner.weight5 = ((1, 60), (73, 60), (90, 10000))
         elif gacha_type == 302:
-            banner.wish_max_progress = 3
+            banner.wish_max_progress = 2
             banner.banner_type = BannerType.WEAPON
             banner.weight4 = ((1, 600), (7, 600), (10, 10000))
             banner.weight5 = ((1, 70), (62, 70), (90, 10000))
