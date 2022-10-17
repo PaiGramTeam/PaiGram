@@ -157,7 +157,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
         user = update.effective_user
         message = update.effective_message
 
-        args = [i.lower() for i in context.match.groups()]
+        args = [i.lower() for i in context.match.groups() if i]
 
         all_avatars = any(["all" in args, "全部" in args])  # 是否发送全部角色
 
