@@ -34,10 +34,10 @@ class AvatarListPlugin(Plugin, BasePlugin):
         self.assets_service = assets_service
         self.template_service = template_service
         self.enka_client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
-        self.cache = TTLCache(maxsize=1024, ttl=600)
+        self.cache = TTLCache(maxsize=128, ttl=600)
 
     async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
-        @cached(cache=TTLCache(maxsize=1024, ttl=600))
+        @cached(cache=TTLCache(maxsize=128, ttl=600))
         async def _get_genshin_client(uid: int):
             return await get_genshin_client(uid)
 
@@ -81,7 +81,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 logger.debug(f"解析旅行者数据时遇到了错误：{e}")
                 return None
 
-    @cached(TTLCache(maxsize=1024, ttl=600))
+    @cached(TTLCache(maxsize=128, ttl=600))
     async def get_avatars_data(
         self, characters: Sequence[Character], client: Client, max_length: int = None
     ) -> List["AvatarData"]:
@@ -127,7 +127,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             )
         return avatar_datas
 
-    @cached(TTLCache(maxsize=1024, ttl=600))
+    @cached(TTLCache(maxsize=128, ttl=600))
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
             response = await self.enka_client.fetch_user(client.uid)
@@ -158,7 +158,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
         return namecard, avatar, nickname, rarity
 
-    @cached(TTLCache(maxsize=1024, ttl=600))
+    @cached(TTLCache(maxsize=128, ttl=600))
     async def get_default_final_data(self, characters: Sequence[Character], update: Update):
         nickname = update.effective_user.full_name
         rarity = 5
