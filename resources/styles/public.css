@@ -15,3 +15,25 @@
 body {
     font-family: "hywh", "seguiemj", emoji, system-ui;
 }
+
+.color-pyro {
+    color: #F09E9B;
+}
+.color-hydro {
+    color: #8EBEF9;
+}
+.color-anemo {
+    color: #A0FCD9;
+}
+.color-electro {
+    color: #F2AFFA;
+}
+.color-dendro {
+    color: #99FD88;
+}
+.color-cryo {
+    color: #B1FCFD;
+}
+.color-geo {
+    color: #FCE699;
+}
