@@ -2,7 +2,8 @@
 from typing import Iterable, List, Optional, Sequence
 
 from arkowrapper import ArkoWrapper
-from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
+from cachetools import TTLCache, cached
+from enkanetwork import EnkaNetworkAPI
 from genshin import Client, GenshinException
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Message, Update, User
@@ -33,11 +34,15 @@ class AvatarListPlugin(Plugin, BasePlugin):
         self.assets_service = assets_service
         self.template_service = template_service
         self.enka_client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
-        self.enka_assets = EnkaAssets(lang="chs")
+        self.cache = TTLCache(maxsize=1024, ttl=600)
 
     async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
+        @cached(cache=TTLCache(maxsize=1024, ttl=600))
+        async def _get_genshin_client(uid: int):
+            return await get_genshin_client(uid)
+
         try:
-            return await get_genshin_client(user.id)
+            return await _get_genshin_client(user.id)
         except UserNotFoundError:  # 若未找到账号
             if filters.ChatType.GROUPS.filter(message):
                 buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
@@ -61,17 +66,31 @@ class AvatarListPlugin(Plugin, BasePlugin):
             else:
                 await message.reply_text("此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定", parse_mode=ParseMode.HTML)
 
-    async def get_avatars_data(self, characters: Sequence[Character], client: Client, max_length: int = None):
-        avatar_datas: List[AvatarData] = []
-        for num, character in enumerate(characters):
-            if num == max_length:  # 若已经有 max_length 个角色
-                break
+    async def get_character_details(self, client: Client, character: Character) -> Optional[CalculatorCharacterDetails]:
+        key = f"character_details_{client.uid}_{character.id}"
+        try:
+            return self.cache[key]
+        except KeyError:
             try:
-                detail = await client.get_character_details(character)
+                details = await client.get_character_details(character)
+                self.cache.update({key: details})
+                return details
             except Exception as e:  # pylint: disable=W0703
                 if character.name != "旅行者":
                     raise e
                 logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+                return None
+
+    @cached(TTLCache(maxsize=1024, ttl=600))
+    async def get_avatars_data(
+        self, characters: Sequence[Character], client: Client, max_length: int = None
+    ) -> List["AvatarData"]:
+        avatar_datas: List[AvatarData] = []
+        for num, character in enumerate(characters):
+            if num == max_length:  # 若已经有 max_length 个角色
+                break
+            detail = await self.get_character_details(client, character)
+            if detail is None:
                 continue
             if character.id == 10000005:  # 针对男草主
                 talents = []
@@ -108,6 +127,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             )
         return avatar_datas
 
+    @cached(TTLCache(maxsize=1024, ttl=600))
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
             response = await self.enka_client.fetch_user(client.uid)
@@ -138,6 +158,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
         return namecard, avatar, nickname, rarity
 
+    @cached(TTLCache(maxsize=1024, ttl=600))
     async def get_default_final_data(self, characters: Sequence[Character], update: Update):
         nickname = update.effective_user.full_name
         rarity = 5

@@ -1,21 +1,20 @@
 import time
 from typing import Optional
 from urllib.parse import urlencode, urljoin, urlsplit
-
-from jinja2 import Environment, FileSystemLoader, Template
-from playwright.async_api import ViewportSize
 from uuid import uuid4
 
 from fastapi import HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from jinja2 import Environment, FileSystemLoader, Template
+from playwright.async_api import ViewportSize
 
 from core.base.aiobrowser import AioBrowser
-from core.bot import bot
 from core.base.webserver import webapp
+from core.bot import bot
+from core.template.cache import TemplatePreviewCache
 from utils.const import PROJECT_ROOT
 from utils.log import logger
-from core.template.cache import TemplatePreviewCache
 
 
 class _QuerySelectorNotFound(Exception):
@@ -39,7 +38,7 @@ class TemplateService:
     def get_template(self, template_name: str) -> Template:
         return self._jinja2_env.get_template(template_name)
 
-    async def render_async(self, template_name: str, template_data: dict):
+    async def render_async(self, template_name: str, template_data: dict) -> str:
         """模板渲染
         :param template_name: 模板文件名
         :param template_data: 模板数据
@@ -51,16 +50,15 @@ class TemplateService:
         return html
 
     async def render(
-        self,
-        template_name: str,
-        template_data: dict,
-        viewport: ViewportSize = None,
-        full_page: bool = True,
-        evaluate: Optional[str] = None,
-        query_selector: str = None
+            self,
+            template_name: str,
+            template_data: dict,
+            viewport: ViewportSize = None,
+            full_page: bool = True,
+            evaluate: Optional[str] = None,
+            query_selector: str = None,
     ) -> bytes:
         """模板渲染成图片
-        :param template_path: 模板目录
         :param template_name: 模板文件名
         :param template_data: 模板数据
         :param viewport: 截图大小
@@ -122,13 +120,14 @@ class TemplatePreviewer:
             await self.cache.set_data(key, data)
             query["key"] = key
 
+        # noinspection PyProtectedMember
         return components._replace(path=path, query=urlencode(query)).geturl()
 
     def register_routes(self):
         """注册预览用到的路由"""
 
         @webapp.get("/preview/{path:path}")
-        async def preview_template(path: str, key: Optional[str] = None): # pylint: disable=W0612
+        async def preview_template(path: str, key: Optional[str] = None):  # pylint: disable=W0612
             # 如果是 /preview/ 开头的静态文件，直接返回内容。比如使用相对链接 ../ 引入的静态资源
             if not path.endswith(".html"):
                 full_path = self.template_service.template_dir / path
