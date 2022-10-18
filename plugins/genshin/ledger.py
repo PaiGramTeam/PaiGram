@@ -11,7 +11,7 @@ from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
-from core.template.services import TemplateService
+from core.template.services import RenderResult, TemplateService
 from core.user.error import UserNotFoundError
 from core.user.services import UserService
 from utils.bot import get_all_args
@@ -65,7 +65,7 @@ class Ledger(Plugin, BasePlugin):
         self.user_service = user_service
         self.current_dir = os.getcwd()
 
-    async def _start_get_ledger(self, client, month=None) -> bytes:
+    async def _start_get_ledger(self, client, month=None) -> RenderResult:
         try:
             diary_info = await client.get_diary(client.uid, month=month)
         except GenshinException as error:
@@ -98,10 +98,10 @@ class Ledger(Plugin, BasePlugin):
             "categories": categories,
             "color": color,
         }
-        png_data = await self.template_service.render(
+        render_result = await self.template_service.render(
             "genshin/ledger/ledger.html", ledger_data, {"width": 580, "height": 610}
         )
-        return png_data
+        return render_result
 
     @handler(CommandHandler, command="ledger", block=False)
     @handler(MessageHandler, filters=filters.Regex("^旅行札记查询(.*)"), block=False)
@@ -122,7 +122,7 @@ class Ledger(Plugin, BasePlugin):
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             client = await get_genshin_client(user.id)
-            png_data = await self._start_get_ledger(client, month)
+            render_result = await self._start_get_ledger(client, month)
         except (UserNotFoundError, CookiesNotFoundError):
             if filters.ChatType.GROUPS.filter(message):
                 buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
@@ -142,4 +142,4 @@ class Ledger(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await message.reply_photo(png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"{client.uid}.png", allow_sending_without_reply=True)

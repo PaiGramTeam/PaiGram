@@ -128,8 +128,8 @@ class PlayerCards(Plugin, BasePlugin):
             await message.reply_text(f"角色展柜中未找到 {character_name}")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
-        await message.reply_photo(pnd_data, filename=f"player_card_{uid}_{character_name}.png")
+        render_result = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
+        await render_result.reply_photo(message, filename=f"player_card_{uid}_{character_name}.png")
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
     @restricts(restricts_time_of_groups=20, without_overlapping=True)

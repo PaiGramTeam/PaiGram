@@ -11,7 +11,7 @@ from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
-from core.template.services import TemplateService
+from core.template.services import RenderResult, TemplateService
 from core.user.error import UserNotFoundError
 from core.user.services import UserService
 from utils.decorators.error import error_callable
@@ -34,7 +34,7 @@ class DailyNote(Plugin, BasePlugin):
         self.user_service = user_service
         self.current_dir = os.getcwd()
 
-    async def _get_daily_note(self, client) -> bytes:
+    async def _get_daily_note(self, client) -> RenderResult:
         daily_info = await client.get_genshin_notes(client.uid)
         day = datetime.datetime.now().strftime("%m-%d %H:%M") + " 星期" + "一二三四五六日"[datetime.datetime.now().weekday()]
         resin_recovery_time = (
@@ -85,10 +85,10 @@ class DailyNote(Plugin, BasePlugin):
             "transformer_ready": transformer_ready,
             "transformer_recovery_time": transformer_recovery_time,
         }
-        png_data = await self.template_service.render(
+        render_result = await self.template_service.render(
             "genshin/daily_note/daily_note.html", daily_data, {"width": 600, "height": 548}, full_page=False
         )
-        return png_data
+        return render_result
 
     @handler(CommandHandler, command="dailynote", block=False)
     @handler(MessageHandler, filters=filters.Regex("^当前状态(.*)"), block=False)
@@ -100,7 +100,7 @@ class DailyNote(Plugin, BasePlugin):
         logger.info(f"用户 {user.full_name}[{user.id}] 查询游戏状态命令请求")
         try:
             client = await get_genshin_client(user.id)
-            png_data = await self._get_daily_note(client)
+            render_result = await self._get_daily_note(client)
         except (UserNotFoundError, CookiesNotFoundError):
             if filters.ChatType.GROUPS.filter(message):
                 buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
@@ -120,4 +120,4 @@ class DailyNote(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
             return ConversationHandler.END
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await message.reply_photo(png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"{client.uid}.png", allow_sending_without_reply=True)

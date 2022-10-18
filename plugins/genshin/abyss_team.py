@@ -82,11 +82,11 @@ class AbyssTeam(Plugin, BasePlugin):
             abyss_teams_data["teams"].append(team)
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        png_data = await self.template_service.render(
+        render_result = await self.template_service.render(
             "genshin/abyss_team/abyss_team.html",
             abyss_teams_data,
             {"width": 785, "height": 800},
             full_page=True,
             query_selector=".bg-contain",
         )
-        await message.reply_photo(png_data, filename=f"abyss_team_{user.id}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"abyss_team_{user.id}.png", allow_sending_without_reply=True)

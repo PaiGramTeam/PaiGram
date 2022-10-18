@@ -1,10 +1,11 @@
 import time
-from typing import Optional
+from typing import Optional, Union
 from urllib.parse import urlencode, urljoin, urlsplit
 
 from jinja2 import Environment, FileSystemLoader, Template
 from playwright.async_api import ViewportSize
 from uuid import uuid4
+from telegram import Message
 
 from fastapi import HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
@@ -15,7 +16,7 @@ from core.bot import bot
 from core.base.webserver import webapp
 from utils.const import PROJECT_ROOT
 from utils.log import logger
-from core.template.cache import TemplatePreviewCache
+from core.template.cache import HtmlToFileIdCache, TemplatePreviewCache
 
 
 class _QuerySelectorNotFound(Exception):
@@ -23,7 +24,13 @@ class _QuerySelectorNotFound(Exception):
 
 
 class TemplateService:
-    def __init__(self, browser: AioBrowser, preview_cache: TemplatePreviewCache, template_dir: str = "resources"):
+    def __init__(
+        self,
+        browser: AioBrowser,
+        html_to_file_id_cache: HtmlToFileIdCache,
+        preview_cache: TemplatePreviewCache,
+        template_dir: str = "resources",
+    ):
         self._browser = browser
         self.template_dir = PROJECT_ROOT / template_dir
 
@@ -35,6 +42,8 @@ class TemplateService:
         )
 
         self.previewer = TemplatePreviewer(self, preview_cache)
+
+        self.html_to_file_id_cache = html_to_file_id_cache
 
     def get_template(self, template_name: str) -> Template:
         return self._jinja2_env.get_template(template_name)
@@ -57,8 +66,8 @@ class TemplateService:
         viewport: ViewportSize = None,
         full_page: bool = True,
         evaluate: Optional[str] = None,
-        query_selector: str = None
-    ) -> bytes:
+        query_selector: str = None,
+    ) -> "RenderResult":
         """模板渲染成图片
         :param template_path: 模板目录
         :param template_name: 模板文件名
@@ -78,6 +87,12 @@ class TemplateService:
 
         html = await template.render_async(**template_data)
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
+
+        file_id = await self.html_to_file_id_cache.get_data(html)
+        # TODO: 功能开发中，默认打开缓存用于调试，上线前改为仅生产环境返回缓存
+        if file_id:
+            logger.debug(f"{template_name} 命中缓存，返回 file_id {file_id}")
+            return RenderResult(html=html, photo=file_id, cache=self.html_to_file_id_cache)
 
         browser = await self._browser.get_browser()
         start_time = time.time()
@@ -101,7 +116,35 @@ class TemplateService:
         png_data = await page.screenshot(clip=clip, full_page=full_page)
         await page.close()
         logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
-        return png_data
+        return RenderResult(html=html, photo=png_data, cache=self.html_to_file_id_cache)
+
+
+class RenderResult:
+    """渲染结果"""
+
+    def __init__(self, html: str, photo: Union[bytes, str], cache: HtmlToFileIdCache):
+        """
+        `html`: str 渲染生成的 html
+        `photo`: Union[bytes, str] 渲染生成的图片。bytes 表示是图片，str 则为 file_id
+        """
+        self.html = html
+        self.photo = photo
+        self._cache = cache
+
+    async def reply_photo(self, message: Message, *args, **kwargs):
+        """是 `message.reply_photo` 的封装，上传成功后，缓存 telegram 返回的 file_id，方便重复使用"""
+        reply = await message.reply_photo(self.photo, *args, **kwargs)
+
+        # 如果是图片，缓存 telegram 返回的 file_id
+        if not self.is_file_id():
+            photo = reply.photo[0]
+            file_id = photo.file_id
+            await self._cache.set_data(self.html, file_id)
+
+        return reply
+
+    def is_file_id(self) -> bool:
+        return isinstance(self.photo, str)
 
 
 class TemplatePreviewer:
@@ -128,7 +171,7 @@ class TemplatePreviewer:
         """注册预览用到的路由"""
 
         @webapp.get("/preview/{path:path}")
-        async def preview_template(path: str, key: Optional[str] = None): # pylint: disable=W0612
+        async def preview_template(path: str, key: Optional[str] = None):  # pylint: disable=W0612
             # 如果是 /preview/ 开头的静态文件，直接返回内容。比如使用相对链接 ../ 引入的静态资源
             if not path.endswith(".html"):
                 full_path = self.template_service.template_dir / path

@@ -213,7 +213,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
         if all_avatars and len(characters) > 20:
             await message.reply_document(InputFile(image, filename="练度统计.png"))
         else:
-            await message.reply_photo(image)
+            await image.reply_photo(message)
 
         logger.info(
             f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]发送{'文件' if all_avatars else '图片'}成功",
