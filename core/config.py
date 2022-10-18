@@ -64,6 +64,11 @@ class BotConfig(BaseSettings):
     web_host: str = "localhost"
     web_port: int = 8080
 
+    error_pb_url: str = ""
+    error_pb_sunset: int = 43200
+    error_pb_max_lines: int = 1000
+    error_sentry_dsn: str = ""
+
     class Config:
         case_sensitive = False
         json_loads = json.loads
