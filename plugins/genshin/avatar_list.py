@@ -149,8 +149,8 @@ class AvatarListPlugin(Plugin, BasePlugin):
             avatar = (await self.assets_service.avatar(10000005).icon()).as_uri()
         return namecard, avatar, nickname, rarity
 
-    @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"))
-    @handler.message(filters.Regex(r"^(全部)?练度统计$"))
+    @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"), block=False)
+    @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
     @restricts(30)
     @error_callable
     async def avatar_list(self, update: Update, context: CallbackContext):
