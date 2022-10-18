@@ -9,7 +9,7 @@ from telegram import Update
 
 from core.config import config
 
-sentry_sdk_git_hash = run("git rev-parse HEAD", stdout=PIPE, shell=True).stdout.decode().strip()
+sentry_sdk_git_hash = run(["git", "rev-parse", "HEAD"], stdout=PIPE, shell=True).stdout.decode().strip()
 sentry_sdk.init(
     config.error_sentry_dsn,
     traces_sample_rate=1.0,

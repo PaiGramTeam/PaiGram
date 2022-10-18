@@ -254,17 +254,5 @@ class Handler(DefaultRichHandler):
 class FileHandler(Handler):
     def __init__(self, *args, path: Path, **kwargs):
         super().__init__(*args, **kwargs)
-        while True:
-            try:
-                path.parent.mkdir(exist_ok=True, parents=True)
-                break
-            except FileNotFoundError:
-                parent = path.parent
-                while True:
-                    try:
-                        parent.mkdir(exist_ok=True, parents=True)
-                        break
-                    except FileNotFoundError:
-                        parent = parent.parent
         path.parent.mkdir(exist_ok=True, parents=True)
         self.console = Console(width=180, file=FileIO(path), theme=Theme(DEFAULT_STYLE))
