@@ -1,22 +1,23 @@
+import asyncio
 import time
-from typing import Optional, Union
+from typing import Optional, Union, List
 from urllib.parse import urlencode, urljoin, urlsplit
-
-from jinja2 import Environment, FileSystemLoader, Template
-from playwright.async_api import ViewportSize
 from uuid import uuid4
-from telegram import Message
 
 from fastapi import HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from jinja2 import Environment, FileSystemLoader, Template
+from playwright.async_api import ViewportSize
+from pydantic import BaseModel
+from telegram import Message, InputMediaPhoto
 
 from core.base.aiobrowser import AioBrowser
-from core.bot import bot
 from core.base.webserver import webapp
+from core.bot import bot
+from core.template.cache import HtmlToFileIdCache, TemplatePreviewCache
 from utils.const import PROJECT_ROOT
 from utils.log import logger
-from core.template.cache import HtmlToFileIdCache, TemplatePreviewCache
 
 
 class _QuerySelectorNotFound(Exception):
@@ -48,7 +49,7 @@ class TemplateService:
     def get_template(self, template_name: str) -> Template:
         return self._jinja2_env.get_template(template_name)
 
-    async def render_async(self, template_name: str, template_data: dict):
+    async def render_async(self, template_name: str, template_data: dict) -> str:
         """模板渲染
         :param template_name: 模板文件名
         :param template_data: 模板数据
@@ -58,6 +59,24 @@ class TemplateService:
         html = await template.render_async(**template_data)
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
         return html
+
+    async def render_group(self, renders: List['InputRenderData']) -> 'RenderGroupResult':
+        task_list: List = []
+        render_results: List[RenderResult] = []
+        for render in renders:
+            task = asyncio.create_task(self.render(*render))
+            task_list.append(task)
+
+        results = await asyncio.gather(*task_list)
+        for result in results:
+            if isinstance(result, RenderResult):
+                render_results.append(result)
+            elif issubclass(result, BaseException):
+                logger.error(f"模板渲染发生错误 {repr(result)}")
+            else:
+                logger.error(f"错误的数据类型 {repr(result)}")
+
+        return RenderGroupResult(render_results, cache=self.html_to_file_id_cache)
 
     async def render(
         self,
@@ -69,7 +88,6 @@ class TemplateService:
         query_selector: str = None,
     ) -> "RenderResult":
         """模板渲染成图片
-        :param template_path: 模板目录
         :param template_name: 模板文件名
         :param template_data: 模板数据
         :param viewport: 截图大小
@@ -117,6 +135,24 @@ class TemplateService:
         await page.close()
         logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
         return RenderResult(html=html, photo=png_data, cache=self.html_to_file_id_cache)
+
+
+class RenderGroupResult:
+    def __init__(self, results: List['RenderResult'], cache: HtmlToFileIdCache):
+        self.results = results
+        self._cache = cache
+
+    async def reply_media_group(self, message: Message, *args, **kwargs):
+        reply = await message.reply_media_group(
+            media=[InputMediaPhoto(result.photo) for result in self.results], *args, **kwargs
+        )
+
+        for index, value in enumerate(reply):
+            result = self.results[index]
+            if isinstance(result.photo, bytes):
+                photo = value.photo[0]
+                file_id = photo.file_id
+                await self._cache.set_data(result.html, file_id)
 
 
 class RenderResult:
@@ -194,3 +230,12 @@ class TemplatePreviewer:
         # 其他静态资源
         for name in ["cache", "resources"]:
             webapp.mount(f"/{name}", StaticFiles(directory=PROJECT_ROOT / name), name=name)
+
+
+class InputRenderData(BaseModel):
+    template_name: str
+    template_data: dict
+    viewport: ViewportSize = None
+    full_page: bool = True
+    evaluate: Optional[str] = None
+    query_selector: str = None
