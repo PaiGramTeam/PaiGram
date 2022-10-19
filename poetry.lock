@@ -315,7 +315,7 @@ resolved_reference = "03fd20e5f838727b7c394c11ea1360cfc3272d69"
 
 [[package]]
 name = "fakeredis"
-version = "1.9.3"
+version = "1.9.4"
 description = "Fake implementation of redis API for testing purposes."
 category = "main"
 optional = false
@@ -1204,7 +1204,7 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "df414feec14d7c0b07fcae43d72e8fff334988d94961e14928f91320816ab3d4"
+content-hash = "d91f61fd8b26f32e2a8b4dfd790f9471276f386a4391ddbf141cf394bb074759"
 
 [metadata.files]
 aiofiles = [
@@ -1430,8 +1430,8 @@ Deprecated = [
 ]
 "enkanetwork.py" = []
 fakeredis = [
-    {file = "fakeredis-1.9.3-py3-none-any.whl", hash = "sha256:74a2f1e5e8781014418fe734b156808d5d1a2d15edec982fada3d6e7603f8536"},
-    {file = "fakeredis-1.9.3.tar.gz", hash = "sha256:ea7e4ed076def2eea36188662586a9f2271946ae56ebc2de6a998c82b33df776"},
+    {file = "fakeredis-1.9.4-py3-none-any.whl", hash = "sha256:61afe14095aad3e7413a0a6fe63041da1b4bc3e41d5228a33b60bd03fabf22d8"},
+    {file = "fakeredis-1.9.4.tar.gz", hash = "sha256:17415645d11994061f5394f3f1c76ba4531f3f8b63f9c55a8fd2120bebcbfae9"},
 ]
 fastapi = [
     {file = "fastapi-0.85.1-py3-none-any.whl", hash = "sha256:de3166b6b1163dc22da4dc4ebdc3192fcbac7700dd1870a1afa44de636a636b5"},
