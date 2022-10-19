@@ -22,7 +22,7 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
 
-from core.base.assets import AssetsService, AssetsServiceType
+from core.base.assets import AssetsService, AssetsServiceType, AssetsCouldNotFound
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
@@ -171,6 +171,7 @@ class DailyMaterial(Plugin, BasePlugin):
     @error_callable
     async def daily_material(self, update: Update, context: CallbackContext):
         user = update.effective_user
+        message = update.effective_message
         args = get_all_args(context)
         now = datetime.now()
 
@@ -188,22 +189,22 @@ class DailyMaterial(Plugin, BasePlugin):
         logger.info(f'用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday="{WEEK_MAP[weekday]}" full={full}')
 
         if weekday == 6:
-            await update.message.reply_text(
+            await message.reply_text(
                 ("今天" if title == "今日" else "这天") + "是星期天, <b>全部素材都可以</b>刷哦~", parse_mode=ParseMode.HTML
             )
             return
 
         if self.locks[0].locked():  # 若检测到了第一个锁：正在下载每日素材表的数据
-            notice = await update.message.reply_text("派蒙正在摘抄每日素材表，以后再来探索吧~")
+            notice = await message.reply_text("派蒙正在摘抄每日素材表，以后再来探索吧~")
             self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
             return
 
         if self.locks[1].locked():  # 若检测到了第二个锁：正在下载角色、武器、材料的图标
-            await update.message.reply_text("派蒙正在搬运每日素材的图标，以后再来探索吧~")
+            await message.reply_text("派蒙正在搬运每日素材的图标，以后再来探索吧~")
             return
 
-        notice = await update.message.reply_text("派蒙可能需要找找图标素材，还请耐心等待哦~")
-        await update.message.reply_chat_action(ChatAction.TYPING)
+        notice = await message.reply_text("派蒙可能需要找找图标素材，还请耐心等待哦~")
+        await message.reply_chat_action(ChatAction.TYPING)
 
         # 获取已经缓存的秘境素材信息
         local_data = {"avatar": [], "weapon": []}
@@ -219,7 +220,7 @@ class DailyMaterial(Plugin, BasePlugin):
         # 尝试获取用户已绑定的原神账号信息
         client, user_data = await self._get_data_from_user(user)
 
-        await update.message.reply_chat_action(ChatAction.TYPING)
+        await message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
         for type_ in ["avatar", "weapon"]:
             areas = []
@@ -251,9 +252,14 @@ class DailyMaterial(Plugin, BasePlugin):
                     )
                 materials = []
                 for mid in area_data["materials"]:  # 添加这个区域当天（weekday）的培养素材
-                    path = (await self.assets_service.material(mid).icon()).as_uri()
-                    material = HONEY_DATA["material"][mid]
-                    materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
+                    try:
+                        path = (await self.assets_service.material(mid).icon()).as_uri()
+                        material = HONEY_DATA["material"][mid]
+                        materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
+                    except AssetsCouldNotFound as exc:
+                        logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
+                        await notice.edit_text(f"出错了呜呜呜 ~ 派蒙找不到一些素材")
+                        return
                 areas.append(
                     AreaData(
                         name=area_data["name"],
@@ -265,7 +271,7 @@ class DailyMaterial(Plugin, BasePlugin):
                 )
             setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
 
-        await update.message.reply_chat_action(ChatAction.TYPING)
+        await message.reply_chat_action(ChatAction.TYPING)
         render_tasks = [
             asyncio.create_task(
                 self.template_service.render(  # 渲染角色素材页
@@ -279,22 +285,22 @@ class DailyMaterial(Plugin, BasePlugin):
             ),
         ]
 
-        while not all(map(lambda x: x.done(), render_tasks)):
-            await asyncio.sleep(0)
+        results = await asyncio.gather(*render_tasks)
 
-        character_img_data, weapon_img_data = tuple(map(lambda x: x.result(), render_tasks))
+        character_img_data = results[0]
+        weapon_img_data = results[1]
 
         self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
-        await update.message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         if full:  # 是否发送原图
-            await update.message.reply_media_group(
+            await message.reply_media_group(
                 [
                     InputMediaDocument(character_img_data, filename="可培养角色.png"),
                     InputMediaDocument(weapon_img_data, filename="可培养武器.png"),
                 ]
             )
         else:
-            await update.message.reply_media_group(
+            await message.reply_media_group(
                 [InputMediaPhoto(character_img_data), InputMediaPhoto(weapon_img_data)]
             )
         logger.debug("角色、武器培养素材图发送成功")
