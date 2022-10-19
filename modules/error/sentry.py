@@ -1,15 +1,18 @@
+import os
+
 import sentry_sdk
-from sentry_sdk.integrations.httpx import HttpxIntegration
+from git.repo import Repo
+from git.repo.fun import rev_parse
 from sentry_sdk.integrations.excepthook import ExcepthookIntegration
+from sentry_sdk.integrations.httpx import HttpxIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-from subprocess import run, PIPE
-
 from telegram import Update
 
 from core.config import config
 
-sentry_sdk_git_hash = run(["git", "rev-parse", "HEAD"], stdout=PIPE, shell=True).stdout.decode().strip()
+repo = Repo(os.getcwd())
+sentry_sdk_git_hash = rev_parse(repo, "HEAD").hexsha
 sentry_sdk.init(
     config.error_sentry_dsn,
     traces_sample_rate=1.0,

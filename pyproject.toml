@@ -38,6 +38,7 @@ arko-wrapper = "^0.2.3"
 fastapi = "^0.85.1"
 uvicorn = {extras = ["standard"], version = "^0.18.3"}
 sentry-sdk = "^1.9.10"
+GitPython = "^3.1.29"
 
 [tool.poetry.extras]
 pyro = ["Pyrogram", "TgCrypto"]
