@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Optional, Union, List
+from typing import Optional, List
 from urllib.parse import urlencode, urljoin, urlsplit
 from uuid import uuid4
 
@@ -9,19 +9,15 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, Template
 from playwright.async_api import ViewportSize
-from pydantic import BaseModel
-from telegram import Message, InputMediaPhoto
 
 from core.base.aiobrowser import AioBrowser
 from core.base.webserver import webapp
 from core.bot import bot
 from core.template.cache import HtmlToFileIdCache, TemplatePreviewCache
+from core.template.error import QuerySelectorNotFound
+from core.template.models import InputRenderData, RenderResult, RenderGroupResult
 from utils.const import PROJECT_ROOT
 from utils.log import logger
-
-
-class _QuerySelectorNotFound(Exception):
-    pass
 
 
 class TemplateService:
@@ -60,7 +56,7 @@ class TemplateService:
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
         return html
 
-    async def render_group(self, renders: List['InputRenderData']) -> 'RenderGroupResult':
+    async def render_group(self, renders: List[InputRenderData]) -> RenderGroupResult:
         task_list: List = []
         render_results: List[RenderResult] = []
         for render in renders:
@@ -86,7 +82,7 @@ class TemplateService:
         full_page: bool = True,
         evaluate: Optional[str] = None,
         query_selector: str = None,
-    ) -> "RenderResult":
+    ) -> RenderResult:
         """模板渲染成图片
         :param template_name: 模板文件名
         :param template_data: 模板数据
@@ -125,62 +121,16 @@ class TemplateService:
             try:
                 card = await page.query_selector(query_selector)
                 if not card:
-                    raise _QuerySelectorNotFound
+                    raise QuerySelectorNotFound
                 clip = await card.bounding_box()
                 if not clip:
-                    raise _QuerySelectorNotFound
-            except _QuerySelectorNotFound:
+                    raise QuerySelectorNotFound
+            except QuerySelectorNotFound:
                 logger.warning(f"未找到 {query_selector} 元素")
         png_data = await page.screenshot(clip=clip, full_page=full_page)
         await page.close()
         logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
         return RenderResult(html=html, photo=png_data, cache=self.html_to_file_id_cache)
-
-
-class RenderGroupResult:
-    def __init__(self, results: List['RenderResult'], cache: HtmlToFileIdCache):
-        self.results = results
-        self._cache = cache
-
-    async def reply_media_group(self, message: Message, *args, **kwargs):
-        reply = await message.reply_media_group(
-            media=[InputMediaPhoto(result.photo) for result in self.results], *args, **kwargs
-        )
-
-        for index, value in enumerate(reply):
-            result = self.results[index]
-            if isinstance(result.photo, bytes):
-                photo = value.photo[0]
-                file_id = photo.file_id
-                await self._cache.set_data(result.html, file_id)
-
-
-class RenderResult:
-    """渲染结果"""
-
-    def __init__(self, html: str, photo: Union[bytes, str], cache: HtmlToFileIdCache):
-        """
-        `html`: str 渲染生成的 html
-        `photo`: Union[bytes, str] 渲染生成的图片。bytes 表示是图片，str 则为 file_id
-        """
-        self.html = html
-        self.photo = photo
-        self._cache = cache
-
-    async def reply_photo(self, message: Message, *args, **kwargs):
-        """是 `message.reply_photo` 的封装，上传成功后，缓存 telegram 返回的 file_id，方便重复使用"""
-        reply = await message.reply_photo(self.photo, *args, **kwargs)
-
-        # 如果是图片，缓存 telegram 返回的 file_id
-        if not self.is_file_id():
-            photo = reply.photo[0]
-            file_id = photo.file_id
-            await self._cache.set_data(self.html, file_id)
-
-        return reply
-
-    def is_file_id(self) -> bool:
-        return isinstance(self.photo, str)
 
 
 class TemplatePreviewer:
@@ -230,12 +180,3 @@ class TemplatePreviewer:
         # 其他静态资源
         for name in ["cache", "resources"]:
             webapp.mount(f"/{name}", StaticFiles(directory=PROJECT_ROOT / name), name=name)
-
-
-class InputRenderData(BaseModel):
-    template_name: str
-    template_data: dict
-    viewport: ViewportSize = None
-    full_page: bool = True
-    evaluate: Optional[str] = None
-    query_selector: str = None
