@@ -19,4 +19,7 @@ class GachaLogInvalidAuthkey(GachaLogException):
 
 
 class PaimonMoeGachaLogFileError(GachaLogFileError):
-    pass
+    def __init__(self, file_version: int, support_version: int):
+        super().__init__("Paimon.Moe version not supported")
+        self.support_version = support_version
+        self.file_version = file_version

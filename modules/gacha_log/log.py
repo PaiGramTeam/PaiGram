@@ -615,7 +615,7 @@ class GachaLog:
         elif wb_len == 4:
             xlsx_type = XlsxType.FXQ
         else:
-            raise IndexError("xlsx 格式错误")
+            raise GachaLogFileError("xlsx 格式错误")
 
         paimonmoe_sheets = {
             UIGFGachaType.BEGINNER: "Beginners' Wish",
@@ -633,7 +633,7 @@ class GachaLog:
         if xlsx_type == XlsxType.PAIMONMOE:
             ws = wb["Information"]
             if ws["B2"].value != PAIMONMOE_VERSION:
-                raise PaimonMoeGachaLogFileError("PaimonMoe version not supported")
+                raise PaimonMoeGachaLogFileError(file_version=ws["B2"].value, support_version=PAIMONMOE_VERSION)
             count = 1
             for gacha_type in paimonmoe_sheets:
                 ws = wb[paimonmoe_sheets[gacha_type]]

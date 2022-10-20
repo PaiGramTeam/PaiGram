@@ -111,8 +111,13 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 data = json.loads(data)
             elif file_type == "xlsx":
                 data = self.gacha_log.convert_xlsx_to_uigf(data, self.zh_dict)
-        except PaimonMoeGachaLogFileError:
-            await message.reply_text("PaimonMoe的抽卡记录版本不支持")
+        except PaimonMoeGachaLogFileError as exc:
+            await message.reply_text(
+                "导入失败，PaimonMoe的抽卡记录当前版本不支持\n" f"支持抽卡记录的版本为 {exc.support_version}，你的抽卡记录版本为 {exc.file_version}"
+            )
+            return
+        except GachaLogFileError:
+            await message.reply_text("文件解析失败，请检查文件是否符合 UIGF 标准")
             return
         except (KeyError, IndexError, ValueError):
             await message.reply_text("文件解析失败，请检查文件编码是否正确或符合 UIGF 标准")
