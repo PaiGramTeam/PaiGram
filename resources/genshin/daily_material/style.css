@@ -1,13 +1,13 @@
 @font-face {
     font-family: 'HYWH';
-    src: url('../../fonts/汉仪文黑-85W.ttf') format('truetype');
+    src: url('../../fonts/HYWenHei-85W.ttf') format('truetype');
 }
 
 :root {
-    --bg-color: #ebe5d9;
-    --font-color: #514e49;
-    --color-1: #d6ba92;
-    --shadow: #726c65;
+    --bg-color: #EBE5D9;
+    --font-color: #514E49;
+    --color-1: #D6BA92;
+    --shadow: #726C65;
 
 }
 
@@ -190,7 +190,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    filter: drop-shadow(1px 1px 2px #6c6c6c);
+    filter: drop-shadow(1px 1px 2px #6C6C6C);
 }
 
 .material-star > img {

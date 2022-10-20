@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import (
     List,
@@ -7,50 +8,66 @@ from typing import (
 
 import dotenv
 import ujson as json
-from pydantic import (
-    BaseModel,
-    BaseSettings,
-)
-
-__all__ = ["BotConfig", "config"]
+from pydantic import BaseModel, BaseSettings, validator
 
 from utils.const import PROJECT_ROOT
 
+__all__ = ["BotConfig", "config", "JoinGroups"]
+
 dotenv.load_dotenv()
+
+
+class JoinGroups(str, Enum):
+    NO_ALLOW = "NO_ALLOW"
+    ALLOW_AUTH_USER = "ALLOW_AUTH_USER"
+    ALLOW_ALL = "ALLOW_ALL"
 
 
 class BotConfig(BaseSettings):
     debug: bool = False
 
-    db_host: str
-    db_port: int
-    db_username: str
-    db_password: str
-    db_database: str
+    db_host: str = ""
+    db_port: int = 0
+    db_username: str = ""
+    db_password: str = ""
+    db_database: str = ""
 
-    redis_host: str
-    redis_port: int
-    redis_db: int
+    redis_host: str = ""
+    redis_port: int = 0
+    redis_db: int = 0
 
-    bot_token: str
-    error_notification_chat_id: str
+    bot_token: str = ""
+    error_notification_chat_id: str = ""
 
-    api_id: Optional[int]
-    api_hash: Optional[str]
+    api_id: Optional[int] = None
+    api_hash: Optional[str] = None
 
     channels: List["ConfigChannel"] = []
     admins: List["ConfigUser"] = []
     verify_groups: List[Union[int, str]] = []
+    join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
 
     logger_width: int = 180
     logger_log_path: str = "./logs"
     logger_time_format: str = "[%Y-%m-%d %X]"
     logger_traceback_max_frames: int = 20
     logger_render_keywords: List[str] = ["BOT"]
+    logger_locals_max_depth: Optional[int] = 0
+    logger_locals_max_length: int = 10
+    logger_locals_max_string: int = 80
 
     enka_network_api_agent: str = ""
     pass_challenge_api: str = ""
     pass_challenge_app_key: str = ""
+
+    web_url: str = "http://localhost:8080/"
+    web_host: str = "localhost"
+    web_port: int = 8080
+
+    error_pb_url: str = ""
+    error_pb_sunset: int = 43200
+    error_pb_max_lines: int = 1000
+    error_sentry_dsn: str = ""
 
     class Config:
         case_sensitive = False
@@ -83,6 +100,9 @@ class BotConfig(BaseSettings):
             path=PROJECT_ROOT.joinpath(self.logger_log_path).resolve(),
             time_format=self.logger_time_format,
             render_keywords=self.logger_render_keywords,
+            locals_max_length=self.logger_locals_max_length,
+            locals_max_string=self.logger_locals_max_string,
+            locals_max_depth=self.logger_locals_max_depth,
         )
 
     @property
@@ -90,6 +110,13 @@ class BotConfig(BaseSettings):
         return MTProtoConfig(
             api_id=self.api_id,
             api_hash=self.api_hash,
+        )
+
+    @property
+    def webserver(self) -> "WebServerConfig":
+        return WebServerConfig(
+            host=self.web_host,
+            port=self.web_port,
         )
 
 
@@ -123,11 +150,25 @@ class LoggerConfig(BaseModel):
     traceback_max_frames: int = 20
     path: Path = PROJECT_ROOT / "logs"
     render_keywords: List[str] = ["BOT"]
+    locals_max_length: int = 10
+    locals_max_string: int = 80
+    locals_max_depth: Optional[int] = None
+
+    @validator("locals_max_depth", pre=True, check_fields=False)
+    def locals_max_depth_validator(cls, value) -> Optional[int]:  # pylint: disable=R0201
+        if value <= 0:
+            return None
+        return value
 
 
 class MTProtoConfig(BaseModel):
     api_id: Optional[int]
     api_hash: Optional[str]
+
+
+class WebServerConfig(BaseModel):
+    host: Optional[str]
+    port: Optional[int]
 
 
 BotConfig.update_forward_refs()

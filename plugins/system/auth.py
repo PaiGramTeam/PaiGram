@@ -348,11 +348,22 @@ class GroupJoiningVerification(Plugin):
                             continue
                         if find_message.from_user and find_message.from_user.id == user.id:
                             await self.mtp.delete_messages(chat_id=chat.id, message_ids=find_message.id)
+                            if find_message.text is not None and "@" in find_message.text:
+                                await context.bot.ban_chat_member(chat.id, user.id)
+                                button = [[InlineKeyboardButton("解除封禁", callback_data=f"auth_admin|pass|{user.id}")]]
+                                text = (
+                                    f"{user.full_name} 由于加入群组后，"
+                                    "在验证缝隙间发送了带有 @(Mention) 的消息，已被踢出群组，并加入了封禁列表。"
+                                )
+                                await question_message.edit_text(text, reply_markup=InlineKeyboardMarkup(button))
+                                if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
+                                    schedule.remove()
                             logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 验证缝隙间发送消息" "现已删除")
+                except BadRequest as exc:
+                    logger.error(f"后验证处理中发生错误 {repr(exc)}")
+                    logger.exception(exc)
                 except MTPFloodWait:
                     logger.warning("调用 mtp 触发洪水限制")
-                    continue
                 except MTPBadRequest as exc:
-                    logger.warning("调用 mtp 请求错误")
+                    logger.error("调用 mtp 请求错误")
                     logger.exception(exc)
-                    continue

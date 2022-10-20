@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Avatar List</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+    <style>
+        .avatar > div::after {
+            background-position: center center;
+            background-size: cover;
+            background-image: url("../../background/rarity/half/{{ rarity }}.png");
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="head" style="background-image: url('{{ namecard }}')">
+        <div class="avatar">
+            <div><img src="{{ avatar }}" alt="avatar"></div>
+        </div>
+        <div class="player">
+            <div>
+                <div class="nickname">{{ nickname }}</div>
+                <div class="uid">UID: {{ uid }}</div>
+            </div>
+        </div>
+        <div class="logo"></div>
+    </div>
+    <div class="content">
+        <div class="row">
+            <div>#</div>
+            <div style="flex: 4">角色</div>
+            <div>等级</div>
+            <div>好感</div>
+            <div>命座</div>
+            <div class="talent">普攻</div>
+            <div class="talent">战技</div>
+            <div class="talent">爆发</div>
+            <div style="flex: 6">武器</div>
+        </div>
+        {% for avatar_data in avatar_datas %}
+            {% set avatar = avatar_data.avatar %}
+            {% set weapon = avatar.weapon %}
+            {% set skill_datas = avatar_data.skills %}
+            {% set is_traveler = avatar.name == '旅行者' %}
+            {% if avatar.rarity == 5 %}
+                {% set row_bg = 'rgb(240 226 179)' %}
+            {% else %}
+                {% set row_bg = 'rgb(229 171 229/70%)' %}
+            {% endif %}
+            <div
+                    {% if loop.index is even %}
+                        class="row second-row"
+                    {% else %}
+                        class="row"
+                    {% endif %}
+            >
+                <div style="background-color: {{ row_bg }}">{{ loop.index }}</div>
+
+                <div class="role" style="flex: 4;background-color: {{ row_bg }}">
+                    <div class="role-icon" style="flex: 1.5;">
+                        <img src="{{ avatar_data.icon }}" alt="side icon"/>
+                    </div>
+                    <div class="role-name">
+                        {% if is_traveler %}
+                            {% if avatar.id == 10000007 %}
+                                荧
+                            {% else %}
+                                空
+                            {% endif %}
+                        {% else %}
+                            {{ avatar.name }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>{{ avatar.level }}</div>
+                <div
+                        {% if avatar.friendship == 10 %}
+                            class="full-friendship"
+                        {% endif %}
+                >
+                    {% if is_traveler %}
+                        /
+                    {% else %}
+                        {{ avatar.friendship }}
+                    {% endif %}
+                </div>
+                <div
+                        {% set constellation = avatar.constellation %}
+                        {% if constellation != 0 %}
+                            class="color {{ ['green', 'cyan', 'blue', 'purple', 'pink', 'red'][constellation - 1] }}"
+                        {% endif %}
+                >
+                    <div class="number">{{ constellation }}</div>
+                </div>
+
+                {% for skill_data in skill_datas %}
+                    {% set skill = skill_data.skill %}
+                    {% set talent_style = 'talent' %}
+                    {% set skill_level = skill.level %}
+
+                    {% if skill_level < 4 %}
+                        {% set talent_style = talent_style + ' talent-level-first' %}
+                    {% endif %}
+
+                    {% if skill.max_level == skill.level %}
+                        {% set talent_style = talent_style + ' talent-level-max' %}
+                    {% endif %}
+
+                    {% if skill_data.buffed %}
+                        {% set talent_style = talent_style + ' talent-buffed' %}
+                        {% set skill_level = skill_level + 3 %}
+                    {% endif %}
+                    {% if skill.max_level != skill.level %}
+                        {% if skill_level < 4 %}
+                            {% set talent_style = talent_style + ' talent-level-1' %}
+                        {% elif skill_level < 6 %}
+                            {% set talent_style = talent_style + ' talent-level-2' %}
+                        {% elif skill_level < 9 %}
+                            {% set talent_style = talent_style + ' talent-level-3' %}
+                        {% else %}
+                            {% set talent_style = talent_style + ' talent-level-4' %}
+                        {% endif %}
+                    {% endif %}
+                    <div class="{{ talent_style }}">{{ skill_level }}</div>
+                {% endfor %}
+
+                <div class="weapon weapon-{{ weapon.rarity }}-star" style="flex: 6">
+                    <div>
+                        {% if weapon.level < 10 %}
+                            Lv.{{ weapon.level }}&nbsp;&nbsp;
+                        {% else %}
+                            Lv.{{ weapon.level }}
+                        {% endif %}
+                    </div>
+                    <div class="color {{ ['green', 'cyan', 'blue', 'purple', 'red'][weapon.refinement - 1] }}">
+                        <div class="number">{{ weapon.refinement }}</div>
+                    </div>
+                    <div><img src="{{ avatar_data.weapon }}" alt="weapon"></div>
+                    <div>{{ weapon.name }}</div>
+                </div>
+            </div>
+        {% endfor %}
+        <div class="notice">
+            {% if has_more %}
+                <div>
+                    *想查看完整数据请在指令中加上<code>all</code>或者<code>全部</code>: <code>/avatars all</code>、<code>全部练度查询</code>
+                </div>
+            {% endif %}
+            <div>※技能列表每 <span style="font-weight: bold">6</span> 个小时更新一次</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

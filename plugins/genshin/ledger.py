@@ -1,10 +1,9 @@
-import json
 import os
 import re
 from datetime import datetime, timedelta
 
 from genshin import GenshinException, DataNotPublic
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
@@ -32,10 +31,8 @@ def check_ledger_month(context: CallbackContext) -> int:
     month = now_time.month
     args = get_all_args(context)
     if len(args) >= 1:
-        month = args[0]
-    elif isinstance(month, int):
-        pass
-    elif re_data := re.findall(r"\d+", str(month)):
+        month = args[0].replace("月", "")
+    if re_data := re.findall(r"\d+", str(month)):
         month = int(re_data[0])
     else:
         num_dict = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
@@ -89,52 +86,6 @@ class Ledger(Plugin, BasePlugin):
         def format_amount(amount: int) -> str:
             return f"{round(amount / 10000, 2)}w" if amount >= 10000 else amount
 
-        evaluate = (
-            """const { Pie } = G2Plot;
-    const data = JSON.parse(`"""
-            + json.dumps(categories)
-            + """`);
-    const piePlot = new Pie("chartContainer", {
-      renderer: "svg",
-      animation: false,
-      data: data,
-      appendPadding: 10,
-      angleField: "amount",
-      colorField: "name",
-      radius: 1,
-      innerRadius: 0.7,
-      color: JSON.parse(`"""
-            + json.dumps(color)
-            + """`),
-      meta: {},
-      label: {
-        type: "inner",
-        offset: "-50%",
-        autoRotate: false,
-        style: {
-          textAlign: "center",
-          fontFamily: "tttgbnumber",
-        },
-        formatter: ({ percentage }) => {
-          return percentage > 2 ? `${percentage}%` : "";
-        },
-      },
-      statistic: {
-        title: {
-          offsetY: -18,
-          content: "总计",
-        },
-        content: {
-          offsetY: -10,
-          style: {
-            fontFamily: "tttgbnumber",
-          },
-        },
-      },
-      legend:false,
-    });
-    piePlot.render();"""
-        )
         ledger_data = {
             "uid": client.uid,
             "day": diary_info.month,
@@ -145,9 +96,10 @@ class Ledger(Plugin, BasePlugin):
             "last_gacha": int(diary_info.month_data.last_primogems / 160),
             "last_mora": format_amount(diary_info.month_data.last_mora),
             "categories": categories,
+            "color": color,
         }
         png_data = await self.template_service.render(
-            "genshin/ledger", "ledger.html", ledger_data, {"width": 580, "height": 610}, evaluate=evaluate
+            "genshin/ledger/ledger.html", ledger_data, {"width": 580, "height": 610}
         )
         return png_data
 
@@ -172,10 +124,16 @@ class Ledger(Plugin, BasePlugin):
             client = await get_genshin_client(user.id)
             png_data = await self._start_get_ledger(client, month)
         except (UserNotFoundError, CookiesNotFoundError):
-            reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return
         except DataNotPublic:
             reply_message = await message.reply_text("查询失败惹，可能是旅行札记功能被禁用了？")

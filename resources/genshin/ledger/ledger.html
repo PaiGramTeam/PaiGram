@@ -58,47 +58,48 @@
       </div>
     </div>
     <script type="text/javascript" src="g2plot.min.js"></script>
-<!--   <script>
-    const { Pie } = G2Plot;
-    const data = JSON.parse(`{{ group_by }}`);
-    const piePlot = new Pie("chartContainer", {
-      renderer: "svg",
-      animation: false,
-      data: data,
-      appendPadding: 10,
-      angleField: "amount",
-      colorField: "name",
-      radius: 1,
-      innerRadius: 0.7,
-      color: JSON.parse(`{{ color }}`),
-      meta: {},
-      label: {
-        type: "inner",
-        offset: "-50%",
-        autoRotate: false,
-        style: {
-          textAlign: "center",
-          fontFamily: "tttgbnumber",
-        },
-        formatter: ({ percentage }) => {
-          return percentage > 2 ? `${percentage}%` : "";
-        },
-      },
-      statistic: {
-        title: {
-          offsetY: -18,
-          content: "总计",
-        },
-        content: {
-          offsetY: -10,
+    <script>
+      const { Pie } = G2Plot;
+      const data = {{ categories | tojson }};
+      const color = {{ color | tojson }};
+      const piePlot = new Pie("chartContainer", {
+        renderer: "svg",
+        animation: false,
+        data,
+        appendPadding: 10,
+        angleField: "amount",
+        colorField: "name",
+        radius: 1,
+        innerRadius: 0.7,
+        color,
+        meta: {},
+        label: {
+          type: "inner",
+          offset: "-50%",
+          autoRotate: false,
           style: {
+            textAlign: "center",
             fontFamily: "tttgbnumber",
           },
+          formatter: ({ percentage }) => {
+            return percentage > 2 ? `${percentage}%` : "";
+          },
         },
-      },
-      legend:false,
-    });
-    piePlot.render();
-  </script> -->
+        statistic: {
+          title: {
+            offsetY: -18,
+            content: "总计",
+          },
+          content: {
+            offsetY: -10,
+            style: {
+              fontFamily: "tttgbnumber",
+            },
+          },
+        },
+        legend:false,
+      });
+      piePlot.render();
+  </script>
   </body>
 </html>

@@ -1,13 +1,20 @@
 import asyncio
 import re
 import time
-from typing import List
+from datetime import datetime
+from json import JSONDecodeError
+from typing import List, Optional, Dict
 
+from genshin import Client, InvalidCookies
+from genshin.utility.ds import generate_dynamic_secret
+from genshin.utility.uid import recognize_genshin_server
 from httpx import AsyncClient
+from pydantic import BaseModel, validator
 
 from modules.apihelper.base import ArtworkImage, PostInfo
 from modules.apihelper.helpers import get_device_id
 from modules.apihelper.request.hoyorequest import HOYORequest
+from utils.log import logger
 from utils.typedefs import JSONDict
 
 
@@ -20,6 +27,8 @@ class Hyperion:
     POST_FULL_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFull"
     POST_FULL_IN_COLLECTION_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection"
     GET_NEW_LIST_URL = "https://bbs-api.mihoyo.com/post/wapi/getNewsList"
+    GET_OFFICIAL_RECOMMENDED_POSTS_URL = "https://bbs-api.mihoyo.com/post/wapi/getOfficialRecommendedPosts"
+
     USER_AGENT = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/90.0.4430.72 Safari/537.36"
@@ -54,7 +63,7 @@ class Hyperion:
 
     @staticmethod
     def get_list_url_params(forum_id: int, is_good: bool = False, is_hot: bool = False, page_size: int = 20) -> dict:
-        params = {
+        return {
             "forum_id": forum_id,
             "gids": 2,
             "is_good": is_good,
@@ -62,8 +71,6 @@ class Hyperion:
             "page_size": page_size,
             "sort_type": 1,
         }
-
-        return params
 
     @staticmethod
     def get_images_params(
@@ -83,6 +90,11 @@ class Hyperion:
             f"{auto_orient}/interlace,{interlace}/format,{images_format}"
         )
         return {"x-oss-process": params}
+
+    async def get_official_recommended_posts(self, gids: int) -> JSONDict:
+        params = {"gids": gids}
+        response = await self.client.get(url=self.GET_OFFICIAL_RECOMMENDED_POSTS_URL, params=params)
+        return response
 
     async def get_post_full_in_collection(self, collection_id: int, gids: int = 2, order_type=1) -> JSONDict:
         params = {"collection_id": collection_id, "gids": gids, "order_type": order_type}
@@ -129,6 +141,18 @@ class Hyperion:
         await self.client.shutdown()
 
 
+class GachaInfoObject(BaseModel):
+    begin_time: datetime
+    end_time: datetime
+    gacha_id: str
+    gacha_name: str
+    gacha_type: int
+
+    @validator("begin_time", "end_time", pre=True, allow_reuse=True)
+    def validate_time(cls, v):
+        return datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
+
+
 class GachaInfo:
     GACHA_LIST_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/gacha/list.json"
     GACHA_INFO_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/%s/zh-cn.json"
@@ -146,16 +170,17 @@ class GachaInfo:
         self.cache = {}
         self.cache_ttl = 600
 
-    async def get_gacha_list_info(self) -> dict:
+    async def get_gacha_list_info(self) -> List[GachaInfoObject]:
         if self.cache.get("time", 0) + self.cache_ttl < time.time():
             self.cache.clear()
         cache = self.cache.get("gacha_list_info")
         if cache is not None:
             return cache
         req = await self.client.get(self.GACHA_LIST_URL)
-        self.cache["gacha_list_info"] = req
+        data = [GachaInfoObject(**i) for i in req["list"]]
+        self.cache["gacha_list_info"] = data
         self.cache["time"] = time.time()
-        return req
+        return data
 
     async def get_gacha_info(self, gacha_id: str) -> dict:
         cache = self.cache.get(gacha_id)
@@ -165,11 +190,14 @@ class GachaInfo:
         self.cache[gacha_id] = req
         return req
 
+    async def close(self):
+        await self.client.shutdown()
+
 
 class SignIn:
     LOGIN_URL = "https://webapi.account.mihoyo.com/Api/login_by_mobilecaptcha"
     S_TOKEN_URL = (
-        "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?" "login_ticket={0}&token_types=3&uid={1}"
+        "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?login_ticket={0}&token_types=3&uid={1}"
     )
     BBS_URL = "https://api-takumi.mihoyo.com/account/auth/api/webLoginByMobile"
     USER_AGENT = (
@@ -209,12 +237,26 @@ class SignIn:
         "Referer": "https://bbs.mihoyo.com/",
         "Accept-Language": "zh-CN,zh-Hans;q=0.9",
     }
+    AUTHKEY_API = "https://api-takumi.mihoyo.com/binding/api/genAuthKey"
+    GACHA_HEADERS = {
+        "User-Agent": "okhttp/4.8.0",
+        "x-rpc-app_version": "2.28.1",
+        "x-rpc-sys_version": "12",
+        "x-rpc-client_type": "5",
+        "x-rpc-channel": "mihoyo",
+        "x-rpc-device_id": get_device_id(USER_AGENT),
+        "x-rpc-device_name": "Mi 10",
+        "x-rpc-device_model": "Mi 10",
+        "Referer": "https://app.mihoyo.com",
+        "Host": "api-takumi.mihoyo.com",
+    }
 
-    def __init__(self, phone: int):
+    def __init__(self, phone: int = 0, uid: int = 0, cookie: Dict = None):
         self.phone = phone
         self.client = AsyncClient()
-        self.uid = 0
-        self.cookie = {}
+        self.uid = uid
+        self.cookie = cookie if cookie is not None else {}
+        self.parse_uid()
 
     def parse_uid(self):
         """
@@ -222,7 +264,7 @@ class SignIn:
         :param self:
         :return:
         """
-        if "login_ticket" not in self.cookie:
+        if not self.cookie:
             return
         for item in ["login_uid", "stuid", "ltuid", "account_id"]:
             if item in self.cookie:
@@ -254,10 +296,14 @@ class SignIn:
         for k, v in data.cookies.items():
             self.cookie[k] = v
 
+        if "login_ticket" not in self.cookie:
+            return False
         self.parse_uid()
         return bool(self.uid)
 
     async def get_s_token(self):
+        if not self.cookie.get("login_ticket") or not self.uid:
+            return
         data = await self.client.get(
             self.S_TOKEN_URL.format(self.cookie["login_ticket"], self.uid), headers={"User-Agent": self.USER_AGENT}
         )
@@ -287,3 +333,27 @@ class SignIn:
             self.cookie[k] = v
 
         return "cookie_token" in self.cookie
+
+    @staticmethod
+    async def get_authkey_by_stoken(client: Client) -> Optional[str]:
+        """通过 stoken 获取 authkey"""
+        try:
+            headers = SignIn.GACHA_HEADERS.copy()
+            headers["DS"] = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
+            data = await client.cookie_manager.request(
+                SignIn.AUTHKEY_API,
+                method="POST",
+                json={
+                    "auth_appid": "webview_gacha",
+                    "game_biz": "hk4e_cn",
+                    "game_uid": client.uid,
+                    "region": recognize_genshin_server(client.uid),
+                },
+                headers=headers,
+            )
+            return data.get("authkey")
+        except JSONDecodeError:
+            logger.warning("Stoken 获取 Authkey JSON解析失败")
+        except InvalidCookies:
+            logger.warning("Stoken 获取 Authkey 失败 | 用户 Stoken 失效")
+        return None

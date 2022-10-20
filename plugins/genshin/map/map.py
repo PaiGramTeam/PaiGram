@@ -1,7 +1,7 @@
 from os import sep
 
 from PIL import Image
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
 
@@ -45,7 +45,8 @@ class Map(Plugin, BasePlugin):
             return
         if resource_name in ("list", "列表"):
             if filters.ChatType.GROUPS.filter(message):
-                reply_message = await message.reply_text("请私聊派蒙使用该命令")
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}")]]
+                reply_message = await message.reply_text("请私聊派蒙使用该命令", reply_markup=InlineKeyboardMarkup(buttons))
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
                 return

@@ -1,7 +1,6 @@
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple, Union, Optional
 
 from enkanetwork import (
-    Assets,
     CharacterInfo,
     DigitType,
     EnkaNetworkAPI,
@@ -45,7 +44,7 @@ class PlayerCards(Plugin, BasePlugin):
         self.user_service = user_service
         self.client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
         self.template_service = template_service
-        self.temp_photo = open("resources/img/kitsune.png", "rb")
+        self.temp_photo: Optional[str] = None
 
     async def _fetch_user(self, uid) -> Union[EnkaNetworkResponse, str]:
         try:
@@ -79,10 +78,16 @@ class PlayerCards(Plugin, BasePlugin):
             else:
                 uid = user_info.genshin_uid
         except UserNotFoundError:
-            reply_message = await message.reply_text("未查询到账号信息，请先私聊派蒙绑定账号")
             if filters.ChatType.GROUPS.filter(message):
+                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return
         data = await self._fetch_user(uid)
         if isinstance(data, str):
@@ -110,8 +115,12 @@ class PlayerCards(Plugin, BasePlugin):
                     temp = []
             if len(temp) > 0:
                 buttons.append(temp)
+            if isinstance(self.temp_photo, str):
+                photo = self.temp_photo
+            else:
+                photo = open("resources/img/kitsune.png", "rb")
             reply_message = await message.reply_photo(
-                photo=self.temp_photo, caption="请选择你要查询的角色", reply_markup=InlineKeyboardMarkup(buttons)
+                photo=photo, caption="请选择你要查询的角色", reply_markup=InlineKeyboardMarkup(buttons)
             )
             if reply_message.photo:
                 self.temp_photo = reply_message.photo[-1].file_id
@@ -123,7 +132,7 @@ class PlayerCards(Plugin, BasePlugin):
             await message.reply_text(f"角色展柜中未找到 {character_name}")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
+        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
         await message.reply_photo(pnd_data, filename=f"player_card_{uid}_{character_name}.png")
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
@@ -162,7 +171,7 @@ class PlayerCards(Plugin, BasePlugin):
             return
         await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()
+        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
         await message.edit_media(InputMediaPhoto(pnd_data, filename=f"player_card_{uid}_{result}.png"))
 
 
@@ -186,15 +195,15 @@ class Artifact(BaseModel):
         self.score = round(self.score, 1)
 
         for r in (
-            ("D", 10),
-            ("C", 16.5),
-            ("B", 23.1),
-            ("A", 29.7),
-            ("S", 36.3),
-            ("SS", 42.9),
-            ("SSS", 49.5),
-            ("ACE", 56.1),
-            ("ACE²", 66),
+                ("D", 10),
+                ("C", 16.5),
+                ("B", 23.1),
+                ("A", 29.7),
+                ("S", 36.3),
+                ("SS", 42.9),
+                ("SSS", 49.5),
+                ("ACE", 56.1),
+                ("ACE²", 66),
         ):
             if self.score >= r[1]:
                 self.score_label = r[0]
@@ -234,15 +243,15 @@ class RenderTemplate:
 
         artifact_total_score_label: str = "E"
         for r in (
-            ("D", 10),
-            ("C", 16.5),
-            ("B", 23.1),
-            ("A", 29.7),
-            ("S", 36.3),
-            ("SS", 42.9),
-            ("SSS", 49.5),
-            ("ACE", 56.1),
-            ("ACE²", 66),
+                ("D", 10),
+                ("C", 16.5),
+                ("B", 23.1),
+                ("A", 29.7),
+                ("S", 36.3),
+                ("SS", 42.9),
+                ("SSS", 49.5),
+                ("ACE", 56.1),
+                ("ACE²", 66),
         ):
             if artifact_total_score / 5 >= r[1]:
                 artifact_total_score_label = r[0]
@@ -266,13 +275,12 @@ class RenderTemplate:
         }
 
         # html = await self.template_service.render_async(
-        #     "genshin/player_card", "player_card.html", data
+        #     "genshin/player_card/player_card.html", data
         # )
         # logger.debug(html)
 
         return await self.template_service.render(
-            "genshin/player_card",
-            "player_card.html",
+            "genshin/player_card/player_card.html",
             data,
             {"width": 950, "height": 1080},
             full_page=True,
