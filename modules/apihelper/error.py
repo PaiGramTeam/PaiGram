@@ -5,14 +5,6 @@ class APIHelperException(Exception):
     pass
 
 
-class GachaLogException(APIHelperException):
-    pass
-
-
-class GachaLogAccountNotFound(GachaLogException):
-    pass
-
-
 class NetworkException(APIHelperException):
     pass
 
