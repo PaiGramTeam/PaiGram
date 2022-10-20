@@ -106,7 +106,7 @@ class ErrorHandler(Plugin):
             logger.error("上传错误信息至 fars 失败")
             logger.exception(exc)
         try:
-            sentry.report_error(update, context.error)
+            sentry.report_error(update, (type(context.error), context.error, context.error.__traceback__))
         except Exception as exc:  # pylint: disable=W0703
             logger.error("上传错误信息至 sentry 失败")
             logger.exception(exc)
