@@ -5,6 +5,7 @@ import time
 
 from aiohttp import ClientConnectorError
 from genshin import Game, GenshinException, AlreadyClaimed, InvalidCookies
+from genshin.utility import recognize_genshin_server
 from httpx import TimeoutException
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
@@ -38,9 +39,12 @@ class SignJob(Plugin):
         self.user_service = user_service
         self.random = secrets.SystemRandom()
 
-    @staticmethod
-    async def single_sign(user_id: int) -> str:
+    async def single_sign(self, user_id: int) -> str:
         client = await get_genshin_client(user_id)
+        if recognize_genshin_server(client.uid) in ("cn_gf01", "cn_qd01"):
+            await asyncio.sleep(10 + self.random.random() * 300)  # 延迟 [10, 300)
+        else:
+            await asyncio.sleep(self.random.random() * 3)  # 延迟 [0, 3)
         rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
         daily_reward_info = await client.get_reward_info(game=Game.GENSHIN)
         if not daily_reward_info.signed_in:
@@ -129,7 +133,6 @@ class SignJob(Plugin):
                 text = f'<a href="tg://user?id={sign_db.user_id}">NOTICE {sign_db.user_id}</a>\n\n{text}'
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
-                await asyncio.sleep(10 + self.random.random() * 50)  # 回复延迟 [10, 60) 避免触发洪水防御
             except BadRequest as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)

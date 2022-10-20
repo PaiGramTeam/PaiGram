@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple, Union, Optional
 
 from enkanetwork import (
     CharacterInfo,
@@ -44,7 +44,7 @@ class PlayerCards(Plugin, BasePlugin):
         self.user_service = user_service
         self.client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
         self.template_service = template_service
-        self.temp_photo = open("resources/img/kitsune.png", "rb")
+        self.temp_photo: Optional[str] = None
 
     async def _fetch_user(self, uid) -> Union[EnkaNetworkResponse, str]:
         try:
@@ -115,8 +115,12 @@ class PlayerCards(Plugin, BasePlugin):
                     temp = []
             if len(temp) > 0:
                 buttons.append(temp)
+            if isinstance(self.temp_photo, str):
+                photo = self.temp_photo
+            else:
+                photo = open("resources/img/kitsune.png", "rb")
             reply_message = await message.reply_photo(
-                photo=self.temp_photo, caption="请选择你要查询的角色", reply_markup=InlineKeyboardMarkup(buttons)
+                photo=photo, caption="请选择你要查询的角色", reply_markup=InlineKeyboardMarkup(buttons)
             )
             if reply_message.photo:
                 self.temp_photo = reply_message.photo[-1].file_id
@@ -191,15 +195,15 @@ class Artifact(BaseModel):
         self.score = round(self.score, 1)
 
         for r in (
-            ("D", 10),
-            ("C", 16.5),
-            ("B", 23.1),
-            ("A", 29.7),
-            ("S", 36.3),
-            ("SS", 42.9),
-            ("SSS", 49.5),
-            ("ACE", 56.1),
-            ("ACE²", 66),
+                ("D", 10),
+                ("C", 16.5),
+                ("B", 23.1),
+                ("A", 29.7),
+                ("S", 36.3),
+                ("SS", 42.9),
+                ("SSS", 49.5),
+                ("ACE", 56.1),
+                ("ACE²", 66),
         ):
             if self.score >= r[1]:
                 self.score_label = r[0]
@@ -239,15 +243,15 @@ class RenderTemplate:
 
         artifact_total_score_label: str = "E"
         for r in (
-            ("D", 10),
-            ("C", 16.5),
-            ("B", 23.1),
-            ("A", 29.7),
-            ("S", 36.3),
-            ("SS", 42.9),
-            ("SSS", 49.5),
-            ("ACE", 56.1),
-            ("ACE²", 66),
+                ("D", 10),
+                ("C", 16.5),
+                ("B", 23.1),
+                ("A", 29.7),
+                ("S", 36.3),
+                ("SS", 42.9),
+                ("SSS", 49.5),
+                ("ACE", 56.1),
+                ("ACE²", 66),
         ):
             if artifact_total_score / 5 >= r[1]:
                 artifact_total_score_label = r[0]
