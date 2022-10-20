@@ -24,6 +24,7 @@ from modules.gacha_log.error import (
     GachaLogNotFound,
     GachaLogAccountNotFound,
 )
+from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
 from utils.bot import get_all_args
 from utils.const import PROJECT_ROOT
@@ -53,7 +54,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         self.user_service = user_service
         self.assets_service = assets
         self.cookie_service = cookie_service
-        with open(f"resources{sep}json{sep}zh.json", "r") as load_f:
+        with open(f"resources{sep}json{sep}zh.json", "r", encoding="utf-8") as load_f:
             self.zh_dict = json.load(load_f)
         self.gacha_log = GachaLog(GACHA_LOG_PATH)
 
@@ -96,7 +97,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         elif document.file_name.endswith(".json"):
             file_type = "json"
         else:
-            await message.reply_text("文件格式错误，请发送符合 UIGF 标准的 json 格式的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
+            await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
             return
         if document.file_size > 2 * 1024 * 1024:
             await message.reply_text("文件过大，请发送小于 2 MB 的文件")
@@ -113,7 +114,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         except PaimonMoeGachaLogFileError:
             await message.reply_text("PaimonMoe的抽卡记录版本不支持")
             return
-        except (UnicodeDecodeError, KeyError):
+        except (KeyError, IndexError, ValueError):
             await message.reply_text("文件解析失败，请检查文件编码是否正确或符合 UIGF 标准")
             return
         except Exception as exc:
@@ -140,7 +141,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         user = update.effective_user
         args = get_all_args(context)
         logger.info(f"用户 {user.full_name}[{user.id}] 导入抽卡记录命令请求")
-        authkey = self.from_url_get_authkey(args[0] if args else "")
+        authkey = from_url_get_authkey(args[0] if args else "")
         if not args:
             if message.document:
                 await self.import_from_file(user, message)
@@ -199,7 +200,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         if message.document:
             await self.import_from_file(user, message)
             return ConversationHandler.END
-        authkey = self.from_url_get_authkey(message.text)
+        authkey = from_url_get_authkey(message.text)
         reply = await message.reply_text("小派蒙正在从米哈游服务器获取数据，请稍后")
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)

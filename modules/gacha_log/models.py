@@ -115,6 +115,7 @@ class Pool:
 class XlsxType(Enum):
     PAIMONMOE = 1
     FXQ = 2
+    UIGF = 3
 
 
 class ItemType(Enum):
@@ -131,13 +132,13 @@ class UIGFGachaType(Enum):
 
 class XlsxLine:
     def __init__(
-        self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: datetime, p: int, _id: int
+        self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: str, rank_type: int, _id: int
     ) -> None:
         self.uigf_gacha_type = uigf_gacha_type
         self.item_type = item_type
         self.name = name
-        self.time = time
-        self.rank_type = p
+        self.time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
+        self.rank_type = rank_type
         self.id = _id
 
     def json(self):
@@ -163,14 +164,13 @@ class XlsxImporter:
     uigf_version = UIGF_VERSION
     lang = "zh-cn"
 
-    def __init__(self, qiyes: List[XlsxLine], uid: int, export_time: datetime) -> None:
+    def __init__(self, lines: List[XlsxLine], uid: int, export_time: datetime) -> None:
         self.uid = uid
-        self.lines = qiyes
+        self.lines = lines
         self.lines.sort(key=lambda x: x.time)
-        if self.lines[0].id == 0:  # 如果是从 paimon.moe 导入的，那么就给id赋值
+        if self.lines[0].id == "0":  # 如果是从 paimon.moe 导入的，那么就给id赋值
             for index, _ in enumerate(self.lines):
-                self.lines[index].id = index + 1
-            self.export_time = export_time
+                self.lines[index].id = str(index + 1)
         self.export_time = export_time
 
     def json(self) -> dict:

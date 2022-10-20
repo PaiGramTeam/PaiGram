@@ -169,13 +169,13 @@ class GachaLog:
         new_num = 0
         try:
             uid = data["info"]["uid"]
-            if verify_uid and int(uid) != client.uid:
+            if not verify_uid:
+                uid = client.uid
+            elif int(uid) != client.uid:
                 raise GachaLogAccountNotFound
             # 检查导入数据是否合法
             all_items = [GachaItem(**i) for i in data["list"]]
-            status, text = await self.verify_data(all_items)
-            if not status:
-                return text
+            await self.verify_data(all_items)
             gacha_log, _ = await self.load_history_info(str(user_id), uid)
             # 将唯一 id 放入临时数据中，加快查找速度
             temp_id_data = {
@@ -189,9 +189,7 @@ class GachaLog:
                     new_num += 1
             for i in gacha_log.item_list.values():
                 # 检查导入后的数据是否合法
-                status, text = await self.verify_data(i)
-                if not status:
-                    return text
+                await self.verify_data(i)
                 i.sort(key=lambda x: (x.time, x.id))
             gacha_log.update_time = datetime.datetime.now()
             await self.save_gacha_log_info(str(user_id), uid, gacha_log)
@@ -199,6 +197,7 @@ class GachaLog:
         except GachaLogAccountNotFound as e:
             raise GachaLogAccountNotFound("导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同") from e
         except Exception as exc:
+            breakpoint()
             raise GachaLogException from exc
 
     async def get_gacha_log_data(self, user_id: int, client: Client, authkey: str) -> int:
@@ -560,23 +559,29 @@ class GachaLog:
         """
 
         def from_paimon_moe(
-            uigf_gacha_type: UIGFGachaType, item_type: str, name: str, date_string: str, p: int
+            uigf_gacha_type: UIGFGachaType, item__type: str, name: str, date_string: str, p: int
         ) -> XlsxLine:
-            item_type = ItemType.CHARACTER if item_type == "Character" else ItemType.WEAPON
+            item__type = ItemType.CHARACTER if item__type == "Character" else ItemType.WEAPON
             name = zh_dict[name]
-            gacha_time = datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
-            return XlsxLine(uigf_gacha_type, item_type, name, gacha_time, p, 0)
+            return XlsxLine(uigf_gacha_type, item__type, name, date_string, p, 0)
 
         def from_fxq(
-            uigf_gacha_type: UIGFGachaType, item_type: str, name: str, date_string: str, p: int, _id: int
+            uigf_gacha_type: UIGFGachaType, item__type: str, name: str, date_string: str, p: int, _id: int
         ) -> XlsxLine:
-            item_type = ItemType.CHARACTER if item_type == "角色" else ItemType.WEAPON
-            item_time = datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
-            return XlsxLine(uigf_gacha_type, item_type, name, item_time, p, _id)
+            item__type = ItemType.CHARACTER if item__type == "角色" else ItemType.WEAPON
+            return XlsxLine(uigf_gacha_type, item__type, name, date_string, p, _id)
 
         wb = load_workbook(data)
+        wb_len = len(wb.worksheets)
 
-        xlsx_type = XlsxType.PAIMONMOE if len(wb.worksheets) == 6 else XlsxType.FXQ  # 判断是paimon.moe还是非小酋导出的
+        if wb_len == 6:
+            xlsx_type = XlsxType.PAIMONMOE
+        elif wb_len == 5:
+            xlsx_type = XlsxType.UIGF
+        elif wb_len == 4:
+            xlsx_type = XlsxType.FXQ
+        else:
+            raise IndexError("xlsx 格式错误")
 
         paimonmoe_sheets = {
             UIGFGachaType.BEGINNER: "Beginners' Wish",
@@ -590,7 +595,7 @@ class GachaLog:
             UIGFGachaType.CHARACTER: "角色活动祈愿",
             UIGFGachaType.WEAPON: "武器活动祈愿",
         }
-        qiyes = []
+        lines = []
         if xlsx_type == XlsxType.PAIMONMOE:
             ws = wb["Information"]
             if ws["B2"].value != PAIMONMOE_VERSION:
@@ -601,7 +606,31 @@ class GachaLog:
                 for row in ws.iter_rows(min_row=2, values_only=True):
                     if row[0] is None:
                         break
-                    qiyes.append(from_paimon_moe(gacha_type, row[0], row[1], row[2], row[3]))
+                    lines.append(from_paimon_moe(gacha_type, row[0], row[1], row[2], row[3]))
+        elif xlsx_type == XlsxType.UIGF:
+            export_time = datetime.datetime.now()
+            ws = wb["原始数据"]
+            type_map = {}
+            count = 0
+            for row in ws["1"]:
+                if row.value is None:
+                    break
+                type_map[row.value] = count
+                count += 1
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row[0] is None:
+                    break
+                item_type = ItemType.CHARACTER if row[type_map["item_type"]] == "角色" else ItemType.WEAPON
+                lines.append(
+                    XlsxLine(
+                        UIGFGachaType(int(row[type_map["uigf_gacha_type"]])),
+                        item_type,
+                        row[type_map["name"]],
+                        row[type_map["time"]],
+                        row[type_map["rank_type"]],
+                        row[type_map["id"]],
+                    )
+                )
         else:
             export_time = datetime.datetime.now()
             for gacha_type in fxq_sheets:
@@ -609,7 +638,7 @@ class GachaLog:
                 for row in ws.iter_rows(min_row=2, values_only=True):
                     if row[0] is None:
                         break
-                    qiyes.append(from_fxq(gacha_type, row[2], row[1], row[0], row[3], row[6]))
+                    lines.append(from_fxq(gacha_type, row[2], row[1], row[0], row[3], row[6]))
 
-        u = XlsxImporter(qiyes, 0, export_time)
+        u = XlsxImporter(lines, 0, export_time)
         return u.json()
