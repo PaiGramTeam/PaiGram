@@ -263,11 +263,13 @@ class GachaLog:
             return False, "导入失败，数据格式错误"
 
     @staticmethod
-    async def import_gacha_log_data(user_id: int, client: Client, data: dict):
+    async def import_gacha_log_data(
+        user_id: int, client: Client, data: dict, verify_uid: bool = True
+    ) -> Tuple[bool, str]:
         new_num = 0
         try:
             uid = data["info"]["uid"]
-            if int(uid) != client.uid:
+            if verify_uid and int(uid) != client.uid:
                 raise GachaLogAccountNotFound
             # 检查导入数据是否合法
             all_items = [GachaItem(**i) for i in data["list"]]
