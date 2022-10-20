@@ -1,7 +1,6 @@
 import contextlib
 import datetime
 import json
-import time
 from io import BytesIO
 from pathlib import Path
 from typing import List, Tuple, Optional
@@ -121,34 +120,21 @@ class GachaLog:
         if not state:
             raise GachaLogNotFound
         save_path = self.gacha_log_path / f"{user_id}-{uid}-uigf.json"
-        uigf_dict = {
-            "info": {
-                "uid": uid,
-                "lang": "zh-cn",
-                "export_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "export_timestamp": int(time.time()),
-                "export_app": "TGPaimonBot",
-                "export_app_version": "v3",
-                "uigf_version": "v2.2",
-            },
-            "list": [],
-        }
+        info = UIGFModel(info=UIGFInfo(uid=uid, export_app="TGPaimonBot", export_app_version="v3"), list=[])
         for items in data.item_list.values():
             for item in items:
-                uigf_dict["list"].append(
-                    {
-                        "gacha_type": item.gacha_type,
-                        "item_id": "",
-                        "count": "1",
-                        "time": item.time.strftime("%Y-%m-%d %H:%M:%S"),
-                        "name": item.name,
-                        "item_type": item.item_type,
-                        "rank_type": item.rank_type,
-                        "id": item.id,
-                        "uigf_gacha_type": item.gacha_type,
-                    }
+                info.list.append(
+                    UIGFItem(
+                        id=item.id,
+                        name=item.name,
+                        gacha_type=item.gacha_type,
+                        item_type=item.item_type,
+                        rank_type=item.rank_type,
+                        time=item.time.strftime("%Y-%m-%d %H:%M:%S"),
+                        uigf_gacha_type=item.gacha_type,
+                    )
                 )
-        await self.save_json(save_path, uigf_dict)
+        await self.save_json(save_path, json.loads(info.json()))
         return save_path
 
     @staticmethod
