@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any
 
 from pydantic import BaseModel, validator
 
@@ -172,7 +172,6 @@ class XlsxImporter:
             for index, _ in enumerate(self.lines):
                 self.lines[index].id = str(index + 1)
         self.export_time = export_time
-        export_time.strftime()
 
     def json(self) -> dict:
         json_d = {
@@ -196,12 +195,15 @@ class UIGFItem(BaseModel):
     id: str
     name: str
     count: int = 1
-    gacha_type: str
+    gacha_type: UIGFGachaType
     item_id: str = ""
     item_type: ItemType
     rank_type: str
     time: datetime.datetime
-    uigf_gacha_type: UIGFGachaType
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        self.uigf_gacha_type = self.gacha_type
 
     @validator("name")
     def name_validator(cls, v):
@@ -212,9 +214,13 @@ class UIGFItem(BaseModel):
 
     @validator("gacha_type")
     def check_gacha_type(cls, v):
-        if v not in {"100", "200", "301", "302", "400"}:
-            raise ValueError("gacha_type must be 200, 301, 302 or 400")
-        return v
+        if isinstance(v, str):
+            if v not in {"100", "200", "301", "302", "400"}:
+                raise ValueError("gacha_type must be 200, 301, 302 or 400")
+            return v
+        elif isinstance(v, UIGFGachaType):
+            return v
+        raise ValueError("error item type")
 
     @validator("item_type")
     def check_item_type(cls, item):
@@ -245,3 +251,17 @@ class UIGFItem(BaseModel):
         json_encoders = {
             datetime: lambda v: v.strftime("%Y-%m-%d %H:%M:%S")
         }
+
+
+class UIGFInfo(BaseModel):
+    uid: int
+    export_time: datetime.datetime
+    export_timestamp: int
+    export_app: str
+    export_app_version: str
+    uigf_version: int
+
+
+class UIGFModel(BaseModel):
+    info: UIGFInfo
+    list: List[UIGFItem]
