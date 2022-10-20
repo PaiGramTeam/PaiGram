@@ -6,6 +6,7 @@ from os import sep
 
 import genshin
 from genshin.models import BannerType
+from modules.apihelper.gacha_log import GachaLog as GachaLogService
 from openpyxl import load_workbook
 from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -19,7 +20,6 @@ from core.plugin import Plugin, handler, conversation
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from modules.apihelper.gacha_log import GachaLog as GachaLogService
 from modules.apihelper.hyperion import SignIn
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
@@ -105,7 +105,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             CHARACTER = 301
             WEAPON = 302
 
-        class qiye:
+        class Qiyr:
             def __init__(
                 self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: datetime, p: int, _id: int
             ) -> None:
@@ -129,20 +129,20 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                     "uigf_gacha_type": self.uigf_gacha_type.value,
                 }
 
-        def from_paimon_moe(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int) -> qiye:
+        def from_paimon_moe(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int) -> Qiyr:
             item_type = ItemType.CHARACTER if type == "Character" else ItemType.WEAPON
             name = zh_dict[name]
 
             time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-            return qiye(uigf_gacha_type, item_type, name, time, p, 0)
+            return Qiyr(uigf_gacha_type, item_type, name, time, p, 0)
 
-        def from_fxq(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int, _id: int) -> qiye:
+        def from_fxq(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int, _id: int) -> Qiyr:
             item_type = ItemType.CHARACTER if type == "角色" else ItemType.WEAPON
             time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-            return qiye(uigf_gacha_type, item_type, name, time, p, _id)
+            return Qiyr(uigf_gacha_type, item_type, name, time, p, _id)
 
         class uigf:
-            qiyes: list[qiye]
+            qiyes: list[Qiyr]
             uid: int
             export_time: datetime
             export_app: str = PM2UIGF_NAME
@@ -150,7 +150,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             uigf_version = UIGF_VERSION
             lang = "zh-cn"
 
-            def __init__(self, qiyes: list[qiye], uid: int, export_time: datetime) -> None:
+            def __init__(self, qiyes: list[Qiyr], uid: int, export_time: datetime) -> None:
                 self.uid = uid
                 self.qiyes = qiyes
                 self.qiyes.sort(key=lambda x: x.time)
