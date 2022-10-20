@@ -24,7 +24,6 @@ from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config  # pylint: disable=W0611
 from core.error import ServiceNotFoundError
-
 # noinspection PyProtectedMember
 from core.plugin import Plugin, _Plugin
 from core.service import Service
@@ -144,7 +143,11 @@ class Bot:
         # special handler
         from plugins.system.start import StartPlugin
 
-        self.app.add_handler(MessageHandler(callback=StartPlugin.unknown_command, filters=filters.COMMAND, block=False))
+        self.app.add_handler(
+            MessageHandler(
+                callback=StartPlugin.unknown_command, filters=filters.COMMAND & filters.ChatType.PRIVATE, block=False
+            )
+        )
 
     async def _start_base_services(self):
         for pkg in self._gen_pkg(PROJECT_ROOT / "core/base"):
