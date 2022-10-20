@@ -132,7 +132,7 @@ class UIGFGachaType(Enum):
 
 class XlsxLine:
     def __init__(
-        self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: str, rank_type: int, _id: int
+            self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: str, rank_type: int, _id: int
     ) -> None:
         self.uigf_gacha_type = uigf_gacha_type
         self.item_type = item_type
@@ -164,7 +164,7 @@ class XlsxImporter:
     uigf_version = UIGF_VERSION
     lang = "zh-cn"
 
-    def __init__(self, lines: List[XlsxLine], uid: int, export_time: datetime) -> None:
+    def __init__(self, lines: List[XlsxLine], uid: int, export_time: datetime.datetime) -> None:
         self.uid = uid
         self.lines = lines
         self.lines.sort(key=lambda x: x.time)
@@ -172,6 +172,7 @@ class XlsxImporter:
             for index, _ in enumerate(self.lines):
                 self.lines[index].id = str(index + 1)
         self.export_time = export_time
+        export_time.strftime()
 
     def json(self) -> dict:
         json_d = {
@@ -189,3 +190,58 @@ class XlsxImporter:
         for line in self.lines:
             json_d["list"].append(line.json())
         return json_d
+
+
+class UIGFItem(BaseModel):
+    id: str
+    name: str
+    count: int = 1
+    gacha_type: str
+    item_id: str = ""
+    item_type: ItemType
+    rank_type: str
+    time: datetime.datetime
+    uigf_gacha_type: UIGFGachaType
+
+    @validator("name")
+    def name_validator(cls, v):
+        if item_id := (roleToId(v) or weaponToId(v)):
+            if item_id not in not_real_roles:
+                return v
+        raise ValueError("Invalid name")
+
+    @validator("gacha_type")
+    def check_gacha_type(cls, v):
+        if v not in {"100", "200", "301", "302", "400"}:
+            raise ValueError("gacha_type must be 200, 301, 302 or 400")
+        return v
+
+    @validator("item_type")
+    def check_item_type(cls, item):
+        if isinstance(item, str):
+            if item not in {"角色", "武器"}:
+                raise ValueError("error item type")
+            else:
+                return ItemType(item)
+        elif isinstance(item, ItemType):
+            return item
+        raise ValueError("error item type")
+
+    @validator("rank_type")
+    def check_rank_type(cls, rank):
+        if rank not in {"5", "4", "3"}:
+            raise ValueError("error rank type")
+        return rank
+
+    @validator("time")
+    def check_time(cls, t):
+        if isinstance(t, str):
+            return datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
+        elif isinstance(t, datetime.datetime):
+            return t
+        raise ValueError("error time type")
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.strftime("%Y-%m-%d %H:%M:%S")
+        }
