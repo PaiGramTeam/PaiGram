@@ -124,142 +124,38 @@ class ItemType(Enum):
 
 
 class UIGFGachaType(Enum):
-    BEGINNER = 100
-    STANDARD = 200
-    CHARACTER = 301
-    WEAPON = 302
-
-
-class XlsxLine:
-    def __init__(
-            self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: str, rank_type: int, _id: int
-    ) -> None:
-        self.uigf_gacha_type = uigf_gacha_type
-        self.item_type = item_type
-        self.name = name
-        self.time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-        self.rank_type = rank_type
-        self.id = _id
-
-    def json(self):
-        return {
-            "gacha_type": str(self.uigf_gacha_type.value),  # 注意！
-            "item_id": "",
-            "count": "1",
-            "time": self.time.strftime("%Y-%m-%d %H:%M:%S"),
-            "name": self.name,
-            "item_type": self.item_type.value,
-            "rank_type": str(self.rank_type),
-            "id": str(self.id),
-            "uigf_gacha_type": str(self.uigf_gacha_type.value),
-        }
-
-
-class XlsxImporter:
-    lines: List[XlsxLine]
-    uid: int
-    export_time: datetime
-    export_app: str = PM2UIGF_NAME
-    export_app_version: str = PM2UIGF_VERSION
-    uigf_version = UIGF_VERSION
-    lang = "zh-cn"
-
-    def __init__(self, lines: List[XlsxLine], uid: int, export_time: datetime.datetime) -> None:
-        self.uid = uid
-        self.lines = lines
-        self.lines.sort(key=lambda x: x.time)
-        if self.lines[0].id == "0":  # 如果是从 paimon.moe 导入的，那么就给id赋值
-            for index, _ in enumerate(self.lines):
-                self.lines[index].id = str(index + 1)
-        self.export_time = export_time
-
-    def json(self) -> dict:
-        json_d = {
-            "info": {
-                "uid": str(self.uid),
-                "lang": self.lang,
-                "export_time": self.export_time.strftime("%Y-%m-%d %H:%M:%S"),
-                "export_timestamp": self.export_time.timestamp(),
-                "export_app": self.export_app,
-                "export_app_version": self.export_app_version,
-                "uigf_version": self.uigf_version,
-            },
-            "list": [],
-        }
-        for line in self.lines:
-            json_d["list"].append(line.json())
-        return json_d
+    BEGINNER = "100"
+    STANDARD = "200"
+    CHARACTER = "301"
+    WEAPON = "302"
 
 
 class UIGFItem(BaseModel):
     id: str
     name: str
-    count: int = 1
-    gacha_type: UIGFGachaType
+    count: str = "1"
+    gacha_type: str
     item_id: str = ""
     item_type: ItemType
     rank_type: str
-    time: datetime.datetime
-
-    def __init__(self, **data: Any):
-        super().__init__(**data)
-        self.uigf_gacha_type = self.gacha_type
-
-    @validator("name")
-    def name_validator(cls, v):
-        if item_id := (roleToId(v) or weaponToId(v)):
-            if item_id not in not_real_roles:
-                return v
-        raise ValueError("Invalid name")
-
-    @validator("gacha_type")
-    def check_gacha_type(cls, v):
-        if isinstance(v, str):
-            if v not in {"100", "200", "301", "302", "400"}:
-                raise ValueError("gacha_type must be 200, 301, 302 or 400")
-            return v
-        elif isinstance(v, UIGFGachaType):
-            return v
-        raise ValueError("error item type")
-
-    @validator("item_type")
-    def check_item_type(cls, item):
-        if isinstance(item, str):
-            if item not in {"角色", "武器"}:
-                raise ValueError("error item type")
-            else:
-                return ItemType(item)
-        elif isinstance(item, ItemType):
-            return item
-        raise ValueError("error item type")
-
-    @validator("rank_type")
-    def check_rank_type(cls, rank):
-        if rank not in {"5", "4", "3"}:
-            raise ValueError("error rank type")
-        return rank
-
-    @validator("time")
-    def check_time(cls, t):
-        if isinstance(t, str):
-            return datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
-        elif isinstance(t, datetime.datetime):
-            return t
-        raise ValueError("error time type")
-
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.strftime("%Y-%m-%d %H:%M:%S")
-        }
+    time: str
+    uigf_gacha_type: UIGFGachaType
 
 
 class UIGFInfo(BaseModel):
-    uid: int
-    export_time: datetime.datetime
-    export_timestamp: int
-    export_app: str
-    export_app_version: str
-    uigf_version: int
+    uid: str = "0"
+    lang: str = "zh-cn"
+    export_time: str = ""
+    export_timestamp: int = 0
+    export_app: str = PM2UIGF_NAME
+    export_app_version: str = f"v{PM2UIGF_VERSION}"
+    uigf_version: str = UIGF_VERSION
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        if not self.export_time:
+            self.export_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.export_timestamp = int(datetime.datetime.now().timestamp())
 
 
 class UIGFModel(BaseModel):

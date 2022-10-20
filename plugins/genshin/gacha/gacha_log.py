@@ -175,7 +175,8 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text(
                 "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
                 "（非 paimon.moe 导出的文件数据）</b>\n\n"
-                "> 你还可以向派蒙发送从其他工具导出的 UIGF JSON 标准的记录文件\n"
+                "> 你还可以向派蒙发送从其他工具导出的 UIGF 标准的记录文件\n"
+                "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
                 "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
                 "<b>注意：导入的数据将会与旧数据进行合并。</b>",
                 parse_mode="html",
