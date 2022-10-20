@@ -69,11 +69,10 @@ class AvatarListPlugin(Plugin, BasePlugin):
             try:
                 detail = await client.get_character_details(character)
             except Exception as e:  # pylint: disable=W0703
-                if character.name == "旅行者":
-                    logger.debug(f"解析旅行者数据时遇到了错误：{e}")
-                    continue
-                else:
+                if character.name != "旅行者":
                     raise e
+                logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+                continue
             if character.id == 10000005:  # 针对男草主
                 talents = []
                 for talent in detail.talents:
@@ -139,17 +138,28 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
         return namecard, avatar, nickname, rarity
 
-    @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"))
-    @handler.message(filters.Regex(r"^(全部)?练度统计$"))
+    async def get_default_final_data(self, characters: Sequence[Character], update: Update):
+        nickname = update.effective_user.full_name
+        rarity = 5
+        # 须弥·正明
+        namecard = (await self.assets_service.namecard(210132).navbar()).as_uri()
+        if traveller := next(filter(lambda x: x.id in [10000005, 10000007], characters), None):
+            avatar = (await self.assets_service.avatar(traveller.id).icon()).as_uri()
+        else:
+            avatar = (await self.assets_service.avatar(10000005).icon()).as_uri()
+        return namecard, avatar, nickname, rarity
+
+    @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"), block=False)
+    @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
     @restricts(30)
     @error_callable
     async def avatar_list(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
 
-        args = context.match
+        args = [i.lower() for i in context.match.groups() if i]
 
-        all_avatars = any(["all" in args.groups(), "全部" in args.groups()])  # 是否发送全部角色
+        all_avatars = any(["all" in args, "全部" in args])  # 是否发送全部角色
 
         logger.info(f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]: all={all_avatars}", extra={"markup": True})
 
@@ -174,7 +184,11 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 return
             raise e
 
-        namecard, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
+        try:
+            namecard, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
+        except Exception as e:
+            logger.debug(f"卡片信息请求失败: {e}")
+            namecard, avatar, nickname, rarity = await self.get_default_final_data(characters, update)
 
         render_data = {
             "uid": client.uid,  # 玩家uid

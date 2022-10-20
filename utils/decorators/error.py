@@ -15,6 +15,8 @@ from utils.log import logger
 
 
 async def send_user_notification(update: Update, _: CallbackContext, text: str):
+    if update.inline_query is not None:  # 忽略 inline_query
+        return
     effective_user = update.effective_user
     message = update.effective_message
     if message is None:

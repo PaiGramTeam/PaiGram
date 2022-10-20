@@ -46,8 +46,8 @@ class BotJoiningGroupsVerification(Plugin):
                             logger.error(f"获取信息出现错误 {repr(exc)}")
                     elif config.join_groups == JoinGroups.ALLOW_AUTH_USER:
                         try:
-                            user_info = await self.user_service.get_user_by_id(chat.id)
-                            await self.cookies_service.get_cookies(user_info.user_id, user_info.region)
+                            user_info = await self.user_service.get_user_by_id(from_user.id)
+                            await self.cookies_service.get_cookies(from_user.id, user_info.region)
                         except (UserNotFoundError, CookiesNotFoundError):
                             logger.warning(f"用户 {from_user.full_name}[{from_user.id}] 邀请请求被拒绝")
                         except Exception as exc:

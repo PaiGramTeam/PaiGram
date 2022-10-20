@@ -8,6 +8,7 @@ from telegram.ext import CallbackContext, InlineQueryHandler
 
 from core.plugin import handler, Plugin
 from core.wiki import WikiService
+from utils.decorators.error import error_callable
 from utils.log import logger
 
 
@@ -18,6 +19,7 @@ class Inline(Plugin):
         self.wiki_service = wiki_service
 
     @handler(InlineQueryHandler, block=False)
+    @error_callable
     async def inline_query(self, update: Update, _: CallbackContext) -> None:
         user = update.effective_user
         ilq = cast(InlineQuery, update.inline_query)

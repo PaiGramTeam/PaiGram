@@ -1,3 +1,3 @@
-from utils.patch import aiohttp
+from utils.patch import aiohttp, genshin
 
-__all__ = ["aiohttp"]
+__all__ = ["aiohttp", "genshin"]
