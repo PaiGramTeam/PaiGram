@@ -1,12 +1,12 @@
+import json
 from datetime import datetime
 from enum import Enum
-import json
 from io import BytesIO
 from os import sep
-from openpyxl import load_workbook
 
 import genshin
 from genshin.models import BannerType
+from openpyxl import load_workbook
 from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
@@ -100,23 +100,23 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             WEAPON = "武器"
 
         class UIGFGachaType(Enum):
-            Beginner = 100
+            BEGINNER = 100
             STANDARD = 200
             CHARACTER = 301
             WEAPON = 302
 
         class qiye:
             def __init__(
-                self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: datetime, p: int, id: int
+                self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: datetime, p: int, _id: int
             ) -> None:
                 self.uigf_gacha_type = uigf_gacha_type
                 self.item_type = item_type
                 self.name = name
                 self.time = time
                 self.rank_type = p
-                self.id = id
+                self.id = _id
 
-            def qy2json(self):
+            def qy2_json(self):
                 return {
                     "gacha_type": self.uigf_gacha_type.value,  # 注意！
                     "item_id": "",
@@ -129,17 +129,17 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                     "uigf_gacha_type": self.uigf_gacha_type.value,
                 }
 
-        def fromPaimonMoe(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int) -> qiye:
+        def from_paimon_moe(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int) -> qiye:
             item_type = ItemType.CHARACTER if type == "Character" else ItemType.WEAPON
             name = zh_dict[name]
 
             time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
             return qiye(uigf_gacha_type, item_type, name, time, p, 0)
 
-        def fromFXQ(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int, id: int) -> qiye:
+        def from_fxq(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int, _id: int) -> qiye:
             item_type = ItemType.CHARACTER if type == "角色" else ItemType.WEAPON
             time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-            return qiye(uigf_gacha_type, item_type, name, time, p, id)
+            return qiye(uigf_gacha_type, item_type, name, time, p, _id)
 
         class uigf:
             qiyes: list[qiye]
@@ -155,7 +155,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 self.qiyes = qiyes
                 self.qiyes.sort(key=lambda x: x.time)
                 if self.qiyes[0].id == 0:  # 如果是从paimon.moe导入的，那么就给id赋值
-                    for index,_ in enumerate(self.qiyes):
+                    for index, _ in enumerate(self.qiyes):
                         self.qiyes[index].id = index + 1
                     self.export_time = export_time
                 self.export_time = export_time
@@ -174,7 +174,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                     "list": [],
                 }
                 for qiye in self.qiyes:
-                    json_d["list"].append(qiye.qy2json())
+                    json_d["list"].append(qiye.qy2_json())
                 return json_d
 
         wb = load_workbook(data)
@@ -182,13 +182,13 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         xlsx_type = XlsxType.PAIMONMOE if len(wb.worksheets) == 6 else XlsxType.FXQ  # 判断是paimon.moe还是非小酋导出的
 
         paimonmoe_sheets = {
-            UIGFGachaType.Beginner: "Beginners' Wish",
+            UIGFGachaType.BEGINNER: "Beginners' Wish",
             UIGFGachaType.STANDARD: "Standard",
             UIGFGachaType.CHARACTER: "Character Event",
             UIGFGachaType.WEAPON: "Weapon Event",
         }
         fxq_sheets = {
-            UIGFGachaType.Beginner: "新手祈愿",
+            UIGFGachaType.BEGINNER: "新手祈愿",
             UIGFGachaType.STANDARD: "常驻祈愿",
             UIGFGachaType.CHARACTER: "角色活动祈愿",
             UIGFGachaType.WEAPON: "武器活动祈愿",
@@ -204,7 +204,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 for row in ws.iter_rows(min_row=2, values_only=True):
                     if row[0] is None:
                         break
-                    qiyes.append(fromPaimonMoe(gacha_type, row[0], row[1], row[2], row[3]))
+                    qiyes.append(from_paimon_moe(gacha_type, row[0], row[1], row[2], row[3]))
         else:
             export_time = datetime.now()
             for gacha_type in fxq_sheets:
@@ -212,7 +212,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 for row in ws.iter_rows(min_row=2, values_only=True):
                     if row[0] is None:
                         break
-                    qiyes.append(fromFXQ(gacha_type, row[2], row[1], row[0], row[3], row[6]))
+                    qiyes.append(from_fxq(gacha_type, row[2], row[1], row[0], row[3], row[6]))
 
         u = uigf(qiyes, 0, export_time)
         return u.export_json()
