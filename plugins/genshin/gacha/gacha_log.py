@@ -17,6 +17,8 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from modules.apihelper.hyperion import SignIn
+from modules.gacha_log.error import GachaLogInvalidAuthkey, PaimonMoeGachaLogFileError, GachaLogFileError, \
+    GachaLogNotFound, GachaLogAccountNotFound
 from modules.gacha_log.log import GachaLog
 from utils.bot import get_all_args
 from utils.const import PROJECT_ROOT
@@ -68,6 +70,14 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             if data:
                 new_num = await self.gacha_log.import_gacha_log_data(user.id, client, data, verify_uid)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
+        except GachaLogNotFound:
+            return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"
+        except GachaLogAccountNotFound:
+            return "导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同"
+        except GachaLogFileError:
+            return "导入失败，数据格式错误"
+        except GachaLogInvalidAuthkey:
+            return "更新数据失败，authkey 无效"
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
@@ -95,6 +105,9 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 data = json.loads(data)
             else:
                 data = self.gacha_log.convert_xlsx_to_uigf(data, self.zh_dict)
+        except PaimonMoeGachaLogFileError:
+            await message.reply_text("PaimonMoe的抽卡记录版本不支持")
+            return
         except UnicodeDecodeError:
             await message.reply_text("文件解析失败，请检查文件编码是否正确或符合 UIGF 标准")
             return
@@ -243,6 +256,12 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 return
             status = await self.gacha_log.remove_history_info(str(cid), str(client.uid))
             await message.reply_text("抽卡记录已强制删除" if status else "抽卡记录删除失败")
+        except GachaLogNotFound:
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
+        except GachaLogAccountNotFound:
+            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except GachaLogFileError:
+            await message.reply_text("导入失败，数据格式错误")
         except UserNotFoundError:
             await message.reply_text("该用户暂未绑定账号")
         except (ValueError, IndexError):
@@ -262,6 +281,12 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(client.uid))
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件")
+        except GachaLogNotFound:
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
+        except GachaLogAccountNotFound:
+            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except GachaLogFileError:
+            await message.reply_text("导入失败，数据格式错误")
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             if filters.ChatType.GROUPS.filter(message):
@@ -299,6 +324,12 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                     "genshin/gacha_log/gacha_log.html", data, full_page=True, query_selector=".body_box"
                 )
                 await message.reply_photo(png_data)
+        except GachaLogNotFound:
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
+        except GachaLogAccountNotFound:
+            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except GachaLogFileError:
+            await message.reply_text("导入失败，数据格式错误")
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             if filters.ChatType.GROUPS.filter(message):
@@ -350,6 +381,12 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 else:
                     await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                     await message.reply_photo(png_data)
+        except GachaLogNotFound:
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
+        except GachaLogAccountNotFound:
+            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except GachaLogFileError:
+            await message.reply_text("导入失败，数据格式错误")
         except (UserNotFoundError, CookiesNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             if filters.ChatType.GROUPS.filter(message):

@@ -551,7 +551,8 @@ class GachaLog:
             "hasMore": len(pool_data) > 6,
         }
 
-    def convert_xlsx_to_uigf(self, data: BytesIO, zh_dict: dict) -> dict:
+    @staticmethod
+    def convert_xlsx_to_uigf(data: BytesIO, zh_dict: dict) -> dict:
         """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
         :param zh_dict:
         :param data: paimon.moe 导出的 xlsx 数据
