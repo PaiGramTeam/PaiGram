@@ -565,7 +565,7 @@ class GachaLog:
             return UIGFItem(
                 id=str(_id),
                 name=zh_dict[name],
-                gacha_type=uigf_gacha_type.value,
+                gacha_type=uigf_gacha_type,
                 item_type=item_type,
                 rank_type=str(rank_type),
                 time=date_string,
@@ -598,7 +598,7 @@ class GachaLog:
             return UIGFItem(
                 id=str(_id),
                 name=name,
-                gacha_type=uigf_gacha_type.value,
+                gacha_type=uigf_gacha_type,
                 item_type=item_type,
                 rank_type=str(rank_type),
                 time=date_string,

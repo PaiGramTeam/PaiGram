@@ -128,13 +128,14 @@ class UIGFGachaType(Enum):
     STANDARD = "200"
     CHARACTER = "301"
     WEAPON = "302"
+    CHARACTER2 = "400"
 
 
 class UIGFItem(BaseModel):
     id: str
     name: str
     count: str = "1"
-    gacha_type: str
+    gacha_type: UIGFGachaType
     item_id: str = ""
     item_type: ItemType
     rank_type: str
