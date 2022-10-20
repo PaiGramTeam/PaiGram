@@ -155,7 +155,8 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 self.qiyes = qiyes
                 self.qiyes.sort(key=lambda x: x.time)
                 if self.qiyes[0].id == 0:  # 如果是从paimon.moe导入的，那么就给id赋值
-                    for i in range(len(self.qiyes)):
+                    for index,_ in enumerate(self.qiyes):
+                        self.qiyes[i].id = index + 1
                         self.qiyes[i].id = i + 1
                     self.export_time = export_time
                 self.export_time = export_time
