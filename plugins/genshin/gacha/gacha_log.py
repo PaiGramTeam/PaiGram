@@ -17,8 +17,13 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from modules.apihelper.hyperion import SignIn
-from modules.gacha_log.error import GachaLogInvalidAuthkey, PaimonMoeGachaLogFileError, GachaLogFileError, \
-    GachaLogNotFound, GachaLogAccountNotFound
+from modules.gacha_log.error import (
+    GachaLogInvalidAuthkey,
+    PaimonMoeGachaLogFileError,
+    GachaLogFileError,
+    GachaLogNotFound,
+    GachaLogAccountNotFound,
+)
 from modules.gacha_log.log import GachaLog
 from utils.bot import get_all_args
 from utils.const import PROJECT_ROOT
@@ -89,7 +94,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         if document.file_name.endswith(".xlsx"):
             file_type = "xlsx"
         elif document.file_name.endswith(".json"):
-            file_type = "../../../resources/json"
+            file_type = "json"
         else:
             await message.reply_text("文件格式错误，请发送符合 UIGF 标准的 json 格式的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
             return
@@ -103,12 +108,12 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 # bytesio to json
                 data = data.getvalue().decode("utf-8")
                 data = json.loads(data)
-            else:
+            elif file_type == "xlsx":
                 data = self.gacha_log.convert_xlsx_to_uigf(data, self.zh_dict)
         except PaimonMoeGachaLogFileError:
             await message.reply_text("PaimonMoe的抽卡记录版本不支持")
             return
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, KeyError):
             await message.reply_text("文件解析失败，请检查文件编码是否正确或符合 UIGF 标准")
             return
         except Exception as exc:

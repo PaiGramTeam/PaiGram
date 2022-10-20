@@ -30,10 +30,10 @@ from modules.gacha_log.models import (
     Pool,
     GachaLogInfo,
     UIGFGachaType,
-    Qiyr,
+    XlsxLine,
     ItemType,
     XlsxType,
-    Q_GIFG,
+    XlsxImporter,
 )
 
 
@@ -93,14 +93,14 @@ class GachaLog:
             return True
         return False
 
-    async def save_gacha_log_info(self, user_id: str, uid: str, info: GachaLogInfo, GACHA_LOG_PATH=None):
+    async def save_gacha_log_info(self, user_id: str, uid: str, info: GachaLogInfo):
         """保存抽卡记录数据
         :param user_id: 用户id
         :param uid: 原神uid
         :param info: 抽卡记录数据
         """
-        save_path = GACHA_LOG_PATH / f"{user_id}-{uid}.json"
-        save_path_bak = GACHA_LOG_PATH / f"{user_id}-{uid}.json.bak"
+        save_path = self.gacha_log_path / f"{user_id}-{uid}.json"
+        save_path_bak = self.gacha_log_path / f"{user_id}-{uid}.json.bak"
         # 将旧数据备份一次
         with contextlib.suppress(PermissionError):
             if save_path.exists():
@@ -196,8 +196,8 @@ class GachaLog:
             gacha_log.update_time = datetime.datetime.now()
             await self.save_gacha_log_info(str(user_id), uid, gacha_log)
             return new_num
-        except GachaLogAccountNotFound:
-            raise GachaLogAccountNotFound("导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except GachaLogAccountNotFound as e:
+            raise GachaLogAccountNotFound("导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同") from e
         except Exception as exc:
             raise GachaLogException from exc
 
@@ -561,18 +561,18 @@ class GachaLog:
 
         def from_paimon_moe(
             uigf_gacha_type: UIGFGachaType, item_type: str, name: str, date_string: str, p: int
-        ) -> Qiyr:
+        ) -> XlsxLine:
             item_type = ItemType.CHARACTER if item_type == "Character" else ItemType.WEAPON
             name = zh_dict[name]
             gacha_time = datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
-            return Qiyr(uigf_gacha_type, item_type, name, gacha_time, p, 0)
+            return XlsxLine(uigf_gacha_type, item_type, name, gacha_time, p, 0)
 
         def from_fxq(
             uigf_gacha_type: UIGFGachaType, item_type: str, name: str, date_string: str, p: int, _id: int
-        ) -> Qiyr:
+        ) -> XlsxLine:
             item_type = ItemType.CHARACTER if item_type == "角色" else ItemType.WEAPON
             item_time = datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
-            return Qiyr(uigf_gacha_type, item_type, name, item_time, p, _id)
+            return XlsxLine(uigf_gacha_type, item_type, name, item_time, p, _id)
 
         wb = load_workbook(data)
 
@@ -611,5 +611,5 @@ class GachaLog:
                         break
                     qiyes.append(from_fxq(gacha_type, row[2], row[1], row[0], row[3], row[6]))
 
-        u = Q_GIFG(qiyes, 0, export_time)
-        return u.export_json()
+        u = XlsxImporter(qiyes, 0, export_time)
+        return u.json()
