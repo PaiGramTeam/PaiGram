@@ -107,10 +107,10 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
 
         class qiye:
             def __init__(
-                self, uigf_gacha_type: UIGFGachaType, type: ItemType, name: str, time: datetime, p: int, id: int
+                self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: datetime, p: int, id: int
             ) -> None:
                 self.uigf_gacha_type = uigf_gacha_type
-                self.item_type = type
+                self.item_type = item_type
                 self.name = name
                 self.time = time
                 self.rank_type = p
@@ -129,17 +129,17 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                     "uigf_gacha_type": self.uigf_gacha_type.value,
                 }
 
-        def fromPaimonMoe(uigf_gacha_type: UIGFGachaType, type: str, name: str, time: str, p: int) -> qiye:
+        def fromPaimonMoe(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int) -> qiye:
             type = ItemType.CHARACTER if type == "Character" else ItemType.WEAPON
             name = zh_dict[name]
 
             time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-            return qiye(uigf_gacha_type, type, name, time, p, 0)
+            return qiye(uigf_gacha_type, item_type, name, time, p, 0)
 
-        def fromFXQ(uigf_gacha_type: UIGFGachaType, type: str, name: str, time: str, p: int, id: int) -> qiye:
+        def fromFXQ(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int, id: int) -> qiye:
             type = ItemType.CHARACTER if type == "角色" else ItemType.WEAPON
             time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-            return qiye(uigf_gacha_type, type, name, time, p, id)
+            return qiye(uigf_gacha_type, item_type, name, time, p, id)
 
         class uigf:
             qiyes: list[qiye]
