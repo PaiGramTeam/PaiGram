@@ -130,14 +130,14 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 }
 
         def from_paimon_moe(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int) -> Qiyr:
-            item_type = ItemType.CHARACTER if type == "Character" else ItemType.WEAPON
+            item_type = ItemType.CHARACTER if item_type == "Character" else ItemType.WEAPON
             name = zh_dict[name]
 
             time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
             return Qiyr(uigf_gacha_type, item_type, name, time, p, 0)
 
         def from_fxq(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int, _id: int) -> Qiyr:
-            item_type = ItemType.CHARACTER if type == "角色" else ItemType.WEAPON
+            item_type = ItemType.CHARACTER if item_type == "角色" else ItemType.WEAPON
             time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
             return Qiyr(uigf_gacha_type, item_type, name, time, p, _id)
 

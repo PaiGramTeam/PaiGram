@@ -268,8 +268,10 @@ class GachaLog:
     ) -> Tuple[bool, str]:
         new_num = 0
         try:
+            if not verify_uid:
+                data["info"]["uid"] = str(client.uid)
             uid = data["info"]["uid"]
-            if verify_uid and int(uid) != client.uid:
+            if int(uid) != client.uid:
                 raise GachaLogAccountNotFound
             # 检查导入数据是否合法
             all_items = [GachaItem(**i) for i in data["list"]]
