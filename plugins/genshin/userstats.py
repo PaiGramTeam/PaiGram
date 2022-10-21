@@ -15,6 +15,7 @@ from telegram.ext import (
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
 from core.plugin import Plugin, handler
+from core.template.models import RenderResult
 from core.template.services import TemplateService
 from core.user.error import UserNotFoundError
 from utils.decorators.error import error_callable
@@ -51,7 +52,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
                 client = await get_genshin_client(user.id)
             except CookiesNotFoundError:
                 client, uid = await get_public_genshin_client(user.id)
-            png_data = await self.render(client, uid)
+            render_result = await self.render(client, uid)
         except UserNotFoundError:
             if filters.ChatType.GROUPS.filter(message):
                 buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
@@ -73,9 +74,9 @@ class UserStatsPlugins(Plugin, BasePlugin):
             await message.reply_text("角色数据有误 估计是派蒙晕了")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await message.reply_photo(png_data, filename=f"{client.uid}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"{client.uid}.png", allow_sending_without_reply=True)
 
-    async def render(self, client: Client, uid: Optional[int] = None) -> bytes:
+    async def render(self, client: Client, uid: Optional[int] = None) -> RenderResult:
         if uid is None:
             uid = client.uid
 
