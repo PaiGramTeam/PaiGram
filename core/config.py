@@ -37,7 +37,8 @@ class BotConfig(BaseSettings):
     redis_db: int = 0
 
     bot_token: str = ""
-    error_notification_chat_id: str = ""
+
+    error_notification_chat_id: Optional[str] = None
 
     api_id: Optional[int] = None
     api_hash: Optional[str] = None

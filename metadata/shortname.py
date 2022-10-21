@@ -4,7 +4,7 @@ import functools
 
 from metadata.genshin import WEAPON_DATA
 
-__all__ = ["roles", "weapons", "roleToId", "roleToName", "weaponToName", "weaponToId"]
+__all__ = ["roles", "weapons", "roleToId", "roleToName", "weaponToName", "weaponToId", "not_real_roles"]
 
 # noinspection SpellCheckingInspection
 roles = {
