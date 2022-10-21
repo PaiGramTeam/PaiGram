@@ -3,6 +3,7 @@ from io import BytesIO
 from os import sep
 
 import genshin
+from aiofiles import open as async_open
 from genshin.models import BannerType
 from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -16,6 +17,7 @@ from core.plugin import Plugin, handler, conversation
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from metadata.scripts.paimon_moe import update_paimon_moe_zh
 from modules.apihelper.hyperion import SignIn
 from modules.gacha_log.error import (
     GachaLogInvalidAuthkey,
@@ -37,6 +39,7 @@ from utils.log import logger
 from utils.models.base import RegionEnum
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
+GACHA_LOG_PAIMON_MOE_PATH = PROJECT_ROOT.joinpath("metadata/data/paimon_moe_zh.json")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
@@ -55,9 +58,13 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         self.user_service = user_service
         self.assets_service = assets
         self.cookie_service = cookie_service
-        with open(f"resources{sep}json{sep}zh.json", "r", encoding="utf-8") as load_f:
-            self.zh_dict = json.load(load_f)
+        self.zh_dict = None
         self.gacha_log = GachaLog(GACHA_LOG_PATH)
+
+    async def __async_init__(self):
+        await update_paimon_moe_zh(False)
+        async with async_open(GACHA_LOG_PAIMON_MOE_PATH, "r", encoding="utf-8") as load_f:
+            self.zh_dict = json.loads(await load_f.read())
 
     async def _refresh_user_data(
         self, user: User, data: dict = None, authkey: str = None, verify_uid: bool = True
