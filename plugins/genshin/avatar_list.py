@@ -1,5 +1,6 @@
 """练度统计"""
-from typing import Iterable, List, Optional, Sequence
+import asyncio
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
@@ -61,52 +62,69 @@ class AvatarListPlugin(Plugin, BasePlugin):
             else:
                 await message.reply_text("此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定", parse_mode=ParseMode.HTML)
 
-    async def get_avatars_data(self, characters: Sequence[Character], client: Client, max_length: int = None):
-        avatar_datas: List[AvatarData] = []
-        for num, character in enumerate(characters):
-            if num == max_length:  # 若已经有 max_length 个角色
-                break
+    async def get_avatar_data(self, character: Character, client: Client) -> Optional["AvatarData"]:
+        detail = None
+        for _ in range(5):
             try:
                 detail = await client.get_character_details(character)
             except Exception as e:  # pylint: disable=W0703
+                if isinstance(e, GenshinException) and "Too Many Requests" in e.msg:
+                    await asyncio.sleep(0.2)
+                    continue
                 if character.name != "旅行者":
                     raise e
                 logger.debug(f"解析旅行者数据时遇到了错误：{e}")
-                continue
-            if character.id == 10000005:  # 针对男草主
-                talents = []
-                for talent in detail.talents:
-                    if "普通攻击" in talent.name:
-                        talent.Config.allow_mutation = True
-                        # noinspection Pydantic
-                        talent.group_id = 1131
-                    if talent.type in ["attack", "skill", "burst"]:
-                        talents.append(talent)
-            else:
-                talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
-            buffed_talents = []
-            for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
-                if result := list(
-                    filter(lambda x: all([x.name in constellation.effect]), talents)  # pylint: disable=W0640
-                ):
-                    buffed_talents.append(result[0].type)
-            avatar_datas.append(
-                AvatarData(
-                    avatar=character,
-                    detail=detail,
-                    icon=(await self.assets_service.avatar(character.id).side()).as_uri(),
-                    weapon=(
-                        await self.assets_service.weapon(character.weapon.id).__getattr__(
-                            "icon" if character.weapon.ascension < 2 else "awaken"
-                        )()
-                    ).as_uri(),
-                    skills=[
-                        SkillData(skill=s, buffed=s.type in buffed_talents)
-                        for s in sorted(talents, key=lambda x: ["attack", "skill", "burst"].index(x.type))
-                    ],
-                )
-            )
-        return avatar_datas
+                return None
+        if detail is None:
+            logger.warning(f"解析[bold]{character.name}[/]的数据时遇到了错误：Too Many Requests", extra={"markup": True})
+            return None
+        if character.id == 10000005:  # 针对男草主
+            talents = []
+            for talent in detail.talents:
+                if "普通攻击" in talent.name:
+                    talent.Config.allow_mutation = True
+                    # noinspection Pydantic
+                    talent.group_id = 1131
+                if talent.type in ["attack", "skill", "burst"]:
+                    talents.append(talent)
+        else:
+            talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
+        buffed_talents = []
+        for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
+            if result := list(
+                filter(lambda x: all([x.name in constellation.effect]), talents)  # pylint: disable=W0640
+            ):
+                buffed_talents.append(result[0].type)
+        return AvatarData(
+            avatar=character,
+            detail=detail,
+            icon=(await self.assets_service.avatar(character.id).side()).as_uri(),
+            weapon=(
+                await self.assets_service.weapon(character.weapon.id).__getattr__(
+                    "icon" if character.weapon.ascension < 2 else "awaken"
+                )()
+            ).as_uri(),
+            skills=[
+                SkillData(skill=s, buffed=s.type in buffed_talents)
+                for s in sorted(talents, key=lambda x: ["attack", "skill", "burst"].index(x.type))
+            ],
+        )
+
+    async def get_avatars_data(
+        self, characters: Sequence[Character], client: Client, max_length: int = None
+    ) -> List["AvatarData"]:
+        task_result: List[Tuple[int, AvatarData]] = []
+
+        async def _task(c, n):
+            if (result := await self.get_avatar_data(c, client)) is not None:
+                task_result.append((n, result))
+
+        task_list = []
+        for num, character in enumerate(characters[:max_length]):
+            task_list.append(asyncio.create_task(_task(character, num)))
+
+        await asyncio.gather(*task_list)
+        return list(map(lambda x: x[1], sorted(task_result, key=lambda x: x[0])))
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
