@@ -4,6 +4,7 @@ from typing import Iterator
 import ujson as json
 from aiofiles import open as async_open
 from httpx import AsyncClient, RemoteProtocolError, Response, URL
+from line_profiler_pycharm import profile
 
 from utils.const import AMBR_HOST, PROJECT_ROOT
 from utils.log import logger
@@ -38,15 +39,16 @@ async def stream_request(method, url) -> Iterator[Response]:
 
 
 # noinspection PyShadowingNames
+@profile
 async def update_metadata_from_github(overwrite: bool = True):
     path = PROJECT_ROOT.joinpath("metadata/data/namecard.json")
     if not overwrite and path.exists():
         return
 
     hosts = [
-        URL("https://raw.fastgit.org/Dimbreath/GenshinData/master/"),
         URL("https://ghproxy.net/https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
         URL("https://github.91chi.fun/https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
+        URL("https://raw.fastgit.org/Dimbreath/GenshinData/master/"),
         URL("https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
     ]
     for num, host in enumerate(hosts):
@@ -59,16 +61,20 @@ async def update_metadata_from_github(overwrite: bool = True):
                 started = False
                 cell = []
                 async for line in response.aiter_lines():
-                    if line.strip("\n").startswith("    {"):
+                    if line == "    {\n":
                         started = True
                         continue
-                    elif line.strip("\n").startswith("    }"):
+                    elif line in ["    },\n", "    }\n"]:
                         started = False
-                        if any(["MATERIAL_NAMECARD" in x for x in cell]):
+                        if any("MATERIAL_NAMECARD" in x for x in cell):
                             material_json_data.append(json.loads("{" + "".join(cell) + "}"))
                         cell = []
                         continue
                     if started:
+                        if "materialType" in line and "MATERIAL_NAMECARD" not in line:
+                            cell = []
+                            started = False
+                            continue
                         cell.append(line.strip(" \n"))
 
             string_ids = []
