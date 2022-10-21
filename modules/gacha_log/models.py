@@ -85,7 +85,7 @@ class GachaLogInfo(BaseModel):
         try:
             return ImportType(self.import_type)
         except ValueError:
-            return ImportType("UNKNOWN")
+            return ImportType.UNKNOWN
 
 
 class Pool:

@@ -171,7 +171,10 @@ class GachaLog:
             all_items = [GachaItem(**i) for i in data["list"]]
             await self.verify_data(all_items)
             gacha_log, status = await self.load_history_info(str(user_id), uid)
-            if import_type == ImportType.PAIMONMOE and status and gacha_log.get_import_type != ImportType.PAIMONMOE:
+            if import_type == ImportType.PAIMONMOE:
+                if status and gacha_log.get_import_type != ImportType.PAIMONMOE:
+                    raise GachaLogMixedProvider
+            elif status and gacha_log.get_import_type == ImportType.PAIMONMOE:
                 raise GachaLogMixedProvider
             # 将唯一 id 放入临时数据中，加快查找速度
             temp_id_data = {

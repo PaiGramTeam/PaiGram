@@ -86,7 +86,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         except GachaLogInvalidAuthkey:
             return "更新数据失败，authkey 无效"
         except GachaLogMixedProvider:
-            return "导入失败，你已经通过其他方式导入过抽卡记录了，无法导入"
+            return "导入失败，你已经通过其他方式导入过抽卡记录了，本次无法导入"
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
@@ -295,7 +295,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_chat_action(ChatAction.TYPING)
             path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(client.uid))
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
-            await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件")
+            await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.2")
         except GachaLogNotFound:
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
         except GachaLogAccountNotFound:
