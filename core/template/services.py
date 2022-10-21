@@ -57,13 +57,27 @@ class TemplateService:
         return html
 
     async def render_group(self, renders: List[InputRenderData]) -> RenderGroupResult:
-        task_list: List = []
         render_results: List[RenderResult] = []
-        for render in renders:
-            task = asyncio.create_task(self.render(*render))
-            task_list.append(task)
 
-        results = await asyncio.gather(*task_list)
+        results = await asyncio.gather(
+            *[
+                self.render(
+                    i.template_name,
+                    i.template_data,
+                    i.viewport,
+                    i.full_page,
+                    i.evaluate,
+                    i.query_selector,
+                    i.file_type,
+                    i.ttl,
+                    i.caption,
+                    i.parse_mode,
+                    i.filename,
+                )
+                for i in renders
+            ]
+        )
+
         for result in results:
             if isinstance(result, RenderResult):
                 render_results.append(result)
