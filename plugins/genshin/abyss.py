@@ -1,8 +1,9 @@
 """深渊数据查询"""
+import asyncio
 import re
 from datetime import datetime
 from functools import lru_cache, partial
-from typing import List, Match, Optional, Tuple
+from typing import Any, Coroutine, List, Match, Optional, Tuple
 
 import ujson as json
 from arkowrapper import ArkoWrapper
@@ -18,7 +19,7 @@ from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template import TemplateService
-from core.template.models import InputRenderData, RenderGroupResult
+from core.template.models import RenderGroupResult, RenderResult
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.genshin import game_id_to_role_id
@@ -185,8 +186,8 @@ class Abyss(Plugin, BasePlugin):
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
 
-        for group in ArkoWrapper(images.results).group(10):  # 每 10 张图片分一个组
-            await RenderGroupResult(results=group, cache=images._cache).reply_media_group(
+        for group in ArkoWrapper(images).group(10):  # 每 10 张图片分一个组
+            await RenderGroupResult(results=group).reply_media_group(
                 message, allow_sending_without_reply=True, write_timeout=60
             )
 
@@ -197,7 +198,7 @@ class Abyss(Plugin, BasePlugin):
 
     async def get_rendered_pic(
         self, client: Client, uid: int, floor: int, total: bool, previous: bool
-    ) -> Optional[RenderGroupResult]:
+    ) -> Optional[List[RenderResult]]:
         """
         获取渲染后的图片
 
@@ -260,22 +261,20 @@ class Abyss(Plugin, BasePlugin):
             data = json.loads(result)
             render_data["data"] = data
 
-            render_inputs: List[Tuple[int, InputRenderData]] = []
+            render_inputs: List[Tuple[int, Coroutine[Any, Any, RenderResult]]] = []
 
             def overview_task():
-                return -1, InputRenderData(
-                    template_name="genshin/abyss/overview.html",
-                    template_data=render_data,
-                    viewport={"width": 750, "height": 580},
+                return -1, self.template_service.render(
+                    "genshin/abyss/overview.html", render_data, viewport={"width": 750, "height": 580}
                 )
 
             def floor_task(floor_index: int):
                 floor_d = data["floors"][floor_index]
                 return (
                     floor_d["floor"],
-                    InputRenderData(
-                        template_name="genshin/abyss/floor.html",
-                        template_data={
+                    self.template_service.render(
+                        "genshin/abyss/floor.html",
+                        {
                             **render_data,
                             "floor": floor_d,
                             "total_stars": f"{floor_d['stars']}/{floor_d['max_stars']}",
@@ -293,19 +292,15 @@ class Abyss(Plugin, BasePlugin):
 
             render_group_inputs = list(map(lambda x: x[1], sorted(render_inputs, key=lambda x: x[0])))
 
-            return await self.template_service.render_group(render_group_inputs)
+            return await asyncio.gather(*render_group_inputs)
 
         elif floor < 1:
             render_data["data"] = json.loads(result)
-            return await self.template_service.render_group(
-                [
-                    InputRenderData(
-                        template_name="genshin/abyss/overview.html",
-                        template_data=render_data,
-                        viewport={"width": 750, "height": 580},
-                    )
-                ]
-            )
+            return [
+                await self.template_service.render(
+                    "genshin/abyss/overview.html", render_data, viewport={"width": 750, "height": 580}
+                )
+            ]
         else:
             num_dic = {
                 "0": "",
@@ -330,13 +325,8 @@ class Abyss(Plugin, BasePlugin):
             render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
             render_data["floor"] = floor_data[0]
             render_data["total_stars"] = f"{floor_data[0]['stars']}/{floor_data[0]['max_stars']}"
-            return await self.template_service.render_group(
-                [
-                    InputRenderData(
-                        template_name="genshin/abyss/floor.html",
-                        template_data=render_data,
-                        viewport={"width": 690, "height": 500},
-                        full_page=True,
-                    )
-                ]
-            )
+            return [
+                await self.template_service.render(
+                    "genshin/abyss/floor.html", render_data, viewport={"width": 690, "height": 500}
+                )
+            ]

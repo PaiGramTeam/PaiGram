@@ -1,6 +1,5 @@
-import asyncio
 import time
-from typing import Optional, List
+from typing import Optional
 from urllib.parse import urlencode, urljoin, urlsplit
 from uuid import uuid4
 
@@ -15,7 +14,7 @@ from core.base.webserver import webapp
 from core.bot import bot
 from core.template.cache import HtmlToFileIdCache, TemplatePreviewCache
 from core.template.error import QuerySelectorNotFound
-from core.template.models import FileType, InputRenderData, RenderResult, RenderGroupResult
+from core.template.models import FileType, RenderResult
 from utils.const import PROJECT_ROOT
 from utils.log import logger
 
@@ -55,38 +54,6 @@ class TemplateService:
         html = await template.render_async(**template_data)
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
         return html
-
-    async def render_group(self, renders: List[InputRenderData]) -> RenderGroupResult:
-        render_results: List[RenderResult] = []
-
-        results = await asyncio.gather(
-            *[
-                self.render(
-                    i.template_name,
-                    i.template_data,
-                    i.viewport,
-                    i.full_page,
-                    i.evaluate,
-                    i.query_selector,
-                    i.file_type,
-                    i.ttl,
-                    i.caption,
-                    i.parse_mode,
-                    i.filename,
-                )
-                for i in renders
-            ]
-        )
-
-        for result in results:
-            if isinstance(result, RenderResult):
-                render_results.append(result)
-            elif issubclass(result, BaseException):
-                logger.error(f"模板渲染发生错误 {repr(result)}")
-            else:
-                logger.error(f"错误的数据类型 {repr(result)}")
-
-        return RenderGroupResult(render_results, cache=self.html_to_file_id_cache)
 
     async def render(
         self,

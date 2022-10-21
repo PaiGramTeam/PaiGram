@@ -1,8 +1,6 @@
 from enum import Enum
 from typing import Optional, Union, List
 
-from playwright.async_api import ViewportSize
-from pydantic import BaseModel
 from telegram import Message, InputMediaPhoto
 
 from core.template.cache import HtmlToFileIdCache
@@ -12,20 +10,6 @@ from core.template.error import ErrorFileType
 class FileType(Enum):
     PHOTO = 1
     DOCUMENT = 2
-
-
-class InputRenderData(BaseModel):
-    template_name: str
-    template_data: dict
-    viewport: Optional[ViewportSize] = None
-    full_page: bool = True
-    evaluate: Optional[str] = None
-    query_selector: Optional[str] = None
-    file_type: FileType = FileType.PHOTO
-    ttl: int = 24 * 60 * 60
-    caption: Optional[str] = None
-    parse_mode: Optional[str] = None
-    filename: Optional[str] = None
 
 
 class RenderResult:
@@ -106,9 +90,8 @@ class RenderResult:
 
 
 class RenderGroupResult:
-    def __init__(self, results: List[RenderResult], cache: HtmlToFileIdCache):
+    def __init__(self, results: List[RenderResult]):
         self.results = results
-        self._cache = cache
 
     async def reply_media_group(self, message: Message, *args, **kwargs):
         """是 `message.reply_media_group` 的封装，上传成功后，缓存 telegram 返回的 file_id，方便重复使用"""
