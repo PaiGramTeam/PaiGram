@@ -1,10 +1,12 @@
 import ujson as json
 from aiofiles import open as async_open
-from httpx import AsyncClient, URL
+from httpx import AsyncClient, RemoteProtocolError, URL
 
 from utils.const import AMBR_HOST, PROJECT_ROOT
 
 __all__ = ["update_metadata_from_ambr", "update_metadata_from_github"]
+
+from utils.log import logger
 
 client = AsyncClient()
 
@@ -32,36 +34,51 @@ async def update_metadata_from_github(overwrite: bool = True):
     if not overwrite and path.exists():
         return
 
-    host = URL("https://raw.fastgit.org/Dimbreath/GenshinData/master/")
+    hosts = [
+        URL("https://raw.fastgit.org/Dimbreath/GenshinData/master/"),
+        URL("https://ghproxy.net/https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
+        URL("https://github.91chi.fun/https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
+        URL("https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
+    ]
+    for num, host in enumerate(hosts):
+        try:
+            text_map_url = host.join("TextMap/TextMapCHS.json")
+            material_url = host.join("ExcelBinOutput/MaterialExcelConfigData.json")
 
-    text_map_url = host.join("TextMap/TextMapCHS.json")
-    material_url = host.join("ExcelBinOutput/MaterialExcelConfigData.json")
+            text_map_json_data = json.loads((await client.get(text_map_url)).text)
+            material_json_data = json.loads((await client.get(material_url)).text)
 
-    text_map_json_data = json.loads((await client.get(text_map_url)).text)
-    material_json_data = json.loads((await client.get(material_url)).text)
-
-    data = {}
-    for namecard_data in filter(lambda x: x.get("materialType", None) == "MATERIAL_NAMECARD", material_json_data):
-        name = text_map_json_data[str(namecard_data["nameTextMapHash"])]
-        icon = namecard_data["icon"]
-        navbar = namecard_data["picPath"][0]
-        banner = namecard_data["picPath"][1]
-        rank = namecard_data["rankLevel"]
-        description = text_map_json_data[str(namecard_data["descTextMapHash"])].replace("\\n", "\n")
-        data.update(
-            {
-                str(namecard_data["id"]): {
-                    "id": namecard_data["id"],
-                    "name": name,
-                    "rank": rank,
-                    "icon": icon,
-                    "navbar": navbar,
-                    "profile": banner,
-                    "description": description,
-                }
-            }
-        )
-    async with async_open(path, mode="w", encoding="utf-8") as file:
-        data = json.dumps(data, ensure_ascii=False)
-        await file.write(data)
-    return data
+            data = {}
+            for namecard_data in filter(
+                lambda x: x.get("materialType", None) == "MATERIAL_NAMECARD", material_json_data
+            ):
+                name = text_map_json_data[str(namecard_data["nameTextMapHash"])]
+                icon = namecard_data["icon"]
+                navbar = namecard_data["picPath"][0]
+                banner = namecard_data["picPath"][1]
+                rank = namecard_data["rankLevel"]
+                description = text_map_json_data[str(namecard_data["descTextMapHash"])].replace("\\n", "\n")
+                data.update(
+                    {
+                        str(namecard_data["id"]): {
+                            "id": namecard_data["id"],
+                            "name": name,
+                            "rank": rank,
+                            "icon": icon,
+                            "navbar": navbar,
+                            "profile": banner,
+                            "description": description,
+                        }
+                    }
+                )
+            async with async_open(path, mode="w", encoding="utf-8") as file:
+                data = json.dumps(data, ensure_ascii=False)
+                await file.write(data)
+            return data
+        except RemoteProtocolError:
+            continue
+        except Exception as e:
+            if num != len(hosts) - 1:
+                logger.error(f"在从 {host} 下载元数据的过程中遇到了错误: {e}")
+                continue
+            raise e
