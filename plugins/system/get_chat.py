@@ -11,7 +11,7 @@ from core.plugin import Plugin, handler
 from core.sign import SignServices
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from modules.apihelper.gacha_log import GachaLog
+from modules.gacha_log.log import GachaLog
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import get_genshin_client

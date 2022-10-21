@@ -1,13 +1,10 @@
 import json
-from datetime import datetime
-from enum import Enum
 from io import BytesIO
 from os import sep
 
 import genshin
+from aiofiles import open as async_open
 from genshin.models import BannerType
-from modules.apihelper.gacha_log import GachaLog as GachaLogService
-from openpyxl import load_workbook
 from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
@@ -20,8 +17,20 @@ from core.plugin import Plugin, handler, conversation
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from metadata.scripts.paimon_moe import update_paimon_moe_zh
 from modules.apihelper.hyperion import SignIn
+from modules.gacha_log.error import (
+    GachaLogInvalidAuthkey,
+    PaimonMoeGachaLogFileError,
+    GachaLogFileError,
+    GachaLogNotFound,
+    GachaLogAccountNotFound,
+    GachaLogMixedProvider,
+)
+from modules.gacha_log.helpers import from_url_get_authkey
+from modules.gacha_log.log import GachaLog
 from utils.bot import get_all_args
+from utils.const import PROJECT_ROOT
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -29,10 +38,13 @@ from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.models.base import RegionEnum
 
+GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
+GACHA_LOG_PAIMON_MOE_PATH = PROJECT_ROOT.joinpath("metadata/data/paimon_moe_zh.json")
+GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
 
-class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
+class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     """抽卡记录导入/导出/分析"""
 
     def __init__(
@@ -46,20 +58,17 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         self.user_service = user_service
         self.assets_service = assets
         self.cookie_service = cookie_service
+        self.zh_dict = None
+        self.gacha_log = GachaLog(GACHA_LOG_PATH)
 
-    @staticmethod
-    def from_url_get_authkey(url: str) -> str:
-        """从 UEL 解析 authkey
-        :param url: URL
-        :return: authkey
-        """
-        try:
-            return url.split("authkey=")[1].split("&")[0]
-        except IndexError:
-            return url
+    async def __async_init__(self):
+        await update_paimon_moe_zh(False)
+        async with async_open(GACHA_LOG_PAIMON_MOE_PATH, "r", encoding="utf-8") as load_f:
+            self.zh_dict = json.loads(await load_f.read())
 
-    @staticmethod
-    async def _refresh_user_data(user: User, data: dict = None, authkey: str = None, verify_uid: bool = True) -> str:
+    async def _refresh_user_data(
+        self, user: User, data: dict = None, authkey: str = None, verify_uid: bool = True
+    ) -> str:
         """刷新用户数据
         :param user: 用户
         :param data: 数据
@@ -70,152 +79,24 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             logger.debug("尝试获取已绑定的原神账号")
             client = await get_genshin_client(user.id, need_cookie=False)
             if authkey:
-                return await GachaLogService.get_gacha_log_data(user.id, client, authkey)
+                new_num = await self.gacha_log.get_gacha_log_data(user.id, client, authkey)
+                return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
             if data:
-                return await GachaLogService.import_gacha_log_data(user.id, client, data, verify_uid)
+                new_num = await self.gacha_log.import_gacha_log_data(user.id, client, data, verify_uid)
+                return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
+        except GachaLogNotFound:
+            return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"
+        except GachaLogAccountNotFound:
+            return "导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同"
+        except GachaLogFileError:
+            return "导入失败，数据格式错误"
+        except GachaLogInvalidAuthkey:
+            return "更新数据失败，authkey 无效"
+        except GachaLogMixedProvider:
+            return "导入失败，你已经通过其他方式导入过抽卡记录了，本次无法导入"
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
-
-    @staticmethod
-    def convert_paimonmoe_to_uigf(data: BytesIO) -> dict:
-        """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
-        :param data: paimon.moe 导出的 xlsx 数据
-        :return: UIGF 格式数据
-        """
-        PAIMONMOE_VERSION = 3
-        PM2UIGF_VERSION = 1
-        PM2UIGF_NAME = "paimon_moe_to_uigf"
-        UIGF_VERSION = "v2.2"
-
-        with open(f"resources{sep}json{sep}zh.json", "r") as load_f:
-            zh_dict = json.load(load_f)
-
-        class XlsxType(Enum):
-            PAIMONMOE = 1
-            FXQ = 2
-
-        class ItemType(Enum):
-            CHARACTER = "角色"
-            WEAPON = "武器"
-
-        class UIGFGachaType(Enum):
-            BEGINNER = 100
-            STANDARD = 200
-            CHARACTER = 301
-            WEAPON = 302
-
-        class Qiyr:
-            def __init__(
-                self, uigf_gacha_type: UIGFGachaType, item_type: ItemType, name: str, time: datetime, p: int, _id: int
-            ) -> None:
-                self.uigf_gacha_type = uigf_gacha_type
-                self.item_type = item_type
-                self.name = name
-                self.time = time
-                self.rank_type = p
-                self.id = _id
-
-            def qy2_json(self):
-                return {
-                    "gacha_type": self.uigf_gacha_type.value,  # 注意！
-                    "item_id": "",
-                    "count": -1,
-                    "time": self.time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "name": self.name,
-                    "item_type": self.item_type.value,
-                    "rank_type": self.rank_type,
-                    "id": self.id,
-                    "uigf_gacha_type": self.uigf_gacha_type.value,
-                }
-
-        def from_paimon_moe(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int) -> Qiyr:
-            item_type = ItemType.CHARACTER if item_type == "Character" else ItemType.WEAPON
-            name = zh_dict[name]
-
-            time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-            return Qiyr(uigf_gacha_type, item_type, name, time, p, 0)
-
-        def from_fxq(uigf_gacha_type: UIGFGachaType, item_type: str, name: str, time: str, p: int, _id: int) -> Qiyr:
-            item_type = ItemType.CHARACTER if item_type == "角色" else ItemType.WEAPON
-            time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-            return Qiyr(uigf_gacha_type, item_type, name, time, p, _id)
-
-        class uigf:
-            qiyes: list[Qiyr]
-            uid: int
-            export_time: datetime
-            export_app: str = PM2UIGF_NAME
-            export_app_version: str = PM2UIGF_VERSION
-            uigf_version = UIGF_VERSION
-            lang = "zh-cn"
-
-            def __init__(self, qiyes: list[Qiyr], uid: int, export_time: datetime) -> None:
-                self.uid = uid
-                self.qiyes = qiyes
-                self.qiyes.sort(key=lambda x: x.time)
-                if self.qiyes[0].id == 0:  # 如果是从paimon.moe导入的，那么就给id赋值
-                    for index, _ in enumerate(self.qiyes):
-                        self.qiyes[index].id = index + 1
-                    self.export_time = export_time
-                self.export_time = export_time
-
-            def export_json(self) -> dict:
-                json_d = {
-                    "info": {
-                        "uid": self.uid,
-                        "lang": self.lang,
-                        "export_time": self.export_time.strftime("%Y-%m-%d %H:%M:%S"),
-                        "export_timestamp": self.export_time.timestamp(),
-                        "export_app": self.export_app,
-                        "export_app_version": self.export_app_version,
-                        "uigf_version": self.uigf_version,
-                    },
-                    "list": [],
-                }
-                for qiye in self.qiyes:
-                    json_d["list"].append(qiye.qy2_json())
-                return json_d
-
-        wb = load_workbook(data)
-
-        xlsx_type = XlsxType.PAIMONMOE if len(wb.worksheets) == 6 else XlsxType.FXQ  # 判断是paimon.moe还是非小酋导出的
-
-        paimonmoe_sheets = {
-            UIGFGachaType.BEGINNER: "Beginners' Wish",
-            UIGFGachaType.STANDARD: "Standard",
-            UIGFGachaType.CHARACTER: "Character Event",
-            UIGFGachaType.WEAPON: "Weapon Event",
-        }
-        fxq_sheets = {
-            UIGFGachaType.BEGINNER: "新手祈愿",
-            UIGFGachaType.STANDARD: "常驻祈愿",
-            UIGFGachaType.CHARACTER: "角色活动祈愿",
-            UIGFGachaType.WEAPON: "武器活动祈愿",
-        }
-        qiyes = []
-        if xlsx_type == XlsxType.PAIMONMOE:
-            ws = wb["Information"]
-            if ws["B2"].value != PAIMONMOE_VERSION:
-                raise Exception("PaimonMoe version not supported")
-            export_time = datetime.strptime(ws["B3"].value, "%Y-%m-%d %H:%M:%S")
-            for gacha_type in paimonmoe_sheets:
-                ws = wb[paimonmoe_sheets[gacha_type]]
-                for row in ws.iter_rows(min_row=2, values_only=True):
-                    if row[0] is None:
-                        break
-                    qiyes.append(from_paimon_moe(gacha_type, row[0], row[1], row[2], row[3]))
-        else:
-            export_time = datetime.now()
-            for gacha_type in fxq_sheets:
-                ws = wb[fxq_sheets[gacha_type]]
-                for row in ws.iter_rows(min_row=2, values_only=True):
-                    if row[0] is None:
-                        break
-                    qiyes.append(from_fxq(gacha_type, row[2], row[1], row[0], row[3], row[6]))
-
-        u = uigf(qiyes, 0, export_time)
-        return u.export_json()
 
     async def import_from_file(self, user: User, message: Message, document: Document = None) -> None:
         if not document:
@@ -226,9 +107,11 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         elif document.file_name.endswith(".json"):
             file_type = "json"
         else:
-            await message.reply_text("文件格式错误，请发送符合 UIGF 标准的 json 格式的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
+            await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
+            return
         if document.file_size > 2 * 1024 * 1024:
             await message.reply_text("文件过大，请发送小于 2 MB 的文件")
+            return
         try:
             data = BytesIO()
             await (await document.get_file()).download(out=data)
@@ -236,9 +119,17 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 # bytesio to json
                 data = data.getvalue().decode("utf-8")
                 data = json.loads(data)
-            else:
-                data = self.convert_paimonmoe_to_uigf(data)
-        except UnicodeDecodeError:
+            elif file_type == "xlsx":
+                data = self.gacha_log.convert_xlsx_to_uigf(data, self.zh_dict)
+        except PaimonMoeGachaLogFileError as exc:
+            await message.reply_text(
+                "导入失败，PaimonMoe的抽卡记录当前版本不支持\n" f"支持抽卡记录的版本为 {exc.support_version}，你的抽卡记录版本为 {exc.file_version}"
+            )
+            return
+        except GachaLogFileError:
+            await message.reply_text("文件解析失败，请检查文件是否符合 UIGF 标准")
+            return
+        except (KeyError, IndexError, ValueError):
             await message.reply_text("文件解析失败，请检查文件编码是否正确或符合 UIGF 标准")
             return
         except Exception as exc:
@@ -265,7 +156,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         user = update.effective_user
         args = get_all_args(context)
         logger.info(f"用户 {user.full_name}[{user.id}] 导入抽卡记录命令请求")
-        authkey = self.from_url_get_authkey(args[0] if args else "")
+        authkey = from_url_get_authkey(args[0] if args else "")
         if not args:
             if message.document:
                 await self.import_from_file(user, message)
@@ -299,7 +190,8 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text(
                 "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
                 "（非 paimon.moe 导出的文件数据）</b>\n\n"
-                "> 你还可以向派蒙发送从其他工具导出的 UIGF JSON 标准的记录文件\n"
+                "> 你还可以向派蒙发送从其他工具导出的 UIGF 标准的记录文件\n"
+                "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
                 "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
                 "<b>注意：导入的数据将会与旧数据进行合并。</b>",
                 parse_mode="html",
@@ -324,7 +216,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         if message.document:
             await self.import_from_file(user, message)
             return ConversationHandler.END
-        authkey = self.from_url_get_authkey(message.text)
+        authkey = from_url_get_authkey(message.text)
         reply = await message.reply_text("小派蒙正在从米哈游服务器获取数据，请稍后")
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
@@ -346,7 +238,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         except UserNotFoundError:
             await message.reply_text("你还没有导入抽卡记录哦~")
             return ConversationHandler.END
-        _, status = await GachaLogService.load_history_info(str(user.id), str(client.uid), only_status=True)
+        _, status = await self.gacha_log.load_history_info(str(user.id), str(client.uid), only_status=True)
         if not status:
             await message.reply_text("你还没有导入抽卡记录哦~")
             return ConversationHandler.END
@@ -361,7 +253,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         message = update.effective_message
         user = update.effective_user
         if message.text == "确定":
-            status = await GachaLogService.remove_history_info(str(user.id), str(context.chat_data["uid"]))
+            status = await self.gacha_log.remove_history_info(str(user.id), str(context.chat_data["uid"]))
             await message.reply_text("抽卡记录已删除" if status else "抽卡记录删除失败")
             return ConversationHandler.END
         await message.reply_text("已取消")
@@ -380,12 +272,18 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             if cid < 0:
                 raise ValueError("Invalid cid")
             client = await get_genshin_client(cid, need_cookie=False)
-            _, status = await GachaLogService.load_history_info(str(cid), str(client.uid), only_status=True)
+            _, status = await self.gacha_log.load_history_info(str(cid), str(client.uid), only_status=True)
             if not status:
                 await message.reply_text("该用户还没有导入抽卡记录")
                 return
-            status = await GachaLogService.remove_history_info(str(cid), str(client.uid))
+            status = await self.gacha_log.remove_history_info(str(cid), str(client.uid))
             await message.reply_text("抽卡记录已强制删除" if status else "抽卡记录删除失败")
+        except GachaLogNotFound:
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
+        except GachaLogAccountNotFound:
+            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except GachaLogFileError:
+            await message.reply_text("导入失败，数据格式错误")
         except UserNotFoundError:
             await message.reply_text("该用户暂未绑定账号")
         except (ValueError, IndexError):
@@ -402,12 +300,15 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         try:
             client = await get_genshin_client(user.id, need_cookie=False)
             await message.reply_chat_action(ChatAction.TYPING)
-            state, text, path = await GachaLogService.gacha_log_to_uigf(str(user.id), str(client.uid))
-            if state:
-                await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
-                await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件")
-            else:
-                await message.reply_text(text)
+            path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(client.uid))
+            await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
+            await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.2")
+        except GachaLogNotFound:
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
+        except GachaLogAccountNotFound:
+            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except GachaLogFileError:
+            await message.reply_text("导入失败，数据格式错误")
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             if filters.ChatType.GROUPS.filter(message):
@@ -433,7 +334,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
         try:
             client = await get_genshin_client(user.id, need_cookie=False)
             await message.reply_chat_action(ChatAction.TYPING)
-            data = await GachaLogService.get_analysis(user.id, client, pool_type, self.assets_service)
+            data = await self.gacha_log.get_analysis(user.id, client, pool_type, self.assets_service)
             if isinstance(data, str):
                 reply_message = await message.reply_text(data)
                 if filters.ChatType.GROUPS.filter(message):
@@ -445,6 +346,12 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                     "genshin/gacha_log/gacha_log.html", data, full_page=True, query_selector=".body_box"
                 )
                 await message.reply_photo(png_data)
+        except GachaLogNotFound:
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
+        except GachaLogAccountNotFound:
+            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except GachaLogFileError:
+            await message.reply_text("导入失败，数据格式错误")
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             if filters.ChatType.GROUPS.filter(message):
@@ -476,7 +383,7 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
             client = await get_genshin_client(user.id, need_cookie=False)
             group = filters.ChatType.GROUPS.filter(message)
             await message.reply_chat_action(ChatAction.TYPING)
-            data = await GachaLogService.get_pool_analysis(user.id, client, pool_type, self.assets_service, group)
+            data = await self.gacha_log.get_pool_analysis(user.id, client, pool_type, self.assets_service, group)
             if isinstance(data, str):
                 reply_message = await message.reply_text(data)
                 if filters.ChatType.GROUPS.filter(message):
@@ -496,6 +403,12 @@ class GachaLog(Plugin.Conversation, BasePlugin.Conversation):
                 else:
                     await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                     await message.reply_photo(png_data)
+        except GachaLogNotFound:
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
+        except GachaLogAccountNotFound:
+            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except GachaLogFileError:
+            await message.reply_text("导入失败，数据格式错误")
         except (UserNotFoundError, CookiesNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
             if filters.ChatType.GROUPS.filter(message):
