@@ -111,12 +111,11 @@ class WeaponPlugin(Plugin, BasePlugin):
 
         template_data = await input_template_data(weapon_data)
         png_data = await self.template_service.render(
-            "genshin/weapon/weapon.html", template_data, {"width": 540, "height": 540}
+            "genshin/weapon/weapon.html", template_data, {"width": 540, "height": 540}, ttl=31 * 24 * 60 * 60
         )
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await png_data.reply_photo(
             message,
             filename=f"{template_data['weapon_name']}.png",
             allow_sending_without_reply=True,
-            ttl=31 * 24 * 60 * 60,
         )
