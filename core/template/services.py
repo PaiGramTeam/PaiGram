@@ -78,10 +78,10 @@ class TemplateService:
         self,
         template_name: str,
         template_data: dict,
-        viewport: ViewportSize = None,
+        viewport: Optional[ViewportSize] = None,
         full_page: bool = True,
         evaluate: Optional[str] = None,
-        query_selector: str = None,
+        query_selector: Optional[str] = None,
         file_type: FileType = FileType.PHOTO,
     ) -> RenderResult:
         """模板渲染成图片
@@ -103,7 +103,7 @@ class TemplateService:
         html = await template.render_async(**template_data)
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
 
-        file_id = await self.html_to_file_id_cache.get_data(html, file_type)
+        file_id = await self.html_to_file_id_cache.get_data(html, str(file_type))
         # TODO: 功能开发中，默认打开缓存用于调试，上线前改为仅生产环境返回缓存
         if file_id:
             logger.debug(f"{template_name} 命中缓存，返回 file_id {file_id}")

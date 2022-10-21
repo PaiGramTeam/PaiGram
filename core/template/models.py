@@ -5,16 +5,16 @@ from playwright.async_api import ViewportSize
 from pydantic import BaseModel
 from telegram import Message, InputMediaPhoto
 
-from core.template import HtmlToFileIdCache
+from core.template.cache import HtmlToFileIdCache
 
 
 class InputRenderData(BaseModel):
     template_name: str
     template_data: dict
-    viewport: ViewportSize = None
+    viewport: Optional[ViewportSize] = None
     full_page: bool = True
     evaluate: Optional[str] = None
-    query_selector: str = None
+    query_selector: Optional[str] = None
 
 
 class FileType(Enum):
@@ -50,7 +50,7 @@ class RenderResult:
 
         photo = reply.photo[0]
         file_id = photo.file_id
-        await self._cache.set_data(self.html, self.file_type, file_id)
+        await self._cache.set_data(self.html, str(self.file_type), file_id)
 
     def is_file_id(self) -> bool:
         return isinstance(self.photo, str)

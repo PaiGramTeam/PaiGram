@@ -1,8 +1,8 @@
 from core.base.aiobrowser import AioBrowser
 from core.service import init_service
 from core.base.redisdb import RedisDB
-from core.template.services import TemplateService, HtmlToFileIdCache
-from core.template.cache import TemplatePreviewCache
+from core.template.services import TemplateService
+from core.template.cache import TemplatePreviewCache, HtmlToFileIdCache
 
 
 @init_service
