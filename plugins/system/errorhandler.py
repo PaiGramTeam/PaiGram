@@ -35,7 +35,7 @@ class ErrorHandler(Plugin):
         logger.error("处理函数时发生异常")
         logger.exception(context.error, exc_info=(type(context.error), context.error, context.error.__traceback__))
 
-        if notice_chat_id is None:
+        if notice_chat_id:
             return
 
         tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
