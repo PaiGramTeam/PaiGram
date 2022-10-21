@@ -22,6 +22,7 @@ class InputRenderData(BaseModel):
     evaluate: Optional[str] = None
     query_selector: Optional[str] = None
     file_type: FileType = FileType.PHOTO
+    ttl: int = 24 * 60 * 60
     caption: Optional[str] = None
     parse_mode: Optional[str] = None
     filename: Optional[str] = None
@@ -36,6 +37,7 @@ class RenderResult:
         photo: Union[bytes, str],
         file_type: FileType,
         cache: HtmlToFileIdCache,
+        ttl: int = 24 * 60 * 60,
         caption: Optional[str] = None,
         parse_mode: Optional[str] = None,
         filename: Optional[str] = None,
@@ -51,8 +53,9 @@ class RenderResult:
         self.photo = photo
         self.file_type = file_type
         self._cache = cache
+        self.ttl = ttl
 
-    async def reply_photo(self, message: Message, *args, ttl: int = 24 * 60 * 60, **kwargs):
+    async def reply_photo(self, message: Message, *args, **kwargs):
         """是 `message.reply_photo` 的封装，上传成功后，缓存 telegram 返回的 file_id，方便重复使用"""
         if self.file_type != FileType.PHOTO:
             raise ErrorFileType
@@ -63,14 +66,14 @@ class RenderResult:
 
         return reply
 
-    async def reply_document(self, message: Message, *args, ttl: int = 24 * 60 * 60, **kwargs):
+    async def reply_document(self, message: Message, *args, **kwargs):
         """是 `message.reply_document` 的封装，上传成功后，缓存 telegram 返回的 file_id，方便重复使用"""
         if self.file_type != FileType.DOCUMENT:
             raise ErrorFileType
 
         reply = await message.reply_document(document=self.photo, *args, **kwargs)
 
-        await self.cache_file_id(reply, ttl)
+        await self.cache_file_id(reply,  self.ttl)
 
         return reply
 
@@ -81,7 +84,7 @@ class RenderResult:
 
         photo = reply.photo[0]
         file_id = photo.file_id
-        await self._cache.set_data(self.html, str(self.file_type), file_id, ttl)
+        await self._cache.set_data(self.html, self.file_type.name, file_id, ttl)
 
     def is_file_id(self) -> bool:
         return isinstance(self.photo, str)
@@ -92,7 +95,7 @@ class RenderGroupResult:
         self.results = results
         self._cache = cache
 
-    async def reply_media_group(self, message: Message, *args, ttl: int = 24 * 60 * 60, **kwargs):
+    async def reply_media_group(self, message: Message, *args, **kwargs):
         """是 `message.reply_media_group` 的封装，上传成功后，缓存 telegram 返回的 file_id，方便重复使用"""
         for result in self.results:
             if result.file_type != FileType.PHOTO:
@@ -111,4 +114,4 @@ class RenderGroupResult:
 
         for index, value in enumerate(reply):
             result = self.results[index]
-            await result.cache_file_id(value, ttl)
+            await result.cache_file_id(value, result.ttl)

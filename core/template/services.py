@@ -83,6 +83,7 @@ class TemplateService:
         evaluate: Optional[str] = None,
         query_selector: Optional[str] = None,
         file_type: FileType = FileType.PHOTO,
+        ttl: int = 24 * 60 * 60,
         caption: Optional[str] = None,
         parse_mode: Optional[str] = None,
         filename: Optional[str] = None,
@@ -95,6 +96,7 @@ class TemplateService:
         :param evaluate: 页面加载后运行的 js
         :param query_selector: 截图选择器
         :param file_type: 缓存的文件类型
+        :param ttl: 缓存时间
         :param caption: 图片描述
         :param parse_mode: 图片描述解析模式
         :param filename: 文件名字
@@ -110,11 +112,20 @@ class TemplateService:
         html = await template.render_async(**template_data)
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
 
-        file_id = await self.html_to_file_id_cache.get_data(html, str(file_type))
+        file_id = await self.html_to_file_id_cache.get_data(html, file_type.name)
         # TODO: 功能开发中，默认打开缓存用于调试，上线前改为仅生产环境返回缓存
         if file_id:
             logger.debug(f"{template_name} 命中缓存，返回 file_id {file_id}")
-            return RenderResult(html=html, photo=file_id, file_type=file_type, cache=self.html_to_file_id_cache)
+            return RenderResult(
+                html=html,
+                photo=file_id,
+                file_type=file_type,
+                cache=self.html_to_file_id_cache,
+                ttl=ttl,
+                caption=caption,
+                parse_mode=parse_mode,
+                filename=filename,
+            )
 
         browser = await self._browser.get_browser()
         start_time = time.time()
@@ -143,6 +154,7 @@ class TemplateService:
             photo=png_data,
             file_type=file_type,
             cache=self.html_to_file_id_cache,
+            ttl=ttl,
             caption=caption,
             parse_mode=parse_mode,
             filename=filename,
