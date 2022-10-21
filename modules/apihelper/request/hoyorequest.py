@@ -2,7 +2,7 @@ from typing import Union
 
 import httpx
 
-from modules.apihelper.error import NetworkException, ResponseException, TimedOut
+from modules.apihelper.error import NetworkException, ResponseException, APIHelperTimedOut
 from modules.apihelper.request.httpxrequest import HTTPXRequest
 from modules.apihelper.typedefs import POST_DATA, JSON_DATA
 
@@ -14,7 +14,7 @@ class HOYORequest(HTTPXRequest):
         try:
             response = await self._client.get(url=url, *args, **kwargs)
         except httpx.TimeoutException as err:
-            raise TimedOut from err
+            raise APIHelperTimedOut from err
         except httpx.HTTPError as exc:
             raise NetworkException(f"Unknown error in HTTP implementation: {repr(exc)}") from exc
         if response.is_error:

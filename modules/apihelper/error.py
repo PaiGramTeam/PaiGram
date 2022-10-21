@@ -17,7 +17,7 @@ class NetworkException(APIHelperException):
     pass
 
 
-class TimedOut(APIHelperException):
+class APIHelperTimedOut(APIHelperException):
     pass
 
 

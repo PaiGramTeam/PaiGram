@@ -9,7 +9,7 @@ from telegram import Update, ReplyKeyboardRemove
 from telegram.error import BadRequest, TimedOut, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
 
-from modules.apihelper.error import APIHelperException, ReturnCodeError
+from modules.apihelper.error import APIHelperException, ReturnCodeError, APIHelperTimedOut
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 
@@ -17,16 +17,14 @@ from utils.log import logger
 async def send_user_notification(update: Update, _: CallbackContext, text: str):
     if update.inline_query is not None:  # 忽略 inline_query
         return
-    effective_user = update.effective_user
+    user = update.effective_user
     message = update.effective_message
+    chat = update.effective_chat
     if message is None:
         update_str = update.to_dict() if isinstance(update, Update) else str(update)
         logger.warning("错误的消息类型\n" + json.dumps(update_str, indent=2, ensure_ascii=False))
         return
-    chat = message.chat
-    logger.info(
-        f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] " f"在 {chat.full_name}[{chat.id}]" f"的 错误信息[{text}]"
-    )
+    logger.info(f"尝试通知用户 {user.full_name}[{user.id}] " f"在 {chat.full_name}[{chat.id}]" f"的 错误信息[{text}]")
     try:
         await message.reply_text(text, reply_markup=ReplyKeyboardRemove(), allow_sending_without_reply=True)
     except BadRequest as exc:
@@ -40,6 +38,14 @@ async def send_user_notification(update: Update, _: CallbackContext, text: str):
         logger.exception(exc)
     finally:
         pass
+
+
+def telegram_warning(update: Update, text: str):
+    user = update.effective_user
+    message = update.effective_message
+    chat = update.effective_chat
+    msg = f"{text}\n" f"user_id[{user.id}] chat_id[{chat.id}] message_id[{message.id}] "
+    logger.warning(msg)
 
 
 def error_callable(func: Callable) -> Callable:
@@ -107,12 +113,22 @@ def error_callable(func: Callable) -> Callable:
         except ReturnCodeError as exc:
             await send_user_notification(update, context, f"出错了呜呜呜 ~ API请求错误 错误信息为 {exc.message}")
             return ConversationHandler.END
+        except APIHelperTimedOut:
+            logger.warning("APIHelperException")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ API请求超时")
         except APIHelperException as exc:
             logger.error("APIHelperException")
             logger.exception(exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ API请求错误")
             return ConversationHandler.END
         except BadRequest as exc:
+            if "Replied message not found" in exc.message:
+                telegram_warning(update, exc.message)
+                await send_user_notification(update, context, "气死我了！怎么有人喜欢发一个命令就秒删了！")
+                return ConversationHandler.END
+            if "Message is not modified" in exc.message:
+                telegram_warning(update, exc.message)
+                return ConversationHandler.END
             logger.error("python-telegram-bot 请求错误")
             logger.exception(exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ telegram-bot-api请求错误")
