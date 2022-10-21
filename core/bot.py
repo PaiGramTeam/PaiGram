@@ -18,6 +18,7 @@ from telegram.ext import (
     Defaults,
     JobQueue,
     MessageHandler,
+    filters,
 )
 from telegram.ext.filters import StatusUpdate
 
@@ -139,6 +140,14 @@ class Bot:
                 f"成功添加了 {num} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]",
                 extra={"markup": True},
             )
+        # special handler
+        from plugins.system.start import StartPlugin
+
+        self.app.add_handler(
+            MessageHandler(
+                callback=StartPlugin.unknown_command, filters=filters.COMMAND & filters.ChatType.PRIVATE, block=False
+            )
+        )
 
     async def _start_base_services(self):
         for pkg in self._gen_pkg(PROJECT_ROOT / "core/base"):
