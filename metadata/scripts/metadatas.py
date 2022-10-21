@@ -1,13 +1,14 @@
-import httpx
+from contextlib import contextmanager
+from typing import Iterator
+
 import ujson as json
 from aiofiles import open as async_open
-from httpx import AsyncClient, RemoteProtocolError, URL
+from httpx import AsyncClient, RemoteProtocolError, Response, URL
 
 from utils.const import AMBR_HOST, PROJECT_ROOT
+from utils.log import logger
 
 __all__ = ["update_metadata_from_ambr", "update_metadata_from_github"]
-
-from utils.log import logger
 
 client = AsyncClient()
 
@@ -30,6 +31,13 @@ async def update_metadata_from_ambr(overwrite: bool = True):
     return result
 
 
+@contextmanager
+async def stream_request(method, url) -> Iterator[Response]:
+    with client.stream(method=method, url=url) as response:
+        yield response
+
+
+# noinspection PyShadowingNames
 async def update_metadata_from_github(overwrite: bool = True):
     path = PROJECT_ROOT.joinpath("metadata/data/namecard.json")
     if not overwrite and path.exists():
@@ -46,29 +54,39 @@ async def update_metadata_from_github(overwrite: bool = True):
             text_map_url = host.join("TextMap/TextMapCHS.json")
             material_url = host.join("ExcelBinOutput/MaterialExcelConfigData.json")
 
-            material_json_data = json.loads((await client.get(material_url)).text)
+            material_json_data = []
+            async with client.stream("GET", material_url) as response:
+                started = False
+                cell = []
+                async for line in response.aiter_lines():
+                    if line.strip("\n").startswith("    {"):
+                        started = True
+                        continue
+                    elif line.strip("\n").startswith("    }"):
+                        started = False
+                        if any(["MATERIAL_NAMECARD" in x for x in cell]):
+                            material_json_data.append(json.loads("{" + "".join(cell) + "}"))
+                        cell = []
+                        continue
+                    if started:
+                        cell.append(line.strip(" \n"))
 
-            data = {}
             string_ids = []
-            for namecard_data in (
-                filtered_data := filter(
-                    lambda x: x.get("materialType", None) == "MATERIAL_NAMECARD", material_json_data
-                )
-            ):
+            for namecard_data in material_json_data:
                 string_ids.append(str(namecard_data["nameTextMapHash"]))
                 string_ids.append(str(namecard_data["descTextMapHash"]))
 
             text_map_json_data = {}
-            with httpx.stream("GET", text_map_url) as r:
-                for line in r.iter_lines():
-                    line: str
+            async with client.stream("GET", text_map_url) as response:
+                async for line in response.aiter_lines():
                     if (string_id := (splits := line.split(":"))[0].strip(' "')) in string_ids:
                         text_map_json_data.update({string_id: splits[1].strip('\n ,"')})
                         string_ids.remove(string_id)
                     if not string_ids:
                         break
 
-            for namecard_data in filtered_data:
+            data = {}
+            for namecard_data in material_json_data:
                 name = text_map_json_data[str(namecard_data["nameTextMapHash"])]
                 icon = namecard_data["icon"]
                 navbar = namecard_data["picPath"][0]
