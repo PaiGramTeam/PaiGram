@@ -62,7 +62,7 @@ class RenderResult:
 
         reply = await message.reply_photo(photo=self.photo, *args, **kwargs)
 
-        await self.cache_file_id(reply, ttl)
+        await self.cache_file_id(reply, self.ttl)
 
         return reply
 
