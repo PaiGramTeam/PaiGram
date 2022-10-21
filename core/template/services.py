@@ -15,7 +15,7 @@ from core.base.webserver import webapp
 from core.bot import bot
 from core.template.cache import HtmlToFileIdCache, TemplatePreviewCache
 from core.template.error import QuerySelectorNotFound
-from core.template.models import InputRenderData, RenderResult, RenderGroupResult
+from core.template.models import FileType, InputRenderData, RenderResult, RenderGroupResult
 from utils.const import PROJECT_ROOT
 from utils.log import logger
 
@@ -82,6 +82,7 @@ class TemplateService:
         full_page: bool = True,
         evaluate: Optional[str] = None,
         query_selector: str = None,
+        file_type: FileType = FileType.PHOTO,
     ) -> RenderResult:
         """模板渲染成图片
         :param template_name: 模板文件名
@@ -102,11 +103,11 @@ class TemplateService:
         html = await template.render_async(**template_data)
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
 
-        file_id = await self.html_to_file_id_cache.get_data(html)
+        file_id = await self.html_to_file_id_cache.get_data(html, file_type)
         # TODO: 功能开发中，默认打开缓存用于调试，上线前改为仅生产环境返回缓存
         if file_id:
             logger.debug(f"{template_name} 命中缓存，返回 file_id {file_id}")
-            return RenderResult(html=html, photo=file_id, cache=self.html_to_file_id_cache)
+            return RenderResult(html=html, photo=file_id, file_type=file_type, cache=self.html_to_file_id_cache)
 
         browser = await self._browser.get_browser()
         start_time = time.time()
@@ -130,7 +131,7 @@ class TemplateService:
         png_data = await page.screenshot(clip=clip, full_page=full_page)
         await page.close()
         logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
-        return RenderResult(html=html, photo=png_data, cache=self.html_to_file_id_cache)
+        return RenderResult(html=html, photo=png_data, file_type=file_type, cache=self.html_to_file_id_cache)
 
 
 class TemplatePreviewer:

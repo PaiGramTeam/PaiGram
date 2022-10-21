@@ -4,6 +4,7 @@ import gzip
 from hashlib import sha256
 
 from core.base.redisdb import RedisDB
+from core.template.models import FileType
 
 
 class TemplatePreviewCache:
@@ -36,17 +37,17 @@ class HtmlToFileIdCache:
         self.client = redis.client
         self.qname = "bot:template:html-to-file-id"
 
-    async def get_data(self, html: str) -> Optional[str]:
-        data = await self.client.get(self.cache_key(html))
+    async def get_data(self, html: str, file_type: FileType) -> Optional[str]:
+        data = await self.client.get(self.cache_key(html, file_type))
         if data:
             return data.decode()
 
-    async def set_data(self, html: str, file_id: str, ttl: int = 60 * 60):
-        ck = self.cache_key(html)
+    async def set_data(self, html: str, file_type: FileType, file_id: str, ttl: int = 60 * 60):
+        ck = self.cache_key(html, file_type)
         await self.client.set(ck, file_id)
         if ttl != -1:
             await self.client.expire(ck, ttl)
 
-    def cache_key(self, html: str) -> str:
+    def cache_key(self, html: str, file_type: FileType) -> str:
         key = sha256(html.encode()).hexdigest()
-        return f"{self.qname}:{key}"
+        return f"{self.qname}:{file_type}:{key}"
