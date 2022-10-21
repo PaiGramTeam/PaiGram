@@ -22,10 +22,9 @@ class HelpPlugin(Plugin):
         user = update.effective_user
         message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] 发出help命令")
-
         await message.reply_chat_action(ChatAction.TYPING)
         render_result = await self.template_service.render(
-            "bot/help/help.html", {}, {"width": 1280, "height": 900}, ttl=-1
+            "bot/help/help.html", {}, {"width": 1280, "height": 900}, ttl=30 * 24 * 60 * 60
         )
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await render_result.reply_photo(message, filename="help.png", allow_sending_without_reply=True)
