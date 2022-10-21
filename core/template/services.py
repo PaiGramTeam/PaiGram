@@ -83,6 +83,9 @@ class TemplateService:
         evaluate: Optional[str] = None,
         query_selector: Optional[str] = None,
         file_type: FileType = FileType.PHOTO,
+        caption: Optional[str] = None,
+        parse_mode: Optional[str] = None,
+        filename: Optional[str] = None,
     ) -> RenderResult:
         """模板渲染成图片
         :param template_name: 模板文件名
@@ -91,6 +94,10 @@ class TemplateService:
         :param full_page: 是否长截图
         :param evaluate: 页面加载后运行的 js
         :param query_selector: 截图选择器
+        :param file_type: 缓存的文件类型
+        :param caption: 图片描述
+        :param parse_mode: 图片描述解析模式
+        :param filename: 文件名字
         :return:
         """
         start_time = time.time()
@@ -131,7 +138,15 @@ class TemplateService:
         png_data = await page.screenshot(clip=clip, full_page=full_page)
         await page.close()
         logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
-        return RenderResult(html=html, photo=png_data, file_type=file_type, cache=self.html_to_file_id_cache)
+        return RenderResult(
+            html=html,
+            photo=png_data,
+            file_type=file_type,
+            cache=self.html_to_file_id_cache,
+            caption=caption,
+            parse_mode=parse_mode,
+            filename=filename,
+        )
 
 
 class TemplatePreviewer:

@@ -1,7 +1,7 @@
-from typing import Any, Optional
-import pickle  # nosec B403
 import gzip
+import pickle  # nosec B403
 from hashlib import sha256
+from typing import Any, Optional
 
 from core.base.redisdb import RedisDB
 
@@ -41,7 +41,7 @@ class HtmlToFileIdCache:
         if data:
             return data.decode()
 
-    async def set_data(self, html: str, file_type: str, file_id: str, ttl: int = 60 * 60):
+    async def set_data(self, html: str, file_type: str, file_id: str, ttl: int = 24 * 60 * 60):
         ck = self.cache_key(html, file_type)
         await self.client.set(ck, file_id)
         if ttl != -1:
