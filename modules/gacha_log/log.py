@@ -36,10 +36,14 @@ from modules.gacha_log.models import (
     UIGFInfo,
     UIGFItem,
 )
+from utils.const import PROJECT_ROOT
+
+GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
+GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 
 
 class GachaLog:
-    def __init__(self, gacha_log_path: Path):
+    def __init__(self, gacha_log_path: Path = GACHA_LOG_PATH):
         self.gacha_log_path = gacha_log_path
 
     @staticmethod
@@ -388,7 +392,7 @@ class GachaLog:
         four_star_avg = round((total - no_four_star) / four_star, 2) if four_star != 0 else 0
         # 四星最多
         four_star_name_list = [i.name for i in all_four]
-        four_star_max = max(four_star_name_list, key=four_star_name_list.count)
+        four_star_max = max(four_star_name_list, key=four_star_name_list.count) if four_star_name_list else ""
         four_star_max_count = four_star_name_list.count(four_star_max)
         return [
             [
@@ -421,7 +425,7 @@ class GachaLog:
         four_star_avg = round((total - no_four_star) / four_star, 2) if four_star != 0 else 0
         # 四星最多
         four_star_name_list = [i.name for i in all_four]
-        four_star_max = max(four_star_name_list, key=four_star_name_list.count)
+        four_star_max = max(four_star_name_list, key=four_star_name_list.count) if four_star_name_list else ""
         four_star_max_count = four_star_name_list.count(four_star_max)
         return [
             [
