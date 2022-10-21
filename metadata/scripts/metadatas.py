@@ -1,3 +1,4 @@
+import httpx
 import ujson as json
 from aiofiles import open as async_open
 from httpx import AsyncClient, RemoteProtocolError, URL
@@ -45,13 +46,29 @@ async def update_metadata_from_github(overwrite: bool = True):
             text_map_url = host.join("TextMap/TextMapCHS.json")
             material_url = host.join("ExcelBinOutput/MaterialExcelConfigData.json")
 
-            text_map_json_data = json.loads((await client.get(text_map_url)).text)
             material_json_data = json.loads((await client.get(material_url)).text)
 
             data = {}
-            for namecard_data in filter(
-                lambda x: x.get("materialType", None) == "MATERIAL_NAMECARD", material_json_data
+            string_ids = []
+            for namecard_data in (
+                filtered_data := filter(
+                    lambda x: x.get("materialType", None) == "MATERIAL_NAMECARD", material_json_data
+                )
             ):
+                string_ids.append(str(namecard_data["nameTextMapHash"]))
+                string_ids.append(str(namecard_data["descTextMapHash"]))
+
+            text_map_json_data = {}
+            with httpx.stream("GET", text_map_url) as r:
+                for line in r.iter_lines():
+                    line: str
+                    if (string_id := (splits := line.split(":"))[0].strip(' "')) in string_ids:
+                        text_map_json_data.update({string_id: splits[1].strip('\n ,"')})
+                        string_ids.remove(string_id)
+                    if not string_ids:
+                        break
+
+            for namecard_data in filtered_data:
                 name = text_map_json_data[str(namecard_data["nameTextMapHash"])]
                 icon = namecard_data["icon"]
                 navbar = namecard_data["picPath"][0]
