@@ -1,8 +1,6 @@
 from genshin.models import BannerType
 
 PAIMONMOE_VERSION = 3
-PM2UIGF_VERSION = 1
-PM2UIGF_NAME = "paimon_moe_to_uigf"
 UIGF_VERSION = "v2.2"
 
 
@@ -13,5 +11,3 @@ GACHA_TYPE_LIST = {
     BannerType.CHARACTER1: "角色祈愿",
     BannerType.CHARACTER2: "角色祈愿",
 }
-
-

@@ -5,7 +5,15 @@ from typing import List, Dict, Union, Any
 from pydantic import BaseModel, validator
 
 from metadata.shortname import roleToId, weaponToId, not_real_roles
-from modules.gacha_log.const import UIGF_VERSION, PM2UIGF_VERSION, PM2UIGF_NAME
+from modules.gacha_log.const import UIGF_VERSION
+
+
+class ImportType(Enum):
+    TGPaimonBot = "TGPaimonBot"
+    PAIMONMOE = "PAIMONMOE"
+    FXQ = "FXQ"
+    UIGF = "UIGF"
+    UNKNOWN = "UNKNOWN"
 
 
 class FiveStarItem(BaseModel):
@@ -64,12 +72,20 @@ class GachaLogInfo(BaseModel):
     user_id: str
     uid: str
     update_time: datetime.datetime
+    import_type: str = ""
     item_list: Dict[str, List[GachaItem]] = {
         "角色祈愿": [],
         "武器祈愿": [],
         "常驻祈愿": [],
         "新手祈愿": [],
     }
+
+    @property
+    def get_import_type(self) -> ImportType:
+        try:
+            return ImportType(self.import_type)
+        except ValueError:
+            return ImportType("UNKNOWN")
 
 
 class Pool:
@@ -112,12 +128,6 @@ class Pool:
         return list(self.dict.values())
 
 
-class XlsxType(Enum):
-    PAIMONMOE = 1
-    FXQ = 2
-    UIGF = 3
-
-
 class ItemType(Enum):
     CHARACTER = "角色"
     WEAPON = "武器"
@@ -148,8 +158,8 @@ class UIGFInfo(BaseModel):
     lang: str = "zh-cn"
     export_time: str = ""
     export_timestamp: int = 0
-    export_app: str = PM2UIGF_NAME
-    export_app_version: str = f"v{PM2UIGF_VERSION}"
+    export_app: str = ""
+    export_app_version: str = ""
     uigf_version: str = UIGF_VERSION
 
     def __init__(self, **data: Any):

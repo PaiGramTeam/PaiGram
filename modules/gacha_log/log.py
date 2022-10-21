@@ -21,6 +21,7 @@ from modules.gacha_log.error import (
     GachaLogFileError,
     GachaLogNotFound,
     PaimonMoeGachaLogFileError,
+    GachaLogMixedProvider,
 )
 from modules.gacha_log.models import (
     GachaItem,
@@ -30,7 +31,7 @@ from modules.gacha_log.models import (
     GachaLogInfo,
     UIGFGachaType,
     ItemType,
-    XlsxType,
+    ImportType,
     UIGFModel,
     UIGFInfo,
     UIGFItem,
@@ -120,7 +121,9 @@ class GachaLog:
         if not state:
             raise GachaLogNotFound
         save_path = self.gacha_log_path / f"{user_id}-{uid}-uigf.json"
-        info = UIGFModel(info=UIGFInfo(uid=uid, export_app="TGPaimonBot", export_app_version="v3"), list=[])
+        info = UIGFModel(
+            info=UIGFInfo(uid=uid, export_app=ImportType.TGPaimonBot.value, export_app_version="v3"), list=[]
+        )
         for items in data.item_list.values():
             for item in items:
                 info.list.append(
@@ -134,7 +137,7 @@ class GachaLog:
                         uigf_gacha_type=item.gacha_type,
                     )
                 )
-        await self.save_json(save_path, json.loads(info.json()))
+        await self.save_json(save_path, info.dict())
         return save_path
 
     @staticmethod
@@ -160,10 +163,16 @@ class GachaLog:
                 uid = client.uid
             elif int(uid) != client.uid:
                 raise GachaLogAccountNotFound
+            try:
+                import_type = ImportType(data["info"]["export_app"])
+            except ValueError:
+                import_type = ImportType.UNKNOWN
             # 检查导入数据是否合法
             all_items = [GachaItem(**i) for i in data["list"]]
             await self.verify_data(all_items)
-            gacha_log, _ = await self.load_history_info(str(user_id), uid)
+            gacha_log, status = await self.load_history_info(str(user_id), uid)
+            if import_type == ImportType.PAIMONMOE and status and gacha_log.get_import_type != ImportType.PAIMONMOE:
+                raise GachaLogMixedProvider
             # 将唯一 id 放入临时数据中，加快查找速度
             temp_id_data = {
                 pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()
@@ -179,10 +188,13 @@ class GachaLog:
                 await self.verify_data(i)
                 i.sort(key=lambda x: (x.time, x.id))
             gacha_log.update_time = datetime.datetime.now()
+            gacha_log.import_type = import_type.value
             await self.save_gacha_log_info(str(user_id), uid, gacha_log)
             return new_num
         except GachaLogAccountNotFound as e:
             raise GachaLogAccountNotFound("导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同") from e
+        except GachaLogMixedProvider as e:
+            raise GachaLogMixedProvider from e
         except Exception as exc:
             raise GachaLogException from exc
 
@@ -195,6 +207,8 @@ class GachaLog:
         """
         new_num = 0
         gacha_log, _ = await self.load_history_info(str(user_id), str(client.uid))
+        if gacha_log.get_import_type == ImportType.PAIMONMOE:
+            raise GachaLogMixedProvider
         # 将唯一 id 放入临时数据中，加快查找速度
         temp_id_data = {pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()}
         try:
@@ -225,6 +239,7 @@ class GachaLog:
         for i in gacha_log.item_list.values():
             i.sort(key=lambda x: (x.time, x.id))
         gacha_log.update_time = datetime.datetime.now()
+        gacha_log.import_type = ImportType.UIGF.value
         await self.save_gacha_log_info(str(user_id), str(client.uid), gacha_log)
         return new_num
 
@@ -595,11 +610,11 @@ class GachaLog:
         wb_len = len(wb.worksheets)
 
         if wb_len == 6:
-            xlsx_type = XlsxType.PAIMONMOE
+            import_type = ImportType.PAIMONMOE
         elif wb_len == 5:
-            xlsx_type = XlsxType.UIGF
+            import_type = ImportType.UIGF
         elif wb_len == 4:
-            xlsx_type = XlsxType.FXQ
+            import_type = ImportType.FXQ
         else:
             raise GachaLogFileError("xlsx 格式错误")
 
@@ -615,8 +630,8 @@ class GachaLog:
             UIGFGachaType.CHARACTER: "角色活动祈愿",
             UIGFGachaType.WEAPON: "武器活动祈愿",
         }
-        data = UIGFModel(info=UIGFInfo(), list=[])
-        if xlsx_type == XlsxType.PAIMONMOE:
+        data = UIGFModel(info=UIGFInfo(export_app=import_type.value), list=[])
+        if import_type == ImportType.PAIMONMOE:
             ws = wb["Information"]
             if ws["B2"].value != PAIMONMOE_VERSION:
                 raise PaimonMoeGachaLogFileError(file_version=ws["B2"].value, support_version=PAIMONMOE_VERSION)
@@ -628,7 +643,7 @@ class GachaLog:
                         break
                     data.list.append(from_paimon_moe(gacha_type, row[0], row[1], row[2], row[3], count))
                     count += 1
-        elif xlsx_type == XlsxType.UIGF:
+        elif import_type == ImportType.UIGF:
             ws = wb["原始数据"]
             type_map = {}
             count = 0
