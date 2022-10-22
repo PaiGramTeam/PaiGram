@@ -116,10 +116,11 @@ async def update_metadata_from_github(overwrite: bool = True):
                 data = json.dumps(data, ensure_ascii=False)
                 await file.write(data)
             return data
-        except RemoteProtocolError:
+        except RemoteProtocolError as e:
+            logger.warning(f"在从 {host} 下载元数据的过程中遇到了错误: {repr(e)}")
             continue
         except Exception as e:
             if num != len(hosts) - 1:
-                logger.error(f"在从 {host} 下载元数据的过程中遇到了错误: {e}")
+                logger.error(f"在从 {host} 下载元数据的过程中遇到了错误: {repr(e)}")
                 continue
             raise e
