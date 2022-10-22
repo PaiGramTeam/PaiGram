@@ -4,7 +4,6 @@ from typing import Iterator
 import ujson as json
 from aiofiles import open as async_open
 from httpx import AsyncClient, RemoteProtocolError, Response, URL
-from line_profiler_pycharm import profile
 
 from utils.const import AMBR_HOST, PROJECT_ROOT
 from utils.log import logger
@@ -39,7 +38,6 @@ async def stream_request(method, url) -> Iterator[Response]:
 
 
 # noinspection PyShadowingNames
-@profile
 async def update_metadata_from_github(overwrite: bool = True):
     path = PROJECT_ROOT.joinpath("metadata/data/namecard.json")
     if not overwrite and path.exists():
