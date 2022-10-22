@@ -63,6 +63,8 @@ class BotConfig(BaseSettings):
     connect_timeout: Optional[float] = None
     pool_timeout: Optional[float] = None
 
+    genshin_ttl: Optional[int] = None
+
     enka_network_api_agent: str = ""
     pass_challenge_api: str = ""
     pass_challenge_app_key: str = ""

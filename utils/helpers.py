@@ -18,6 +18,7 @@ from typing_extensions import ParamSpec
 
 from core.base.redisdb import RedisDB
 from core.bot import bot
+from core.config import config
 from core.cookies.services import CookiesService, PublicCookiesService
 from core.error import ServiceNotFoundError
 from core.user.services import UserService
@@ -47,8 +48,8 @@ public_cookies_service = cast(PublicCookiesService, public_cookies_service)
 redis_db = bot.services.get(RedisDB)
 redis_db = cast(RedisDB, redis_db)
 genshin_cache: Optional[genshin.RedisCache] = None
-if redis_db:
-    genshin_cache = genshin.RedisCache(redis_db.client)
+if redis_db and config.genshin_ttl:
+    genshin_cache = genshin.RedisCache(redis_db.client, ttl=config.genshin_ttl)
 
 REGION_MAP = {
     "1": RegionEnum.HYPERION,
@@ -173,11 +174,11 @@ async def execute(command, pass_error=True):
 
 
 async def async_re_sub(
-    pattern: str | Pattern,
-    repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
-    string: str,
-    count: int = 0,
-    flags: int = 0,
+        pattern: str | Pattern,
+        repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
+        string: str,
+        count: int = 0,
+        flags: int = 0,
 ) -> str:
     """
     一个支持 repl 参数为 async 函数的 re.sub
@@ -204,7 +205,7 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1] :]
+            temp = temp[match.span(1)[1]:]
     else:
         while match := re.search(pattern, temp, flags=flags):
             replaced = None
@@ -215,5 +216,5 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1] :]
+            temp = temp[match.span(1)[1]:]
     return result + temp
