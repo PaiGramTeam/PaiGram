@@ -4,7 +4,7 @@ from typing import Optional, Union, List
 from telegram import Message, InputMediaPhoto, InputMediaDocument
 
 from core.template.cache import HtmlToFileIdCache
-from core.template.error import ErrorFileType
+from core.template.error import ErrorFileType, FileIdNotFound
 
 
 class FileType(Enum):
@@ -91,8 +91,12 @@ class RenderResult:
         if self.is_file_id():
             return
 
-        photo = reply.photo[0]
-        file_id = photo.file_id
+        if self.file_type == FileType.PHOTO and reply.photo:
+            file_id = reply.photo[0].file_id
+        elif self.file_type == FileType.DOCUMENT and reply.document:
+            file_id = reply.document.file_id
+        else:
+            raise FileIdNotFound
         await self._cache.set_data(self.html, self.file_type.name, file_id, self.ttl)
 
     def is_file_id(self) -> bool:

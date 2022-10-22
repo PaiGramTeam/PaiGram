@@ -8,3 +8,7 @@ class QuerySelectorNotFound(TemplateException):
 
 class ErrorFileType(TemplateException):
     pass
+
+
+class FileIdNotFound(TemplateException):
+    pass
