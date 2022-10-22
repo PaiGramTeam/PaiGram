@@ -14,6 +14,7 @@ from core.cookies import CookiesService
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler, conversation
 from core.template import TemplateService
+from core.template.models import FileType
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.scripts.paimon_moe import update_paimon_moe_zh, GACHA_LOG_PAIMON_MOE_PATH
@@ -29,7 +30,6 @@ from modules.gacha_log.error import (
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
 from utils.bot import get_all_args
-from utils.const import PROJECT_ROOT
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -341,7 +341,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 png_data = await self.template_service.render(
                     "genshin/gacha_log/gacha_log.html", data, full_page=True, query_selector=".body_box"
                 )
-                await message.reply_photo(png_data)
+                await png_data.reply_photo(message)
         except GachaLogNotFound:
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
         except GachaLogAccountNotFound:
@@ -390,15 +390,18 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 if data["hasMore"] and not group:
                     document = True
                     data["hasMore"] = False
+                await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if document else ChatAction.UPLOAD_PHOTO)
                 png_data = await self.template_service.render(
-                    "genshin/gacha_count/gacha_count.html", data, full_page=True, query_selector=".body_box"
+                    "genshin/gacha_count/gacha_count.html",
+                    data,
+                    full_page=True,
+                    query_selector=".body_box",
+                    file_type=FileType.DOCUMENT if document else FileType.PHOTO,
                 )
                 if document:
-                    await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
-                    await message.reply_document(png_data, filename="抽卡统计.png")
+                    await png_data.reply_document(message, filename="抽卡统计.png")
                 else:
-                    await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-                    await message.reply_photo(png_data)
+                    await png_data.reply_photo(message)
         except GachaLogNotFound:
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
         except GachaLogAccountNotFound:
