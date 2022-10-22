@@ -225,7 +225,7 @@ class Gacha(Plugin, BasePlugin):
             "genshin/gacha/gacha.html", template_data, {"width": 1157, "height": 603}, False
         )
 
-        reply_message = await message.reply_photo(png_data)
+        reply_message = await message.reply_photo(png_data.photo)
         if filters.ChatType.GROUPS.filter(message):
             self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
             self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
