@@ -3,7 +3,7 @@ import asyncio
 import re
 from datetime import datetime
 from functools import lru_cache, partial
-from typing import Any, Coroutine, List, Match, Optional, Tuple
+from typing import Any, Coroutine, List, Match, Optional, Tuple, Union
 
 import ujson as json
 from arkowrapper import ArkoWrapper
@@ -198,7 +198,17 @@ class Abyss(Plugin, BasePlugin):
 
     async def get_rendered_pic(
         self, client: Client, uid: int, floor: int, total: bool, previous: bool
-    ) -> Optional[List[RenderResult]]:
+    ) -> Union[
+        tuple[
+            Union[BaseException, Any],
+            Union[BaseException, Any],
+            Union[BaseException, Any],
+            Union[BaseException, Any],
+            Union[BaseException, Any],
+        ],
+        list[RenderResult],
+        None,
+    ]:
         """
         获取渲染后的图片
 
@@ -281,6 +291,7 @@ class Abyss(Plugin, BasePlugin):
                         },
                         viewport={"width": 690, "height": 500},
                         full_page=True,
+                        ttl=15 * 24 * 60 * 60,
                     ),
                 )
 

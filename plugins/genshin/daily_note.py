@@ -92,7 +92,7 @@ class DailyNote(Plugin, BasePlugin):
 
     @handler(CommandHandler, command="dailynote", block=False)
     @handler(MessageHandler, filters=filters.Regex("^当前状态(.*)"), block=False)
-    @restricts(return_data=ConversationHandler.END)
+    @restricts(30)
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user

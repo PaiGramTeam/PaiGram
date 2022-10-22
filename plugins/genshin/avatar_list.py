@@ -226,6 +226,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             full_page=True,
             query_selector=".container",
             file_type=FileType.DOCUMENT if as_document else FileType.PHOTO,
+            ttl=30 * 24 * 60 * 60,
         )
         self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
         if as_document:
