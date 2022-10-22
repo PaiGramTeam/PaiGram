@@ -243,7 +243,14 @@ class Bot:
         try:
             for _ in range(5):
                 try:
-                    self.app.run_polling(close_loop=False, write_timeout=10)
+                    self.app.run_polling(
+                        close_loop=False,
+                        timeout=self.config.timeout,
+                        read_timeout=self.config.read_timeout,
+                        write_timeout=self.config.write_timeout,
+                        connect_timeout=self.config.connect_timeout,
+                        pool_timeout=self.config.pool_timeout,
+                    )
                     break
                 except TimedOut:
                     logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试", extra={"markup": True})

@@ -57,6 +57,12 @@ class BotConfig(BaseSettings):
     logger_locals_max_length: int = 10
     logger_locals_max_string: int = 80
 
+    timeout: int = 10
+    read_timeout: float = 2
+    write_timeout: Optional[float] = None
+    connect_timeout: Optional[float] = None
+    pool_timeout: Optional[float] = None
+
     enka_network_api_agent: str = ""
     pass_challenge_api: str = ""
     pass_challenge_app_key: str = ""
