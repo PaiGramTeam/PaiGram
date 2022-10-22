@@ -24,10 +24,10 @@ class DailyNote(Plugin, BasePlugin):
     """每日便签"""
 
     def __init__(
-        self,
-        user_service: UserService = None,
-        cookies_service: CookiesService = None,
-        template_service: TemplateService = None,
+            self,
+            user_service: UserService = None,
+            cookies_service: CookiesService = None,
+            template_service: TemplateService = None,
     ):
         self.template_service = template_service
         self.cookies_service = cookies_service
@@ -86,7 +86,7 @@ class DailyNote(Plugin, BasePlugin):
             "transformer_recovery_time": transformer_recovery_time,
         }
         render_result = await self.template_service.render(
-            "genshin/daily_note/daily_note.html", daily_data, {"width": 600, "height": 548}, full_page=False
+            "genshin/daily_note/daily_note.html", daily_data, {"width": 600, "height": 548}, full_page=False, ttl=8 * 60
         )
         return render_result
 
