@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional, Union, List
 
-from telegram import Message, InputMediaPhoto
+from telegram import Message, InputMediaPhoto, InputMediaDocument
 
 from core.template.cache import HtmlToFileIdCache
 from core.template.error import ErrorFileType
@@ -10,6 +10,16 @@ from core.template.error import ErrorFileType
 class FileType(Enum):
     PHOTO = 1
     DOCUMENT = 2
+
+    @staticmethod
+    def media_type(file_type: "FileType"):
+        """对应的 Telegram media 类型"""
+        if file_type == FileType.PHOTO:
+            return InputMediaPhoto
+        elif file_type == FileType.DOCUMENT:
+            return InputMediaDocument
+        else:
+            raise ErrorFileType
 
 
 class RenderResult:
@@ -95,13 +105,10 @@ class RenderGroupResult:
 
     async def reply_media_group(self, message: Message, *args, **kwargs):
         """是 `message.reply_media_group` 的封装，上传成功后，缓存 telegram 返回的 file_id，方便重复使用"""
-        for result in self.results:
-            if result.file_type != FileType.PHOTO:
-                raise ErrorFileType
 
         reply = await message.reply_media_group(
             media=[
-                InputMediaPhoto(
+                FileType.media_type(result.file_type)(
                     media=result.photo, caption=result.caption, parse_mode=result.parse_mode, filename=result.filename
                 )
                 for result in self.results

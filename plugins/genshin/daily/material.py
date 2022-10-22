@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 from genshin import Client
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
-from telegram import InputMediaDocument, InputMediaPhoto, Message, Update, User
+from telegram import Message, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
@@ -28,6 +28,7 @@ from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.template import TemplateService
+from core.template.models import FileType, RenderGroupResult
 from core.user.error import UserNotFoundError
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
 from utils.bot import get_all_args
@@ -186,7 +187,7 @@ class DailyMaterial(Plugin, BasePlugin):
             title = "今日"
             weekday = now.weekday() - (1 if now.hour < 4 else 0)
             weekday = 6 if weekday < 0 else weekday
-            time = now.strftime("%m-%d %H:%M") + " 星期" + WEEK_MAP[weekday]
+            time = f"星期{WEEK_MAP[weekday]}"
         full = bool(args and args[-1] == "full")  # 判定最后一个参数是不是 full
 
         logger.info(f'用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday="{WEEK_MAP[weekday]}" full={full}')
@@ -275,35 +276,33 @@ class DailyMaterial(Plugin, BasePlugin):
             setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
 
         await message.reply_chat_action(ChatAction.TYPING)
-        render_tasks = [
-            asyncio.create_task(
-                self.template_service.render(  # 渲染角色素材页
-                    "genshin/daily_material/character.html", {"data": render_data}, {"width": 1164, "height": 500}
-                )
-            ),
-            asyncio.create_task(
-                self.template_service.render(  # 渲染武器素材页
-                    "genshin/daily_material/weapon.html", {"data": render_data}, {"width": 1164, "height": 500}
-                )
-            ),
-        ]
 
-        results = await asyncio.gather(*render_tasks)
+        # 是否发送原图
+        file_type = FileType.DOCUMENT if full else FileType.PHOTO
 
-        character_img_data = results[0]
-        weapon_img_data = results[1]
+        character_img_data, weapon_img_data = await asyncio.gather(
+            self.template_service.render(  # 渲染角色素材页
+                "genshin/daily_material/character.html",
+                {"data": render_data},
+                {"width": 1164, "height": 500},
+                file_type=file_type,
+            ),
+            self.template_service.render(  # 渲染武器素材页
+                "genshin/daily_material/weapon.html",
+                {"data": render_data},
+                {"width": 1164, "height": 500},
+                file_type=file_type,
+            ),
+        )
 
         self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        if full:  # 是否发送原图
-            await message.reply_media_group(
-                [
-                    InputMediaDocument(character_img_data, filename="可培养角色.png"),
-                    InputMediaDocument(weapon_img_data, filename="可培养武器.png"),
-                ]
-            )
-        else:
-            await message.reply_media_group([InputMediaPhoto(character_img_data), InputMediaPhoto(weapon_img_data)])
+
+        character_img_data.filename = f"{title}可培养角色.png"
+        weapon_img_data.filename = f"{title}可培养武器.png"
+
+        await RenderGroupResult([character_img_data, weapon_img_data]).reply_media_group(message)
+
         logger.debug("角色、武器培养素材图发送成功")
 
     @handler.command("refresh_daily_material", block=False)
