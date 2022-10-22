@@ -152,7 +152,7 @@ class Abyss(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
             return
 
-        async def reply_message(content: str) -> None:
+        async def reply_message_func(content: str) -> None:
             _user = await client.get_genshin_user(uid)
             _reply_msg = await message.reply_text(
                 f"旅行者 {_user.info.nickname}(<code>{uid}</code>) {content}", parse_mode=ParseMode.HTML
@@ -168,19 +168,19 @@ class Abyss(Plugin, BasePlugin):
         try:
             images = await self.get_rendered_pic(client, uid, floor, total, previous)
         except AbyssUnlocked:  # 若深渊未解锁
-            await reply_message("还未解锁深渊哦~")
+            await reply_message_func("还未解锁深渊哦~")
             return
         except NoMostKills:  # 若深渊还未挑战
-            await reply_message("还没有挑战本次深渊呢，咕咕咕~")
+            await reply_message_func("还没有挑战本次深渊呢，咕咕咕~")
             return
         except AbyssNotFoundError:
-            await reply_message("无法查询玩家挑战队伍详情，只能查询统计详情哦~")
+            await reply_message_func("无法查询玩家挑战队伍详情，只能查询统计详情哦~")
             return
         except IndexError:  # 若深渊为挑战此层
-            await reply_message("还没有挑战本层呢，咕咕咕~")
+            await reply_message_func("还没有挑战本层呢，咕咕咕~")
             return
         if images is None:
-            await reply_message(f"还没有第 {floor} 层的挑战数据")
+            await reply_message_func(f"还没有第 {floor} 层的挑战数据")
             return
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
