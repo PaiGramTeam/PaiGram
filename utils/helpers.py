@@ -16,6 +16,7 @@ from genshin import Client, types
 from httpx import UnsupportedProtocol
 from typing_extensions import ParamSpec
 
+from core.base.redisdb import RedisDB
 from core.bot import bot
 from core.cookies.services import CookiesService, PublicCookiesService
 from core.error import ServiceNotFoundError
@@ -43,6 +44,11 @@ user_service = bot.services.get(UserService)
 user_service = cast(UserService, user_service)
 public_cookies_service = bot.services.get(PublicCookiesService)
 public_cookies_service = cast(PublicCookiesService, public_cookies_service)
+redis_db = bot.services.get(RedisDB)
+redis_db = cast(RedisDB, redis_db)
+genshin_cache: Optional[genshin.RedisCache] = None
+if redis_db:
+    genshin_cache = genshin.RedisCache(redis_db.client)
 
 REGION_MAP = {
     "1": RegionEnum.HYPERION,
@@ -109,6 +115,8 @@ async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, 
         )
     else:
         raise TypeError("region is not RegionEnum.NULL")
+    if genshin_cache:
+        client.cache = genshin_cache
     return client
 
 
@@ -130,6 +138,8 @@ async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]
         )
     else:
         raise TypeError("region is not RegionEnum.NULL")
+    if genshin_cache:
+        client.cache = genshin_cache
     return client, uid
 
 
