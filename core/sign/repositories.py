@@ -1,7 +1,7 @@
 from typing import List, Optional, cast
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.base.mysql import MySQL
 from .models import Sign
@@ -39,7 +39,6 @@ class SignRepository:
 
     async def get_by_chat_id(self, chat_id: int) -> Optional[List[Sign]]:
         async with self.mysql.Session() as session:
-            session = cast(AsyncSession, session)
             statement = select(Sign).where(Sign.chat_id == chat_id)
             results = await session.exec(statement)
             signs = results.all()
@@ -51,3 +50,8 @@ class SignRepository:
             results = await session.exec(query)
             signs = results.all()
             return [sign[0] for sign in signs]
+
+    async def delete(self, sign: Sign):
+        async with self.mysql.Session() as session:
+            await session.delete(sign)
+            await session.commit()

@@ -23,3 +23,6 @@ class SignServices:
 
     async def get_by_chat_id(self, chat_id: int):
         return await self._repository.get_by_chat_id(chat_id)
+
+    async def delete(self, sign: Sign):
+        await self._repository.delete(sign)

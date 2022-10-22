@@ -18,3 +18,6 @@ class UserService:
 
     async def add_user(self, user: User) -> User:
         return await self._repository.update_user(user)
+
+    async def delete_user(self, user: User) -> User:
+        return await self._repository.delete_user(user)

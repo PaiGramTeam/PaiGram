@@ -7,7 +7,7 @@ from utils.log import logger
 from utils.models.base import RegionEnum
 from .cache import PublicCookiesCache
 from .error import TooManyRequestPublicCookies, CookieServiceError
-from .models import CookiesStatusEnum
+from .models import CookiesStatusEnum, Cookies
 from .repositories import CookiesNotFoundError, CookiesRepository
 
 
@@ -23,6 +23,9 @@ class CookiesService:
 
     async def get_cookies(self, user_id: int, region: RegionEnum):
         return await self._repository.get_cookies(user_id, region)
+
+    async def delete_cookies(self, cookies: Cookies, region: RegionEnum):
+        return await self._repository.delete_cookies(cookies, region)
 
 
 class PublicCookiesService:

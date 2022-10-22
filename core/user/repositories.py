@@ -34,3 +34,8 @@ class UserRepository:
             session = cast(AsyncSession, session)
             session.add(user)
             await session.commit()
+
+    async def delete_user(self, user: User):
+        async with self.mysql.Session() as session:
+            await session.delete(user)
+            await session.commit()
