@@ -1,12 +1,12 @@
 """练度统计"""
 import asyncio
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence
 
 from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
 from genshin import Client, GenshinException
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Message, Update, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -17,6 +17,7 @@ from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template import TemplateService
+from core.template.models import FileType
 from core.user.error import UserNotFoundError
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
@@ -113,18 +114,14 @@ class AvatarListPlugin(Plugin, BasePlugin):
     async def get_avatars_data(
         self, characters: Sequence[Character], client: Client, max_length: int = None
     ) -> List["AvatarData"]:
-        task_result: List[Tuple[int, AvatarData]] = []
-
         async def _task(c, n):
-            if (result := await self.get_avatar_data(c, client)) is not None:
-                task_result.append((n, result))
+            return n, await self.get_avatar_data(c, client)
 
-        task_list = []
-        for num, character in enumerate(characters[:max_length]):
-            task_list.append(asyncio.create_task(_task(character, num)))
+        task_results = await asyncio.gather(
+            *[_task(character, num) for num, character in enumerate(characters[:max_length])]
+        )
 
-        await asyncio.gather(*task_list)
-        return list(map(lambda x: x[1], sorted(task_result, key=lambda x: x[0])))
+        return list(filter(lambda x: x, map(lambda x: x[1], sorted(task_results, key=lambda x: x[0]))))
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
@@ -218,7 +215,9 @@ class AvatarListPlugin(Plugin, BasePlugin):
             "has_more": len(characters) != len(avatar_datas),  # 是否显示了全部角色
         }
 
-        await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if all_avatars else ChatAction.UPLOAD_PHOTO)
+        as_document = True if all_avatars and len(characters) > 20 else False
+
+        await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if as_document else ChatAction.UPLOAD_PHOTO)
 
         image = await self.template_service.render(
             "genshin/avatar_list/main.html",
@@ -226,10 +225,11 @@ class AvatarListPlugin(Plugin, BasePlugin):
             viewport={"width": 1040, "height": 500},
             full_page=True,
             query_selector=".container",
+            file_type=FileType.DOCUMENT if as_document else FileType.PHOTO,
         )
         self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
-        if all_avatars and len(characters) > 20:
-            await message.reply_document(InputFile(image, filename="练度统计.png"))
+        if as_document:
+            await image.reply_document(message, filename="练度统计.png")
         else:
             await image.reply_photo(message)
 

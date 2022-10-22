@@ -427,7 +427,7 @@ class DailyMaterial(Plugin, BasePlugin):
             for ID, DATA in ITEMS.items():
                 if (ITEM := [ID, DATA[1], TYPE]) not in new_items:
                     new_items.append(ITEM)
-                    task_list.append(asyncio.create_task(task(*ITEM)))
+                    task_list.append(task(*ITEM))
             await asyncio.gather(*task_list)  # 等待所有任务执行完成
 
         logger.info("图标素材下载完成")
