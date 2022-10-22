@@ -5,7 +5,7 @@ from typing import Callable, cast
 from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, GenshinException, TooManyRequests, DataNotPublic
 from httpx import ConnectTimeout
-from telegram import Update, ReplyKeyboardRemove
+from telegram import Update, ReplyKeyboardRemove, InlineKeyboardButton
 from telegram.error import BadRequest, TimedOut, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
 
@@ -14,9 +14,10 @@ from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 
 
-async def send_user_notification(update: Update, _: CallbackContext, text: str):
+async def send_user_notification(update: Update, context: CallbackContext, text: str):
     if update.inline_query is not None:  # 忽略 inline_query
         return
+    buttons = [[InlineKeyboardButton("点我重新绑定", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
     user = update.effective_user
     message = update.effective_message
     chat = update.effective_chat
@@ -26,14 +27,10 @@ async def send_user_notification(update: Update, _: CallbackContext, text: str):
         return
     logger.info(f"尝试通知用户 {user.full_name}[{user.id}] " f"在 {chat.full_name}[{chat.id}]" f"的 错误信息[{text}]")
     try:
-        await message.reply_text(text, reply_markup=ReplyKeyboardRemove(), allow_sending_without_reply=True)
-    except BadRequest as exc:
-        logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
-        logger.exception(exc)
-    except Forbidden as exc:
-        logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
-        logger.exception(exc)
-    except Exception as exc:
+        await message.reply_text(
+            text, reply_markup=buttons if "重新绑定" in text else ReplyKeyboardRemove(), allow_sending_without_reply=True
+        )
+    except (BadRequest, Forbidden, Exception) as exc:
         logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
         logger.exception(exc)
     finally:
@@ -70,15 +67,15 @@ def error_callable(func: Callable) -> Callable:
             return await func(*args, **kwargs)
         except ClientConnectorError:
             logger.error("aiohttp 模块连接服务器 ClientConnectorError")
-            await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ 请稍后再试")
             return ConversationHandler.END
         except ConnectTimeout:
             logger.error("httpx 模块连接服务器 ConnectTimeout")
-            await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ 请稍后再试")
             return ConversationHandler.END
         except TimedOut:
             logger.error("python-telegram-bot 模块连接服务器 TimedOut")
-            await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ 请稍后再试")
             return ConversationHandler.END
         except UrlResourcesNotFoundError as exc:
             logger.error("URL数据资源未找到")
@@ -87,13 +84,13 @@ def error_callable(func: Callable) -> Callable:
             return ConversationHandler.END
         except InvalidCookies as exc:
             if exc.retcode in (10001, -100):
-                await send_user_notification(update, context, "出错了呜呜呜 ~ Cookies无效，请尝试重新绑定账户")
+                await send_user_notification(update, context, "出错了呜呜呜 ~ Cookie 无效，请尝试重新绑定")
             elif exc.retcode == 10103:
-                await send_user_notification(update, context, "出错了呜呜呜 ~ Cookie有效，但没有绑定到游戏帐户，" "请尝试重新绑定邮游戏账户")
+                await send_user_notification(update, context, "出错了呜呜呜 ~ Cookie 有效，但没有绑定到游戏帐户，请尝试重新绑定")
             else:
                 logger.warning("Cookie错误")
                 logger.exception(exc)
-                await send_user_notification(update, context, f"出错了呜呜呜 ~ Cookies无效 错误信息为 {exc.msg}")
+                await send_user_notification(update, context, f"出错了呜呜呜 ~ Cookie 无效 错误信息为 {exc.msg} 请尝试重新绑定")
             return ConversationHandler.END
         except TooManyRequests as exc:
             logger.warning("查询次数太多（操作频繁）", exc)
@@ -104,22 +101,22 @@ def error_callable(func: Callable) -> Callable:
             return ConversationHandler.END
         except GenshinException as exc:
             if exc.retcode == -130:
-                await send_user_notification(update, context, "出错了呜呜呜 ~ 未设置默认角色，请尝试重新绑定默认角色")
+                await send_user_notification(update, context, "出错了呜呜呜 ~ 未设置默认角色，请尝试重新绑定")
                 return ConversationHandler.END
             logger.error("GenshinException")
             logger.exception(exc)
-            await send_user_notification(update, context, f"出错了呜呜呜 ~ 获取账号信息发生错误 错误信息为 {exc.msg}")
+            await send_user_notification(update, context, f"出错了呜呜呜 ~ 获取账号信息发生错误 错误信息为 {exc.msg} ~ 请稍后再试")
             return ConversationHandler.END
         except ReturnCodeError as exc:
-            await send_user_notification(update, context, f"出错了呜呜呜 ~ API请求错误 错误信息为 {exc.message}")
+            await send_user_notification(update, context, f"出错了呜呜呜 ~ API请求错误 错误信息为 {exc.message} ~ 请稍后再试")
             return ConversationHandler.END
         except APIHelperTimedOut:
             logger.warning("APIHelperException")
-            await send_user_notification(update, context, "出错了呜呜呜 ~ API请求超时")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ API请求超时 ~ 请稍后再试")
         except APIHelperException as exc:
             logger.error("APIHelperException")
             logger.exception(exc)
-            await send_user_notification(update, context, "出错了呜呜呜 ~ API请求错误")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ API请求错误 ~ 请稍后再试")
             return ConversationHandler.END
         except BadRequest as exc:
             if "Replied message not found" in exc.message:
@@ -131,12 +128,12 @@ def error_callable(func: Callable) -> Callable:
                 return ConversationHandler.END
             logger.error("python-telegram-bot 请求错误")
             logger.exception(exc)
-            await send_user_notification(update, context, "出错了呜呜呜 ~ telegram-bot-api请求错误")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ telegram-bot-api请求错误 ~ 请稍后再试")
             return ConversationHandler.END
         except Forbidden as exc:
-            logger.error("python-telegram-bot返回 Forbidden")
+            logger.error("python-telegram-bot 返回 Forbidden")
             logger.exception(exc)
-            await send_user_notification(update, context, "出错了呜呜呜 ~ telegram-bot-api请求错误")
+            await send_user_notification(update, context, "出错了呜呜呜 ~ telegram-bot-api请求错误 ~ 请稍后再试")
             return ConversationHandler.END
 
     return decorator
