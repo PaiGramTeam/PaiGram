@@ -286,14 +286,14 @@ class DailyMaterial(Plugin, BasePlugin):
                 {"data": render_data},
                 {"width": 1164, "height": 500},
                 file_type=file_type,
-                ttl=7 * 24 * 60 * 60,
+                ttl=30 * 24 * 60 * 60,
             ),
             self.template_service.render(  # 渲染武器素材页
                 "genshin/daily_material/weapon.html",
                 {"data": render_data},
                 {"width": 1164, "height": 500},
                 file_type=file_type,
-                ttl=7 * 24 * 60 * 60,
+                ttl=30 * 24 * 60 * 60,
             ),
         )
 
