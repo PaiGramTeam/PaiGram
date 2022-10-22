@@ -232,7 +232,17 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             client = await get_genshin_client(user.id, need_cookie=False)
             context.chat_data["uid"] = client.uid
         except UserNotFoundError:
-            await message.reply_text("你还没有导入抽卡记录哦~")
+            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            if filters.ChatType.GROUPS.filter(message):
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return ConversationHandler.END
         _, status = await self.gacha_log.load_history_info(str(user.id), str(client.uid), only_status=True)
         if not status:
@@ -275,11 +285,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             status = await self.gacha_log.remove_history_info(str(cid), str(client.uid))
             await message.reply_text("抽卡记录已强制删除" if status else "抽卡记录删除失败")
         except GachaLogNotFound:
-            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
-        except GachaLogAccountNotFound:
-            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
-        except GachaLogFileError:
-            await message.reply_text("导入失败，数据格式错误")
+            await message.reply_text("该用户还没有导入抽卡记录")
         except UserNotFoundError:
             await message.reply_text("该用户暂未绑定账号")
         except (ValueError, IndexError):
@@ -300,18 +306,26 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.2")
         except GachaLogNotFound:
-            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
+            buttons = [
+                [InlineKeyboardButton("点我导入", url=f"https://t.me/{context.bot.username}?start=gacha_log_import")]
+            ]
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
         except GachaLogAccountNotFound:
             await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
         except GachaLogFileError:
             await message.reply_text("导入失败，数据格式错误")
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
-                await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CommandHandler, command="gacha_log", block=False)
     @handler(MessageHandler, filters=filters.Regex("^抽卡记录(.*)"), block=False)
@@ -343,15 +357,14 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 )
                 await png_data.reply_photo(message)
         except GachaLogNotFound:
-            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
-        except GachaLogAccountNotFound:
-            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
-        except GachaLogFileError:
-            await message.reply_text("导入失败，数据格式错误")
+            buttons = [
+                [InlineKeyboardButton("点我导入", url=f"https://t.me/{context.bot.username}?start=gacha_log_import")]
+            ]
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
@@ -359,7 +372,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CommandHandler, command="gacha_count", block=True)
     @handler(MessageHandler, filters=filters.Regex("^抽卡统计(.*)"), block=True)
@@ -403,15 +416,14 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 else:
                     await png_data.reply_photo(message)
         except GachaLogNotFound:
-            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~")
-        except GachaLogAccountNotFound:
-            await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
-        except GachaLogFileError:
-            await message.reply_text("导入失败，数据格式错误")
-        except (UserNotFoundError, CookiesNotFoundError):
+            buttons = [
+                [InlineKeyboardButton("点我导入", url=f"https://t.me/{context.bot.username}?start=gacha_log_import")]
+            ]
+            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+        except (UserNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
@@ -419,4 +431,4 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
