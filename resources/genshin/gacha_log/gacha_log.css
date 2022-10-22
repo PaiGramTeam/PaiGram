@@ -28,7 +28,7 @@ body {
 }
 
 .head_box {
-    border-radius: 15px;
+    border-radius: 9999px;
     font-family: tttgbnumber, sans-serif;
     padding: 10px 20px;
     position: relative;
