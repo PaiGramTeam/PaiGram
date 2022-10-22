@@ -94,8 +94,7 @@ class TemplateService:
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
 
         file_id = await self.html_to_file_id_cache.get_data(html, file_type.name)
-        # TODO: 功能开发中，默认打开缓存用于调试，上线前改为仅生产环境返回缓存
-        if file_id:
+        if file_id and not bot.config.debug:
             logger.debug(f"{template_name} 命中缓存，返回 file_id {file_id}")
             return RenderResult(
                 html=html,
