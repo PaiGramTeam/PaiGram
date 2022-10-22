@@ -17,7 +17,7 @@ from enkanetwork import (
     VaildateUIDError,
 )
 from pydantic import BaseModel
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
@@ -132,8 +132,8 @@ class PlayerCards(Plugin, BasePlugin):
             await message.reply_text(f"角色展柜中未找到 {character_name}")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
-        await message.reply_photo(pnd_data, filename=f"player_card_{uid}_{character_name}.png")
+        render_result = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
+        await render_result.reply_photo(message, filename=f"player_card_{uid}_{character_name}.png")
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
     @restricts(restricts_time_of_groups=20, without_overlapping=True)
@@ -171,8 +171,9 @@ class PlayerCards(Plugin, BasePlugin):
             return
         await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        pnd_data = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
-        await message.edit_media(InputMediaPhoto(pnd_data, filename=f"player_card_{uid}_{result}.png"))
+        render_result = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
+        render_result.filename = f"player_card_{uid}_{result}.png"
+        await render_result.edit_media(message)
 
 
 class Artifact(BaseModel):
@@ -195,15 +196,15 @@ class Artifact(BaseModel):
         self.score = round(self.score, 1)
 
         for r in (
-                ("D", 10),
-                ("C", 16.5),
-                ("B", 23.1),
-                ("A", 29.7),
-                ("S", 36.3),
-                ("SS", 42.9),
-                ("SSS", 49.5),
-                ("ACE", 56.1),
-                ("ACE²", 66),
+            ("D", 10),
+            ("C", 16.5),
+            ("B", 23.1),
+            ("A", 29.7),
+            ("S", 36.3),
+            ("SS", 42.9),
+            ("SSS", 49.5),
+            ("ACE", 56.1),
+            ("ACE²", 66),
         ):
             if self.score >= r[1]:
                 self.score_label = r[0]
@@ -243,15 +244,15 @@ class RenderTemplate:
 
         artifact_total_score_label: str = "E"
         for r in (
-                ("D", 10),
-                ("C", 16.5),
-                ("B", 23.1),
-                ("A", 29.7),
-                ("S", 36.3),
-                ("SS", 42.9),
-                ("SSS", 49.5),
-                ("ACE", 56.1),
-                ("ACE²", 66),
+            ("D", 10),
+            ("C", 16.5),
+            ("B", 23.1),
+            ("A", 29.7),
+            ("S", 36.3),
+            ("SS", 42.9),
+            ("SSS", 49.5),
+            ("ACE", 56.1),
+            ("ACE²", 66),
         ):
             if artifact_total_score / 5 >= r[1]:
                 artifact_total_score_label = r[0]
@@ -285,6 +286,7 @@ class RenderTemplate:
             {"width": 950, "height": 1080},
             full_page=True,
             query_selector=".text-neutral-200",
+            ttl=7 * 24 * 60 * 60,
         )
 
     async def de_stats(self) -> List[Tuple[str, Any]]:
