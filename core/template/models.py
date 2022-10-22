@@ -56,7 +56,7 @@ class RenderResult:
 
         reply = await message.reply_photo(photo=self.photo, *args, **kwargs)
 
-        await self.cache_file_id(reply, self.ttl)
+        await self.cache_file_id(reply)
 
         return reply
 
@@ -67,7 +67,7 @@ class RenderResult:
 
         reply = await message.reply_document(document=self.photo, *args, **kwargs)
 
-        await self.cache_file_id(reply, self.ttl)
+        await self.cache_file_id(reply)
 
         return reply
 
@@ -82,18 +82,18 @@ class RenderResult:
 
         edit_media = await message.edit_media(media, *args, **kwargs)
 
-        await self.cache_file_id(edit_media, self.ttl)
+        await self.cache_file_id(edit_media)
 
         return edit_media
 
-    async def cache_file_id(self, reply: Message, ttl: int = 24 * 60 * 60):
+    async def cache_file_id(self, reply: Message):
         """缓存 telegram 返回的 file_id"""
         if self.is_file_id():
             return
 
         photo = reply.photo[0]
         file_id = photo.file_id
-        await self._cache.set_data(self.html, self.file_type.name, file_id, ttl)
+        await self._cache.set_data(self.html, self.file_type.name, file_id, self.ttl)
 
     def is_file_id(self) -> bool:
         return isinstance(self.photo, str)
@@ -119,4 +119,4 @@ class RenderGroupResult:
 
         for index, value in enumerate(reply):
             result = self.results[index]
-            await result.cache_file_id(value, result.ttl)
+            await result.cache_file_id(value)
