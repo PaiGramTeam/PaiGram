@@ -15,7 +15,7 @@ import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from genshin import Client
+from genshin import Client, InvalidCookies
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
 from telegram import Message, Update, User
@@ -168,6 +168,8 @@ class DailyMaterial(Plugin, BasePlugin):
                 )
         except (UserNotFoundError, CookiesNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+        except InvalidCookies:
+            logger.info(f"用户({user.full_name} {user.id}) 所绑定的账号信息已失效")
         return client, user_data
 
     @handler.command("daily_material", block=False)
@@ -262,7 +264,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
                     except AssetsCouldNotFound as exc:
                         logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
-                        await notice.edit_text(f"出错了呜呜呜 ~ 派蒙找不到一些素材")
+                        await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
                         return
                 areas.append(
                     AreaData(

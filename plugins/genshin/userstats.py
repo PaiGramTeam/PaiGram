@@ -54,8 +54,8 @@ class UserStatsPlugins(Plugin, BasePlugin):
                 client, uid = await get_public_genshin_client(user.id)
             render_result = await self.render(client, uid)
         except UserNotFoundError:
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
@@ -63,7 +63,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多 请稍后重试")

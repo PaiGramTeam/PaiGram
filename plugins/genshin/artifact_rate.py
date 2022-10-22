@@ -39,7 +39,7 @@ class ArtifactRate(Plugin.Conversation, BasePlugin.Conversation):
             if rate_result_req.status_code == 400:
                 artifact_attr = rate_result_req.json()
                 return artifact_attr.get("message", "API请求错误")
-            return "API请求错误"
+            return "API请求错误，请稍后再试"
         rate_result = rate_result_req.json()
         return (
             "*圣遗物评分结果*\n"
@@ -68,22 +68,19 @@ class ArtifactRate(Plugin.Conversation, BasePlugin.Conversation):
         photo_file: Optional[File] = None
         if message is None:
             return ConversationHandler.END
-        else:
-            if message.reply_to_message is None:
-                message_data = message
-            else:
-                message_data = message.reply_to_message
-            if message_data.photo is not None and len(message_data.photo) >= 1:
-                photo_file = await message_data.photo[-1].get_file()  # 草 居然第一张是预览图我人都麻了
-            elif message_data.document is not None:
-                document = message_data.document
-                if "image" not in document.mime_type:
-                    await message.reply_text("错误的图片类型")
-                    return ConversationHandler.END
-                if document.file_size / 1024 / 1024 >= 5:
-                    await message.reply_text("图片太大啦")
-                    return ConversationHandler.END
-                photo_file = await document.get_file()
+        message_data = message if message.reply_to_message is None else message.reply_to_message
+
+        if message_data.photo is not None and len(message_data.photo) >= 1:
+            photo_file = await message_data.photo[-1].get_file()  # 草 居然第一张是预览图我人都麻了
+        elif message_data.document is not None:
+            document = message_data.document
+            if "image" not in document.mime_type:
+                await message.reply_text("错误的图片类型")
+                return ConversationHandler.END
+            if document.file_size >= 5242880:
+                await message.reply_text("图片太大啦")
+                return ConversationHandler.END
+            photo_file = await document.get_file()
         if photo_file is None:
             await message.reply_text("图呢？")
             return ConversationHandler.END
@@ -92,9 +89,9 @@ class ArtifactRate(Plugin.Conversation, BasePlugin.Conversation):
         if artifact_attr_req.status_code != 200:
             if artifact_attr_req.status_code == 400:
                 artifact_attr = artifact_attr_req.json()
-                await message.reply_text(artifact_attr.get("message", "API请求错误"))
+                await message.reply_text(artifact_attr.get("message", "API请求错误，请稍后再试"))
                 return ConversationHandler.END
-            await message.reply_text("API请求错误")
+            await message.reply_text("API请求错误，请稍后再试")
             return ConversationHandler.END
         artifact_attr = artifact_attr_req.json()
         context.user_data["artifact_attr"] = artifact_attr
@@ -117,7 +114,7 @@ class ArtifactRate(Plugin.Conversation, BasePlugin.Conversation):
         artifact_attr = context.user_data.get("artifact_attr")
         await query.answer()
         if artifact_attr is None:
-            await query.edit_message_text("数据错误")
+            await query.edit_message_text("数据错误，请重新发送图片")
             return ConversationHandler.END
 
         def get_callback_data(callback_query_data: str) -> Tuple[str, int]:
@@ -136,7 +133,7 @@ class ArtifactRate(Plugin.Conversation, BasePlugin.Conversation):
         elif key_name == "star":
             artifact_attr["star"] = value
         else:
-            await query.edit_message_text("数据错误")
+            await query.edit_message_text("数据错误，请重新发送图片")
             return ConversationHandler.END
         if artifact_attr.get("level") is None:
             await query.edit_message_text("无法识别圣遗物等级，请选择圣遗物等级", reply_markup=InlineKeyboardMarkup(self.LEVEL_KEYBOARD))

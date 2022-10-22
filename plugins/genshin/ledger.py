@@ -124,8 +124,8 @@ class Ledger(Plugin, BasePlugin):
             client = await get_genshin_client(user.id)
             render_result = await self._start_get_ledger(client, month)
         except (UserNotFoundError, CookiesNotFoundError):
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
@@ -133,10 +133,10 @@ class Ledger(Plugin, BasePlugin):
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         except DataNotPublic:
-            reply_message = await message.reply_text("查询失败惹，可能是旅行札记功能被禁用了？")
+            reply_message = await message.reply_text("查询失败惹，可能是旅行札记功能被禁用了？请先通过米游社或者 hoyolab 获取一次旅行札记后重试。")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)

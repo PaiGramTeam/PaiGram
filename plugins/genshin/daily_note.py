@@ -24,10 +24,10 @@ class DailyNote(Plugin, BasePlugin):
     """每日便签"""
 
     def __init__(
-            self,
-            user_service: UserService = None,
-            cookies_service: CookiesService = None,
-            template_service: TemplateService = None,
+        self,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+        template_service: TemplateService = None,
     ):
         self.template_service = template_service
         self.cookies_service = cookies_service
@@ -102,8 +102,8 @@ class DailyNote(Plugin, BasePlugin):
             client = await get_genshin_client(user.id)
             render_result = await self._get_daily_note(client)
         except (UserNotFoundError, CookiesNotFoundError):
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
@@ -111,10 +111,10 @@ class DailyNote(Plugin, BasePlugin):
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         except DataNotPublic:
-            reply_message = await message.reply_text("查询失败惹，可能是便签功能被禁用了？")
+            reply_message = await message.reply_text("查询失败惹，可能是便签功能被禁用了？请尝试通过米游社或者 hoyolab 获取一次便签信息后重试。")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 300)

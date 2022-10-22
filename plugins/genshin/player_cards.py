@@ -57,10 +57,8 @@ class PlayerCards(Plugin, BasePlugin):
             return "Enka.Network 服务请求超时，请稍后重试"
         except HTTPException:
             return "Enka.Network HTTP 服务请求错误，请稍后重试"
-        except UIDNotFounded:
-            return "UID 未找到"
-        except VaildateUIDError:
-            return "UID 未找到"
+        except (UIDNotFounded, VaildateUIDError):
+            return "UID 未找到，可能为服务器抽风，请稍后重试"
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
@@ -78,8 +76,8 @@ class PlayerCards(Plugin, BasePlugin):
             else:
                 uid = user_info.genshin_uid
         except UserNotFoundError:
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
@@ -87,14 +85,14 @@ class PlayerCards(Plugin, BasePlugin):
 
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         data = await self._fetch_user(uid)
         if isinstance(data, str):
             await message.reply_text(data)
             return
         if data.characters is None:
-            await message.reply_text("请先将角色加入到角色展柜并允许查看角色详情")
+            await message.reply_text("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
             return
         if len(args) == 1:
             character_name = roleToName(args[0])
@@ -120,7 +118,7 @@ class PlayerCards(Plugin, BasePlugin):
             else:
                 photo = open("resources/img/kitsune.png", "rb")
             reply_message = await message.reply_photo(
-                photo=photo, caption="请选择你要查询的角色", reply_markup=InlineKeyboardMarkup(buttons)
+                photo=photo, caption="请选择你要查询的角色，部分角色数据存在缓存，更新可能不及时", reply_markup=InlineKeyboardMarkup(buttons)
             )
             if reply_message.photo:
                 self.temp_photo = reply_message.photo[-1].file_id
@@ -129,7 +127,7 @@ class PlayerCards(Plugin, BasePlugin):
             if characters.name == character_name:
                 break
         else:
-            await message.reply_text(f"角色展柜中未找到 {character_name}")
+            await message.reply_text(f"角色展柜中未找到 {character_name} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         render_result = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
@@ -161,13 +159,13 @@ class PlayerCards(Plugin, BasePlugin):
             await message.reply_text(data)
             return
         if data.characters is None:
-            await message.edit_text("请先将角色加入到角色展柜并允许查看角色详情")
+            await message.edit_text("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
             return
         for characters in data.characters:
             if characters.name == result:
                 break
         else:
-            await message.edit_text(f"角色展柜中未找到 {result}")
+            await message.edit_text(f"角色展柜中未找到 {result} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试")
             return
         await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)

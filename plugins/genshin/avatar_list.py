@@ -41,18 +41,19 @@ class AvatarListPlugin(Plugin, BasePlugin):
         try:
             return await get_genshin_client(user.id)
         except UserNotFoundError:  # 若未找到账号
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
-                reply_msg = await message.reply_text(
+                reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
         except CookiesNotFoundError:
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
                 reply_msg = await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙绑定账号",
                     reply_markup=InlineKeyboardMarkup(buttons),
@@ -61,7 +62,11 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定", parse_mode=ParseMode.HTML)
+                await message.reply_text(
+                    "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定",
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                )
 
     async def get_avatar_data(self, character: Character, client: Client) -> Optional["AvatarData"]:
         detail = None
@@ -215,7 +220,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             "has_more": len(characters) != len(avatar_datas),  # 是否显示了全部角色
         }
 
-        as_document = True if all_avatars and len(characters) > 20 else False
+        as_document = all_avatars and len(characters) > 20
 
         await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if as_document else ChatAction.UPLOAD_PHOTO)
 

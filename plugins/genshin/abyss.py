@@ -113,7 +113,7 @@ class Abyss(Plugin, BasePlugin):
         floor, total, previous = get_args(message.text)
 
         if floor > 12 or floor < 0:
-            reply_msg = await message.reply_text("深渊层数输入错误，请重新输入")
+            reply_msg = await message.reply_text("深渊层数输入错误，请重新输入。支持的参数为： 1-12 或 all")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
@@ -132,22 +132,21 @@ class Abyss(Plugin, BasePlugin):
             await client.get_record_cards()
             uid = client.uid
         except UserNotFoundError:  # 若未找到账号
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
-                reply_msg = await message.reply_text(
+                reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         except CookiesNotFoundError:  # 若未找到cookie
             client, uid = await get_public_genshin_client(user.id)
         except TooManyRequestPublicCookies:
-            reply_msg = await message.reply_text(
-                "查询次数太多，请您稍后重试",
-            )
+            reply_msg = await message.reply_text("查询次数太多，请您稍后重试")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
