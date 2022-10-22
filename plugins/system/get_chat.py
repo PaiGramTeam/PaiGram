@@ -29,6 +29,7 @@ class GetChat(Plugin):
         self.cookies_service = cookies_service
         self.user_service = user_service
         self.sign_service = sign_service
+        self.gacha_log = GachaLog()
 
     async def parse_group_chat(self, chat: Chat, admins: List[ChatMember]) -> str:
         text = f"群 ID：<code>{chat.id}</code>\n" f"群名称：<code>{chat.title}</code>\n"
@@ -93,7 +94,7 @@ class GetChat(Plugin):
             else:
                 text += f"\n自动签到：未开启"
             with contextlib.suppress(Exception):
-                gacha_log, status = await GachaLog.load_history_info(str(chat.id), str(uid))
+                gacha_log, status = await self.gacha_log.load_history_info(str(chat.id), str(uid))
                 if status:
                     text += f"\n抽卡记录："
                     for key, value in gacha_log.item_list.items():

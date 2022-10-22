@@ -1,6 +1,5 @@
 import json
 from io import BytesIO
-from os import sep
 
 import genshin
 from aiofiles import open as async_open
@@ -17,7 +16,7 @@ from core.plugin import Plugin, handler, conversation
 from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from metadata.scripts.paimon_moe import update_paimon_moe_zh
+from metadata.scripts.paimon_moe import update_paimon_moe_zh, GACHA_LOG_PAIMON_MOE_PATH
 from modules.apihelper.hyperion import SignIn
 from modules.gacha_log.error import (
     GachaLogInvalidAuthkey,
@@ -38,9 +37,6 @@ from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.models.base import RegionEnum
 
-GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
-GACHA_LOG_PAIMON_MOE_PATH = PROJECT_ROOT.joinpath("metadata/data/paimon_moe_zh.json")
-GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
 
@@ -59,7 +55,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         self.assets_service = assets
         self.cookie_service = cookie_service
         self.zh_dict = None
-        self.gacha_log = GachaLog(GACHA_LOG_PATH)
+        self.gacha_log = GachaLog()
 
     async def __async_init__(self):
         await update_paimon_moe_zh(False)

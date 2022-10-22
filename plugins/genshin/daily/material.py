@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import os
 import re
 from asyncio import Lock
 from ctypes import c_double
@@ -22,7 +23,7 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
 
-from core.base.assets import AssetsService, AssetsServiceType, AssetsCouldNotFound
+from core.base.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
@@ -116,7 +117,9 @@ class DailyMaterial(Plugin, BasePlugin):
                 logger.info("正在开始获取每日素材缓存")
                 self.data = await self._refresh_data()
 
-        if not DATA_FILE_PATH.exists():  # 若缓存不存在
+        if (not DATA_FILE_PATH.exists()) or (  # 若缓存不存在
+            (datetime.today() - datetime.fromtimestamp(os.stat(DATA_FILE_PATH).st_mtime)).days > 3  # 若缓存过期，超过了3天
+        ):
             self.refresh_task = asyncio.create_task(task_daily())  # 创建后台任务
         if not data and DATA_FILE_PATH.exists():  # 若存在，则读取至内存中
             async with async_open(DATA_FILE_PATH) as file:
@@ -300,9 +303,7 @@ class DailyMaterial(Plugin, BasePlugin):
                 ]
             )
         else:
-            await message.reply_media_group(
-                [InputMediaPhoto(character_img_data), InputMediaPhoto(weapon_img_data)]
-            )
+            await message.reply_media_group([InputMediaPhoto(character_img_data), InputMediaPhoto(weapon_img_data)])
         logger.debug("角色、武器培养素材图发送成功")
 
     @handler.command("refresh_daily_material", block=False)
