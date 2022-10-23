@@ -5,25 +5,114 @@ import os
 import traceback as traceback_
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import Any, Callable, List, Mapping, Optional, TYPE_CHECKING, Tuple
+from types import TracebackType
+from typing import (
+    Any,
+    Callable,
+    List,
+    Mapping,
+    Optional,
+    TYPE_CHECKING,
+    Tuple,
+    Type,
+    Union,
+)
 
 from typing_extensions import Self
 
-from core.config import config
-from utils.const import NOT_SET
-from utils.log._handler import FileHandler, Handler
-from utils.typedefs import ExceptionInfoType
+from utils.log._handler import (
+    FileHandler,
+    Handler,
+)
+from utils.typedefs import LogFilterType
 
 if TYPE_CHECKING:
+    from utils.log._config import LoggerConfig
     from logging import LogRecord  # pylint: disable=unused-import
 
-__all__ = ["logger"]
+__all__ = ["Logger", "LogFilter"]
+
+SysExcInfoType = Union[
+    Tuple[Type[BaseException], BaseException, Optional[TracebackType]],
+    Tuple[None, None, None],
+]
+ExceptionInfoType = Union[bool, SysExcInfoType, BaseException]
 
 _lock = Lock()
-__initialized__ = False
+NONE = object()
 
 
 class Logger(logging.Logger):
+    _instance: Optional["Logger"] = None
+
+    def __new__(cls, *args, **kwargs) -> "Logger":
+        with _lock:
+            if cls._instance is None:
+                result = super(Logger, cls).__new__(cls)
+                cls._instance = result
+        return cls._instance
+
+    def __init__(self, config: "LoggerConfig" = None) -> None:
+        from utils.log._config import LoggerConfig
+
+        self.config = config or LoggerConfig()
+
+        level_ = 10 if self.config.debug else 20
+        super().__init__(
+            name=self.config.name,
+            level=level_ if self.config.level is None else self.config.level,
+        )
+
+        log_path = Path(self.config.project_root).joinpath(self.config.log_path)
+        handler, debug_handler, error_handler = (
+            # 控制台 log 配置
+            Handler(
+                width=self.config.width,
+                locals_max_length=self.config.traceback_locals_max_length,
+                locals_max_string=self.config.traceback_locals_max_string,
+                locals_max_depth=self.config.traceback_locals_max_depth,
+                project_root=self.config.project_root,
+                log_time_format=self.config.time_format,
+            ),
+            # debug.log 配置
+            FileHandler(
+                width=self.config.width,
+                level=10,
+                path=log_path.joinpath("debug/debug.log"),
+                locals_max_depth=1,
+                locals_max_length=self.config.traceback_locals_max_length,
+                locals_max_string=self.config.traceback_locals_max_string,
+                project_root=self.config.project_root,
+                log_time_format=self.config.time_format,
+            ),
+            # error.log 配置
+            FileHandler(
+                width=self.config.width,
+                level=40,
+                path=log_path.joinpath("error/error.log"),
+                locals_max_length=self.config.traceback_locals_max_length,
+                locals_max_string=self.config.traceback_locals_max_string,
+                locals_max_depth=self.config.traceback_locals_max_depth,
+                project_root=self.config.project_root,
+                log_time_format=self.config.time_format,
+            ),
+        )
+        logging.basicConfig(
+            level=10 if self.config.debug else 20,
+            format="%(message)s",
+            datefmt=self.config.time_format,
+            handlers=[handler, debug_handler, error_handler],
+        )
+        if config.capture_warnings:
+            logging.captureWarnings(True)
+            warnings_logger = logging.getLogger("py.warnings")
+            warnings_logger.addHandler(handler)
+            warnings_logger.addHandler(debug_handler)
+
+        self.addHandler(handler)
+        self.addHandler(debug_handler)
+        self.addHandler(error_handler)
+
     def success(
         self,
         msg: Any,
@@ -33,11 +122,19 @@ class Logger(logging.Logger):
         stacklevel: int = 1,
         extra: Optional[Mapping[str, Any]] = None,
     ) -> None:
-        return self.log(25, msg, *args, exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
+        return self.log(
+            25,
+            msg,
+            *args,
+            exc_info=exc_info,
+            stack_info=stack_info,
+            stacklevel=stacklevel,
+            extra=extra,
+        )
 
     def exception(
         self,
-        msg: Any = NOT_SET,
+        msg: Any = NONE,
         *args: Any,
         exc_info: Optional[ExceptionInfoType] = True,
         stack_info: bool = False,
@@ -46,7 +143,7 @@ class Logger(logging.Logger):
         **kwargs,
     ) -> None:  # pylint: disable=W1113
         super(Logger, self).exception(
-            "" if msg is NOT_SET else msg,
+            "" if msg is NONE else msg,
             *args,
             exc_info=exc_info,
             stack_info=stack_info,
@@ -87,6 +184,10 @@ class Logger(logging.Logger):
             break
         return rv
 
+    def addFilter(self, log_filter: LogFilterType) -> None:
+        for handler in self.handlers:
+            handler.addFilter(log_filter)
+
 
 class LogFilter(logging.Filter):
     _filter_list: List[Callable[["LogRecord"], bool]] = []
@@ -101,61 +202,3 @@ class LogFilter(logging.Filter):
 
     def filter(self, record: "LogRecord") -> bool:
         return all(map(lambda func: func(record), self._filter_list))
-
-
-def default_filter(record: "LogRecord") -> bool:
-    """默认的过滤器"""
-    return record.name.split(".")[0] in ["TGPaimon", "uvicorn"]
-
-
-with _lock:
-    if not __initialized__:
-        if "PYCHARM_HOSTED" in os.environ:
-            print()  # 针对 pycharm 的控制台 bug
-        logging.captureWarnings(True)
-        handler, debug_handler, error_handler = (
-            # 控制台 log 配置
-            Handler(
-                locals_max_length=config.logger.locals_max_length,
-                locals_max_string=config.logger.locals_max_string,
-                locals_max_depth=config.logger.locals_max_depth,
-            ),
-            # debug.log 配置
-            FileHandler(
-                level=10,
-                path=config.logger.path.joinpath("debug/debug.log"),
-                locals_max_depth=1,
-                locals_max_length=config.logger.locals_max_length,
-                locals_max_string=config.logger.locals_max_string,
-            ),
-            # error.log 配置
-            FileHandler(
-                level=40,
-                path=config.logger.path.joinpath("error/error.log"),
-                locals_max_length=config.logger.locals_max_length,
-                locals_max_string=config.logger.locals_max_string,
-                locals_max_depth=config.logger.locals_max_depth,
-            ),
-        )
-
-        default_log_filter = LogFilter().add_filter(default_filter)
-        handler.addFilter(default_log_filter)
-        debug_handler.addFilter(default_log_filter)
-
-        level_ = 10 if config.debug else 20
-        logging.basicConfig(
-            level=10 if config.debug else 20,
-            format="%(message)s",
-            datefmt=config.logger.time_format,
-            handlers=[handler, debug_handler, error_handler],
-        )
-        warnings_logger = logging.getLogger("py.warnings")
-        warnings_logger.addHandler(handler)
-        warnings_logger.addHandler(debug_handler)
-
-        logger = Logger("TGPaimon", level_)
-        logger.addHandler(handler)
-        logger.addHandler(debug_handler)
-        logger.addHandler(error_handler)
-
-        __initialized__ = True
