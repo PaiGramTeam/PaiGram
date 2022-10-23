@@ -1,3 +1,5 @@
+import re
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from core.config import config
@@ -11,7 +13,7 @@ __all__ = ["logger"]
 
 logger = Logger(
     LoggerConfig(
-        name="TGPaimon",
+        name=config.logger.name,
         width=config.logger.width,
         time_format=config.logger.time_format,
         traceback_max_frames=config.logger.traceback_max_frames,
@@ -24,11 +26,19 @@ logger = Logger(
 )
 
 
-def default_filter(record: "LogRecord") -> bool:
+@lru_cache
+def _name_filter(record_name: str) -> bool:
+    for name in config.logger.filtered_names + [config.logger.name]:
+        if re.match(rf"^{name}.*?$", record_name):
+            return True
+    return False
+
+
+def name_filter(record: "LogRecord") -> bool:
     """默认的过滤器"""
-    return record.name.split(".")[0] in ["TGPaimon", "uvicorn"]
+    return _name_filter(record.name)
 
 
 log_filter = LogFilter()
-log_filter.add_filter(default_filter)
+log_filter.add_filter(name_filter)
 logger.addFilter(log_filter)
