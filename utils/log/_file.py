@@ -18,7 +18,7 @@ class FileIO(IO[str]):
         today = date.today()
         if self.file.exists():
             if not self.file.is_file():
-                raise RuntimeError(f'日志文件冲突, 请删除文件夹 "{str(self.file.resolve())}"')
+                raise FileExistsError(f'Log file conflict, please delete the folder "{str(self.file.resolve())}"')
             if self.file_stream is None or self.file_stream.closed:
                 self.file_stream = self.file.open(mode="a+", encoding="utf-8")
             modify_date = date.fromtimestamp(os.stat(self.file).st_mtime)

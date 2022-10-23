@@ -3,12 +3,18 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Literal, Optional, TYPE_CHECKING, Union
-
-import ujson as json
-from rich.console import (
-    Console,
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    TYPE_CHECKING,
+    Union,
 )
+
+from rich.console import Console
 from rich.logging import (
     LogRender as DefaultLogRender,
     RichHandler as DefaultRichHandler,
@@ -19,10 +25,7 @@ from rich.text import (
     TextType,
 )
 from rich.theme import Theme
-from ujson import JSONDecodeError
 
-from core.config import config
-from utils.const import PROJECT_ROOT
 from utils.log._file import FileIO
 from utils.log._style import DEFAULT_STYLE
 from utils.log._traceback import Traceback
@@ -45,23 +48,17 @@ if sys.platform == "win32":
     color_system = "windows"
 else:
     color_system = "truecolor"
-# noinspection SpellCheckingInspection
-log_console = Console(color_system=color_system, theme=Theme(DEFAULT_STYLE), width=config.logger.width)
 
 
 class LogRender(DefaultLogRender):
     @property
     def last_time(self):
+        """上次打印的时间"""
         return self._last_time
 
     @last_time.setter
     def last_time(self, last_time):
         self._last_time = last_time
-
-    def __init__(self, *args, **kwargs):
-        super(LogRender, self).__init__(*args, **kwargs)
-        self.show_level = True
-        self.time_format = config.logger.time_format
 
     def __call__(
         self,
@@ -87,7 +84,7 @@ class LogRender(DefaultLogRender):
             output.add_column(style="log.line_no", width=4)
         row: List["RenderableType"] = []
         if self.show_time:
-            log_time = log_time or log_console.get_datetime()
+            log_time = log_time or console.get_datetime()
             time_format = time_format or self.time_format
             if callable(time_format):
                 log_time_display = time_format(log_time)
@@ -108,7 +105,10 @@ class LogRender(DefaultLogRender):
             row.append(path_text)
 
         line_no_text = Text()
-        line_no_text.append(str(line_no), style=f"link file://{link_path}#{line_no}" if link_path else "")
+        line_no_text.append(
+            str(line_no),
+            style=f"link file://{link_path}#{line_no}" if link_path else "",
+        )
         row.append(line_no_text)
 
         output.add_row(*row)
@@ -119,16 +119,23 @@ class Handler(DefaultRichHandler):
     def __init__(
         self,
         *args,
+        width: int = None,
         rich_tracebacks: bool = True,
-        locals_max_depth: Optional[int] = config.logger.locals_max_depth,
+        locals_max_depth: Optional[int] = None,
+        tracebacks_max_frames: int = 100,
+        keywords: Optional[List[str]] = None,
+        log_time_format: Union[str, FormatTimeCallable] = "[%x %X]",
+        project_root: Union[str, Path] = "./logs",
         **kwargs,
     ) -> None:
         super(Handler, self).__init__(*args, rich_tracebacks=rich_tracebacks, **kwargs)
-        self._log_render = LogRender()
-        self.console = log_console
+        self._log_render = LogRender(time_format=log_time_format, show_level=True)
+        self.console = Console(color_system=color_system, theme=Theme(DEFAULT_STYLE), width=width)
         self.tracebacks_show_locals = True
-        self.keywords = self.KEYWORDS + config.logger.render_keywords
+        self.tracebacks_max_frames = tracebacks_max_frames
+        self.keywords = self.KEYWORDS + (keywords or [])
         self.locals_max_depth = locals_max_depth
+        self.project_root = project_root
 
     def render(
         self,
@@ -139,7 +146,7 @@ class Handler(DefaultRichHandler):
     ) -> "ConsoleRenderable":
         if record.pathname != "<input>":
             try:
-                path = str(Path(record.pathname).relative_to(PROJECT_ROOT))
+                path = str(Path(record.pathname).relative_to(self.project_root))
                 path = path.split(".")[0].replace(os.sep, ".")
             except ValueError:
                 import site
@@ -178,7 +185,11 @@ class Handler(DefaultRichHandler):
         )
         return log_renderable
 
-    def render_message(self, record: "LogRecord", message: Any) -> "ConsoleRenderable":
+    def render_message(
+        self,
+        record: "LogRecord",
+        message: Any,
+    ) -> "ConsoleRenderable":
         use_markup = getattr(record, "markup", self.markup)
         if isinstance(message, str):
             message_text = Text.from_markup(message) if use_markup else Text(message)
@@ -216,15 +227,16 @@ class Handler(DefaultRichHandler):
                 width=self.tracebacks_width,
                 extra_lines=self.tracebacks_extra_lines,
                 word_wrap=self.tracebacks_word_wrap,
-                show_locals=getattr(record, "show_locals", None) or self.tracebacks_show_locals,
-                locals_max_length=getattr(record, "locals_max_length", None) or self.locals_max_length,
-                locals_max_string=getattr(record, "locals_max_string", None) or self.locals_max_string,
+                show_locals=(getattr(record, "show_locals", None) or self.tracebacks_show_locals),
+                locals_max_length=(getattr(record, "locals_max_length", None) or self.locals_max_length),
+                locals_max_string=(getattr(record, "locals_max_string", None) or self.locals_max_string),
                 locals_max_depth=(
                     getattr(record, "locals_max_depth")
                     if hasattr(record, "locals_max_depth")
                     else self.locals_max_depth
                 ),
                 suppress=self.tracebacks_suppress,
+                max_frames=self.tracebacks_max_frames,
             )
             message = record.getMessage()
             if self.formatter:
@@ -237,10 +249,7 @@ class Handler(DefaultRichHandler):
                 message = None
 
         if message is not None:
-            try:
-                message_renderable = self.render_message(record, json.loads(message))
-            except JSONDecodeError:
-                message_renderable = self.render_message(record, message)
+            message_renderable = self.render_message(record, message)
         else:
             message_renderable = None
         log_renderable = self.render(record=record, traceback=_traceback, message_renderable=message_renderable)
@@ -252,7 +261,13 @@ class Handler(DefaultRichHandler):
 
 
 class FileHandler(Handler):
-    def __init__(self, *args, path: Path, **kwargs):
+    def __init__(
+        self,
+        *args,
+        width: int = None,
+        path: Path,
+        **kwargs,
+    ) -> None:
         super().__init__(*args, **kwargs)
         path.parent.mkdir(exist_ok=True, parents=True)
-        self.console = Console(width=180, file=FileIO(path), theme=Theme(DEFAULT_STYLE))
+        self.console = Console(width=width, file=FileIO(path), theme=Theme(DEFAULT_STYLE))

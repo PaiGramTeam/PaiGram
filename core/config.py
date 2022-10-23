@@ -48,6 +48,7 @@ class BotConfig(BaseSettings):
     verify_groups: List[Union[int, str]] = []
     join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
 
+    logger_name: str = "TGPaimon"
     logger_width: int = 180
     logger_log_path: str = "./logs"
     logger_time_format: str = "[%Y-%m-%d %X]"
@@ -56,6 +57,7 @@ class BotConfig(BaseSettings):
     logger_locals_max_depth: Optional[int] = 0
     logger_locals_max_length: int = 10
     logger_locals_max_string: int = 80
+    logger_filtered_names: List[str] = ["uvicorn"]
 
     timeout: int = 10
     read_timeout: float = 2
@@ -104,6 +106,7 @@ class BotConfig(BaseSettings):
     @property
     def logger(self) -> "LoggerConfig":
         return LoggerConfig(
+            name=self.logger_name,
             width=self.logger_width,
             traceback_max_frames=self.logger_traceback_max_frames,
             path=PROJECT_ROOT.joinpath(self.logger_log_path).resolve(),
@@ -112,6 +115,7 @@ class BotConfig(BaseSettings):
             locals_max_length=self.logger_locals_max_length,
             locals_max_string=self.logger_locals_max_string,
             locals_max_depth=self.logger_locals_max_depth,
+            filtered_names=self.logger_filtered_names,
         )
 
     @property
@@ -154,6 +158,7 @@ class RedisConfig(BaseModel):
 
 
 class LoggerConfig(BaseModel):
+    name: str = "TGPaimon"
     width: int = 180
     time_format: str = "[%Y-%m-%d %X]"
     traceback_max_frames: int = 20
@@ -162,6 +167,7 @@ class LoggerConfig(BaseModel):
     locals_max_length: int = 10
     locals_max_string: int = 80
     locals_max_depth: Optional[int] = None
+    filtered_names: List[str] = ["uvicorn"]
 
     @validator("locals_max_depth", pre=True, check_fields=False)
     def locals_max_depth_validator(cls, value) -> Optional[int]:  # pylint: disable=R0201
