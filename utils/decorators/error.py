@@ -5,7 +5,7 @@ from typing import Callable, cast
 from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, GenshinException, TooManyRequests, DataNotPublic
 from httpx import ConnectTimeout
-from telegram import Update, ReplyKeyboardRemove, InlineKeyboardButton
+from telegram import Update, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest, TimedOut, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
 
@@ -17,7 +17,7 @@ from utils.log import logger
 async def send_user_notification(update: Update, context: CallbackContext, text: str):
     if update.inline_query is not None:  # 忽略 inline_query
         return
-    buttons = [[InlineKeyboardButton("点我重新绑定", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+    buttons = InlineKeyboardMarkup([[InlineKeyboardButton("点我重新绑定", url=f"https://t.me/{context.bot.username}?start=set_cookie")]])
     user = update.effective_user
     message = update.effective_message
     chat = update.effective_chat
