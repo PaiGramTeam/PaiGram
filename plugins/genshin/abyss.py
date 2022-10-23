@@ -9,7 +9,7 @@ import ujson as json
 from arkowrapper import ArkoWrapper
 from genshin import Client
 from pytz import timezone
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Message
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -198,14 +198,14 @@ class Abyss(Plugin, BasePlugin):
     async def get_rendered_pic(
         self, client: Client, uid: int, floor: int, total: bool, previous: bool
     ) -> Union[
-        tuple[
+        Tuple[
             Union[BaseException, Any],
             Union[BaseException, Any],
             Union[BaseException, Any],
             Union[BaseException, Any],
             Union[BaseException, Any],
         ],
-        list[RenderResult],
+        List[RenderResult],
         None,
     ]:
         """
