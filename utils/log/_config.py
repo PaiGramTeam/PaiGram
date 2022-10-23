@@ -26,7 +26,7 @@ class LoggerConfig(BaseSettings):
                 cls._instance = result
         return cls._instance
 
-    name: str = "arko-logger"
+    name: str = "logger"
     level: Optional[Union[str, int]] = None
 
     debug: bool = False
