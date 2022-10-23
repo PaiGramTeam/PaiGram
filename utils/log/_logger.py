@@ -27,7 +27,7 @@ from utils.log._handler import (
 from utils.typedefs import LogFilterType
 
 if TYPE_CHECKING:
-    from utils.log._config import LoggerConfig
+    from utils.log._config import LoggerConfig  # pylint: disable=unused-import
     from logging import LogRecord  # pylint: disable=unused-import
 
 __all__ = ["Logger", "LogFilter"]
@@ -184,7 +184,7 @@ class Logger(logging.Logger):
             break
         return rv
 
-    def addFilter(self, log_filter: LogFilterType) -> None:
+    def addFilter(self, log_filter: LogFilterType) -> None:  # pylint: disable=arguments-differ
         for handler in self.handlers:
             handler.addFilter(log_filter)
 

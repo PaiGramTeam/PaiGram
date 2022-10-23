@@ -8,6 +8,8 @@ from typing import (
 
 from pydantic import BaseSettings
 
+from utils.const import PROJECT_ROOT
+
 __all__ = ["LoggerConfig"]
 
 
@@ -34,7 +36,7 @@ class LoggerConfig(BaseSettings):
     capture_warnings: bool = True
 
     log_path: Union[str, Path] = "./logs"
-    project_root: Union[str, Path] = Path(".")
+    project_root: Union[str, Path] = PROJECT_ROOT
 
     traceback_max_frames: int = 20
     traceback_locals_max_depth: Optional[int] = None

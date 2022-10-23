@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from core.config import config
-from utils.const import PROJECT_ROOT
 from utils.log._config import LoggerConfig
 from utils.log._logger import LogFilter, Logger
 
@@ -21,7 +20,6 @@ logger = Logger(
         traceback_locals_max_depth=config.logger.locals_max_depth,
         traceback_locals_max_length=config.logger.locals_max_length,
         traceback_locals_max_string=config.logger_locals_max_string,
-        project_root=PROJECT_ROOT,
     )
 )
 
@@ -31,5 +29,6 @@ def default_filter(record: "LogRecord") -> bool:
     return record.name.split(".")[0] in ["TGPaimon", "uvicorn"]
 
 
-default_log_filter = LogFilter().add_filter(default_filter)
-logger.addFilter(default_log_filter)
+log_filter = LogFilter()
+log_filter.add_filter(default_filter)
+logger.addFilter(log_filter)

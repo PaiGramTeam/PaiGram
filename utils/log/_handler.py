@@ -278,17 +278,5 @@ class FileHandler(Handler):
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-        while True:
-            try:
-                path.parent.mkdir(exist_ok=True)
-                break
-            except FileNotFoundError:
-                parent = path.parent
-                while True:
-                    try:
-                        parent.mkdir(exist_ok=True)
-                        break
-                    except FileNotFoundError:
-                        parent = parent.parent
-        path.parent.mkdir(exist_ok=True)
+        path.parent.mkdir(exist_ok=True, parents=True)
         self.console = Console(width=width, file=FileIO(path), theme=Theme(DEFAULT_STYLE))
