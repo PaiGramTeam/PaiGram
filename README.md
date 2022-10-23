@@ -1,8 +1,9 @@
+<!--suppress SpellCheckingInspection -->
 <h1 align="center">TGPaimonBot</h1>
 
 <div align="center">
-<img src="https://img.shields.io/badge/python-3.8%2B-blue">
-<img src="https://img.shields.io/badge/works%20on-my%20machine-brightgreen">
+<img src="https://img.shields.io/badge/python-3.8%2B-blue"  alt="">
+<img src="https://img.shields.io/badge/works%20on-my%20machine-brightgreen" alt="">
 <img src="https://img.shields.io/badge/status-%E5%92%95%E5%92%95%E5%92%95-blue">
 <a href="https://black.readthedocs.io/en/stable/index.html"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="code_style" /></a>
 <a href="https://www.codacy.com/gh/luoshuijs/TGPaimonBot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=luoshuijs/TGPaimonBot&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/810a80be4cbe4b7284ab7634941423c4"/></a>
@@ -10,7 +11,7 @@
 
 
 <p>
-<img src="https://user-images.githubusercontent.com/70872201/190447002-119a8819-b111-4a96-a0b3-701c5e256137.png" align="right" width="100px">
+<img src="https://user-images.githubusercontent.com/70872201/190447002-119a8819-b111-4a96-a0b3-701c5e256137.png" align="right" width="100px" alt="">
 <h2 align="left">简介</h2>
 
 基于 [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) 的 Paimon BOT
@@ -18,6 +19,10 @@
 项目仅供学习交流使用，严禁用于任何商业用途和非法行为
 
 ![Alt](https://repobeats.axiom.co/api/embed/1c5f63b06e06654bd87076b9b1bc677cf96dac24.svg "Repobeats analytics image")
+
+## 目前功能
+
+<img src="./doc/images/help.png" alt="帮助"/>
 
 ## 环境需求
 
