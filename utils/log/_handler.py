@@ -30,13 +30,6 @@ from utils.log._file import FileIO
 from utils.log._style import DEFAULT_STYLE
 from utils.log._traceback import Traceback
 
-try:
-    import ujson as json
-    from ujson import JSONDecodeError
-except ImportError:
-    import json
-    from json import JSONDecodeError
-
 if TYPE_CHECKING:
     from rich.console import (  # pylint: disable=unused-import
         ConsoleRenderable,
@@ -60,6 +53,7 @@ else:
 class LogRender(DefaultLogRender):
     @property
     def last_time(self):
+        """上次打印的时间"""
         return self._last_time
 
     @last_time.setter
@@ -255,10 +249,7 @@ class Handler(DefaultRichHandler):
                 message = None
 
         if message is not None:
-            try:
-                message_renderable = self.render_message(record, json.loads(message))
-            except JSONDecodeError:
-                message_renderable = self.render_message(record, message)
+            message_renderable = self.render_message(record, message)
         else:
             message_renderable = None
         log_renderable = self.render(record=record, traceback=_traceback, message_renderable=message_renderable)
