@@ -119,7 +119,7 @@ zookeeper = ["kazoo"]
 
 [[package]]
 name = "arko-wrapper"
-version = "0.2.3"
+version = "0.2.4"
 description = "给你的Python迭代器加上魔法"
 category = "main"
 optional = false
@@ -1288,7 +1288,7 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "314ad77bc5a88cac422b0feddf4daf798376af1e80f26bf2ddde1d4cb35f4332"
+content-hash = "9f961856a3808d66f2fe178da9fbd6c3d1b04502fff522d01468740321ab7b29"
 
 [metadata.files]
 aiofiles = [
@@ -1409,8 +1409,8 @@ APScheduler = [
     {file = "APScheduler-3.9.1.tar.gz", hash = "sha256:65e6574b6395498d371d045f2a8a7e4f7d50c6ad21ef7313d15b1c7cf20df1e3"},
 ]
 arko-wrapper = [
-    {file = "arko-wrapper-0.2.3.tar.gz", hash = "sha256:61927ac03c39c48d2514705b9af3642df30a200a7dd09e010131ebfe29774044"},
-    {file = "arko_wrapper-0.2.3-py3-none-any.whl", hash = "sha256:25f41c22b265324db44508ec8b1875bafd7193b667d5e64164d8fa638301b8a5"},
+    {file = "arko-wrapper-0.2.4.tar.gz", hash = "sha256:92b7771c72f3b18d5193b8b4375f1b0f52cb94d3933b00118c281d6e582819ae"},
+    {file = "arko_wrapper-0.2.4-py3-none-any.whl", hash = "sha256:703dcfeeb95c43631d8cba02eebbc57973a3f0bdca7353dfc57b38b257a94774"},
 ]
 async-timeout = [
     {file = "async-timeout-4.0.2.tar.gz", hash = "sha256:2163e1640ddb52b7a8c80d0a67a08587e5d245cc9c553a74a847056bc2976b15"},
