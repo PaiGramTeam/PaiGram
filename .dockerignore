@@ -1,0 +1,60 @@
+### Code Editor ###
+
+# VSCode
+.vscode/
+*.code-workspace
+.history
+.ionide
+
+# Pycharm
+*.iws
+.idea/
+out/
+
+### Python ###
+
+# Environments
+env/
+venv/
+cache/
+temp/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyc
+
+### Customize ###
+
+**_test.html
+test_**.html
+logs/
+report/
+data/
+/resources/*/*/test/
+plugins/genshin/daily/daily.json
+metadata/data/
+resources/assets/
+
+### DotEnv ###
+.env
+
+
+### private plugins ###
+plugins/private
+
+
+# Unit test / coverage reports
+.pytest_cache
+
+### mtp ###
+paimon.session
+PaimonBot.session
+PaimonBot.session-journal
+
+
+### git ###
+.git
+.gitignore
