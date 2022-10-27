@@ -11,7 +11,6 @@ python = "^3.8"
 ujson = "^5.5.0"
 genshin = { git = "https://github.com/thesadru/genshin.py" }
 Jinja2 = "^3.1.2"
-numpy = "^1.23.4"
 python-telegram-bot = { version = "^20.0a4", extras = ["rate-limiter"] }
 Pillow = "^9.2.0"
 sqlmodel = "^0.0.8"
