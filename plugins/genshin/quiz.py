@@ -11,7 +11,6 @@ from core.quiz import QuizService
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
-from utils.random import MT19937Random
 
 
 class QuizPlugin(Plugin, BasePlugin):
@@ -21,7 +20,6 @@ class QuizPlugin(Plugin, BasePlugin):
         self.bot_admin_service = bot_admin_service
         self.quiz_service = quiz_service
         self.time_out = 120
-        self.random = MT19937Random()
 
     @handler(CommandHandler, command="quiz", block=False)
     @restricts(restricts_time_of_groups=20)
@@ -38,7 +36,7 @@ class QuizPlugin(Plugin, BasePlugin):
                 return None
         if len(question_id_list) == 0:
             return None
-        index = self.random.random(0, len(question_id_list))
+        index = random.choice(question_id_list)  # nosec
         question = await self.quiz_service.get_question(question_id_list[index])
         _options = []
         correct_option = None

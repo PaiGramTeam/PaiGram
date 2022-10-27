@@ -16,7 +16,6 @@ from core.quiz import QuizService
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
-from utils.random import MT19937Random
 
 FullChatPermissions = ChatPermissions(
     can_send_messages=True,
@@ -37,7 +36,6 @@ class GroupJoiningVerification(Plugin):
         self.quiz_service = quiz_service
         self.time_out = 120
         self.kick_time = 120
-        self.random = MT19937Random()
         self.lock = asyncio.Lock()
         self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, List[ChatMember]]] = {}
         self.is_refresh_quiz = False
@@ -276,7 +274,7 @@ class GroupJoiningVerification(Plugin):
                     return
                 else:
                     raise err
-            index = self.random.random(0, len(question_id_list))
+            index = random.choice(question_id_list)  # nosec
             question = await self.quiz_service.get_question(question_id_list[index])
             buttons = [
                 [
