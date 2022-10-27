@@ -80,9 +80,10 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 if character.name != "旅行者":
                     raise e
                 logger.debug(f"解析旅行者数据时遇到了错误：{e}")
-                return None
+            else:
+                break
         if detail is None:
-            logger.warning(f"解析[bold]{character.name}[/]的数据时遇到了错误：Too Many Requests", extra={"markup": True})
+            logger.warning(f"解析[bold]{character.name}[/]的数据时遇到了错误：{e.msg}", extra={"markup": True})
             return None
         if character.id == 10000005:  # 针对男草主
             talents = []
