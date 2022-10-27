@@ -1,4 +1,4 @@
-import secrets
+import random
 from typing import Tuple, List
 
 from modules.gacha.banner import GachaBanner
@@ -73,8 +73,7 @@ class BannerSystem:
             if weight < 0:
                 raise GachaIllegalArgument("Weights must be non-negative!")
             total += weight
-        secrets_random = secrets.SystemRandom()
-        roll = int(secrets_random.random() * min(total, cutoff))
+        roll = random.randint(0, min(total, cutoff))  # nosec
         sub_total = 0
         for index, value in enumerate(weights):
             sub_total += value
@@ -146,11 +145,8 @@ class BannerSystem:
 
     @staticmethod
     def get_random(items) -> int:
-        secrets_random = secrets.SystemRandom()
-        roll = int(secrets_random.random() * len(items))
-        return items[roll]
+        return random.choice(items)  # nosec
 
     @staticmethod
     def random_range(_mix: int, _max: int) -> int:
-        secrets_random = secrets.SystemRandom()
-        return int(secrets_random.uniform(_mix, _max))
+        return random.randint(_mix, _max)  # nosec
