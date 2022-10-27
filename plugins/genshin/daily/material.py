@@ -16,7 +16,6 @@ from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
 from genshin import Client, InvalidCookies, GenshinException
-from genshin.models import Character
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
 from telegram import Message, Update, User
@@ -128,7 +127,8 @@ class DailyMaterial(Plugin, BasePlugin):
                 data = json.loads(await file.read())
         self.data = data
 
-    async def _get_skills_data(self, client: Client, character_id: int) -> Optional[List[int]]:
+    @staticmethod
+    async def _get_skills_data(client: Client, character_id: int) -> Optional[List[int]]:
         detail = None
         for _ in range(5):
             try:
