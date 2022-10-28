@@ -132,11 +132,3 @@ class BotConfig(Settings):
 
 BotConfig.update_forward_refs()
 config = BotConfig()
-
-
-def main():
-    print(config.redis.database)
-
-
-if __name__ == '__main__':
-    main()
