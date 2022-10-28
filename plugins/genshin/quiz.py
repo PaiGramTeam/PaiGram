@@ -36,8 +36,8 @@ class QuizPlugin(Plugin, BasePlugin):
                 return None
         if len(question_id_list) == 0:
             return None
-        index = random.choice(question_id_list)  # nosec
-        question = await self.quiz_service.get_question(question_id_list[index])
+        question_id = random.choice(question_id_list)  # nosec
+        question = await self.quiz_service.get_question(question_id)
         _options = []
         correct_option = None
         for answer in question.answers:
