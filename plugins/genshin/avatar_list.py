@@ -77,13 +77,14 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 if isinstance(e, GenshinException) and "Too Many Requests" in e.msg:
                     await asyncio.sleep(0.2)
                     continue
-                if character.name != "旅行者":
-                    raise e
-                logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+                if character.name == "旅行者":
+                    logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+                    return None
+                raise e
             else:
                 break
-        if detail is None:
-            logger.warning(f"解析[bold]{character.name}[/]的数据时遇到了错误：{e.msg}", extra={"markup": True})
+        else:
+            logger.warning(f"解析[bold]{character.name}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True})
             return None
         if character.id == 10000005:  # 针对男草主
             talents = []
