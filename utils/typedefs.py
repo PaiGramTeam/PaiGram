@@ -4,6 +4,7 @@ from types import TracebackType
 from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 from httpx import URL
+from pydantic import ConstrainedInt
 
 __all__ = [
     "StrOrPath",
@@ -14,6 +15,7 @@ __all__ = [
     "JSONDict",
     "JSONType",
     "LogFilterType",
+    "NaturalNumber",
 ]
 
 StrOrPath = Union[str, Path]
@@ -26,3 +28,7 @@ JSONDict = Dict[str, Any]
 JSONType = Union[JSONDict, list]
 
 LogFilterType = Union[Filter, Callable[[LogRecord], int]]
+
+
+class NaturalNumber(ConstrainedInt):
+    ge = 0

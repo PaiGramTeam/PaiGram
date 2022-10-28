@@ -7,15 +7,11 @@ from typing import (
 )
 
 import dotenv
-from pydantic import (
-    AnyUrl,
-    BaseModel,
-    Field,
-    validator,
-)
+from pydantic import AnyUrl, BaseModel, Field
 
 from utils.const import PROJECT_ROOT
 from utils.models.base import Settings
+from utils.typedefs import NaturalNumber
 
 __all__ = ["BotConfig", "config", "JoinGroups"]
 
@@ -67,14 +63,8 @@ class LoggerConfig(Settings):
     render_keywords: List[str] = ["BOT"]
     locals_max_length: int = 10
     locals_max_string: int = 80
-    locals_max_depth: Optional[int] = None
+    locals_max_depth: Optional[NaturalNumber] = None
     filtered_names: List[str] = ["uvicorn"]
-
-    @validator("locals_max_depth", pre=True, check_fields=False)
-    def locals_max_depth_validator(cls, value) -> Optional[int]:  # pylint: disable=R0201
-        if int(value) <= 0:
-            return None
-        return value
 
     class Config(Settings.Config):
         env_prefix = "logger_"
