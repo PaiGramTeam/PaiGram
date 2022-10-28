@@ -15,7 +15,7 @@ from utils.log import logger
 repo = Repo(os.getcwd())
 sentry_sdk_git_hash = rev_parse(repo, "HEAD").hexsha
 sentry_sdk.init(
-    config.error_sentry_dsn,
+    config.error.sentry_dsn,
     traces_sample_rate=1.0,
     release=sentry_sdk_git_hash,
     environment="production",
@@ -31,7 +31,7 @@ sentry_sdk.init(
 class Sentry:
     @staticmethod
     def report_error(update: object, exc_info):
-        if not config.error_sentry_dsn:
+        if not config.error.sentry_dsn:
             return
         logger.info("正在上传日记到 sentry")
         message: str = ""
@@ -45,8 +45,6 @@ class Sentry:
             if update.effective_message:
                 if update.effective_message.text:
                     message = update.effective_message.text
-        sentry_sdk.set_context(
-            "Target", {"ChatID": str(chat_id), "UserID": str(user_id), "Msg": message}
-        )
+        sentry_sdk.set_context("Target", {"ChatID": str(chat_id), "UserID": str(user_id), "Msg": message})
         sentry_sdk.capture_exception(exc_info)
         logger.success("上传日记到 sentry 成功")

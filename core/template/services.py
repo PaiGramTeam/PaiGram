@@ -1,20 +1,37 @@
 import time
 from typing import Optional
-from urllib.parse import urlencode, urljoin, urlsplit
+from urllib.parse import (
+    urlencode,
+    urljoin,
+    urlsplit,
+)
 from uuid import uuid4
 
 from fastapi import HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+)
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import (
+    Environment,
+    FileSystemLoader,
+    Template,
+)
 from playwright.async_api import ViewportSize
 
 from core.base.aiobrowser import AioBrowser
 from core.base.webserver import webapp
 from core.bot import bot
-from core.template.cache import HtmlToFileIdCache, TemplatePreviewCache
+from core.template.cache import (
+    HtmlToFileIdCache,
+    TemplatePreviewCache,
+)
 from core.template.error import QuerySelectorNotFound
-from core.template.models import FileType, RenderResult
+from core.template.models import (
+    FileType,
+    RenderResult,
+)
 from utils.const import PROJECT_ROOT
 from utils.log import logger
 
@@ -149,7 +166,7 @@ class TemplatePreviewer:
 
     async def get_preview_url(self, template: str, data: dict):
         """获取预览 URL"""
-        components = urlsplit(bot.config.web_url)
+        components = urlsplit(bot.config.webserver.url)
         path = urljoin("/preview/", template)
         query = {}
 
@@ -187,4 +204,6 @@ class TemplatePreviewer:
 
         # 其他静态资源
         for name in ["cache", "resources"]:
+            directory = PROJECT_ROOT / name
+            directory.mkdir(exist_ok=True)
             webapp.mount(f"/{name}", StaticFiles(directory=PROJECT_ROOT / name), name=name)

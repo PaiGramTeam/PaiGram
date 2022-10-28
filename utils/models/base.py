@@ -1,7 +1,13 @@
 import imghdr
 import os
 from enum import Enum
-from typing import Union, Optional
+from typing import (
+    Optional,
+    Union,
+)
+
+import ujson as json
+from pydantic import BaseSettings
 
 from utils.baseobject import BaseObject
 
@@ -96,3 +102,14 @@ class ModuleInfo:
 
     def __str__(self):
         return self.module_name
+
+
+class Settings(BaseSettings):
+    def __new__(cls, *args, **kwargs):
+        cls.update_forward_refs()
+        return super(Settings, cls).__new__(cls)
+
+    class Config(BaseSettings.Config):
+        case_sensitive = False
+        json_loads = json.loads
+        json_dumps = json.dumps

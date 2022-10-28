@@ -5,6 +5,7 @@ from httpx import URL
 
 __all__ = [
     "PROJECT_ROOT",
+    "CORE_DIR",
     "PLUGIN_DIR",
     "RESOURCE_DIR",
     "NOT_SET",

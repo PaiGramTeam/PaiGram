@@ -7,10 +7,15 @@ from typing import (
 )
 
 import dotenv
-import ujson as json
-from pydantic import BaseModel, BaseSettings, validator
+from pydantic import (
+    AnyUrl,
+    BaseModel,
+    Field,
+    validator,
+)
 
 from utils.const import PROJECT_ROOT
+from utils.models.base import Settings
 
 __all__ = ["BotConfig", "config", "JoinGroups"]
 
@@ -23,116 +28,6 @@ class JoinGroups(str, Enum):
     ALLOW_ALL = "ALLOW_ALL"
 
 
-class BotConfig(BaseSettings):
-    debug: bool = False
-
-    db_host: str = ""
-    db_port: int = 0
-    db_username: str = ""
-    db_password: str = ""
-    db_database: str = ""
-
-    redis_host: str = ""
-    redis_port: int = 0
-    redis_db: int = 0
-
-    bot_token: str = ""
-
-    error_notification_chat_id: Optional[str] = None
-
-    api_id: Optional[int] = None
-    api_hash: Optional[str] = None
-
-    channels: List["ConfigChannel"] = []
-    admins: List["ConfigUser"] = []
-    verify_groups: List[Union[int, str]] = []
-    join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
-
-    logger_name: str = "TGPaimon"
-    logger_width: int = 180
-    logger_log_path: str = "./logs"
-    logger_time_format: str = "[%Y-%m-%d %X]"
-    logger_traceback_max_frames: int = 20
-    logger_render_keywords: List[str] = ["BOT"]
-    logger_locals_max_depth: Optional[int] = 0
-    logger_locals_max_length: int = 10
-    logger_locals_max_string: int = 80
-    logger_filtered_names: List[str] = ["uvicorn"]
-
-    timeout: int = 10
-    read_timeout: float = 2
-    write_timeout: Optional[float] = None
-    connect_timeout: Optional[float] = None
-    pool_timeout: Optional[float] = None
-
-    genshin_ttl: Optional[int] = None
-
-    enka_network_api_agent: str = ""
-    pass_challenge_api: str = ""
-    pass_challenge_app_key: str = ""
-
-    web_url: str = "http://localhost:8080/"
-    web_host: str = "localhost"
-    web_port: int = 8080
-
-    error_pb_url: str = ""
-    error_pb_sunset: int = 43200
-    error_pb_max_lines: int = 1000
-    error_sentry_dsn: str = ""
-
-    class Config:
-        case_sensitive = False
-        json_loads = json.loads
-        json_dumps = json.dumps
-
-    @property
-    def mysql(self) -> "MySqlConfig":
-        return MySqlConfig(
-            host=self.db_host,
-            port=self.db_port,
-            username=self.db_username,
-            password=self.db_password,
-            database=self.db_database,
-        )
-
-    @property
-    def redis(self) -> "RedisConfig":
-        return RedisConfig(
-            host=self.redis_host,
-            port=self.redis_port,
-            database=self.redis_db,
-        )
-
-    @property
-    def logger(self) -> "LoggerConfig":
-        return LoggerConfig(
-            name=self.logger_name,
-            width=self.logger_width,
-            traceback_max_frames=self.logger_traceback_max_frames,
-            path=PROJECT_ROOT.joinpath(self.logger_log_path).resolve(),
-            time_format=self.logger_time_format,
-            render_keywords=self.logger_render_keywords,
-            locals_max_length=self.logger_locals_max_length,
-            locals_max_string=self.logger_locals_max_string,
-            locals_max_depth=self.logger_locals_max_depth,
-            filtered_names=self.logger_filtered_names,
-        )
-
-    @property
-    def mtproto(self) -> "MTProtoConfig":
-        return MTProtoConfig(
-            api_id=self.api_id,
-            api_hash=self.api_hash,
-        )
-
-    @property
-    def webserver(self) -> "WebServerConfig":
-        return WebServerConfig(
-            host=self.web_host,
-            port=self.web_port,
-        )
-
-
 class ConfigChannel(BaseModel):
     name: str
     chat_id: int
@@ -143,21 +38,27 @@ class ConfigUser(BaseModel):
     user_id: int
 
 
-class MySqlConfig(BaseModel):
+class MySqlConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 3306
     username: str
     password: str
     database: str
 
+    class Config(Settings.Config):
+        env_prefix = "db_"
 
-class RedisConfig(BaseModel):
+
+class RedisConfig(Settings):
     host: str = "127.0.0.1"
-    port: int
-    database: int = 0
+    port: int = 6379
+    database: int = Field(env="redis_db")
+
+    class Config(Settings.Config):
+        env_prefix = "redis_"
 
 
-class LoggerConfig(BaseModel):
+class LoggerConfig(Settings):
     name: str = "TGPaimon"
     width: int = 180
     time_format: str = "[%Y-%m-%d %X]"
@@ -171,19 +72,67 @@ class LoggerConfig(BaseModel):
 
     @validator("locals_max_depth", pre=True, check_fields=False)
     def locals_max_depth_validator(cls, value) -> Optional[int]:  # pylint: disable=R0201
-        if value <= 0:
+        if int(value) <= 0:
             return None
         return value
 
-
-class MTProtoConfig(BaseModel):
-    api_id: Optional[int]
-    api_hash: Optional[str]
+    class Config(Settings.Config):
+        env_prefix = "logger_"
 
 
-class WebServerConfig(BaseModel):
-    host: Optional[str]
-    port: Optional[int]
+class MTProtoConfig(Settings):
+    api_id: Optional[int] = None
+    api_hash: Optional[str] = None
+
+
+class WebServerConfig(Settings):
+    url: AnyUrl = "http://localhost:8080"
+    host: str = "localhost"
+    port: int = 8080
+
+    class Config(Settings.Config):
+        env_prefix = "web_"
+
+
+class ErrorConfig(Settings):
+    pb_url: str = ""
+    pb_sunset: int = 43200
+    pb_max_lines: int = 1000
+    sentry_dsn: str = ""
+    notification_chat_id: Optional[str] = None
+
+    class Config(Settings.Config):
+        env_prefix = "error_"
+
+
+class BotConfig(Settings):
+    debug: bool = False
+
+    bot_token: str = ""
+
+    channels: List["ConfigChannel"] = []
+    admins: List["ConfigUser"] = []
+    verify_groups: List[Union[int, str]] = []
+    join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
+
+    timeout: int = 10
+    read_timeout: float = 2
+    write_timeout: Optional[float] = None
+    connect_timeout: Optional[float] = None
+    pool_timeout: Optional[float] = None
+
+    genshin_ttl: Optional[int] = None
+
+    enka_network_api_agent: str = ""
+    pass_challenge_api: str = ""
+    pass_challenge_app_key: str = ""
+
+    mysql: MySqlConfig = MySqlConfig()
+    logger: LoggerConfig = LoggerConfig()
+    webserver: WebServerConfig = WebServerConfig()
+    redis: RedisConfig = RedisConfig()
+    mtproto: MTProtoConfig = MTProtoConfig()
+    error: ErrorConfig = ErrorConfig()
 
 
 BotConfig.update_forward_refs()

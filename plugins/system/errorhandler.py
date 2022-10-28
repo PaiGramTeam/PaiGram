@@ -4,18 +4,18 @@ import time
 import traceback
 
 import aiofiles
-from telegram import Update, ReplyKeyboardRemove
+from telegram import ReplyKeyboardRemove, Update
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext
 
 from core.bot import bot
-from core.plugin import error_handler, Plugin
+from core.plugin import Plugin, error_handler
 from modules.error.pb import PbClient
 from modules.error.sentry import Sentry
 from utils.log import logger
 
-notice_chat_id = bot.config.error_notification_chat_id
+notice_chat_id = bot.config.error.notification_chat_id
 current_dir = os.getcwd()
 logs_dir = os.path.join(current_dir, "logs")
 if not os.path.exists(logs_dir):
