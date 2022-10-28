@@ -14,7 +14,7 @@ from utils.baseobject import BaseObject
 
 class Stat:
     def __init__(
-            self, view_num: int = 0, reply_num: int = 0, like_num: int = 0, bookmark_num: int = 0, forward_num: int = 0
+        self, view_num: int = 0, reply_num: int = 0, like_num: int = 0, bookmark_num: int = 0, forward_num: int = 0
     ):
         self.forward_num = forward_num  # 关注数
         self.bookmark_num = bookmark_num  # 收藏数
@@ -63,11 +63,11 @@ class RegionEnum(Enum):
 
 class GameItem(BaseObject):
     def __init__(
-            self,
-            item_id: int = 0,
-            name: str = "",
-            item_type: Union[Enum, str, int] = "",
-            value: Union[Enum, str, int, bool, float] = 0,
+        self,
+        item_id: int = 0,
+        name: str = "",
+        item_type: Union[Enum, str, int] = "",
+        value: Union[Enum, str, int, bool, float] = 0,
     ):
         self.item_id = item_id
         self.name = name  # 名称
@@ -79,10 +79,7 @@ class GameItem(BaseObject):
 
 class ModuleInfo:
     def __init__(
-            self,
-            file_name: Optional[str] = None,
-            plugin_name: Optional[str] = None,
-            relative_path: Optional[str] = None
+        self, file_name: Optional[str] = None, plugin_name: Optional[str] = None, relative_path: Optional[str] = None
     ):
         self.relative_path = relative_path
         self.module_name = plugin_name
