@@ -59,5 +59,5 @@ class QuizPlugin(Plugin, BasePlugin):
             type=Poll.QUIZ,
         )
         if filters.ChatType.GROUPS.filter(message):
-            self._add_delete_message_job(context, update.message.chat_id, update.message.message_id, 300)
+            self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
             self._add_delete_message_job(context, poll_message.chat_id, poll_message.message_id, 300)
