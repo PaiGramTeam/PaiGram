@@ -94,12 +94,21 @@ class WebServerConfig(Settings):
         env_prefix = "web_"
 
 
+class ErrorConfig(Settings):
+    pb_url: str = ""
+    pb_sunset: int = 43200
+    pb_max_lines: int = 1000
+    sentry_dsn: str = ""
+    notification_chat_id: Optional[str] = None
+
+    class Config(Settings.Config):
+        env_prefix = "error_"
+
+
 class BotConfig(Settings):
     debug: bool = False
 
     bot_token: str = ""
-
-    error_notification_chat_id: Optional[str] = None
 
     channels: List["ConfigChannel"] = []
     admins: List["ConfigUser"] = []
@@ -118,16 +127,12 @@ class BotConfig(Settings):
     pass_challenge_api: str = ""
     pass_challenge_app_key: str = ""
 
-    error_pb_url: str = ""
-    error_pb_sunset: int = 43200
-    error_pb_max_lines: int = 1000
-    error_sentry_dsn: str = ""
-
     mysql: MySqlConfig = MySqlConfig()
     logger: LoggerConfig = LoggerConfig()
     webserver: WebServerConfig = WebServerConfig()
     redis: RedisConfig = RedisConfig()
     mtproto: MTProtoConfig = MTProtoConfig()
+    error: ErrorConfig = ErrorConfig()
 
 
 BotConfig.update_forward_refs()

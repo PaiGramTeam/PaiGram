@@ -7,16 +7,16 @@ from utils.log import logger
 class PbClient:
     def __init__(self):
         self.client = httpx.AsyncClient()
-        self.PB_API = config.error_pb_url
-        self.sunset: int = config.error_pb_sunset  # 自动销毁时间 单位为秒
+        self.PB_API = config.error.pb_url
+        self.sunset: int = config.error.pb_sunset  # 自动销毁时间 单位为秒
         self.private: bool = True
-        self.max_lines: int = config.error_pb_max_lines
+        self.max_lines: int = config.error.pb_max_lines
 
     async def create_pb(self, content: str) -> str:
         if not self.PB_API:
             return ""
         logger.info("正在上传日记到 pb")
-        content = "\n".join(content.splitlines()[-self.max_lines:]) + "\n"
+        content = "\n".join(content.splitlines()[-self.max_lines :]) + "\n"
         data = {
             "c": content,
         }
