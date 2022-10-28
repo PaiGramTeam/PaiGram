@@ -274,8 +274,8 @@ class GroupJoiningVerification(Plugin):
                     return
                 else:
                     raise err
-            index = random.choice(question_id_list)  # nosec
-            question = await self.quiz_service.get_question(question_id_list[index])
+            question_id = random.choice(question_id_list)  # nosec
+            question = await self.quiz_service.get_question(question_id)
             buttons = [
                 [
                     InlineKeyboardButton(
