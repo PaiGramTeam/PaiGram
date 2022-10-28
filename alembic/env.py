@@ -68,7 +68,7 @@ config.set_section_option(section, "DB_HOST", botConfig.mysql.host)
 config.set_section_option(section, "DB_PORT", str(botConfig.mysql.port))
 config.set_section_option(section, "DB_USERNAME", botConfig.mysql.username)
 config.set_section_option(section, "DB_PASSWORD", botConfig.mysql.password)
-config.set_section_option(section, "DB_DATABASE", botConfig.mysql.db)
+config.set_section_option(section, "DB_DATABASE", botConfig.mysql.database)
 
 
 def run_migrations_offline() -> None:
