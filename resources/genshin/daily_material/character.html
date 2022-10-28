@@ -67,6 +67,11 @@
                                     {% endif %}
                                 {% endif %}
                                 <img src="{{ item.icon }}" alt="{{ item.name }}"/>
+                                {% if item.level != none and item.skills != none %}
+                                    <div class="item-icon-character-talent">
+                                        <span>{{ item.skills[0] }}/{{ item.skills[1] }}/{{ item.skills[2] }}</span>
+                                    </div>
+                                {% endif %}
                             </div>
                             <div class="item-name">
                                 <div>{{ item.name }}</div>

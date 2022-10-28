@@ -15,7 +15,7 @@ import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from genshin import Client, InvalidCookies
+from genshin import Client, InvalidCookies, GenshinException
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
 from telegram import Message, Update, User
@@ -127,6 +127,30 @@ class DailyMaterial(Plugin, BasePlugin):
                 data = json.loads(await file.read())
         self.data = data
 
+    @staticmethod
+    async def _get_skills_data(client: Client, character_id: int) -> Optional[List[int]]:
+        detail = None
+        for _ in range(5):
+            try:
+                detail = await client.get_character_details(character_id)
+            except Exception as e:  # pylint: disable=W0703
+                logger.warning(f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了错误：{e}", extra={"markup": True})
+                if isinstance(e, GenshinException) and "Too Many Requests" in e.msg:
+                    await asyncio.sleep(0.2)
+                    continue
+                # 输入数据不可能是旅行者
+                # if character.name != "旅行者":
+                #     raise e
+                # logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+            else:
+                break
+        if not detail:
+            return None
+        # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
+        # 不用计算命座加成，因为这个是展示天赋升级情况，10 级为最高。计算命座会引起混淆。
+        talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
+        return [t.level for t in talents]
+
     async def _get_data_from_user(self, user: User) -> Tuple[Optional[Client], Dict[str, List[Any]]]:
         """获取已经绑定的账号的角色、武器信息"""
         client = None
@@ -148,6 +172,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         rarity=character.rarity,
                         level=character.level,
                         constellation=character.constellation,
+                        gid=character.id,
                         icon=(await self.assets_service.avatar(cid).icon()).as_uri(),
                     )
                 )
@@ -237,6 +262,9 @@ class DailyMaterial(Plugin, BasePlugin):
                     for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
                         if id_ == str(i.id):
                             if i.rarity > 3:  # 跳过 3 星及以下的武器
+                                if type_ == "avatar":  # 给角色添加天赋信息
+                                    skills = await self._get_skills_data(client, i.gid)
+                                    i.skills = skills
                                 items.append(i)
                             added = True
                     if added:
@@ -445,6 +473,8 @@ class ItemData(BaseModel):
     icon: str  # 图标
     level: Optional[int] = None  # 等级
     constellation: Optional[int] = None  # 命座
+    skills: Optional[List[int]] = None  # 天赋等级
+    gid: Optional[int] = None  # 角色在 genshin.py 里的 ID
     refinement: Optional[int] = None  # 精炼度
     c_path: Optional[str] = None  # 武器使用者图标
 
