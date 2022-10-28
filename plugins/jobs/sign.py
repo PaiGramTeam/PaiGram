@@ -38,7 +38,8 @@ class SignJob(Plugin):
         self.cookies_service = cookies_service
         self.user_service = user_service
 
-    async def single_sign(self, user_id: int) -> str:
+    @staticmethod
+    async def single_sign(user_id: int) -> str:
         client = await get_genshin_client(user_id)
         if recognize_genshin_server(client.uid) in ("cn_gf01", "cn_qd01"):
             await asyncio.sleep(random.randint(10, 300))  # nosec
