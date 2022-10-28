@@ -4,7 +4,10 @@ from typing import TYPE_CHECKING
 
 from core.config import config
 from utils.log._config import LoggerConfig
-from utils.log._logger import LogFilter, Logger
+from utils.log._logger import (
+    LogFilter,
+    Logger,
+)
 
 if TYPE_CHECKING:
     from logging import LogRecord
@@ -21,7 +24,7 @@ logger = Logger(
         keywords=config.logger.render_keywords,
         traceback_locals_max_depth=config.logger.locals_max_depth,
         traceback_locals_max_length=config.logger.locals_max_length,
-        traceback_locals_max_string=config.logger_locals_max_string,
+        traceback_locals_max_string=config.logger.locals_max_string,
     )
 )
 

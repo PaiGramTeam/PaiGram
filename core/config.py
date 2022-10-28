@@ -10,6 +10,7 @@ import dotenv
 from pydantic import (
     AnyUrl,
     BaseModel,
+    Field,
     validator,
 )
 
@@ -51,7 +52,7 @@ class MySqlConfig(Settings):
 class RedisConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 6379
-    db: int = 0
+    database: int = Field(env='redis_db')
 
     class Config(Settings.Config):
         env_prefix = "redis_"
@@ -131,3 +132,11 @@ class BotConfig(Settings):
 
 BotConfig.update_forward_refs()
 config = BotConfig()
+
+
+def main():
+    print(config.redis.database)
+
+
+if __name__ == '__main__':
+    main()

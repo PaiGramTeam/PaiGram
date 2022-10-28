@@ -204,4 +204,6 @@ class TemplatePreviewer:
 
         # 其他静态资源
         for name in ["cache", "resources"]:
+            directory = PROJECT_ROOT / name
+            directory.mkdir(exist_ok=True)
             webapp.mount(f"/{name}", StaticFiles(directory=PROJECT_ROOT / name), name=name)
