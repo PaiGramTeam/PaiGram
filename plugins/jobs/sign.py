@@ -95,7 +95,11 @@ class SignJob(Plugin):
         sign_list = await self.sign_service.get_all()
         for sign_db in sign_list:
             user_id = sign_db.user_id
-            if sign_db.status in [SignStatusEnum.INVALID_COOKIES, SignStatusEnum.FORBIDDEN]:
+            if sign_db.status in [
+                SignStatusEnum.INVALID_COOKIES,
+                SignStatusEnum.FORBIDDEN,
+                SignStatusEnum.NEED_CHALLENGE,
+            ]:
                 continue
             if context.job.name == "SignJob":
                 if sign_db.status not in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
