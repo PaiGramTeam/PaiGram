@@ -1,31 +1,48 @@
 import time
 from typing import Optional
-from urllib.parse import urlencode, urljoin, urlsplit
+from urllib.parse import (
+    urlencode,
+    urljoin,
+    urlsplit,
+)
 from uuid import uuid4
 
 from fastapi import HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+)
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import (
+    Environment,
+    FileSystemLoader,
+    Template,
+)
 from playwright.async_api import ViewportSize
 
 from core.base.aiobrowser import AioBrowser
 from core.base.webserver import webapp
 from core.bot import bot
-from core.template.cache import HtmlToFileIdCache, TemplatePreviewCache
+from core.template.cache import (
+    HtmlToFileIdCache,
+    TemplatePreviewCache,
+)
 from core.template.error import QuerySelectorNotFound
-from core.template.models import FileType, RenderResult
+from core.template.models import (
+    FileType,
+    RenderResult,
+)
 from utils.const import PROJECT_ROOT
 from utils.log import logger
 
 
 class TemplateService:
     def __init__(
-        self,
-        browser: AioBrowser,
-        html_to_file_id_cache: HtmlToFileIdCache,
-        preview_cache: TemplatePreviewCache,
-        template_dir: str = "resources",
+            self,
+            browser: AioBrowser,
+            html_to_file_id_cache: HtmlToFileIdCache,
+            preview_cache: TemplatePreviewCache,
+            template_dir: str = "resources",
     ):
         self._browser = browser
         self.template_dir = PROJECT_ROOT / template_dir
@@ -56,18 +73,18 @@ class TemplateService:
         return html
 
     async def render(
-        self,
-        template_name: str,
-        template_data: dict,
-        viewport: Optional[ViewportSize] = None,
-        full_page: bool = True,
-        evaluate: Optional[str] = None,
-        query_selector: Optional[str] = None,
-        file_type: FileType = FileType.PHOTO,
-        ttl: int = 24 * 60 * 60,
-        caption: Optional[str] = None,
-        parse_mode: Optional[str] = None,
-        filename: Optional[str] = None,
+            self,
+            template_name: str,
+            template_data: dict,
+            viewport: Optional[ViewportSize] = None,
+            full_page: bool = True,
+            evaluate: Optional[str] = None,
+            query_selector: Optional[str] = None,
+            file_type: FileType = FileType.PHOTO,
+            ttl: int = 24 * 60 * 60,
+            caption: Optional[str] = None,
+            parse_mode: Optional[str] = None,
+            filename: Optional[str] = None,
     ) -> RenderResult:
         """模板渲染成图片
         :param template_name: 模板文件名
@@ -149,7 +166,7 @@ class TemplatePreviewer:
 
     async def get_preview_url(self, template: str, data: dict):
         """获取预览 URL"""
-        components = urlsplit(bot.config.web_url)
+        components = urlsplit(bot.config.webserver.url)
         path = urljoin("/preview/", template)
         query = {}
 
