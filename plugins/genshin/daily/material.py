@@ -130,8 +130,6 @@ class DailyMaterial(Plugin, BasePlugin):
     @staticmethod
     async def _get_skills_data(client: Client, character_id: int) -> Optional[List[int]]:
         """获取角色技能的数据"""
-        # 只有 cookie 无效或 5 次重试都超时时才会返回 None，调用者接收到 None 时应设置 flag,不再对其他角色进行请求。
-        detail = None
         for _ in range(5):
             try:
                 detail = await client.get_character_details(character_id)
