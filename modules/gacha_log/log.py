@@ -141,7 +141,7 @@ class GachaLog:
                         uigf_gacha_type=item.gacha_type,
                     )
                 )
-        await self.save_json(save_path, info.dict())
+        await self.save_json(save_path, json.loads(info.json()))
         return save_path
 
     @staticmethod
