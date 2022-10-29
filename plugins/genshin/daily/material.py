@@ -129,22 +129,30 @@ class DailyMaterial(Plugin, BasePlugin):
 
     @staticmethod
     async def _get_skills_data(client: Client, character_id: int) -> Optional[List[int]]:
+        """获取角色技能的数据"""
+        # 只有 cookie 无效或 5 次重试都超时时才会返回 None，调用者接收到 None 时应设置 flag,不再对其他角色进行请求。
         detail = None
         for _ in range(5):
             try:
                 detail = await client.get_character_details(character_id)
             except Exception as e:  # pylint: disable=W0703
-                logger.warning(f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了错误：{e}", extra={"markup": True})
-                if isinstance(e, GenshinException) and "Too Many Requests" in e.msg:
-                    await asyncio.sleep(0.2)
-                    continue
-                # 输入数据不可能是旅行者
-                # if character.name != "旅行者":
-                #     raise e
-                # logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+                if isinstance(e, GenshinException):
+                    # 如果是 Too Many Requests 异常，则等待一段时间后重试
+                    if "Too Many Requests" in e.msg:
+                        await asyncio.sleep(0.2)
+                        continue
+                    # 如果是 cookie 过期，则直接返回 None
+                    elif "Cookies are not valid" in e.msg:
+                        return None
+                # 如果是其他异常，则直接抛出
+                raise e
             else:
                 break
-        if not detail:
+        else:
+            # 如果重试了5次都失败了，则直接返回 None
+            logger.warning(
+                f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
+            )
             return None
         # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
         # 不用计算命座加成，因为这个是展示天赋升级情况，10 级为最高。计算命座会引起混淆。
@@ -253,6 +261,7 @@ class DailyMaterial(Plugin, BasePlugin):
 
         await message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
+        cookie_valid = True
         for type_ in ["avatar", "weapon"]:
             areas = []
             for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
@@ -262,9 +271,12 @@ class DailyMaterial(Plugin, BasePlugin):
                     for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
                         if id_ == str(i.id):
                             if i.rarity > 3:  # 跳过 3 星及以下的武器
-                                if type_ == "avatar":  # 给角色添加天赋信息
+                                if type_ == "avatar" and cookie_valid:  # 给角色添加天赋信息
                                     skills = await self._get_skills_data(client, i.gid)
-                                    i.skills = skills
+                                    if None == skills:
+                                        cookie_valid = False
+                                    else:
+                                        i.skills = skills
                                 items.append(i)
                             added = True
                     if added:
