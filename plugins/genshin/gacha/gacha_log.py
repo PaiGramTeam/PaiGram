@@ -382,17 +382,23 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         message = update.effective_message
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
+        all_five = False
         if args := get_all_args(context):
             if "武器" in args:
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
-        logger.info(f"用户 {user.full_name}[{user.id}] 抽卡统计命令请求 || 参数 {pool_type.name}")
+            elif "仅五星" in args:
+                all_five = True
+        logger.info(f"用户 {user.full_name}[{user.id}] 抽卡统计命令请求 || 参数 {pool_type.name} || 仅五星 {all_five}")
         try:
             client = await get_genshin_client(user.id, need_cookie=False)
             group = filters.ChatType.GROUPS.filter(message)
             await message.reply_chat_action(ChatAction.TYPING)
-            data = await self.gacha_log.get_pool_analysis(user.id, client, pool_type, self.assets_service, group)
+            if all_five:
+                data = await self.gacha_log.get_all_five_analysis(user.id, client, self.assets_service)
+            else:
+                data = await self.gacha_log.get_pool_analysis(user.id, client, pool_type, self.assets_service, group)
             if isinstance(data, str):
                 reply_message = await message.reply_text(data)
                 if filters.ChatType.GROUPS.filter(message):
