@@ -129,22 +129,25 @@ class DailyMaterial(Plugin, BasePlugin):
 
     @staticmethod
     async def _get_skills_data(client: Client, character_id: int) -> Optional[List[int]]:
-        detail = None
+        """获取角色技能的数据"""
         for _ in range(5):
             try:
                 detail = await client.get_character_details(character_id)
             except Exception as e:  # pylint: disable=W0703
-                logger.warning(f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了错误：{e}", extra={"markup": True})
-                if isinstance(e, GenshinException) and "Too Many Requests" in e.msg:
-                    await asyncio.sleep(0.2)
-                    continue
-                # 输入数据不可能是旅行者
-                # if character.name != "旅行者":
-                #     raise e
-                # logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+                if isinstance(e, GenshinException):
+                    # 如果是 Too Many Requests 异常，则等待一段时间后重试
+                    if "Too Many Requests" in e.msg:
+                        await asyncio.sleep(0.2)
+                        continue
+                # 如果是其他异常，则直接抛出
+                raise e
             else:
                 break
-        if not detail:
+        else:
+            # 如果重试了5次都失败了，则直接返回 None
+            logger.warning(
+                f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
+            )
             return None
         # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
         # 不用计算命座加成，因为这个是展示天赋升级情况，10 级为最高。计算命座会引起混淆。
@@ -153,7 +156,6 @@ class DailyMaterial(Plugin, BasePlugin):
 
     async def _get_data_from_user(self, user: User) -> Tuple[Optional[Client], Dict[str, List[Any]]]:
         """获取已经绑定的账号的角色、武器信息"""
-        client = None
         user_data = {"avatar": [], "weapon": []}
         try:
             logger.debug("尝试获取已绑定的原神账号")
@@ -195,7 +197,11 @@ class DailyMaterial(Plugin, BasePlugin):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
         except InvalidCookies:
             logger.info(f"用户({user.full_name} {user.id}) 所绑定的账号信息已失效")
-        return client, user_data
+        else:
+            # 没有异常返回数据
+            return client, user_data
+        # 有上述异常的， client 会返回 None
+        return None, user_data
 
     @handler.command("daily_material", block=False)
     @restricts(restricts_time_of_groups=20, without_overlapping=True)
@@ -253,57 +259,60 @@ class DailyMaterial(Plugin, BasePlugin):
 
         await message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
-        for type_ in ["avatar", "weapon"]:
-            areas = []
-            for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
-                items = []
-                for id_ in area_data["items"]:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
-                    added = False
-                    for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
-                        if id_ == str(i.id):
-                            if i.rarity > 3:  # 跳过 3 星及以下的武器
-                                if type_ == "avatar":  # 给角色添加天赋信息
-                                    skills = await self._get_skills_data(client, i.gid)
-                                    i.skills = skills
-                                items.append(i)
-                            added = True
-                    if added:
-                        continue
-                    try:
-                        item = HONEY_DATA[type_][id_]
-                    except KeyError:  # 跳过不存在或者已忽略的角色、武器
-                        logger.warning(f"未在 honey 数据中找到 {type_} {id_} 的信息")
-                        continue
-                    if item[2] < 4:  # 跳过 3 星及以下的武器
-                        continue
-                    items.append(
-                        ItemData(  # 添加角色数据中未找到的
-                            id=id_,
-                            name=item[1],
-                            rarity=item[2],
-                            icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri(),
+
+        # 如果 client 为 None 就没必要进技能处理 因为已经触发 InvalidCookies 等异常
+        if client:
+            for type_ in ["avatar", "weapon"]:
+                areas = []
+                for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
+                    items = []
+                    for id_ in area_data["items"]:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
+                        added = False
+                        for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
+                            if id_ == str(i.id):
+                                if i.rarity > 3:  # 跳过 3 星及以下的武器
+                                    if type_ == "avatar":  # 给角色添加天赋信息
+                                        skills = await self._get_skills_data(client, i.gid)
+                                        i.skills = skills
+                                    items.append(i)
+                                added = True
+                        if added:
+                            continue
+                        try:
+                            item = HONEY_DATA[type_][id_]
+                        except KeyError:  # 跳过不存在或者已忽略的角色、武器
+                            logger.warning(f"未在 honey 数据中找到 {type_} {id_} 的信息")
+                            continue
+                        if item[2] < 4:  # 跳过 3 星及以下的武器
+                            continue
+                        items.append(
+                            ItemData(  # 添加角色数据中未找到的
+                                id=id_,
+                                name=item[1],
+                                rarity=item[2],
+                                icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri(),
+                            )
+                        )
+                    materials = []
+                    for mid in area_data["materials"]:  # 添加这个区域当天（weekday）的培养素材
+                        try:
+                            path = (await self.assets_service.material(mid).icon()).as_uri()
+                            material = HONEY_DATA["material"][mid]
+                            materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
+                        except AssetsCouldNotFound as exc:
+                            logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
+                            await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
+                            return
+                    areas.append(
+                        AreaData(
+                            name=area_data["name"],
+                            materials=materials,
+                            # template previewer pickle cannot serialize generator
+                            items=list(sort_item(items)),
+                            material_name=get_material_serial_name(map(lambda x: x.name, materials)),
                         )
                     )
-                materials = []
-                for mid in area_data["materials"]:  # 添加这个区域当天（weekday）的培养素材
-                    try:
-                        path = (await self.assets_service.material(mid).icon()).as_uri()
-                        material = HONEY_DATA["material"][mid]
-                        materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
-                    except AssetsCouldNotFound as exc:
-                        logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
-                        await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
-                        return
-                areas.append(
-                    AreaData(
-                        name=area_data["name"],
-                        materials=materials,
-                        # template previewer pickle cannot serialize generator
-                        items=list(sort_item(items)),
-                        material_name=get_material_serial_name(map(lambda x: x.name, materials)),
-                    )
-                )
-            setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
+                setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
 
         await message.reply_chat_action(ChatAction.TYPING)
 
