@@ -122,6 +122,7 @@ class Pool:
                 self.count += 1
                 if not self.start_init:
                     self.start = i.time
+                    self.start_init = True
                 self.end = i.time
 
     def to_list(self):
