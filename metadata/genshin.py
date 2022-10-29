@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Any, Generic, ItemsView, Iterator, KeysView, TypeVar, Optional
+from typing import Any, Generic, ItemsView, Iterator, KeysView, TypeVar, Optional, ValuesView
 
 import ujson as json
 
@@ -22,7 +22,7 @@ __all__ = [
     "game_id_to_role_id",
     "Data",
     "weapon_to_game_id",
-    "avatar_to_game_id"
+    "avatar_to_game_id",
 ]
 
 K = TypeVar("K")
@@ -78,6 +78,9 @@ class Data(dict, Generic[K, V]):
     def keys(self) -> KeysView[K, V]:
         return self.data.keys()
 
+    def values(self) -> ValuesView[K, V]:
+        return self.data.values()
+
     def items(self) -> ItemsView[K, V]:
         return self.data.items()
 
@@ -105,13 +108,9 @@ def game_id_to_role_id(gid: str) -> int | None:
 
 @functools.lru_cache()
 def weapon_to_game_id(name: str) -> Optional[int]:
-    return next(
-        (int(key) for key, value in WEAPON_DATA.items() if value['name'] == name), None
-    )
+    return next((int(key) for key, value in WEAPON_DATA.items() if value["name"] == name), None)
 
 
 @functools.lru_cache()
 def avatar_to_game_id(name: str) -> Optional[int]:
-    return next(
-        (int(key) for key, value in AVATAR_DATA.items() if value['name'] == name), None
-    )
+    return next((int(key) for key, value in AVATAR_DATA.items() if value["name"] == name), None)
