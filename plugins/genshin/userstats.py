@@ -1,4 +1,4 @@
-import secrets
+import random
 from typing import Optional
 
 from genshin import Client
@@ -109,7 +109,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
                 ("雷神瞳", "electroculi"),
                 ("草神瞳", "dendroculi"),
             ],
-            "style": secrets.choice(["mondstadt", "liyue"]),
+            "style": random.choice(["mondstadt", "liyue"]),  # nosec
         }
 
         # html = await self.template_service.render_async(
