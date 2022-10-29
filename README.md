@@ -32,6 +32,9 @@
 
 ## 使用方法
 
+<details>
+  <summary>手动搭建</summary>
+
 ### 1. 安装 `poetry`
 
 ```bash
@@ -70,6 +73,31 @@ alembic upgrade head
 ```bash
 python ./run.py
 ```
+</details>
+
+<details>
+  <summary>Docker 搭建</summary>
+
+### 1. 构建镜像
+
+```bash
+docker build . -t TGPaimonBot:latest
+```
+
+### 2. 修改配置
+
+创建 `.env` 文件并填写数据库连接和 bot token 等参数。
+
+```bash
+cp .env.example .env
+```
+
+### 3. 运行容器
+
+```bash
+docker run --rm --name TGPaimonBot --env-file .env TGPaimonBot:latest
+```
+</details>
 
 ## 其他说明
 
