@@ -1,8 +1,12 @@
+from contextlib import contextmanager
+from typing import Iterator
+
 import ujson as json
 from aiofiles import open as async_open
-from httpx import AsyncClient, URL
+from httpx import AsyncClient, RemoteProtocolError, Response, URL
 
 from utils.const import AMBR_HOST, PROJECT_ROOT
+from utils.log import logger
 
 __all__ = ["update_metadata_from_ambr", "update_metadata_from_github"]
 
@@ -27,41 +31,94 @@ async def update_metadata_from_ambr(overwrite: bool = True):
     return result
 
 
+@contextmanager
+async def stream_request(method, url) -> Iterator[Response]:
+    with client.stream(method=method, url=url) as response:
+        yield response
+
+
+# noinspection PyShadowingNames
 async def update_metadata_from_github(overwrite: bool = True):
     path = PROJECT_ROOT.joinpath("metadata/data/namecard.json")
     if not overwrite and path.exists():
         return
 
-    host = URL("https://raw.fastgit.org/Dimbreath/GenshinData/master/")
+    hosts = [
+        URL("https://ghproxy.net/https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
+        URL("https://github.91chi.fun/https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
+        URL("https://raw.fastgit.org/Dimbreath/GenshinData/master/"),
+        URL("https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
+    ]
+    for num, host in enumerate(hosts):
+        try:
+            text_map_url = host.join("TextMap/TextMapCHS.json")
+            material_url = host.join("ExcelBinOutput/MaterialExcelConfigData.json")
 
-    text_map_url = host.join("TextMap/TextMapCHS.json")
-    material_url = host.join("ExcelBinOutput/MaterialExcelConfigData.json")
+            material_json_data = []
+            async with client.stream("GET", material_url) as response:
+                started = False
+                cell = []
+                async for line in response.aiter_lines():
+                    if line == "    {\n":
+                        started = True
+                        continue
+                    elif line in ["    },\n", "    }\n"]:
+                        started = False
+                        if any("MATERIAL_NAMECARD" in x for x in cell):
+                            material_json_data.append(json.loads("{" + "".join(cell) + "}"))
+                        cell = []
+                        continue
+                    if started:
+                        if "materialType" in line and "MATERIAL_NAMECARD" not in line:
+                            cell = []
+                            started = False
+                            continue
+                        cell.append(line.strip(" \n"))
 
-    text_map_json_data = json.loads((await client.get(text_map_url)).text)
-    material_json_data = json.loads((await client.get(material_url)).text)
+            string_ids = []
+            for namecard_data in material_json_data:
+                string_ids.append(str(namecard_data["nameTextMapHash"]))
+                string_ids.append(str(namecard_data["descTextMapHash"]))
 
-    data = {}
-    for namecard_data in filter(lambda x: x.get("materialType", None) == "MATERIAL_NAMECARD", material_json_data):
-        name = text_map_json_data[str(namecard_data["nameTextMapHash"])]
-        icon = namecard_data["icon"]
-        navbar = namecard_data["picPath"][0]
-        banner = namecard_data["picPath"][1]
-        rank = namecard_data["rankLevel"]
-        description = text_map_json_data[str(namecard_data["descTextMapHash"])].replace("\\n", "\n")
-        data.update(
-            {
-                str(namecard_data["id"]): {
-                    "id": namecard_data["id"],
-                    "name": name,
-                    "rank": rank,
-                    "icon": icon,
-                    "navbar": navbar,
-                    "profile": banner,
-                    "description": description,
-                }
-            }
-        )
-    async with async_open(path, mode="w", encoding="utf-8") as file:
-        data = json.dumps(data, ensure_ascii=False)
-        await file.write(data)
-    return data
+            text_map_json_data = {}
+            async with client.stream("GET", text_map_url) as response:
+                async for line in response.aiter_lines():
+                    if (string_id := (splits := line.split(":"))[0].strip(' "')) in string_ids:
+                        text_map_json_data.update({string_id: splits[1].strip('\n ,"')})
+                        string_ids.remove(string_id)
+                    if not string_ids:
+                        break
+
+            data = {}
+            for namecard_data in material_json_data:
+                name = text_map_json_data[str(namecard_data["nameTextMapHash"])]
+                icon = namecard_data["icon"]
+                navbar = namecard_data["picPath"][0]
+                banner = namecard_data["picPath"][1]
+                rank = namecard_data["rankLevel"]
+                description = text_map_json_data[str(namecard_data["descTextMapHash"])].replace("\\n", "\n")
+                data.update(
+                    {
+                        str(namecard_data["id"]): {
+                            "id": namecard_data["id"],
+                            "name": name,
+                            "rank": rank,
+                            "icon": icon,
+                            "navbar": navbar,
+                            "profile": banner,
+                            "description": description,
+                        }
+                    }
+                )
+            async with async_open(path, mode="w", encoding="utf-8") as file:
+                data = json.dumps(data, ensure_ascii=False)
+                await file.write(data)
+            return data
+        except RemoteProtocolError as e:
+            logger.warning(f"在从 {host} 下载元数据的过程中遇到了错误: {repr(e)}")
+            continue
+        except Exception as e:
+            if num != len(hosts) - 1:
+                logger.error(f"在从 {host} 下载元数据的过程中遇到了错误: {repr(e)}")
+                continue
+            raise e

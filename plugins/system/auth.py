@@ -13,9 +13,9 @@ from core.base.mtproto import MTProto
 from core.bot import bot
 from core.plugin import Plugin, handler
 from core.quiz import QuizService
+from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
-from utils.random import MT19937Random
 
 FullChatPermissions = ChatPermissions(
     can_send_messages=True,
@@ -36,7 +36,6 @@ class GroupJoiningVerification(Plugin):
         self.quiz_service = quiz_service
         self.time_out = 120
         self.kick_time = 120
-        self.random = MT19937Random()
         self.lock = asyncio.Lock()
         self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, List[ChatMember]]] = {}
         self.is_refresh_quiz = False
@@ -104,6 +103,7 @@ class GroupJoiningVerification(Plugin):
             logger.exception(exc)
 
     @handler(CallbackQueryHandler, pattern=r"^auth_admin\|", block=False)
+    @error_callable
     @restricts(without_overlapping=True)
     async def admin(self, update: Update, context: CallbackContext) -> None:
         async def admin_callback(callback_query_data: str) -> Tuple[str, int]:
@@ -160,6 +160,7 @@ class GroupJoiningVerification(Plugin):
             schedule.remove()
 
     @handler(CallbackQueryHandler, pattern=r"^auth_challenge\|", block=False)
+    @error_callable
     @restricts(without_overlapping=True)
     async def query(self, update: Update, context: CallbackContext) -> None:
         async def query_callback(callback_query_data: str) -> Tuple[int, bool, str, str]:
@@ -229,6 +230,7 @@ class GroupJoiningVerification(Plugin):
             schedule.remove()
 
     @handler.message.new_chat_members(priority=2)
+    @error_callable
     async def new_mem(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         chat = message.chat
@@ -272,8 +274,8 @@ class GroupJoiningVerification(Plugin):
                     return
                 else:
                     raise err
-            index = self.random.random(0, len(question_id_list))
-            question = await self.quiz_service.get_question(question_id_list[index])
+            question_id = random.choice(question_id_list)  # nosec
+            question = await self.quiz_service.get_question(question_id)
             buttons = [
                 [
                     InlineKeyboardButton(

@@ -1,20 +1,24 @@
-from itertools import chain
-import os
 import asyncio
+import os
 from importlib import import_module
+from itertools import chain
 from logging.config import fileConfig
 from typing import Iterator
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from alembic import context
+from sqlalchemy import (
+    engine_from_config,
+    pool,
+)
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
-
 from sqlmodel import SQLModel
 
-from alembic import context
-
-from utils.const import CORE_DIR, PLUGIN_DIR, PROJECT_ROOT
+from utils.const import (
+    CORE_DIR,
+    PLUGIN_DIR,
+    PROJECT_ROOT,
+)
 from utils.log import logger
 
 # this is the Alembic Config object, which provides

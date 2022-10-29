@@ -52,10 +52,7 @@ class GachaRedis:
 
 class GachaHandle:
     def __init__(self, hyperion: Optional[GachaInfo] = None):
-        if hyperion is None:
-            self.hyperion = GachaInfo()
-        else:
-            self.hyperion = hyperion
+        self.hyperion = GachaInfo() if hyperion is None else hyperion
 
     async def de_banner(self, gacha_id: str, gacha_type: int) -> Optional[GachaBanner]:
         gacha_info = await self.hyperion.get_gacha_info(gacha_id)
@@ -90,7 +87,7 @@ class GachaHandle:
                     banner.fallback_items4_pool1.append(avatar_to_game_id(r4_prob["item_name"]))
                 elif r4_prob["item_type"] == "武器":
                     banner.fallback_items4_pool1.append(weapon_to_game_id(r4_prob["item_name"]))
-        if gacha_type in (301, 400):
+        if gacha_type in {301, 400}:
             banner.wish_max_progress = 1
             banner.banner_type = BannerType.EVENT
             banner.weight4 = ((1, 510), (8, 510), (10, 10000))
@@ -132,7 +129,7 @@ class GachaHandle:
         re_color = re.search(r"<color=#(.*?)>", title, flags=0)
         if re_color is None:
             return title_html.text, None
-        color = re_color.group(1)
+        color = re_color[1]
         title_html.color.name = "span"
         title_html.span["style"] = f"color:#{color};"
         return title_html.text, title_html.p
@@ -178,7 +175,7 @@ class Gacha(Plugin, BasePlugin):
             try:
                 gacha_base_info = await self.handle.gacha_base_info(gacha_name)
             except GachaNotFound as exc:
-                await message.reply_text(f"没有找到名为 {exc.gacha_name} 的卡池")
+                await message.reply_text(f"没有找到名为 {exc.gacha_name} 的卡池，可能是卡池不存在或者卡池已经结束，请检查后重试。如果你想抽取默认卡池，请不要输入参数。")
                 return
         else:
             gacha_base_info = await self.handle.gacha_base_info(default=True)
@@ -188,9 +185,11 @@ class Gacha(Plugin, BasePlugin):
         banner = await self.get_banner(gacha_base_info)
         player_gacha_info = await self.gacha_db.get(user.id)
         # 检查 wish_item_id
-        if banner.banner_type == BannerType.WEAPON:
-            if player_gacha_info.event_weapon_banner.wish_item_id not in banner.rate_up_items5:
-                player_gacha_info.event_weapon_banner.wish_item_id = 0
+        if (
+            banner.banner_type == BannerType.WEAPON
+            and player_gacha_info.event_weapon_banner.wish_item_id not in banner.rate_up_items5
+        ):
+            player_gacha_info.event_weapon_banner.wish_item_id = 0
         # 执行抽卡
         item_list = self.banner_system.do_pulls(player_gacha_info, banner, 10)
         data = await self.handle.de_item_list(item_list)
@@ -225,7 +224,7 @@ class Gacha(Plugin, BasePlugin):
             "genshin/gacha/gacha.html", template_data, {"width": 1157, "height": 603}, False
         )
 
-        reply_message = await message.reply_photo(png_data)
+        reply_message = await message.reply_photo(png_data.photo)
         if filters.ChatType.GROUPS.filter(message):
             self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
             self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
@@ -238,28 +237,39 @@ class Gacha(Plugin, BasePlugin):
         message = update.effective_message
         user = update.effective_user
         args = get_all_args(context)
-        gacha_base_info = await self.handle.gacha_base_info("武器活动")
+        try:
+            gacha_base_info = await self.handle.gacha_base_info("武器活动")
+        except GachaNotFound:
+            reply_message = await message.reply_text("当前还没有武器正在 UP，可能是卡池不存在或者卡池已经结束。")
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
+            return
         banner = await self.get_banner(gacha_base_info)
+        up_weapons = {}
+        for rate_up_items5 in banner.rate_up_items5:
+            weapon = WEAPON_DATA.get(str(rate_up_items5))
+            if weapon is None:
+                continue
+            up_weapons[weapon["name"]] = rate_up_items5
+        up_weapons_text = "当前 UP 武器有：" + "、".join(up_weapons.keys())
         if len(args) >= 1:
             weapon_name = args[0]
         else:
-            reply_message = await message.reply_text("参数错误")
+            reply_message = await message.reply_text(f"输入的参数不正确，请输入需要定轨的武器名称。\n{up_weapons_text}")
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)
             return
         weapon_name = weaponToName(weapon_name)
         player_gacha_info = await self.gacha_db.get(user.id)
-        for rate_up_items5 in banner.rate_up_items5:
-            weapon = WEAPON_DATA.get(str(rate_up_items5))
-            if weapon is None:
-                continue
-            if weapon["name"] == weapon_name:
-                player_gacha_info.event_weapon_banner.wish_item_id = rate_up_items5
-                player_gacha_info.event_weapon_banner.failed_chosen_item_pulls = 0
-                break
+        if weapon_name in up_weapons:
+            player_gacha_info.event_weapon_banner.wish_item_id = up_weapons[weapon_name]
+            player_gacha_info.event_weapon_banner.failed_chosen_item_pulls = 0
         else:
-            reply_message = await message.reply_text(f"没有找到 {weapon_name} 武器或该武器不存在UP卡池中")
+            reply_message = await message.reply_text(
+                f"输入的参数不正确，可能是没有名为 {weapon_name} 的武器或该武器不存在当前 UP 卡池中\n{up_weapons_text}"
+            )
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 10)

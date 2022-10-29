@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import os
 import re
 from asyncio import Lock
 from ctypes import c_double
@@ -14,19 +15,20 @@ import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from genshin import Client
+from genshin import Client, InvalidCookies, GenshinException
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
-from telegram import InputMediaDocument, InputMediaPhoto, Message, Update, User
+from telegram import Message, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
 
-from core.base.assets import AssetsService, AssetsServiceType, AssetsCouldNotFound
+from core.base.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.template import TemplateService
+from core.template.models import FileType, RenderGroupResult
 from core.user.error import UserNotFoundError
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
 from utils.bot import get_all_args
@@ -116,16 +118,44 @@ class DailyMaterial(Plugin, BasePlugin):
                 logger.info("正在开始获取每日素材缓存")
                 self.data = await self._refresh_data()
 
-        if not DATA_FILE_PATH.exists():  # 若缓存不存在
+        if (not DATA_FILE_PATH.exists()) or (  # 若缓存不存在
+            (datetime.today() - datetime.fromtimestamp(os.stat(DATA_FILE_PATH).st_mtime)).days > 3  # 若缓存过期，超过了3天
+        ):
             self.refresh_task = asyncio.create_task(task_daily())  # 创建后台任务
         if not data and DATA_FILE_PATH.exists():  # 若存在，则读取至内存中
             async with async_open(DATA_FILE_PATH) as file:
                 data = json.loads(await file.read())
         self.data = data
 
+    @staticmethod
+    async def _get_skills_data(client: Client, character_id: int) -> Optional[List[int]]:
+        """获取角色技能的数据"""
+        for _ in range(5):
+            try:
+                detail = await client.get_character_details(character_id)
+            except Exception as e:  # pylint: disable=W0703
+                if isinstance(e, GenshinException):
+                    # 如果是 Too Many Requests 异常，则等待一段时间后重试
+                    if "Too Many Requests" in e.msg:
+                        await asyncio.sleep(0.2)
+                        continue
+                # 如果是其他异常，则直接抛出
+                raise e
+            else:
+                break
+        else:
+            # 如果重试了5次都失败了，则直接返回 None
+            logger.warning(
+                f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
+            )
+            return None
+        # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
+        # 不用计算命座加成，因为这个是展示天赋升级情况，10 级为最高。计算命座会引起混淆。
+        talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
+        return [t.level for t in talents]
+
     async def _get_data_from_user(self, user: User) -> Tuple[Optional[Client], Dict[str, List[Any]]]:
         """获取已经绑定的账号的角色、武器信息"""
-        client = None
         user_data = {"avatar": [], "weapon": []}
         try:
             logger.debug("尝试获取已绑定的原神账号")
@@ -144,6 +174,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         rarity=character.rarity,
                         level=character.level,
                         constellation=character.constellation,
+                        gid=character.id,
                         icon=(await self.assets_service.avatar(cid).icon()).as_uri(),
                     )
                 )
@@ -164,7 +195,13 @@ class DailyMaterial(Plugin, BasePlugin):
                 )
         except (UserNotFoundError, CookiesNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-        return client, user_data
+        except InvalidCookies:
+            logger.info(f"用户({user.full_name} {user.id}) 所绑定的账号信息已失效")
+        else:
+            # 没有异常返回数据
+            return client, user_data
+        # 有上述异常的， client 会返回 None
+        return None, user_data
 
     @handler.command("daily_material", block=False)
     @restricts(restricts_time_of_groups=20, without_overlapping=True)
@@ -183,7 +220,7 @@ class DailyMaterial(Plugin, BasePlugin):
             title = "今日"
             weekday = now.weekday() - (1 if now.hour < 4 else 0)
             weekday = 6 if weekday < 0 else weekday
-            time = now.strftime("%m-%d %H:%M") + " 星期" + WEEK_MAP[weekday]
+            time = f"星期{WEEK_MAP[weekday]}"
         full = bool(args and args[-1] == "full")  # 判定最后一个参数是不是 full
 
         logger.info(f'用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday="{WEEK_MAP[weekday]}" full={full}')
@@ -222,87 +259,91 @@ class DailyMaterial(Plugin, BasePlugin):
 
         await message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
-        for type_ in ["avatar", "weapon"]:
-            areas = []
-            for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
-                items = []
-                for id_ in area_data["items"]:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
-                    added = False
-                    for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
-                        if id_ == str(i.id):
-                            if i.rarity > 3:  # 跳过 3 星及以下的武器
-                                items.append(i)
-                            added = True
-                    if added:
-                        continue
-                    try:
-                        item = HONEY_DATA[type_][id_]
-                    except KeyError:  # 跳过不存在或者已忽略的角色、武器
-                        logger.warning(f"未在 honey 数据中找到 {type_} {id_} 的信息")
-                        continue
-                    if item[2] < 4:  # 跳过 3 星及以下的武器
-                        continue
-                    items.append(
-                        ItemData(  # 添加角色数据中未找到的
-                            id=id_,
-                            name=item[1],
-                            rarity=item[2],
-                            icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri(),
+
+        # 如果 client 为 None 就没必要进技能处理 因为已经触发 InvalidCookies 等异常
+        if client:
+            for type_ in ["avatar", "weapon"]:
+                areas = []
+                for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
+                    items = []
+                    for id_ in area_data["items"]:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
+                        added = False
+                        for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
+                            if id_ == str(i.id):
+                                if i.rarity > 3:  # 跳过 3 星及以下的武器
+                                    if type_ == "avatar":  # 给角色添加天赋信息
+                                        skills = await self._get_skills_data(client, i.gid)
+                                        i.skills = skills
+                                    items.append(i)
+                                added = True
+                        if added:
+                            continue
+                        try:
+                            item = HONEY_DATA[type_][id_]
+                        except KeyError:  # 跳过不存在或者已忽略的角色、武器
+                            logger.warning(f"未在 honey 数据中找到 {type_} {id_} 的信息")
+                            continue
+                        if item[2] < 4:  # 跳过 3 星及以下的武器
+                            continue
+                        items.append(
+                            ItemData(  # 添加角色数据中未找到的
+                                id=id_,
+                                name=item[1],
+                                rarity=item[2],
+                                icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri(),
+                            )
+                        )
+                    materials = []
+                    for mid in area_data["materials"]:  # 添加这个区域当天（weekday）的培养素材
+                        try:
+                            path = (await self.assets_service.material(mid).icon()).as_uri()
+                            material = HONEY_DATA["material"][mid]
+                            materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
+                        except AssetsCouldNotFound as exc:
+                            logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
+                            await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
+                            return
+                    areas.append(
+                        AreaData(
+                            name=area_data["name"],
+                            materials=materials,
+                            # template previewer pickle cannot serialize generator
+                            items=list(sort_item(items)),
+                            material_name=get_material_serial_name(map(lambda x: x.name, materials)),
                         )
                     )
-                materials = []
-                for mid in area_data["materials"]:  # 添加这个区域当天（weekday）的培养素材
-                    try:
-                        path = (await self.assets_service.material(mid).icon()).as_uri()
-                        material = HONEY_DATA["material"][mid]
-                        materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
-                    except AssetsCouldNotFound as exc:
-                        logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
-                        await notice.edit_text(f"出错了呜呜呜 ~ 派蒙找不到一些素材")
-                        return
-                areas.append(
-                    AreaData(
-                        name=area_data["name"],
-                        materials=materials,
-                        # template previewer pickle cannot serialize generator
-                        items=list(sort_item(items)),
-                        material_name=get_material_serial_name(map(lambda x: x.name, materials)),
-                    )
-                )
-            setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
+                setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
 
         await message.reply_chat_action(ChatAction.TYPING)
-        render_tasks = [
-            asyncio.create_task(
-                self.template_service.render(  # 渲染角色素材页
-                    "genshin/daily_material/character.html", {"data": render_data}, {"width": 1164, "height": 500}
-                )
-            ),
-            asyncio.create_task(
-                self.template_service.render(  # 渲染武器素材页
-                    "genshin/daily_material/weapon.html", {"data": render_data}, {"width": 1164, "height": 500}
-                )
-            ),
-        ]
 
-        results = await asyncio.gather(*render_tasks)
+        # 是否发送原图
+        file_type = FileType.DOCUMENT if full else FileType.PHOTO
 
-        character_img_data = results[0]
-        weapon_img_data = results[1]
+        character_img_data, weapon_img_data = await asyncio.gather(
+            self.template_service.render(  # 渲染角色素材页
+                "genshin/daily_material/character.html",
+                {"data": render_data},
+                {"width": 1164, "height": 500},
+                file_type=file_type,
+                ttl=30 * 24 * 60 * 60,
+            ),
+            self.template_service.render(  # 渲染武器素材页
+                "genshin/daily_material/weapon.html",
+                {"data": render_data},
+                {"width": 1164, "height": 500},
+                file_type=file_type,
+                ttl=30 * 24 * 60 * 60,
+            ),
+        )
 
         self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        if full:  # 是否发送原图
-            await message.reply_media_group(
-                [
-                    InputMediaDocument(character_img_data, filename="可培养角色.png"),
-                    InputMediaDocument(weapon_img_data, filename="可培养武器.png"),
-                ]
-            )
-        else:
-            await message.reply_media_group(
-                [InputMediaPhoto(character_img_data), InputMediaPhoto(weapon_img_data)]
-            )
+
+        character_img_data.filename = f"{title}可培养角色.png"
+        weapon_img_data.filename = f"{title}可培养武器.png"
+
+        await RenderGroupResult([character_img_data, weapon_img_data]).reply_media_group(message)
+
         logger.debug("角色、武器培养素材图发送成功")
 
     @handler.command("refresh_daily_material", block=False)
@@ -427,7 +468,7 @@ class DailyMaterial(Plugin, BasePlugin):
             for ID, DATA in ITEMS.items():
                 if (ITEM := [ID, DATA[1], TYPE]) not in new_items:
                     new_items.append(ITEM)
-                    task_list.append(asyncio.create_task(task(*ITEM)))
+                    task_list.append(task(*ITEM))
             await asyncio.gather(*task_list)  # 等待所有任务执行完成
 
         logger.info("图标素材下载完成")
@@ -441,6 +482,8 @@ class ItemData(BaseModel):
     icon: str  # 图标
     level: Optional[int] = None  # 等级
     constellation: Optional[int] = None  # 命座
+    skills: Optional[List[int]] = None  # 天赋等级
+    gid: Optional[int] = None  # 角色在 genshin.py 里的 ID
     refinement: Optional[int] = None  # 精炼度
     c_path: Optional[str] = None  # 武器使用者图标
 

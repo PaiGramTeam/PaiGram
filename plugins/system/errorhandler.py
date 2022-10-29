@@ -4,18 +4,18 @@ import time
 import traceback
 
 import aiofiles
-from telegram import Update, ReplyKeyboardRemove
+from telegram import ReplyKeyboardRemove, Update
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext
 
 from core.bot import bot
-from core.plugin import error_handler, Plugin
+from core.plugin import Plugin, error_handler
 from modules.error.pb import PbClient
 from modules.error.sentry import Sentry
 from utils.log import logger
 
-notice_chat_id = bot.config.error_notification_chat_id
+notice_chat_id = bot.config.error.notification_chat_id
 current_dir = os.getcwd()
 logs_dir = os.path.join(current_dir, "logs")
 if not os.path.exists(logs_dir):
@@ -35,7 +35,7 @@ class ErrorHandler(Plugin):
         logger.error("处理函数时发生异常")
         logger.exception(context.error, exc_info=(type(context.error), context.error, context.error.__traceback__))
 
-        if notice_chat_id is None:
+        if not notice_chat_id:
             return
 
         tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
@@ -63,9 +63,6 @@ class ErrorHandler(Plugin):
         try:
             if "make sure that only one bot instance is running" in tb_string:
                 logger.error("其他机器人在运行，请停止！")
-                return
-            if "Message is not modified" in tb_string:
-                logger.error("消息未修改")
                 return
             await context.bot.send_document(
                 chat_id=notice_chat_id,
@@ -106,7 +103,7 @@ class ErrorHandler(Plugin):
             logger.error("上传错误信息至 fars 失败")
             logger.exception(exc)
         try:
-            sentry.report_error(update, context.error)
+            sentry.report_error(update, (type(context.error), context.error, context.error.__traceback__))
         except Exception as exc:  # pylint: disable=W0703
             logger.error("上传错误信息至 sentry 失败")
             logger.exception(exc)

@@ -1,11 +1,12 @@
 """练度统计"""
+import asyncio
 from typing import Iterable, List, Optional, Sequence
 
 from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
 from genshin import Client, GenshinException
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Message, Update, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -16,6 +17,7 @@ from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template import TemplateService
+from core.template.models import FileType
 from core.user.error import UserNotFoundError
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
@@ -39,18 +41,19 @@ class AvatarListPlugin(Plugin, BasePlugin):
         try:
             return await get_genshin_client(user.id)
         except UserNotFoundError:  # 若未找到账号
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
-                reply_msg = await message.reply_text(
+                reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先私聊派蒙绑定账号")
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
         except CookiesNotFoundError:
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
                 reply_msg = await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙绑定账号",
                     reply_markup=InlineKeyboardMarkup(buttons),
@@ -59,54 +62,73 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
-                await message.reply_text("此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定", parse_mode=ParseMode.HTML)
+                await message.reply_text(
+                    "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定",
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                )
 
-    async def get_avatars_data(self, characters: Sequence[Character], client: Client, max_length: int = None):
-        avatar_datas: List[AvatarData] = []
-        for num, character in enumerate(characters):
-            if num == max_length:  # 若已经有 max_length 个角色
-                break
+    async def get_avatar_data(self, character: Character, client: Client) -> Optional["AvatarData"]:
+        detail = None
+        for _ in range(5):
             try:
                 detail = await client.get_character_details(character)
             except Exception as e:  # pylint: disable=W0703
-                if character.name != "旅行者":
-                    raise e
-                logger.debug(f"解析旅行者数据时遇到了错误：{e}")
-                continue
-            if character.id == 10000005:  # 针对男草主
-                talents = []
-                for talent in detail.talents:
-                    if "普通攻击" in talent.name:
-                        talent.Config.allow_mutation = True
-                        # noinspection Pydantic
-                        talent.group_id = 1131
-                    if talent.type in ["attack", "skill", "burst"]:
-                        talents.append(talent)
+                if isinstance(e, GenshinException) and "Too Many Requests" in e.msg:
+                    await asyncio.sleep(0.2)
+                    continue
+                if character.name == "旅行者":
+                    logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+                    return None
+                raise e
             else:
-                talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
-            buffed_talents = []
-            for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
-                if result := list(
-                    filter(lambda x: all([x.name in constellation.effect]), talents)  # pylint: disable=W0640
-                ):
-                    buffed_talents.append(result[0].type)
-            avatar_datas.append(
-                AvatarData(
-                    avatar=character,
-                    detail=detail,
-                    icon=(await self.assets_service.avatar(character.id).side()).as_uri(),
-                    weapon=(
-                        await self.assets_service.weapon(character.weapon.id).__getattr__(
-                            "icon" if character.weapon.ascension < 2 else "awaken"
-                        )()
-                    ).as_uri(),
-                    skills=[
-                        SkillData(skill=s, buffed=s.type in buffed_talents)
-                        for s in sorted(talents, key=lambda x: ["attack", "skill", "burst"].index(x.type))
-                    ],
-                )
-            )
-        return avatar_datas
+                break
+        else:
+            logger.warning(f"解析[bold]{character.name}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True})
+            return None
+        if character.id == 10000005:  # 针对男草主
+            talents = []
+            for talent in detail.talents:
+                if "普通攻击" in talent.name:
+                    talent.Config.allow_mutation = True
+                    # noinspection Pydantic
+                    talent.group_id = 1131
+                if talent.type in ["attack", "skill", "burst"]:
+                    talents.append(talent)
+        else:
+            talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
+        buffed_talents = []
+        for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
+            if result := list(
+                filter(lambda x: all([x.name in constellation.effect]), talents)  # pylint: disable=W0640
+            ):
+                buffed_talents.append(result[0].type)
+        return AvatarData(
+            avatar=character,
+            detail=detail,
+            icon=(await self.assets_service.avatar(character.id).side()).as_uri(),
+            weapon=(
+                await self.assets_service.weapon(character.weapon.id).__getattr__(
+                    "icon" if character.weapon.ascension < 2 else "awaken"
+                )()
+            ).as_uri(),
+            skills=[
+                SkillData(skill=s, buffed=s.type in buffed_talents)
+                for s in sorted(talents, key=lambda x: ["attack", "skill", "burst"].index(x.type))
+            ],
+        )
+
+    async def get_avatars_data(
+        self, characters: Sequence[Character], client: Client, max_length: int = None
+    ) -> List["AvatarData"]:
+        async def _task(c, n):
+            return n, await self.get_avatar_data(c, client)
+
+        task_results = await asyncio.gather(
+            *[_task(character, num) for num, character in enumerate(characters[:max_length])]
+        )
+
+        return list(filter(lambda x: x, map(lambda x: x[1], sorted(task_results, key=lambda x: x[0]))))
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
@@ -200,7 +222,9 @@ class AvatarListPlugin(Plugin, BasePlugin):
             "has_more": len(characters) != len(avatar_datas),  # 是否显示了全部角色
         }
 
-        await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if all_avatars else ChatAction.UPLOAD_PHOTO)
+        as_document = all_avatars and len(characters) > 20
+
+        await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if as_document else ChatAction.UPLOAD_PHOTO)
 
         image = await self.template_service.render(
             "genshin/avatar_list/main.html",
@@ -208,12 +232,14 @@ class AvatarListPlugin(Plugin, BasePlugin):
             viewport={"width": 1040, "height": 500},
             full_page=True,
             query_selector=".container",
+            file_type=FileType.DOCUMENT if as_document else FileType.PHOTO,
+            ttl=30 * 24 * 60 * 60,
         )
         self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
-        if all_avatars and len(characters) > 20:
-            await message.reply_document(InputFile(image, filename="练度统计.png"))
+        if as_document:
+            await image.reply_document(message, filename="练度统计.png")
         else:
-            await message.reply_photo(image)
+            await image.reply_photo(message)
 
         logger.info(
             f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]发送{'文件' if all_avatars else '图片'}成功",

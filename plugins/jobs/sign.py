@@ -1,6 +1,6 @@
 import asyncio
 import datetime
-import secrets
+import random
 import time
 
 from aiohttp import ClientConnectorError
@@ -37,14 +37,14 @@ class SignJob(Plugin):
         self.sign_service = sign_service
         self.cookies_service = cookies_service
         self.user_service = user_service
-        self.random = secrets.SystemRandom()
 
-    async def single_sign(self, user_id: int) -> str:
+    @staticmethod
+    async def single_sign(user_id: int) -> str:
         client = await get_genshin_client(user_id)
         if recognize_genshin_server(client.uid) in ("cn_gf01", "cn_qd01"):
-            await asyncio.sleep(10 + self.random.random() * 300)  # 延迟 [10, 300)
+            await asyncio.sleep(random.randint(10, 300))  # nosec
         else:
-            await asyncio.sleep(self.random.random() * 3)  # 延迟 [0, 3)
+            await asyncio.sleep(random.randint(0, 3))  # nosec
         rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
         daily_reward_info = await client.get_reward_info(game=Game.GENSHIN)
         if not daily_reward_info.signed_in:
@@ -95,7 +95,11 @@ class SignJob(Plugin):
         sign_list = await self.sign_service.get_all()
         for sign_db in sign_list:
             user_id = sign_db.user_id
-            if sign_db.status in [SignStatusEnum.INVALID_COOKIES, SignStatusEnum.FORBIDDEN]:
+            if sign_db.status in [
+                SignStatusEnum.INVALID_COOKIES,
+                SignStatusEnum.FORBIDDEN,
+                SignStatusEnum.NEED_CHALLENGE,
+            ]:
                 continue
             if context.job.name == "SignJob":
                 if sign_db.status not in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:

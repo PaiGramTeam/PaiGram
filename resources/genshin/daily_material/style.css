@@ -244,6 +244,23 @@ body {
     transform: translateX(-50%) translateY(-50%);
 }
 
+.item-icon-character-talent {
+    position: absolute;
+    padding: 4px;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(100, 149, 237, 0.7);
+    backdrop-filter: blur(3px);
+    border-radius: 0 5px 0 0;
+    box-shadow: 1px 1px 5px var(--shadow);
+}
+
+.item-icon-character-talent > span {
+    color: white;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+}
+
 .item-name {
     text-align: center;
     display: flex;

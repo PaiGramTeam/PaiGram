@@ -49,7 +49,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
     def __init__(self):
         self.bbs = Hyperion()
         self.last_post_id_list: List[int] = []
-        if config.channels is not None and len(config.channels) > 0:
+        if config.channels and len(config.channels) > 0:
             logger.success("文章定时推送处理已经开启")
             bot.app.job_queue.run_repeating(self.task, 60 * 3)
 
@@ -80,7 +80,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
 
         self.last_post_id_list = temp_post_id_list
 
-        for post_id in temp_post_id_list:
+        for post_id in new_post_id_list:
             try:
                 post_info = await self.bbs.get_post_info(2, post_id)
             except APIHelperException as exc:

@@ -1,29 +1,49 @@
 import time
 from typing import Optional
-from urllib.parse import urlencode, urljoin, urlsplit
-
-from jinja2 import Environment, FileSystemLoader, Template
-from playwright.async_api import ViewportSize
+from urllib.parse import (
+    urlencode,
+    urljoin,
+    urlsplit,
+)
 from uuid import uuid4
 
 from fastapi import HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+)
 from fastapi.staticfiles import StaticFiles
+from jinja2 import (
+    Environment,
+    FileSystemLoader,
+    Template,
+)
+from playwright.async_api import ViewportSize
 
 from core.base.aiobrowser import AioBrowser
-from core.bot import bot
 from core.base.webserver import webapp
+from core.bot import bot
+from core.template.cache import (
+    HtmlToFileIdCache,
+    TemplatePreviewCache,
+)
+from core.template.error import QuerySelectorNotFound
+from core.template.models import (
+    FileType,
+    RenderResult,
+)
 from utils.const import PROJECT_ROOT
 from utils.log import logger
-from core.template.cache import TemplatePreviewCache
-
-
-class _QuerySelectorNotFound(Exception):
-    pass
 
 
 class TemplateService:
-    def __init__(self, browser: AioBrowser, preview_cache: TemplatePreviewCache, template_dir: str = "resources"):
+    def __init__(
+        self,
+        browser: AioBrowser,
+        html_to_file_id_cache: HtmlToFileIdCache,
+        preview_cache: TemplatePreviewCache,
+        template_dir: str = "resources",
+    ):
         self._browser = browser
         self.template_dir = PROJECT_ROOT / template_dir
 
@@ -36,10 +56,12 @@ class TemplateService:
 
         self.previewer = TemplatePreviewer(self, preview_cache)
 
+        self.html_to_file_id_cache = html_to_file_id_cache
+
     def get_template(self, template_name: str) -> Template:
         return self._jinja2_env.get_template(template_name)
 
-    async def render_async(self, template_name: str, template_data: dict):
+    async def render_async(self, template_name: str, template_data: dict) -> str:
         """模板渲染
         :param template_name: 模板文件名
         :param template_data: 模板数据
@@ -54,19 +76,28 @@ class TemplateService:
         self,
         template_name: str,
         template_data: dict,
-        viewport: ViewportSize = None,
+        viewport: Optional[ViewportSize] = None,
         full_page: bool = True,
         evaluate: Optional[str] = None,
-        query_selector: str = None
-    ) -> bytes:
+        query_selector: Optional[str] = None,
+        file_type: FileType = FileType.PHOTO,
+        ttl: int = 24 * 60 * 60,
+        caption: Optional[str] = None,
+        parse_mode: Optional[str] = None,
+        filename: Optional[str] = None,
+    ) -> RenderResult:
         """模板渲染成图片
-        :param template_path: 模板目录
         :param template_name: 模板文件名
         :param template_data: 模板数据
         :param viewport: 截图大小
         :param full_page: 是否长截图
         :param evaluate: 页面加载后运行的 js
         :param query_selector: 截图选择器
+        :param file_type: 缓存的文件类型
+        :param ttl: 缓存时间
+        :param caption: 图片描述
+        :param parse_mode: 图片描述解析模式
+        :param filename: 文件名字
         :return:
         """
         start_time = time.time()
@@ -78,6 +109,20 @@ class TemplateService:
 
         html = await template.render_async(**template_data)
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
+
+        file_id = await self.html_to_file_id_cache.get_data(html, file_type.name)
+        if file_id and not bot.config.debug:
+            logger.debug(f"{template_name} 命中缓存，返回 file_id {file_id}")
+            return RenderResult(
+                html=html,
+                photo=file_id,
+                file_type=file_type,
+                cache=self.html_to_file_id_cache,
+                ttl=ttl,
+                caption=caption,
+                parse_mode=parse_mode,
+                filename=filename,
+            )
 
         browser = await self._browser.get_browser()
         start_time = time.time()
@@ -92,16 +137,25 @@ class TemplateService:
             try:
                 card = await page.query_selector(query_selector)
                 if not card:
-                    raise _QuerySelectorNotFound
+                    raise QuerySelectorNotFound
                 clip = await card.bounding_box()
                 if not clip:
-                    raise _QuerySelectorNotFound
-            except _QuerySelectorNotFound:
+                    raise QuerySelectorNotFound
+            except QuerySelectorNotFound:
                 logger.warning(f"未找到 {query_selector} 元素")
         png_data = await page.screenshot(clip=clip, full_page=full_page)
         await page.close()
         logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
-        return png_data
+        return RenderResult(
+            html=html,
+            photo=png_data,
+            file_type=file_type,
+            cache=self.html_to_file_id_cache,
+            ttl=ttl,
+            caption=caption,
+            parse_mode=parse_mode,
+            filename=filename,
+        )
 
 
 class TemplatePreviewer:
@@ -112,7 +166,7 @@ class TemplatePreviewer:
 
     async def get_preview_url(self, template: str, data: dict):
         """获取预览 URL"""
-        components = urlsplit(bot.config.web_url)
+        components = urlsplit(bot.config.webserver.url)
         path = urljoin("/preview/", template)
         query = {}
 
@@ -128,7 +182,7 @@ class TemplatePreviewer:
         """注册预览用到的路由"""
 
         @webapp.get("/preview/{path:path}")
-        async def preview_template(path: str, key: Optional[str] = None): # pylint: disable=W0612
+        async def preview_template(path: str, key: Optional[str] = None):  # pylint: disable=W0612
             # 如果是 /preview/ 开头的静态文件，直接返回内容。比如使用相对链接 ../ 引入的静态资源
             if not path.endswith(".html"):
                 full_path = self.template_service.template_dir / path
@@ -150,4 +204,6 @@ class TemplatePreviewer:
 
         # 其他静态资源
         for name in ["cache", "resources"]:
+            directory = PROJECT_ROOT / name
+            directory.mkdir(exist_ok=True)
             webapp.mount(f"/{name}", StaticFiles(directory=PROJECT_ROOT / name), name=name)

@@ -1,6 +1,9 @@
 import os
 import traceback as traceback_
-from types import ModuleType, TracebackType
+from types import (
+    ModuleType,
+    TracebackType,
+)
 from typing import (
     Any,
     Dict,
@@ -40,10 +43,7 @@ from rich.traceback import (
     Traceback as BaseTraceback,
 )
 
-from core.config import config
-from utils.log._style import (
-    MonokaiProStyle,
-)
+from utils.log._style import MonokaiProStyle
 
 if TYPE_CHECKING:
     from rich.console import ConsoleRenderable  # pylint: disable=W0611
@@ -114,7 +114,8 @@ class Traceback(BaseTraceback):
     locals_max_depth: Optional[int]
 
     def __init__(self, *args, locals_max_depth: Optional[int] = None, **kwargs):
-        kwargs.update({"show_locals": True, "max_frames": config.logger.traceback_max_frames})
+
+        kwargs.update({"show_locals": True})
         super(Traceback, self).__init__(*args, **kwargs)
         self.locals_max_depth = locals_max_depth
 
@@ -128,11 +129,11 @@ class Traceback(BaseTraceback):
         extra_lines: int = 3,
         theme: Optional[str] = None,
         word_wrap: bool = False,
-        show_locals: bool = False,
+        show_locals: bool = True,
         indent_guides: bool = True,
-        locals_max_length: int = config.logger.locals_max_length,
-        locals_max_string: int = config.logger.locals_max_string,
-        locals_max_depth: Optional[int] = config.logger_locals_max_depth,
+        locals_max_length: int = 10,
+        locals_max_string: int = 80,
+        locals_max_depth: Optional[int] = None,
         suppress: Iterable[Union[str, ModuleType]] = (),
         max_frames: int = 100,
     ) -> "Traceback":
@@ -249,8 +250,7 @@ class Traceback(BaseTraceback):
                 traceback = cause.__traceback__
                 is_cause = False
                 continue
-            # No cover, code is reached but coverage doesn't recognize it.
-            break  # pragma: no cover
+            break
 
         trace = Trace(stacks=stacks)
         return trace

@@ -18,6 +18,7 @@ from telegram.ext import (
     Defaults,
     JobQueue,
     MessageHandler,
+    filters,
 )
 from telegram.ext.filters import StatusUpdate
 
@@ -139,6 +140,14 @@ class Bot:
                 f"成功添加了 {num} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]",
                 extra={"markup": True},
             )
+        # special handler
+        from plugins.system.start import StartPlugin
+
+        self.app.add_handler(
+            MessageHandler(
+                callback=StartPlugin.unknown_command, filters=filters.COMMAND & filters.ChatType.PRIVATE, block=False
+            )
+        )
 
     async def _start_base_services(self):
         for pkg in self._gen_pkg(PROJECT_ROOT / "core/base"):
@@ -234,7 +243,14 @@ class Bot:
         try:
             for _ in range(5):
                 try:
-                    self.app.run_polling(close_loop=False, write_timeout=10)
+                    self.app.run_polling(
+                        close_loop=False,
+                        timeout=self.config.timeout,
+                        read_timeout=self.config.read_timeout,
+                        write_timeout=self.config.write_timeout,
+                        connect_timeout=self.config.connect_timeout,
+                        pool_timeout=self.config.pool_timeout,
+                    )
                     break
                 except TimedOut:
                     logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试", extra={"markup": True})

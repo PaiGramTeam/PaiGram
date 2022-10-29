@@ -3,7 +3,10 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI
 
-from core.config import BotConfig, config as botConfig
+from core.config import (
+    BotConfig,
+    config as botConfig,
+)
 from core.service import Service
 
 __all__ = ["webapp", "WebServer"]
@@ -28,7 +31,7 @@ class WebServer(Service):
 
     @classmethod
     def from_config(cls, config: BotConfig) -> Service:
-        return cls(debug=config.debug, **config.webserver.dict())
+        return cls(debug=config.debug, host=config.webserver.host, port=config.webserver.port)
 
     def __init__(self, debug: bool, host: str, port: int):
         self.debug = debug

@@ -1,138 +1,51 @@
 import contextlib
 import datetime
 import json
-import time
+from io import BytesIO
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional, Union
+from typing import List, Tuple, Optional
 
 import aiofiles
 from genshin import Client, InvalidAuthkey
 from genshin.models import BannerType
-from pydantic import BaseModel, validator
+from openpyxl import load_workbook
 
 from core.base.assets import AssetsService
 from metadata.pool.pool import get_pool_by_id
-from metadata.shortname import roleToId, weaponToId, not_real_roles
-from modules.apihelper.error import GachaLogAccountNotFound
+from metadata.shortname import roleToId, weaponToId
+from modules.gacha_log.const import GACHA_TYPE_LIST, PAIMONMOE_VERSION
+from modules.gacha_log.error import (
+    GachaLogAccountNotFound,
+    GachaLogInvalidAuthkey,
+    GachaLogException,
+    GachaLogFileError,
+    GachaLogNotFound,
+    PaimonMoeGachaLogFileError,
+    GachaLogMixedProvider,
+)
+from modules.gacha_log.models import (
+    GachaItem,
+    FiveStarItem,
+    FourStarItem,
+    Pool,
+    GachaLogInfo,
+    UIGFGachaType,
+    ItemType,
+    ImportType,
+    UIGFModel,
+    UIGFInfo,
+    UIGFItem,
+)
 from utils.const import PROJECT_ROOT
-from utils.log import logger
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
-GACHA_TYPE_LIST = {
-    BannerType.NOVICE: "新手祈愿",
-    BannerType.PERMANENT: "常驻祈愿",
-    BannerType.WEAPON: "武器祈愿",
-    BannerType.CHARACTER1: "角色祈愿",
-    BannerType.CHARACTER2: "角色祈愿",
-}
-
-
-class FiveStarItem(BaseModel):
-    name: str
-    icon: str
-    count: int
-    type: str
-    isUp: bool
-    isBig: bool
-    time: datetime.datetime
-
-
-class FourStarItem(BaseModel):
-    name: str
-    icon: str
-    count: int
-    type: str
-    time: datetime.datetime
-
-
-class GachaItem(BaseModel):
-    id: str
-    name: str
-    gacha_type: str
-    item_type: str
-    rank_type: str
-    time: datetime.datetime
-
-    @validator("name")
-    def name_validator(cls, v):
-        if item_id := (roleToId(v) or weaponToId(v)):
-            if item_id not in not_real_roles:
-                return v
-        raise ValueError("Invalid name")
-
-    @validator("gacha_type")
-    def check_gacha_type(cls, v):
-        if v not in {"100", "200", "301", "302", "400"}:
-            raise ValueError("gacha_type must be 200, 301, 302 or 400")
-        return v
-
-    @validator("item_type")
-    def check_item_type(cls, item):
-        if item not in {"角色", "武器"}:
-            raise ValueError("error item type")
-        return item
-
-    @validator("rank_type")
-    def check_rank_type(cls, rank):
-        if rank not in {"5", "4", "3"}:
-            raise ValueError("error rank type")
-        return rank
-
-
-class GachaLogInfo(BaseModel):
-    user_id: str
-    uid: str
-    update_time: datetime.datetime
-    item_list: Dict[str, List[GachaItem]] = {
-        "角色祈愿": [],
-        "武器祈愿": [],
-        "常驻祈愿": [],
-        "新手祈愿": [],
-    }
-
-
-class Pool:
-    def __init__(self, five: List[str], four: List[str], name: str, to: str, **kwargs):
-        self.five = five
-        self.real_name = name
-        self.name = "、".join(self.five)
-        self.four = four
-        self.from_ = kwargs.get("from")
-        self.to = to
-        self.from_time = datetime.datetime.strptime(self.from_, "%Y-%m-%d %H:%M:%S")
-        self.to_time = datetime.datetime.strptime(self.to, "%Y-%m-%d %H:%M:%S")
-        self.start = self.from_time
-        self.start_init = False
-        self.end = self.to_time
-        self.dict = {}
-        self.count = 0
-
-    def parse(self, item: Union[FiveStarItem, FourStarItem]):
-        if self.from_time <= item.time <= self.to_time:
-            if self.dict.get(item.name):
-                self.dict[item.name]["count"] += 1
-            else:
-                self.dict[item.name] = {
-                    "name": item.name,
-                    "icon": item.icon,
-                    "count": 1,
-                    "rank_type": 5 if isinstance(item, FiveStarItem) else 4,
-                }
-
-    def count_item(self, item: List[GachaItem]):
-        for i in item:
-            if self.from_time <= i.time <= self.to_time:
-                self.count += 1
-                if not self.start_init:
-                    self.start = i.time
-                self.end = i.time
-
-    def to_list(self):
-        return list(self.dict.values())
 
 
 class GachaLog:
+    def __init__(self, gacha_log_path: Path = GACHA_LOG_PATH):
+        self.gacha_log_path = gacha_log_path
+
     @staticmethod
     async def load_json(path):
         async with aiofiles.open(path, "r", encoding="utf-8") as f:
@@ -145,9 +58,8 @@ class GachaLog:
                 return await f.write(json.dumps(data, ensure_ascii=False, indent=4))
             await f.write(data)
 
-    @staticmethod
     async def load_history_info(
-        user_id: str, uid: str, only_status: bool = False
+        self, user_id: str, uid: str, only_status: bool = False
     ) -> Tuple[Optional[GachaLogInfo], bool]:
         """读取历史抽卡记录数据
         :param user_id: 用户id
@@ -155,26 +67,25 @@ class GachaLog:
         :param only_status: 是否只读取状态
         :return: 抽卡记录数据
         """
-        file_path = GACHA_LOG_PATH / f"{user_id}-{uid}.json"
+        file_path = self.gacha_log_path / f"{user_id}-{uid}.json"
         if only_status:
             return None, file_path.exists()
         if not file_path.exists():
             return GachaLogInfo(user_id=user_id, uid=uid, update_time=datetime.datetime.now()), False
         try:
-            return GachaLogInfo.parse_obj(await GachaLog.load_json(file_path)), True
+            return GachaLogInfo.parse_obj(await self.load_json(file_path)), True
         except json.decoder.JSONDecodeError:
             return GachaLogInfo(user_id=user_id, uid=uid, update_time=datetime.datetime.now()), False
 
-    @staticmethod
-    async def remove_history_info(user_id: str, uid: str) -> bool:
+    async def remove_history_info(self, user_id: str, uid: str) -> bool:
         """删除历史抽卡记录数据
         :param user_id: 用户id
         :param uid: 原神uid
         :return: 是否删除成功
         """
-        file_path = GACHA_LOG_PATH / f"{user_id}-{uid}.json"
-        file_bak_path = GACHA_LOG_PATH / f"{user_id}-{uid}.json.bak"
-        file_export_path = GACHA_LOG_PATH / f"{user_id}-{uid}-uigf.json"
+        file_path = self.gacha_log_path / f"{user_id}-{uid}.json"
+        file_bak_path = self.gacha_log_path / f"{user_id}-{uid}.json.bak"
+        file_export_path = self.gacha_log_path / f"{user_id}-{uid}-uigf.json"
         with contextlib.suppress(Exception):
             file_bak_path.unlink(missing_ok=True)
         with contextlib.suppress(Exception):
@@ -187,15 +98,14 @@ class GachaLog:
             return True
         return False
 
-    @staticmethod
-    async def save_gacha_log_info(user_id: str, uid: str, info: GachaLogInfo):
+    async def save_gacha_log_info(self, user_id: str, uid: str, info: GachaLogInfo):
         """保存抽卡记录数据
         :param user_id: 用户id
         :param uid: 原神uid
         :param info: 抽卡记录数据
         """
-        save_path = GACHA_LOG_PATH / f"{user_id}-{uid}.json"
-        save_path_bak = GACHA_LOG_PATH / f"{user_id}-{uid}.json.bak"
+        save_path = self.gacha_log_path / f"{user_id}-{uid}.json"
+        save_path_bak = self.gacha_log_path / f"{user_id}-{uid}.json.bak"
         # 将旧数据备份一次
         with contextlib.suppress(PermissionError):
             if save_path.exists():
@@ -203,78 +113,73 @@ class GachaLog:
                     save_path_bak.unlink()
                 save_path.rename(save_path.parent / f"{save_path.name}.bak")
         # 写入数据
-        await GachaLog.save_json(save_path, info.json())
+        await self.save_json(save_path, info.json())
 
-    @staticmethod
-    async def gacha_log_to_uigf(user_id: str, uid: str) -> Tuple[bool, str, Optional[Path]]:
+    async def gacha_log_to_uigf(self, user_id: str, uid: str) -> Optional[Path]:
         """抽卡日记转换为 UIGF 格式
         :param user_id: 用户ID
         :param uid: 游戏UID
         :return: 转换是否成功、转换信息、UIGF文件目录
         """
-        data, state = await GachaLog.load_history_info(user_id, uid)
+        data, state = await self.load_history_info(user_id, uid)
         if not state:
-            return False, "派蒙还没有找到你导入的任何抽卡记录哦，快试试导入吧~", None
-        save_path = GACHA_LOG_PATH / f"{user_id}-{uid}-uigf.json"
-        uigf_dict = {
-            "info": {
-                "uid": uid,
-                "lang": "zh-cn",
-                "export_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "export_timestamp": int(time.time()),
-                "export_app": "TGPaimonBot",
-                "export_app_version": "v3",
-                "uigf_version": "v2.2",
-            },
-            "list": [],
-        }
+            raise GachaLogNotFound
+        save_path = self.gacha_log_path / f"{user_id}-{uid}-uigf.json"
+        info = UIGFModel(
+            info=UIGFInfo(uid=uid, export_app=ImportType.TGPaimonBot.value, export_app_version="v3"), list=[]
+        )
         for items in data.item_list.values():
             for item in items:
-                uigf_dict["list"].append(
-                    {
-                        "gacha_type": item.gacha_type,
-                        "item_id": "",
-                        "count": "1",
-                        "time": item.time.strftime("%Y-%m-%d %H:%M:%S"),
-                        "name": item.name,
-                        "item_type": item.item_type,
-                        "rank_type": item.rank_type,
-                        "id": item.id,
-                        "uigf_gacha_type": item.gacha_type,
-                    }
+                info.list.append(
+                    UIGFItem(
+                        id=item.id,
+                        name=item.name,
+                        gacha_type=item.gacha_type,
+                        item_type=item.item_type,
+                        rank_type=item.rank_type,
+                        time=item.time.strftime("%Y-%m-%d %H:%M:%S"),
+                        uigf_gacha_type=item.gacha_type,
+                    )
                 )
-        await GachaLog.save_json(save_path, uigf_dict)
-        return True, "", save_path
+        await self.save_json(save_path, json.loads(info.json()))
+        return save_path
 
     @staticmethod
-    async def verify_data(data: List[GachaItem]):
+    async def verify_data(data: List[GachaItem]) -> bool:
         try:
             total = len(data)
             five_star = len([i for i in data if i.rank_type == "5"])
             four_star = len([i for i in data if i.rank_type == "4"])
             if total > 50:
                 if total <= five_star * 15:
-                    return False, "检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。"
+                    raise GachaLogFileError("检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。")
                 if four_star < five_star:
-                    return False, "检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。"
-            return True, ""
+                    raise GachaLogFileError("检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。")
+            return True
         except Exception as exc:  # pylint: disable=W0703
-            logger.warning(f"抽卡记录数据验证失败 {repr(exc)}")
-            return False, "导入失败，数据格式错误"
+            raise GachaLogFileError from exc
 
-    @staticmethod
-    async def import_gacha_log_data(user_id: int, client: Client, data: dict):
+    async def import_gacha_log_data(self, user_id: int, client: Client, data: dict, verify_uid: bool = True) -> int:
         new_num = 0
         try:
             uid = data["info"]["uid"]
-            if int(uid) != client.uid:
+            if not verify_uid:
+                uid = client.uid
+            elif int(uid) != client.uid:
                 raise GachaLogAccountNotFound
+            try:
+                import_type = ImportType(data["info"]["export_app"])
+            except ValueError:
+                import_type = ImportType.UNKNOWN
             # 检查导入数据是否合法
             all_items = [GachaItem(**i) for i in data["list"]]
-            status, text = await GachaLog.verify_data(all_items)
-            if not status:
-                return text
-            gacha_log, _ = await GachaLog.load_history_info(str(user_id), uid)
+            await self.verify_data(all_items)
+            gacha_log, status = await self.load_history_info(str(user_id), uid)
+            if import_type == ImportType.PAIMONMOE:
+                if status and gacha_log.get_import_type != ImportType.PAIMONMOE:
+                    raise GachaLogMixedProvider
+            elif status and gacha_log.get_import_type == ImportType.PAIMONMOE:
+                raise GachaLogMixedProvider
             # 将唯一 id 放入临时数据中，加快查找速度
             temp_id_data = {
                 pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()
@@ -287,30 +192,30 @@ class GachaLog:
                     new_num += 1
             for i in gacha_log.item_list.values():
                 # 检查导入后的数据是否合法
-                status, text = await GachaLog.verify_data(i)
-                if not status:
-                    return text
+                await self.verify_data(i)
                 i.sort(key=lambda x: (x.time, x.id))
             gacha_log.update_time = datetime.datetime.now()
-            await GachaLog.save_gacha_log_info(str(user_id), uid, gacha_log)
-            return "导入完成，本次没有新增数据" if new_num == 0 else f"导入完成，本次共新增{new_num}条抽卡记录"
-        except GachaLogAccountNotFound:
-            return "导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同"
+            gacha_log.import_type = import_type.value
+            await self.save_gacha_log_info(str(user_id), uid, gacha_log)
+            return new_num
+        except GachaLogAccountNotFound as e:
+            raise GachaLogAccountNotFound("导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同") from e
+        except GachaLogMixedProvider as e:
+            raise GachaLogMixedProvider from e
         except Exception as exc:
-            logger.warning(f"导入失败，数据格式错误 {repr(exc)}")
-            return "导入失败，数据格式错误"
+            raise GachaLogException from exc
 
-    @staticmethod
-    async def get_gacha_log_data(user_id: int, client: Client, authkey: str) -> str:
-        """
-        使用authkey获取抽卡记录数据，并合并旧数据
+    async def get_gacha_log_data(self, user_id: int, client: Client, authkey: str) -> int:
+        """使用authkey获取抽卡记录数据，并合并旧数据
         :param user_id: 用户id
         :param client: genshin client
         :param authkey: authkey
         :return: 更新结果
         """
         new_num = 0
-        gacha_log, _ = await GachaLog.load_history_info(str(user_id), str(client.uid))
+        gacha_log, _ = await self.load_history_info(str(user_id), str(client.uid))
+        if gacha_log.get_import_type == ImportType.PAIMONMOE:
+            raise GachaLogMixedProvider
         # 将唯一 id 放入临时数据中，加快查找速度
         temp_id_data = {pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()}
         try:
@@ -336,13 +241,14 @@ class GachaLog:
                         gacha_log.item_list[pool_name].append(item)
                         temp_id_data[pool_name].append(item.id)
                         new_num += 1
-        except InvalidAuthkey:
-            return "更新数据失败，authkey 无效"
+        except InvalidAuthkey as exc:
+            raise GachaLogInvalidAuthkey from exc
         for i in gacha_log.item_list.values():
             i.sort(key=lambda x: (x.time, x.id))
         gacha_log.update_time = datetime.datetime.now()
-        await GachaLog.save_gacha_log_info(str(user_id), str(client.uid), gacha_log)
-        return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
+        gacha_log.import_type = ImportType.UIGF.value
+        await self.save_gacha_log_info(str(user_id), str(client.uid), gacha_log)
+        return new_num
 
     @staticmethod
     def check_avatar_up(name: str, gacha_time: datetime.datetime) -> bool:
@@ -360,8 +266,7 @@ class GachaLog:
                 return False
         return True
 
-    @staticmethod
-    async def get_all_5_star_items(data: List[GachaItem], assets: AssetsService, pool_name: str = "角色祈愿"):
+    async def get_all_5_star_items(self, data: List[GachaItem], assets: AssetsService, pool_name: str = "角色祈愿"):
         """
         获取所有5星角色
         :param data: 抽卡记录
@@ -380,7 +285,7 @@ class GachaLog:
                         "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri(),
                         "count": count,
                         "type": "角色",
-                        "isUp": GachaLog.check_avatar_up(item.name, item.time) if pool_name == "角色祈愿" else False,
+                        "isUp": self.check_avatar_up(item.name, item.time) if pool_name == "角色祈愿" else False,
                         "isBig": (not result[-1].isUp) if result and pool_name == "角色祈愿" else False,
                         "time": item.time,
                     }
@@ -487,7 +392,7 @@ class GachaLog:
         four_star_avg = round((total - no_four_star) / four_star, 2) if four_star != 0 else 0
         # 四星最多
         four_star_name_list = [i.name for i in all_four]
-        four_star_max = max(four_star_name_list, key=four_star_name_list.count)
+        four_star_max = max(four_star_name_list, key=four_star_name_list.count) if four_star_name_list else ""
         four_star_max_count = four_star_name_list.count(four_star_max)
         return [
             [
@@ -520,7 +425,7 @@ class GachaLog:
         four_star_avg = round((total - no_four_star) / four_star, 2) if four_star != 0 else 0
         # 四星最多
         four_star_name_list = [i.name for i in all_four]
-        four_star_max = max(four_star_name_list, key=four_star_name_list.count)
+        four_star_max = max(four_star_name_list, key=four_star_name_list.count) if four_star_name_list else ""
         four_star_max_count = four_star_name_list.count(four_star_max)
         return [
             [
@@ -563,8 +468,7 @@ class GachaLog:
                         return f"{pool_name} · 非"
         return pool_name
 
-    @staticmethod
-    async def get_analysis(user_id: int, client: Client, pool: BannerType, assets: AssetsService):
+    async def get_analysis(self, user_id: int, client: Client, pool: BannerType, assets: AssetsService):
         """
         获取抽卡记录分析数据
         :param user_id: 用户id
@@ -573,26 +477,26 @@ class GachaLog:
         :param assets: 资源服务
         :return: 分析数据
         """
-        gacha_log, status = await GachaLog.load_history_info(str(user_id), str(client.uid))
+        gacha_log, status = await self.load_history_info(str(user_id), str(client.uid))
         if not status:
-            return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"
+            raise GachaLogNotFound
         pool_name = GACHA_TYPE_LIST[pool]
         data = gacha_log.item_list[pool_name]
         total = len(data)
         if total == 0:
-            return "派蒙没有找到这个卡池的抽卡记录，快来私聊派蒙导入吧~"
-        all_five, no_five_star = await GachaLog.get_all_5_star_items(data, assets, pool_name)
-        all_four, no_four_star = await GachaLog.get_all_4_star_items(data, assets)
+            raise GachaLogNotFound
+        all_five, no_five_star = await self.get_all_5_star_items(data, assets, pool_name)
+        all_four, no_four_star = await self.get_all_4_star_items(data, assets)
         summon_data = None
         if pool == BannerType.CHARACTER1:
-            summon_data = GachaLog.get_301_pool_data(total, all_five, no_five_star, no_four_star)
-            pool_name = GachaLog.count_fortune(pool_name, summon_data)
+            summon_data = self.get_301_pool_data(total, all_five, no_five_star, no_four_star)
+            pool_name = self.count_fortune(pool_name, summon_data)
         elif pool == BannerType.WEAPON:
-            summon_data = GachaLog.get_302_pool_data(total, all_five, all_four, no_five_star, no_four_star)
-            pool_name = GachaLog.count_fortune(pool_name, summon_data, True)
+            summon_data = self.get_302_pool_data(total, all_five, all_four, no_five_star, no_four_star)
+            pool_name = self.count_fortune(pool_name, summon_data, True)
         elif pool == BannerType.PERMANENT:
-            summon_data = GachaLog.get_200_pool_data(total, all_five, all_four, no_five_star, no_four_star)
-            pool_name = GachaLog.count_fortune(pool_name, summon_data)
+            summon_data = self.get_200_pool_data(total, all_five, all_four, no_five_star, no_four_star)
+            pool_name = self.count_fortune(pool_name, summon_data)
         last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
         first_time = data[-1].time.strftime("%Y-%m-%d %H:%M")
         return {
@@ -607,10 +511,10 @@ class GachaLog:
             "fourLog": all_four[:18],
         }
 
-    @staticmethod
-    async def get_pool_analysis(user_id: int, client: Client, pool: BannerType, assets: AssetsService, group: bool):
-        """
-        获取抽卡记录分析数据
+    async def get_pool_analysis(
+        self, user_id: int, client: Client, pool: BannerType, assets: AssetsService, group: bool
+    ) -> dict:
+        """获取抽卡记录分析数据
         :param user_id: 用户id
         :param client: genshin client
         :param pool: 池子类型
@@ -618,16 +522,16 @@ class GachaLog:
         :param group: 是否群组
         :return: 分析数据
         """
-        gacha_log, status = await GachaLog.load_history_info(str(user_id), str(client.uid))
+        gacha_log, status = await self.load_history_info(str(user_id), str(client.uid))
         if not status:
-            return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"
+            raise GachaLogNotFound
         pool_name = GACHA_TYPE_LIST[pool]
         data = gacha_log.item_list[pool_name]
         total = len(data)
         if total == 0:
-            return "派蒙没有找到这个卡池的抽卡记录，快来私聊派蒙导入吧~"
-        all_five, _ = await GachaLog.get_all_5_star_items(data, assets, pool_name)
-        all_four, _ = await GachaLog.get_all_4_star_items(data, assets)
+            raise GachaLogNotFound
+        all_five, _ = await self.get_all_5_star_items(data, assets, pool_name)
+        all_four, _ = await self.get_all_4_star_items(data, assets)
         pool_data = []
         up_pool_data = [Pool(**i) for i in get_pool_by_id(pool.value)]
         for up_pool in up_pool_data:
@@ -653,3 +557,169 @@ class GachaLog:
             "pool": pool_data[:6] if group else pool_data,
             "hasMore": len(pool_data) > 6,
         }
+
+    async def get_all_five_analysis(self, user_id: int, client: Client, assets: AssetsService) -> dict:
+        """获取五星抽卡记录分析数据
+        :param user_id: 用户id
+        :param client: genshin client
+        :param assets: 资源服务
+        :return: 分析数据
+        """
+        gacha_log, status = await self.load_history_info(str(user_id), str(client.uid))
+        if not status:
+            raise GachaLogNotFound
+        pools = []
+        for pool_name, items in gacha_log.item_list.items():
+            pool = Pool(
+                five=[pool_name],
+                four=[],
+                name=pool_name,
+                to=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                **{"from": "2020-09-28 00:00:00"},
+            )
+            all_five, _ = await self.get_all_5_star_items(items, assets, pool_name)
+            for item in all_five:
+                pool.parse(item)
+            pool.count_item(items)
+            pools.append(pool)
+        pool_data = [
+            {
+                "count": up_pool.count,
+                "list": up_pool.to_list(),
+                "name": up_pool.name,
+                "start": up_pool.start.strftime("%Y-%m-%d"),
+                "end": up_pool.end.strftime("%Y-%m-%d"),
+            }
+            for up_pool in pools
+        ]
+        return {
+            "uid": client.uid,
+            "typeName": "五星列表",
+            "pool": pool_data,
+            "hasMore": False,
+        }
+
+    @staticmethod
+    def convert_xlsx_to_uigf(data: BytesIO, zh_dict: dict) -> dict:
+        """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
+        :param zh_dict:
+        :param data: paimon.moe 导出的 xlsx 数据
+        :return: UIGF 格式数据
+        """
+
+        def from_paimon_moe(
+            uigf_gacha_type: UIGFGachaType, item_type: str, name: str, date_string: str, rank_type: int, _id: int
+        ) -> UIGFItem:
+            item_type = ItemType.CHARACTER if item_type == "Character" else ItemType.WEAPON
+            return UIGFItem(
+                id=str(_id),
+                name=zh_dict[name],
+                gacha_type=uigf_gacha_type,
+                item_type=item_type,
+                rank_type=str(rank_type),
+                time=date_string,
+                uigf_gacha_type=uigf_gacha_type,
+            )
+
+        def from_uigf(
+            uigf_gacha_type: str,
+            gacha__type: str,
+            item_type: str,
+            name: str,
+            date_string: str,
+            rank_type: str,
+            _id: str,
+        ) -> UIGFItem:
+            return UIGFItem(
+                id=_id,
+                name=name,
+                gacha_type=gacha__type,
+                item_type=item_type,
+                rank_type=rank_type,
+                time=date_string,
+                uigf_gacha_type=uigf_gacha_type,
+            )
+
+        def from_fxq(
+            uigf_gacha_type: UIGFGachaType, item_type: str, name: str, date_string: str, rank_type: int, _id: int
+        ) -> UIGFItem:
+            item_type = ItemType.CHARACTER if item_type == "角色" else ItemType.WEAPON
+            return UIGFItem(
+                id=str(_id),
+                name=name,
+                gacha_type=uigf_gacha_type,
+                item_type=item_type,
+                rank_type=str(rank_type),
+                time=date_string,
+                uigf_gacha_type=uigf_gacha_type,
+            )
+
+        wb = load_workbook(data)
+        wb_len = len(wb.worksheets)
+
+        if wb_len == 6:
+            import_type = ImportType.PAIMONMOE
+        elif wb_len == 5:
+            import_type = ImportType.UIGF
+        elif wb_len == 4:
+            import_type = ImportType.FXQ
+        else:
+            raise GachaLogFileError("xlsx 格式错误")
+
+        paimonmoe_sheets = {
+            UIGFGachaType.BEGINNER: "Beginners' Wish",
+            UIGFGachaType.STANDARD: "Standard",
+            UIGFGachaType.CHARACTER: "Character Event",
+            UIGFGachaType.WEAPON: "Weapon Event",
+        }
+        fxq_sheets = {
+            UIGFGachaType.BEGINNER: "新手祈愿",
+            UIGFGachaType.STANDARD: "常驻祈愿",
+            UIGFGachaType.CHARACTER: "角色活动祈愿",
+            UIGFGachaType.WEAPON: "武器活动祈愿",
+        }
+        data = UIGFModel(info=UIGFInfo(export_app=import_type.value), list=[])
+        if import_type == ImportType.PAIMONMOE:
+            ws = wb["Information"]
+            if ws["B2"].value != PAIMONMOE_VERSION:
+                raise PaimonMoeGachaLogFileError(file_version=ws["B2"].value, support_version=PAIMONMOE_VERSION)
+            count = 1
+            for gacha_type in paimonmoe_sheets:
+                ws = wb[paimonmoe_sheets[gacha_type]]
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    if row[0] is None:
+                        break
+                    data.list.append(from_paimon_moe(gacha_type, row[0], row[1], row[2], row[3], count))
+                    count += 1
+        elif import_type == ImportType.UIGF:
+            ws = wb["原始数据"]
+            type_map = {}
+            count = 0
+            for row in ws["1"]:
+                if row.value is None:
+                    break
+                type_map[row.value] = count
+                count += 1
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row[0] is None:
+                    break
+                data.list.append(
+                    from_uigf(
+                        row[type_map["uigf_gacha_type"]],
+                        row[type_map["gacha_type"]],
+                        row[type_map["item_type"]],
+                        row[type_map["name"]],
+                        row[type_map["time"]],
+                        row[type_map["rank_type"]],
+                        row[type_map["id"]],
+                    )
+                )
+        else:
+            for gacha_type in fxq_sheets:
+                ws = wb[fxq_sheets[gacha_type]]
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    if row[0] is None:
+                        break
+                    data.list.append(from_fxq(gacha_type, row[2], row[1], row[0], row[3], row[6]))
+
+        return json.loads(data.json())
