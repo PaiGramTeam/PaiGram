@@ -558,6 +558,47 @@ class GachaLog:
             "hasMore": len(pool_data) > 6,
         }
 
+    async def get_all_five_analysis(self, user_id: int, client: Client, assets: AssetsService) -> dict:
+        """获取五星抽卡记录分析数据
+        :param user_id: 用户id
+        :param client: genshin client
+        :param assets: 资源服务
+        :return: 分析数据
+        """
+        gacha_log, status = await self.load_history_info(str(user_id), str(client.uid))
+        if not status:
+            raise GachaLogNotFound
+        pools = []
+        for pool_name, items in gacha_log.item_list.items():
+            pool = Pool(
+                five=[pool_name],
+                four=[],
+                name=pool_name,
+                to=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                **{"from": "2020-09-28 00:00:00"},
+            )
+            all_five, _ = await self.get_all_5_star_items(items, assets, pool_name)
+            for item in all_five:
+                pool.parse(item)
+            pool.count_item(items)
+            pools.append(pool)
+        pool_data = [
+            {
+                "count": up_pool.count,
+                "list": up_pool.to_list(),
+                "name": up_pool.name,
+                "start": up_pool.start.strftime("%Y-%m-%d"),
+                "end": up_pool.end.strftime("%Y-%m-%d"),
+            }
+            for up_pool in pools
+        ]
+        return {
+            "uid": client.uid,
+            "typeName": "五星列表",
+            "pool": pool_data,
+            "hasMore": False,
+        }
+
     @staticmethod
     def convert_xlsx_to_uigf(data: BytesIO, zh_dict: dict) -> dict:
         """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
