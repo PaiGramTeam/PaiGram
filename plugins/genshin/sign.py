@@ -47,19 +47,23 @@ class SignSystem:
         self.cache = redis.client
         self.qname = "plugin:sign:"
 
-    async def get_challenge(self, uid: int) -> Optional[bytes]:
-        return await self.cache.get_challenge(f"{self.qname}{uid}")
+    async def get_challenge(self, uid: int) -> Tuple[Optional[str], Optional[str]]:
+        data = await self.cache.get(f"{self.qname}{uid}")
+        if not data:
+            return None, None
+        data = data.decode("utf-8").split("|")
+        return data[0], data[1]
 
-    async def set_challenge(self, uid: int, challenge: str):
-        await self.cache.set_challenge(f"{self.qname}{uid}", challenge)
+    async def set_challenge(self, uid: int, gt: str, challenge: str):
+        await self.cache.set(f"{self.qname}{uid}", f"{gt}|{challenge}")
         await self.cache.expire(f"{self.qname}{uid}", 10 * 60)
 
     async def gen_challenge_header(self, uid: int, validate: str) -> Optional[Dict]:
-        challenge = await self.get_challenge(uid)
+        _, challenge = await self.get_challenge(uid)
         if not challenge or not validate:
             return
         return {
-            "x-rpc-challenge": challenge.decode("utf-8"),
+            "x-rpc-challenge": challenge,
             "x-rpc-validate": validate,
             "x-rpc-seccode": f"{validate}|jordan",
         }
@@ -69,14 +73,13 @@ class SignSystem:
     ) -> Optional[InlineKeyboardMarkup]:
         if not config.pass_challenge_user_web:
             return None
-        if challenge:
-            await self.set_challenge(uid, challenge)
-            data = f"sign|{user_id}|{uid}|{gt}"
+        if gt and challenge:
+            await self.set_challenge(uid, gt, challenge)
+            data = f"sign|{user_id}|{uid}"
             return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
-        challenge = await self.get_challenge(uid)
-        if not challenge:
+        gt, challenge = await self.get_challenge(uid)
+        if not challenge or not gt:
             return
-        challenge = challenge.decode("utf-8")
         url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}"
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
@@ -415,9 +418,9 @@ class Sign(Plugin, BasePlugin):
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" "再乱点再按我叫西风骑士团、千岩军、天领奉和教令院了！", show_alert=True)
             return
-        challenge = await self.system.cache.get_challenge(uid)
+        _, challenge = await self.system.get_challenge(uid)
         if not challenge:
             await callback_query.answer(text="验证请求已经过期，请重新发起签到！", show_alert=True)
             return
-        url = f"t.me/{bot.app.bot.username}?start=sign_{gt}"
+        url = f"t.me/{bot.app.bot.username}?start=sign"
         await callback_query.answer(url=url)
