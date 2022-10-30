@@ -169,6 +169,17 @@ class Sign(Plugin, BasePlugin):
         return None
 
     @staticmethod
+    async def gen_challenge_header(uid: int, validate: str) -> Optional[Dict]:
+        challenge = await SignRedis.get(uid)
+        if not challenge:
+            return
+        return {
+            "x-rpc-challenge": challenge.decode("utf-8"),
+            "x-rpc-validate": validate,
+            "x-rpc-seccode": f"{validate}|jordan",
+        }
+
+    @staticmethod
     async def gen_challenge_button(uid: int, gt: str, challenge: str):
         if not config.pass_challenge_user_web:
             return None
@@ -294,6 +305,7 @@ class Sign(Plugin, BasePlugin):
         user = update.effective_user
         message = update.effective_message
         args = get_all_args(context)
+        validate = None
         if len(args) >= 1:
             msg = None
             if args[0] == "开启自动签到":
@@ -304,6 +316,8 @@ class Sign(Plugin, BasePlugin):
                     msg = await self._process_auto_sign(user.id, user.id, "开启")
             elif args[0] == "关闭自动签到":
                 msg = await self._process_auto_sign(user.id, message.chat_id, "关闭")
+            else:
+                validate = args[0]
             if msg:
                 logger.info(f"用户 {user.full_name}[{user.id}] 自动签到命令请求 || 参数 {args[0]}")
                 reply_message = await message.reply_text(msg)
@@ -316,8 +330,9 @@ class Sign(Plugin, BasePlugin):
             self._add_delete_message_job(context, message.chat_id, message.message_id)
         try:
             client = await get_genshin_client(user.id)
+            headers = await Sign.gen_challenge_header(client.uid, validate)
             await message.reply_chat_action(ChatAction.TYPING)
-            sign_text, button = await self.start_sign(client)
+            sign_text, button = await self.start_sign(client, headers)
             reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)

@@ -8,7 +8,7 @@ from telegram.helpers import escape_markdown
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import handler, Plugin
 from core.user.error import UserNotFoundError
-from plugins.genshin.sign import Sign, SignRedis
+from plugins.genshin.sign import Sign
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 
@@ -48,15 +48,10 @@ class StartPlugin(Plugin):
         with contextlib.suppress(UserNotFoundError, CookiesNotFoundError):
             client = await get_genshin_client(update.effective_user.id)
             await update.effective_message.reply_chat_action(ChatAction.TYPING)
-            challenge = await SignRedis.get(client.uid)
-            if not challenge:
+            headers = await Sign.gen_challenge_header(update.effective_user.id, validate)
+            if not headers:
                 await update.effective_message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
                 return
-            headers = {
-                "x-rpc-challenge": challenge.decode("utf-8"),
-                "x-rpc-validate": validate,
-                "x-rpc-seccode": f"{validate}|jordan",
-            }
             sign_text, button = await Sign.start_sign(client, headers)
             await update.effective_message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
 
