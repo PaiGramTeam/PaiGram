@@ -36,6 +36,7 @@ from utils.log import logger
 
 class NeedChallenge(Exception):
     def __init__(self, uid: int, gt: str = "", challenge: str = ""):
+        super().__init__()
         self.uid = uid
         self.gt = gt
         self.challenge = challenge

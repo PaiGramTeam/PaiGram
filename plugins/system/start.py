@@ -1,5 +1,3 @@
-import logging
-
 from telegram import Update, ReplyKeyboardRemove
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
@@ -12,6 +10,7 @@ from core.user.error import UserNotFoundError
 from plugins.genshin.sign import SignSystem
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
+from utils.log import logger
 
 
 class StartPlugin(Plugin):
@@ -82,7 +81,7 @@ class StartPlugin(Plugin):
                 "请尽快点击下方按钮进行验证。", allow_sending_without_reply=True, reply_markup=button
             )
         except (UserNotFoundError, CookiesNotFoundError):
-            logging.warning(f"用户 {user.full_name}[{user.id}] 账号信息未找到")
+            logger.warning(f"用户 {user.full_name}[{user.id}] 账号信息未找到")
 
     async def process_sign_validate(self, update: Update, validate: str):
         user = update.effective_user
@@ -96,4 +95,4 @@ class StartPlugin(Plugin):
             sign_text, button = await self.sign_system.start_sign(client, headers=headers)
             await update.effective_message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
         except (UserNotFoundError, CookiesNotFoundError):
-            logging.warning(f"用户 {user.full_name}[{user.id}] 账号信息未找到")
+            logger.warning(f"用户 {user.full_name}[{user.id}] 账号信息未找到")
