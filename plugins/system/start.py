@@ -1,19 +1,22 @@
-import contextlib
-
-from telegram import Update, ReplyKeyboardRemove
+from telegram import Update, ReplyKeyboardRemove, Message, User
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.helpers import escape_markdown
 
+from core.base.redisdb import RedisDB
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import handler, Plugin
 from core.user.error import UserNotFoundError
-from plugins.genshin.sign import Sign
+from plugins.genshin.sign import SignSystem, NeedChallenge
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
+from utils.log import logger
 
 
 class StartPlugin(Plugin):
+    def __init__(self, redis: RedisDB = None):
+        self.sign_system = SignSystem(redis)
+
     @handler(CommandHandler, command="start", block=False)
     @restricts()
     async def start(self, update: Update, context: CallbackContext) -> None:
@@ -37,38 +40,13 @@ class StartPlugin(Plugin):
                     f"{escape_markdown('发送 /setuid 或 /setcookie 命令进入绑定账号流程')}"
                 )
             elif args[0] == "sign":
-                await StartPlugin.gen_sign_button(update)
+                await self.gen_sign_button(message, user)
             elif args[0].startswith("challenge_"):
-                await StartPlugin.process_sign_validate(update, args[0][10:])
+                await self.process_sign_validate(message, user, args[0][10:])
             else:
                 await message.reply_html(f"你好 {user.mention_html()} ！我是派蒙 ！\n请点击 /{args[0]} 命令进入对应流程")
             return
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
-
-    @staticmethod
-    async def gen_sign_button(update: Update):
-        with contextlib.suppress(UserNotFoundError, CookiesNotFoundError):
-            client = await get_genshin_client(update.effective_user.id)
-            await update.effective_message.reply_chat_action(ChatAction.TYPING)
-            button = await Sign.gen_challenge_button(client.uid, update.effective_user.id)
-            if not button:
-                await update.effective_message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
-                return
-            await update.effective_message.reply_text(
-                "请尽快点击下方按钮进行验证。", allow_sending_without_reply=True, reply_markup=button
-            )
-
-    @staticmethod
-    async def process_sign_validate(update: Update, validate: str):
-        with contextlib.suppress(UserNotFoundError, CookiesNotFoundError):
-            client = await get_genshin_client(update.effective_user.id)
-            await update.effective_message.reply_chat_action(ChatAction.TYPING)
-            headers = await Sign.gen_challenge_header(client.uid, validate)
-            if not headers:
-                await update.effective_message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
-                return
-            sign_text, button = await Sign.start_sign(client, update.effective_user.id, headers)
-            await update.effective_message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
 
     @staticmethod
     @restricts()
@@ -89,3 +67,30 @@ class StartPlugin(Plugin):
     @restricts()
     async def reply_keyboard_remove(self, update: Update, _: CallbackContext) -> None:
         await update.message.reply_text("移除远程键盘成功", reply_markup=ReplyKeyboardRemove())
+
+    async def gen_sign_button(self, message: Message, user: User):
+        try:
+            client = await get_genshin_client(user.id)
+            await message.reply_chat_action(ChatAction.TYPING)
+            button = await self.sign_system.gen_challenge_button(client.uid, user.id)
+            if not button:
+                await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
+                return
+            await message.reply_text("请尽快点击下方按钮进行验证。", allow_sending_without_reply=True, reply_markup=button)
+        except (UserNotFoundError, CookiesNotFoundError):
+            logger.warning(f"用户 {user.full_name}[{user.id}] 账号信息未找到")
+
+    async def process_sign_validate(self, message: Message, user: User, validate: str):
+        try:
+            client = await get_genshin_client(user.id)
+            await message.reply_chat_action(ChatAction.TYPING)
+            headers = await self.sign_system.gen_challenge_header(client.uid, validate)
+            if not headers:
+                await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
+                return
+            sign_text = await self.sign_system.start_sign(client, headers=headers)
+            await message.reply_text(sign_text, allow_sending_without_reply=True)
+        except (UserNotFoundError, CookiesNotFoundError):
+            logger.warning(f"用户 {user.full_name}[{user.id}] 账号信息未找到")
+        except NeedChallenge:
+            await message.reply_text("回调错误，请重新签到", allow_sending_without_reply=True)
