@@ -36,12 +36,16 @@ class SignRedis:
     qname = "plugin:sign:"
 
     @staticmethod
-    async def get(uid: int) -> Optional[bytes]:
-        return await SignRedis.client.get(f"{SignRedis.qname}{uid}")
+    async def get(uid: int) -> Tuple[Optional[str], Optional[str]]:
+        data = await SignRedis.client.get(f"{SignRedis.qname}{uid}")
+        if not data:
+            return None, None
+        data = data.decode("utf-8").split("|")
+        return data[0], data[1]
 
     @staticmethod
-    async def set(uid: int, challenge: str):
-        await SignRedis.client.set(f"{SignRedis.qname}{uid}", challenge)
+    async def set(uid: int, gt: str, challenge: str):
+        await SignRedis.client.set(f"{SignRedis.qname}{uid}", f"{gt}|{challenge}")
         await SignRedis.client.expire(f"{SignRedis.qname}{uid}", 10 * 60)
 
 
@@ -170,27 +174,26 @@ class Sign(Plugin, BasePlugin):
 
     @staticmethod
     async def gen_challenge_header(uid: int, validate: str) -> Optional[Dict]:
-        challenge = await SignRedis.get(uid)
+        _, challenge = await SignRedis.get(uid)
         if not challenge or not validate:
             return
         return {
-            "x-rpc-challenge": challenge.decode("utf-8"),
+            "x-rpc-challenge": challenge,
             "x-rpc-validate": validate,
             "x-rpc-seccode": f"{validate}|jordan",
         }
 
     @staticmethod
-    async def gen_challenge_button(uid: int, user_id: int, gt: str, challenge: str = None):
+    async def gen_challenge_button(uid: int, user_id: int, gt: str = None, challenge: str = None):
         if not config.pass_challenge_user_web:
             return None
-        if challenge:
-            await SignRedis.set(uid, challenge)
-            data = f"sign|{user_id}|{uid}|{gt}"
+        if gt and challenge:
+            await SignRedis.set(uid, gt, challenge)
+            data = f"sign|{user_id}|{uid}"
             return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
-        challenge = await SignRedis.get(uid)
-        if not challenge:
+        gt, challenge = await SignRedis.get(uid)
+        if not gt or not challenge:
             return
-        challenge = challenge.decode("utf-8")
         url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}"
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
@@ -357,21 +360,20 @@ class Sign(Plugin, BasePlugin):
         callback_query = update.callback_query
         user = callback_query.from_user
 
-        async def get_sign_callback(callback_query_data: str) -> Tuple[int, int, str]:
+        async def get_sign_callback(callback_query_data: str) -> Tuple[int, int]:
             _data = callback_query_data.split("|")
             _user_id = int(_data[1])
             _uid = int(_data[2])
-            _gt = _data[3]
             logger.debug(f"callback_query_data 函数返回 user_id[{_user_id}] uid[{_uid}]")
-            return _user_id, _uid, _gt
+            return _user_id, _uid
 
-        user_id, uid, gt = await get_sign_callback(callback_query.data)
+        user_id, uid = await get_sign_callback(callback_query.data)
         if user.id != user_id:
-            await callback_query.answer(text="这不是你的按钮！\n" "再乱点再按我叫西风骑士团、千岩军、天领奉和教令院了！", show_alert=True)
+            await callback_query.answer(text="这不是你的按钮！\n再乱点再按我叫西风骑士团、千岩军、天领奉行和教令院了！", show_alert=True)
             return
         challenge = await SignRedis.get(uid)
         if not challenge:
             await callback_query.answer(text="验证请求已经过期，请重新发起签到！", show_alert=True)
             return
-        url = f"t.me/{bot.app.bot.username}?start=sign_{gt}"
+        url = f"t.me/{bot.app.bot.username}?start=sign"
         await callback_query.answer(url=url)
