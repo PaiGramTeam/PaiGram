@@ -9,7 +9,7 @@ from genshin import Game, GenshinException, AlreadyClaimed, Client
 from httpx import AsyncClient, TimeoutException
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, CallbackContext
+from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
 from telegram.ext import MessageHandler, filters
 
 from core.admin.services import BotAdminService
@@ -36,12 +36,16 @@ class SignRedis:
     qname = "plugin:sign:"
 
     @staticmethod
-    async def get(uid: int) -> Optional[bytes]:
-        return await SignRedis.client.get(f"{SignRedis.qname}{uid}")
+    async def get(uid: int) -> Tuple[Optional[str], Optional[str]]:
+        data = await SignRedis.client.get(f"{SignRedis.qname}{uid}")
+        if not data:
+            return None, None
+        data = data.decode("utf-8").split("|")
+        return data[0], data[1]
 
     @staticmethod
-    async def set(uid: int, challenge: str):
-        await SignRedis.client.set(f"{SignRedis.qname}{uid}", challenge)
+    async def set(uid: int, gt: str, challenge: str):
+        await SignRedis.client.set(f"{SignRedis.qname}{uid}", f"{gt}|{challenge}")
         await SignRedis.client.expire(f"{SignRedis.qname}{uid}", 10 * 60)
 
 
@@ -170,25 +174,33 @@ class Sign(Plugin, BasePlugin):
 
     @staticmethod
     async def gen_challenge_header(uid: int, validate: str) -> Optional[Dict]:
-        challenge = await SignRedis.get(uid)
+        _, challenge = await SignRedis.get(uid)
         if not challenge or not validate:
             return
         return {
-            "x-rpc-challenge": challenge.decode("utf-8"),
+            "x-rpc-challenge": challenge,
             "x-rpc-validate": validate,
             "x-rpc-seccode": f"{validate}|jordan",
         }
 
     @staticmethod
-    async def gen_challenge_button(uid: int, gt: str, challenge: str):
+    async def gen_challenge_button(uid: int, user_id: int, gt: str = None, challenge: str = None):
         if not config.pass_challenge_user_web:
             return None
-        await SignRedis.set(uid, challenge)
+        if gt and challenge:
+            await SignRedis.set(uid, gt, challenge)
+            data = f"sign|{user_id}|{uid}"
+            return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
+        gt, challenge = await SignRedis.get(uid)
+        if not gt or not challenge:
+            return
         url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}"
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
     @staticmethod
-    async def start_sign(client: Client, headers: Dict = None) -> Tuple[str, Optional[InlineKeyboardMarkup]]:
+    async def start_sign(
+        client: Client, user_id: int, headers: Dict = None
+    ) -> Tuple[str, Optional[InlineKeyboardMarkup]]:
         try:
             rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
         except GenshinException as error:
@@ -223,6 +235,7 @@ class Sign(Plugin, BasePlugin):
                     if request_daily_reward and request_daily_reward.get("success", 0) == 1:
                         button = await Sign.gen_challenge_button(
                             client.uid,
+                            user_id,
                             request_daily_reward.get("gt", ""),
                             request_daily_reward.get("challenge", ""),
                         )
@@ -324,7 +337,7 @@ class Sign(Plugin, BasePlugin):
             client = await get_genshin_client(user.id)
             headers = await Sign.gen_challenge_header(client.uid, validate)
             await message.reply_chat_action(ChatAction.TYPING)
-            sign_text, button = await self.start_sign(client, headers)
+            sign_text, button = await self.start_sign(client, user.id, headers)
             reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
@@ -339,3 +352,28 @@ class Sign(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
+
+    @handler(CallbackQueryHandler, pattern=r"^sign\|", block=False)
+    @restricts(restricts_time_of_groups=20, without_overlapping=True)
+    @error_callable
+    async def sign_gen_link(self, update: Update, _: CallbackContext) -> None:
+        callback_query = update.callback_query
+        user = callback_query.from_user
+
+        async def get_sign_callback(callback_query_data: str) -> Tuple[int, int]:
+            _data = callback_query_data.split("|")
+            _user_id = int(_data[1])
+            _uid = int(_data[2])
+            logger.debug(f"callback_query_data 函数返回 user_id[{_user_id}] uid[{_uid}]")
+            return _user_id, _uid
+
+        user_id, uid = await get_sign_callback(callback_query.data)
+        if user.id != user_id:
+            await callback_query.answer(text="这不是你的按钮！\n再乱点再按我叫西风骑士团、千岩军、天领奉行和教令院了！", show_alert=True)
+            return
+        challenge = await SignRedis.get(uid)
+        if not challenge:
+            await callback_query.answer(text="验证请求已经过期，请重新发起签到！", show_alert=True)
+            return
+        url = f"t.me/{bot.app.bot.username}?start=sign"
+        await callback_query.answer(url=url)

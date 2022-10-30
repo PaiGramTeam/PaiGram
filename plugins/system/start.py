@@ -36,12 +36,27 @@ class StartPlugin(Plugin):
                     f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
                     f"{escape_markdown('发送 /setuid 或 /setcookie 命令进入绑定账号流程')}"
                 )
+            elif args[0] == "sign":
+                await StartPlugin.gen_sign_button(update)
             elif args[0].startswith("challenge_"):
                 await StartPlugin.process_sign_validate(update, args[0][10:])
             else:
                 await message.reply_html(f"你好 {user.mention_html()} ！我是派蒙 ！\n请点击 /{args[0]} 命令进入对应流程")
             return
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
+
+    @staticmethod
+    async def gen_sign_button(update: Update):
+        with contextlib.suppress(UserNotFoundError, CookiesNotFoundError):
+            client = await get_genshin_client(update.effective_user.id)
+            await update.effective_message.reply_chat_action(ChatAction.TYPING)
+            button = await Sign.gen_challenge_button(client.uid, update.effective_user.id)
+            if not button:
+                await update.effective_message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
+                return
+            await update.effective_message.reply_text(
+                "请尽快点击下方按钮进行验证。", allow_sending_without_reply=True, reply_markup=button
+            )
 
     @staticmethod
     async def process_sign_validate(update: Update, validate: str):
@@ -52,7 +67,7 @@ class StartPlugin(Plugin):
             if not headers:
                 await update.effective_message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
                 return
-            sign_text, button = await Sign.start_sign(client, headers)
+            sign_text, button = await Sign.start_sign(client, update.effective_user.id, headers)
             await update.effective_message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
 
     @staticmethod
