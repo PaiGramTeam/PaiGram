@@ -403,15 +403,14 @@ class Sign(Plugin, BasePlugin):
         callback_query = update.callback_query
         user = callback_query.from_user
 
-        async def get_sign_callback(callback_query_data: str) -> Tuple[int, int, str]:
+        async def get_sign_callback(callback_query_data: str) -> Tuple[int, int]:
             _data = callback_query_data.split("|")
             _user_id = int(_data[1])
             _uid = int(_data[2])
-            _gt = _data[3]
-            logger.debug(f"callback_query_data 函数返回 user_id[{_user_id}] uid[{_uid}]")
-            return _user_id, _uid, _gt
+            logger.debug(f"get_sign_callback 函数返回 user_id[{_user_id}] uid[{_uid}]")
+            return _user_id, _uid
 
-        user_id, uid, gt = await get_sign_callback(callback_query.data)
+        user_id, uid = await get_sign_callback(callback_query.data)
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" "再乱点再按我叫西风骑士团、千岩军、天领奉和教令院了！", show_alert=True)
             return
