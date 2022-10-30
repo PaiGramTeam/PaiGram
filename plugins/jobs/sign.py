@@ -56,7 +56,7 @@ class SignJob(Plugin):
                     continue
             try:
                 text = await self.sign_system.start_sign(
-                    user_id, is_sleep=True, is_raise=True, title="自动签到" if context.job.name == "SignJob" else "重签签到"
+                    user_id, is_sleep=True, is_raise=True, title="自动签到" if context.job.name == "SignJob" else "自动重新签到"
                 )
                 sign_db.status = SignStatusEnum.STATUS_SUCCESS
             except InvalidCookies:
