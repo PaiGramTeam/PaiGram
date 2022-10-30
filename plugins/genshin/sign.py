@@ -195,7 +195,7 @@ class SignSystem:
         headers: Optional[Dict] = None,
         is_sleep: bool = False,
         is_raise: bool = False,
-        title: Optional[str] = None,
+        title: Optional[str] = "签到结果",
     ) -> str:
         if is_sleep:
             if recognize_genshin_server(client.uid) in ("cn_gf01", "cn_qd01"):
@@ -367,11 +367,8 @@ class Sign(Plugin, BasePlugin):
         try:
             client = await get_genshin_client(user.id)
             await message.reply_chat_action(ChatAction.TYPING)
-            if validate:
-                headers = await self.system.gen_challenge_header(client.uid, validate)
-                sign_text = await self.system.start_sign(client, headers, title="签到结果")
-            else:
-                sign_text = await self.system.start_sign(client, title="签到结果")
+            headers = await self.system.gen_challenge_header(client.uid, validate)
+            sign_text = await self.system.start_sign(client, headers)
             reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)

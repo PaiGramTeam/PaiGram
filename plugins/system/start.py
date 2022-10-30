@@ -7,7 +7,7 @@ from core.base.redisdb import RedisDB
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import handler, Plugin
 from core.user.error import UserNotFoundError
-from plugins.genshin.sign import SignSystem
+from plugins.genshin.sign import SignSystem, NeedChallenge
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
@@ -92,7 +92,9 @@ class StartPlugin(Plugin):
             if not headers:
                 await update.effective_message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
                 return
-            sign_text, button = await self.sign_system.start_sign(client, headers=headers)
-            await update.effective_message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
+            sign_text = await self.sign_system.start_sign(client, headers=headers)
+            await update.effective_message.reply_text(sign_text, allow_sending_without_reply=True)
         except (UserNotFoundError, CookiesNotFoundError):
             logger.warning(f"用户 {user.full_name}[{user.id}] 账号信息未找到")
+        except NeedChallenge:
+            await update.effective_message.reply_text("回调错误，请重新签到", allow_sending_without_reply=True)
