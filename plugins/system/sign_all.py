@@ -1,6 +1,4 @@
-import asyncio
 import datetime
-import random
 
 from aiohttp import ClientConnectorError
 from genshin import InvalidCookies, AlreadyClaimed, GenshinException
@@ -9,12 +7,14 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CommandHandler, CallbackContext
 
+from core.base.redisdb import RedisDB
 from core.cookies import CookiesService
 from core.plugin import Plugin, handler
 from core.sign import SignServices
 from core.sign.models import SignStatusEnum
 from core.user import UserService
-from plugins.jobs.sign import NeedChallenge, SignJob
+from plugins.genshin.sign import SignSystem
+from plugins.jobs.sign import NeedChallenge
 from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger
 
@@ -25,10 +25,12 @@ class SignAll(Plugin):
         sign_service: SignServices = None,
         user_service: UserService = None,
         cookies_service: CookiesService = None,
+        redis: RedisDB = None,
     ):
         self.sign_service = sign_service
         self.cookies_service = cookies_service
         self.user_service = user_service
+        self.sign_system = SignSystem(redis)
 
     @handler(CommandHandler, command="sign_all", block=False)
     @bot_admins_rights_check
@@ -42,7 +44,7 @@ class SignAll(Plugin):
             user_id = sign_db.user_id
             old_status = sign_db.status
             try:
-                text = await SignJob.single_sign(user_id)
+                text = await self.sign_system.start_sign(user_id, is_sleep=True, is_raise=True, title="自动重新签到")
             except InvalidCookies:
                 text = "自动签到执行失败，Cookie无效"
                 sign_db.status = SignStatusEnum.INVALID_COOKIES
@@ -67,10 +69,7 @@ class SignAll(Plugin):
             if sign_db.chat_id < 0:
                 text = f'<a href="tg://user?id={sign_db.user_id}">NOTICE {sign_db.user_id}</a>\n\n{text}'
             try:
-                if "今天旅行者已经签到过了~" not in text:
-                    await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
-                    await asyncio.sleep(random.randint(10, 50))  # nosec
-                    # 回复延迟 [10, 60] 避免触发洪水防御
+                await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
             except BadRequest as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)

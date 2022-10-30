@@ -1,11 +1,14 @@
+import asyncio
 import datetime
 import json
+import random
 import re
 import time
 from json import JSONDecodeError
 from typing import Optional, Dict, Tuple
 
 from genshin import Game, GenshinException, AlreadyClaimed, Client
+from genshin.utility import recognize_genshin_server
 from httpx import AsyncClient, TimeoutException
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -31,40 +34,50 @@ from utils.helpers import get_genshin_client
 from utils.log import logger
 
 
-class SignRedis:
-    client = bot.find_service(RedisDB).client
-    qname = "plugin:sign:"
-
-    @staticmethod
-    async def get(uid: int) -> Tuple[Optional[str], Optional[str]]:
-        data = await SignRedis.client.get(f"{SignRedis.qname}{uid}")
-        if not data:
-            return None, None
-        data = data.decode("utf-8").split("|")
-        return data[0], data[1]
-
-    @staticmethod
-    async def set(uid: int, gt: str, challenge: str):
-        await SignRedis.client.set(f"{SignRedis.qname}{uid}", f"{gt}|{challenge}")
-        await SignRedis.client.expire(f"{SignRedis.qname}{uid}", 10 * 60)
+class NeedChallenge(Exception):
+    def __init__(self, uid: int, gt: str = "", challenge: str = ""):
+        self.uid = uid
+        self.gt = gt
+        self.challenge = challenge
 
 
-class Sign(Plugin, BasePlugin):
-    """每日签到"""
+class SignSystem:
+    def __init__(self, redis: RedisDB):
+        self.cache = redis.client
+        self.qname = "plugin:sign:"
 
-    CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
+    async def get_challenge(self, uid: int) -> Optional[bytes]:
+        return await self.cache.get_challenge(f"{self.qname}{uid}")
 
-    def __init__(
-        self,
-        user_service: UserService = None,
-        cookies_service: CookiesService = None,
-        sign_service: SignServices = None,
-        bot_admin_service: BotAdminService = None,
-    ):
-        self.bot_admin_service = bot_admin_service
-        self.cookies_service = cookies_service
-        self.user_service = user_service
-        self.sign_service = sign_service
+    async def set_challenge(self, uid: int, challenge: str):
+        await self.cache.set_challenge(f"{self.qname}{uid}", challenge)
+        await self.cache.expire(f"{self.qname}{uid}", 10 * 60)
+
+    async def gen_challenge_header(self, uid: int, validate: str) -> Optional[Dict]:
+        challenge = await self.get_challenge(uid)
+        if not challenge or not validate:
+            return
+        return {
+            "x-rpc-challenge": challenge.decode("utf-8"),
+            "x-rpc-validate": validate,
+            "x-rpc-seccode": f"{validate}|jordan",
+        }
+
+    async def gen_challenge_button(
+        self, uid: int, user_id: int, gt: Optional[str] = None, challenge: Optional[str] = None
+    ) -> Optional[InlineKeyboardMarkup]:
+        if not config.pass_challenge_user_web:
+            return None
+        if challenge:
+            await self.set_challenge(uid, challenge)
+            data = f"sign|{user_id}|{uid}|{gt}"
+            return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
+        challenge = await self.get_challenge(uid)
+        if not challenge:
+            return
+        challenge = challenge.decode("utf-8")
+        url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}"
+        return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
     @staticmethod
     async def pass_challenge(gt: str, challenge: str, referer: str = None) -> Optional[Dict]:
@@ -150,10 +163,10 @@ class Sign(Plugin, BasePlugin):
                 )
             logger.debug(f"签到 recognize 请求返回：{resp.text}")
             data = resp.json()
-            status = data.get("status")
+            status = data.get_challenge("status")
             if status is not None and status != 0:
-                logger.error(f"签到 recognize 请求解析错误：{data.get('msg')}")
-            if data.get("code", 0) != 0:
+                logger.error(f"签到 recognize 请求解析错误：{data.get_challenge('msg')}")
+            if data.get_challenge("code", 0) != 0:
                 raise RuntimeError
             logger.info("签到 recognize 请求 解析成功")
             return {
@@ -172,45 +185,33 @@ class Sign(Plugin, BasePlugin):
             logger.warning("签到 recognize 请求失败")
         return None
 
-    @staticmethod
-    async def gen_challenge_header(uid: int, validate: str) -> Optional[Dict]:
-        _, challenge = await SignRedis.get(uid)
-        if not challenge or not validate:
-            return
-        return {
-            "x-rpc-challenge": challenge,
-            "x-rpc-validate": validate,
-            "x-rpc-seccode": f"{validate}|jordan",
-        }
-
-    @staticmethod
-    async def gen_challenge_button(uid: int, user_id: int, gt: str = None, challenge: str = None):
-        if not config.pass_challenge_user_web:
-            return None
-        if gt and challenge:
-            await SignRedis.set(uid, gt, challenge)
-            data = f"sign|{user_id}|{uid}"
-            return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
-        gt, challenge = await SignRedis.get(uid)
-        if not gt or not challenge:
-            return
-        url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}"
-        return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
-
-    @staticmethod
     async def start_sign(
-        client: Client, user_id: int, headers: Dict = None
-    ) -> Tuple[str, Optional[InlineKeyboardMarkup]]:
+        self,
+        client: Client,
+        headers: Optional[Dict] = None,
+        is_sleep: bool = False,
+        is_raise: bool = False,
+        title: Optional[str] = None,
+    ) -> str:
+        if is_sleep:
+            if recognize_genshin_server(client.uid) in ("cn_gf01", "cn_qd01"):
+                await asyncio.sleep(random.randint(10, 300))  # nosec
+            else:
+                await asyncio.sleep(random.randint(0, 3))  # nosec
         try:
             rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
         except GenshinException as error:
             logger.warning(f"UID {client.uid} 获取签到信息失败，API返回信息为 {str(error)}")
-            return f"获取签到信息失败，API返回信息为 {str(error)}", None
+            if is_raise:
+                raise error
+            return f"获取签到信息失败，API返回信息为 {str(error)}"
         try:
             daily_reward_info = await client.get_reward_info(game=Game.GENSHIN, lang="zh-cn")  # 获取签到信息失败
         except GenshinException as error:
             logger.warning(f"UID {client.uid} 获取签到状态失败，API返回信息为 {str(error)}")
-            return f"获取签到状态失败，API返回信息为 {str(error)}", None
+            if is_raise:
+                raise error
+            return f"获取签到状态失败，API返回信息为 {str(error)}"
         if not daily_reward_info.signed_in:
             try:
                 request_daily_reward = await client.request_daily_reward(
@@ -221,7 +222,8 @@ class Sign(Plugin, BasePlugin):
                     headers=headers,
                 )
                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                    headers = await Sign.pass_challenge(
+                    # 尝试通过 ajax 请求绕过签到
+                    headers = await self.pass_challenge(
                         request_daily_reward.get("gt", ""),
                         request_daily_reward.get("challenge", ""),
                     )
@@ -233,23 +235,27 @@ class Sign(Plugin, BasePlugin):
                         headers=headers,
                     )
                     if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                        button = await Sign.gen_challenge_button(
-                            client.uid,
-                            user_id,
-                            request_daily_reward.get("gt", ""),
-                            request_daily_reward.get("challenge", ""),
+                        # 如果绕过失败 抛出异常 相关信息写入
+                        raise NeedChallenge(
+                            uid=client.uid,
+                            gt=request_daily_reward.get("gt", ""),
+                            challenge=request_daily_reward.get("challenge", ""),
                         )
-                        logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
-                        return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。", button
                     logger.info(f"UID {client.uid} 签到成功")
-            except TimeoutException:
-                return "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ ", None
-            except AlreadyClaimed:
+            except TimeoutException as error:
+                if is_raise:
+                    raise error
+                return "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
+            except AlreadyClaimed as error:
                 logger.info(f"UID {client.uid} 已经签到")
+                if is_raise:
+                    raise error
                 result = "今天旅行者已经签到过了~"
             except GenshinException as error:
                 logger.warning(f"UID {client.uid} 签到失败，API返回信息为 {str(error)}")
-                return f"获取签到状态失败，API返回信息为 {str(error)}", None
+                if is_raise:
+                    raise error
+                return f"获取签到状态失败，API返回信息为 {str(error)}"
             else:
                 logger.info(f"UID {client.uid} 签到成功")
                 result = "OK"
@@ -265,13 +271,34 @@ class Sign(Plugin, BasePlugin):
         if not daily_reward_info.signed_in:
             missed_days -= 1
         message = (
-            f"#### {today} (UTC+8) ####\n"
+            f"#### {title} ####\n"
+            f"时间：{today} (UTC+8)\n"
             f"UID: {client.uid}\n"
             f"今日奖励: {reward.name} × {reward.amount}\n"
             f"本月漏签次数：{missed_days}\n"
             f"签到结果: {result}"
         )
-        return message, None
+        return message
+
+
+class Sign(Plugin, BasePlugin):
+    """每日签到"""
+
+    CHECK_SERVER, COMMAND_RESULT = range(10400, 10402)
+
+    def __init__(
+        self,
+        redis: RedisDB = None,
+        user_service: UserService = None,
+        cookies_service: CookiesService = None,
+        sign_service: SignServices = None,
+        bot_admin_service: BotAdminService = None,
+    ):
+        self.bot_admin_service = bot_admin_service
+        self.cookies_service = cookies_service
+        self.user_service = user_service
+        self.sign_service = sign_service
+        self.system = SignSystem(redis)
 
     async def _process_auto_sign(self, user_id: int, chat_id: int, method: str) -> str:
         try:
@@ -310,7 +337,7 @@ class Sign(Plugin, BasePlugin):
         user = update.effective_user
         message = update.effective_message
         args = get_all_args(context)
-        validate = None
+        validate: Optional[str] = None
         if len(args) >= 1:
             msg = None
             if args[0] == "开启自动签到":
@@ -335,10 +362,24 @@ class Sign(Plugin, BasePlugin):
             self._add_delete_message_job(context, message.chat_id, message.message_id)
         try:
             client = await get_genshin_client(user.id)
-            headers = await Sign.gen_challenge_header(client.uid, validate)
             await message.reply_chat_action(ChatAction.TYPING)
-            sign_text, button = await self.start_sign(client, user.id, headers)
-            reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
+            try:
+                if validate:
+                    headers = await self.system.gen_challenge_header(client.uid, validate)
+                    sign_text = await self.system.start_sign(client, headers, title="签到结果")
+                else:
+                    sign_text = await self.system.start_sign(client, title="签到结果")
+                reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
+            except NeedChallenge as exc:
+                button = await self.system.gen_challenge_button(
+                    exc.uid,
+                    user.id,
+                    exc.gt,
+                    exc.challenge,
+                )
+                reply_message = await message.reply_text(
+                    f"UID {exc.uid} 签到失败，触发验证码风控，请尝试点击下方按钮重新签到", allow_sending_without_reply=True, reply_markup=button
+                )
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
         except (UserNotFoundError, CookiesNotFoundError):
@@ -360,20 +401,21 @@ class Sign(Plugin, BasePlugin):
         callback_query = update.callback_query
         user = callback_query.from_user
 
-        async def get_sign_callback(callback_query_data: str) -> Tuple[int, int]:
+        async def get_sign_callback(callback_query_data: str) -> Tuple[int, int, str]:
             _data = callback_query_data.split("|")
             _user_id = int(_data[1])
             _uid = int(_data[2])
+            _gt = _data[3]
             logger.debug(f"callback_query_data 函数返回 user_id[{_user_id}] uid[{_uid}]")
-            return _user_id, _uid
+            return _user_id, _uid, _gt
 
-        user_id, uid = await get_sign_callback(callback_query.data)
+        user_id, uid, gt = await get_sign_callback(callback_query.data)
         if user.id != user_id:
-            await callback_query.answer(text="这不是你的按钮！\n再乱点再按我叫西风骑士团、千岩军、天领奉行和教令院了！", show_alert=True)
+            await callback_query.answer(text="这不是你的按钮！\n" "再乱点再按我叫西风骑士团、千岩军、天领奉和教令院了！", show_alert=True)
             return
-        challenge = await SignRedis.get(uid)
+        challenge = await self.system.cache.get_challenge(uid)
         if not challenge:
             await callback_query.answer(text="验证请求已经过期，请重新发起签到！", show_alert=True)
             return
-        url = f"t.me/{bot.app.bot.username}?start=sign"
+        url = f"t.me/{bot.app.bot.username}?start=sign_{gt}"
         await callback_query.answer(url=url)
