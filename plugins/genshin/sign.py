@@ -171,7 +171,7 @@ class Sign(Plugin, BasePlugin):
     @staticmethod
     async def gen_challenge_header(uid: int, validate: str) -> Optional[Dict]:
         challenge = await SignRedis.get(uid)
-        if not challenge:
+        if not challenge or not validate:
             return
         return {
             "x-rpc-challenge": challenge.decode("utf-8"),
@@ -213,14 +213,6 @@ class Sign(Plugin, BasePlugin):
                         request_daily_reward.get("gt", ""),
                         request_daily_reward.get("challenge", ""),
                     )
-                    if not headers:
-                        button = await Sign.gen_challenge_button(
-                            client.uid,
-                            request_daily_reward.get("gt", ""),
-                            request_daily_reward.get("challenge", ""),
-                        )
-                        logger.warning(f"UID {client.uid} 签到失败，触发验证码风控")
-                        return f"UID {client.uid} 签到失败，触发验证码风控，请尝试重新签到。", button
                     request_daily_reward = await client.request_daily_reward(
                         "sign",
                         method="POST",

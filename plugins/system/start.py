@@ -48,7 +48,7 @@ class StartPlugin(Plugin):
         with contextlib.suppress(UserNotFoundError, CookiesNotFoundError):
             client = await get_genshin_client(update.effective_user.id)
             await update.effective_message.reply_chat_action(ChatAction.TYPING)
-            headers = await Sign.gen_challenge_header(update.effective_user.id, validate)
+            headers = await Sign.gen_challenge_header(client.uid, validate)
             if not headers:
                 await update.effective_message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
                 return
