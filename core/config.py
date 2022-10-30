@@ -116,6 +116,7 @@ class BotConfig(Settings):
     enka_network_api_agent: str = ""
     pass_challenge_api: str = ""
     pass_challenge_app_key: str = ""
+    pass_challenge_user_web: str = ""
 
     mysql: MySqlConfig = MySqlConfig()
     logger: LoggerConfig = LoggerConfig()
