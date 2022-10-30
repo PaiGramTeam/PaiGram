@@ -164,10 +164,10 @@ class SignSystem:
                 )
             logger.debug(f"签到 recognize 请求返回：{resp.text}")
             data = resp.json()
-            status = data.get_challenge("status")
+            status = data.get("status")
             if status is not None and status != 0:
-                logger.error(f"签到 recognize 请求解析错误：{data.get_challenge('msg')}")
-            if data.get_challenge("code", 0) != 0:
+                logger.error(f"签到 recognize 请求解析错误：{data.get('msg')}")
+            if data.get("code", 0) != 0:
                 raise RuntimeError
             logger.info("签到 recognize 请求 解析成功")
             return {
