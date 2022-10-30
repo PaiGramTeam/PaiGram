@@ -177,7 +177,7 @@ class Sign(Plugin, BasePlugin):
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
     @staticmethod
-    async def _start_sign(client: Client, headers: Dict = None) -> Tuple[str, Optional[InlineKeyboardMarkup]]:
+    async def start_sign(client: Client, headers: Dict = None) -> Tuple[str, Optional[InlineKeyboardMarkup]]:
         try:
             rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
         except GenshinException as error:
@@ -317,7 +317,7 @@ class Sign(Plugin, BasePlugin):
         try:
             client = await get_genshin_client(user.id)
             await message.reply_chat_action(ChatAction.TYPING)
-            sign_text, button = await self._start_sign(client)
+            sign_text, button = await self.start_sign(client)
             reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)

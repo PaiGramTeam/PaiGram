@@ -57,7 +57,7 @@ class StartPlugin(Plugin):
                 "x-rpc-validate": validate,
                 "x-rpc-seccode": f"{validate}|jordan",
             }
-            sign_text, button = await Sign._start_sign(client, headers)
+            sign_text, button = await Sign.start_sign(client, headers)
             await update.effective_message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
 
     @staticmethod
