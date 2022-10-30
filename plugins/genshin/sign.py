@@ -363,23 +363,12 @@ class Sign(Plugin, BasePlugin):
         try:
             client = await get_genshin_client(user.id)
             await message.reply_chat_action(ChatAction.TYPING)
-            try:
-                if validate:
-                    headers = await self.system.gen_challenge_header(client.uid, validate)
-                    sign_text = await self.system.start_sign(client, headers, title="签到结果")
-                else:
-                    sign_text = await self.system.start_sign(client, title="签到结果")
-                reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
-            except NeedChallenge as exc:
-                button = await self.system.gen_challenge_button(
-                    exc.uid,
-                    user.id,
-                    exc.gt,
-                    exc.challenge,
-                )
-                reply_message = await message.reply_text(
-                    f"UID {exc.uid} 签到失败，触发验证码风控，请尝试点击下方按钮重新签到", allow_sending_without_reply=True, reply_markup=button
-                )
+            if validate:
+                headers = await self.system.gen_challenge_header(client.uid, validate)
+                sign_text = await self.system.start_sign(client, headers, title="签到结果")
+            else:
+                sign_text = await self.system.start_sign(client, title="签到结果")
+            reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
         except (UserNotFoundError, CookiesNotFoundError):
@@ -393,6 +382,18 @@ class Sign(Plugin, BasePlugin):
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
+        except NeedChallenge as exc:
+            button = await self.system.gen_challenge_button(
+                exc.uid,
+                user.id,
+                exc.gt,
+                exc.challenge,
+            )
+            reply_message = await message.reply_text(
+                f"UID {exc.uid} 签到失败，触发验证码风控，请尝试点击下方按钮重新签到", allow_sending_without_reply=True, reply_markup=button
+            )
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
 
     @handler(CallbackQueryHandler, pattern=r"^sign\|", block=False)
     @restricts(restricts_time_of_groups=20, without_overlapping=True)
