@@ -1,9 +1,16 @@
+import contextlib
+
 from telegram import Update, ReplyKeyboardRemove
+from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.helpers import escape_markdown
 
+from core.cookies.error import CookiesNotFoundError
 from core.plugin import handler, Plugin
+from core.user.error import UserNotFoundError
+from plugins.genshin.sign import Sign, SignRedis
 from utils.decorators.restricts import restricts
+from utils.helpers import get_genshin_client
 
 
 class StartPlugin(Plugin):
@@ -29,10 +36,29 @@ class StartPlugin(Plugin):
                     f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
                     f"{escape_markdown('发送 /setuid 或 /setcookie 命令进入绑定账号流程')}"
                 )
+            elif args[0].startswith("challenge_"):
+                await StartPlugin.process_sign_validate(update, args[0][10:])
             else:
                 await message.reply_html(f"你好 {user.mention_html()} ！我是派蒙 ！\n请点击 /{args[0]} 命令进入对应流程")
             return
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
+
+    @staticmethod
+    async def process_sign_validate(update: Update, validate: str):
+        with contextlib.suppress(UserNotFoundError, CookiesNotFoundError):
+            client = await get_genshin_client(update.effective_user.id)
+            await update.effective_message.reply_chat_action(ChatAction.TYPING)
+            challenge = await SignRedis.get(client.uid)
+            if not challenge:
+                await update.effective_message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
+                return
+            headers = {
+                "x-rpc-challenge": challenge.decode("utf-8"),
+                "x-rpc-validate": validate,
+                "x-rpc-seccode": f"{validate}|jordan",
+            }
+            sign_text, button = await Sign._start_sign(client, headers)
+            await update.effective_message.reply_text(sign_text, allow_sending_without_reply=True, reply_markup=button)
 
     @staticmethod
     @restricts()

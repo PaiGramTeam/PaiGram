@@ -24,6 +24,7 @@ from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config  # pylint: disable=W0611
 from core.error import ServiceNotFoundError
+
 # noinspection PyProtectedMember
 from core.plugin import Plugin, _Plugin
 from core.service import Service
@@ -275,7 +276,7 @@ class Bot:
 
     def find_service(self, target: Type[T]) -> T:
         """查找服务。若没找到则抛出 ServiceNotFoundError"""
-        if result := self._services.get(target) is None:
+        if (result := self._services.get(target)) is None:
             raise ServiceNotFoundError(target)
         return result
 
