@@ -16,6 +16,7 @@ from core.user import UserService
 from plugins.genshin.sign import SignSystem, NeedChallenge
 from plugins.system.errorhandler import notice_chat_id
 from plugins.system.sign_status import SignStatus
+from utils.helpers import get_genshin_client
 from utils.log import logger
 
 
@@ -51,8 +52,9 @@ class SignJob(Plugin):
                 if sign_db.status in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
                     continue
             try:
+                client = await get_genshin_client(user_id)
                 text = await self.sign_system.start_sign(
-                    user_id, is_sleep=True, is_raise=True, title="自动签到" if context.job.name == "SignJob" else "自动重新签到"
+                    client, is_sleep=True, is_raise=True, title="自动签到" if context.job.name == "SignJob" else "自动重新签到"
                 )
                 sign_db.status = SignStatusEnum.STATUS_SUCCESS
             except InvalidCookies:

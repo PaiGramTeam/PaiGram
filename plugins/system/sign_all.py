@@ -16,6 +16,7 @@ from core.user import UserService
 from plugins.genshin.sign import SignSystem
 from plugins.jobs.sign import NeedChallenge
 from utils.decorators.admins import bot_admins_rights_check
+from utils.helpers import get_genshin_client
 from utils.log import logger
 
 
@@ -44,7 +45,8 @@ class SignAll(Plugin):
             user_id = sign_db.user_id
             old_status = sign_db.status
             try:
-                text = await self.sign_system.start_sign(user_id, is_sleep=True, is_raise=True, title="自动重新签到")
+                client = await get_genshin_client(user_id)
+                text = await self.sign_system.start_sign(client, is_sleep=True, is_raise=True, title="自动重新签到")
             except InvalidCookies:
                 text = "自动签到执行失败，Cookie无效"
                 sign_db.status = SignStatusEnum.INVALID_COOKIES
