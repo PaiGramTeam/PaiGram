@@ -55,6 +55,9 @@ class Logger(logging.Logger):
     def __init__(self, config: "LoggerConfig" = None) -> None:
         from utils.log._config import LoggerConfig
 
+        if "PYCHARM_HOSTED" in os.environ:
+            print("")
+
         self.config = config or LoggerConfig()
 
         level_ = 10 if self.config.debug else 20
@@ -114,13 +117,13 @@ class Logger(logging.Logger):
         self.addHandler(error_handler)
 
     def success(
-        self,
-        msg: Any,
-        *args: Any,
-        exc_info: Optional[ExceptionInfoType] = None,
-        stack_info: bool = False,
-        stacklevel: int = 1,
-        extra: Optional[Mapping[str, Any]] = None,
+            self,
+            msg: Any,
+            *args: Any,
+            exc_info: Optional[ExceptionInfoType] = None,
+            stack_info: bool = False,
+            stacklevel: int = 1,
+            extra: Optional[Mapping[str, Any]] = None,
     ) -> None:
         return self.log(
             25,
@@ -133,14 +136,14 @@ class Logger(logging.Logger):
         )
 
     def exception(
-        self,
-        msg: Any = NONE,
-        *args: Any,
-        exc_info: Optional[ExceptionInfoType] = True,
-        stack_info: bool = False,
-        stacklevel: int = 1,
-        extra: Optional[Mapping[str, Any]] = None,
-        **kwargs,
+            self,
+            msg: Any = NONE,
+            *args: Any,
+            exc_info: Optional[ExceptionInfoType] = True,
+            stack_info: bool = False,
+            stacklevel: int = 1,
+            extra: Optional[Mapping[str, Any]] = None,
+            **kwargs,
     ) -> None:  # pylint: disable=W1113
         super(Logger, self).exception(
             "" if msg is NONE else msg,

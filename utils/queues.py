@@ -3,7 +3,6 @@
 import asyncio
 import sys
 from asyncio import (
-    Future,
     QueueEmpty as AsyncQueueEmpty,
     QueueFull as AsyncQueueFull,
 )
@@ -61,8 +60,8 @@ class Queue(Generic[T]):
         """返回该队列的事件循环"""
         try:
             self._loop = asyncio.get_running_loop()
-        except RuntimeError:
-            raise RuntimeError("没有正在运行的事件循环, 请在异步函数中使用.")
+        except RuntimeError as e:
+            raise RuntimeError("没有正在运行的事件循环, 请在异步函数中使用.") from e
         return self._loop
 
     def __init__(self, maxsize: int = 0) -> NoReturn:
@@ -94,7 +93,7 @@ class Queue(Generic[T]):
         self._finished.set()
 
         self._closing = False
-        self._pending: Set[Future[Any]] = set()
+        self._pending = set()  # type: Set[asyncio.Future[Any]]
 
         def checked_call_soon_threadsafe(callback: Callable[..., None], *args: Any) -> NoReturn:
             try:
@@ -215,7 +214,7 @@ class Queue(Generic[T]):
 
 
 # noinspection PyProtectedMember
-class _SyncQueueProxy(SyncQueue[T]):
+class _SyncQueueProxy(SyncQueue[T]):  # pylint: disable=W0212
     """同步"""
 
     def __init__(self, parent: Queue[T]):
@@ -318,7 +317,7 @@ class _SyncQueueProxy(SyncQueue[T]):
 
 
 # noinspection PyProtectedMember
-class _AsyncQueueProxy(AsyncQueue[T]):
+class _AsyncQueueProxy(AsyncQueue[T]):  # pylint: disable=W0212
     """异步"""
 
     def __init__(self, parent: Queue[T]):
@@ -374,14 +373,12 @@ class _AsyncQueueProxy(AsyncQueue[T]):
 
     def put_nowait(self, item: T) -> NoReturn:
         self._parent._check_closing()
-        with self._parent._sync_mutex:
-            if self._parent._maxsize > 0:
-                if self._parent._qsize() >= self._parent._maxsize:
-                    raise AsyncQueueFull
+        with (self._parent._sync_mutex and 0 < self._parent._maxsize <= self._parent._qsize()):
+            raise AsyncQueueFull
 
-            self._parent._put_internal(item)
-            self._parent._notify_async_not_empty(threadsafe=False)
-            self._parent._notify_sync_not_empty()
+        self._parent._put_internal(item)
+        self._parent._notify_async_not_empty(threadsafe=False)
+        self._parent._notify_sync_not_empty()
 
     async def get(self) -> T:
         self._parent._check_closing()

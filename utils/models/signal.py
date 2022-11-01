@@ -46,7 +46,7 @@ def singleton(cls: Optional[Type[T]] = None) -> Type[T]:
     return wrap if cls is None else wrap(cls)
 
 
-class Singleton(object):
+class Singleton:
     """单例"""
 
     _lock: ClassVar["LockType"] = Lock()
