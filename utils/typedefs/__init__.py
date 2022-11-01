@@ -1,10 +1,23 @@
-from logging import Filter, LogRecord
+from logging import (
+    Filter,
+    LogRecord,
+)
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 from httpx import URL
 from pydantic import ConstrainedInt
+
+from utils.typedefs._queue import *
 
 __all__ = [
     "StrOrPath",
@@ -16,6 +29,9 @@ __all__ = [
     "JSONType",
     "LogFilterType",
     "NaturalNumber",
+    "BaseQueue",
+    "SyncQueue",
+    "AsyncQueue",
 ]
 
 StrOrPath = Union[str, Path]
