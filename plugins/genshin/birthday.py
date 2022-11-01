@@ -40,7 +40,11 @@ class BirthdayPlugin(Plugin, BasePlugin):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        key = datetime.now().strftime("%m_%d")
+        key = (
+            rm_starting_str(datetime.now().strftime("%m"), "0")
+            + "_"
+            + rm_starting_str(datetime.now().strftime("%d"), "0")
+        )
         args = get_all_args(context)
         if len(args) >= 1:
             msg = args[0]
