@@ -28,25 +28,25 @@
         {% for item in items %}
         <div class="item">
             <div class="item-bg-box">
-                <img class="item-bg" src="{{_res_path}}/genshin/gacha/items/bg.png" alt=""/>
+                <img class="item-bg" src="items/bg.png" alt=""/>
             </div>
-            <img class="item-shadow" src="{{_res_path}}/genshin/gacha/items/shadow-{{item.rank}}.png" alt=""/>
-            <img class="item-shadow2" src="{{_res_path}}/genshin/gacha/items/bg2.png" alt=""/>
+            <img class="item-shadow" src="items/shadow-{{item.rank}}.png" alt=""/>
+            <img class="item-shadow2" src="items/bg2.png" alt=""/>
             {% if item.id <= 100000 %}
             <div class="item-weapon-box">
-                <img class="item-weapon-img" src="{{_res_path}}/genshin/gacha/weapon/{{item.name}}.png" alt=""/>
+                <img class="item-weapon-img" src="{{item.url}}" alt=""/>
             </div>
             {% else %}
             <div class="item-img-box">
-                <img class="item-character-img" src="{{_res_path}}/genshin/gacha/character/{{item.name}}.png" alt=""/>
+                <img class="item-character-img" src="{{item.url}}" alt=""/>
             </div>
             {% endif %}
             {% if item.id <= 100000 %}
-                <img class="item-element"  src="{{_res_path}}/genshin/gacha/items/{{item.type}}.png" alt=""/>
+                <img class="item-element"  src="items/{{item.type}}.png" alt=""/>
             {% else %}
-                <img class="item-element"  src="{{_res_path}}/genshin/gacha/items/{{item.element}}.png" alt=""/>
+                <img class="item-element"  src="items/{{item.element}}.png" alt=""/>
             {% endif %}
-            <img class="item-star" src="{{_res_path}}/genshin/gacha/items/s-{{item.rank}}.png" alt=""/>
+            <img class="item-star" src="items/s-{{item.rank}}.png" alt=""/>
         </div>
         {% endfor %}
     </div>
