@@ -1,5 +1,8 @@
 import asyncio
 
+from utils.const import PROJECT_ROOT
+from utils.reload import Reloader
+
 try:
     import uvloop
 except ImportError:
@@ -12,8 +15,21 @@ if uvloop is not None:
 
 def main():
     from core.bot import bot
+    from core.config import config
 
-    bot.launch()
+    reload_config = config.reload
+
+    if reload_config.cold:
+
+        Reloader(
+            bot.launch,
+            reload_delay=reload_config.delay,
+            reload_dirs=list(set(reload_config.dirs + [PROJECT_ROOT])),
+            reload_includes=reload_config.include,
+            reload_excludes=reload_config.exclude,
+        ).run()
+    else:
+        bot.launch()
 
 
 if __name__ == "__main__":

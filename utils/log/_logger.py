@@ -55,9 +55,6 @@ class Logger(logging.Logger):
     def __init__(self, config: "LoggerConfig" = None) -> None:
         from utils.log._config import LoggerConfig
 
-        if "PYCHARM_HOSTED" in os.environ:
-            print("")
-
         self.config = config or LoggerConfig()
 
         level_ = 10 if self.config.debug else 20

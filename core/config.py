@@ -7,7 +7,11 @@ from typing import (
 )
 
 import dotenv
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import (
+    AnyUrl,
+    BaseModel,
+    Field,
+)
 
 from utils.const import PROJECT_ROOT
 from utils.models.base import Settings
@@ -95,8 +99,20 @@ class ErrorConfig(Settings):
         env_prefix = "error_"
 
 
+class ReloadConfig(Settings):
+    cold: bool = False
+    delay: float = 0.25
+    dirs: List[str] = []
+    include: List[str] = []
+    exclude: List[str] = []
+
+    class Config(Settings.Config):
+        env_prefix = "reload_"
+
+
 class BotConfig(Settings):
     debug: bool = False
+    proxy_url: Optional[AnyUrl]
 
     bot_token: str = ""
 
@@ -118,6 +134,7 @@ class BotConfig(Settings):
     pass_challenge_app_key: str = ""
     pass_challenge_user_web: str = ""
 
+    reload: ReloadConfig = ReloadConfig()
     mysql: MySqlConfig = MySqlConfig()
     logger: LoggerConfig = LoggerConfig()
     webserver: WebServerConfig = WebServerConfig()
