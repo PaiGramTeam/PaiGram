@@ -1,5 +1,4 @@
 import asyncio
-import os
 import re
 from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
@@ -10,6 +9,7 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
+from core.base.assets import AssetsService
 from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
@@ -114,16 +114,6 @@ class GachaHandle:
                 raise GachaNotFound(gacha_name)
 
     @staticmethod
-    async def de_item_list(item_list: List[int]) -> List[dict]:
-        gacha_item: List[dict] = []
-        for item_id in item_list:
-            if 10000 <= item_id <= 100000:
-                gacha_item.append(WEAPON_DATA.get(str(item_id)))
-            if 10000000 <= item_id <= 19999999:
-                gacha_item.append(AVATAR_DATA.get(str(item_id)))
-        return gacha_item
-
-    @staticmethod
     def de_title(title: str) -> Union[Tuple[str, None], Tuple[str, Any]]:
         title_html = BeautifulSoup(title, "lxml")
         re_color = re.search(r"<color=#(.*?)>", title, flags=0)
@@ -138,15 +128,14 @@ class GachaHandle:
 class Gacha(Plugin, BasePlugin):
     """抽卡模拟器（非首模拟器/减寿模拟器）"""
 
-    def __init__(self, template_service: TemplateService = None, redis: RedisDB = None):
+    def __init__(self, assets: AssetsService = None, template_service: TemplateService = None, redis: RedisDB = None):
         self.gacha_db = GachaRedis(redis)
         self.handle = GachaHandle()
         self.banner_system = BannerSystem()
         self.template_service = template_service
-        self.current_dir = os.getcwd()
-        self.resources_dir = os.path.join(self.current_dir, "resources")
         self.banner_cache = {}
         self._look = asyncio.Lock()
+        self.assets_service = assets
 
     async def get_banner(self, gacha_base_info: GachaInfoObject):
         async with self._look:
@@ -155,6 +144,23 @@ class Gacha(Plugin, BasePlugin):
                 banner = await self.handle.de_banner(gacha_base_info.gacha_id, gacha_base_info.gacha_type)
                 self.banner_cache.setdefault(gacha_base_info.gacha_id, banner)
             return banner
+
+    async def de_item_list(self,item_list: List[int]) -> List[dict]:
+        gacha_item: List[dict] = []
+        for item_id in item_list:
+            if 10000 <= item_id <= 100000:
+                data = WEAPON_DATA.get(str(item_id))
+                avatar = self.assets_service.weapon(item_id)
+                gacha = await avatar.gacha()
+                data.setdefault("url", gacha.as_uri())
+                gacha_item.append(data)
+            elif 10000000 <= item_id <= 19999999:
+                data = AVATAR_DATA.get(str(item_id))
+                avatar = self.assets_service.avatar(item_id)
+                gacha = await avatar.gacha_card()
+                data.setdefault("url", gacha.as_uri())
+                gacha_item.append(data)
+        return gacha_item
 
     @handler(CommandHandler, command="gacha", block=False)
     @handler(MessageHandler, filters=filters.Regex("^非首模拟器(.*)"), block=False)
@@ -192,10 +198,9 @@ class Gacha(Plugin, BasePlugin):
             player_gacha_info.event_weapon_banner.wish_item_id = 0
         # 执行抽卡
         item_list = self.banner_system.do_pulls(player_gacha_info, banner, 10)
-        data = await self.handle.de_item_list(item_list)
+        data = await self.de_item_list(item_list)
         player_gacha_banner_info = player_gacha_info.get_banner_info(banner)
         template_data = {
-            "_res_path": f"file://{self.resources_dir}",
             "name": f"{user.full_name}",
             "info": gacha_name,
             "banner_name": banner.html_title,

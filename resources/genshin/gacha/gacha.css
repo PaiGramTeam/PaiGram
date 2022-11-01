@@ -138,7 +138,9 @@ body {
 }
 
 .item-weapon-img {
-    width: 110px;
+    height: 100%;
+    position: absolute;
+    left: -35%;
     filter: drop-shadow(3px 9px 0px #333);
 }
 
