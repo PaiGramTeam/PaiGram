@@ -260,59 +260,57 @@ class DailyMaterial(Plugin, BasePlugin):
         await message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
 
-        # 如果 client 为 None 就没必要进技能处理 因为已经触发 InvalidCookies 等异常
-        if client:
-            for type_ in ["avatar", "weapon"]:
-                areas = []
-                for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
-                    items = []
-                    for id_ in area_data["items"]:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
-                        added = False
-                        for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
-                            if id_ == str(i.id):
-                                if i.rarity > 3:  # 跳过 3 星及以下的武器
-                                    if type_ == "avatar":  # 给角色添加天赋信息
-                                        skills = await self._get_skills_data(client, i.gid)
-                                        i.skills = skills
-                                    items.append(i)
-                                added = True
-                        if added:
-                            continue
-                        try:
-                            item = HONEY_DATA[type_][id_]
-                        except KeyError:  # 跳过不存在或者已忽略的角色、武器
-                            logger.warning(f"未在 honey 数据中找到 {type_} {id_} 的信息")
-                            continue
-                        if item[2] < 4:  # 跳过 3 星及以下的武器
-                            continue
-                        items.append(
-                            ItemData(  # 添加角色数据中未找到的
-                                id=id_,
-                                name=item[1],
-                                rarity=item[2],
-                                icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri(),
-                            )
-                        )
-                    materials = []
-                    for mid in area_data["materials"]:  # 添加这个区域当天（weekday）的培养素材
-                        try:
-                            path = (await self.assets_service.material(mid).icon()).as_uri()
-                            material = HONEY_DATA["material"][mid]
-                            materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
-                        except AssetsCouldNotFound as exc:
-                            logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
-                            await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
-                            return
-                    areas.append(
-                        AreaData(
-                            name=area_data["name"],
-                            materials=materials,
-                            # template previewer pickle cannot serialize generator
-                            items=list(sort_item(items)),
-                            material_name=get_material_serial_name(map(lambda x: x.name, materials)),
+        for type_ in ["avatar", "weapon"]:
+            areas = []
+            for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
+                items = []
+                for id_ in area_data["items"]:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
+                    added = False
+                    for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
+                        if id_ == str(i.id):
+                            if i.rarity > 3:  # 跳过 3 星及以下的武器
+                                if type_ == "avatar" and client:  # client 不为 None 时给角色添加天赋信息
+                                    skills = await self._get_skills_data(client, i.gid)
+                                    i.skills = skills
+                                items.append(i)
+                            added = True
+                    if added:
+                        continue
+                    try:
+                        item = HONEY_DATA[type_][id_]
+                    except KeyError:  # 跳过不存在或者已忽略的角色、武器
+                        logger.warning(f"未在 honey 数据中找到 {type_} {id_} 的信息")
+                        continue
+                    if item[2] < 4:  # 跳过 3 星及以下的武器
+                        continue
+                    items.append(
+                        ItemData(  # 添加角色数据中未找到的
+                            id=id_,
+                            name=item[1],
+                            rarity=item[2],
+                            icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri(),
                         )
                     )
-                setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
+                materials = []
+                for mid in area_data["materials"]:  # 添加这个区域当天（weekday）的培养素材
+                    try:
+                        path = (await self.assets_service.material(mid).icon()).as_uri()
+                        material = HONEY_DATA["material"][mid]
+                        materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
+                    except AssetsCouldNotFound as exc:
+                        logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
+                        await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
+                        return
+                areas.append(
+                    AreaData(
+                        name=area_data["name"],
+                        materials=materials,
+                        # template previewer pickle cannot serialize generator
+                        items=list(sort_item(items)),
+                        material_name=get_material_serial_name(map(lambda x: x.name, materials)),
+                    )
+                )
+            setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
 
         await message.reply_chat_action(ChatAction.TYPING)
 
