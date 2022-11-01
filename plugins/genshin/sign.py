@@ -80,7 +80,7 @@ class SignSystem:
         gt, challenge = await self.get_challenge(uid)
         if not challenge or not gt:
             return
-        url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}"
+        url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}&uid={uid}"
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
     @staticmethod
