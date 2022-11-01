@@ -260,6 +260,7 @@ class DailyMaterial(Plugin, BasePlugin):
         await message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
 
+        calculator_sync: bool = True  # 默认养成计算器同步为开启
         for type_ in ["avatar", "weapon"]:
             areas = []
             for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
@@ -269,9 +270,20 @@ class DailyMaterial(Plugin, BasePlugin):
                     for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
                         if id_ == str(i.id):
                             if i.rarity > 3:  # 跳过 3 星及以下的武器
-                                if type_ == "avatar" and client:  # client 不为 None 时给角色添加天赋信息
-                                    skills = await self._get_skills_data(client, i.gid)
-                                    i.skills = skills
+                                if type_ == "avatar" and client and calculator_sync:  # client 不为 None 时给角色添加天赋信息
+                                    try:
+                                        skills = await self._get_skills_data(client, i.gid)
+                                        i.skills = skills
+                                    except GenshinException as e:
+                                        if e.retcode == -502002:
+                                            calculator_sync = False  # 发现角色养成计算器没启用 设置状态为 False 并防止下次继续获取
+                                            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
+                                            await notice.edit_text(
+                                                "获取角色天赋信息失败，如果想要显示角色天赋信息，请先在米游社/HoYoLab中使用一次<b>养成计算器</b>后再使用此功能~",
+                                                parse_mode=ParseMode.HTML,
+                                            )
+                                        else:
+                                            raise e
                                 items.append(i)
                             added = True
                     if added:
