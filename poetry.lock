@@ -311,7 +311,7 @@ pydantic = "*"
 type = "git"
 url = "https://github.com/mrwan200/EnkaNetwork.py"
 reference = "HEAD"
-resolved_reference = "03fd20e5f838727b7c394c11ea1360cfc3272d69"
+resolved_reference = "a90c2c82760b134fe7501664dc67ce8fc43ffab5"
 
 [[package]]
 name = "et-xmlfile"
@@ -385,7 +385,7 @@ python-versions = ">=3.7"
 [[package]]
 name = "genshin"
 version = "1.3.0"
-description = "An API wrapper for Genshin Impact."
+description = ""
 category = "main"
 optional = false
 python-versions = ">=3.8"
@@ -405,7 +405,7 @@ geetest = ["rsa"]
 type = "git"
 url = "https://github.com/thesadru/genshin.py"
 reference = "HEAD"
-resolved_reference = "3adde1a24da9a60d090d1f0b5f1109c67e0004ae"
+resolved_reference = "f6492c8cabc2c9efd8642be5192bf1cc838cfb36"
 
 [[package]]
 name = "gitdb"
@@ -775,8 +775,8 @@ urllib3 = ">=1.25.8,<2.0.0"
 websockets = ">=10.0,<11.0"
 
 [[package]]
-name = "Pyrogram"
-version = "2.0.57"
+name = "pyrogram"
+version = "2.0.59"
 description = "Elegant, modern and asynchronous Telegram MTProto API framework in Python for users and bots"
 category = "main"
 optional = true
@@ -1280,7 +1280,7 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "dd6f43c45554797a810d5c7654f6447fff4f29f905dd47bdab62d278dc1d11bb"
+content-hash = "f40c6f9cdc4d43a82b1cd4e0d3f5f05b24fab112a7019c284d13549169c9af07"
 
 [metadata.files]
 aiofiles = [
@@ -2059,9 +2059,9 @@ pyppeteer = [
     {file = "pyppeteer-1.0.2-py3-none-any.whl", hash = "sha256:11a734d8f02c6b128035aba8faf32748f2016310a6a1cbc6aa5b1e2580742e8f"},
     {file = "pyppeteer-1.0.2.tar.gz", hash = "sha256:ddb0d15cb644720160d49abb1ad0d97e87a55581febf1b7531be9e983aad7742"},
 ]
-Pyrogram = [
-    {file = "Pyrogram-2.0.57-py3-none-any.whl", hash = "sha256:082f78836e97799f882c34238e45761f8689c45824110989e46f82ee08ca805a"},
-    {file = "Pyrogram-2.0.57.tar.gz", hash = "sha256:de05925592b82e796c6b2520f133d9ae6eb320834c78e50b09dc7ed18c5b976e"},
+pyrogram = [
+    {file = "Pyrogram-2.0.59-py3-none-any.whl", hash = "sha256:9c7d3e51a39313e14f7f5de3fec717b889d557c2356c71f97d26cc2984fc2cd9"},
+    {file = "Pyrogram-2.0.59.tar.gz", hash = "sha256:57cddc62c0f6c9f23b8d8c3c496d2fe0c83d5b4e26ae4f3e8615374d292796ed"},
 ]
 PySocks = [
     {file = "PySocks-1.7.1-py27-none-any.whl", hash = "sha256:08e69f092cc6dbe92a0fdd16eeb9b9ffbc13cadfe5ca4c7bd92ffb078b293299"},
