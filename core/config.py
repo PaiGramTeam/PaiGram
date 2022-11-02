@@ -100,7 +100,6 @@ class ErrorConfig(Settings):
 
 
 class ReloadConfig(Settings):
-    cold: bool = False
     delay: float = 0.25
     dirs: List[str] = []
     include: List[str] = []
@@ -112,6 +111,8 @@ class ReloadConfig(Settings):
 
 class BotConfig(Settings):
     debug: bool = False
+    auto_reload: bool = False
+
     proxy_url: Optional[AnyUrl]
 
     bot_token: str = ""

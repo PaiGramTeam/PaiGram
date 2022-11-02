@@ -17,9 +17,8 @@ def main():
     from core.bot import bot
     from core.config import config
 
-    reload_config = config.reload
-
-    if reload_config.cold:
+    if config.auto_reload:
+        reload_config = config.reload
 
         Reloader(
             bot.launch,
