@@ -311,7 +311,7 @@ pydantic = "*"
 type = "git"
 url = "https://github.com/mrwan200/EnkaNetwork.py"
 reference = "HEAD"
-resolved_reference = "03fd20e5f838727b7c394c11ea1360cfc3272d69"
+resolved_reference = "a90c2c82760b134fe7501664dc67ce8fc43ffab5"
 
 [[package]]
 name = "et-xmlfile"
@@ -385,7 +385,7 @@ python-versions = ">=3.7"
 [[package]]
 name = "genshin"
 version = "1.3.0"
-description = "An API wrapper for Genshin Impact."
+description = ""
 category = "main"
 optional = false
 python-versions = ">=3.8"
@@ -405,7 +405,7 @@ geetest = ["rsa"]
 type = "git"
 url = "https://github.com/thesadru/genshin.py"
 reference = "HEAD"
-resolved_reference = "3adde1a24da9a60d090d1f0b5f1109c67e0004ae"
+resolved_reference = "f6492c8cabc2c9efd8642be5192bf1cc838cfb36"
 
 [[package]]
 name = "gitdb"
@@ -668,7 +668,7 @@ test = ["appdirs (==1.4.4)", "pytest (>=6)", "pytest-cov (>=2.7)", "pytest-mock 
 
 [[package]]
 name = "playwright"
-version = "1.26.1"
+version = "1.27.1"
 description = "A high-level API to automate web browsers"
 category = "main"
 optional = false
@@ -678,7 +678,6 @@ python-versions = ">=3.7"
 greenlet = "1.1.3"
 pyee = "8.1.0"
 typing-extensions = {version = "*", markers = "python_version <= \"3.8\""}
-websockets = "10.1"
 
 [[package]]
 name = "pluggy"
@@ -1280,7 +1279,7 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "dd6f43c45554797a810d5c7654f6447fff4f29f905dd47bdab62d278dc1d11bb"
+content-hash = "50b940d001b4e6e5cee1eee1a4371ec8f681115ca0f58839e6369965792db285"
 
 [metadata.files]
 aiofiles = [
@@ -1986,13 +1985,13 @@ platformdirs = [
     {file = "platformdirs-2.5.2.tar.gz", hash = "sha256:58c8abb07dcb441e6ee4b11d8df0ac856038f944ab98b7be6b27b2a3c7feef19"},
 ]
 playwright = [
-    {file = "playwright-1.26.1-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:eabf81e932076be5afe8f198c13cde913db319ccb07a9c16ea13bd0d372b40b2"},
-    {file = "playwright-1.26.1-py3-none-macosx_11_0_arm64.whl", hash = "sha256:ecd2d47a671d40f2c9f2fa70dec5c4e8f341194e7450e1483c787e02eecb6f61"},
-    {file = "playwright-1.26.1-py3-none-macosx_11_0_universal2.whl", hash = "sha256:a04bb9f2b25ad00077c7816e51b2cc3edc9b5ae7ed864ab1efbc3037a16db868"},
-    {file = "playwright-1.26.1-py3-none-manylinux1_x86_64.whl", hash = "sha256:c3cc87fc738d7c7668d8e3a8086fca2c6f981d31e560cee5f89415d17160f7e5"},
-    {file = "playwright-1.26.1-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e8b3a58cd903d21bf71b0361b8f1379bb9de8046ecf5a866f5d13bd815100099"},
-    {file = "playwright-1.26.1-py3-none-win32.whl", hash = "sha256:1b06a0cd1d0c4ded1c5412129f9207d2589aa5ac86645cfa1a89690ef610228b"},
-    {file = "playwright-1.26.1-py3-none-win_amd64.whl", hash = "sha256:9dfbb664a0d3865ec3db4cd636dab755c7bf5eeadcaf1d6abe9ab8c9c26c431f"},
+    {file = "playwright-1.27.1-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:3b584bc23bfacfbfb91777663d2b68891d8a16c5c2228b4702c6a7d29c0ac364"},
+    {file = "playwright-1.27.1-py3-none-macosx_11_0_arm64.whl", hash = "sha256:771d690aaa933bb40f60abbe7935979cfa9a5bec498bbc57cd87baf038348d2b"},
+    {file = "playwright-1.27.1-py3-none-macosx_11_0_universal2.whl", hash = "sha256:db89faac3c535e289f8463b184ffd4523d97b5e959d97bae330d29522c5bfb9d"},
+    {file = "playwright-1.27.1-py3-none-manylinux1_x86_64.whl", hash = "sha256:5e7be8dc52b9e3340a08fd15b7d3cdd635efd51c0c62bd1edba55f0bfeea293c"},
+    {file = "playwright-1.27.1-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c32bfbbb6e6529f7f7176551eda7061e9f205e19259052ef663dcae7109c1f12"},
+    {file = "playwright-1.27.1-py3-none-win32.whl", hash = "sha256:464f3a0ea48aeb42adbdada88a91fd36d4311ae7020d2ab58f410c4c92e0ddfe"},
+    {file = "playwright-1.27.1-py3-none-win_amd64.whl", hash = "sha256:fc8ce323cf116e27902f327cee1cba6fc0c5400e9281df8e53d3355de88336ba"},
 ]
 pluggy = [
     {file = "pluggy-1.0.0-py2.py3-none-any.whl", hash = "sha256:74134bbf457f031a36d68416e1509f34bd5ccc019f0bcc952c7b909d06b37bd3"},
