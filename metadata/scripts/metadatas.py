@@ -8,7 +8,11 @@ from httpx import AsyncClient, RemoteProtocolError, Response, URL
 from utils.const import AMBR_HOST, PROJECT_ROOT
 from utils.log import logger
 
-__all__ = ["update_metadata_from_ambr", "update_metadata_from_github"]
+__all__ = ["update_metadata_from_ambr", "update_metadata_from_github", "make_github_fast"]
+RESOURCE_REPO = "tamilpp25/Grasscutter_Resources"
+RESOURCE_BRANCH = "3.2"
+RESOURCE_ROOT = "Resources"
+RESOURCE_DEFAULT_PATH = f"{RESOURCE_REPO}/{RESOURCE_BRANCH}/{RESOURCE_ROOT}/"
 
 client = AsyncClient()
 
@@ -44,10 +48,10 @@ async def update_metadata_from_github(overwrite: bool = True):
         return
 
     hosts = [
-        URL("https://ghproxy.net/https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
-        URL("https://github.91chi.fun/https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
-        URL("https://raw.fastgit.org/Dimbreath/GenshinData/master/"),
-        URL("https://raw.githubusercontent.com/Dimbreath/GenshinData/master/"),
+        URL(f"https://ghproxy.net/https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}"),
+        URL(f"https://github.91chi.fun/https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}"),
+        URL(f"https://raw.fastgit.org/{RESOURCE_DEFAULT_PATH}"),
+        URL(f"https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}"),
     ]
     for num, host in enumerate(hosts):
         try:
@@ -84,7 +88,7 @@ async def update_metadata_from_github(overwrite: bool = True):
             async with client.stream("GET", text_map_url) as response:
                 async for line in response.aiter_lines():
                     if (string_id := (splits := line.split(":"))[0].strip(' "')) in string_ids:
-                        text_map_json_data.update({string_id: splits[1].strip('\n ,"')})
+                        text_map_json_data[string_id] = splits[1].strip('\n ,"')
                         string_ids.remove(string_id)
                     if not string_ids:
                         break
@@ -122,3 +126,9 @@ async def update_metadata_from_github(overwrite: bool = True):
                 logger.error(f"在从 {host} 下载元数据的过程中遇到了错误: {repr(e)}")
                 continue
             raise e
+
+
+def make_github_fast(url: str) -> str:
+    url = url.replace("raw.githubusercontent.com", "raw.fastgit.org")
+    url = url.replace("Dimbreath/GenshinData/master/", RESOURCE_DEFAULT_PATH)
+    return url

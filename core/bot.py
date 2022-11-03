@@ -28,6 +28,7 @@ from core.error import ServiceNotFoundError
 # noinspection PyProtectedMember
 from core.plugin import Plugin, _Plugin
 from core.service import Service
+from metadata.scripts.metadatas import make_github_fast
 from utils.const import PLUGIN_DIR, PROJECT_ROOT
 from utils.log import logger
 
@@ -214,7 +215,7 @@ class Bot:
                     setattr(
                         genshin.utility.extdb,
                         i,
-                        getattr(genshin.utility.extdb, i).replace("githubusercontent.com", "fastgit.org"),
+                        make_github_fast(getattr(genshin.utility.extdb, i)),
                     )
             await genshin.utility.update_characters_enka()
         except Exception as exc:  # pylint: disable=W0703
