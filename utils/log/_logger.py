@@ -68,6 +68,7 @@ class Logger(logging.Logger):
             # 控制台 log 配置
             Handler(
                 width=self.config.width,
+                keywords=self.config.keywords,
                 locals_max_length=self.config.traceback_locals_max_length,
                 locals_max_string=self.config.traceback_locals_max_string,
                 locals_max_depth=self.config.traceback_locals_max_depth,
@@ -77,6 +78,7 @@ class Logger(logging.Logger):
             # debug.log 配置
             FileHandler(
                 width=self.config.width,
+                keywords=self.config.keywords,
                 level=10,
                 path=log_path.joinpath("debug/debug.log"),
                 locals_max_depth=1,
@@ -88,6 +90,7 @@ class Logger(logging.Logger):
             # error.log 配置
             FileHandler(
                 width=self.config.width,
+                keywords=self.config.keywords,
                 level=40,
                 path=log_path.joinpath("error/error.log"),
                 locals_max_length=self.config.traceback_locals_max_length,

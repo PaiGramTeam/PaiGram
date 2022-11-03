@@ -10,11 +10,9 @@ from signal import (
 from ssl import SSLZeroReturnError
 from typing import (
     Callable,
-    Dict,
     Optional,
     TYPE_CHECKING,
     Tuple,
-    Type,
     TypeVar,
     Union,
 )
@@ -30,6 +28,7 @@ from telegram.error import (
 from telegram.ext import (
     AIORateLimiter,
     Application as TgApplication,
+    BaseHandler,
     Defaults,
 )
 from telegram.request import HTTPXRequest
@@ -37,7 +36,7 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.config import config as bot_config
-from core.execute import Executor
+from core.event import Event
 from utils.enums import Priority
 from utils.log import logger
 from utils.models.signal import Singleton
@@ -58,6 +57,7 @@ class Bot(Singleton):
 
     _startup_funcs: PriorityQueue[Tuple[Priority, Callable]] = PriorityQueue()
     _shutdown_funcs: PriorityQueue[Tuple[Priority, Callable]] = PriorityQueue()
+    _events: PriorityQueue[Event] = PriorityQueue()
 
     _running: False
 
@@ -113,15 +113,10 @@ class Bot(Singleton):
         return self._web_server
 
     def __init__(self) -> None:
+        from core.execute import Executor
+
         self._running = False
         self._executor = Executor('bot')
-
-    def __dict__(self) -> Dict[Type[T], T]:
-        return {
-            TgApplication: self.tg_app,
-            FastAPI: self.web_app,
-            Server: self.web_server,
-        }
 
     async def _on_startup(self) -> None:
         while not self._startup_funcs.async_q.empty():
@@ -263,6 +258,13 @@ class Bot(Singleton):
             return wrapper
 
         return decorate
+
+
+class Handler(BaseHandler):
+    def check_update(self, update: object) -> Optional[Union[bool, object]]:
+        pass
+
+    ...
 
 
 bot = Bot()

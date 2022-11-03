@@ -1,5 +1,6 @@
 import inspect
 import multiprocessing
+import os
 import signal
 import threading
 from pathlib import Path
@@ -136,7 +137,9 @@ class Reloader:
         self.startup()
         for changes in self:
             if changes:
-                logger.warning(f"检测到有改变发生, 正在重载...")
+                logger.warning(
+                    f"检测到文件 {[str(c.relative_to(PROJECT_ROOT)).replace(os.sep, '/') for c in changes]} 发生改变, 正在重载..."
+                )
                 self.restart()
 
         self.shutdown()
@@ -152,11 +155,10 @@ class Reloader:
         return self.should_restart()
 
     def startup(self) -> None:
-        logger.info("重载器已经启动")
+        logger.info("重载器正在启动")
 
         for sig in HANDLED_SIGNALS:
             signal.signal(sig, self.signal_handler)
-
         self._process = spawn.Process(target=self._target)
         self._process.start()
 

@@ -5,12 +5,10 @@ from utils.reload import Reloader
 
 try:
     import uvloop
+
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 except ImportError:
     uvloop = None
-
-if uvloop is not None:
-    # noinspection PyUnresolvedReferences
-    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
 def main():

@@ -12,6 +12,7 @@ from typing import (
 
 from typing_extensions import ParamSpec
 
+from core.bot import bot
 from utils.models.lock import HashLock
 
 __all__ = ["Executor"]
@@ -22,8 +23,6 @@ P = ParamSpec("P")
 
 
 def get_bot_type_args() -> Dict[Type[T], T]:
-    from core.bot import bot
-
     return {
         type(bot): bot,
         type(bot.tg_app): bot.tg_app,
@@ -33,8 +32,6 @@ def get_bot_type_args() -> Dict[Type[T], T]:
 
 
 def get_bot_str_args() -> Dict[str, Any]:
-    from core.bot import bot
-
     return {
         "bot": bot,
         "tg_app": bot.tg_app,
