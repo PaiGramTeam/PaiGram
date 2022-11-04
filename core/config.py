@@ -37,9 +37,9 @@ class ConfigUser(BaseModel):
 class MySqlConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 3306
-    username: str
-    password: str
-    database: str
+    username: str = None
+    password: str = None
+    database: str = None
 
     class Config(Settings.Config):
         env_prefix = "db_"
