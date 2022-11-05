@@ -17,7 +17,9 @@ from utils.log import logger
 async def send_user_notification(update: Update, context: CallbackContext, text: str):
     if update.inline_query is not None:  # 忽略 inline_query
         return
-    buttons = InlineKeyboardMarkup([[InlineKeyboardButton("点我重新绑定", url=f"https://t.me/{context.bot.username}?start=set_cookie")]])
+    buttons = InlineKeyboardMarkup(
+        [[InlineKeyboardButton("点我重新绑定", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+    )
     user = update.effective_user
     message = update.effective_message
     chat = update.effective_chat
@@ -102,10 +104,14 @@ def error_callable(func: Callable) -> Callable:
         except GenshinException as exc:
             if exc.retcode == -130:
                 await send_user_notification(update, context, "出错了呜呜呜 ~ 未设置默认角色，请尝试重新绑定")
-                return ConversationHandler.END
-            logger.error("GenshinException")
-            logger.exception(exc)
-            await send_user_notification(update, context, f"出错了呜呜呜 ~ 获取账号信息发生错误 错误信息为 {exc.msg} ~ 请稍后再试")
+            elif exc.retcode == 1034:
+                await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器检测到该账号可能存在异常，请求被拒绝")
+            else:
+                logger.error("GenshinException")
+                logger.exception(exc)
+                await send_user_notification(
+                    update, context, f"出错了呜呜呜 ~ 获取账号信息发生错误 错误信息为 { exc.msg if exc.msg else exc.retcode} ~ 请稍后再试"
+                )
             return ConversationHandler.END
         except ReturnCodeError as exc:
             await send_user_notification(update, context, f"出错了呜呜呜 ~ API请求错误 错误信息为 {exc.message} ~ 请稍后再试")
