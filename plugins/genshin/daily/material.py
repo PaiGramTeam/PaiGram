@@ -9,28 +9,67 @@ from functools import partial
 from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
-from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+)
 
 import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from genshin import Client, InvalidCookies, GenshinException
-from httpx import AsyncClient, HTTPError
+from genshin import (
+    Client,
+    GenshinException,
+    InvalidCookies,
+)
+from httpx import (
+    AsyncClient,
+    HTTPError,
+)
 from pydantic import BaseModel
-from telegram import Message, Update, User
-from telegram.constants import ChatAction, ParseMode
-from telegram.error import RetryAfter, TimedOut
+from telegram import (
+    Message,
+    Update,
+    User,
+)
+from telegram.constants import (
+    ChatAction,
+    ParseMode,
+)
+from telegram.error import (
+    RetryAfter,
+    TimedOut,
+)
 from telegram.ext import CallbackContext
 
-from core.base.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
+from core.base.assets import (
+    AssetsCouldNotFound,
+    AssetsService,
+    AssetsServiceType,
+)
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
-from core.plugin import Plugin, handler
+from core.plugin import (
+    Plugin,
+    handler,
+)
 from core.template import TemplateService
-from core.template.models import FileType, RenderGroupResult
+from core.template.models import (
+    FileType,
+    RenderGroupResult,
+)
 from core.user.error import UserNotFoundError
-from metadata.genshin import AVATAR_DATA, HONEY_DATA
+from metadata.genshin import (
+    AVATAR_DATA,
+    HONEY_DATA,
+)
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
@@ -46,6 +85,11 @@ DOMAINS = ["忘却之峡", "太山府", "菫色之庭", "昏识塔", "塞西莉�
 DOMAIN_AREA_MAP = dict(zip(DOMAINS, ["蒙德", "璃月", "稻妻", "须弥"] * 2))
 
 WEEK_MAP = ["一", "二", "三", "四", "五", "六", "日"]
+
+IGNORE_ROLES = [
+    10000076,  # 珐露珊
+    10000075,  # 流浪者
+]
 
 
 def sort_item(items: List["ItemData"]) -> Iterable["ItemData"]:
@@ -119,7 +163,7 @@ class DailyMaterial(Plugin, BasePlugin):
                 self.data = await self._refresh_data()
 
         if (not DATA_FILE_PATH.exists()) or (  # 若缓存不存在
-            (datetime.today() - datetime.fromtimestamp(os.stat(DATA_FILE_PATH).st_mtime)).days > 3  # 若缓存过期，超过了3天
+                (datetime.today() - datetime.fromtimestamp(os.stat(DATA_FILE_PATH).st_mtime)).days > 3  # 若缓存过期，超过了3天
         ):
             self.refresh_task = asyncio.create_task(task_daily())  # 创建后台任务
         if not data and DATA_FILE_PATH.exists():  # 若存在，则读取至内存中
@@ -146,7 +190,8 @@ class DailyMaterial(Plugin, BasePlugin):
         else:
             # 如果重试了5次都失败了，则直接返回 None
             logger.warning(
-                f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
+                f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了 Too Many Requests 错误",
+                extra={"markup": True}
             )
             return None
         # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
@@ -223,11 +268,14 @@ class DailyMaterial(Plugin, BasePlugin):
             time = f"星期{WEEK_MAP[weekday]}"
         full = bool(args and args[-1] == "full")  # 判定最后一个参数是不是 full
 
-        logger.info(f'用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday="{WEEK_MAP[weekday]}" full={full}')
+        logger.info(
+            f'用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday="{WEEK_MAP[weekday]}" full={full}'
+        )
 
         if weekday == 6:
             await message.reply_text(
-                ("今天" if title == "今日" else "这天") + "是星期天, <b>全部素材都可以</b>刷哦~", parse_mode=ParseMode.HTML
+                ("今天" if title == "今日" else "这天") + "是星期天, <b>全部素材都可以</b>刷哦~",
+                parse_mode=ParseMode.HTML
             )
             return
 
@@ -376,7 +424,8 @@ class DailyMaterial(Plugin, BasePlugin):
             async with self.locks[0]:  # 锁住第一把锁
                 data = await self._refresh_data()
             notice = await notice.edit_text(
-                "每日素材表" + ("摘抄<b>完成！</b>" if data else "坏掉了！等会它再长好了之后我再抄。。。") + "\n正搬运每日素材的图标中。。。",
+                "每日素材表" + (
+                    "摘抄<b>完成！</b>" if data else "坏掉了！等会它再长好了之后我再抄。。。") + "\n正搬运每日素材的图标中。。。",
                 parse_mode=ParseMode.HTML,
             )
             self.data = data or self.data
@@ -418,6 +467,8 @@ class DailyMaterial(Plugin, BasePlugin):
                         if tag.text.strip() == "旅行者":  # 忽略主角
                             continue
                         id_ = ("" if id_.startswith("i_n") else "10000") + re.findall(r"\d+", id_)[0]
+                        if int(id_) in IGNORE_ROLES:  # 跳过忽略的角色
+                            continue
                         for day in map(int, tag.find("div")["data-days"]):  # 获取该角色/武器的可培养天
                             result[key][day][1].append(id_)
                 for stage, schedules in result.items():
