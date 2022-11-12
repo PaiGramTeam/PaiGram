@@ -411,7 +411,7 @@ class Verification:
 
     async def create(self):
         url = self.get_url(self.HOST, self.CREATE_VERIFICATION_URL)
-        params = {"is_high": True}
+        params = {"is_high": "true"}
         headers = self.get_headers(params=params)
         response = await self.client.get(url, params=params, headers=headers)
         return response
@@ -420,7 +420,7 @@ class Verification:
         url = self.get_url(self.HOST, self.VERIFY_VERIFICATION_URL)
         data = {"geetest_challenge": challenge, "geetest_validate": validate, "geetest_seccode": validate + "|jordan"}
         headers = self.get_headers(data=data)
-        response = await self.client.post(url, data=data, headers=headers)
+        response = await self.client.post(url, json=data, headers=headers)
         return response
 
     async def ajax(self, referer: str, gt: str, challenge: str) -> Optional[str]:
