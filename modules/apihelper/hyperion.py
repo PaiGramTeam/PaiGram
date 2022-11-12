@@ -428,7 +428,6 @@ class Verification:
         }
         response = await self.client.get(url, headers=headers, params=params, de_json=False)
         text = response.text
-        logger.debug(f"ajax 返回：{text}")
         json_data = re.findall(r"^.*?\((\{.*?)\)$", text)[0]
         data = json.loads(json_data)
         if "success" in data["status"] and "success" in data["data"]["result"]:
