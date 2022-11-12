@@ -110,7 +110,7 @@ class StartPlugin(Plugin):
             sign_text = await self.sign_system.start_sign(client, headers=headers)
             await message.reply_text(sign_text, allow_sending_without_reply=True)
         except (UserNotFoundError, CookiesNotFoundError):
-            logger.warning(f"用户 %s[%s] 账号信息未找到", user.full_name, user.id)
+            logger.warning("用户 %s[%s] 账号信息未找到", user.full_name, user.id)
         except NeedChallenge:
             await message.reply_text("回调错误，请重新签到", allow_sending_without_reply=True)
 
