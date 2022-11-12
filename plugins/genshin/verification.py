@@ -44,13 +44,13 @@ class VerificationPlugins(Plugin, BasePlugin):
     async def verify(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        user = await self.user_service.get_user_by_id(user.id)
-        if user.region != RegionEnum.HYPERION:
+        user_info = await self.user_service.get_user_by_id(user.id)
+        if user_info.region != RegionEnum.HYPERION:
             await message.reply_text("非法用户")
             return
-        uid = user.yuanshen_uid
+        uid = user_info.yuanshen_uid
         cookie = await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
-        client = Verification(cookie=cookie)
+        client = Verification(cookie=cookie.cookies)
         if context.args and len(context.args) > 0:
             validate = context.args[0]
             _, challenge = await self.system.get_challenge(uid)

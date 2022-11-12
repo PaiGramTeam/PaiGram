@@ -13,7 +13,7 @@ from httpx import AsyncClient
 from pydantic import BaseModel, validator
 
 from modules.apihelper.base import ArtworkImage, PostInfo
-from modules.apihelper.helpers import get_device_id
+from modules.apihelper.helpers import get_device_id, get_ds
 from modules.apihelper.request.hoyorequest import HOYORequest
 from utils.typedefs import JSONDict
 
@@ -362,27 +362,24 @@ class SignIn:
 class Verification:
     HOST = "api-takumi-record.mihoyo.com"
     VERIFICATION_HOST = "api.geetest.com"
-    CREATE_VERIFICATION_URL = "/game_record/app/card/wapi/createVerification?is_high=true"
+    CREATE_VERIFICATION_URL = "/game_record/app/card/wapi/createVerification"
     VERIFY_VERIFICATION_URL = "/game_record/app/card/wapi/verifyVerification"
     AJAX_URL = "/ajax.php"
 
     USER_AGENT = (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+        "User-Agent: Mozilla/5.0 (Linux; Android 12; Mi 10 Build/SKQ1.211006.001; wv) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 "
+        "miHoYoBBS/2.33.1"
     )
     BBS_HEADERS = {
-        "Host": "api-takumi.mihoyo.com",
-        "Content-Type": "application/json;charset=utf-8",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
         "Accept": "application/json, text/plain, */*",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
         "User-Agent": USER_AGENT,
-        "Referer": "https://webstatic.mihoyo.com/",
-        "Accept-Language": "zh-CN,zh-Hans;q=0.9",
         "X-Requested-With": "com.mihoyo.hyperion",
+        "Referer": "https://webstatic.mihoyo.com/",
         "x-rpc-device_id": get_device_id(USER_AGENT),
-        "x-rpc-app_version": "2.28.1",
-        "x-rpc-client_type": "5",
+        "x-rpc-page": "3.1.3_#/ys",
     }
 
     VERIFICATION_HEADERS = {
@@ -400,9 +397,12 @@ class Verification:
         headers["Referer"] = referer
         return headers
 
-    def get_headers(self):
+    def get_headers(self, data: dict = None, params: dict = None):
         headers = self.BBS_HEADERS.copy()
-        headers["DS"] = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
+        app_version, client_type, ds = get_ds(new_ds=True, data=data, params=params)
+        headers["x-rpc-app_version"] = app_version
+        headers["x-rpc-client_type"] = client_type
+        headers["DS"] = ds
         return headers
 
     @staticmethod
@@ -410,9 +410,9 @@ class Verification:
         return "https://" + host + url
 
     async def create(self):
-        headers = self.get_headers()
         url = self.get_url(self.HOST, self.CREATE_VERIFICATION_URL)
         params = {"is_high": True}
+        headers = self.get_headers(params=params)
         response = await self.client.get(url, params=params, headers=headers)
         return response
 
