@@ -1,5 +1,6 @@
 from typing import Optional
 
+from genshin import GenshinException, Region
 from telegram import Update, ReplyKeyboardRemove, Message, User, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
@@ -18,7 +19,6 @@ from plugins.genshin.verification import VerificationSystem
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
-from utils.models.base import RegionEnum
 
 
 class StartPlugin(Plugin):
@@ -117,30 +117,43 @@ class StartPlugin(Plugin):
     async def process_validate(
         self, message: Message, user: User, validate: Optional[str] = None, bot_username: Optional[str] = None
     ):
-        user_info = await self.user_service.get_user_by_id(user.id)
-        if user_info.region != RegionEnum.HYPERION:
-            await message.reply_text("非法用户")
+        try:
+            client = await get_genshin_client(user.id)
+            if client.region != Region.CHINESE:
+                await message.reply_text("非法用户")
+                return
+        except UserNotFoundError:
+            await message.reply_text("用户未找到")
             return
-        uid = user_info.yuanshen_uid
-        cookie = await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
-        client = Verification(cookie=cookie.cookies)
+        except CookiesNotFoundError:
+            await message.reply_text("检测到用户为UID绑定，无需认证")
+            return
+        try:
+            await client.get_genshin_notes()
+        except GenshinException as exc:
+            if exc.retcode != 1034:
+                raise exc
+        else:
+            await message.reply_text("账户正常，无需认证")
+            return
+        verification = Verification(cookies=client.cookie_manager.cookies)
         if validate:
-            _, challenge = await self.verification_system.get_challenge(uid)
+            _, challenge = await self.verification_system.get_challenge(client.uid)
             if challenge:
-                await client.verify(challenge, validate)
+                await verification.verify(challenge, validate)
                 await message.reply_text("验证成功")
             else:
                 await message.reply_text("验证失效")
         if bot_username:
-            data = await client.create()
+            data = await verification.create()
             challenge = data["challenge"]
             gt = data["gt"]
-            validate = await client.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
+            validate = await verification.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
             if validate:
-                await client.verify(challenge, validate)
+                await verification.verify(challenge, validate)
                 await message.reply_text("验证成功")
                 return
-            await self.sign_system.set_challenge(uid, gt, challenge)
-            url = f"{config.pass_challenge_user_web}?username={bot_username}&command=verify&gt={gt}&challenge={challenge}&uid={uid}"
+            await self.sign_system.set_challenge(client.uid, gt, challenge)
+            url = f"{config.pass_challenge_user_web}?username={bot_username}&command=verify&gt={gt}&challenge={challenge}&uid={client.uid}"
             button = InlineKeyboardMarkup([[InlineKeyboardButton("验证", url=url)]])
             await message.reply_text("请尽快点击下方手动验证", reply_markup=button)

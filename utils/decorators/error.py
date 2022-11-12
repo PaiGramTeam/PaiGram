@@ -9,7 +9,7 @@ from telegram import Update, ReplyKeyboardRemove, InlineKeyboardButton, InlineKe
 from telegram.error import BadRequest, TimedOut, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
 
-from modules.apihelper.error import APIHelperException, ReturnCodeError, APIHelperTimedOut
+from modules.apihelper.error import APIHelperException, ReturnCodeError, APIHelperTimedOut, ResponseException
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 
@@ -115,7 +115,7 @@ def error_callable(func: Callable) -> Callable:
                 logger.error("GenshinException")
                 logger.exception(exc)
                 await send_user_notification(
-                    update, context, f"出错了呜呜呜 ~ 获取账号信息发生错误 错误信息为 { exc.msg if exc.msg else exc.retcode} ~ 请稍后再试"
+                    update, context, f"出错了呜呜呜 ~ 获取账号信息发生错误 错误信息为 {exc.msg if exc.msg else exc.retcode} ~ 请稍后再试"
                 )
             return ConversationHandler.END
         except ReturnCodeError as exc:
@@ -124,6 +124,12 @@ def error_callable(func: Callable) -> Callable:
         except APIHelperTimedOut:
             logger.warning("APIHelperException")
             await send_user_notification(update, context, "出错了呜呜呜 ~ API请求超时 ~ 请稍后再试")
+        except ResponseException as exc:
+            logger.error("APIHelperException [%s]%s", exc.code, exc.message)
+            await send_user_notification(
+                update, context, f"出错了呜呜呜 ~ API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
+            )
+            return ConversationHandler.END
         except APIHelperException as exc:
             logger.error("APIHelperException")
             logger.exception(exc)

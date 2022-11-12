@@ -389,8 +389,8 @@ class Verification:
         "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
     }
 
-    def __init__(self, cookie: Dict = None):
-        self.client = HOYORequest(headers=self.BBS_HEADERS, cookies=cookie)
+    def __init__(self, cookies: Dict = None):
+        self.client = HOYORequest(headers=self.BBS_HEADERS, cookies=cookies)
 
     def get_verification_headers(self, referer: str):
         headers = self.VERIFICATION_HEADERS.copy()

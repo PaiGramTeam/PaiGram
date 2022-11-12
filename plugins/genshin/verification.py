@@ -1,5 +1,6 @@
 from typing import Tuple, Optional
 
+from genshin import Region, GenshinException
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 
@@ -7,12 +8,14 @@ from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.config import config
 from core.cookies import CookiesService
+from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.user import UserService
+from core.user.error import UserNotFoundError
 from modules.apihelper.hyperion import Verification
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.models.base import RegionEnum
+from utils.helpers import get_genshin_client
 
 
 class VerificationSystem:
@@ -44,31 +47,44 @@ class VerificationPlugins(Plugin, BasePlugin):
     async def verify(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        user_info = await self.user_service.get_user_by_id(user.id)
-        if user_info.region != RegionEnum.HYPERION:
-            await message.reply_text("非法用户")
+        try:
+            client = await get_genshin_client(user.id)
+            if client.region != Region.CHINESE:
+                await message.reply_text("非法用户")
+                return
+        except UserNotFoundError:
+            await message.reply_text("用户未找到")
             return
-        uid = user_info.yuanshen_uid
-        cookie = await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
-        client = Verification(cookie=cookie.cookies)
+        except CookiesNotFoundError:
+            await message.reply_text("检测到用户为UID绑定，无需认证")
+            return
+        verification = Verification(cookies=client.cookie_manager.cookies)
         if context.args and len(context.args) > 0:
             validate = context.args[0]
-            _, challenge = await self.system.get_challenge(uid)
+            _, challenge = await self.system.get_challenge(client.uid)
             if challenge:
-                await client.verify(challenge, validate)
+                await verification.verify(challenge, validate)
                 await message.reply_text("验证成功")
             else:
                 await message.reply_text("验证失效")
             return
-        data = await client.create()
+        try:
+            await client.get_genshin_notes()
+        except GenshinException as exc:
+            if exc.retcode != 1034:
+                raise exc
+        else:
+            await message.reply_text("账户正常，无需认证")
+            return
+        data = await verification.create()
         challenge = data["challenge"]
         gt = data["gt"]
-        validate = await client.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
+        validate = await verification.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
         if validate:
-            await client.verify(challenge, validate)
+            await verification.verify(challenge, validate)
             await message.reply_text("验证成功")
             return
-        await self.system.set_challenge(uid, gt, challenge)
-        url = f"{config.pass_challenge_user_web}?username={context.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={uid}"
+        await self.system.set_challenge(client.uid, gt, challenge)
+        url = f"{config.pass_challenge_user_web}?username={context.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={client.uid}"
         button = InlineKeyboardMarkup([[InlineKeyboardButton("验证", url=url)]])
         await message.reply_text("请尽快点击下方手动验证", reply_markup=button)
