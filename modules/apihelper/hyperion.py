@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 import time
 from datetime import datetime
@@ -126,7 +127,7 @@ class Hyperion:
 
     async def download_image(self, art_id: int, url: str, page: int = 0) -> ArtworkImage:
         response = await self.client.get(url, params=self.get_images_params(resize=2000), timeout=10, de_json=False)
-        return ArtworkImage(art_id=art_id, page=page, data=response)
+        return ArtworkImage(art_id=art_id, page=page, data=response.content)
 
     async def get_new_list(self, gids: int, type_id: int, page_size: int = 20):
         """
@@ -356,4 +357,80 @@ class SignIn:
             logger.warning("Stoken 获取 Authkey JSON解析失败")
         except InvalidCookies:
             logger.warning("Stoken 获取 Authkey 失败 | 用户 Stoken 失效")
+        return None
+
+
+class Verification:
+    HOST = "api-takumi-record.mihoyo.com"
+    VERIFICATION_HOST = "api.geetest.com"
+    CREATE_VERIFICATION_URL = "/game_record/app/card/wapi/createVerification?is_high=true"
+    VERIFY_VERIFICATION_URL = "/game_record/app/card/wapi/verifyVerification"
+    AJAX_URL = "/ajax.php"
+
+    USER_AGENT = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+    )
+    BBS_HEADERS = {
+        "Host": "api-takumi.mihoyo.com",
+        "Content-Type": "application/json;charset=utf-8",
+        "Origin": "https://bbs.mihoyo.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Accept": "application/json, text/plain, */*",
+        "User-Agent": USER_AGENT,
+        "Referer": "https://bbs.mihoyo.com/",
+        "Accept-Language": "zh-CN,zh-Hans;q=0.9",
+        "X-Requested-With": "com.mihoyo.hyperion",
+    }
+
+    VERIFICATION_HEADERS = {
+        "Accept": "*/*",
+        "X-Requested-With": "com.mihoyo.hyperion",
+        "User-Agent": USER_AGENT,
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+
+    def __init__(self, cookie: Dict = None):
+        self.client = HOYORequest(headers=self.BBS_HEADERS, cookies=cookie)
+
+    def get_verification_headers(self, referer: str):
+        headers = self.VERIFICATION_HEADERS.copy()
+        headers["Referer"] = referer
+        return headers
+
+    @staticmethod
+    def get_url(host: str, url: str):
+        return "https://" + host + url
+
+    async def create(self):
+        url = self.get_url(self.HOST, self.CREATE_VERIFICATION_URL)
+        params = {"is_high": True}
+        response = await self.client.get(url, params=params)
+        return response
+
+    async def verify(self, challenge: str, validate: str):
+        url = self.get_url(self.HOST, self.VERIFY_VERIFICATION_URL)
+        params = {"geetest_challenge": challenge, "geetest_validate": validate, "geetest_seccode": validate + "|jordan"}
+        response = await self.client.get(url, params=params)
+        return response
+
+    async def ajax(self, referer: str, gt: str, challenge: str) -> Optional[str]:
+        headers = self.get_verification_headers(referer)
+        url = self.get_url(self.VERIFICATION_HOST, self.AJAX_URL)
+        params = {
+            "gt": gt,
+            "challenge": challenge,
+            "lang": "zh-cn",
+            "pt": 3,
+            "client_type": "web_mobile",
+            "callback": f"geetest_{int(time.time() * 1000)}",
+        }
+        response = await self.client.get(url, headers=headers, params=params, de_json=False)
+        text = response.text
+        logger.debug(f"ajax 返回：{text}")
+        json_data = re.findall(r"^.*?\((\{.*?)\)$", text)[0]
+        data = json.loads(json_data)
+        if "success" in data["status"] and "success" in data["data"]["result"]:
+            return data["data"]["validate"]
         return None

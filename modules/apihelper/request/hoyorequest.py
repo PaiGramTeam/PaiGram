@@ -1,6 +1,7 @@
 from typing import Union
 
 import httpx
+from httpx import Response
 
 from modules.apihelper.error import NetworkException, ResponseException, APIHelperTimedOut
 from modules.apihelper.request.httpxrequest import HTTPXRequest
@@ -10,7 +11,7 @@ from modules.apihelper.typedefs import POST_DATA, JSON_DATA
 class HOYORequest(HTTPXRequest):
     async def get(
         self, url: str, *args, de_json: bool = True, re_json_data: bool = False, **kwargs
-    ) -> Union[POST_DATA, JSON_DATA, bytes]:
+    ) -> Union[POST_DATA, JSON_DATA, Response]:
         try:
             response = await self._client.get(url=url, *args, **kwargs)
         except httpx.TimeoutException as err:
@@ -20,7 +21,7 @@ class HOYORequest(HTTPXRequest):
         if response.is_error:
             raise ResponseException(message=f"response error in status code: {response.status_code}")
         if not de_json:
-            return response.content
+            return response
         json_data = response.json()
         return_code = json_data.get("retcode", None)
         data = json_data.get("data", None)
