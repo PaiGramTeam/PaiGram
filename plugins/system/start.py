@@ -50,7 +50,7 @@ class StartPlugin(Plugin):
             elif args[0] == "verify_verification":
                 await message.reply_markdown_v2(
                     f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
-                    f"{escape_markdown('发送 /verif 命令进入认证流程')}"
+                    f"{escape_markdown('发送 /verify 命令进入认证流程')}"
                 )
             elif args[0] == "sign":
                 await self.gen_sign_button(message, user)
@@ -61,7 +61,7 @@ class StartPlugin(Plugin):
                 if _command == "sign":
                     await self.process_sign_validate(message, user, _challenge)
                 elif _command == "verify":
-                    await self.process_sign_validate(message, user, _challenge)
+                    await self.process_validate(message, user, _challenge)
             else:
                 await message.reply_html(f"你好 {user.mention_html()} ！我是派蒙 ！\n请点击 /{args[0]} 命令进入对应流程")
             return
