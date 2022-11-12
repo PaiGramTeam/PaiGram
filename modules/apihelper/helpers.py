@@ -4,6 +4,7 @@ import random
 import string
 import time
 import uuid
+from typing import Mapping
 from urllib.parse import urlencode
 
 RECOGNIZE_SERVER = {
@@ -35,7 +36,7 @@ def _hexdigest(text):
     return _md5.hexdigest()
 
 
-def get_ds(ds_type: str = None, new_ds: bool = False, data: dict = None, params: dict = None):
+def get_ds(ds_type: str = None, new_ds: bool = False, data: Mapping[str, str] = None, params: Mapping[str, str] = None):
     # 1:  ios
     # 2:  android
     # 4:  pc web
