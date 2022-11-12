@@ -110,7 +110,7 @@ def error_callable(func: Callable) -> Callable:
             if exc.retcode == -130:
                 await send_user_notification(update, context, "出错了呜呜呜 ~ 未设置默认角色，请尝试重新绑定")
             elif exc.retcode == 1034:
-                await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器检测到该账号可能存在异常，请求被拒，请尝试通过验证")
+                await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器检测到该账号可能存在异常，请求被拒绝，请尝试通过验证")
             else:
                 logger.error("GenshinException")
                 logger.exception(exc)
