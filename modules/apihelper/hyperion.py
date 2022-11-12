@@ -373,14 +373,16 @@ class Verification:
     BBS_HEADERS = {
         "Host": "api-takumi.mihoyo.com",
         "Content-Type": "application/json;charset=utf-8",
-        "Origin": "https://bbs.mihoyo.com",
         "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive",
         "Accept": "application/json, text/plain, */*",
         "User-Agent": USER_AGENT,
-        "Referer": "https://bbs.mihoyo.com/",
+        "Referer": "https://webstatic.mihoyo.com/",
         "Accept-Language": "zh-CN,zh-Hans;q=0.9",
         "X-Requested-With": "com.mihoyo.hyperion",
+        "x-rpc-device_id": get_device_id(USER_AGENT),
+        "x-rpc-app_version": "2.28.1",
+        "x-rpc-client_type": "5",
     }
 
     VERIFICATION_HEADERS = {
@@ -398,20 +400,27 @@ class Verification:
         headers["Referer"] = referer
         return headers
 
+    def get_headers(self):
+        headers = self.BBS_HEADERS.copy()
+        headers["DS"] = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
+        return headers
+
     @staticmethod
     def get_url(host: str, url: str):
         return "https://" + host + url
 
     async def create(self):
+        headers = self.get_headers()
         url = self.get_url(self.HOST, self.CREATE_VERIFICATION_URL)
         params = {"is_high": True}
-        response = await self.client.get(url, params=params)
+        response = await self.client.get(url, params=params, headers=headers)
         return response
 
     async def verify(self, challenge: str, validate: str):
+        headers = self.get_headers()
         url = self.get_url(self.HOST, self.VERIFY_VERIFICATION_URL)
         params = {"geetest_challenge": challenge, "geetest_validate": validate, "geetest_seccode": validate + "|jordan"}
-        response = await self.client.get(url, params=params)
+        response = await self.client.get(url, params=params, headers=headers)
         return response
 
     async def ajax(self, referer: str, gt: str, challenge: str) -> Optional[str]:
