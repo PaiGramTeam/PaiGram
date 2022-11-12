@@ -417,10 +417,10 @@ class Verification:
         return response
 
     async def verify(self, challenge: str, validate: str):
-        headers = self.get_headers()
         url = self.get_url(self.HOST, self.VERIFY_VERIFICATION_URL)
-        params = {"geetest_challenge": challenge, "geetest_validate": validate, "geetest_seccode": validate + "|jordan"}
-        response = await self.client.get(url, params=params, headers=headers)
+        data = {"geetest_challenge": challenge, "geetest_validate": validate, "geetest_seccode": validate + "|jordan"}
+        headers = self.get_headers(data=data)
+        response = await self.client.post(url, data=data, headers=headers)
         return response
 
     async def ajax(self, referer: str, gt: str, challenge: str) -> Optional[str]:

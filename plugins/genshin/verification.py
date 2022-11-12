@@ -39,7 +39,7 @@ class VerificationPlugins(Plugin, BasePlugin):
         self.system = VerificationSystem(redis)
 
     @handler.command("verify", block=False)
-    @restricts()
+    @restricts(restricts_time=60)
     @error_callable
     async def verify(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
@@ -69,6 +69,6 @@ class VerificationPlugins(Plugin, BasePlugin):
             await message.reply_text("验证成功")
             return
         await self.system.set_challenge(uid, gt, challenge)
-        url = f"{config.pass_challenge_user_web}?username={context.bot.app.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={uid}"
+        url = f"{config.pass_challenge_user_web}?username={context.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={uid}"
         button = InlineKeyboardMarkup([[InlineKeyboardButton("验证", url=url)]])
         await message.reply_text("请尽快点击下方手动验证", reply_markup=button)
