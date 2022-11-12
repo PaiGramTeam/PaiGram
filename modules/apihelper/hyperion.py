@@ -369,7 +369,7 @@ class Verification:
     USER_AGENT = (
         "User-Agent: Mozilla/5.0 (Linux; Android 12; Mi 10 Build/SKQ1.211006.001; wv) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 "
-        "miHoYoBBS/2.33.1"
+        "miHoYoBBS/2.36.1"
     )
     BBS_HEADERS = {
         "Accept": "application/json, text/plain, */*",

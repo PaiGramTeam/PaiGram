@@ -69,8 +69,7 @@ class SignSystem:
         }
 
     async def get_challenge_button(
-            self, uid: int, user_id: int, gt: Optional[str] = None, challenge: Optional[str] = None,
-            callback: bool = True
+        self, uid: int, user_id: int, gt: Optional[str] = None, challenge: Optional[str] = None, callback: bool = True
     ) -> Optional[InlineKeyboardMarkup]:
         if not config.pass_challenge_user_web:
             return None
@@ -105,8 +104,8 @@ class SignSystem:
         header = {
             "Accept": "*/*",
             "X-Requested-With": "com.mihoyo.hyperion",
-            "User-Agent": "Mozilla/5.0 (Linux; Android 12; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/2.37.1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/107.0.0.0 Safari/537.36",
             "Referer": referer,
             "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
         }
@@ -129,7 +128,7 @@ class SignSystem:
                     timeout=30,
                 )
             text = req.text
-            logger.debug(f"ajax 返回：{text}")
+            logger.debug(f"ajax 返回：%s", text)
             if req.status_code != 200:
                 raise RuntimeError
             text = re.findall(r"^.*?\((\{.*?)\)$", text)[0]
@@ -169,11 +168,11 @@ class SignSystem:
                     params=pass_challenge_params,
                     timeout=60,
                 )
-            logger.debug(f"签到 recognize 请求返回：{resp.text}")
+            logger.debug(f"签到 recognize 请求返回：%s", resp.text)
             data = resp.json()
             status = data.get("status")
             if status is not None and status != 0:
-                logger.error(f"签到 recognize 请求解析错误：{data.get('msg')}")
+                logger.error(f"签到 recognize 请求解析错误：[%s]%s", data.get('code'), data.get('msg'))
             if data.get("code", 0) != 0:
                 raise RuntimeError
             logger.info("签到 recognize 请求 解析成功")
@@ -389,11 +388,7 @@ class Sign(Plugin, BasePlugin):
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
         except NeedChallenge as exc:
             button = await self.system.get_challenge_button(
-                exc.uid,
-                user.id,
-                exc.gt,
-                exc.challenge,
-                not filters.ChatType.PRIVATE.filter(message)
+                exc.uid, user.id, exc.gt, exc.challenge, not filters.ChatType.PRIVATE.filter(message)
             )
             reply_message = await message.reply_text(
                 f"UID {exc.uid} 签到失败，触发验证码风控，请尝试点击下方按钮重新签到", allow_sending_without_reply=True, reply_markup=button
