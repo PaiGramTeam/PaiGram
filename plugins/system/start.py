@@ -1,9 +1,12 @@
-from telegram import Update, ReplyKeyboardRemove, Message, User
+from typing import Optional
+
+from telegram import Update, ReplyKeyboardRemove, Message, User, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.helpers import escape_markdown
 
 from core.base.redisdb import RedisDB
+from core.config import config
 from core.cookies import CookiesService
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import handler, Plugin
@@ -48,10 +51,7 @@ class StartPlugin(Plugin):
                     f"{escape_markdown('发送 /setuid 或 /setcookie 命令进入绑定账号流程')}"
                 )
             elif args[0] == "verify_verification":
-                await message.reply_markdown_v2(
-                    f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}\n"
-                    f"{escape_markdown('发送 /verify 命令进入认证流程')}"
-                )
+                await self.process_validate(message, user, bot_username=context.bot.username)
             elif args[0] == "sign":
                 await self.gen_sign_button(message, user)
             elif args[0].startswith("challenge_"):
@@ -61,7 +61,7 @@ class StartPlugin(Plugin):
                 if _command == "sign":
                     await self.process_sign_validate(message, user, _challenge)
                 elif _command == "verify":
-                    await self.process_validate(message, user, _challenge)
+                    await self.process_validate(message, user, validate=_challenge)
             else:
                 await message.reply_html(f"你好 {user.mention_html()} ！我是派蒙 ！\n请点击 /{args[0]} 命令进入对应流程")
             return
@@ -114,7 +114,9 @@ class StartPlugin(Plugin):
         except NeedChallenge:
             await message.reply_text("回调错误，请重新签到", allow_sending_without_reply=True)
 
-    async def process_validate(self, message: Message, user: User, validate: str):
+    async def process_validate(
+        self, message: Message, user: User, validate: Optional[str] = None, bot_username: Optional[str] = None
+    ):
         user_info = await self.user_service.get_user_by_id(user.id)
         if user_info.region != RegionEnum.HYPERION:
             await message.reply_text("非法用户")
@@ -122,9 +124,23 @@ class StartPlugin(Plugin):
         uid = user_info.yuanshen_uid
         cookie = await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
         client = Verification(cookie=cookie.cookies)
-        _, challenge = await self.verification_system.get_challenge(uid)
-        if challenge:
-            await client.verify(challenge, validate)
-            await message.reply_text("验证成功")
-        else:
-            await message.reply_text("验证失效")
+        if validate:
+            _, challenge = await self.verification_system.get_challenge(uid)
+            if challenge:
+                await client.verify(challenge, validate)
+                await message.reply_text("验证成功")
+            else:
+                await message.reply_text("验证失效")
+        if bot_username:
+            data = await client.create()
+            challenge = data["challenge"]
+            gt = data["gt"]
+            validate = await client.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
+            if validate:
+                await client.verify(challenge, validate)
+                await message.reply_text("验证成功")
+                return
+            await self.sign_system.set_challenge(uid, gt, challenge)
+            url = f"{config.pass_challenge_user_web}?username={bot_username}&command=verify&gt={gt}&challenge={challenge}&uid={uid}"
+            button = InlineKeyboardMarkup([[InlineKeyboardButton("验证", url=url)]])
+            await message.reply_text("请尽快点击下方手动验证", reply_markup=button)
