@@ -407,7 +407,7 @@ class Verification:
 
     @staticmethod
     def get_url(host: str, url: str):
-        return "https://" + host + url
+        return f"https://{host}{url}"
 
     async def create(self):
         url = self.get_url(self.HOST, self.CREATE_VERIFICATION_URL)
@@ -418,7 +418,8 @@ class Verification:
 
     async def verify(self, challenge: str, validate: str):
         url = self.get_url(self.HOST, self.VERIFY_VERIFICATION_URL)
-        data = {"geetest_challenge": challenge, "geetest_validate": validate, "geetest_seccode": validate + "|jordan"}
+        data = {"geetest_challenge": challenge, "geetest_validate": validate, "geetest_seccode": f"{validate}|jordan"}
+
         headers = self.get_headers(data=data)
         response = await self.client.post(url, json=data, headers=headers)
         return response

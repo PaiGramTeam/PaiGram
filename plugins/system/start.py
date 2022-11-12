@@ -115,13 +115,13 @@ class StartPlugin(Plugin):
             await message.reply_text("回调错误，请重新签到", allow_sending_without_reply=True)
 
     async def process_validate(self, message: Message, user: User, validate: str):
-        user = await self.user_service.get_user_by_id(user.id)
-        if user.region != RegionEnum.HYPERION:
+        user_info = await self.user_service.get_user_by_id(user.id)
+        if user_info.region != RegionEnum.HYPERION:
             await message.reply_text("非法用户")
             return
-        uid = user.yuanshen_uid
+        uid = user_info.yuanshen_uid
         cookie = await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
-        client = Verification(cookie=cookie)
+        client = Verification(cookie=cookie.cookies)
         _, challenge = await self.verification_system.get_challenge(uid)
         if challenge:
             await client.verify(challenge, validate)
