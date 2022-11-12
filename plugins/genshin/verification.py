@@ -15,10 +15,8 @@ from utils.decorators.restricts import restricts
 from utils.models.base import RegionEnum
 
 
-class VerificationPlugins(Plugin, BasePlugin):
-    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None, redis: RedisDB = None):
-        self.cookies_service = cookies_service
-        self.user_service = user_service
+class VerificationSystem:
+    def __init__(self, redis: RedisDB = None):
         self.cache = redis.client
         self.qname = "plugin:verification:"
 
@@ -32,6 +30,13 @@ class VerificationPlugins(Plugin, BasePlugin):
     async def set_challenge(self, uid: int, gt: str, challenge: str):
         await self.cache.set(f"{self.qname}{uid}", f"{gt}|{challenge}")
         await self.cache.expire(f"{self.qname}{uid}", 10 * 60)
+
+
+class VerificationPlugins(Plugin, BasePlugin):
+    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None, redis: RedisDB = None):
+        self.cookies_service = cookies_service
+        self.user_service = user_service
+        self.system = VerificationSystem(redis)
 
     @handler.command("verify", block=False)
     @restricts()
@@ -48,7 +53,7 @@ class VerificationPlugins(Plugin, BasePlugin):
         client = Verification(cookie=cookie)
         if context.args and len(context.args) > 0:
             validate = context.args[0]
-            _, challenge = await self.get_challenge(uid)
+            _, challenge = await self.system.get_challenge(uid)
             if challenge:
                 await client.verify(challenge, validate)
                 await message.reply_text("验证成功")
@@ -63,7 +68,7 @@ class VerificationPlugins(Plugin, BasePlugin):
             await client.verify(challenge, validate)
             await message.reply_text("验证成功")
             return
-        await self.set_challenge(uid, gt, challenge)
+        await self.system.set_challenge(uid, gt, challenge)
         url = f"{config.pass_challenge_user_web}?username={context.bot.app.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={uid}"
         button = InlineKeyboardMarkup([[InlineKeyboardButton("验证", url=url)]])
         await message.reply_text("请尽快点击下方手动验证", reply_markup=button)

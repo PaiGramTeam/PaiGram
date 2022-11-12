@@ -15,7 +15,6 @@ from pydantic import BaseModel, validator
 from modules.apihelper.base import ArtworkImage, PostInfo
 from modules.apihelper.helpers import get_device_id
 from modules.apihelper.request.hoyorequest import HOYORequest
-from utils.log import logger
 from utils.typedefs import JSONDict
 
 
@@ -354,9 +353,9 @@ class SignIn:
             )
             return data.get("authkey")
         except JSONDecodeError:
-            logger.warning("Stoken 获取 Authkey JSON解析失败")
+            pass
         except InvalidCookies:
-            logger.warning("Stoken 获取 Authkey 失败 | 用户 Stoken 失效")
+            pass
         return None
 
 
