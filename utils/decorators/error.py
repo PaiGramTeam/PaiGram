@@ -17,9 +17,16 @@ from utils.log import logger
 async def send_user_notification(update: Update, context: CallbackContext, text: str):
     if update.inline_query is not None:  # 忽略 inline_query
         return
-    buttons = InlineKeyboardMarkup(
-        [[InlineKeyboardButton("点我重新绑定", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
-    )
+    if "重新绑定" in text:
+        buttons = InlineKeyboardMarkup(
+            [[InlineKeyboardButton("点我重新绑定", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+        )
+    elif "通过验证" in text:
+        buttons = InlineKeyboardMarkup(
+            [[InlineKeyboardButton("点我通过验证", url=f"https://t.me/{context.bot.username}?start=verify_verification")]]
+        )
+    else:
+        buttons = ReplyKeyboardRemove()
     user = update.effective_user
     message = update.effective_message
     chat = update.effective_chat
@@ -29,9 +36,7 @@ async def send_user_notification(update: Update, context: CallbackContext, text:
         return
     logger.info(f"尝试通知用户 {user.full_name}[{user.id}] " f"在 {chat.full_name}[{chat.id}]" f"的 错误信息[{text}]")
     try:
-        await message.reply_text(
-            text, reply_markup=buttons if "重新绑定" in text else ReplyKeyboardRemove(), allow_sending_without_reply=True
-        )
+        await message.reply_text(text, reply_markup=buttons, allow_sending_without_reply=True)
     except (BadRequest, Forbidden, Exception) as exc:
         logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
         logger.exception(exc)
@@ -105,7 +110,7 @@ def error_callable(func: Callable) -> Callable:
             if exc.retcode == -130:
                 await send_user_notification(update, context, "出错了呜呜呜 ~ 未设置默认角色，请尝试重新绑定")
             elif exc.retcode == 1034:
-                await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器检测到该账号可能存在异常，请求被拒绝")
+                await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器检测到该账号可能存在异常，请求被拒绝，请尝试通过验证")
             else:
                 logger.error("GenshinException")
                 logger.exception(exc)
