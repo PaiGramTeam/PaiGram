@@ -59,7 +59,7 @@ def get_ds(ds_type: str = None, new_ds: bool = False, data: Mapping[str, str] = 
     client_type = '5'
     salt = 'YVEIkzDFNHLeKXLxzqCA9TzxCpWwbIbk'
     ds = old()
-    if ds_type == '2' or ds_type == 'android':
+    if ds_type in ('android', '2'):
         app_version = '2.36.1'
         client_type = '2'
         salt = 'n0KjuIrKgLHh08LWSCYP0WXlVXaYvV64'
