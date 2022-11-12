@@ -91,7 +91,7 @@ class StartPlugin(Plugin):
         try:
             client = await get_genshin_client(user.id)
             await message.reply_chat_action(ChatAction.TYPING)
-            button = await self.sign_system.gen_challenge_button(client.uid, user.id)
+            button = await self.sign_system.get_challenge_button(client.uid, user.id, callback=False)
             if not button:
                 await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
                 return

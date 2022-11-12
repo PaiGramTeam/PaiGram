@@ -68,20 +68,23 @@ class SignSystem:
             "x-rpc-seccode": f"{validate}|jordan",
         }
 
-    async def gen_challenge_button(
-        self, uid: int, user_id: int, gt: Optional[str] = None, challenge: Optional[str] = None
+    async def get_challenge_button(
+            self, uid: int, user_id: int, gt: Optional[str] = None, challenge: Optional[str] = None,
+            callback: bool = True
     ) -> Optional[InlineKeyboardMarkup]:
         if not config.pass_challenge_user_web:
             return None
-        if gt and challenge:
+        if not challenge or not gt:
+            gt, challenge = await self.get_challenge(uid)
+        if not challenge or not gt:
+            return None
+        if callback:
             await self.set_challenge(uid, gt, challenge)
             data = f"sign|{user_id}|{uid}"
             return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
-        gt, challenge = await self.get_challenge(uid)
-        if not challenge or not gt:
-            return
-        url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}&uid={uid}"
-        return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
+        else:
+            url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}&uid={uid}"
+            return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
     @staticmethod
     async def pass_challenge(gt: str, challenge: str, referer: str = None) -> Optional[Dict]:
@@ -102,7 +105,7 @@ class SignSystem:
             "Accept": "*/*",
             "X-Requested-With": "com.mihoyo.hyperion",
             "User-Agent": "Mozilla/5.0 (Linux; Android 12; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/2.37.1",
+                          "Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/2.37.1",
             "Referer": referer,
             "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
         }
@@ -384,11 +387,12 @@ class Sign(Plugin, BasePlugin):
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
         except NeedChallenge as exc:
-            button = await self.system.gen_challenge_button(
+            button = await self.system.get_challenge_button(
                 exc.uid,
                 user.id,
                 exc.gt,
                 exc.challenge,
+                not filters.ChatType.PRIVATE.filter(message)
             )
             reply_message = await message.reply_text(
                 f"UID {exc.uid} 签到失败，触发验证码风控，请尝试点击下方按钮重新签到", allow_sending_without_reply=True, reply_markup=button
