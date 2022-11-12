@@ -43,7 +43,7 @@ def get_ds(ds_type: str = None, new_ds: bool = False, data: Mapping[str, str] = 
     # 5:  mobile web
     def new():
         t = str(int(time.time()))
-        r = str(random.randint(100001, 200000))
+        r = str(random.randint(100001, 200000))  # nosec
         b = json.dumps(data) if data else ''
         q = urlencode(params) if params else ''
         c = _hexdigest(f'salt={salt}&t={t}&r={r}&b={b}&q={q}')
