@@ -74,16 +74,17 @@ class SignSystem:
     ) -> Optional[InlineKeyboardMarkup]:
         if not config.pass_challenge_user_web:
             return None
+        if challenge and gt:
+            await self.set_challenge(uid, gt, challenge)
         if not challenge or not gt:
             gt, challenge = await self.get_challenge(uid)
         if not challenge or not gt:
             return None
         if callback:
-            await self.set_challenge(uid, gt, challenge)
             data = f"sign|{user_id}|{uid}"
             return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
         else:
-            url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&gt={gt}&challenge={challenge}&uid={uid}"
+            url = f"{config.pass_challenge_user_web}?username={bot.app.bot.username}&command=sign&gt={gt}&challenge={challenge}&uid={uid}"
             return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
     @staticmethod
