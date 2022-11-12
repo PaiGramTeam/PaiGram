@@ -16,6 +16,7 @@ from core.user.error import UserNotFoundError
 from modules.apihelper.hyperion import Verification
 from plugins.genshin.sign import SignSystem, NeedChallenge
 from plugins.genshin.verification import VerificationSystem
+from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
@@ -28,7 +29,8 @@ class StartPlugin(Plugin):
         self.sign_system = SignSystem(redis)
         self.verification_system = VerificationSystem(redis)
 
-    @handler(CommandHandler, command="start", block=False)
+    @handler.command("start", block=False)
+    @error_callable
     @restricts()
     async def start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
