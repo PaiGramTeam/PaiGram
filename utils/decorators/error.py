@@ -32,13 +32,13 @@ async def send_user_notification(update: Update, context: CallbackContext, text:
     chat = update.effective_chat
     if message is None:
         update_str = update.to_dict() if isinstance(update, Update) else str(update)
-        logger.warning("错误的消息类型\n" + json.dumps(update_str, indent=2, ensure_ascii=False))
+        logger.warning("错误的消息类型\n %s", json.dumps(update_str, indent=2, ensure_ascii=False))
         return
-    logger.info(f"尝试通知用户 {user.full_name}[{user.id}] " f"在 {chat.full_name}[{chat.id}]" f"的 错误信息[{text}]")
+    logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的 错误信息[%s]", user.full_name, user.id, chat.full_name, chat.id, text)
     try:
         await message.reply_text(text, reply_markup=buttons, allow_sending_without_reply=True)
     except (BadRequest, Forbidden, Exception) as exc:
-        logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
+        logger.error("发送 update_id[%s] 错误信息失败 错误信息为", update.update_id)
         logger.exception(exc)
     finally:
         pass
@@ -48,8 +48,7 @@ def telegram_warning(update: Update, text: str):
     user = update.effective_user
     message = update.effective_message
     chat = update.effective_chat
-    msg = f"{text}\n" f"user_id[{user.id}] chat_id[{chat.id}] message_id[{message.id}] "
-    logger.warning(msg)
+    logger.warning("%s \n user_id[%s] chat_id[%s] message_id[%s]", text, user.id, chat.id, message.id)
 
 
 def error_callable(func: Callable) -> Callable:

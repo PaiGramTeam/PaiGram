@@ -32,6 +32,7 @@ class UpdatePlugin(Plugin):
             try:
                 reply_text = Message.de_json(data, bot.app.bot)
                 await reply_text.edit_text("重启成功")
+                logger.success("重启成功信息已经通知到用户")
             except (BadRequest, Forbidden, KeyError) as exc:
                 logger.error("UpdatePlugin 编辑消息出现错误")
                 logger.exception(exc)
@@ -43,20 +44,20 @@ class UpdatePlugin(Plugin):
         user = update.effective_user
         message = update.effective_message
         args = get_all_args(context)
-        logger.info(f"用户 {user.full_name}[{user.id}] update命令请求")
+        logger.info("用户 %s[%s] update命令请求", user.full_name, user.id)
         if self._lock.locked():
             await message.reply_text("程序正在更新 请勿重复操作")
             return
         async with self._lock:
             reply_text = await message.reply_text("正在更新")
-            logger.info(f"正在更新代码")
+            logger.info("正在更新代码")
             await execute("git fetch --all")
             if len(args) > 0:
                 await execute("git reset --hard origin/main")
             await execute("git pull --all")
             if len(args) > 0:
                 await execute(f"{executable} -m poetry install --extras all")
-            logger.info(f"更新成功 正在重启")
+            logger.success("更新成功 正在重启")
             await reply_text.edit_text("更新成功 正在重启")
             async with async_open(UPDATE_DATA, mode="w", encoding="utf-8") as file:
                 await file.write(reply_text.to_json())

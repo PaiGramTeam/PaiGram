@@ -90,7 +90,7 @@ class VerificationPlugins(Plugin, BasePlugin):
             data = await verification.create()
             logger.success("用户 %s[%s] 创建验证成功", user.full_name, user.id)
         except ResponseException as exc:
-            logger.warning("用户 %s[%s] 创建验证失效 API返回 [%s]%s 请稍后重试", user.full_name, user.id, exc.code, exc.message)
+            logger.warning("用户 %s[%s] 创建验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
             await message.reply_text(f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
             return
         challenge = data["challenge"]

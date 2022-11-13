@@ -68,7 +68,7 @@ def restricts(
 
             # 如果上一个命令还未完成，忽略后续重复调用
             if without_overlapping and user_lock.locked():
-                logger.warning(f"用户 {user.full_name}[{user.id}] 触发 overlapping 该次命令已忽略")
+                logger.warning("用户 %s[%s] 触发 overlapping 该次命令已忽略", user.full_name, user.id)
                 return return_data
 
             async with user_lock:
@@ -86,8 +86,8 @@ def restricts(
                 else:
                     if count >= 6:
                         context.user_data["restrict_since"] = time.time()
+                        logger.warning("用户 %s[%s] 触发洪水限制 已被限制5分钟", user.full_name, user.id)
                         await message.reply_text("你已经触发洪水防御，请等待5分钟")
-                        logger.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制5分钟")
                         return return_data
                 # 单次使用限制
                 if command_time:
