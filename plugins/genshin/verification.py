@@ -49,7 +49,7 @@ class VerificationPlugins(Plugin, BasePlugin):
     async def verify(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        logger.info(f"用户 %s[%s] 发出verify命令", user.full_name, user.id)
+        logger.info("用户 %s[%s] 发出verify命令", user.full_name, user.id)
         try:
             client = await get_genshin_client(user.id)
             if client.region != Region.CHINESE:
@@ -82,14 +82,15 @@ class VerificationPlugins(Plugin, BasePlugin):
         except GenshinException as exc:
             if exc.retcode != 1034:
                 raise exc
+            logger.info("检测到用户 %s[%s] 玩家 %s 触发 1034 异常", user.full_name, user.id, client.uid)
         else:
             await message.reply_text("账户正常，无需认证")
             return
         try:
             data = await verification.create()
-            logger.success(f"用户 %s[%s] 创建验证成功", user.full_name, user.id)
+            logger.success("用户 %s[%s] 创建验证成功", user.full_name, user.id)
         except ResponseException as exc:
-            logger.warning(f"用户 %s[%s] 创建验证失效 API返回 [%s]%s 请稍后重试", user.full_name, user.id, exc.code, exc.message)
+            logger.warning("用户 %s[%s] 创建验证失效 API返回 [%s]%s 请稍后重试", user.full_name, user.id, exc.code, exc.message)
             await message.reply_text(f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
             return
         challenge = data["challenge"]
@@ -98,11 +99,11 @@ class VerificationPlugins(Plugin, BasePlugin):
             validate = await verification.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
             if validate:
                 await verification.verify(challenge, validate)
-                logger.success(f"用户 %s[%s] 通过 ajax 验证", user.full_name, user.id)
+                logger.success("用户 %s[%s] 通过 ajax 验证", user.full_name, user.id)
                 await message.reply_text("验证成功")
                 return
         except APIHelperException as exc:
-            logger.warning(f"用户 %s[%s] ajax 验证失效 错误信息为 %s", user.full_name, user.id, repr(exc))
+            logger.warning("用户 %s[%s] ajax 验证失效 错误信息为 %s", user.full_name, user.id, repr(exc))
         await self.system.set_challenge(client.uid, gt, challenge)
         url = f"{config.pass_challenge_user_web}?username={context.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={client.uid}"
         button = InlineKeyboardMarkup([[InlineKeyboardButton("验证", url=url)]])

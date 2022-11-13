@@ -54,25 +54,25 @@ class StartPlugin(Plugin):
                     f"{escape_markdown('发送 /setuid 或 /setcookie 命令进入绑定账号流程')}"
                 )
             elif args[0] == "verify_verification":
-                logger.info(f"用户 %s[%s] 通过start命令 获取认证信息", user.full_name, user.id)
+                logger.info("用户 %s[%s] 通过start命令 获取认证信息", user.full_name, user.id)
                 await self.process_validate(message, user, bot_username=context.bot.username)
             elif args[0] == "sign":
-                logger.info(f"用户 %s[%s] 通过start命令 获取签到信息", user.full_name, user.id)
+                logger.info("用户 %s[%s] 通过start命令 获取签到信息", user.full_name, user.id)
                 await self.gen_sign_button(message, user)
             elif args[0].startswith("challenge_"):
                 _data = args[0].split("_")
                 _command = _data[1]
                 _challenge = _data[2]
                 if _command == "sign":
-                    logger.info(f"用户 %s[%s] 通过start命令 进入签到流程", user.full_name, user.id)
+                    logger.info("用户 %s[%s] 通过start命令 进入签到流程", user.full_name, user.id)
                     await self.process_sign_validate(message, user, _challenge)
                 elif _command == "verify":
-                    logger.info(f"用户 %s[%s] 通过start命令 进入认证流程", user.full_name, user.id)
+                    logger.info("用户 %s[%s] 通过start命令 进入认证流程", user.full_name, user.id)
                     await self.process_validate(message, user, validate=_challenge)
             else:
                 await message.reply_html(f"你好 {user.mention_html()} ！我是派蒙 ！\n请点击 /{args[0]} 命令进入对应流程")
             return
-        logger.info(f"用户 %s[%s] 发出start命令", user.full_name, user.id)
+        logger.info("用户 %s[%s] 发出start命令", user.full_name, user.id)
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
 
     @staticmethod
@@ -88,12 +88,16 @@ class StartPlugin(Plugin):
     @handler(CommandHandler, command="ping", block=False)
     @restricts()
     async def ping(self, update: Update, _: CallbackContext) -> None:
+        user = update.effective_user
+        logger.info(f"用户 %s[%s] 发出ping命令", user.full_name, user.id)
         await update.effective_message.reply_text("online! ヾ(✿ﾟ▽ﾟ)ノ")
 
     @handler(CommandHandler, command="reply_keyboard_remove", block=False)
     @restricts()
     async def reply_keyboard_remove(self, update: Update, _: CallbackContext) -> None:
-        await update.message.reply_text("移除远程键盘成功", reply_markup=ReplyKeyboardRemove())
+        user = update.effective_user
+        logger.info(f"用户 %s[%s] 发出reply_keyboard_remove命令", user.full_name, user.id)
+        await update.effective_message.reply_text("移除远程键盘成功", reply_markup=ReplyKeyboardRemove())
 
     async def gen_sign_button(self, message: Message, user: User):
         try:
@@ -141,6 +145,7 @@ class StartPlugin(Plugin):
         except GenshinException as exc:
             if exc.retcode != 1034:
                 raise exc
+            logger.info("检测到用户 %s[%s] 玩家 %s 触发 1034 异常", user.full_name, user.id, client.uid)
         else:
             await message.reply_text("账户正常，无需认证")
             return
@@ -150,21 +155,21 @@ class StartPlugin(Plugin):
             if challenge:
                 try:
                     await verification.verify(challenge, validate)
-                    logger.success(f"用户 %s[%s] 验证成功", user.full_name, user.id)
+                    logger.success("用户 %s[%s] 验证成功", user.full_name, user.id)
                     await message.reply_text("验证成功")
                 except ResponseException as exc:
-                    logger.warning(f"用户 %s[%s] 验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
+                    logger.warning("用户 %s[%s] 验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
                     await message.reply_text(f"验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
             else:
-                logger.warning(f"用户 %s[%s] 验证失效 请求已经过期", user.full_name, user.id)
+                logger.warning("用户 %s[%s] 验证失效 请求已经过期", user.full_name, user.id)
                 await message.reply_text("验证失效 请求已经过期 请稍后重试")
             return
         if bot_username:
             try:
                 data = await verification.create()
-                logger.success(f"用户 %s[%s] 创建验证成功", user.full_name, user.id)
+                logger.success("用户 %s[%s] 创建验证成功", user.full_name, user.id)
             except ResponseException as exc:
-                logger.warning(f"用户 %s[%s] 创建验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
+                logger.warning("用户 %s[%s] 创建验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
                 await message.reply_text(f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
                 return
             challenge = data["challenge"]
@@ -173,11 +178,11 @@ class StartPlugin(Plugin):
                 validate = await verification.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
                 if validate:
                     await verification.verify(challenge, validate)
-                    logger.success(f"用户 %s[%s] 通过 ajax 验证", user.full_name, user.id)
+                    logger.success("用户 %s[%s] 通过 ajax 验证", user.full_name, user.id)
                     await message.reply_text("验证成功")
                     return
             except APIHelperException as exc:
-                logger.warning(f"用户 %s[%s] ajax 验证失效 错误信息为 %s", user.full_name, user.id, repr(exc))
+                logger.warning("用户 %s[%s] ajax 验证失效 错误信息为 %s", user.full_name, user.id, repr(exc))
             await self.sign_system.set_challenge(client.uid, gt, challenge)
             url = f"{config.pass_challenge_user_web}?username={bot_username}&command=verify&gt={gt}&challenge={challenge}&uid={client.uid}"
             button = InlineKeyboardMarkup([[InlineKeyboardButton("验证", url=url)]])
