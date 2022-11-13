@@ -1,6 +1,6 @@
 from typing import Optional
 
-from genshin import GenshinException, Region
+from genshin import Region, GenshinException
 from telegram import Update, ReplyKeyboardRemove, Message, User, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
@@ -178,7 +178,7 @@ class StartPlugin(Plugin):
                     return
             except APIHelperException as exc:
                 logger.warning(f"用户 %s[%s] ajax 验证失效 错误信息为 %s", user.full_name, user.id, repr(exc))
-            await self.sign_system.set_challenge(client.uid, gt, challenge)
+            await self.verification_system.set_challenge(client.uid, gt, challenge)
             url = f"{config.pass_challenge_user_web}?username={bot_username}&command=verify&gt={gt}&challenge={challenge}&uid={client.uid}"
             button = InlineKeyboardMarkup([[InlineKeyboardButton("验证", url=url)]])
             await message.reply_text("请尽快点击下方手动验证", reply_markup=button)
