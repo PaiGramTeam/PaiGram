@@ -22,14 +22,6 @@ def get_device_id(name: str = None):
     return str(uuid.uuid3(uuid.NAMESPACE_URL, name))
 
 
-def random_text(num: int) -> str:
-    return "".join(random.sample(string.ascii_lowercase + string.digits, num))
-
-
-def timestamp() -> int:
-    return int(time.time())
-
-
 def _hexdigest(text):
     _md5 = hashlib.md5()  # nosec B303
     _md5.update(text.encode())
@@ -37,10 +29,15 @@ def _hexdigest(text):
 
 
 def get_ds(ds_type: str = None, new_ds: bool = False, data: Mapping[str, str] = None, params: Mapping[str, str] = None):
-    # 1:  ios
-    # 2:  android
-    # 4:  pc web
-    # 5:  mobile web
+    """DS 算法
+    代码来自 https://github.com/y1ndan/genshinhelper
+    :param ds_type:  1:ios  2:android  4:pc web  5:mobile web
+    :param new_ds: 是否为DS2算法
+    :param data: 需要签名的Data
+    :param params: 需要签名的Params
+    :return:
+    """
+
     def new():
         t = str(int(time.time()))
         r = str(random.randint(100001, 200000))  # nosec
@@ -86,9 +83,9 @@ def get_recognize_server(uid: int) -> str:
         raise TypeError(f"UID {uid} isn't associated with any recognize server")
 
 
-def get_headers():
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36",
-    }
-    return headers
+def get_headers(device: str = "Paimon Build", version: str = "2.36.1"):
+    return (
+        f"Mozilla/5.0 (Linux; Android 12; {device}; wv) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 "
+        f"miHoYoBBS/{version}"
+    )
