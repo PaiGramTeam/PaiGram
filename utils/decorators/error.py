@@ -100,7 +100,7 @@ def error_callable(func: Callable) -> Callable:
                 await send_user_notification(update, context, f"出错了呜呜呜 ~ Cookie 无效 错误信息为 {exc.msg} 请尝试重新绑定")
             return ConversationHandler.END
         except TooManyRequests as exc:
-            logger.warning("查询次数太多（操作频繁）", exc)
+            logger.warning("查询次数太多（操作频繁） %s", exc)
             await send_user_notification(update, context, "出错了呜呜呜 ~ 当天查询次数已经超过30次，请次日再进行查询")
             return ConversationHandler.END
         except DataNotPublic:
@@ -111,6 +111,12 @@ def error_callable(func: Callable) -> Callable:
                 await send_user_notification(update, context, "出错了呜呜呜 ~ 未设置默认角色，请尝试重新绑定")
             elif exc.retcode == 1034:
                 await send_user_notification(update, context, "出错了呜呜呜 ~ 服务器检测到该账号可能存在异常，请求被拒绝，请尝试通过验证")
+            elif exc.retcode == -500001:
+                await send_user_notification(update, context, "出错了呜呜呜 ~ 网络出小差了，请稍后重试~")
+            elif exc.retcode == -1:
+                await send_user_notification(update, context, "出错了呜呜呜 ~ 系统发生错误，请稍后重试~")
+            elif exc.retcode == -10001:  # 参数异常 应该抛出错误
+                raise exc
             else:
                 logger.error("GenshinException")
                 logger.exception(exc)
