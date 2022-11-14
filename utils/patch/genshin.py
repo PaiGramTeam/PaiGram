@@ -7,9 +7,10 @@ from genshin import constants, types
 from genshin.client import routes
 from genshin.utility import ds
 
-from modules.apihelper.helpers import get_ds, get_ua, get_device_id
+from modules.apihelper.helpers import get_ds, get_ua, get_device_id, hex_digest
 from utils.patch.methods import patch, patchable
 
+DEVICE_ID = get_device_id()
 
 @patch(genshin.client.components.calculator.CalculatorClient)  # noqa
 class CalculatorClient:
@@ -79,8 +80,13 @@ class BaseClient:
                 "ds": ds.generate_dynamic_secret(),
             }
         elif region == types.Region.CHINESE:
+            uid = self.cookie_manager.get_user_id()
+            if uid:
+                device_id = hex_digest(str(uid))
+            else:
+                device_id = DEVICE_ID
             _app_version, _client_type, _ds = get_ds(new_ds=True, data=data, params=params)
-            ua = get_ua(version=_app_version)
+            ua = get_ua(device="Paimon Build " + device_id[0:5], version=_app_version)
             headers = {
                 "User-Agent": ua,
                 "X_Requested_With": "com.mihoyo.hoyolab",

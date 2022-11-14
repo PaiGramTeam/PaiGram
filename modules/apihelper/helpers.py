@@ -18,11 +18,11 @@ RECOGNIZE_SERVER = {
 }
 
 
-def get_device_id(name: str = None):
+def get_device_id(name: str = ""):
     return str(uuid.uuid3(uuid.NAMESPACE_URL, name))
 
 
-def _hexdigest(text):
+def hex_digest(text):
     _md5 = hashlib.md5()  # nosec B303
     _md5.update(text.encode())
     return _md5.hexdigest()
@@ -43,13 +43,13 @@ def get_ds(ds_type: str = None, new_ds: bool = False, data: Mapping[str, str] = 
         r = str(random.randint(100001, 200000))  # nosec
         b = json.dumps(data) if data else ''
         q = urlencode(params) if params else ''
-        c = _hexdigest(f'salt={salt}&t={t}&r={r}&b={b}&q={q}')
+        c = hex_digest(f'salt={salt}&t={t}&r={r}&b={b}&q={q}')
         return f'{t},{r},{c}'
 
     def old():
         t = str(int(time.time()))
         r = ''.join(random.sample(string.ascii_lowercase + string.digits, 6))
-        c = _hexdigest(f'salt={salt}&t={t}&r={r}')
+        c = hex_digest(f'salt={salt}&t={t}&r={r}')
         return f'{t},{r},{c}'
 
     app_version = '2.36.1'
