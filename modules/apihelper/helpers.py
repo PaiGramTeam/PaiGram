@@ -83,7 +83,7 @@ def get_recognize_server(uid: int) -> str:
         raise TypeError(f"UID {uid} isn't associated with any recognize server")
 
 
-def get_headers(device: str = "Paimon Build", version: str = "2.36.1"):
+def get_ua(device: str = "Paimon Build", version: str = "2.36.1"):
     return (
         f"Mozilla/5.0 (Linux; Android 12; {device}; wv) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 "

@@ -7,7 +7,7 @@ from genshin import constants, types
 from genshin.client import routes
 from genshin.utility import ds
 
-from modules.apihelper.helpers import get_ds, get_headers
+from modules.apihelper.helpers import get_ds, get_ua, get_device_id
 from utils.patch.methods import patch, patchable
 
 
@@ -80,11 +80,12 @@ class BaseClient:
             }
         elif region == types.Region.CHINESE:
             _app_version, _client_type, _ds = get_ds(new_ds=True, data=data, params=params)
-            ua = get_headers(version=_app_version)
+            ua = get_ua(version=_app_version)
             headers = {
                 "User-Agent": ua,
                 "X_Requested_With": "com.mihoyo.hoyolab",
                 "Referer": "https://webstatic-sea.hoyolab.com",
+                "x-rpc-device_id": get_device_id(ua),
                 "x-rpc-app_version": _app_version,
                 "x-rpc-client_type": _client_type,
                 "ds": _ds,
