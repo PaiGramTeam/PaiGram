@@ -144,6 +144,9 @@ class StartPlugin(Plugin):
         else:
             await message.reply_text("账户正常，无需认证")
             return
+        await message.reply_text("由于官方对第三方工具限制以及账户安全的考虑，频繁使用第三方工具会导致账号被风控并要求用过验证才能进行访问。\n"
+                                 "如果出现频繁验证请求，建议暂停使用本Bot在内的第三方工具查询功能。\n"
+                                 "在暂停使用期间依然出现频繁认证，建议修改密码以保护账号安全。")
         verification = Verification(cookies=client.cookie_manager.cookies)
         if validate:
             _, challenge = await self.verification_system.get_challenge(client.uid)
