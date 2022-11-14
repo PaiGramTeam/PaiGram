@@ -4,8 +4,7 @@ import random
 import string
 import time
 import uuid
-from typing import Mapping
-from urllib.parse import urlencode
+from typing import Mapping, Any, Optional
 
 RECOGNIZE_SERVER = {
     "1": "cn_gf01",
@@ -28,7 +27,7 @@ def hex_digest(text):
     return _md5.hexdigest()
 
 
-def get_ds(ds_type: str = None, new_ds: bool = False, data: Mapping[str, str] = None, params: Mapping[str, str] = None):
+def get_ds(ds_type: str = None, new_ds: bool = False, data: Any = None, params: Optional[Mapping[str, Any]] = None):
     """DS 算法
     代码来自 https://github.com/y1ndan/genshinhelper
     :param ds_type:  1:ios  2:android  4:pc web  5:mobile web
@@ -42,7 +41,7 @@ def get_ds(ds_type: str = None, new_ds: bool = False, data: Mapping[str, str] = 
         t = str(int(time.time()))
         r = str(random.randint(100001, 200000))  # nosec
         b = json.dumps(data) if data else ''
-        q = urlencode(params) if params else ''
+        q = "&".join(f"{k}={v}" for k, v in sorted(params.items())) if params else ''
         c = hex_digest(f'salt={salt}&t={t}&r={r}&b={b}&q={q}')
         return f'{t},{r},{c}'
 
