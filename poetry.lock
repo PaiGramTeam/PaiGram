@@ -405,7 +405,7 @@ geetest = ["rsa"]
 type = "git"
 url = "https://github.com/thesadru/genshin.py"
 reference = "HEAD"
-resolved_reference = "f6492c8cabc2c9efd8642be5192bf1cc838cfb36"
+resolved_reference = "c09e5ec85ea9b5af202aa3a7b3080f237053a611"
 
 [[package]]
 name = "gitdb"
@@ -775,8 +775,8 @@ urllib3 = ">=1.25.8,<2.0.0"
 websockets = ">=10.0,<11.0"
 
 [[package]]
-name = "Pyrogram"
-version = "2.0.57"
+name = "pyrogram"
+version = "2.0.60"
 description = "Elegant, modern and asynchronous Telegram MTProto API framework in Python for users and bots"
 category = "main"
 optional = true
@@ -1280,7 +1280,7 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "7a1751910c98d44769163743e5e7006a8025369a50eba564f555ff6ba9c2d28f"
+content-hash = "d2ce26945bde5934936220f13ed71fd1e0db711393da18c6db83c1ea6b4a3237"
 
 [metadata.files]
 aiofiles = [
@@ -2059,9 +2059,9 @@ pyppeteer = [
     {file = "pyppeteer-1.0.2-py3-none-any.whl", hash = "sha256:11a734d8f02c6b128035aba8faf32748f2016310a6a1cbc6aa5b1e2580742e8f"},
     {file = "pyppeteer-1.0.2.tar.gz", hash = "sha256:ddb0d15cb644720160d49abb1ad0d97e87a55581febf1b7531be9e983aad7742"},
 ]
-Pyrogram = [
-    {file = "Pyrogram-2.0.57-py3-none-any.whl", hash = "sha256:082f78836e97799f882c34238e45761f8689c45824110989e46f82ee08ca805a"},
-    {file = "Pyrogram-2.0.57.tar.gz", hash = "sha256:de05925592b82e796c6b2520f133d9ae6eb320834c78e50b09dc7ed18c5b976e"},
+pyrogram = [
+    {file = "Pyrogram-2.0.60-py3-none-any.whl", hash = "sha256:ea722196bb84acd14c223ce13e94127fdcba5495d59e5b01dda857d9cc0abc33"},
+    {file = "Pyrogram-2.0.60.tar.gz", hash = "sha256:24d92fc045026aaf5b05dfcb83d8a9d0def5c927e40ebdd5b8c3bc0d6c3d5065"},
 ]
 PySocks = [
     {file = "PySocks-1.7.1-py27-none-any.whl", hash = "sha256:08e69f092cc6dbe92a0fdd16eeb9b9ffbc13cadfe5ca4c7bd92ffb078b293299"},
