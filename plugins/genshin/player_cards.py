@@ -92,7 +92,7 @@ class PlayerCards(Plugin, BasePlugin):
             await message.reply_text(data)
             return
         if data.characters is None:
-            await message.reply_text("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
+            await message.reply_text("请在游戏中的角色展柜中添加角色再开启显示角色详情再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
             return
         if len(args) == 1:
             character_name = roleToName(args[0])
