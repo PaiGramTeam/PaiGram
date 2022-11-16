@@ -114,9 +114,10 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         add_user_command_data.region = region
         await message.reply_text(f"请输入{bbs_name}的Cookies！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
         javascript = (
-            "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a["
-            "0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的Cookie,请重新登录!');c&&confirm("
-            "'将Cookie复制到剪贴板?')&&copy(document.cookie)})(); "
+            "(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');"
+            "if(a[0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的 Cookie , 请重新登录!');"
+            "if(c)console.log(document.cookie)c&&navigator.clipboard.writeText(document.cookie)"
+            "&&alert('Cookie 已经成功获取, 点击确定将 Cookie 复制到剪贴板。如果未复制入剪贴板请手动复制下方的文字。')})()"
         )
         javascript_android = "javascript:(()=>{prompt('',document.cookie)})();"
         help_message = (
