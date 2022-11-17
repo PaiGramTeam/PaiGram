@@ -32,16 +32,20 @@ async def send_user_notification(update: Update, context: CallbackContext, text:
     chat = update.effective_chat
     if message is None:
         update_str = update.to_dict() if isinstance(update, Update) else str(update)
-        logger.warning("错误的消息类型\n" + json.dumps(update_str, indent=2, ensure_ascii=False))
+        logger.warning("错误的消息类型\n %s", json.dumps(update_str, indent=2, ensure_ascii=False))
         return
-    logger.info(f"尝试通知用户 {user.full_name}[{user.id}] " f"在 {chat.full_name}[{chat.id}]" f"的 错误信息[{text}]")
+    logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.full_name, chat.id, text)
     try:
         await message.reply_text(text, reply_markup=buttons, allow_sending_without_reply=True)
-    except (BadRequest, Forbidden, Exception) as exc:
-        logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
+    except ConnectTimeout:
+        logger.error("httpx 模块连接服务器 ConnectTimeout 发送 update_id[%s] 错误信息失败", update.update_id)
+    except BadRequest as exc:
+        logger.error("发送 update_id[%s] 错误信息失败 错误信息为 [%s]", update.update_id, exc.message)
+    except Forbidden as exc:
+        logger.error("发送 update_id[%s] 错误信息失败 错误信息为 [%s]", update.update_id, exc.message)
+    except Exception as exc:
+        logger.error("发送 update_id[%s] 错误信息失败 错误信息为 [%s]", update.update_id, repr(exc))
         logger.exception(exc)
-    finally:
-        pass
 
 
 def telegram_warning(update: Update, text: str):
