@@ -128,9 +128,12 @@ class Abyss(Plugin, BasePlugin):
         )
 
         try:
-            client = await get_genshin_client(user.id)
-            await client.get_record_cards()
-            uid = client.uid
+            try:
+                client = await get_genshin_client(user.id)
+                await client.get_record_cards()
+                uid = client.uid
+            except CookiesNotFoundError:
+                client, uid = await get_public_genshin_client(user.id)
         except UserNotFoundError:  # 若未找到账号
             buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
             if filters.ChatType.GROUPS.filter(message):
@@ -143,8 +146,6 @@ class Abyss(Plugin, BasePlugin):
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
-        except CookiesNotFoundError:  # 若未找到cookie
-            client, uid = await get_public_genshin_client(user.id)
         except TooManyRequestPublicCookies:
             reply_msg = await message.reply_text("查询次数太多，请您稍后重试")
             if filters.ChatType.GROUPS.filter(message):
