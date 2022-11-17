@@ -220,7 +220,7 @@ class SignSystem:
                                     validate=_validate,
                                 )
                                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                                    logger.warning(f"UID[%s] 触发验证码 challenge[%s]", client.uid, challenge)
+                                    logger.warning("UID[%s] 触发验证码 challenge[%s]", client.uid, challenge)
                                     raise NeedChallenge(
                                         uid=client.uid,
                                         gt=request_daily_reward.get("gt", ""),
