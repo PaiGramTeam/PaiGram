@@ -105,11 +105,11 @@ class SignSystem:
                     params=pass_challenge_params,
                     timeout=60,
                 )
-            logger.debug(f"recognize 请求返回：%s", resp.text)
+            logger.debug("recognize 请求返回：%s", resp.text)
             data = resp.json()
             status = data.get("status")
             if status and status != 0:
-                logger.error(f"recognize 解析错误：[%s]%s", data.get('code'), data.get('msg'))
+                logger.error("recognize 解析错误：[%s]%s", data.get('code'), data.get('msg'))
             if data.get("code", 0) != 0:
                 raise RuntimeError
             logger.info("recognize 解析成功")

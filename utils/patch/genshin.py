@@ -224,11 +224,8 @@ class DailyRewardClient:
                 headers["x-rpc-validate"] = validate
                 headers["x-rpc-seccode"] = f"{validate}|jordan"
 
-            try:
-                del kwargs["challenge"]
-                del kwargs["validate"]
-            except KeyError:
-                pass
+            kwargs.pop("challenge", None)
+            kwargs.pop("validate", None)
 
         else:
             raise TypeError(f"{self.region!r} is not a valid region.")
