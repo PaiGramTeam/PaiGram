@@ -108,7 +108,7 @@ class SignSystem:
             logger.debug("recognize 请求返回：%s", resp.text)
             data = resp.json()
             status = data.get("status")
-            if status and status != 0:
+            if status != 0:
                 logger.error("recognize 解析错误：[%s]%s", data.get('code'), data.get('msg'))
             if data.get("code", 0) != 0:
                 raise RuntimeError
