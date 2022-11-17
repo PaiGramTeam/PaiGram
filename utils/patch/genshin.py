@@ -224,10 +224,10 @@ class DailyRewardClient:
                 headers["x-rpc-validate"] = validate
                 headers["x-rpc-seccode"] = f"{validate}|jordan"
 
-            kwargs.pop("challenge", None)
-            kwargs.pop("validate", None)
-
         else:
             raise TypeError(f"{self.region!r} is not a valid region.")
+
+        kwargs.pop("challenge", None)
+        kwargs.pop("validate", None)
 
         return await self.request(url, method=method, params=params, headers=headers, **kwargs)
