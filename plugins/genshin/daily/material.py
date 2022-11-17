@@ -274,6 +274,8 @@ class DailyMaterial(Plugin, BasePlugin):
                                     try:
                                         skills = await self._get_skills_data(client, i.gid)
                                         i.skills = skills
+                                    except InvalidCookies:
+                                        calculator_sync = False
                                     except GenshinException as e:
                                         if e.retcode == -502002:
                                             calculator_sync = False  # 发现角色养成计算器没启用 设置状态为 False 并防止下次继续获取
