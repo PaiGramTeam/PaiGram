@@ -65,16 +65,17 @@ class VerificationPlugins(Plugin, BasePlugin):
         if context.args and len(context.args) > 0:
             validate = context.args[0]
             _, challenge = await self.system.get_challenge(client.uid)
+            logger.info("用户 %s[%s] 请求通过认证 challenge[%s] validate[%s] ", user.full_name, user.id, challenge, validate)
             if challenge:
                 try:
                     await verification.verify(challenge, validate)
-                    logger.success(f"用户 %s[%s] 验证成功", user.full_name, user.id)
+                    logger.success("用户 %s[%s] 验证成功", user.full_name, user.id)
                     await message.reply_text("验证成功")
                 except ResponseException as exc:
-                    logger.warning(f"用户 %s[%s] 验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
-                    await message.reply_text(f"验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
+                    logger.warning("用户 %s[%s] 验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
+                    await message.reply_text(f"验证失败 错误信息为 [{exc.code}]{exc.message}")
             else:
-                logger.warning(f"用户 %s[%s] 验证失效 请求已经过期", user.full_name, user.id)
+                logger.warning("用户 %s[%s] 验证失效 请求已经过期", user.full_name, user.id)
                 await message.reply_text("验证失效 请求已经过期 请稍后重试")
             return
         try:
@@ -87,13 +88,13 @@ class VerificationPlugins(Plugin, BasePlugin):
             return
         try:
             data = await verification.create()
-            logger.success(f"用户 %s[%s] 创建验证成功", user.full_name, user.id)
+            challenge = data["challenge"]
+            gt = data["gt"]
+            logger.success("用户 %s[%s] 创建验证成功 gt[%s] challenge[%s]", user.full_name, user.id, gt, challenge)
         except ResponseException as exc:
-            logger.warning(f"用户 %s[%s] 创建验证失效 API返回 [%s]%s 请稍后重试", user.full_name, user.id, exc.code, exc.message)
+            logger.warning("用户 %s[%s] 创建验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
             await message.reply_text(f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
             return
-        challenge = data["challenge"]
-        gt = data["gt"]
         try:
             validate = await verification.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
             if validate:
