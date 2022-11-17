@@ -111,11 +111,11 @@ class StartPlugin(Plugin):
         try:
             client = await get_genshin_client(user.id)
             await message.reply_chat_action(ChatAction.TYPING)
-            headers = await self.sign_system.gen_challenge_header(client.uid, validate)
-            if not headers:
+            _, challenge = await self.sign_system.get_challenge(client.uid)
+            if not challenge:
                 await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
                 return
-            sign_text = await self.sign_system.start_sign(client, headers=headers)
+            sign_text = await self.sign_system.start_sign(client, challenge=challenge, validate=validate)
             await message.reply_text(sign_text, allow_sending_without_reply=True)
         except (UserNotFoundError, CookiesNotFoundError):
             logger.warning("用户 %s[%s] 账号信息未找到", user.full_name, user.id)
