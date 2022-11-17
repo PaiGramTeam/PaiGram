@@ -3,7 +3,7 @@ import typing
 import aiohttp.typedefs
 import genshin  # pylint: disable=W0406
 import yarl
-from genshin import constants, types
+from genshin import constants, types, utility
 from genshin.client import routes
 from genshin.utility import ds
 
@@ -11,6 +11,7 @@ from modules.apihelper.helpers import get_ds, get_ua, get_device_id, hex_digest
 from utils.patch.methods import patch, patchable
 
 DEVICE_ID = get_device_id()
+
 
 @patch(genshin.client.components.calculator.CalculatorClient)  # noqa
 class CalculatorClient:
@@ -155,3 +156,78 @@ class BaseClient:
             await self.cache.set_static(static_cache, response)
 
         return response
+
+
+@patch(genshin.client.components.daily.DailyRewardClient)  # noqa
+class DailyRewardClient:
+    @patchable
+    async def request_daily_reward(
+        self,
+        endpoint: str,
+        *,
+        game: typing.Optional[types.Game] = None,
+        method: str = "GET",
+        lang: typing.Optional[str] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
+        **kwargs: typing.Any,
+    ) -> typing.Mapping[str, typing.Any]:
+        """Make a request towards the daily reward endpoint."""
+        params = dict(params or {})
+        headers = dict(headers or {})
+
+        if game is None:
+            if self.default_game is None:
+                raise RuntimeError("No default game set.")
+
+            game = self.default_game
+
+        base_url = routes.REWARD_URL.get_url(self.region, game)
+        url = (base_url / endpoint).update_query(**base_url.query)
+
+        if self.region == types.Region.OVERSEAS:
+            params["lang"] = lang or self.lang
+
+        elif self.region == types.Region.CHINESE:
+            # TODO: Support cn honkai
+            player_id = await self._get_uid(types.Game.GENSHIN)
+
+            params["uid"] = player_id
+            params["region"] = utility.recognize_genshin_server(player_id)
+
+            account_id = self.cookie_manager.get_user_id()
+            if account_id:
+                device_id = hex_digest(str(account_id))
+            else:
+                device_id = DEVICE_ID
+            if endpoint == "sign":
+                _app_version, _client_type, _ds = get_ds()
+            else:
+                _app_version, _client_type, _ds = get_ds(new_ds=True, params=params)
+            ua = get_ua(device="Paimon Build " + device_id[0:5], version=_app_version)
+            headers["User-Agent"] = ua
+            headers["X_Requested_With"] = "com.mihoyo.hoyolab"
+            headers["Referer"] = (
+                "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?"
+                "bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
+            )
+            headers["x-rpc-device_id"] = get_device_id(ua)
+            headers["x-rpc-app_version"] = _app_version
+            headers["x-rpc-client_type"] = _client_type
+            headers["ds"] = _ds
+
+            validate = kwargs.get("validate")
+            challenge = kwargs.get("challenge")
+
+            if validate and challenge:
+                headers["x-rpc-challenge"] = challenge
+                headers["x-rpc-validate"] = validate
+                headers["x-rpc-seccode"] = f"{validate}|jordan"
+
+            kwargs.pop("challenge", None)
+            kwargs.pop("validate", None)
+
+        else:
+            raise TypeError(f"{self.region!r} is not a valid region.")
+
+        return await self.request(url, method=method, params=params, headers=headers, **kwargs)
