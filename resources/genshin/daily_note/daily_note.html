@@ -18,7 +18,7 @@
       <div class="item">
         <div class="main">
           <div class="bg"></div>
-          <img class="icon" src="items/树脂.png" />
+          <img class="icon" src="items/树脂.png"  alt=""/>
           <div class="info">
             <div class="name">原粹树脂</div>
             <div class="time">
@@ -31,13 +31,15 @@
           </div>
         </div>
         <div class="right">
-          <span>{{ current_resin }}/{{ max_resin }}</span>
+          <span class="{% if current_resin/(max_resin or 1) > 0.9 %}red{% endif %}">
+            {{ current_resin }}/{{ max_resin }}
+          </span>
         </div>
       </div>
       <div class="item">
         <div class="main">
           <div class="bg"></div>
-          <img class="icon" src="items/洞天宝钱.png" />
+          <img class="icon" src="items/洞天宝钱.png"  alt=""/>
           <div class="info">
             <div class="name">洞天宝钱</div>
             <div class="time">
@@ -58,7 +60,7 @@
       <div class="item">
         <div class="main">
           <div class="bg"></div>
-          <img class="icon" src="items/委托.png" />
+          <img class="icon" src="items/委托.png"  alt=""/>
           <div class="info">
             <div class="name">每日委托任务</div>
             <div class="time">今日委托奖励{% if claimed_commission_reward %}已{% else %}未{% endif %}领取</div>
@@ -71,7 +73,7 @@
       <div class="item">
         <div class="main">
           <div class="bg"></div>
-          <img class="icon" src="items/派遣.png" />
+          <img class="icon" src="items/派遣.png"  alt=""/>
           <div class="info">
             <div class="name">探索派遣</div>
             <div class="time">
@@ -88,12 +90,12 @@
       <div class="item">
         <div class="main">
           <div class="bg"></div>
-          <img class="icon" src="items/周本.png" />
+          <img class="icon" src="items/周本.png"  alt=""/>
           <div class="info">
             <div class="name">值得铭记的强敌</div>
             <div class="time">
               {% if remaining_resin_discounts<=0 %}周本已完成
-              {% else %}周本树脂减半次数已用{% endif %}
+              {% else %}周本树脂减半次数剩余{% endif %}
             </div>
           </div>
         </div>
@@ -104,7 +106,7 @@
       <div class="item">
         <div class="main">
           <div class="bg"></div>
-          <img class="icon" src="items/参量质变仪.png" />
+          <img class="icon" src="items/参量质变仪.png"  alt=""/>
           <div class="info">
             <div class="name">参量质变仪</div>
             <div class="time">
