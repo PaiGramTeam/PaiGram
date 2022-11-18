@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 import time
 from datetime import datetime
@@ -12,9 +13,8 @@ from httpx import AsyncClient
 from pydantic import BaseModel, validator
 
 from modules.apihelper.base import ArtworkImage, PostInfo
-from modules.apihelper.helpers import get_device_id
+from modules.apihelper.helpers import get_device_id, get_ds, get_ua
 from modules.apihelper.request.hoyorequest import HOYORequest
-from utils.log import logger
 from utils.typedefs import JSONDict
 
 
@@ -126,7 +126,7 @@ class Hyperion:
 
     async def download_image(self, art_id: int, url: str, page: int = 0) -> ArtworkImage:
         response = await self.client.get(url, params=self.get_images_params(resize=2000), timeout=10, de_json=False)
-        return ArtworkImage(art_id=art_id, page=page, data=response)
+        return ArtworkImage(art_id=art_id, page=page, data=response.content)
 
     async def get_new_list(self, gids: int, type_id: int, page_size: int = 20):
         """
@@ -353,7 +353,88 @@ class SignIn:
             )
             return data.get("authkey")
         except JSONDecodeError:
-            logger.warning("Stoken 获取 Authkey JSON解析失败")
+            pass
         except InvalidCookies:
-            logger.warning("Stoken 获取 Authkey 失败 | 用户 Stoken 失效")
+            pass
+        return None
+
+
+class Verification:
+    HOST = "api-takumi-record.mihoyo.com"
+    VERIFICATION_HOST = "api.geetest.com"
+    CREATE_VERIFICATION_URL = "/game_record/app/card/wapi/createVerification"
+    VERIFY_VERIFICATION_URL = "/game_record/app/card/wapi/verifyVerification"
+    AJAX_URL = "/ajax.php"
+
+    USER_AGENT = get_ua()
+    BBS_HEADERS = {
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "User-Agent": USER_AGENT,
+        "X-Requested-With": "com.mihoyo.hyperion",
+        "Referer": "https://webstatic.mihoyo.com/",
+        "x-rpc-device_id": get_device_id(USER_AGENT),
+        "x-rpc-page": "3.1.3_#/ys",
+    }
+
+    VERIFICATION_HEADERS = {
+        "Accept": "*/*",
+        "X-Requested-With": "com.mihoyo.hyperion",
+        "User-Agent": USER_AGENT,
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+
+    def __init__(self, cookies: Dict = None):
+        self.client = HOYORequest(headers=self.BBS_HEADERS, cookies=cookies)
+
+    def get_verification_headers(self, referer: str):
+        headers = self.VERIFICATION_HEADERS.copy()
+        headers["Referer"] = referer
+        return headers
+
+    def get_headers(self, data: dict = None, params: dict = None):
+        headers = self.BBS_HEADERS.copy()
+        app_version, client_type, ds = get_ds(new_ds=True, data=data, params=params)
+        headers["x-rpc-app_version"] = app_version
+        headers["x-rpc-client_type"] = client_type
+        headers["DS"] = ds
+        return headers
+
+    @staticmethod
+    def get_url(host: str, url: str):
+        return f"https://{host}{url}"
+
+    async def create(self):
+        url = self.get_url(self.HOST, self.CREATE_VERIFICATION_URL)
+        params = {"is_high": "true"}
+        headers = self.get_headers(params=params)
+        response = await self.client.get(url, params=params, headers=headers)
+        return response
+
+    async def verify(self, challenge: str, validate: str):
+        url = self.get_url(self.HOST, self.VERIFY_VERIFICATION_URL)
+        data = {"geetest_challenge": challenge, "geetest_validate": validate, "geetest_seccode": f"{validate}|jordan"}
+
+        headers = self.get_headers(data=data)
+        response = await self.client.post(url, json=data, headers=headers)
+        return response
+
+    async def ajax(self, referer: str, gt: str, challenge: str) -> Optional[str]:
+        headers = self.get_verification_headers(referer)
+        url = self.get_url(self.VERIFICATION_HOST, self.AJAX_URL)
+        params = {
+            "gt": gt,
+            "challenge": challenge,
+            "lang": "zh-cn",
+            "pt": 3,
+            "client_type": "web_mobile",
+            "callback": f"geetest_{int(time.time() * 1000)}",
+        }
+        response = await self.client.get(url, headers=headers, params=params, de_json=False)
+        text = response.text
+        json_data = re.findall(r"^.*?\((\{.*?)\)$", text)[0]
+        data = json.loads(json_data)
+        if "success" in data["status"] and "success" in data["data"]["result"]:
+            return data["data"]["validate"]
         return None

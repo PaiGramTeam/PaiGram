@@ -184,7 +184,11 @@ class Gacha(Plugin, BasePlugin):
                 await message.reply_text(f"没有找到名为 {exc.gacha_name} 的卡池，可能是卡池不存在或者卡池已经结束，请检查后重试。如果你想抽取默认卡池，请不要输入参数。")
                 return
         else:
-            gacha_base_info = await self.handle.gacha_base_info(default=True)
+            try:
+                gacha_base_info = await self.handle.gacha_base_info(default=True)
+            except GachaNotFound:
+                await message.reply_text("当前卡池正在替换中，请稍后重试。")
+                return
         logger.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
         # 用户数据储存和处理
         await message.reply_chat_action(ChatAction.TYPING)
