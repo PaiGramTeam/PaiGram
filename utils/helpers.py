@@ -5,21 +5,38 @@ import os
 import re
 from asyncio import create_subprocess_shell
 from asyncio.subprocess import PIPE
+from contextlib import contextmanager
 from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import Awaitable, Callable, Match, Optional, Pattern, Tuple, TypeVar, Union, cast
+from typing import (
+    Awaitable,
+    Callable,
+    Match,
+    Optional,
+    Pattern,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import aiofiles
 import genshin
 import httpx
-from genshin import Client, types
+from genshin import (
+    Client,
+    types,
+)
 from httpx import UnsupportedProtocol
 from typing_extensions import ParamSpec
 
 from core.base.redisdb import RedisDB
 from core.bot import bot
 from core.config import config
-from core.cookies.services import CookiesService, PublicCookiesService
+from core.cookies.services import (
+    CookiesService,
+    PublicCookiesService,
+)
 from core.error import ServiceNotFoundError
 from core.user.services import UserService
 from utils.error import UrlResourcesNotFoundError
@@ -174,11 +191,11 @@ async def execute(command, pass_error=True):
 
 
 async def async_re_sub(
-        pattern: str | Pattern,
-        repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
-        string: str,
-        count: int = 0,
-        flags: int = 0,
+    pattern: str | Pattern,
+    repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
+    string: str,
+    count: int = 0,
+    flags: int = 0,
 ) -> str:
     """
     一个支持 repl 参数为 async 函数的 re.sub
@@ -205,7 +222,7 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1]:]
+            temp = temp[match.span(1)[1] :]
     else:
         while match := re.search(pattern, temp, flags=flags):
             replaced = None
@@ -216,5 +233,13 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1]:]
+            temp = temp[match.span(1)[1] :]
     return result + temp
+
+
+@contextmanager
+def do_nothing():
+    try:
+        yield
+    finally:
+        ...

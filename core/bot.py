@@ -10,11 +10,10 @@ from signal import (
 from ssl import SSLZeroReturnError
 from typing import (
     Callable,
+    List,
     Optional,
     TYPE_CHECKING,
-    Tuple,
     TypeVar,
-    Union,
 )
 
 import pytz
@@ -28,7 +27,6 @@ from telegram.error import (
 from telegram.ext import (
     AIORateLimiter,
     Application as TgApplication,
-    BaseHandler,
     Defaults,
 )
 from telegram.request import HTTPXRequest
@@ -37,17 +35,16 @@ from uvicorn import Server
 
 from core.config import config as bot_config
 from core.event import Event
-from utils.enums import Priority
 from utils.log import logger
 from utils.models.signal import Singleton
-from utils.queues import PriorityQueue
 
 if TYPE_CHECKING:
+    from types import FrameType
     from asyncio import AbstractEventLoop
 
-R = TypeVar('R')
-T = TypeVar('T')
-P = ParamSpec('P')
+R = TypeVar("R")
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 class Bot(Singleton):
@@ -55,15 +52,15 @@ class Bot(Singleton):
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
 
-    _startup_funcs: PriorityQueue[Tuple[Priority, Callable]] = PriorityQueue()
-    _shutdown_funcs: PriorityQueue[Tuple[Priority, Callable]] = PriorityQueue()
-    _events: PriorityQueue[Event] = PriorityQueue()
+    _startup_funcs: List[Callable] = []
+    _shutdown_funcs: List[Callable] = []
+    _events: List[Event] = []
 
     _running: False
 
     @property
     def running(self) -> bool:
-        """ bot 是否正在运行"""
+        """bot 是否正在运行"""
         return self._running
 
     @property
@@ -116,17 +113,15 @@ class Bot(Singleton):
         from core.execute import Executor
 
         self._running = False
-        self._executor = Executor('bot')
+        self._executor = Executor("bot")
 
     async def _on_startup(self) -> None:
-        while not self._startup_funcs.async_q.empty():
-            priority, func = await self._startup_funcs.async_q.get()
-            await self._executor(func, args=[priority, self])
+        for func in self._startup_funcs:
+            await self._executor(func, args=[self])
 
     async def _on_shutdown(self) -> None:
-        while not self._shutdown_funcs.async_q.empty():
-            priority, func = await self._shutdown_funcs.async_q.get()
-            await self._executor(func, args=[priority, self])
+        for func in self._shutdown_funcs:
+            await self._executor(func, args=[self])
 
     async def initialize(self):
         """BOT 初始化"""
@@ -172,24 +167,29 @@ class Bot(Singleton):
                 else:
                     logger.error("网络连接出现问题, 请检查您的网络状况.")
                 raise SystemExit
+
         await self._on_startup()
         await self.tg_app.start()
         self._running = True
         logger.success("BOT 启动成功")
 
+    # noinspection PyUnusedLocal
+    def stop_signal_handler(self, signum: int, frame: "FrameType"):
+        signals = {k: v for v, k in signal.__dict__.items() if v.startswith("SIG") and not v.startswith("SIG_")}
+        logger.debug(f"接收到了终止信号 {signals[signum]} 正在退出...")
+        self._web_server_task.cancel()
+
     async def idle(self) -> None:
         """在接收到中止信号之前，堵塞loop"""
 
-        signals = {k: v for v, k in signal.__dict__.items() if v.startswith("SIG") and not v.startswith("SIG_")}
         task = None
 
-        def signal_handler(signum, _) -> None:
-            logger.debug(f"接收到了终止信号 {signals[signum]} 正在退出...")
+        def stop_handler(signum, frame):
+            self.stop_signal_handler(signum, frame)
             task.cancel()
-            self._web_server_task.cancel()
 
         for s in (SIGINT, SIGTERM, SIGABRT):
-            signal_func(s, signal_handler)
+            signal_func(s, stop_handler)
 
         while True:
             task = asyncio.create_task(asyncio.sleep(600))
@@ -233,38 +233,31 @@ class Bot(Singleton):
 
     # decorators
 
-    def on_startup(self, priority: Union[Priority, int] = Priority.Normal) -> Callable[[T], T]:
+    def on_startup(self) -> Callable[[T], T]:
         """注册一个在 BOT 启动时执行的函数"""
 
         def decorate(func: Callable[P, R]) -> Callable[P, R]:
             @wraps(func)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-                await self._startup_funcs.async_q.put((priority, func))
+                self._startup_funcs.append(func)
                 return func(*args, **kwargs)
 
             return wrapper
 
         return decorate
 
-    def on_shutdown(self, priority: Union[Priority, int] = Priority.Normal) -> Callable[[T], T]:
+    def on_shutdown(self) -> Callable[[T], T]:
         """注册一个在 BOT 停止时执行的函数"""
 
         def decorate(func: Callable[P, R]) -> Callable[P, R]:
             @wraps(func)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-                await self._shutdown_funcs.async_q.put((priority, func))
+                self._shutdown_funcs.append(func)
                 return func(*args, **kwargs)
 
             return wrapper
 
         return decorate
-
-
-class Handler(BaseHandler):
-    def check_update(self, update: object) -> Optional[Union[bool, object]]:
-        pass
-
-    ...
 
 
 bot = Bot()

@@ -24,29 +24,23 @@ from utils.typedefs import StrOrPath
 if TYPE_CHECKING:
     from multiprocessing.process import BaseProcess
 
-__all__ = ['Reloader']
+__all__ = ["Reloader"]
 
 multiprocessing.allow_connection_pickling()
 spawn = multiprocessing.get_context("spawn")
 
 
 class FileFilter:
+    """监控文件过滤"""
+
     def __init__(self, includes: List[str], excludes: List[str]):
         default_includes = ["*.py"]
-        self.includes = [
-            default
-            for default in default_includes
-            if default not in excludes
-        ]
+        self.includes = [default for default in default_includes if default not in excludes]
         self.includes.extend(includes)
         self.includes = list(set(self.includes))
 
         default_excludes = [".*", ".py[cod]", ".sw.*", "~*"]
-        self.excludes = [
-            default
-            for default in default_excludes
-            if default not in includes
-        ]
+        self.excludes = [default for default in default_excludes if default not in includes]
         self.exclude_dirs = []
         for e in excludes:
             p = Path(e)
@@ -89,13 +83,13 @@ class Reloader:
         return self._target
 
     def __init__(
-            self,
-            target: Callable[..., None],
-            *,
-            reload_delay: float = 0.25,
-            reload_dirs: List[StrOrPath] = None,
-            reload_includes: List[str] = None,
-            reload_excludes: List[str] = None,
+        self,
+        target: Callable[..., None],
+        *,
+        reload_delay: float = 0.25,
+        reload_dirs: List[StrOrPath] = None,
+        reload_includes: List[str] = None,
+        reload_excludes: List[str] = None,
     ):
         if inspect.iscoroutinefunction(target):
             raise ValueError("不支持异步函数")
@@ -104,7 +98,7 @@ class Reloader:
         self.reload_delay = reload_delay
 
         _reload_dirs = []
-        for reload_dir in (reload_dirs or []):
+        for reload_dir in reload_dirs or []:
             _reload_dirs.append(PROJECT_ROOT.joinpath(Path(reload_dir)))
 
         self.reload_dirs = []
