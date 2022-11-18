@@ -207,7 +207,7 @@ class Gacha(Plugin, BasePlugin):
         template_data = {
             "name": f"{user.full_name}",
             "info": gacha_name,
-            "banner_name": banner.html_title,
+            "banner_name": banner.html_title if banner.html_title else banner.title,
             "banner_type": banner.banner_type.name,
             "player_gacha_banner_info": player_gacha_banner_info,
             "items": [],
