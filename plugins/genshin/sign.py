@@ -170,7 +170,7 @@ class SignSystem:
                     # 尝试通过 ajax 请求绕过签到
                     gt = request_daily_reward.get("gt", "")
                     challenge = request_daily_reward.get("challenge", "")
-                    logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.uid, challenge, gt)
+                    logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
                     validate = await self.verification.ajax(
                         referer=self.REFERER,
                         gt=gt,
@@ -206,9 +206,9 @@ class SignSystem:
                         )
                         logger.debug("request_daily_reward 返回\n%s", _request_daily_reward)
                         if _request_daily_reward and _request_daily_reward.get("success", 0) == 1:
-                            logger.info("UID[%s] 创建验证码\ngt[%s]\nchallenge[%s]", client.uid, challenge, gt)
                             _gt = _request_daily_reward.get("gt", "")
                             _challenge = _request_daily_reward.get("challenge", "")
+                            logger.info("UID[%s] 创建验证码\ngt[%s]\nchallenge[%s]", client.uid, _gt, _challenge)
                             _validate = await self.recognize(_gt, _challenge)
                             if _validate:
                                 logger.success("recognize 通过验证成功\nchallenge[%s]\nvalidate[%s]", _challenge, _validate)
@@ -221,35 +221,32 @@ class SignSystem:
                                     validate=_validate,
                                 )
                                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                                    logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.uid, challenge)
+                                    logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.uid, _challenge)
+                                    gt = request_daily_reward.get("gt", "")
+                                    challenge = request_daily_reward.get("challenge", "")
+                                    logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
                                     raise NeedChallenge(
                                         uid=client.uid,
-                                        gt=request_daily_reward.get("gt", ""),
-                                        challenge=request_daily_reward.get("challenge", ""),
+                                        gt=gt,
+                                        challenge=challenge,
                                     )
                                 else:
                                     logger.success("UID[%s] 通过 recognize 签到成功", client.uid)
                             else:
                                 request_daily_reward = await client.request_daily_reward(
-                                    "sign",
-                                    method="POST",
-                                    game=Game.GENSHIN,
-                                    lang="zh-cn"
+                                    "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
                                 )
                                 gt = request_daily_reward.get("gt", "")
                                 challenge = request_daily_reward.get("challenge", "")
-                                logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, challenge, gt)
+                                logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
                                 raise NeedChallenge(uid=client.uid, gt=gt, challenge=challenge)
                     else:
                         request_daily_reward = await client.request_daily_reward(
-                            "sign",
-                            method="POST",
-                            game=Game.GENSHIN,
-                            lang="zh-cn"
+                            "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
                         )
                         gt = request_daily_reward.get("gt", "")
                         challenge = request_daily_reward.get("challenge", "")
-                        logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, challenge, gt)
+                        logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
                         raise NeedChallenge(uid=client.uid, gt=gt, challenge=challenge)
                 else:
                     logger.success("UID[%s] 签到成功", client.uid)
