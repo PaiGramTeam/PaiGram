@@ -4,6 +4,7 @@ from typing import Optional
 
 import genshin
 from genshin import InvalidCookies, GenshinException, DataNotPublic
+from genshin.models import GenshinAccount
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
 from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
@@ -248,7 +249,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         try:
-            user_info = await client.get_record_card()
+            genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             await message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -268,6 +269,16 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await sign_in_client.get_s_token()
             add_user_command_data.cookies = sign_in_client.cookie
             logger.info(f"用户 {user.full_name}[{user.id}] 绑定时获取 stoken 成功")
+        user_info: Optional[GenshinAccount] = None
+        level: int = 0
+        # todo : 多账号绑定
+        for genshin_account in genshin_accounts:
+            if genshin_account.level >= level:  # 获取账号等级最高的
+                level = genshin_account.level
+                user_info = genshin_account
+        if user_info is None:
+            await message.reply_text("未找到原神账号，请确认账号信息无误。")
+            return ConversationHandler.END
         add_user_command_data.game_uid = user_info.uid
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
