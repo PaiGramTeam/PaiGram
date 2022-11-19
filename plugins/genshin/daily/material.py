@@ -312,7 +312,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         material = HONEY_DATA["material"][mid]
                         materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
                     except AssetsCouldNotFound as exc:
-                        logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
+                        logger.warning("%s mid[%s]", exc.message, exc.target)
                         await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
                         return
                 areas.append(

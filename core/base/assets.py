@@ -45,7 +45,10 @@ class AssetsServiceError(Exception):
 
 
 class AssetsCouldNotFound(AssetsServiceError):
-    pass
+    def __init__(self, message: str, target: str):
+        self.message = message
+        self.target = target
+        super().__init__(f"{message}: target={message}")
 
 
 class _AssetsService(ABC):
@@ -223,7 +226,7 @@ class _AvatarAssets(_AssetsService):
             except ValueError:
                 target = roleToId(target)
         if isinstance(target, str) or target is None:
-            raise AssetsCouldNotFound(f"找不到对应的角色: target={temp}")
+            raise AssetsCouldNotFound("找不到对应的角色", temp)
         result.id = target
         result._enka_api = self._enka_api
         return result
@@ -288,7 +291,7 @@ class _WeaponAssets(_AssetsService):
         if isinstance(target, str):
             target = int(target) if target.isnumeric() else weaponToId(target)
         if isinstance(target, str) or target is None:
-            raise AssetsCouldNotFound(f"找不到对应的武器: target={temp}")
+            raise AssetsCouldNotFound("找不到对应的武器", temp)
         result.id = target
         return result
 
@@ -329,7 +332,7 @@ class _MaterialAssets(_AssetsService):
             else:
                 target = {v["name"]: int(k) for k, v in MATERIAL_DATA.items()}.get(target)
         if isinstance(target, str) or target is None:
-            raise AssetsCouldNotFound(f"找不到对应的素材: target={temp}")
+            raise AssetsCouldNotFound("找不到对应的素材", temp)
         result.id = target
         return result
 
