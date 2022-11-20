@@ -1,3 +1,5 @@
+from typing import Optional
+
 from genshin import Region, GenshinException
 from pydantic import BaseModel
 from telegram import ReplyKeyboardRemove, Update, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
@@ -20,7 +22,7 @@ from utils.log import logger
 
 class WebAppData(BaseModel):
     path: str
-    data: dict
+    data: Optional[dict]
     code: int
     message: str
 
