@@ -1,4 +1,4 @@
-from genshin import Region
+from genshin import Region, GenshinException
 from pydantic import BaseModel
 from telegram import ReplyKeyboardRemove, Update, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import CallbackContext, filters
@@ -93,7 +93,15 @@ class WebApp(Plugin):
                             await message.reply_text("验证失效 请求已经过期 请稍后重试", reply_markup=ReplyKeyboardRemove())
                         return
                     try:
-                        data = await verification.create(is_high=True)
+                        await client.get_genshin_notes()
+                    except GenshinException as exc:
+                        if exc.retcode != 1034:
+                            raise exc
+                    else:
+                        await message.reply_text("账户正常，无需认证")
+                        return
+                    try:
+                        data = await verification.create(is_high=is_high)
                         challenge = data["challenge"]
                         gt = data["gt"]
                         logger.success("用户 %s[%s] 创建验证成功 gt[%s] challenge[%s]", user.full_name, user.id, gt, challenge)
