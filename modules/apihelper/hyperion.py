@@ -405,9 +405,9 @@ class Verification:
     def get_url(host: str, url: str):
         return f"https://{host}{url}"
 
-    async def create(self):
+    async def create(self, is_high: bool = False):
         url = self.get_url(self.HOST, self.CREATE_VERIFICATION_URL)
-        params = {"is_high": "true"}
+        params = {"is_high": "true" if is_high else "false"}
         headers = self.get_headers(params=params)
         response = await self.client.get(url, params=params, headers=headers)
         return response
