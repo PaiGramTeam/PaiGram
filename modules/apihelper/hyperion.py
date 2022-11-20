@@ -74,7 +74,7 @@ class Hyperion:
 
     @staticmethod
     def get_images_params(
-            resize: int = 600, quality: int = 80, auto_orient: int = 0, interlace: int = 1, images_format: str = "jpg"
+        resize: int = 600, quality: int = 80, auto_orient: int = 0, interlace: int = 1, images_format: str = "jpg"
     ):
         """
         image/resize,s_600/quality,q_80/auto-orient,0/interlace,1/format,jpg
