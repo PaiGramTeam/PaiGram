@@ -101,7 +101,7 @@ class WebApp(Plugin):
                         await message.reply_text("账户正常，无需认证")
                         return
                     try:
-                        data = await verification.create(is_high=is_high)
+                        data = await verification.create(is_high=True)
                         challenge = data["challenge"]
                         gt = data["gt"]
                         logger.success("用户 %s[%s] 创建验证成功 gt[%s] challenge[%s]", user.full_name, user.id, gt, challenge)
