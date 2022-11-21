@@ -1,2 +1,2 @@
-from .pb import *  # noqa: F401
-from .sentry import *  # noqa: F401
+from .pb import *  # pylint:disable=F401
+from .sentry import *  # pylint:disable=F401
