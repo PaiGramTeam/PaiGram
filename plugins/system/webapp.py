@@ -55,7 +55,7 @@ class WebApp(Plugin):
         if web_app_data:
             logger.info("用户 %s[%s] 触发 WEB_APP_DATA 请求", user.full_name, user.id)
             result = self.de_web_app_data(web_app_data.data)
-            logger.debug("path:%s\ndata:%s\ncode:%s\nmessage:%s", result.path, result.data, result.code, result.message)
+            logger.debug("path[%s]\ndata[%s]\ncode[%s]\nmessage[%s]", result.path, result.data, result.code, result.message)
             if result.code == 0:
                 if result.path == "verify":
                     validate = result.data.get("geetest_validate")
@@ -75,7 +75,7 @@ class WebApp(Plugin):
                         _, challenge = await self.verification_system.get_challenge(client.uid)
                         if challenge:
                             logger.info(
-                                "用户 %s[%s] 请求通过认证\nchallenge:%s\nvalidate:%s",
+                                "用户 %s[%s] 请求通过认证\nchallenge[%s]\nvalidate[%s]",
                                 user.full_name,
                                 user.id,
                                 challenge,

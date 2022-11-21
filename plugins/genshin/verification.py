@@ -2,7 +2,7 @@ from typing import Tuple, Optional
 
 from genshin import Region, GenshinException
 from telegram import Update, WebAppInfo, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, filters
 
 from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
@@ -43,7 +43,7 @@ class VerificationPlugins(Plugin, BasePlugin):
         self.user_service = user_service
         self.system = VerificationSystem(redis)
 
-    @handler.command("verify", block=False)
+    @handler.command("verify", filters=filters.ChatType.PRIVATE, block=False)
     @restricts(restricts_time=60)
     @error_callable
     async def verify(self, update: Update, context: CallbackContext) -> None:
@@ -78,7 +78,7 @@ class VerificationPlugins(Plugin, BasePlugin):
             data = await verification.create(is_high=is_high)
             challenge = data["challenge"]
             gt = data["gt"]
-            logger.success("用户 %s[%s] 创建验证成功\ngt:%s\nchallenge%s", user.full_name, user.id, gt, challenge)
+            logger.success("用户 %s[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", user.full_name, user.id, gt, challenge)
         except ResponseException as exc:
             logger.warning("用户 %s[%s] 创建验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
             await message.reply_text(f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
