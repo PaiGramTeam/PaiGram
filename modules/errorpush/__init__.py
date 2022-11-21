@@ -1,2 +1,5 @@
-from .pb import *  # pylint:disable=F401
-from .sentry import *  # pylint:disable=F401
+from .pb import PbClient, PbClientException
+from .sentry import SentryClient, SentryClientException
+
+
+__all__ = ["PbClient", "PbClientException", "SentryClient", "SentryClientException"]
