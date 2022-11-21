@@ -5,7 +5,7 @@ from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, CallbackContext
 
 from core.plugin import Plugin, handler
-from modules.error.pb import PbClient
+from modules.errorpush import PbClient
 from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger
 
