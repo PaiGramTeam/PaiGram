@@ -12,9 +12,7 @@ class PbClientException(Exception):
 
 
 class PbClient:
-    def __init__(
-            self, pb_url: Optional[str] = None, pb_sunset: Optional[int] = None, pb_max_lines: Optional[int] = None
-    ):
+    def __init__(self, pb_url: Optional[str] = None, pb_sunset: Optional[int] = None, pb_max_lines: int = 1000):
         """PbClient
         :param pb_url:
         :param pb_sunset: 自动销毁时间 单位为秒
@@ -39,7 +37,7 @@ class PbClient:
     async def _create_pb(self, content: str) -> Optional[str]:
         if not self.PB_API:
             return None
-        content = "\n".join(content.splitlines()[-self.max_lines:]) + "\n"
+        content = "\n".join(content.splitlines()[-self.max_lines :]) + "\n"
         data = {
             "c": content,
         }
