@@ -2,22 +2,27 @@ from typing import Optional
 
 import httpx
 
-from core.config import config
 from utils.log import logger
+
+__all__ = ["PbClient"]
 
 
 class PbClient:
-    def __init__(self):
+    def __init__(self, pb_url: str, pb_sunset: int, pb_max_lines: int):
+        """ PbClient
+        :param pb_url:
+        :param pb_sunset: 自动销毁时间 单位为秒
+        :param pb_max_lines:
+        """
         self.client = httpx.AsyncClient()
-        self.PB_API = config.error.pb_url
-        self.sunset: int = config.error.pb_sunset  # 自动销毁时间 单位为秒
+        self.PB_API = pb_url
+        self.sunset: int = pb_sunset
         self.private: bool = True
-        self.max_lines: int = config.error.pb_max_lines
+        self.max_lines: int = pb_max_lines
 
     async def create_pb(self, content: str) -> Optional[str]:
         if not self.PB_API:
             return None
-        logger.info("正在上传日记到 pb")
         content = "\n".join(content.splitlines()[-self.max_lines:]) + "\n"
         data = {
             "c": content,
@@ -30,5 +35,4 @@ class PbClient:
         if result.is_error:
             logger.warning("上传日记到 pb 失败 status_code[%s]", result.status_code)
             return None
-        logger.success("上传日记到 pb 成功")
         return result.headers.get("location")

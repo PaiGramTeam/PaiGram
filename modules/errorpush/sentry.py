@@ -9,31 +9,30 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from telegram import Update
 
-from core.config import config
-from utils.log import logger
-
-repo = Repo(os.getcwd())
-sentry_sdk_git_hash = rev_parse(repo, "HEAD").hexsha
-sentry_sdk.init(
-    config.error.sentry_dsn,
-    traces_sample_rate=1.0,
-    release=sentry_sdk_git_hash,
-    environment="production",
-    integrations=[
-        HttpxIntegration(),
-        ExcepthookIntegration(always_run=False),
-        LoggingIntegration(event_level=50),
-        SqlalchemyIntegration(),
-    ],
-)
+__all__ = ["Sentry"]
 
 
 class Sentry:
-    @staticmethod
-    def report_error(update: object, exc_info):
-        if not config.error.sentry_dsn:
+    def __init__(self, sentry_dsn: str):
+        self.sentry_dsn = sentry_dsn
+        repo = Repo(os.getcwd())
+        sentry_sdk_git_hash = rev_parse(repo, "HEAD").hexsha
+        sentry_sdk.init(
+            sentry_dsn,
+            traces_sample_rate=1.0,
+            release=sentry_sdk_git_hash,
+            environment="production",
+            integrations=[
+                HttpxIntegration(),
+                ExcepthookIntegration(always_run=False),
+                LoggingIntegration(event_level=50),
+                SqlalchemyIntegration(),
+            ],
+        )
+
+    def report_error(self, update: object, exc_info):
+        if not self.sentry_dsn:
             return
-        logger.info("正在上传日记到 sentry")
         message: str = ""
         chat_id: int = 0
         user_id: int = 0
@@ -47,4 +46,3 @@ class Sentry:
                     message = update.effective_message.text
         sentry_sdk.set_context("Target", {"ChatID": str(chat_id), "UserID": str(user_id), "Msg": message})
         sentry_sdk.capture_exception(exc_info)
-        logger.success("上传日记到 sentry 成功")

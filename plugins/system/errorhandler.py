@@ -10,9 +10,10 @@ from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext
 
 from core.bot import bot
+from core.config import config
 from core.plugin import Plugin, error_handler
-from modules.error.pb import PbClient
-from modules.error.sentry import Sentry
+from modules.errorpush import PbClient
+from modules.errorpush import Sentry
 from utils.log import logger
 
 notice_chat_id = bot.config.error.notification_chat_id
@@ -23,14 +24,14 @@ if not os.path.exists(logs_dir):
 report_dir = os.path.join(current_dir, "report")
 if not os.path.exists(report_dir):
     os.mkdir(report_dir)
-pb_client = PbClient()
-sentry = Sentry()
+pb_client = PbClient(config.error.pb_url, config.error.pb_sunset, config.error.pb_max_lines)
+sentry = Sentry(config.error.sentry_dsn)
 
 
 class ErrorHandler(Plugin):
     @error_handler(block=False)  # pylint: disable=E1123, E1120
     async def error_handler(self, update: object, context: CallbackContext) -> None:
-        """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
+        """记录错误并发送消息通知开发人员。 logger the errorpush and send a telegram message to notify the developer."""
 
         logger.error("处理函数时发生异常")
         logger.exception(context.error, exc_info=(type(context.error), context.error, context.error.__traceback__))
