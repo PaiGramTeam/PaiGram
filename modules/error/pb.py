@@ -1,3 +1,5 @@
+from typing import Optional
+
 import httpx
 
 from core.config import config
@@ -12,11 +14,11 @@ class PbClient:
         self.private: bool = True
         self.max_lines: int = config.error.pb_max_lines
 
-    async def create_pb(self, content: str) -> str:
+    async def create_pb(self, content: str) -> Optional[str]:
         if not self.PB_API:
-            return ""
+            return None
         logger.info("正在上传日记到 pb")
-        content = "\n".join(content.splitlines()[-self.max_lines :]) + "\n"
+        content = "\n".join(content.splitlines()[-self.max_lines:]) + "\n"
         data = {
             "c": content,
         }
@@ -24,6 +26,9 @@ class PbClient:
             data["p"] = "1"
         if self.sunset:
             data["sunset"] = self.sunset
-        data = await self.client.post(self.PB_API, data=data)  # 需要错误处理
+        result = await self.client.post(self.PB_API, data=data)
+        if result.is_error:
+            logger.warning("上传日记到 pb 失败 status_code[%s]", result.status_code)
+            return None
         logger.success("上传日记到 pb 成功")
-        return data.headers["location"]
+        return result.headers.get("location")
