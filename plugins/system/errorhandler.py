@@ -111,6 +111,7 @@ class ErrorHandler(Plugin):
             logger.info("正在上传日记到 sentry")
             try:
                 sentry.report_error(update, (type(context.error), context.error, context.error.__traceback__))
+                logger.success("上传日记到 sentry 成功")
             except SentryClientException as exc:
                 logger.warning("上传错误信息至 sentry 失败", exc_info=exc)
             except Exception as exc:
