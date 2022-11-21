@@ -4,12 +4,18 @@ import httpx
 
 from utils.log import logger
 
-__all__ = ["PbClient"]
+__all__ = ["PbClient", "PbClientException"]
+
+
+class PbClientException(Exception):
+    pass
 
 
 class PbClient:
-    def __init__(self, pb_url: str, pb_sunset: int, pb_max_lines: int):
-        """ PbClient
+    def __init__(
+            self, pb_url: Optional[str] = None, pb_sunset: Optional[int] = None, pb_max_lines: Optional[int] = None
+    ):
+        """PbClient
         :param pb_url:
         :param pb_sunset: 自动销毁时间 单位为秒
         :param pb_max_lines:
@@ -20,7 +26,17 @@ class PbClient:
         self.private: bool = True
         self.max_lines: int = pb_max_lines
 
+    @property
+    def enabled(self) -> bool:
+        return bool(self.PB_API)
+
     async def create_pb(self, content: str) -> Optional[str]:
+        try:
+            return await self._create_pb(content)
+        except Exception as exc:
+            raise PbClientException from exc
+
+    async def _create_pb(self, content: str) -> Optional[str]:
         if not self.PB_API:
             return None
         content = "\n".join(content.splitlines()[-self.max_lines:]) + "\n"

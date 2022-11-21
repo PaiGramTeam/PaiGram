@@ -1,2 +1,2 @@
-from .pb import *
-from .sentry import *
+from .pb import *  # noqa: F401
+from .sentry import *  # noqa: F401
