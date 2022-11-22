@@ -16,6 +16,7 @@ from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
 from genshin import Client, InvalidCookies, GenshinException
+from genshin.models import Character
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
 from telegram import Message, Update, User
@@ -128,11 +129,11 @@ class DailyMaterial(Plugin, BasePlugin):
         self.data = data
 
     @staticmethod
-    async def _get_skills_data(client: Client, character_id: int) -> Optional[List[int]]:
+    async def _get_skills_data(client: Client, character: Character) -> Optional[List[int]]:
         """获取角色技能的数据"""
         for _ in range(5):
             try:
-                detail = await client.get_character_details(character_id)
+                detail = await client.get_character_details(character)
             except Exception as e:  # pylint: disable=W0703
                 if isinstance(e, GenshinException):
                     # 如果是 Too Many Requests 异常，则等待一段时间后重试
@@ -146,7 +147,7 @@ class DailyMaterial(Plugin, BasePlugin):
         else:
             # 如果重试了5次都失败了，则直接返回 None
             logger.warning(
-                f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
+                f"daily_material 解析角色 id 为 [bold]{character.id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
             )
             return None
         # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
@@ -176,6 +177,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         constellation=character.constellation,
                         gid=character.id,
                         icon=(await self.assets_service.avatar(cid).icon()).as_uri(),
+                        origin=character,
                     )
                 )
                 user_data["weapon"].append(
@@ -272,7 +274,7 @@ class DailyMaterial(Plugin, BasePlugin):
                             if i.rarity > 3:  # 跳过 3 星及以下的武器
                                 if type_ == "avatar" and client and calculator_sync:  # client 不为 None 时给角色添加天赋信息
                                     try:
-                                        skills = await self._get_skills_data(client, i.gid)
+                                        skills = await self._get_skills_data(client, i.origin)
                                         i.skills = skills
                                     except InvalidCookies:
                                         calculator_sync = False
@@ -498,6 +500,7 @@ class ItemData(BaseModel):
     gid: Optional[int] = None  # 角色在 genshin.py 里的 ID
     refinement: Optional[int] = None  # 精炼度
     c_path: Optional[str] = None  # 武器使用者图标
+    origin: Optional[Character] = None  # 原始数据
 
 
 class AreaData(BaseModel):
