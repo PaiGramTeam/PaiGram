@@ -36,7 +36,7 @@ lxml = "^4.9.1"
 arko-wrapper = "^0.2.4"
 fastapi = "^0.87.0"
 uvicorn = {extras = ["standard"], version = "^0.19.0"}
-sentry-sdk = "^1.11.0"
+sentry-sdk = "^1.11.1"
 GitPython = "^3.1.29"
 openpyxl = "^3.0.10"
 
