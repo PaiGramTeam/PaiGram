@@ -523,7 +523,7 @@ class AssetsService(Service):
 
     def __init__(self):
         for attr, assets_type_name in filter(
-            lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
+                lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
         ):
             setattr(self, attr, globals()[assets_type_name]())
 
@@ -536,25 +536,3 @@ class AssetsService(Service):
 
 
 AssetsServiceType = TypeVar("AssetsServiceType", bound=_AssetsService)
-
-
-async def main():
-    service = AssetsService()
-    await service.start()
-    result = await service.avatar(10000002).get_link("icon")
-    print(result)
-
-
-def __main__():
-    import asyncio
-    import sys
-
-    if sys.version_info >= (3, 8) and sys.platform.startswith("win"):
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(main())
-
-
-if __name__ == "__main__":
-    __main__()
