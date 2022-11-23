@@ -182,12 +182,15 @@ class _AssetsService(ABC):
         path = next(filter(lambda x: x.stem == item, self.path.iterdir()), None)
         if not overwrite and path:  # 如果需要下载的图标存在且不覆盖( overwrite )
             return path.resolve()
-        if overwrite and path is not None and path.exists():  # 如果覆盖
-            await async_remove(path)  # 删除已存在的图标
+        if path is not None and path.exists():
+            if overwrite:  # 如果覆盖
+                await async_remove(path)  # 删除已存在的图标
+            else:
+                return path
         # 依次从使用当前 assets class 中的爬虫下载图标，顺序为爬虫名的字母顺序
         async for url in self._download_url_generator(item):
             if url is not None:
-                path = self._dir.joinpath(f"{item}{Path(url).suffix}")
+                path = self.path.joinpath(f"{item}{Path(url).suffix}")
                 if (result := await self._download(url, path)) is not None:
                     return result
 
