@@ -1,8 +1,8 @@
 from typing import Tuple, Optional
 
 from genshin import Region, GenshinException
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext
+from telegram import Update, WebAppInfo, KeyboardButton, ReplyKeyboardMarkup
+from telegram.ext import CallbackContext, filters
 
 from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
@@ -12,7 +12,7 @@ from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from modules.apihelper.error import ResponseException, APIHelperException
+from modules.apihelper.error import ResponseException
 from modules.apihelper.hyperion import Verification
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -43,7 +43,7 @@ class VerificationPlugins(Plugin, BasePlugin):
         self.user_service = user_service
         self.system = VerificationSystem(redis)
 
-    @handler.command("verify", block=False)
+    @handler.command("verify", filters=filters.ChatType.PRIVATE, block=False)
     @restricts(restricts_time=60)
     @error_callable
     async def verify(self, update: Update, context: CallbackContext) -> None:
@@ -61,50 +61,36 @@ class VerificationPlugins(Plugin, BasePlugin):
         except CookiesNotFoundError:
             await message.reply_text("检测到用户为UID绑定，无需认证")
             return
+        is_high: bool = False
         verification = Verification(cookies=client.cookie_manager.cookies)
-        if context.args and len(context.args) > 0:
-            validate = context.args[0]
-            _, challenge = await self.system.get_challenge(client.uid)
-            logger.info("用户 %s[%s] 请求通过认证 challenge[%s] validate[%s] ", user.full_name, user.id, challenge, validate)
-            if challenge:
-                try:
-                    await verification.verify(challenge, validate)
-                    logger.success("用户 %s[%s] 验证成功", user.full_name, user.id)
-                    await message.reply_text("验证成功")
-                except ResponseException as exc:
-                    logger.warning("用户 %s[%s] 验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
-                    await message.reply_text(f"验证失败 错误信息为 [{exc.code}]{exc.message}")
+        if not context.args:
+            try:
+                await client.get_genshin_notes()
+            except GenshinException as exc:
+                if exc.retcode == 1034:
+                    is_high = True
+                else:
+                    raise exc
             else:
-                logger.warning("用户 %s[%s] 验证失效 请求已经过期", user.full_name, user.id)
-                await message.reply_text("验证失效 请求已经过期 请稍后重试")
-            return
+                await message.reply_text("账户正常，无需认证")
+                return
         try:
-            await client.get_genshin_notes()
-        except GenshinException as exc:
-            if exc.retcode != 1034:
-                raise exc
-        else:
-            await message.reply_text("账户正常，无需认证")
-            return
-        try:
-            data = await verification.create()
+            data = await verification.create(is_high=is_high)
             challenge = data["challenge"]
             gt = data["gt"]
-            logger.success("用户 %s[%s] 创建验证成功 gt[%s] challenge[%s]", user.full_name, user.id, gt, challenge)
+            logger.success("用户 %s[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", user.full_name, user.id, gt, challenge)
         except ResponseException as exc:
             logger.warning("用户 %s[%s] 创建验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
             await message.reply_text(f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
             return
-        try:
-            validate = await verification.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
-            if validate:
-                await verification.verify(challenge, validate)
-                logger.success(f"用户 %s[%s] 通过 ajax 验证", user.full_name, user.id)
-                await message.reply_text("验证成功")
-                return
-        except APIHelperException as exc:
-            logger.warning(f"用户 %s[%s] ajax 验证失效 错误信息为 %s", user.full_name, user.id, repr(exc))
         await self.system.set_challenge(client.uid, gt, challenge)
-        url = f"{config.pass_challenge_user_web}?username={context.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={client.uid}"
-        button = InlineKeyboardMarkup([[InlineKeyboardButton("验证", url=url)]])
-        await message.reply_text("请尽快点击下方手动验证", reply_markup=button)
+        url = f"{config.pass_challenge_user_web}/webapp?username={context.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={client.uid}"
+        await message.reply_text(
+            "请尽快在10秒内完成手动验证\n或发送 /web_cancel 取消操作",
+            reply_markup=ReplyKeyboardMarkup.from_button(
+                KeyboardButton(
+                    text="点我手动验证",
+                    web_app=WebAppInfo(url=url),
+                )
+            ),
+        )

@@ -2,7 +2,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.base.assets import AssetsService
+from core.base.assets import AssetsService, AssetsCouldNotFound
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.template import TemplateService
@@ -109,7 +109,15 @@ class WeaponPlugin(Plugin, BasePlugin):
                 }
             return _template_data
 
-        template_data = await input_template_data(weapon_data)
+        try:
+            template_data = await input_template_data(weapon_data)
+        except AssetsCouldNotFound as exc:
+            logger.warning("%s weapon_name[%s]", exc.message, weapon_name)
+            reply_message = await message.reply_text(f"数据库中没有找到 {weapon_name}")
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self._add_delete_message_job(context, message.chat_id, message.message_id)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+            return
         png_data = await self.template_service.render(
             "genshin/weapon/weapon.html", template_data, {"width": 540, "height": 540}, ttl=31 * 24 * 60 * 60
         )

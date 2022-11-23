@@ -109,7 +109,7 @@ class SignSystem:
             data = resp.json()
             status = data.get("status")
             if status != 0:
-                logger.error("recognize 解析错误：[%s]%s", data.get('code'), data.get('msg'))
+                logger.error("recognize 解析错误：[%s]%s", data.get("code"), data.get("msg"))
             if data.get("code", 0) != 0:
                 raise RuntimeError
             logger.info("recognize 解析成功")
@@ -156,7 +156,7 @@ class SignSystem:
         if not daily_reward_info.signed_in:
             try:
                 if validate:
-                    logger.info("UID[%s] 正在使用 challenge[%s] validate[%s] 通过验证码", client.uid, challenge, validate)
+                    logger.info("UID[%s] 正在尝试通过验证码\nchallenge[%s]\nvalidate[%s]", client.uid, challenge, validate)
                 request_daily_reward = await client.request_daily_reward(
                     "sign",
                     method="POST",
@@ -170,14 +170,14 @@ class SignSystem:
                     # 尝试通过 ajax 请求绕过签到
                     gt = request_daily_reward.get("gt", "")
                     challenge = request_daily_reward.get("challenge", "")
-                    logger.warning("UID[%s] 触发验证码 challenge[%s] gt[%s]", client.uid, challenge, gt)
+                    logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
                     validate = await self.verification.ajax(
                         referer=self.REFERER,
                         gt=gt,
                         challenge=challenge,
                     )
                     if validate:
-                        logger.success("ajax 通过验证成功 challenge[%s] validate[%s]", challenge, validate)
+                        logger.success("ajax 通过验证成功\nchallenge[%s]\nvalidate[%s]", challenge, validate)
                         request_daily_reward = await client.request_daily_reward(
                             "sign",
                             method="POST",
@@ -188,7 +188,7 @@ class SignSystem:
                         )
                         logger.debug("request_daily_reward 返回 %s", request_daily_reward)
                         if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                            logger.warning("UID[%s] 触发验证码 challenge[%s]", client.uid, challenge)
+                            logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.uid, challenge)
                             raise NeedChallenge(
                                 uid=client.uid,
                                 gt=request_daily_reward.get("gt", ""),
@@ -197,20 +197,21 @@ class SignSystem:
                     elif config.pass_challenge_app_key:
                         # 如果无法绕过 检查配置文件是否配置识别 API 尝试请求绕过
                         # 注意 需要重新获取没有进行任何请求的 Challenge
-                        logger.info("正在为 recognize 重新请求签到")
+                        logger.info("UID[%s] 正在使用 recognize 重新请求签到", client.uid)
                         _request_daily_reward = await client.request_daily_reward(
                             "sign",
                             method="POST",
                             game=Game.GENSHIN,
                             lang="zh-cn",
                         )
-                        logger.debug("request_daily_reward 返回 %s", _request_daily_reward)
+                        logger.debug("request_daily_reward 返回\n%s", _request_daily_reward)
                         if _request_daily_reward and _request_daily_reward.get("success", 0) == 1:
                             _gt = _request_daily_reward.get("gt", "")
                             _challenge = _request_daily_reward.get("challenge", "")
+                            logger.info("UID[%s] 创建验证码\ngt[%s]\nchallenge[%s]", client.uid, _gt, _challenge)
                             _validate = await self.recognize(_gt, _challenge)
                             if _validate:
-                                logger.success("recognize 通过验证成功 challenge[%s] validate[%s]", _challenge, _validate)
+                                logger.success("recognize 通过验证成功\nchallenge[%s]\nvalidate[%s]", _challenge, _validate)
                                 request_daily_reward = await client.request_daily_reward(
                                     "sign",
                                     method="POST",
@@ -220,17 +221,32 @@ class SignSystem:
                                     validate=_validate,
                                 )
                                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                                    logger.warning("UID[%s] 触发验证码 challenge[%s]", client.uid, challenge)
+                                    logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.uid, _challenge)
+                                    gt = request_daily_reward.get("gt", "")
+                                    challenge = request_daily_reward.get("challenge", "")
+                                    logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
                                     raise NeedChallenge(
                                         uid=client.uid,
-                                        gt=request_daily_reward.get("gt", ""),
-                                        challenge=request_daily_reward.get("challenge", ""),
+                                        gt=gt,
+                                        challenge=challenge,
                                     )
                                 else:
                                     logger.success("UID[%s] 通过 recognize 签到成功", client.uid)
                             else:
+                                request_daily_reward = await client.request_daily_reward(
+                                    "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
+                                )
+                                gt = request_daily_reward.get("gt", "")
+                                challenge = request_daily_reward.get("challenge", "")
+                                logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
                                 raise NeedChallenge(uid=client.uid, gt=gt, challenge=challenge)
                     else:
+                        request_daily_reward = await client.request_daily_reward(
+                            "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
+                        )
+                        gt = request_daily_reward.get("gt", "")
+                        challenge = request_daily_reward.get("challenge", "")
+                        logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
                         raise NeedChallenge(uid=client.uid, gt=gt, challenge=challenge)
                 else:
                     logger.success("UID[%s] 签到成功", client.uid)
@@ -356,7 +372,17 @@ class Sign(Plugin, BasePlugin):
             client = await get_genshin_client(user.id)
             await message.reply_chat_action(ChatAction.TYPING)
             _, challenge = await self.system.get_challenge(client.uid)
-            sign_text = await self.system.start_sign(client, challenge=challenge, validate=validate)
+            if validate:
+                _, challenge = await self.system.get_challenge(client.uid)
+                if challenge:
+                    sign_text = await self.system.start_sign(client, challenge=challenge, validate=validate)
+                else:
+                    reply_message = await message.reply_text("请求已经过期", allow_sending_without_reply=True)
+                    if filters.ChatType.GROUPS.filter(reply_message):
+                        self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+                    return
+            else:
+                sign_text = await self.system.start_sign(client)
             reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
