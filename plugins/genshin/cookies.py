@@ -132,6 +132,11 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             f"[1、通过 Via 浏览器打开{bbs_name}并登录]({bbs_url})\n"
             f"2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n"
             f"`{escape_markdown(javascript_android, version=2, entity_type='code')}`"
+            f"iOS：\n"
+            f"1、在App Store上安装Web Inspector，并在iOS设置- Safari浏览器-扩展-允许这些扩展下找到Web Inspector-打开，允许所有网站\n"
+            f"2、[通过Safari打开{bbs_name}并登录({bbs_url})\n"
+            f"3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - console - 点击下方文本框复制下方代码粘贴："
+            f"`{escape_markdown(javascript, version=2, entity_type='code')}`"
         )
         await message.reply_markdown_v2(help_message, disable_web_page_preview=True)
         return INPUT_COOKIES
