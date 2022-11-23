@@ -145,12 +145,12 @@ class _AssetsService(ABC):
     async def _get_from_honey(self, item: str) -> str | None:
         """从 honey 上爬取"""
         try:
-            url = self.honey_name_map.get(item, None)
+            honey_name = self.honey_name_map.get(item, None)
         except IndexError:
             return None
-        if url is not None:
+        if honey_name is not None:
             try:
-                result = HONEY_HOST.join(f"img/{url}.png")
+                result = HONEY_HOST.join(f"img/{honey_name}.png")
                 response = await self.client.get(result, follow_redirects=False)
                 response.raise_for_status()
             except HTTPStatusError:
@@ -158,7 +158,7 @@ class _AssetsService(ABC):
             if response.status_code == 200:
                 return result
 
-            return HONEY_HOST.join(f"img/{url}.webp")
+            return HONEY_HOST.join(f"img/{honey_name}.webp")
 
     async def _download_url_generator(self, item: str) -> AsyncIterator[str]:
         for func in map(lambda x: getattr(self, x), sorted(filter(lambda x: x.startswith("_get_from_"), dir(self)))):
@@ -332,6 +332,10 @@ class _WeaponAssets(_AssetsService):
         result.id = target
         return result
 
+    async def _get_from_ambr(self, item: str) -> str | None:
+        if item == "icon":
+            return str(AMBR_HOST.join(f"assets/UI/{self.game_name_map.get(item)}.png"))
+
     async def _get_from_enka(self, item: str) -> str | None:
         if item in self.game_name_map:
             return str(ENKA_HOST.join(f"ui/{self.game_name_map.get(item)}.png"))
@@ -385,15 +389,7 @@ class _MaterialAssets(_AssetsService):
         if response.status_code == 200:
             return result
 
-        try:
-            result = HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.webp")
-            response = await self.client.get(result, follow_redirects=False)
-            response.raise_for_status()
-        except HTTPStatusError:
-            return None
-
-        if response.status_code == 200:
-            return result
+        return HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.webp")
 
 
 class _ArtifactAssets(_AssetsService):
