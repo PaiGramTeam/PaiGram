@@ -4,17 +4,18 @@ from __future__ import annotations
 import asyncio
 import re
 from abc import ABC, abstractmethod
+from asyncio import Lock as AsyncLock
 from functools import cached_property, partial
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from ssl import SSLZeroReturnError
-from typing import Awaitable, Callable, ClassVar, Dict, Optional, TYPE_CHECKING, TypeVar, Union
+from typing import AsyncIterator, Awaitable, Callable, ClassVar, Dict, Optional, TYPE_CHECKING, TypeVar, Union
 
 from aiofiles import open as async_open
 from aiofiles.os import remove as async_remove
 from enkanetwork import Assets as EnkaAssets
 from enkanetwork.model.assets import CharacterAsset as EnkaCharacterAsset
-from httpx import AsyncClient, HTTPError, URL
+from httpx import AsyncClient, HTTPError, HTTPStatusError, URL
 from typing_extensions import Self
 
 from core.service import Service
@@ -57,6 +58,8 @@ class _AssetsService(ABC):
     icon_types: ClassVar[list[str]]
 
     _client: Optional[AsyncClient] = None
+    _links: dict[str, str] = {}
+    _async_lock: AsyncLock = AsyncLock()
 
     id: int
     type: str
@@ -131,33 +134,72 @@ class _AssetsService(ABC):
                 await file.write(response.content)  # 保存图标
             return path.resolve()
 
-    async def _get_from_ambr(self, item: str) -> Path | None:  # pylint: disable=W0613,R0201
+    async def _get_from_ambr(self, item: str) -> str | None:  # pylint: disable=W0613,R0201
+        """从 ambr.top 上爬取"""
         return None
 
-    async def _get_from_enka(self, item: str) -> Path | None:  # pylint: disable=W0613,R0201
+    async def _get_from_enka(self, item: str) -> str | None:  # pylint: disable=W0613,R0201
+        """从 enke.network 上爬取"""
         return None
 
-    async def _get_from_honey(self, item: str) -> Path | None:
-        """从 honey 获取图标"""
-        if (url := self.honey_name_map.get(item, None)) is not None:
-            # 先尝试下载 png 格式的图片
-            path = self.path.joinpath(f"{item}.png")
-            if (result := await self._download(HONEY_HOST.join(f"img/{url}.png"), path)) is not None:
+    async def _get_from_honey(self, item: str) -> str | None:
+        """从 honey 上爬取"""
+        try:
+            honey_name = self.honey_name_map.get(item, None)
+        except IndexError:
+            return None
+        if honey_name is not None:
+            try:
+                result = HONEY_HOST.join(f"img/{honey_name}.png")
+                response = await self.client.get(result, follow_redirects=False)
+                response.raise_for_status()
+            except HTTPStatusError:
+                return None
+            if response.status_code == 200:
                 return result
-            path = self.path.joinpath(f"{item}.webp")
-            return await self._download(HONEY_HOST.join(f"img/{url}.webp"), path)
+
+            return HONEY_HOST.join(f"img/{honey_name}.webp")
+
+    async def _download_url_generator(self, item: str) -> AsyncIterator[str]:
+        for func in map(lambda x: getattr(self, x), sorted(filter(lambda x: x.startswith("_get_from_"), dir(self)))):
+            if (url := await func(item)) is not None:
+                try:
+                    response = await self.client.get(url := str(url))
+                    response.raise_for_status()
+                    if response.status_code == 200:
+                        yield url
+                except HTTPStatusError:
+                    continue
+
+    async def _get_download_url(self, item: str) -> str | None:
+        """获取图标的下载链接"""
+        async for url in self._download_url_generator(item):
+            if url is not None:
+                return url
 
     async def _get_img(self, overwrite: bool = False, *, item: str) -> Path | None:
         """获取图标"""
         path = next(filter(lambda x: x.stem == item, self.path.iterdir()), None)
-        if not overwrite and path:
+        if not overwrite and path:  # 如果需要下载的图标存在且不覆盖( overwrite )
             return path.resolve()
-        if overwrite and path is not None and path.exists():
-            await async_remove(path)
-        # 依次从使用当前 assets class 中的爬虫下载图标，顺序为爬虫名的字母顺序
-        for func in map(lambda x: getattr(self, x), sorted(filter(lambda x: x.startswith("_get_from_"), dir(self)))):
-            if (path := await func(item)) is not None:
+        if path is not None and path.exists():
+            if overwrite:  # 如果覆盖
+                await async_remove(path)  # 删除已存在的图标
+            else:
                 return path
+        # 依次从使用当前 assets class 中的爬虫下载图标，顺序为爬虫名的字母顺序
+        async for url in self._download_url_generator(item):
+            if url is not None:
+                path = self.path.joinpath(f"{item}{Path(url).suffix}")
+                if (result := await self._download(url, path)) is not None:
+                    return result
+
+    async def get_link(self, item: str) -> str | None:
+        async with self._async_lock:
+            if (result := self._links.get(item, None)) is None:
+                result = await self._get_download_url(item)
+                self._links.update({item: result})
+        return result
 
     def __getattr__(self, item: str):
         """魔法"""
@@ -231,17 +273,15 @@ class _AvatarAssets(_AssetsService):
         result._enka_api = self._enka_api
         return result
 
-    async def _get_from_ambr(self, item: str) -> Path | None:
+    async def _get_from_ambr(self, item: str) -> str | None:
         if item in {"icon", "side", "gacha"}:
-            url = AMBR_HOST.join(f"assets/UI/{self.game_name_map[item]}.png")
-            return await self._download(url, self.path.joinpath(f"{item}.png"))
+            return str(AMBR_HOST.join(f"assets/UI/{self.game_name_map[item]}.png"))
 
-    async def _get_from_enka(self, item: str) -> Path | None:
-        path = self.path.joinpath(f"{item}.png")
+    async def _get_from_enka(self, item: str) -> str | None:
         item = "banner" if item == "gacha" else item
         # noinspection PyUnboundLocalVariable
         if self.enka is not None and item in (data := self.enka.images.dict()).keys() and (url := data[item]["url"]):
-            return await self._download(url, path)
+            return str(url)
 
     @cached_property
     def honey_name_map(self) -> dict[str, str]:
@@ -295,11 +335,13 @@ class _WeaponAssets(_AssetsService):
         result.id = target
         return result
 
-    async def _get_from_enka(self, item: str) -> Path | None:
+    async def _get_from_ambr(self, item: str) -> str | None:
+        if item == "icon":
+            return str(AMBR_HOST.join(f"assets/UI/{self.game_name_map.get(item)}.png"))
+
+    async def _get_from_enka(self, item: str) -> str | None:
         if item in self.game_name_map:
-            url = ENKA_HOST.join(f"ui/{self.game_name_map.get(item)}.png")
-            path = self.path.joinpath(f"{item}.png")
-            return await self._download(url, path)
+            return str(ENKA_HOST.join(f"ui/{self.game_name_map.get(item)}.png"))
 
     @cached_property
     def honey_name_map(self) -> dict[str, str]:
@@ -336,20 +378,21 @@ class _MaterialAssets(_AssetsService):
         result.id = target
         return result
 
-    async def _get_from_ambr(self, item: str) -> Path | None:
+    async def _get_from_ambr(self, item: str) -> str | None:
         if item == "icon":
-            url = AMBR_HOST.join(f"assets/UI/{self.game_name_map.get(item)}.png")
-            path = self.path.joinpath(f"{item}.png")
-            return await self._download(url, path)
+            return str(AMBR_HOST.join(f"assets/UI/{self.game_name_map.get(item)}.png"))
 
-    async def _get_from_honey(self, item: str) -> Path | None:
-        path = self.path.joinpath(f"{item}.png")
-        url = HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.png")
-        if (result := await self._download(url, path)) is None:
-            path = self.path.joinpath(f"{item}.webp")
-            url = HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.webp")
-            return await self._download(url, path)
-        return result
+    async def _get_from_honey(self, item: str) -> str | None:
+        try:
+            result = HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.png")
+            response = await self.client.get(result, follow_redirects=False)
+            response.raise_for_status()
+        except HTTPStatusError:
+            return None
+        if response.status_code == 200:
+            return result
+
+        return HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.webp")
 
 
 class _ArtifactAssets(_AssetsService):
@@ -376,16 +419,13 @@ class _ArtifactAssets(_AssetsService):
     def game_name(self) -> str:
         return f"UI_RelicIcon_{self.id}"
 
-    async def _get_from_enka(self, item: str) -> Path | None:
+    async def _get_from_enka(self, item: str) -> str | None:
         if item in self.game_name_map:
-            url = ENKA_HOST.join(f"ui/{self.game_name_map.get(item)}.png")
-            path = self.path.joinpath(f"{item}.png")
-            return await self._download(url, path)
+            return str(ENKA_HOST.join(f"ui/{self.game_name_map.get(item)}.png"))
 
-    async def _get_from_ambr(self, item: str) -> Path | None:
+    async def _get_from_ambr(self, item: str) -> str | None:
         if item in self.game_name_map:
-            url = AMBR_HOST.join(f"assets/UI/reliquary/{self.game_name_map[item]}.png")
-            return await self._download(url, self.path.joinpath(f"{item}.png"))
+            return str(AMBR_HOST.join(f"assets/UI/reliquary/{self.game_name_map[item]}.png"))
 
     @cached_property
     def game_name_map(self) -> dict[str, str]:
@@ -434,16 +474,14 @@ class _NamecardAssets(_AssetsService):
         result.enka = DEFAULT_EnkaAssets.namecards(target)
         return result
 
-    async def _get_from_ambr(self, item: str) -> Path | None:
+    async def _get_from_ambr(self, item: str) -> str | None:
         if item == "profile":
-            url = AMBR_HOST.join(f"assets/UI/namecard/{self.game_name_map[item]}.png.png")
-            return await self._download(url, self.path.joinpath(f"{item}.png"))
+            return AMBR_HOST.join(f"assets/UI/namecard/{self.game_name_map[item]}.png.png")
 
-    async def _get_from_enka(self, item: str) -> Path | None:
-        path = self.path.joinpath(f"{item}.png")
+    async def _get_from_enka(self, item: str) -> str | None:
         url = getattr(self.enka, {"profile": "banner"}.get(item, item), None)
         if url is not None:
-            return await self._download(url.url, path)
+            return str(url)
 
     @cached_property
     def game_name_map(self) -> dict[str, str]:
