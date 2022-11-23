@@ -38,6 +38,9 @@ class Inline(Plugin):
                     icon = await self.assets_service.weapon(weapons_name).get_link("icon")
                 except AssetsCouldNotFound:
                     continue
+                except Exception as exc:
+                    logger.error("获取武器信息失败 %s", str(exc))
+                    continue
                 data = {"name": weapons_name, "icon": icon}
                 self.weapons_list.append(data)
             logger.success("Inline 模块获取武器列表成功")
@@ -49,6 +52,9 @@ class Inline(Plugin):
                 try:
                     icon = await self.assets_service.avatar(character_name).get_link("icon")
                 except AssetsCouldNotFound:
+                    continue
+                except Exception as exc:
+                    logger.error("获取角色信息失败 %s", str(exc))
                     continue
                 data = {"name": character_name, "icon": icon}
                 self.characters_list.append(data)
