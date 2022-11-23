@@ -4,8 +4,7 @@ from __future__ import annotations
 import asyncio
 import re
 from abc import ABC, abstractmethod
-from asyncio import Lock as AsyncLock
-from functools import cached_property, partial
+from functools import cached_property, lru_cache, partial
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from ssl import SSLZeroReturnError
@@ -59,7 +58,6 @@ class _AssetsService(ABC):
 
     _client: Optional[AsyncClient] = None
     _links: dict[str, str] = {}
-    _async_lock: AsyncLock = AsyncLock()
 
     id: int
     type: str
@@ -194,12 +192,10 @@ class _AssetsService(ABC):
                 if (result := await self._download(url, path)) is not None:
                     return result
 
+    @lru_cache
     async def get_link(self, item: str) -> str | None:
-        async with self._async_lock:
-            if (result := self._links.get(item, None)) is None:
-                result = await self._get_download_url(item)
-                self._links.update({item: result})
-        return result
+        """获取相应图标链接"""
+        return await self._get_download_url(item)
 
     def __getattr__(self, item: str):
         """魔法"""
