@@ -311,7 +311,7 @@ pydantic = "*"
 type = "git"
 url = "https://github.com/mrwan200/EnkaNetwork.py"
 reference = "HEAD"
-resolved_reference = "a90c2c82760b134fe7501664dc67ce8fc43ffab5"
+resolved_reference = "a8aeebc325c08399bae1ef5e1213f9072bb822b3"
 
 [[package]]
 name = "et-xmlfile"
@@ -334,14 +334,14 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "fakeredis"
-version = "1.10.0"
+version = "2.0.0"
 description = "Fake implementation of redis API for testing purposes."
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
-redis = "<4.4"
+redis = "<4.5"
 sortedcontainers = ">=2.4.0,<3.0.0"
 
 [package.extras]
@@ -1281,7 +1281,7 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "87caedf8e45b51fda11c23a259ab660b71f1d6b9a544380b9b2c001d150282a2"
+content-hash = "8ace0efe60f2b3917062367b82b331530d7edb334a8e21a548da26e906756c56"
 
 [metadata.files]
 aiofiles = [
@@ -1515,8 +1515,8 @@ exceptiongroup = [
     {file = "exceptiongroup-1.0.0rc9.tar.gz", hash = "sha256:9086a4a21ef9b31c72181c77c040a074ba0889ee56a7b289ff0afb0d97655f96"},
 ]
 fakeredis = [
-    {file = "fakeredis-1.10.0-py3-none-any.whl", hash = "sha256:0be420a79fabda234963a2730c4ce609a6d44a598e8dd253ce97785bef944285"},
-    {file = "fakeredis-1.10.0.tar.gz", hash = "sha256:2b02370118535893d832bcd3c099ef282de3f13b29ae3922432e2225794ec334"},
+    {file = "fakeredis-2.0.0-py3-none-any.whl", hash = "sha256:fb3186cbbe4c549f922b0f08eb84b09c0e51ecf8efbed3572d20544254f93a97"},
+    {file = "fakeredis-2.0.0.tar.gz", hash = "sha256:6d1dc2417921b7ce56a80877afa390d6335a3154146f201a86e3a14417bdc79e"},
 ]
 fastapi = [
     {file = "fastapi-0.87.0-py3-none-any.whl", hash = "sha256:254453a2e22f64e2a1b4e1d8baf67d239e55b6c8165c079d25746a5220c81bb4"},
