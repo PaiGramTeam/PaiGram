@@ -4,6 +4,7 @@ from typing import Optional
 
 import genshin
 from genshin import InvalidCookies, GenshinException, DataNotPublic
+from genshin.models import GenshinAccount
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
 from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
@@ -120,19 +121,24 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         )
         javascript_android = "javascript:(()=>{prompt('',document.cookie)})();"
         help_message = (
-            f"*关于如何获取Cookies*\n\n"
+            f"<b>关于如何获取Cookies</b>\n\n"
             f"PC：\n"
-            f"[1、打开{bbs_name}并登录]({bbs_url})\n"
-            f"2、按F12打开开发者工具\n"
-            f"3、{escape_markdown('将开发者工具切换至控制台(Console)页签', version=2)}\n"
-            f"4、复制下方的代码，并将其粘贴在控制台中，按下回车\n"
-            f"`{escape_markdown(javascript, version=2, entity_type='code')}`\n\n"
-            f"Android：\n"
-            f"[1、通过 Via 浏览器打开{bbs_name}并登录]({bbs_url})\n"
-            f"2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n"
-            f"`{escape_markdown(javascript_android, version=2, entity_type='code')}`"
+            f"1、<a href='{bbs_url}'>打开 {bbs_name} 并登录</a>\n"
+            "2、按F12打开开发者工具\n"
+            "3、将开发者工具切换至控制台(Console)\n"
+            "4、复制下方的代码，并将其粘贴在控制台中，按下回车\n"
+            f"<pre><code class='javascript'>{javascript}</code></pre>"
+            "Android：\n"
+            f"1、<a href='{bbs_url}'>通过 Via 打开 {bbs_name} 并登录</a>\n"
+            "2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n"
+            f"<code>{javascript_android}</code>\n"
+            "iOS：\n"
+            "1、在App Store上安装Web Inspector，并在iOS设置- Safari浏览器-扩展-允许这些扩展下找到Web Inspector-打开，允许所有网站\n"
+            f"2、<a href='{bbs_url}'>通过 Safari 打开 {bbs_name} 并登录</a>\n"
+            "3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - console - 点击下方文本框复制下方代码粘贴："
+            f"<pre><code class='javascript'>{javascript}</code></pre>"
         )
-        await message.reply_markdown_v2(help_message, disable_web_page_preview=True)
+        await message.reply_html(help_message, disable_web_page_preview=True)
         return INPUT_COOKIES
 
     @conversation.state(state=CHECK_PHONE)
@@ -248,7 +254,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         try:
-            user_info = await client.get_record_card()
+            genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             await message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -268,6 +274,16 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await sign_in_client.get_s_token()
             add_user_command_data.cookies = sign_in_client.cookie
             logger.info(f"用户 {user.full_name}[{user.id}] 绑定时获取 stoken 成功")
+        user_info: Optional[GenshinAccount] = None
+        level: int = 0
+        # todo : 多账号绑定
+        for genshin_account in genshin_accounts:
+            if genshin_account.level >= level:  # 获取账号等级最高的
+                level = genshin_account.level
+                user_info = genshin_account
+        if user_info is None:
+            await message.reply_text("未找到原神账号，请确认账号信息无误。")
+            return ConversationHandler.END
         add_user_command_data.game_uid = user_info.uid
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")

@@ -80,7 +80,7 @@ class AbyssTeamData:
         "Mobile/15E148 MicroMessenger/8.0.20(0x1800142f) NetType/WIFI Language/zh_CN",
         "content-type": "application/json",
     }
-    VERSION = "3.1"
+    VERSION = "3.2"
 
     def __init__(self):
         self.client = httpx.AsyncClient(headers=self.HEADERS)

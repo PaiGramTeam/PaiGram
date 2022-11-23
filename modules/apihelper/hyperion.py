@@ -13,7 +13,7 @@ from httpx import AsyncClient
 from pydantic import BaseModel, validator
 
 from modules.apihelper.base import ArtworkImage, PostInfo
-from modules.apihelper.helpers import get_device_id, get_ds
+from modules.apihelper.helpers import get_device_id, get_ds, get_ua
 from modules.apihelper.request.hoyorequest import HOYORequest
 from utils.typedefs import JSONDict
 
@@ -366,11 +366,7 @@ class Verification:
     VERIFY_VERIFICATION_URL = "/game_record/app/card/wapi/verifyVerification"
     AJAX_URL = "/ajax.php"
 
-    USER_AGENT = (
-        "User-Agent: Mozilla/5.0 (Linux; Android 12; Mi 10 Build/SKQ1.211006.001; wv) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 "
-        "miHoYoBBS/2.36.1"
-    )
+    USER_AGENT = get_ua()
     BBS_HEADERS = {
         "Accept": "application/json, text/plain, */*",
         "Accept-Encoding": "gzip, deflate",
@@ -409,9 +405,9 @@ class Verification:
     def get_url(host: str, url: str):
         return f"https://{host}{url}"
 
-    async def create(self):
+    async def create(self, is_high: bool = False):
         url = self.get_url(self.HOST, self.CREATE_VERIFICATION_URL)
-        params = {"is_high": "true"}
+        params = {"is_high": "true" if is_high else "false"}
         headers = self.get_headers(params=params)
         response = await self.client.get(url, params=params, headers=headers)
         return response

@@ -4,8 +4,9 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, CallbackContext
 
+from core.config import config
 from core.plugin import Plugin, handler
-from modules.error.pb import PbClient
+from modules.errorpush import PbClient, PbClientException
 from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger
 
@@ -16,16 +17,16 @@ debug_log = os.path.join(current_dir, "logs", "debug", "debug.log")
 
 class Log(Plugin):
     def __init__(self):
-        self.pb_client = PbClient()
-        self.pb_client.sunset = 3600
-        self.pb_client.max_lines = 10000
+        self.pb_client = PbClient(config.error.pb_url, 3600, 10000)
 
     async def send_to_pb(self, file_name: str):
         pb_url = ""
         try:
             with open(file_name, "r", encoding="utf-8") as f:
                 pb_url = await self.pb_client.create_pb(f.read())
-        except Exception as exc:  # pylint: disable=W0703
+        except PbClientException as exc:
+            logger.warning("上传错误信息至 fars 失败", exc_info=exc)
+        except Exception as exc:
             logger.error("上传错误信息至 fars 失败")
             logger.exception(exc)
         return pb_url

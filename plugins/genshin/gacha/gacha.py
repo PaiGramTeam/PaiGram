@@ -145,7 +145,7 @@ class Gacha(Plugin, BasePlugin):
                 self.banner_cache.setdefault(gacha_base_info.gacha_id, banner)
             return banner
 
-    async def de_item_list(self,item_list: List[int]) -> List[dict]:
+    async def de_item_list(self, item_list: List[int]) -> List[dict]:
         gacha_item: List[dict] = []
         for item_id in item_list:
             if 10000 <= item_id <= 100000:
@@ -207,7 +207,7 @@ class Gacha(Plugin, BasePlugin):
         template_data = {
             "name": f"{user.full_name}",
             "info": gacha_name,
-            "banner_name": banner.html_title,
+            "banner_name": banner.html_title if banner.html_title else banner.title,
             "banner_type": banner.banner_type.name,
             "player_gacha_banner_info": player_gacha_banner_info,
             "items": [],
