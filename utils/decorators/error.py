@@ -128,7 +128,9 @@ def error_callable(func: Callable) -> Callable:
                 logger.error("GenshinException")
                 logger.exception(exc)
                 await send_user_notification(
-                    update, context, f"出错了呜呜呜 ~ 获取账号信息发生错误 错误信息为 {exc.original if exc.original else exc.retcode} ~ 请稍后再试"
+                    update,
+                    context,
+                    f"出错了呜呜呜 ~ 获取账号信息发生错误 错误信息为 {exc.original if exc.original else exc.retcode} ~ 请稍后再试",
                 )
             return ConversationHandler.END
         except ReturnCodeError as exc:

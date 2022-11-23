@@ -55,7 +55,9 @@ class WebApp(Plugin):
         if web_app_data:
             logger.info("用户 %s[%s] 触发 WEB_APP_DATA 请求", user.full_name, user.id)
             result = self.de_web_app_data(web_app_data.data)
-            logger.debug("path[%s]\ndata[%s]\ncode[%s]\nmessage[%s]", result.path, result.data, result.code, result.message)
+            logger.debug(
+                "path[%s]\ndata[%s]\ncode[%s]\nmessage[%s]", result.path, result.data, result.code, result.message
+            )
             if result.code == 0:
                 if result.path == "verify":
                     validate = result.data.get("geetest_validate")
