@@ -144,7 +144,11 @@ class _AssetsService(ABC):
 
     async def _get_from_honey(self, item: str) -> str | None:
         """从 honey 上爬取"""
-        if (url := self.honey_name_map.get(item, None)) is not None:
+        try:
+            url = self.honey_name_map.get(item, None)
+        except IndexError:
+            return None
+        if url is not None:
             try:
                 result = HONEY_HOST.join(f"img/{url}.png")
                 response = await self.client.get(result, follow_redirects=False)
@@ -154,20 +158,18 @@ class _AssetsService(ABC):
             if response.status_code == 200:
                 return result
 
-            try:
-                result = HONEY_HOST.join(f"img/{url}.webp")
-                response = await self.client.get(result, follow_redirects=False)
-                response.raise_for_status()
-            except HTTPStatusError:
-                return None
-
-            if response.status_code == 200:
-                return result
+            return HONEY_HOST.join(f"img/{url}.webp")
 
     async def _download_url_generator(self, item: str) -> AsyncIterator[str]:
         for func in map(lambda x: getattr(self, x), sorted(filter(lambda x: x.startswith("_get_from_"), dir(self)))):
             if (url := await func(item)) is not None:
-                yield url
+                try:
+                    response = await self.client.get(url := str(url))
+                    response.raise_for_status()
+                    if response.status_code == 200:
+                        yield url
+                except HTTPStatusError:
+                    continue
 
     async def _get_download_url(self, item: str) -> str | None:
         """获取图标的下载链接"""
@@ -186,7 +188,8 @@ class _AssetsService(ABC):
         async for url in self._download_url_generator(item):
             if url is not None:
                 path = self._dir.joinpath(f"{item}{Path(url).suffix}")
-                return await self._download(url, path)
+                if (result := await self._download(url, path)) is not None:
+                    return result
 
     async def get_link(self, item: str) -> str | None:
         async with self._async_lock:
@@ -372,7 +375,7 @@ class _MaterialAssets(_AssetsService):
         if item == "icon":
             return str(AMBR_HOST.join(f"assets/UI/{self.game_name_map.get(item)}.png"))
 
-    async def _get_from_honey(self, item: str) -> Path | None:
+    async def _get_from_honey(self, item: str) -> str | None:
         try:
             result = HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.png")
             response = await self.client.get(result, follow_redirects=False)
@@ -523,7 +526,7 @@ class AssetsService(Service):
 
     def __init__(self):
         for attr, assets_type_name in filter(
-                lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
+            lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
         ):
             setattr(self, attr, globals()[assets_type_name]())
 
