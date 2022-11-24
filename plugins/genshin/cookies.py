@@ -135,8 +135,9 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             "iOS：\n"
             "1、在App Store上安装Web Inspector，并在iOS设置- Safari浏览器-扩展-允许这些扩展下找到Web Inspector-打开，允许所有网站\n"
             f"2、<a href='{bbs_url}'>通过 Safari 打开 {bbs_name} 并登录</a>\n"
-            "3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - console - 点击下方文本框复制下方代码粘贴："
+            "3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - Console - 点击下方文本框复制下方代码粘贴："
             f"<pre><code class='javascript'>{javascript}</code></pre>"
+            "4、点击Console下的Execute"
         )
         await message.reply_html(help_message, disable_web_page_preview=True)
         return INPUT_COOKIES
