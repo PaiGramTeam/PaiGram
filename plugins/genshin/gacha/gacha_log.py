@@ -1,8 +1,10 @@
 import json
+from io import BytesIO
 
 import aiofiles
 import genshin
 from aiofiles import open as async_open
+from tempfile import TemporaryFile
 from genshin.models import BannerType
 from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -109,14 +111,13 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("文件过大，请发送小于 2 MB 的文件")
             return
         try:
-            file = await document.get_file()
-            out_file = await file.download_to_drive("cache")
+            out = BytesIO()
+            await (await message.document.get_file()).download_to_memory(out=out)
             if file_type == "json":
                 # bytesio to json
-                async with aiofiles.open(out_file, "r", encoding="utf-8") as f:
-                    data = json.loads(await f.read())
+                data = json.loads(out.getvalue().decode("utf-8"))
             elif file_type == "xlsx":
-                data = self.gacha_log.convert_xlsx_to_uigf(out_file, self.zh_dict)
+                data = self.gacha_log.convert_xlsx_to_uigf(out, self.zh_dict)
         except PaimonMoeGachaLogFileError as exc:
             await message.reply_text(
                 "导入失败，PaimonMoe的抽卡记录当前版本不支持\n" f"支持抽卡记录的版本为 {exc.support_version}，你的抽卡记录版本为 {exc.file_version}"
