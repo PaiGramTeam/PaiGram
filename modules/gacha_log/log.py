@@ -1,9 +1,9 @@
 import contextlib
 import datetime
 import json
-from io import BytesIO
+from os import PathLike
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, IO, Union
 
 import aiofiles
 from genshin import Client, InvalidAuthkey
@@ -600,10 +600,10 @@ class GachaLog:
         }
 
     @staticmethod
-    def convert_xlsx_to_uigf(data: BytesIO, zh_dict: dict) -> dict:
+    def convert_xlsx_to_uigf(file: Union[str, PathLike[str], IO[bytes]], zh_dict: dict) -> dict:
         """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
+        :param file: 导出的 xlsx 文件
         :param zh_dict:
-        :param data: paimon.moe 导出的 xlsx 数据
         :return: UIGF 格式数据
         """
 
@@ -654,7 +654,7 @@ class GachaLog:
                 uigf_gacha_type=uigf_gacha_type,
             )
 
-        wb = load_workbook(data)
+        wb = load_workbook(file)
         wb_len = len(wb.worksheets)
 
         if wb_len == 6:
