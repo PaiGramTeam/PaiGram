@@ -8,10 +8,11 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
+httpx= "^0.23.1"
 ujson = "^5.5.0"
 genshin = { git = "https://github.com/thesadru/genshin.py" }
 Jinja2 = "^3.1.2"
-python-telegram-bot = { version = "^20.0a4", extras = ["rate-limiter"] }
+python-telegram-bot = { version = "^20.0a4", extras = ["ext", "rate-limiter"] }
 Pillow = "^9.3.0"
 sqlmodel = "^0.0.8"
 colorlog = "^6.7.0"
