@@ -48,7 +48,8 @@ except ImportError:
 
 if tg_version_info < (20, 0, 0, "alpha", 6):
     logger.warning(
-        f"Bot与当前PTB版本 [cyan bold]{tg_version}[/] [red bold]不兼容[/]，请更新到最新版本后使用 [blue bold]poetry install[/] 重新安装依赖",
+        f"Bot与当前PTB版本 [cyan bold]%s[/] [red bold]不兼容[/]，请更新到最新版本后使用 [blue bold]poetry install[/] 重新安装依赖",
+        tg_version,
         extra={"markup": True},
     )
 
