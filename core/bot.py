@@ -10,6 +10,7 @@ from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Opti
 import genshin
 import pytz
 from async_timeout import timeout
+from telegram import __version__ as tg_version
 from telegram.error import NetworkError, TimedOut
 from telegram.ext import (
     AIORateLimiter,
@@ -39,6 +40,14 @@ __all__ = ["bot"]
 
 T = TypeVar("T")
 PluginType = TypeVar("PluginType", bound=_Plugin)
+
+try:
+    from telegram import __version_info__ as tg_version_info
+except ImportError:
+    tg_version_info = (0, 0, 0, 0, 0)  # type: ignore[assignment]
+
+if tg_version_info < (20, 0, 0, "alpha", 6):
+    logger.warning(f"Bot与当前PTB版本 {tg_version} 不兼容，请更新到最新版本后使用 poetry install 重新安装依赖")
 
 
 class Bot:
