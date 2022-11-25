@@ -182,9 +182,9 @@ class Bot:
                 await instance.start()
                 logger.success(f'服务 "{base_service_cls.__name__}" 初始化成功')
                 self._services.update({base_service_cls: instance})
-            except Exception as e:  # pylint: disable=W0703
+            except Exception as e:
                 logger.exception(f'服务 "{base_service_cls.__name__}" 初始化失败: {e}')
-                continue
+                raise SystemExit from e
 
     async def start_services(self):
         """启动服务"""
