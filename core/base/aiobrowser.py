@@ -1,6 +1,6 @@
 from typing import Optional
 
-from playwright.async_api import Browser, Playwright, async_playwright
+from playwright.async_api import Browser, Playwright, async_playwright, Error
 
 from core.service import Service
 from utils.log import logger
@@ -22,9 +22,23 @@ class AioBrowser(Service):
             try:
                 self.browser = await self._playwright.chromium.launch(timeout=5000)
                 logger.success("[blue]Browser[/] 启动成功", extra={"markup": True})
-            except TimeoutError as err:
-                logger.warning("[blue]Browser[/] 启动失败", extra={"markup": True})
-                raise err
+            except Error as err:
+                if "playwright install" in str(err):
+                    logger.error(
+                        "检查到 [blue]playwright[/] 刚刚安装或者未升级\n"
+                        "请运行以下命令下载新浏览器\n"
+                        "[blue bold]playwright install chromium[/]",
+                        extra={"markup": True},
+                    )
+                    raise SystemExit from RuntimeError(
+                        "检查到 playwright 刚刚安装或者未升级\n请运行以下命令下载新浏览器\nplaywright install chromium"
+                    )
+                else:
+                    logger.exception("[blue]Browser[/] 启动失败", exc_info=err, extra={"markup": True})
+                raise SystemExit from err
+            except Exception as err:
+                logger.exception("[blue]Browser[/] 启动失败", exc_info=err, extra={"markup": True})
+                raise SystemExit from err
 
         return self.browser
 

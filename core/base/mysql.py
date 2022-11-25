@@ -5,6 +5,7 @@ from typing_extensions import Self
 
 from core.config import BotConfig
 from core.service import Service
+from utils.log import logger
 
 
 class MySQL(Service):
@@ -18,10 +19,14 @@ class MySQL(Service):
         self.user = username
         self.port = port
         self.host = host
-        self.engine = create_async_engine(
-            f"mysql+asyncmy://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-        )
-        self.Session = sessionmaker(bind=self.engine, class_=AsyncSession)
+        try:
+            self.engine = create_async_engine(
+                f"mysql+asyncmy://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+            )
+            self.Session = sessionmaker(bind=self.engine, class_=AsyncSession)
+        except Exception as exc:
+            logger.exception("尝试初始化 [red]mysql[/] 数据库链接失败", exc_info=exc, extra={"markup": True})
+            raise SystemExit from exc
 
     async def get_session(self):
         """获取会话"""
