@@ -1,10 +1,8 @@
 import json
 from io import BytesIO
 
-import aiofiles
 import genshin
 from aiofiles import open as async_open
-from tempfile import TemporaryFile
 from genshin.models import BannerType
 from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
