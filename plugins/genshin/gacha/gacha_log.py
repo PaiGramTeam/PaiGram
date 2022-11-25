@@ -112,7 +112,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             return
         try:
             out = BytesIO()
-            await (await message.document.get_file()).download_to_memory(out=out)
+            await (await document.get_file()).download_to_memory(out=out)
             if file_type == "json":
                 # bytesio to json
                 data = json.loads(out.getvalue().decode("utf-8"))
