@@ -30,15 +30,7 @@ class AioBrowser(Service):
                         "[blue bold]playwright install chromium[/]",
                         extra={"markup": True},
                     )
-                    raise SystemExit from RuntimeError(
-                        "检查到 playwright 刚刚安装或者未升级\n请运行以下命令下载新浏览器\nplaywright install chromium"
-                    )
-                else:
-                    logger.exception("[blue]Browser[/] 启动失败", exc_info=err, extra={"markup": True})
-                raise SystemExit from err
-            except Exception as err:
-                logger.exception("[blue]Browser[/] 启动失败", exc_info=err, extra={"markup": True})
-                raise SystemExit from err
+                    raise RuntimeError("检查到 playwright 刚刚安装或者未升级\n请运行以下命令下载新浏览器\nplaywright install chromium")
 
         return self.browser
 

@@ -43,14 +43,7 @@ class RedisDB(Service):
                 logger.warning("连接 [red]Redis[/] 超时，使用 [red]fakeredis[/] 模拟", extra={"markup": True})
             if isinstance(exc, ConnectionError):
                 logger.warning("连接 [red]Redis[/] 失败，使用 [red]fakeredis[/] 模拟", extra={"markup": True})
-            try:
-                await self.start_fake_redis()
-            except Exception as exc:
-                logger.exception("尝试连接 [red]Redis[/] 失败", exc_info=exc, extra={"markup": True})
-                raise SystemExit from exc
-        except Exception as exc:
-            logger.exception("尝试连接 [red]Redis[/] 失败", exc_info=exc, extra={"markup": True})
-            raise SystemExit from exc
+            await self.start_fake_redis()
 
     async def stop(self):  # pylint: disable=W0221
         await self.client.close()
