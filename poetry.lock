@@ -1286,7 +1286,7 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "83fe6aec6306afc3f7d8f7552fd14c5126efe5408667357e42e8417c0013d4f5"
+content-hash = "48beacc925cc4637c5ee31cb25c69491b3ade0d4042381b0aafa9707a99e4f01"
 
 [metadata.files]
 aiofiles = [
