@@ -31,6 +31,7 @@ class AioBrowser(Service):
                         extra={"markup": True},
                     )
                     raise RuntimeError("检查到 playwright 刚刚安装或者未升级\n请运行以下命令下载新浏览器\nplaywright install chromium")
+                raise err
 
         return self.browser
 
