@@ -32,10 +32,10 @@ class ErrorHandler(Plugin):
     async def error_handler(self, update: object, context: CallbackContext) -> None:
         """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
 
-        if isinstance(NetworkError, context.error):
+        if isinstance(context.error, NetworkError):
             logger.error("Bot请求异常", exc_info=context.error)
             return
-        if isinstance(TimedOut, context.error):
+        if isinstance(context.error, TimedOut):
             logger.error("Bot请求超时", exc_info=context.error)
             return
 
