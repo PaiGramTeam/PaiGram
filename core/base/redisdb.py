@@ -2,7 +2,7 @@ import asyncio
 
 import fakeredis.aioredis
 from redis import asyncio as aioredis
-from redis.exceptions import ConnectionError, TimeoutError
+from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError
 from typing_extensions import Self
 
 from core.config import BotConfig
@@ -38,10 +38,10 @@ class RedisDB(Service):
         logger.info("正在尝试建立与 [red]Redis[/] 连接", extra={"markup": True})
         try:
             await self.ping()
-        except (TimeoutError, ConnectionError) as exc:
-            if isinstance(exc, TimeoutError):
+        except (RedisTimeoutError, RedisConnectionError) as exc:
+            if isinstance(exc, RedisTimeoutError):
                 logger.warning("连接 [red]Redis[/] 超时，使用 [red]fakeredis[/] 模拟", extra={"markup": True})
-            if isinstance(exc, ConnectionError):
+            if isinstance(exc, RedisConnectionError):
                 logger.warning("连接 [red]Redis[/] 失败，使用 [red]fakeredis[/] 模拟", extra={"markup": True})
             await self.start_fake_redis()
 
