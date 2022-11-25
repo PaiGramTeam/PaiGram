@@ -28,5 +28,4 @@ def init_service(func: Callable):
             bot.add_service(service)
         except Exception as e:  # pylint: disable=W0703
             logger.exception(f"来自{func.__module__}的服务初始化失败：{e}")
-
     return func
