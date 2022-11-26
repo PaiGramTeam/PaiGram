@@ -18,9 +18,8 @@ class MySQL(Service):
         self.user = username
         self.port = port
         self.host = host
-        self.engine = create_async_engine(
-            f"mysql+asyncmy://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-        )
+        self.url = f"mysql+asyncmy://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        self.engine = create_async_engine(self.url)
         self.Session = sessionmaker(bind=self.engine, class_=AsyncSession)
 
     async def get_session(self):

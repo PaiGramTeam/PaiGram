@@ -5,8 +5,12 @@ from typing import Optional
 import genshin
 from genshin import DataNotPublic, GenshinException, InvalidCookies
 from genshin.models import GenshinAccount
-from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject,
-                      Update)
+from telegram import (
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+    TelegramObject,
+    Update,
+)
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
@@ -115,30 +119,44 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         add_user_command_data.user = user_info
         add_user_command_data.region = region
         await message.reply_text(f"请输入{bbs_name}的Cookies！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
-        javascript = (
-            "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a["
-            "0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的Cookie,请重新登录!');c&&confirm("
-            "'将Cookie复制到剪贴板?')&&copy(document.cookie)})(); "
-        )
-        javascript_android = "javascript:(()=>{prompt('',document.cookie)})();"
-        help_message = (
-            f"<b>关于如何获取Cookies</b>\n\n"
-            f"PC：\n"
-            f"1、<a href='{bbs_url}'>打开 {bbs_name} 并登录</a>\n"
-            "2、按F12打开开发者工具\n"
-            "3、将开发者工具切换至控制台(Console)\n"
-            "4、复制下方的代码，并将其粘贴在控制台中，按下回车\n"
-            f"<pre><code class='javascript'>{javascript}</code></pre>"
-            "Android：\n"
-            f"1、<a href='{bbs_url}'>通过 Via 打开 {bbs_name} 并登录</a>\n"
-            "2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n"
-            f"<code>{javascript_android}</code>\n"
-            "iOS：\n"
-            "1、在App Store上安装Web Inspector，并在iOS设置- Safari浏览器-扩展-允许这些扩展下找到Web Inspector-打开，允许所有网站\n"
-            f"2、<a href='{bbs_url}'>通过 Safari 打开 {bbs_name} 并登录</a>\n"
-            "3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - console - 点击下方文本框复制下方代码粘贴："
-            f"<pre><code class='javascript'>{javascript}</code></pre>"
-        )
+        if bbs_name == "米游社":
+            help_message = (
+                "<b>关于如何获取Cookies</b>\n"
+                "<b>现在因为网站HttpOnly策略无法通过脚本获取，因此操作只能在PC上运行。</b>\n\n"
+                "PC：\n"
+                f"1、<a href='{bbs_url}'>打开 {bbs_name} 并登录</a>\n"
+                "2、按F12打开开发者工具\n"
+                "3、将开发者工具切换至网络(Network)并🎨 Update help message点击过滤栏中的文档(Document)并刷新\n"
+                "4、在请求列表找到 <i>/ys</i> 并点击\n"
+                "5、找到并复制请求标头(Request Headers)中的Cookie\n"
+                "<u>如发现没有请求标头(Request Headers)大概因为缓存的存在需要你点击禁用缓存(Disable Cache)再次刷新</u>"
+            )
+        else:
+            javascript = (
+                "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a["
+                "0].trim()==n)return a[1]}};c=_('account_id')||alert('无效的Cookie,请重新登录!');c&&confirm("
+                "'将Cookie复制到剪贴板?')&&copy(document.cookie)})(); "
+            )
+            javascript_android = "javascript:(()=>{prompt('',document.cookie)})();"
+            help_message = (
+                f"<b>关于如何获取Cookies</b>\n\n"
+                f"PC：\n"
+                f"1、<a href='{bbs_url}'>打开 {bbs_name} 并登录</a>\n"
+                "2、按F12打开开发者工具\n"
+                "3、将开发者工具切换至控制台(Console)\n"
+                "4、复制下方的代码，并将其粘贴在控制台中，按下回车\n"
+                f"<pre><code class='javascript'>{javascript}</code></pre>"
+                "Android：\n"
+                f"1、<a href='{bbs_url}'>通过 Via 打开 {bbs_name} 并登录</a>\n"
+                "2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n"
+                f"<code>{javascript_android}</code>\n"
+                "iOS：\n"
+                "1、在App Store上安装Web Inspector，并在iOS设置- Safari浏览器-扩展-允许这些扩展下找到Web Inspector-打开，允许所有网站\n"
+                f"2、<a href='{bbs_url}'>通过 Safari 打开 {bbs_name} 并登录</a>\n"
+                "3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - Console - 点击下方文本框复制下方代码粘贴："
+                f"<pre><code class='javascript'>{javascript}</code></pre>"
+                "4、点击Console下的Execute"
+            )
         await message.reply_html(help_message, disable_web_page_preview=True)
         return INPUT_COOKIES
 

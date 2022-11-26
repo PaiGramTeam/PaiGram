@@ -1,7 +1,7 @@
 import contextlib
 import datetime
 import json
-from io import BytesIO
+from os import PathLike
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -14,15 +14,28 @@ from core.base.assets import AssetsService
 from metadata.pool.pool import get_pool_by_id
 from metadata.shortname import roleToId, weaponToId
 from modules.gacha_log.const import GACHA_TYPE_LIST, PAIMONMOE_VERSION
-from modules.gacha_log.error import (GachaLogAccountNotFound,
-                                     GachaLogException, GachaLogFileError,
-                                     GachaLogInvalidAuthkey,
-                                     GachaLogMixedProvider, GachaLogNotFound,
-                                     PaimonMoeGachaLogFileError)
-from modules.gacha_log.models import (FiveStarItem, FourStarItem, GachaItem,
-                                      GachaLogInfo, ImportType, ItemType, Pool,
-                                      UIGFGachaType, UIGFInfo, UIGFItem,
-                                      UIGFModel)
+from modules.gacha_log.error import (
+    GachaLogAccountNotFound,
+    GachaLogException,
+    GachaLogFileError,
+    GachaLogInvalidAuthkey,
+    GachaLogMixedProvider,
+    GachaLogNotFound,
+    PaimonMoeGachaLogFileError,
+)
+from modules.gacha_log.models import (
+    FiveStarItem,
+    FourStarItem,
+    GachaItem,
+    GachaLogInfo,
+    ImportType,
+    ItemType,
+    Pool,
+    UIGFGachaType,
+    UIGFInfo,
+    UIGFItem,
+    UIGFModel,
+)
 from utils.const import PROJECT_ROOT
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
@@ -587,10 +600,10 @@ class GachaLog:
         }
 
     @staticmethod
-    def convert_xlsx_to_uigf(data: BytesIO, zh_dict: dict) -> dict:
+    def convert_xlsx_to_uigf(file: Union[str, PathLike[str], IO[bytes]], zh_dict: dict) -> dict:
         """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
+        :param file: 导出的 xlsx 文件
         :param zh_dict:
-        :param data: paimon.moe 导出的 xlsx 数据
         :return: UIGF 格式数据
         """
 
@@ -641,7 +654,7 @@ class GachaLog:
                 uigf_gacha_type=uigf_gacha_type,
             )
 
-        wb = load_workbook(data)
+        wb = load_workbook(file)
         wb_len = len(wb.worksheets)
 
         if wb_len == 6:

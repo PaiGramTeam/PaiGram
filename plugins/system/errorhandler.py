@@ -6,14 +6,18 @@ import traceback
 import aiofiles
 from telegram import ReplyKeyboardRemove, Update
 from telegram.constants import ParseMode
-from telegram.error import BadRequest, Forbidden
+from telegram.error import BadRequest, Forbidden, NetworkError, TimedOut
 from telegram.ext import CallbackContext
 
 from core.bot import bot
 from core.config import config
 from core.plugin import Plugin, error_handler
-from modules.errorpush import (PbClient, PbClientException, SentryClient,
-                               SentryClientException)
+from modules.errorpush import (
+    PbClient,
+    PbClientException,
+    SentryClient,
+    SentryClientException,
+)
 from utils.log import logger
 
 notice_chat_id = bot.config.error.notification_chat_id
@@ -32,6 +36,13 @@ class ErrorHandler(Plugin):
     @error_handler(block=False)  # pylint: disable=E1123, E1120
     async def error_handler(self, update: object, context: CallbackContext) -> None:
         """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
+
+        if isinstance(context.error, NetworkError):
+            logger.error("Bot请求异常", exc_info=context.error)
+            return
+        if isinstance(context.error, TimedOut):
+            logger.error("Bot请求超时", exc_info=context.error)
+            return
 
         logger.error("处理函数时发生异常")
         logger.exception(context.error, exc_info=(type(context.error), context.error, context.error.__traceback__))

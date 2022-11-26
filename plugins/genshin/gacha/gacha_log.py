@@ -4,11 +4,22 @@ from io import BytesIO
 import genshin
 from aiofiles import open as async_open
 from genshin.models import BannerType
-from telegram import (Document, InlineKeyboardButton, InlineKeyboardMarkup,
-                      Message, Update, User)
+from telegram import (
+    Document,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    Update,
+    User,
+)
 from telegram.constants import ChatAction
-from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
-                          MessageHandler, filters)
+from telegram.ext import (
+    CallbackContext,
+    CommandHandler,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
@@ -19,13 +30,19 @@ from core.template import TemplateService
 from core.template.models import FileType
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from metadata.scripts.paimon_moe import (GACHA_LOG_PAIMON_MOE_PATH,
-                                         update_paimon_moe_zh)
+from metadata.scripts.paimon_moe import (
+    GACHA_LOG_PAIMON_MOE_PATH,
+    update_paimon_moe_zh,
+)
 from modules.apihelper.hyperion import SignIn
-from modules.gacha_log.error import (GachaLogAccountNotFound,
-                                     GachaLogFileError, GachaLogInvalidAuthkey,
-                                     GachaLogMixedProvider, GachaLogNotFound,
-                                     PaimonMoeGachaLogFileError)
+from modules.gacha_log.error import (
+    GachaLogAccountNotFound,
+    GachaLogFileError,
+    GachaLogInvalidAuthkey,
+    GachaLogMixedProvider,
+    GachaLogNotFound,
+    PaimonMoeGachaLogFileError,
+)
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
 from utils.bot import get_all_args
@@ -108,14 +125,13 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("文件过大，请发送小于 2 MB 的文件")
             return
         try:
-            data = BytesIO()
-            await (await document.get_file()).download(out=data)
+            out = BytesIO()
+            await (await document.get_file()).download_to_memory(out=out)
             if file_type == "json":
                 # bytesio to json
-                data = data.getvalue().decode("utf-8")
-                data = json.loads(data)
+                data = json.loads(out.getvalue().decode("utf-8"))
             elif file_type == "xlsx":
-                data = self.gacha_log.convert_xlsx_to_uigf(data, self.zh_dict)
+                data = self.gacha_log.convert_xlsx_to_uigf(out, self.zh_dict)
         except PaimonMoeGachaLogFileError as exc:
             await message.reply_text(
                 "导入失败，PaimonMoe的抽卡记录当前版本不支持\n" f"支持抽卡记录的版本为 {exc.support_version}，你的抽卡记录版本为 {exc.file_version}"
