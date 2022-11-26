@@ -1,24 +1,19 @@
 import contextlib
-from http.cookies import CookieError, SimpleCookie
+from http.cookies import SimpleCookie, CookieError
 from typing import Optional
 
 import genshin
-from genshin import DataNotPublic, GenshinException, InvalidCookies
+from genshin import InvalidCookies, GenshinException, DataNotPublic
 from genshin.models import GenshinAccount
-from telegram import (
-    ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
-    TelegramObject,
-    Update,
-)
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
+from telegram.ext import CallbackContext, filters, ConversationHandler
 from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.models import Cookies
 from core.cookies.services import CookiesService
-from core.plugin import Plugin, conversation, handler
+from core.plugin import Plugin, handler, conversation
 from core.user.error import UserNotFoundError
 from core.user.models import User
 from core.user.services import UserService
@@ -37,6 +32,10 @@ class AddUserCommandData(TelegramObject):
     game_uid: int = 0
     phone: int = 0
     sign_in_client: Optional[SignIn] = None
+
+
+class GetAccountIdException(Exception):
+    pass
 
 
 CHECK_SERVER, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10105)
@@ -126,10 +125,10 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 "PC：\n"
                 f"1、<a href='{bbs_url}'>打开 {bbs_name} 并登录</a>\n"
                 "2、按F12打开开发者工具\n"
-                "3、将开发者工具切换至网络(Network)并🎨 Update help message点击过滤栏中的文档(Document)并刷新\n"
+                "3、将开发者工具切换至网络(Network)并🎨 Update help message点击过滤栏中的文档(Document)并刷新页面\n"
                 "4、在请求列表找到 <i>/ys</i> 并点击\n"
                 "5、找到并复制请求标头(Request Headers)中的Cookie\n"
-                "<u>如发现没有请求标头(Request Headers)大概因为缓存的存在需要你点击禁用缓存(Disable Cache)再次刷新</u>"
+                "<u>如发现没有请求标头(Request Headers)大概因为缓存的存在需要你点击禁用缓存(Disable Cache)再次刷新页面</u>"
             )
         else:
             javascript = (
@@ -273,6 +272,13 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         try:
+            if "account_mid_v2" in cookies:
+                logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
+                account_id = await SignIn.get_v2_account_id(client)
+                if account_id is None:
+                    raise GetAccountIdException
+                logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
+                add_user_command_data.cookies["account_id"] = account_id
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             await message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
@@ -285,11 +291,14 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 f"获取账号信息发生错误，错误信息为 {str(exc)}，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove()
             )
             return ConversationHandler.END
+        except GetAccountIdException:
+            await message.reply_text("获取账号ID发生错误，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
         except (AttributeError, ValueError):
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         with contextlib.suppress(Exception):
-            sign_in_client = SignIn(cookie=cookies)
+            sign_in_client = SignIn(cookie=add_user_command_data.cookies)
             await sign_in_client.get_s_token()
             add_user_command_data.cookies = sign_in_client.cookie
             logger.info(f"用户 {user.full_name}[{user.id}] 绑定时获取 stoken 成功")
