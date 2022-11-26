@@ -377,8 +377,6 @@ class SignIn:
             return uid
         except JSONDecodeError:
             pass
-        except InvalidCookies:
-            pass
         return None
 
 
