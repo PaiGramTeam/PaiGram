@@ -255,6 +255,11 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         try:
+            if "account_mid_v2" in cookies:
+                account_id = await SignIn.get_v2_account_id(client)
+                if account_id is None:
+                    raise InvalidCookies
+                add_user_command_data.cookies["account_id"] = account_id
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             await message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
@@ -271,10 +276,11 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         with contextlib.suppress(Exception):
-            sign_in_client = SignIn(cookie=cookies)
+            sign_in_client = SignIn(cookie=add_user_command_data.cookies)
             await sign_in_client.get_s_token()
             add_user_command_data.cookies = sign_in_client.cookie
             logger.info(f"用户 {user.full_name}[{user.id}] 绑定时获取 stoken 成功")
+        breakpoint()
         user_info: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定

@@ -238,6 +238,7 @@ class SignIn:
         "Accept-Language": "zh-CN,zh-Hans;q=0.9",
     }
     AUTHKEY_API = "https://api-takumi.mihoyo.com/binding/api/genAuthKey"
+    USER_INFO_API = "https://bbs-api.mihoyo.com/user/wapi/getUserFullInfo"
     GACHA_HEADERS = {
         "User-Agent": "okhttp/4.8.0",
         "x-rpc-app_version": "2.28.1",
@@ -332,7 +333,7 @@ class SignIn:
         for k, v in data.cookies.items():
             self.cookie[k] = v
 
-        return "cookie_token" in self.cookie
+        return "cookie_token" in self.cookie or "cookie_token_v2" in self.cookie
 
     @staticmethod
     async def get_authkey_by_stoken(client: Client) -> Optional[str]:
@@ -352,6 +353,28 @@ class SignIn:
                 headers=headers,
             )
             return data.get("authkey")
+        except JSONDecodeError:
+            pass
+        except InvalidCookies:
+            pass
+        return None
+
+    @staticmethod
+    async def get_v2_account_id(client: Client) -> Optional[int]:
+        """获取 v2 account_id"""
+        try:
+            headers = SignIn.GACHA_HEADERS.copy()
+            headers["DS"] = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
+            data = await client.cookie_manager.request(
+                SignIn.USER_INFO_API,
+                method="GET",
+                params={"gids": "2"},
+                headers=headers,
+            )
+            uid = data.get("user_info", {}).get("uid", None)
+            if uid:
+                uid = int(uid)
+            return uid
         except JSONDecodeError:
             pass
         except InvalidCookies:
