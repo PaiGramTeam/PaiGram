@@ -34,6 +34,10 @@ class AddUserCommandData(TelegramObject):
     sign_in_client: Optional[SignIn] = None
 
 
+class GetAccountIdException(Exception):
+    pass
+
+
 CHECK_SERVER, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10105)
 
 
@@ -256,9 +260,11 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         try:
             if "account_mid_v2" in cookies:
+                logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
                 account_id = await SignIn.get_v2_account_id(client)
                 if account_id is None:
-                    raise InvalidCookies
+                    raise GetAccountIdException
+                logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
                 add_user_command_data.cookies["account_id"] = account_id
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
@@ -271,6 +277,9 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text(
                 f"获取账号信息发生错误，错误信息为 {str(exc)}，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove()
             )
+            return ConversationHandler.END
+        except GetAccountIdException:
+            await message.reply_text("获取账号ID发生错误，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except (AttributeError, ValueError):
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
