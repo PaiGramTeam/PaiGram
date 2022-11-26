@@ -5,11 +5,9 @@ import os
 import re
 from asyncio import create_subprocess_shell
 from asyncio.subprocess import PIPE
-from contextlib import contextmanager
 from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import (Awaitable, Callable, Match, Optional, Pattern, Tuple,
-                    TypeVar, Union, cast)
+from typing import Awaitable, Callable, Match, Optional, Pattern, Tuple, TypeVar, Union, cast
 
 import aiofiles
 import genshin
@@ -220,11 +218,3 @@ async def async_re_sub(
             result += temp[: match.span(1)[0]] + (replaced or repl)
             temp = temp[match.span(1)[1] :]
     return result + temp
-
-
-@contextmanager
-def do_nothing():
-    try:
-        yield
-    finally:
-        ...

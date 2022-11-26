@@ -103,16 +103,27 @@ class ReloadConfig(Settings):
 
 class BotConfig(Settings):
     debug: bool = False
+    """debug 开关"""
+    retry: int = 5
+    """重试次数"""
     auto_reload: bool = False
+    """自动重载"""
 
     proxy_url: Optional[AnyUrl]
+    """代理链接"""
 
     bot_token: str = ""
+    """BOT的token"""
 
     channels: List["ConfigChannel"] = []
+    """文章推送群组"""
+
     admins: List["ConfigUser"] = []
+    """BOT 管理员"""
     verify_groups: List[Union[int, str]] = []
+    """启用群验证功能的群组"""
     join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
+    """是否允许机器人被邀请到其它群组"""
 
     timeout: int = 10
     read_timeout: float = 2

@@ -1,5 +1,5 @@
 from multiprocessing import RLock as Lock
-from typing import TYPE_CHECKING, ClassVar, Generic, Optional, Type, TypeVar
+from typing import ClassVar, Generic, Optional, TYPE_CHECKING, Type, TypeVar
 
 from typing_extensions import Self
 
@@ -39,7 +39,7 @@ def singleton(cls: Optional[Type[T]] = None) -> Type[T]:
     return wrap if cls is None else wrap(cls)
 
 
-class Singleton:
+class Singleton(object):
     """单例"""
 
     _lock: ClassVar["LockType"] = Lock()

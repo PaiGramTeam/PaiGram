@@ -4,7 +4,7 @@ import os
 import signal
 import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Iterator, List, Optional
+from typing import Callable, Iterator, List, Optional, TYPE_CHECKING
 
 from watchfiles import watch
 
@@ -116,6 +116,7 @@ class Reloader:
         )
 
     def signal_handler(self, *_) -> None:
+        self._process.kill()
         self.should_exit.set()
 
     def run(self) -> None:
@@ -123,7 +124,9 @@ class Reloader:
         for changes in self:
             if changes:
                 logger.warning(
-                    f"检测到文件 {[str(c.relative_to(PROJECT_ROOT)).replace(os.sep, '/') for c in changes]} 发生改变, 正在重载..."
+                    "检测到文件 "
+                    f"{[str(c.relative_to(PROJECT_ROOT)).replace(os.sep, '/') for c in changes]} "
+                    "发生改变, 正在重载..."
                 )
                 self.restart()
 
@@ -144,8 +147,10 @@ class Reloader:
 
         for sig in HANDLED_SIGNALS:
             signal.signal(sig, self.signal_handler)
+
         self._process = spawn.Process(target=self._target)
         self._process.start()
+        logger.success("重载器启动成功")
 
     def restart(self) -> None:
         self._process.terminate()

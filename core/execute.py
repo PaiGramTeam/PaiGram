@@ -1,15 +1,15 @@
 import inspect
 from functools import partial
 from multiprocessing import RLock as Lock
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Dict, Mapping,
-                    Sequence, Type, TypeVar)
+from typing import Any, Callable, ClassVar, Dict, Mapping, Sequence, TYPE_CHECKING, Type, TypeVar
 
 from telegram.ext import CallbackContext
+
 # noinspection PyProtectedMember
 from telegram.ext._utils.types import HandlerCallback
 from typing_extensions import ParamSpec, Self
 
-from utils.helpers import do_nothing
+from utils.decorator import do_nothing
 from utils.models.lock import HashLock
 
 if TYPE_CHECKING:
@@ -77,6 +77,7 @@ class Executor:
         kwargs: Mapping = None,
         lock_id: int = None,
     ) -> R:
+
         args = args or []
         kwargs = kwargs or {}
 

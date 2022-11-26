@@ -2,8 +2,19 @@ import datetime
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from types import MethodType
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Dict, List,
-                    Optional, Type, TypedDict, TypeVar, Union)
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Type,
+    TypeVar,
+    TypedDict,
+    Union,
+)
 
 from telegram.ext import BaseHandler
 from typing_extensions import ParamSpec
@@ -29,12 +40,53 @@ _JOB_ATTR_NAME = "_job_data"
 _EXCLUDE_ATTRS = ["handlers", "jobs", "error_handlers"]
 
 
+# noinspection PyProtectedMember
+class PluginController:
+    """插件的控制器"""
+
+    _plugin: "_Plugin"
+
+    @property
+    def plugin(self) -> "_Plugin":
+        return self._plugin
+
+    def __init__(self, plugin: "_Plugin") -> None:
+        self._plugin = plugin
+
+    async def install(self) -> None:
+        """安装此插件"""
+        from core.bot import bot
+
+        await self.plugin._initialize()
+        bot.tg_app.add_handlers(self.plugin.handlers)
+
+    async def uninstall(self) -> None:
+        """卸载此插件"""
+        from core.bot import bot
+
+        bot.tg_app.remove_handlers(self.plugin.handlers)
+        await self.plugin._destroy()
+
+    async def reinstall(self) -> None:
+        """重载此插件"""
+        await self.uninstall()
+        await self.install()
+
+
 class _Plugin:
     """插件"""
 
     _lock: ClassVar[LockType] = Lock()
+    _initialized: bool = False
 
     _handlers: List[HandlerType] = []
+
+    @property
+    def controller(self) -> "PluginController":
+        return self._controller
+
+    def __init__(self) -> None:
+        self._controller = PluginController(self)
 
     @property
     def handlers(self) -> List[HandlerType]:
@@ -50,6 +102,24 @@ class _Plugin:
                         for data in datas:
                             self._handlers.append(data.handler)
         return self._handlers
+
+    async def initialize(self) -> None:
+        """初始化此插件"""
+
+    async def destroy(self) -> None:
+        """销毁此插件"""
+
+    async def _initialize(self) -> None:
+        with self._lock:
+            if not self._initialized:
+                await self.initialize()
+                self._initialized = True
+
+    async def _destroy(self) -> None:
+        with self._lock:
+            if self._initialized:
+                await self.destroy()
+                self._initialized = False
 
 
 class _Conversation(_Plugin):
@@ -74,6 +144,7 @@ class _HandlerMeta:
 
 
 class HandlerFunc:
+    _lock: "LockType" = Lock()
     _handler: Optional[HandlerType] = None
 
     def __init__(self, handler_type: HandlerCls, func: Callable[P, R], kwargs: Dict):
@@ -83,7 +154,9 @@ class HandlerFunc:
 
     @property
     def handler(self) -> HandlerType:
-        self._handler = self._handler or self.type(**self.kwargs, callback=self.callback)
+        with self._lock:
+            if self._handler is None:
+                self._handler = self._handler or self.type(**self.kwargs, callback=self.callback)
         return self._handler
 
 

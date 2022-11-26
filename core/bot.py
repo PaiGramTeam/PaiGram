@@ -1,24 +1,22 @@
 import asyncio
 import signal
 from functools import wraps
-from signal import SIGABRT, SIGINT, SIGTERM
-from signal import signal as signal_func
+from signal import SIGABRT, SIGINT, SIGTERM, signal as signal_func
 from ssl import SSLZeroReturnError
-from typing import TYPE_CHECKING, Callable, List, Optional, TypeVar
+from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
 
 import pytz
 import uvicorn
 from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
-from telegram.ext import AIORateLimiter
-from telegram.ext import Application as TgApplication
-from telegram.ext import Defaults
+from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
 from telegram.request import HTTPXRequest
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.config import config as bot_config
 from core.event import Event
+from core.execute import Executor
 from utils.log import logger
 from utils.models.signal import Singleton
 
@@ -36,6 +34,8 @@ class Bot(Singleton):
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
 
+    _executor: Optional[Executor] = None
+
     _startup_funcs: List[Callable] = []
     _shutdown_funcs: List[Callable] = []
     _events: List[Event] = []
@@ -45,7 +45,15 @@ class Bot(Singleton):
     @property
     def running(self) -> bool:
         """bot 是否正在运行"""
-        return self._running
+        with self._lock:
+            return self._running
+
+    @property
+    def executor(self) -> Executor:
+        with self._lock:
+            if self._executor is None:
+                self._executor = Executor("Bot")
+        return self._executor
 
     @property
     def tg_app(self) -> TgApplication:
@@ -94,18 +102,15 @@ class Bot(Singleton):
         return self._web_server
 
     def __init__(self) -> None:
-        from core.execute import Executor
-
         self._running = False
-        self._executor = Executor("bot")
 
     async def _on_startup(self) -> None:
         for func in self._startup_funcs:
-            await self._executor(func, args=[self])
+            await self.executor(func, args=[self])
 
     async def _on_shutdown(self) -> None:
         for func in self._shutdown_funcs:
-            await self._executor(func, args=[self])
+            await self.executor(func, args=[self])
 
     async def initialize(self):
         """BOT 初始化"""
@@ -200,8 +205,8 @@ class Bot(Singleton):
             await self._web_server.shutdown()
 
         await self.shutdown()
-        logger.success("BOT 关闭成功")
         self._running = False
+        logger.success("BOT 关闭成功")
 
     def launch(self):
         """启动"""
@@ -210,8 +215,7 @@ class Bot(Singleton):
             loop.run_until_complete(self.start())
             loop.run_until_complete(self.idle())
         except (SystemExit, KeyboardInterrupt):
-            # 接收到了终止信号
-            pass
+            pass  # 接收到了终止信号
         finally:
             loop.run_until_complete(self.stop())
 
