@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import func
-from sqlmodel import SQLModel, Field, Enum, Column, DateTime
+from sqlmodel import Column, DateTime, Enum, Field, SQLModel
 
 
 class SignStatusEnum(int, enum.Enum):

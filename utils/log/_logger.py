@@ -6,29 +6,18 @@ import traceback as traceback_
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from types import TracebackType
-from typing import (
-    Any,
-    Callable,
-    List,
-    Mapping,
-    Optional,
-    TYPE_CHECKING,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import (TYPE_CHECKING, Any, Callable, List, Mapping, Optional,
+                    Tuple, Type, Union)
 
 from typing_extensions import Self
 
-from utils.log._handler import (
-    FileHandler,
-    Handler,
-)
+from utils.log._handler import FileHandler, Handler
 from utils.typedefs import LogFilterType
 
 if TYPE_CHECKING:
-    from utils.log._config import LoggerConfig  # pylint: disable=unused-import
     from logging import LogRecord  # pylint: disable=unused-import
+
+    from utils.log._config import LoggerConfig  # pylint: disable=unused-import
 
 __all__ = ["Logger", "LogFilter"]
 

@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import CallbackContext
 
 from core.admin.services import BotAdminService
-from core.config import config, JoinGroups
+from core.config import JoinGroups, config
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler

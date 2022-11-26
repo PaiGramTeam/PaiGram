@@ -1,4 +1,4 @@
-from typing import cast, List
+from typing import List, cast
 
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -6,8 +6,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from core.base.mysql import MySQL
 from utils.error import RegionNotFoundError
 from utils.models.base import RegionEnum
+
 from .error import CookiesNotFoundError
-from .models import HyperionCookie, HoyolabCookie, Cookies
+from .models import Cookies, HoyolabCookie, HyperionCookie
 
 
 class CookiesRepository:

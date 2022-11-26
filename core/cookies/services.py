@@ -1,12 +1,14 @@
 from typing import List
 
 import genshin
-from genshin import GenshinException, InvalidCookies, TooManyRequests, types, Game
+from genshin import (Game, GenshinException, InvalidCookies, TooManyRequests,
+                     types)
 
 from utils.log import logger
 from utils.models.base import RegionEnum
+
 from .cache import PublicCookiesCache
-from .error import TooManyRequestPublicCookies, CookieServiceError
+from .error import CookieServiceError, TooManyRequestPublicCookies
 from .models import CookiesStatusEnum
 from .repositories import CookiesNotFoundError, CookiesRepository
 

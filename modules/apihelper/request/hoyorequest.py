@@ -3,9 +3,10 @@ from typing import Union
 import httpx
 from httpx import Response
 
-from modules.apihelper.error import NetworkException, ResponseException, APIHelperTimedOut
+from modules.apihelper.error import (APIHelperTimedOut, NetworkException,
+                                     ResponseException)
 from modules.apihelper.request.httpxrequest import HTTPXRequest
-from modules.apihelper.typedefs import POST_DATA, JSON_DATA
+from modules.apihelper.typedefs import JSON_DATA, POST_DATA
 
 
 class HOYORequest(HTTPXRequest):

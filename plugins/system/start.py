@@ -1,7 +1,8 @@
 from typing import Optional
 
-from genshin import Region, GenshinException
-from telegram import Update, ReplyKeyboardRemove, Message, User, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
+from genshin import GenshinException, Region
+from telegram import (KeyboardButton, Message, ReplyKeyboardMarkup,
+                      ReplyKeyboardRemove, Update, User, WebAppInfo)
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.helpers import escape_markdown
@@ -10,12 +11,12 @@ from core.base.redisdb import RedisDB
 from core.config import config
 from core.cookies import CookiesService
 from core.cookies.error import CookiesNotFoundError
-from core.plugin import handler, Plugin
+from core.plugin import Plugin, handler
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from modules.apihelper.error import ResponseException, APIHelperException
+from modules.apihelper.error import APIHelperException, ResponseException
 from modules.apihelper.hyperion import Verification
-from plugins.genshin.sign import SignSystem, NeedChallenge
+from plugins.genshin.sign import NeedChallenge, SignSystem
 from plugins.genshin.verification import VerificationSystem
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

@@ -3,7 +3,7 @@ from typing import Iterator
 
 import ujson as json
 from aiofiles import open as async_open
-from httpx import AsyncClient, RemoteProtocolError, Response, URL
+from httpx import URL, AsyncClient, RemoteProtocolError, Response
 
 from utils.const import AMBR_HOST, PROJECT_ROOT
 from utils.log import logger

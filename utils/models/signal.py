@@ -1,12 +1,5 @@
 from multiprocessing import RLock as Lock
-from typing import (
-    ClassVar,
-    Generic,
-    Optional,
-    TYPE_CHECKING,
-    Type,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, ClassVar, Generic, Optional, Type, TypeVar
 
 from typing_extensions import Self
 

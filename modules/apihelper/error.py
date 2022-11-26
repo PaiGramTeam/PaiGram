@@ -1,4 +1,4 @@
-from typing import Mapping, Any, Optional
+from typing import Any, Mapping, Optional
 
 
 class APIHelperException(Exception):

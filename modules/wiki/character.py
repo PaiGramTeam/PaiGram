@@ -4,8 +4,7 @@ from typing import List, Optional
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from modules.wiki.base import Model, HONEY_HOST
-from modules.wiki.base import WikiModel
+from modules.wiki.base import HONEY_HOST, Model, WikiModel
 from modules.wiki.other import Association, Element, WeaponType
 
 

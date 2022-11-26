@@ -1,10 +1,6 @@
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import (
-    List,
-    Optional,
-    Union,
-)
+from typing import List, Optional, Union
 
 from pydantic import BaseSettings
 

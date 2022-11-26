@@ -1,5 +1,6 @@
 from core.base.redisdb import RedisDB
 from core.service import init_service
+
 from .cache import WikiCache
 from .services import WikiService
 

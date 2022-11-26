@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlmodel import SQLModel, Field, Enum, Column
+from sqlmodel import Column, Enum, Field, SQLModel
 
 from utils.models.base import RegionEnum
 

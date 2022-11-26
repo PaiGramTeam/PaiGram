@@ -1,7 +1,7 @@
 import enum
-from typing import Optional, Dict
+from typing import Dict, Optional
 
-from sqlmodel import SQLModel, Field, JSON, Enum, Column
+from sqlmodel import JSON, Column, Enum, Field, SQLModel
 
 
 class CookiesStatusEnum(int, enum.Enum):

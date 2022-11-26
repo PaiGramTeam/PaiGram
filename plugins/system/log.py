@@ -2,7 +2,7 @@ import os
 
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, CallbackContext
+from telegram.ext import CallbackContext, CommandHandler
 
 from core.config import config
 from core.plugin import Plugin, handler

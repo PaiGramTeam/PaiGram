@@ -8,35 +8,20 @@ from asyncio.subprocess import PIPE
 from contextlib import contextmanager
 from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import (
-    Awaitable,
-    Callable,
-    Match,
-    Optional,
-    Pattern,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import (Awaitable, Callable, Match, Optional, Pattern, Tuple,
+                    TypeVar, Union, cast)
 
 import aiofiles
 import genshin
 import httpx
-from genshin import (
-    Client,
-    types,
-)
+from genshin import Client, types
 from httpx import UnsupportedProtocol
 from typing_extensions import ParamSpec
 
 from core.base.redisdb import RedisDB
 from core.bot import bot
 from core.config import config
-from core.cookies.services import (
-    CookiesService,
-    PublicCookiesService,
-)
+from core.cookies.services import CookiesService, PublicCookiesService
 from core.error import ServiceNotFoundError
 from core.user.services import UserService
 from utils.error import UrlResourcesNotFoundError

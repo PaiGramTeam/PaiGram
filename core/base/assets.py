@@ -8,19 +8,22 @@ from functools import cached_property, partial
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from ssl import SSLZeroReturnError
-from typing import Awaitable, Callable, ClassVar, Dict, Optional, TYPE_CHECKING, TypeVar, Union
+from typing import (TYPE_CHECKING, Awaitable, Callable, ClassVar, Dict,
+                    Optional, TypeVar, Union)
 
 from aiofiles import open as async_open
 from aiofiles.os import remove as async_remove
 from enkanetwork import Assets as EnkaAssets
 from enkanetwork.model.assets import CharacterAsset as EnkaCharacterAsset
-from httpx import AsyncClient, HTTPError, URL
+from httpx import URL, AsyncClient, HTTPError
 from typing_extensions import Self
 
 from core.service import Service
-from metadata.genshin import AVATAR_DATA, HONEY_DATA, MATERIAL_DATA, NAMECARD_DATA, WEAPON_DATA
+from metadata.genshin import (AVATAR_DATA, HONEY_DATA, MATERIAL_DATA,
+                              NAMECARD_DATA, WEAPON_DATA)
 from metadata.scripts.honey import update_honey_metadata
-from metadata.scripts.metadatas import update_metadata_from_ambr, update_metadata_from_github
+from metadata.scripts.metadatas import (update_metadata_from_ambr,
+                                        update_metadata_from_github)
 from metadata.shortname import roleToId, weaponToId
 from modules.wiki.base import HONEY_HOST
 from utils.const import AMBR_HOST, ENKA_HOST, PROJECT_ROOT

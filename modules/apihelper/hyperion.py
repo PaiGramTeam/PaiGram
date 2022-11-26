@@ -4,7 +4,7 @@ import re
 import time
 from datetime import datetime
 from json import JSONDecodeError
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 from genshin import Client, InvalidCookies
 from genshin.utility.ds import generate_dynamic_secret

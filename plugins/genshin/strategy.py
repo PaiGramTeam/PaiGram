@@ -1,9 +1,7 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import Update
-from telegram.constants import ChatAction
-from telegram.constants import ParseMode
-from telegram.ext import CommandHandler, CallbackContext
-from telegram.ext import MessageHandler, filters
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ChatAction, ParseMode
+from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
+                          filters)
 
 from core.baseplugin import BasePlugin
 from core.game.services import GameStrategyService

@@ -1,10 +1,9 @@
 import random
-from typing import Tuple, List
+from typing import List, Tuple
 
 from modules.gacha.banner import GachaBanner
-from modules.gacha.error import GachaInvalidTimes, GachaIllegalArgument
-from modules.gacha.player.info import PlayerGachaBannerInfo
-from modules.gacha.player.info import PlayerGachaInfo
+from modules.gacha.error import GachaIllegalArgument, GachaInvalidTimes
+from modules.gacha.player.info import PlayerGachaBannerInfo, PlayerGachaInfo
 from modules.gacha.pool import BannerPool
 
 

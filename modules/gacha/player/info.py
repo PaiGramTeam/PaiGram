@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from modules.gacha.banner import GachaBanner, BannerType
+from modules.gacha.banner import BannerType, GachaBanner
 from modules.gacha.player.banner import PlayerGachaBannerInfo
 
 

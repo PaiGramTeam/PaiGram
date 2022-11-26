@@ -9,13 +9,14 @@ from functools import partial
 from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
-from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
+from typing import (Any, Dict, Iterable, Iterator, List, Literal, Optional,
+                    Tuple)
 
 import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from genshin import Client, InvalidCookies, GenshinException
+from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import Character
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
@@ -24,7 +25,8 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
 
-from core.base.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
+from core.base.assets import (AssetsCouldNotFound, AssetsService,
+                              AssetsServiceType)
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler

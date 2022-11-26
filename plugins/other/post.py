@@ -1,16 +1,10 @@
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 from bs4 import BeautifulSoup
-from telegram import (
-    Update,
-    ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
-    InputMediaPhoto,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    Message,
-)
-from telegram.constants import ParseMode, MessageLimit
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
+                      InputMediaPhoto, Message, ReplyKeyboardMarkup,
+                      ReplyKeyboardRemove, Update)
+from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown

@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.base.mysql import MySQL
+
 from .error import UserNotFoundError
 from .models import User
 

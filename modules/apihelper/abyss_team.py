@@ -1,5 +1,5 @@
 import time
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
 import httpx
 from pydantic import BaseModel, parse_obj_as, validator

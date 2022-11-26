@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
-from telegram import Message, InputMediaPhoto, InputMediaDocument
+from telegram import InputMediaDocument, InputMediaPhoto, Message
 
 from core.template.cache import HtmlToFileIdCache
 from core.template.error import ErrorFileType, FileIdNotFound

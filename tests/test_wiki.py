@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from random import sample, randint
+from random import randint, sample
 from typing import Type
 
 import pytest

@@ -1,8 +1,9 @@
 from typing import Optional
 
-from genshin import Region, GenshinException
+from genshin import GenshinException, Region
 from pydantic import BaseModel
-from telegram import ReplyKeyboardRemove, Update, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
+from telegram import (KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove,
+                      Update, WebAppInfo)
 from telegram.ext import CallbackContext, filters
 
 from core.base.redisdb import RedisDB

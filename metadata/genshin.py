@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import functools
-from typing import Any, Generic, ItemsView, Iterator, KeysView, TypeVar, Optional, ValuesView
+from typing import (Any, Generic, ItemsView, Iterator, KeysView, Optional,
+                    TypeVar, ValuesView)
 
 import ujson as json
 

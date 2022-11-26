@@ -1,6 +1,7 @@
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
+                          filters)
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin

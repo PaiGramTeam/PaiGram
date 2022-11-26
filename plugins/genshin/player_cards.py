@@ -1,25 +1,15 @@
-from typing import Any, List, Tuple, Union, Optional
+from typing import Any, List, Optional, Tuple, Union
 
-from enkanetwork import (
-    CharacterInfo,
-    DigitType,
-    EnkaNetworkAPI,
-    EnkaNetworkResponse,
-    EnkaServerError,
-    Equipments,
-    EquipmentsStats,
-    EquipmentsType,
-    Forbidden,
-    HTTPException,
-    Stats,
-    StatsPercentage,
-    UIDNotFounded,
-    VaildateUIDError,
-)
+from enkanetwork import (CharacterInfo, DigitType, EnkaNetworkAPI,
+                         EnkaNetworkResponse, EnkaServerError, Equipments,
+                         EquipmentsStats, EquipmentsType, Forbidden,
+                         HTTPException, Stats, StatsPercentage, UIDNotFounded,
+                         VaildateUIDError)
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
+from telegram.ext import (CallbackContext, CallbackQueryHandler,
+                          CommandHandler, MessageHandler, filters)
 
 from core.base.assets import DEFAULT_EnkaAssets
 from core.baseplugin import BasePlugin
@@ -29,7 +19,8 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.shortname import roleToName
-from modules.playercards.helpers import ArtifactStatsTheory, fix_skills_level_data
+from modules.playercards.helpers import (ArtifactStatsTheory,
+                                         fix_skills_level_data)
 from utils.bot import get_all_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

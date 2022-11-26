@@ -1,7 +1,7 @@
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
-from genshin import Region, GenshinException
-from telegram import Update, WebAppInfo, KeyboardButton, ReplyKeyboardMarkup
+from genshin import GenshinException, Region
+from telegram import KeyboardButton, ReplyKeyboardMarkup, Update, WebAppInfo
 from telegram.ext import CallbackContext, filters
 
 from core.base.redisdb import RedisDB

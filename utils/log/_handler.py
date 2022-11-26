@@ -3,27 +3,14 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import (TYPE_CHECKING, Any, Callable, Iterable, List, Literal,
+                    Optional, Union)
 
 from rich.console import Console
-from rich.logging import (
-    LogRender as DefaultLogRender,
-    RichHandler as DefaultRichHandler,
-)
+from rich.logging import LogRender as DefaultLogRender
+from rich.logging import RichHandler as DefaultRichHandler
 from rich.table import Table
-from rich.text import (
-    Text,
-    TextType,
-)
+from rich.text import Text, TextType
 from rich.theme import Theme
 
 from utils.log._file import FileIO
@@ -31,11 +18,10 @@ from utils.log._style import DEFAULT_STYLE
 from utils.log._traceback import Traceback
 
 if TYPE_CHECKING:
-    from rich.console import (  # pylint: disable=unused-import
-        ConsoleRenderable,
-        RenderableType,
-    )
     from logging import LogRecord  # pylint: disable=unused-import
+
+    from rich.console import (  # pylint: disable=unused-import
+        ConsoleRenderable, RenderableType)
 
 __all__ = ["LogRender", "Handler", "FileHandler"]
 

@@ -3,9 +3,10 @@ import os
 from typing import Optional
 
 from genshin import DataNotPublic
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, CallbackContext
+from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
+                          MessageHandler, filters)
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError

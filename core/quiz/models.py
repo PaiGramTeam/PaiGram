@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from sqlmodel import SQLModel, Field, Column, Integer, ForeignKey
+from sqlmodel import Column, Field, ForeignKey, Integer, SQLModel
 
 from utils.baseobject import BaseObject
 from utils.typedefs import JSONDict

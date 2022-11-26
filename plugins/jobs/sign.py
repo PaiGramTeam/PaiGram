@@ -1,7 +1,7 @@
 import datetime
 
 from aiohttp import ClientConnectorError
-from genshin import GenshinException, AlreadyClaimed, InvalidCookies
+from genshin import AlreadyClaimed, GenshinException, InvalidCookies
 from httpx import TimeoutException
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
@@ -13,7 +13,7 @@ from core.plugin import Plugin, job
 from core.sign.models import SignStatusEnum
 from core.sign.services import SignServices
 from core.user import UserService
-from plugins.genshin.sign import SignSystem, NeedChallenge
+from plugins.genshin.sign import NeedChallenge, SignSystem
 from plugins.system.errorhandler import notice_chat_id
 from plugins.system.sign_status import SignStatus
 from utils.helpers import get_genshin_client

@@ -4,20 +4,11 @@ import os
 import signal
 import threading
 from pathlib import Path
-from typing import (
-    Callable,
-    Iterator,
-    List,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Callable, Iterator, List, Optional
 
 from watchfiles import watch
 
-from utils.const import (
-    HANDLED_SIGNALS,
-    PROJECT_ROOT,
-)
+from utils.const import HANDLED_SIGNALS, PROJECT_ROOT
 from utils.log import logger
 from utils.typedefs import StrOrPath
 

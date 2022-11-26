@@ -1,9 +1,4 @@
-from typing import (
-    Generic,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Generic, Tuple, TypeVar, Union
 
 from telegram import Update
 from telegram.ext import CallbackContext

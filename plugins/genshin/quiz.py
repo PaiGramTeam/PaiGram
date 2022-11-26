@@ -1,6 +1,6 @@
 import random
 
-from telegram import Update, Poll
+from telegram import Poll, Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, filters
 

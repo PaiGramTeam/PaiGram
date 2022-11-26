@@ -3,10 +3,8 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI
 
-from core.config import (
-    BotConfig,
-    config as botConfig,
-)
+from core.config import BotConfig
+from core.config import config as botConfig
 from core.service import Service
 
 __all__ = ["webapp", "WebServer"]

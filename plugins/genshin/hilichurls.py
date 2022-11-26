@@ -2,8 +2,7 @@ import json
 from os import sep
 
 from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext
-from telegram.ext import filters
+from telegram.ext import CallbackContext, CommandHandler, filters
 
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler

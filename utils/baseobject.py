@@ -1,6 +1,6 @@
 import json
 from copy import deepcopy
-from typing import Dict, Union, Optional, List
+from typing import Dict, List, Optional, Union
 
 from utils.typedefs import JSONDict
 

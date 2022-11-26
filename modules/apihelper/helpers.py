@@ -4,7 +4,7 @@ import random
 import string
 import time
 import uuid
-from typing import Mapping, Any, Optional
+from typing import Any, Mapping, Optional
 
 RECOGNIZE_SERVER = {
     "1": "cn_gf01",

@@ -1,34 +1,18 @@
 import asyncio
 import signal
 from functools import wraps
-from signal import (
-    SIGABRT,
-    SIGINT,
-    SIGTERM,
-    signal as signal_func,
-)
+from signal import SIGABRT, SIGINT, SIGTERM
+from signal import signal as signal_func
 from ssl import SSLZeroReturnError
-from typing import (
-    Callable,
-    List,
-    Optional,
-    TYPE_CHECKING,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Callable, List, Optional, TypeVar
 
 import pytz
 import uvicorn
 from fastapi import FastAPI
-from telegram.error import (
-    NetworkError,
-    TelegramError,
-    TimedOut,
-)
-from telegram.ext import (
-    AIORateLimiter,
-    Application as TgApplication,
-    Defaults,
-)
+from telegram.error import NetworkError, TelegramError, TimedOut
+from telegram.ext import AIORateLimiter
+from telegram.ext import Application as TgApplication
+from telegram.ext import Defaults
 from telegram.request import HTTPXRequest
 from typing_extensions import ParamSpec
 from uvicorn import Server
@@ -39,8 +23,8 @@ from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
-    from types import FrameType
     from asyncio import AbstractEventLoop
+    from types import FrameType
 
 R = TypeVar("R")
 T = TypeVar("T")

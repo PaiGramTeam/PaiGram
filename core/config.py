@@ -1,17 +1,9 @@
 from enum import Enum
 from pathlib import Path
-from typing import (
-    List,
-    Optional,
-    Union,
-)
+from typing import List, Optional, Union
 
 import dotenv
-from pydantic import (
-    AnyUrl,
-    BaseModel,
-    Field,
-)
+from pydantic import AnyUrl, BaseModel, Field
 
 from utils.const import PROJECT_ROOT
 from utils.models.base import Settings

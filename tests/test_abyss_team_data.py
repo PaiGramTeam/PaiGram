@@ -4,7 +4,8 @@ import pytest
 import pytest_asyncio
 from flaky import flaky
 
-from modules.apihelper.abyss_team import AbyssTeamData, TeamRateResult, TeamRate, FullTeamRate
+from modules.apihelper.abyss_team import (AbyssTeamData, FullTeamRate,
+                                          TeamRate, TeamRateResult)
 
 LOGGER = logging.getLogger(__name__)
 

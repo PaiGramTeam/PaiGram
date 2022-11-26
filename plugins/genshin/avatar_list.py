@@ -3,10 +3,13 @@ import asyncio
 from typing import Iterable, List, Optional, Sequence
 
 from arkowrapper import ArkoWrapper
-from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
+from enkanetwork import Assets as EnkaAssets
+from enkanetwork import EnkaNetworkAPI
 from genshin import Client, GenshinException, InvalidCookies
-from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
+from genshin.models import (CalculatorCharacterDetails, CalculatorTalent,
+                            Character)
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, Message,
+                      Update, User)
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 

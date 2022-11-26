@@ -3,24 +3,22 @@ from typing import Optional
 
 from genshin import Client
 from genshin.models import GenshinUserStats
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import (
-    CallbackContext,
-    CommandHandler,
-    MessageHandler,
-    filters,
-)
+from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
+                          filters)
 
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
+from core.cookies.error import (CookiesNotFoundError,
+                                TooManyRequestPublicCookies)
 from core.plugin import Plugin, handler
 from core.template.models import RenderResult
 from core.template.services import TemplateService
 from core.user.error import UserNotFoundError
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.helpers import url_to_file, get_genshin_client, get_public_genshin_client
+from utils.helpers import (get_genshin_client, get_public_genshin_client,
+                           url_to_file)
 from utils.log import logger
 
 

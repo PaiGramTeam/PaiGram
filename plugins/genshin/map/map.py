@@ -1,15 +1,17 @@
 from os import sep
 
 from PIL import Image
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
+                          filters)
 
 from core.baseplugin import BasePlugin
-from core.plugin import handler, Plugin
+from core.plugin import Plugin, handler
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
+
 from .model import MapHelper
 
 

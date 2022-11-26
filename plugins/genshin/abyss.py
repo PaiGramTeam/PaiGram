@@ -9,13 +9,15 @@ import ujson as json
 from arkowrapper import ArkoWrapper
 from genshin import Client
 from pytz import timezone
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, Message,
+                      Update)
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
+from core.cookies.error import (CookiesNotFoundError,
+                                TooManyRequestPublicCookies)
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
 from core.template import TemplateService
@@ -25,7 +27,8 @@ from core.user.error import UserNotFoundError
 from metadata.genshin import game_id_to_role_id
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.helpers import async_re_sub, get_genshin_client, get_public_genshin_client
+from utils.helpers import (async_re_sub, get_genshin_client,
+                           get_public_genshin_client)
 from utils.log import logger
 
 TZ = timezone("Asia/Shanghai")

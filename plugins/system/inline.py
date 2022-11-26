@@ -1,12 +1,13 @@
 from typing import cast
 from uuid import uuid4
 
-from telegram import InlineQueryResultArticle, InputTextMessageContent, Update, InlineQuery
+from telegram import (InlineQuery, InlineQueryResultArticle,
+                      InputTextMessageContent, Update)
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, InlineQueryHandler
 
-from core.plugin import handler, Plugin
+from core.plugin import Plugin, handler
 from core.wiki import WikiService
 from utils.decorators.error import error_callable
 from utils.log import logger

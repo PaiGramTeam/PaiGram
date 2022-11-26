@@ -1,9 +1,10 @@
 import asyncio
 import random
 import time
-from typing import Tuple, Union, Dict, List
+from typing import Dict, List, Tuple, Union
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember
+from telegram import (ChatMember, ChatPermissions, InlineKeyboardButton,
+                      InlineKeyboardMarkup, Update)
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, CallbackQueryHandler
@@ -18,7 +19,8 @@ from utils.decorators.restricts import restricts
 from utils.log import logger
 
 try:
-    from pyrogram.errors import BadRequest as MTPBadRequest, FloodWait as MTPFloodWait
+    from pyrogram.errors import BadRequest as MTPBadRequest
+    from pyrogram.errors import FloodWait as MTPFloodWait
 
     PYROGRAM_AVAILABLE = True
 except ImportError:

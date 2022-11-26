@@ -9,11 +9,9 @@ from typing import AsyncIterator, ClassVar, List, Optional, Tuple, Union
 import anyio
 import ujson as json
 from bs4 import BeautifulSoup
-from httpx import AsyncClient, HTTPError, Response, URL
-from pydantic import (
-    BaseConfig as PydanticBaseConfig,
-    BaseModel as PydanticBaseModel,
-)
+from httpx import URL, AsyncClient, HTTPError, Response
+from pydantic import BaseConfig as PydanticBaseConfig
+from pydantic import BaseModel as PydanticBaseModel
 from typing_extensions import Self
 
 __all__ = ["Model", "WikiModel", "HONEY_HOST"]

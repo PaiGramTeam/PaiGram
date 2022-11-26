@@ -12,7 +12,8 @@ from telegram.ext import CallbackContext
 from core.bot import bot
 from core.config import config
 from core.plugin import Plugin, error_handler
-from modules.errorpush import PbClient, SentryClient, PbClientException, SentryClientException
+from modules.errorpush import (PbClient, PbClientException, SentryClient,
+                               SentryClientException)
 from utils.log import logger
 
 notice_chat_id = bot.config.error.notification_chat_id

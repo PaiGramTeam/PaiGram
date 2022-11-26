@@ -4,12 +4,12 @@ import os
 from sys import executable
 
 from aiofiles import open as async_open
-from telegram import Update, Message
+from telegram import Message, Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
 from core.bot import bot
-from core.plugin import handler, Plugin
+from core.plugin import Plugin, handler
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import execute

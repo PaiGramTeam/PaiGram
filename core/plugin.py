@@ -2,19 +2,8 @@ import datetime
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from types import MethodType
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    TYPE_CHECKING,
-    Type,
-    TypeVar,
-    TypedDict,
-    Union,
-)
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Dict, List,
+                    Optional, Type, TypedDict, TypeVar, Union)
 
 from telegram.ext import BaseHandler
 from typing_extensions import ParamSpec

@@ -1,8 +1,4 @@
-from signal import (
-    SIGABRT,
-    SIGINT,
-    SIGTERM,
-)
+from signal import SIGABRT, SIGINT, SIGTERM
 
 __all__ = ['HANDLED_SIGNALS']
 
