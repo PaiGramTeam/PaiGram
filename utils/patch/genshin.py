@@ -13,6 +13,14 @@ from utils.patch.methods import patch, patchable
 DEVICE_ID = get_device_id()
 
 
+def get_account_mid_v2(cookies: typing.Dict[str, str]) -> typing.Optional[str]:
+    for name, value in cookies.items():
+        if name == "account_mid_v2":
+            return value
+
+    return None
+
+
 @patch(genshin.client.components.calculator.CalculatorClient)  # noqa
 class CalculatorClient:
     @patchable
@@ -81,11 +89,15 @@ class BaseClient:
                 "ds": ds.generate_dynamic_secret(),
             }
         elif region == types.Region.CHINESE:
-            uid = self.cookie_manager.get_user_id()
-            if uid:
-                device_id = hex_digest(str(uid))
+            account_id = self.cookie_manager.user_id
+            if account_id:
+                device_id = hex_digest(str(account_id))
             else:
-                device_id = DEVICE_ID
+                account_mid_v2 = get_account_mid_v2(self.cookie_manager.cookies)
+                if account_mid_v2:
+                    device_id = hex_digest(account_mid_v2)
+                else:
+                    device_id = DEVICE_ID
             _app_version, _client_type, _ds = get_ds(new_ds=True, data=data, params=params)
             ua = get_ua(device="Paimon Build " + device_id[0:5], version=_app_version)
             headers = {
@@ -195,11 +207,15 @@ class DailyRewardClient:
             params["uid"] = player_id
             params["region"] = utility.recognize_genshin_server(player_id)
 
-            account_id = self.cookie_manager.get_user_id()
+            account_id = self.cookie_manager.user_id
             if account_id:
                 device_id = hex_digest(str(account_id))
             else:
-                device_id = DEVICE_ID
+                account_mid_v2 = get_account_mid_v2(self.cookie_manager.cookies)
+                if account_mid_v2:
+                    device_id = hex_digest(account_mid_v2)
+                else:
+                    device_id = DEVICE_ID
             if endpoint == "sign":
                 _app_version, _client_type, _ds = get_ds()
             else:
