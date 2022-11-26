@@ -356,7 +356,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 sign_in_client = SignIn(cookie=add_user_command_data.cookies)
                 await sign_in_client.get_s_token()
                 add_user_command_data.cookies = sign_in_client.cookie
-                logger.info(f"用户 {user.full_name}[{user.id}] 绑定时获取 stoken 成功")
+                logger.info("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
         user_info: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定
