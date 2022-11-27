@@ -32,6 +32,7 @@ from core.template import TemplateService
 from core.template.models import FileType, RenderGroupResult
 from core.user.error import UserNotFoundError
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
+from metadata.shortname import not_real_roles
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
@@ -422,6 +423,8 @@ class DailyMaterial(Plugin, BasePlugin):
                         if tag.text.strip() == "旅行者":  # 忽略主角
                             continue
                         id_ = ("" if id_.startswith("i_n") else "10000") + re.findall(r"\d+", id_)[0]
+                        if int(id_) in not_real_roles:  # 跳过忽略的角色
+                            continue
                         for day in map(int, tag.find("div")["data-days"]):  # 获取该角色/武器的可培养天
                             result[key][day][1].append(id_)
                 for stage, schedules in result.items():
