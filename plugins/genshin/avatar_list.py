@@ -4,7 +4,7 @@ from typing import Iterable, List, Optional, Sequence
 
 from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
-from genshin import Client, GenshinException
+from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
@@ -198,6 +198,9 @@ class AvatarListPlugin(Plugin, BasePlugin):
             avatar_datas: List[AvatarData] = await self.get_avatars_data(
                 characters, client, None if all_avatars else 20
             )
+        except InvalidCookies as e:
+            await notice.delete()
+            raise e
         except GenshinException as e:
             if e.retcode == -502002:
                 self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)

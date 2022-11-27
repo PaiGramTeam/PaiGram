@@ -1,7 +1,7 @@
 from typing import List
 
 import genshin
-from genshin import GenshinException, InvalidCookies, TooManyRequests, types
+from genshin import GenshinException, InvalidCookies, TooManyRequests, types, Game
 
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -77,28 +77,37 @@ class PublicCookiesService:
             else:
                 raise CookieServiceError
             try:
-                await client.get_record_card()
+                record_card = await client.get_record_card()
+                if record_card.game == Game.GENSHIN and region == RegionEnum.HYPERION:
+                    await client.get_partial_genshin_user(record_card.uid)
             except InvalidCookies as exc:
-                if "[10001]" in str(exc) or "[-100]" in str(exc):
-                    logger.warning(f"用户 [{public_id}] Cookies无效")
-                elif "[10103]" in str(exc):
-                    logger.warning(f"用户 [{public_id}] Cookie有效，但没有绑定到游戏帐户")
+                if exc.retcode in (10001, -100):
+                    logger.warning("用户 [%s] Cookies无效", public_id)
+                elif exc.retcode == 10103:
+                    logger.warning("用户 [%s] Cookie有效，但没有绑定到游戏帐户", public_id)
                 else:
-                    logger.warning("Cookies无效，具体原因未知")
+                    logger.warning("Cookies无效 ")
                     logger.exception(exc)
                 cookies.status = CookiesStatusEnum.INVALID_COOKIES
                 await self._repository.update_cookies_ex(cookies, region)
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
             except TooManyRequests:
-                logger.warning(f"用户 [{public_id}] 查询次数太多或操作频繁")
+                logger.warning("用户 [%s] 查询次数太多或操作频繁", public_id)
                 cookies.status = CookiesStatusEnum.TOO_MANY_REQUESTS
                 await self._repository.update_cookies_ex(cookies, region)
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
             except GenshinException as exc:
-                logger.warning(f"用户 [{public_id}] 获取账号信息发生错误，错误信息为")
-                logger.exception(exc)
+                if exc.retcode == 1034:
+                    logger.warning("用户 [%s] 触发验证", public_id)
+                else:
+                    logger.warning("用户 [%s] 获取账号信息发生错误，错误信息为", public_id)
+                    logger.exception(exc)
+                await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
-            logger.info(f"用户 user_id[{user_id}] 请求" f"用户 user_id[{public_id}] 的公共Cookies 该Cookie使用次数为[{count}]次 ")
+            except Exception as exc:
+                await self._cache.delete_public_cookies(cookies.user_id, region)
+                raise exc
+            logger.info("用户 user_id[%s] 请求用户 user_id[%s] 的公共Cookies 该Cookie使用次数为%s次 ", user_id, public_id, count)
             return cookies

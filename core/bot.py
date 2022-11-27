@@ -10,6 +10,7 @@ from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Opti
 import genshin
 import pytz
 from async_timeout import timeout
+from telegram import __version__ as tg_version
 from telegram.error import NetworkError, TimedOut
 from telegram.ext import (
     AIORateLimiter,
@@ -39,6 +40,18 @@ __all__ = ["bot"]
 
 T = TypeVar("T")
 PluginType = TypeVar("PluginType", bound=_Plugin)
+
+try:
+    from telegram import __version_info__ as tg_version_info
+except ImportError:
+    tg_version_info = (0, 0, 0, 0, 0)  # type: ignore[assignment]
+
+if tg_version_info < (20, 0, 0, "alpha", 6):
+    logger.warning(
+        "Bot与当前PTB版本 [cyan bold]%s[/] [red bold]不兼容[/]，请更新到最新版本后使用 [blue bold]poetry install[/] 重新安装依赖",
+        tg_version,
+        extra={"markup": True},
+    )
 
 
 class Bot:
@@ -169,9 +182,9 @@ class Bot:
                 await instance.start()
                 logger.success(f'服务 "{base_service_cls.__name__}" 初始化成功')
                 self._services.update({base_service_cls: instance})
-            except Exception as e:  # pylint: disable=W0703
+            except Exception as e:
                 logger.exception(f'服务 "{base_service_cls.__name__}" 初始化失败: {e}')
-                continue
+                raise SystemExit from e
 
     async def start_services(self):
         """启动服务"""

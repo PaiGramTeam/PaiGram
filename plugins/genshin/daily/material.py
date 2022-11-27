@@ -9,67 +9,29 @@ from functools import partial
 from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-)
+from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
 
 import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from genshin import (
-    Client,
-    GenshinException,
-    InvalidCookies,
-)
-from httpx import (
-    AsyncClient,
-    HTTPError,
-)
+from genshin import Client, InvalidCookies, GenshinException
+from genshin.models import Character
+from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
-from telegram import (
-    Message,
-    Update,
-    User,
-)
-from telegram.constants import (
-    ChatAction,
-    ParseMode,
-)
-from telegram.error import (
-    RetryAfter,
-    TimedOut,
-)
+from telegram import Message, Update, User
+from telegram.constants import ChatAction, ParseMode
+from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
 
-from core.base.assets import (
-    AssetsCouldNotFound,
-    AssetsService,
-    AssetsServiceType,
-)
+from core.base.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
-from core.plugin import (
-    Plugin,
-    handler,
-)
+from core.plugin import Plugin, handler
 from core.template import TemplateService
-from core.template.models import (
-    FileType,
-    RenderGroupResult,
-)
+from core.template.models import FileType, RenderGroupResult
 from core.user.error import UserNotFoundError
-from metadata.genshin import (
-    AVATAR_DATA,
-    HONEY_DATA,
-)
+from metadata.genshin import AVATAR_DATA, HONEY_DATA
 from utils.bot import get_all_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
@@ -85,11 +47,6 @@ DOMAINS = ["忘却之峡", "太山府", "菫色之庭", "昏识塔", "塞西莉�
 DOMAIN_AREA_MAP = dict(zip(DOMAINS, ["蒙德", "璃月", "稻妻", "须弥"] * 2))
 
 WEEK_MAP = ["一", "二", "三", "四", "五", "六", "日"]
-
-IGNORE_ROLES = [
-    10000076,  # 珐露珊
-    10000075,  # 流浪者
-]
 
 
 def sort_item(items: List["ItemData"]) -> Iterable["ItemData"]:
@@ -172,11 +129,11 @@ class DailyMaterial(Plugin, BasePlugin):
         self.data = data
 
     @staticmethod
-    async def _get_skills_data(client: Client, character_id: int) -> Optional[List[int]]:
+    async def _get_skills_data(client: Client, character: Character) -> Optional[List[int]]:
         """获取角色技能的数据"""
         for _ in range(5):
             try:
-                detail = await client.get_character_details(character_id)
+                detail = await client.get_character_details(character)
             except Exception as e:  # pylint: disable=W0703
                 if isinstance(e, GenshinException):
                     # 如果是 Too Many Requests 异常，则等待一段时间后重试
@@ -190,7 +147,7 @@ class DailyMaterial(Plugin, BasePlugin):
         else:
             # 如果重试了5次都失败了，则直接返回 None
             logger.warning(
-                f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
+                f"daily_material 解析角色 id 为 [bold]{character.id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
             )
             return None
         # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
@@ -220,6 +177,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         constellation=character.constellation,
                         gid=character.id,
                         icon=(await self.assets_service.avatar(cid).icon()).as_uri(),
+                        origin=character,
                     )
                 )
                 user_data["weapon"].append(
@@ -316,8 +274,10 @@ class DailyMaterial(Plugin, BasePlugin):
                             if i.rarity > 3:  # 跳过 3 星及以下的武器
                                 if type_ == "avatar" and client and calculator_sync:  # client 不为 None 时给角色添加天赋信息
                                     try:
-                                        skills = await self._get_skills_data(client, i.gid)
+                                        skills = await self._get_skills_data(client, i.origin)
                                         i.skills = skills
+                                    except InvalidCookies:
+                                        calculator_sync = False
                                     except GenshinException as e:
                                         if e.retcode == -502002:
                                             calculator_sync = False  # 发现角色养成计算器没启用 设置状态为 False 并防止下次继续获取
@@ -354,7 +314,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         material = HONEY_DATA["material"][mid]
                         materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
                     except AssetsCouldNotFound as exc:
-                        logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
+                        logger.warning("%s mid[%s]", exc.message, exc.target)
                         await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
                         return
                 areas.append(
@@ -462,8 +422,6 @@ class DailyMaterial(Plugin, BasePlugin):
                         if tag.text.strip() == "旅行者":  # 忽略主角
                             continue
                         id_ = ("" if id_.startswith("i_n") else "10000") + re.findall(r"\d+", id_)[0]
-                        if int(id_) in IGNORE_ROLES:  # 跳过忽略的角色
-                            continue
                         for day in map(int, tag.find("div")["data-days"]):  # 获取该角色/武器的可培养天
                             result[key][day][1].append(id_)
                 for stage, schedules in result.items():
@@ -542,6 +500,7 @@ class ItemData(BaseModel):
     gid: Optional[int] = None  # 角色在 genshin.py 里的 ID
     refinement: Optional[int] = None  # 精炼度
     c_path: Optional[str] = None  # 武器使用者图标
+    origin: Optional[Character] = None  # 原始数据
 
 
 class AreaData(BaseModel):

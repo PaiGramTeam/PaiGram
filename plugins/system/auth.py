@@ -17,6 +17,13 @@ from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
 
+try:
+    from pyrogram.errors import BadRequest as MTPBadRequest, FloodWait as MTPFloodWait
+
+    PYROGRAM_AVAILABLE = True
+except ImportError:
+    PYROGRAM_AVAILABLE = False
+
 FullChatPermissions = ChatPermissions(
     can_send_messages=True,
     can_send_media_messages=True,
@@ -338,9 +345,7 @@ class GroupJoiningVerification(Plugin):
                 user_id=user.id,
                 job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_question_message"},
             )
-            if self.mtp and (question_message.id - message.id - 1):
-                from pyrogram.errors import BadRequest as MTPBadRequest, FloodWait as MTPFloodWait
-
+            if PYROGRAM_AVAILABLE and self.mtp and (question_message.id - message.id - 1):
                 try:
                     messages_list = await self.mtp.get_messages(
                         chat.id, message_ids=list(range(message.id + 1, question_message.id))
@@ -353,10 +358,7 @@ class GroupJoiningVerification(Plugin):
                             if find_message.text is not None and "@" in find_message.text:
                                 await context.bot.ban_chat_member(chat.id, user.id)
                                 button = [[InlineKeyboardButton("解除封禁", callback_data=f"auth_admin|pass|{user.id}")]]
-                                text = (
-                                    f"{user.full_name} 由于加入群组后，"
-                                    "在验证缝隙间发送了带有 @(Mention) 的消息，已被踢出群组，并加入了封禁列表。"
-                                )
+                                text = f"{user.full_name} 由于加入群组后，" "在验证缝隙间发送了带有 @(Mention) 的消息，已被踢出群组，并加入了封禁列表。"
                                 await question_message.edit_text(text, reply_markup=InlineKeyboardMarkup(button))
                                 if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
                                     schedule.remove()

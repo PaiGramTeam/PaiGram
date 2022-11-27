@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Any, Generic, ItemsView, Iterator, KeysView, TypeVar, Optional, ValuesView
+from typing import Any, Generic, ItemsView, Iterator, KeysView, Optional, TypeVar, ValuesView
 
 import ujson as json
 
@@ -59,6 +59,12 @@ class Data(dict, Generic[K, V]):
         self._file_name = file_name
         self._dict = {}
         super(Data, self).__init__()
+
+    def __str__(self) -> str:
+        return self.data.__str__()
+
+    def __repr__(self) -> str:
+        return self.data.__repr__()
 
     def get(self, key: K, value: Any = None) -> V | None:
         return self.data.get(key, value)
