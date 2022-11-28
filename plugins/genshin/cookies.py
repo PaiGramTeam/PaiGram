@@ -3,7 +3,7 @@ from http.cookies import SimpleCookie, CookieError
 from typing import Optional, Dict
 
 import genshin
-from genshin import InvalidCookies, GenshinException, DataNotPublic
+from genshin import InvalidCookies, GenshinException, DataNotPublic, types
 from genshin.models import GenshinAccount
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
 from telegram.ext import CallbackContext, filters, ConversationHandler
@@ -32,10 +32,6 @@ class AddUserCommandData(TelegramObject):
     game_uid: int = 0
     phone: int = 0
     sign_in_client: Optional[SignIn] = None
-
-
-class GetAccountIdException(Exception):
-    pass
 
 
 CHECK_SERVER, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10105)
@@ -322,11 +318,13 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         try:
             if "account_mid_v2" in cookies:
                 logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
-                account_id = await SignIn.get_v2_account_id(client)
-                if account_id is None:
-                    raise GetAccountIdException
-                logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
-                add_user_command_data.cookies["account_id"] = account_id
+                if client.region == types.Region.CHINESE:
+                    account_info = await client.get_hoyolab_user(-1)
+                    account_id = account_info.hoyolab_uid
+                    add_user_command_data.cookies["account_id"] = str(account_id)
+                    logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
+                else:
+                    logger.warning("用户 %s[%s] region 也许是不正确的", user.full_name, user.id, client.region.name)
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
@@ -342,13 +340,9 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 f"获取账号信息发生错误，错误信息为 {exc.original}，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove()
             )
             return ConversationHandler.END
-        except GetAccountIdException:
-            logger.info("用户 %s[%s] 获取账号ID发生错误", user.full_name, user.id)
-            await message.reply_text("获取账号ID发生错误，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
         except (AttributeError, ValueError) as exc:
             logger.warning("用户 %s[%s] Cookies错误", user.full_name, user.id)
-            logger.debug("Cookies错误", exc_info=exc)
+            logger.debug("用户 %s[%s] Cookies错误" % (user.full_name, user.id), exc_info=exc)
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         with contextlib.suppress(Exception):
