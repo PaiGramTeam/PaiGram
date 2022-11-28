@@ -11,6 +11,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from telegram.helpers import create_deep_linked_url
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
@@ -54,7 +55,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
                 client, uid = await get_public_genshin_client(user.id)
             render_result = await self.render(client, uid)
         except UserNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

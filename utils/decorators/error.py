@@ -8,6 +8,7 @@ from httpx import ConnectTimeout
 from telegram import Update, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from telegram.error import BadRequest, TimedOut, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.baseplugin import add_delete_message_job
 from modules.apihelper.error import APIHelperException, ReturnCodeError, APIHelperTimedOut, ResponseException
@@ -23,11 +24,11 @@ async def send_user_notification(update: Update, context: CallbackContext, text:
         return None
     if "重新绑定" in text:
         buttons = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("点我重新绑定", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            [[InlineKeyboardButton("点我重新绑定", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
         )
     elif "通过验证" in text:
         buttons = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("点我通过验证", url=f"https://t.me/{context.bot.username}?start=verify_verification")]]
+            [[InlineKeyboardButton("点我通过验证", url=create_deep_linked_url(context.bot.username, "verify_verification"))]]
         )
     else:
         buttons = ReplyKeyboardRemove()

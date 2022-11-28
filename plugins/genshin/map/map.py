@@ -4,6 +4,7 @@ from PIL import Image
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.helpers import create_deep_linked_url
 
 from core.baseplugin import BasePlugin
 from core.plugin import handler, Plugin
@@ -45,7 +46,7 @@ class Map(Plugin, BasePlugin):
             return
         if resource_name in ("list", "列表"):
             if filters.ChatType.GROUPS.filter(message):
-                buttons = [[InlineKeyboardButton("点我私聊", url=f"https://t.me/{context.bot.username}")]]
+                buttons = [[InlineKeyboardButton("点我私聊", url=create_deep_linked_url(context.bot.username))]]
                 reply_message = await message.reply_text("请私聊派蒙使用该命令", reply_markup=InlineKeyboardMarkup(buttons))
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 300)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 300)

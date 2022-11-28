@@ -6,6 +6,7 @@ from genshin import DataNotPublic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, CallbackContext
+from telegram.helpers import create_deep_linked_url
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
@@ -102,7 +103,7 @@ class DailyNote(Plugin, BasePlugin):
             client = await get_genshin_client(user.id)
             render_result = await self._get_daily_note(client)
         except (UserNotFoundError, CookiesNotFoundError):
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

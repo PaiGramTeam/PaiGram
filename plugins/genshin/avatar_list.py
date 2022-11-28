@@ -9,6 +9,7 @@ from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Charact
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
@@ -41,7 +42,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
         try:
             return await get_genshin_client(user.id)
         except UserNotFoundError:  # 若未找到账号
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -52,7 +53,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
         except CookiesNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_msg = await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙绑定账号",

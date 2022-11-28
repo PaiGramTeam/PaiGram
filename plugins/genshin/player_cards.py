@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import DEFAULT_EnkaAssets
 from core.baseplugin import BasePlugin
@@ -76,7 +77,7 @@ class PlayerCards(Plugin, BasePlugin):
             else:
                 uid = user_info.genshin_uid
         except UserNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
