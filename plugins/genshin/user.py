@@ -70,8 +70,8 @@ class UserPlugin(Plugin, BasePlugin):
         else:
             await message.reply_text("数据非法")
             return ConversationHandler.END
-        text = f"*绑定信息*\n" f"UID：`{uid}`\n" f"注册：`{region_str}`\n" f"是否绑定Cookie：`{'√' if cookies_status else '×'}`"
-        await message.reply_text(text)
+        text = f"*绑定信息*\nUID：`{uid}`\n注册：`{region_str}`\n是否绑定Cookie：`{'√' if cookies_status else '×'}`"
+        await message.reply_markdown_v2(text)
         await message.reply_text(
             "请回复确认即可解除绑定并从数据库移除，如绑定Cookies也会跟着一起从数据库删除，删除后操作无法逆转，回复 /cancel 退出操作", reply_markup=ReplyKeyboardRemove()
         )
