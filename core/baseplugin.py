@@ -3,29 +3,37 @@ from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
 
 from core.plugin import handler, conversation
+from utils.bot import get_chat
 from utils.log import logger
 
 
 async def clean_message(context: CallbackContext):
     job = context.job
-    logger.debug(f"删除消息 chat_id[{job.chat_id}] 的 message_id[{job.data}]")
+    message_id = job.data
+    char_info = f"chat_id[{job.chat_id}]"
+    try:
+        chat = await get_chat(job.chat_id)
+        char_info = f"{chat.full_name}[{chat.id}]"
+    except (BadRequest, Forbidden) as exc:
+        logger.warning("获取 chat info 失败 %s", exc.message)
+    except Exception as exc:
+        logger.warning("获取 chat info 消息失败 %s", str(exc))
+    logger.debug("删除消息 %s message_id[%s]", char_info, message_id)
     try:
         # noinspection PyTypeChecker
-        await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
+        await context.bot.delete_message(chat_id=job.chat_id, message_id=message_id)
     except BadRequest as exc:
-        if "not found" in str(exc):
-            logger.warning(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息不存在")
-        elif "Message can't be deleted" in str(exc):
-            logger.warning(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息无法删除 可能是没有授权")
+        if "not found" in exc.message:
+            logger.warning("删除消息 %s message_id[%s] 失败 消息不存在", char_info, message_id)
+        elif "Message can't be deleted" in exc.message:
+            logger.warning("删除消息 %s message_id[%s] 失败 消息无法删除 可能是没有授权", char_info, message_id)
         else:
-            logger.error(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败")
-            logger.exception(exc)
+            logger.warning("删除消息 %s message_id[%s] 失败", char_info, message_id, exc_info=exc)
     except Forbidden as exc:
-        if "bot was kicked" in str(exc):
-            logger.warning(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 已经被踢出群")
+        if "bot was kicked" in exc.message:
+            logger.warning("删除消息 %s message_id[%s] 失败 已经被踢出群", char_info, message_id)
         else:
-            logger.error(f"删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败")
-            logger.exception(exc)
+            logger.warning("删除消息 %s message_id[%s] 失败", char_info, message_id, exc_info=exc)
 
 
 def add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int, delete_seconds: int):
