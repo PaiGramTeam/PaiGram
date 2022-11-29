@@ -20,6 +20,7 @@ from telegram.ext import (
     JobQueue,
     MessageHandler,
     filters,
+    TypeHandler,
 )
 from telegram.ext.filters import StatusUpdate
 
@@ -116,6 +117,10 @@ class Bot:
                 if hasattr(plugin, "__async_init__"):
                     await self.async_inject(plugin.__async_init__)
                 handlers = plugin.handlers
+                for index, handler in enumerate(handlers):
+                    if isinstance(handler, TypeHandler):  # 对 TypeHandler 进行特殊处理，优先级必须设置 -1，否则无用
+                        handlers.pop(index)
+                        self.app.add_handler(handler, group=-1)
                 self.app.add_handlers(handlers)
                 if handlers:
                     logger.debug(f'插件 "{path}" 添加了 {len(handlers)} 个 handler ')
