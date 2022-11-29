@@ -34,3 +34,13 @@ class UserRepository:
             session = cast(AsyncSession, session)
             session.add(user)
             await session.commit()
+
+    def del_user_by_id(self, user_id):
+        async with self.mysql.Session() as session:
+            session = cast(AsyncSession, session)
+            statement = select(User).where(User.user_id == user_id)
+            results = await session.exec(statement)
+            if user := results.first():
+                return session.delete(user)
+            else:
+                raise UserNotFoundError(user_id)

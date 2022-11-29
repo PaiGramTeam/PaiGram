@@ -89,3 +89,23 @@ class CookiesRepository:
                 return [cookies[0] for cookies in db_cookies]
             else:
                 raise RegionNotFoundError(region.name)
+
+    async def del_cookies(self, user_id, region: RegionEnum):
+        async with self.mysql.Session() as session:
+            session = cast(AsyncSession, session)
+            if region == RegionEnum.HYPERION:
+                statement = select(HyperionCookie).where(HyperionCookie.user_id == user_id)
+                results = await session.exec(statement)
+                db_cookies = results.first()
+                if db_cookies is None:
+                    raise CookiesNotFoundError(user_id)
+                await session.delete(db_cookies)
+            elif region == RegionEnum.HOYOLAB:
+                statement = select(HoyolabCookie).where(HoyolabCookie.user_id == user_id)
+                results = await session.exec(statement)
+                db_cookies = results.first()
+                if db_cookies is None:
+                    raise CookiesNotFoundError(user_id)
+                await session.delete(db_cookies)
+            else:
+                raise RegionNotFoundError(region.name)
