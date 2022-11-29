@@ -12,17 +12,17 @@ redis_db = cast(RedisDB, redis_db)
 
 
 async def get_chat(chat_id: Union[str, int], ttl: int = 86400) -> Chat:
-    if redis_db:
-        qname = f"bot:chat:{chat_id}"
-        data = await redis_db.client.get(qname)
-        if data:
-            json_data = json.loads(data)
-            return Chat.de_json(json_data, bot.app.bot)
-        chat_info = await bot.app.bot.get_chat(chat_id)
-        await redis_db.client.set(qname, chat_info.to_json())
-        await redis_db.client.expire(qname, ttl)
-        return chat_info
-    return await bot.app.bot.get_chat(chat_id)
+    if not redis_db:
+        return await bot.app.bot.get_chat(chat_id)
+    qname = f"bot:chat:{chat_id}"
+    data = await redis_db.client.get(qname)
+    if data:
+        json_data = json.loads(data)
+        return Chat.de_json(json_data, bot.app.bot)
+    chat_info = await bot.app.bot.get_chat(chat_id)
+    await redis_db.client.set(qname, chat_info.to_json())
+    await redis_db.client.expire(qname, ttl)
+    return chat_info
 
 
 def get_all_args(context: CallbackContext) -> List[str]:

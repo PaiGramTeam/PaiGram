@@ -12,7 +12,7 @@ from core.sign import SignServices
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from modules.gacha_log.log import GachaLog
-from utils.bot import get_all_args
+from utils.bot import get_all_args, get_chat as get_chat_with_cache
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import get_genshin_client
 from utils.log import logger
@@ -48,6 +48,7 @@ class GetChat(Plugin):
                     text += "D" if admin.can_delete_messages else "_"
                     text += "R" if admin.can_restrict_members else "_"
                     text += "I" if admin.can_invite_users else "_"
+                    text += "T" if admin.can_manage_topics else "_"
                     text += "P" if admin.can_pin_messages else "_"
                     text += "V" if admin.can_manage_video_chats else "_"
                     text += "N" if admin.can_promote_members else "_"
@@ -120,7 +121,7 @@ class GetChat(Plugin):
             await message.reply_text("参数错误，请指定群 id ！")
             return
         try:
-            chat = await message.get_bot().get_chat(args[0])
+            chat = await get_chat_with_cache(args[0])
             if chat_id < 0:
                 admins = await chat.get_administrators() if chat_id < 0 else None
                 text = await self.parse_group_chat(chat, admins)
