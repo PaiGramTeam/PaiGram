@@ -1,8 +1,7 @@
 from typing import Optional
 
-from telegram import Update, TelegramObject, User, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, TelegramObject, User, ReplyKeyboardRemove
 from telegram.ext import CallbackContext, filters, ConversationHandler
-from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
 from core.cookies import CookiesService
