@@ -59,7 +59,6 @@ class UserPlugin(Plugin, BasePlugin):
             cookies_status = True
         except CookiesNotFoundError:
             logger.info("用户 %s[%s] Cookies 不存在", user.full_name, user.id)
-        await message.reply_text("获取用户信息成功")
         if user_info.region == RegionEnum.HYPERION:
             uid = user_info.yuanshen_uid
             region_str = "米游社"
@@ -69,10 +68,17 @@ class UserPlugin(Plugin, BasePlugin):
         else:
             await message.reply_text("数据非法")
             return ConversationHandler.END
-        text = f"*绑定信息*\nUID：`{uid}`\n注册：`{region_str}`\n是否绑定Cookie：`{'√' if cookies_status else '×'}`"
-        await message.reply_markdown_v2(text)
-        await message.reply_text(
-            "请回复确认即可解除绑定并从数据库移除，如绑定Cookies也会跟着一起从数据库删除，删除后操作无法逆转，回复 /cancel 退出操作", reply_markup=ReplyKeyboardRemove()
+        await message.reply_text("获取用户信息成功")
+        text = (
+            f"<b>绑定信息</b>\n"
+            f"UID：<code>{uid}</code>\n"
+            f"注册：<code>{region_str}</code>`\n"
+            f"是否绑定Cookie：<code>{'√' if cookies_status else '×'}</code>"
+        )
+        await message.reply_html(text)
+        await message.reply_html(
+            "请回复<b>确认</b>即可解除绑定并从数据库移除，如绑定Cookies也会跟着一起从数据库删除，删除后操作无法逆转，回复 /cancel 退出操作",
+            reply_markup=ReplyKeyboardRemove(),
         )
         return DEL_USER
 
