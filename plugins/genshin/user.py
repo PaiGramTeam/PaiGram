@@ -76,10 +76,7 @@ class UserPlugin(Plugin, BasePlugin):
             f"是否绑定Cookie：<code>{'√' if cookies_status else '×'}</code>"
         )
         await message.reply_html(text)
-        await message.reply_html(
-            "请回复<b>确认</b>即可解除绑定并从数据库移除，如绑定Cookies也会跟着一起从数据库删除，删除后操作无法逆转，回复 /cancel 退出操作",
-            reply_markup=ReplyKeyboardRemove(),
-        )
+        await message.reply_html("请回复<b>确认</b>即可解除绑定并从数据库移除，如绑定Cookies也会跟着一起从数据库删除，删除后操作无法逆转，回复 /cancel 可退出操作")
         return DEL_USER
 
     @conversation.state(state=DEL_USER)
