@@ -41,6 +41,6 @@ class UserRepository:
             statement = select(User).where(User.user_id == user_id)
             results = await session.exec(statement)
             if user := results.first():
-                return session.delete(user)
+                await session.delete(user)
             else:
                 raise UserNotFoundError(user_id)
