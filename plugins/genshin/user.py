@@ -97,7 +97,8 @@ class UserPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 return ConversationHandler.END
             else:
                 logger.success("用户 %s[%s] 从数据库删除账号成功", user.full_name, user.id)
-            if del_user_command_data.cookies:
+            cookies = del_user_command_data.cookies
+            if cookies:
                 try:
                     await self.cookies_service.del_cookies(user.id, del_user_command_data.region)
                 except CookiesNotFoundError:
