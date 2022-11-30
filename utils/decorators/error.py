@@ -41,6 +41,9 @@ async def send_user_notification(update: Update, context: CallbackContext, text:
         return None
     logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.full_name, chat.id, text)
     try:
+        if update.callback_query:
+            await update.callback_query.answer(text, show_alert=True)
+            return None
         return await message.reply_text(text, reply_markup=buttons, allow_sending_without_reply=True)
     except ConnectTimeout:
         logger.error("httpx 模块连接服务器 ConnectTimeout 发送 update_id[%s] 错误信息失败", update.update_id)
@@ -154,11 +157,10 @@ def error_callable(func: Callable) -> Callable:
         if text:
             notice_message = await send_user_notification(update, context, text)
             message = update.effective_message
-            if message:
-                if filters.ChatType.GROUPS.filter(message):
-                    if notice_message:
-                        add_delete_message_job(context, notice_message.chat_id, notice_message.message_id, 60)
-                    add_delete_message_job(context, message.chat_id, message.message_id, 60)
+            if message and not update.callback_query and filters.ChatType.GROUPS.filter(message):
+                if notice_message:
+                    add_delete_message_job(context, notice_message.chat_id, notice_message.message_id, 60)
+                add_delete_message_job(context, message.chat_id, message.message_id, 60)
         else:
             user = update.effective_user
             chat = update.effective_chat
