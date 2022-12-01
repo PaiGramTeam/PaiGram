@@ -130,7 +130,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         elif message.text == "米游社":
             region = RegionEnum.HYPERION
-            bbs_url = "https://bbs.mihoyo.com/ys/"
+            bbs_url = "https://www.miyoushe.com/ys/"
             bbs_name = "米游社"
         elif message.text == "HoYoLab":
             bbs_url = "https://www.hoyolab.com/home"
