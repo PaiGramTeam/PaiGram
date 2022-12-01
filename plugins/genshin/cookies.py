@@ -277,7 +277,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        str_cookies = re.sub("(\s*\S*=\{.*?};?\s*)", " ", message.text, 0)
+        str_cookies = re.sub("(\s*\S*?=\{.*?};?\s*)", " ", message.text, 0)
 
         cookie = SimpleCookie()
         try:
