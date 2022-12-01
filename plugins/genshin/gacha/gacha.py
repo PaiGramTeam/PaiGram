@@ -163,7 +163,8 @@ class Gacha(Plugin, BasePlugin):
         return gacha_item
 
     @handler(CommandHandler, command="gacha", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^非首模拟器(.*)"), block=False)
+    @handler(CommandHandler, command="wish", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡模拟器(.*)"), block=False)
     @restricts(restricts_time=3, restricts_time_of_groups=20)
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
