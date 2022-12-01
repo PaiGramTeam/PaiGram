@@ -321,7 +321,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
                 if client.region == types.Region.CHINESE:
                     account_info = await client.get_hoyolab_user(-1)
-                    account_id = account_info.hoyolab_uid
+                    account_id = account_info.hoyolab_id
                     add_user_command_data.cookies["account_id"] = str(account_id)
                     logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
                 else:
