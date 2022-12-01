@@ -1,19 +1,20 @@
 import contextlib
-from http.cookies import SimpleCookie, CookieError
-from typing import Optional, Dict
+import re
+from http.cookies import CookieError, SimpleCookie
+from typing import Dict, Optional
 
 import genshin
-from genshin import InvalidCookies, GenshinException, DataNotPublic, types
+from genshin import DataNotPublic, GenshinException, InvalidCookies, types
 from genshin.models import GenshinAccount
-from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
-from telegram.ext import CallbackContext, filters, ConversationHandler
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update
+from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.models import Cookies
 from core.cookies.services import CookiesService
-from core.plugin import Plugin, handler, conversation
+from core.plugin import Plugin, conversation, handler
 from core.user.error import UserNotFoundError
 from core.user.models import User
 from core.user.services import UserService
@@ -57,7 +58,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             cookies["account_id"] = ltuid.value
         if login_uid:
             cookies["ltuid"] = login_uid.value
-            cookies["account_id"] = ltuid.value
+            if ltuid:
+                cookies["account_id"] = ltuid.value
         cookie_token = cookie.get("cookie_token")
         cookie_token_v2 = cookie.get("cookie_token_v2")
         if cookie_token:
@@ -276,7 +278,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        str_cookies = message.text
+        str_cookies = re.sub(r"(\s*\S*?=\{.*?};?\s*)", " ", message.text, 0)
+
         cookie = SimpleCookie()
         try:
             cookie.load(str_cookies)
