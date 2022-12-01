@@ -20,4 +20,4 @@ class UserService:
         return await self._repository.update_user(user)
 
     async def add_user(self, user: User) -> User:
-        return await self._repository.update_user(user)
+        return await self._repository.add_user(user)
