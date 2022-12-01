@@ -103,7 +103,7 @@ class BaseClient:
             headers = {
                 "User-Agent": ua,
                 "X_Requested_With": "com.mihoyo.hoyolab",
-                "Referer": "https://webstatic-sea.hoyolab.com",
+                "Referer": "https://webstatic.mihoyo.com",
                 "x-rpc-device_id": get_device_id(device_id),
                 "x-rpc-app_version": app_version,
                 "x-rpc-client_type": client_type,
@@ -284,7 +284,7 @@ class HoyolabClient:
             ua = get_ua(device="Paimon Build " + device_id[0:5], version="2.40.0")
             headers = {
                 "User-Agent": ua,
-                "Referer": "https://bbs.mihoyo.com/",
+                "Referer": "https://www.miyoushe.com/ys/",
                 "x-rpc-device_id": get_device_id(device_id),
                 "x-rpc-app_version": "2.40.0",
                 "x-rpc-client_type": "4",
