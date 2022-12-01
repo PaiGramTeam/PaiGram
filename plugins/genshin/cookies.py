@@ -45,7 +45,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         self.user_service = user_service
 
     @staticmethod
-    def de_cookie(cookie: SimpleCookie) -> Dict[str, str]:
+    def parse_cookie(cookie: SimpleCookie) -> Dict[str, str]:
         cookies = {}
         ltoken = cookie.get("ltoken")
         if ltoken:
@@ -289,7 +289,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         try:
-            cookies = self.de_cookie(cookie)
+            cookies = self.parse_cookie(cookie)
         except (AttributeError, ValueError) as exc:
             logger.info("用户 %s[%s] Cookies解析出现错误", user.full_name, user.id)
             logger.debug("解析Cookies出现错误", exc_info=exc)
