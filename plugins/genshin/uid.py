@@ -21,7 +21,7 @@ from utils.log import logger
 from utils.models.base import RegionEnum
 
 
-class AddUserCommandData(TelegramObject):
+class SetUserUidCommandData(TelegramObject):
     user: Optional[User] = None
     region: RegionEnum = RegionEnum.HYPERION
     game_uid: int = 0
@@ -51,10 +51,10 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
         user = update.effective_user
         message = update.effective_message
         logger.info(f"用户 {user.full_name}[{user.id}] 绑定账号命令请求")
-        add_user_command_data: AddUserCommandData = context.chat_data.get("add_uid_command_data")
-        if add_user_command_data is None:
-            cookies_command_data = AddUserCommandData()
-            context.chat_data["add_uid_command_data"] = cookies_command_data
+        set_user_uid_command_data: SetUserUidCommandData = context.chat_data.get("set_user_uid_command_data")
+        if set_user_uid_command_data is None:
+            cookies_command_data = SetUserUidCommandData()
+            context.chat_data["set_user_uid_command_data"] = cookies_command_data
         text = (
             f"你好 {user.mention_markdown_v2()} "
             f'{escape_markdown("！请输入通行证UID（非游戏UID），BOT将会通过通行证UID查找游戏UID。请选择要绑定的服务器！或回复退出取消操作")}'
@@ -69,21 +69,22 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
     async def check_server(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
-        add_user_command_data: AddUserCommandData = context.chat_data.get("add_uid_command_data")
+        set_user_uid_command_data: SetUserUidCommandData = context.chat_data.get("set_user_uid_command_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         elif message.text == "米游社":
-            region = add_user_command_data.region = RegionEnum.HYPERION
+            region = set_user_uid_command_data.region = RegionEnum.HYPERION
         elif message.text == "HoYoLab":
-            region = add_user_command_data.region = RegionEnum.HOYOLAB
+            region = set_user_uid_command_data.region = RegionEnum.HOYOLAB
         else:
             await message.reply_text("选择错误，请重新选择")
             return CHECK_SERVER
         try:
             user_info = await self.user_service.get_user_by_id(user.id)
-            add_user_command_data.user = user_info
+            set_user_uid_command_data.user = user_info
         except UserNotFoundError:
+            set_user_uid_command_data.user = None
             user_info = None
         if user_info is not None:
             try:
@@ -102,8 +103,8 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
-        add_user_command_data: AddUserCommandData = context.chat_data.get("add_uid_command_data")
-        region = add_user_command_data.region
+        set_user_uid_command_data: SetUserUidCommandData = context.chat_data.get("set_user_uid_command_data")
+        region = set_user_uid_command_data.region
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -149,7 +150,7 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
             f"UID：`{user_info.uid}`\n"
             f"服务器名称：`{user_info.server_name}`\n"
         )
-        add_user_command_data.game_uid = user_info.uid
+        set_user_uid_command_data.game_uid = user_info.uid
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return COMMAND_RESULT
 
@@ -159,33 +160,35 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
-        add_user_command_data: AddUserCommandData = context.chat_data.get("add_uid_command_data")
+        set_user_uid_command_data: SetUserUidCommandData = context.chat_data.get("set_user_uid_command_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         elif message.text == "确认":
-            if add_user_command_data.user is None:
-                if add_user_command_data.region == RegionEnum.HYPERION:
+            if set_user_uid_command_data.user is None:
+                if set_user_uid_command_data.region == RegionEnum.HYPERION:
                     user_db = User(
                         user_id=user.id,
-                        yuanshen_uid=add_user_command_data.game_uid,
-                        region=add_user_command_data.region,
+                        yuanshen_uid=set_user_uid_command_data.game_uid,
+                        region=set_user_uid_command_data.region,
                     )
-                elif add_user_command_data.region == RegionEnum.HOYOLAB:
+                elif set_user_uid_command_data.region == RegionEnum.HOYOLAB:
                     user_db = User(
-                        user_id=user.id, genshin_uid=add_user_command_data.game_uid, region=add_user_command_data.region
+                        user_id=user.id,
+                        genshin_uid=set_user_uid_command_data.game_uid,
+                        region=set_user_uid_command_data.region,
                     )
                 else:
                     await message.reply_text("数据错误")
                     return ConversationHandler.END
                 await self.user_service.add_user(user_db)
             else:
-                user_db = add_user_command_data.user
-                user_db.region = add_user_command_data.region
-                if add_user_command_data.region == RegionEnum.HYPERION:
-                    user_db.yuanshen_uid = add_user_command_data.game_uid
-                elif add_user_command_data.region == RegionEnum.HOYOLAB:
-                    user_db.genshin_uid = add_user_command_data.game_uid
+                user_db = set_user_uid_command_data.user
+                user_db.region = set_user_uid_command_data.region
+                if set_user_uid_command_data.region == RegionEnum.HYPERION:
+                    user_db.yuanshen_uid = set_user_uid_command_data.game_uid
+                elif set_user_uid_command_data.region == RegionEnum.HOYOLAB:
+                    user_db.genshin_uid = set_user_uid_command_data.game_uid
                 else:
                     await message.reply_text("数据错误")
                     return ConversationHandler.END

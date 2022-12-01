@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-httpx = "^0.23.1"
+httpx= "^0.23.1"
 ujson = "^5.5.0"
 genshin = { git = "https://github.com/thesadru/genshin.py" }
 Jinja2 = "^3.1.2"
@@ -23,7 +23,6 @@ asyncmy = "^0.2.5"
 pyppeteer = "^1.0.2"
 aiofiles = "^22.1.0"
 python-dotenv = "^0.21.0"
-PyMySQL = "^1.0.2"
 alembic = "^1.8.1"
 black = "^22.10.0"
 rich = "^12.6.0"
@@ -35,8 +34,8 @@ pytest-asyncio = { version = "^0.20.2", optional = true }
 flaky = { version = "^3.7.0", optional = true }
 lxml = "^4.9.1"
 arko-wrapper = "^0.2.4"
-fastapi = "^0.87.0"
-uvicorn = { extras = ["standard"], version = "^0.19.0" }
+fastapi = "^0.88.0"
+uvicorn = {extras = ["standard"], version = "^0.19.0"}
 sentry-sdk = "^1.11.0"
 GitPython = "^3.1.29"
 openpyxl = "^3.0.10"
@@ -63,6 +62,3 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 include = '\.pyi?$'
 line-length = 120
 target-version = ['py38', 'py39', 'py310']
-
-[tool.isort]
-profile = "black"

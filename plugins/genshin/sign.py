@@ -5,13 +5,14 @@ import time
 from json import JSONDecodeError
 from typing import Optional, Tuple
 
-from genshin import AlreadyClaimed, Client, Game, GenshinException
+from genshin import Game, GenshinException, AlreadyClaimed, Client
 from genshin.utility import recognize_genshin_server
 from httpx import AsyncClient, TimeoutException
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import (CallbackContext, CallbackQueryHandler,
-                          CommandHandler, MessageHandler, filters)
+from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
+from telegram.ext import MessageHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.admin.services import BotAdminService
 from core.base.redisdb import RedisDB
@@ -21,13 +22,12 @@ from core.config import config
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, handler
-from core.sign.models import Sign as SignUser
-from core.sign.models import SignStatusEnum
+from core.sign.models import Sign as SignUser, SignStatusEnum
 from core.sign.services import SignServices
 from core.user.error import UserNotFoundError
 from core.user.services import UserService
 from modules.apihelper.hyperion import Verification
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -345,7 +345,7 @@ class Sign(Plugin, BasePlugin):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         validate: Optional[str] = None
         if len(args) >= 1:
             msg = None
@@ -388,7 +388,7 @@ class Sign(Plugin, BasePlugin):
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
         except (UserNotFoundError, CookiesNotFoundError):
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -430,5 +430,4 @@ class Sign(Plugin, BasePlugin):
         if not challenge:
             await callback_query.answer(text="验证请求已经过期，请重新发起签到！", show_alert=True)
             return
-        url = f"t.me/{bot.app.bot.username}?start=sign"
-        await callback_query.answer(url=url)
+        await callback_query.answer(url=create_deep_linked_url(bot.app.bot.username, "sign"))

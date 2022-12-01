@@ -34,7 +34,7 @@ from core.template import TemplateService
 from core.template.models import FileType, RenderGroupResult
 from core.user.error import UserNotFoundError
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -213,7 +213,7 @@ class DailyMaterial(Plugin, BasePlugin):
     async def daily_material(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         now = datetime.now()
 
         try:

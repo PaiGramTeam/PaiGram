@@ -1,9 +1,9 @@
 import contextlib
 from http.cookies import SimpleCookie, CookieError
-from typing import Optional
+from typing import Optional, Dict
 
 import genshin
-from genshin import InvalidCookies, GenshinException, DataNotPublic
+from genshin import InvalidCookies, GenshinException, DataNotPublic, types
 from genshin.models import GenshinAccount
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
 from telegram.ext import CallbackContext, filters, ConversationHandler
@@ -34,10 +34,6 @@ class AddUserCommandData(TelegramObject):
     sign_in_client: Optional[SignIn] = None
 
 
-class GetAccountIdException(Exception):
-    pass
-
-
 CHECK_SERVER, CHECK_PHONE, CHECK_CAPTCHA, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10105)
 
 
@@ -48,8 +44,46 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         self.cookies_service = cookies_service
         self.user_service = user_service
 
+    @staticmethod
+    def parse_cookie(cookie: SimpleCookie) -> Dict[str, str]:
+        cookies = {}
+        ltoken = cookie.get("ltoken")
+        if ltoken:
+            cookies["ltoken"] = ltoken.value
+        ltuid = cookie.get("ltuid")
+        login_uid = cookie.get("login_uid")
+        if ltuid:
+            cookies["ltuid"] = ltuid.value
+            cookies["account_id"] = ltuid.value
+        if login_uid:
+            cookies["ltuid"] = login_uid.value
+            cookies["account_id"] = ltuid.value
+        cookie_token = cookie.get("cookie_token")
+        cookie_token_v2 = cookie.get("cookie_token_v2")
+        if cookie_token:
+            cookies["cookie_token"] = cookie_token.value
+        if cookie_token_v2:
+            cookies["cookie_token"] = cookie_token_v2.value
+        account_mid_v2 = cookie.get("account_mid_v2")
+        if account_mid_v2:
+            cookies["account_mid_v2"] = account_mid_v2.value
+        cookie_token_v2 = cookie.get("cookie_token_v2")
+        if cookie_token_v2:
+            cookies["cookie_token_v2"] = cookie_token_v2.value
+        ltoken_v2 = cookie.get("ltoken_v2")
+        if ltoken_v2:
+            cookies["ltoken_v2"] = ltoken_v2.value
+        ltmid_v2 = cookie.get("ltmid_v2")
+        if ltmid_v2:
+            cookies["ltmid_v2"] = ltmid_v2.value
+        login_ticket = cookie.get("login_ticket")
+        if login_ticket:
+            cookies["login_ticket"] = login_ticket.value
+        return cookies
+
     @conversation.entry_point
     @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=True)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
@@ -125,7 +159,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 "PC：\n"
                 f"1、<a href='{bbs_url}'>打开 {bbs_name} 并登录</a>\n"
                 "2、按F12打开开发者工具\n"
-                "3、将开发者工具切换至网络(Network)并🎨 Update help message点击过滤栏中的文档(Document)并刷新页面\n"
+                "3、将开发者工具切换至网络(Network)并点击过滤栏中的文档(Document)并刷新页面\n"
                 "4、在请求列表找到 <i>/ys</i> 并点击\n"
                 "5、找到并复制请求标头(Request Headers)中的Cookie\n"
                 "<u>如发现没有请求标头(Request Headers)大概因为缓存的存在需要你点击禁用缓存(Disable Cache)再次刷新页面</u>"
@@ -237,6 +271,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
     @error_callable
     async def input_cookies(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
+        user = update.effective_user
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
@@ -246,13 +281,22 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         try:
             cookie.load(str_cookies)
         except CookieError:
+            logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
             await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if len(cookie) == 0:
+            logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
             await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        cookies = {key: morsel.value for key, morsel in cookie.items()}
+        try:
+            cookies = self.parse_cookie(cookie)
+        except (AttributeError, ValueError) as exc:
+            logger.info("用户 %s[%s] Cookies解析出现错误", user.full_name, user.id)
+            logger.debug("解析Cookies出现错误", exc_info=exc)
+            await message.reply_text("解析Cookies出现错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
         if not cookies:
+            logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
             await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         add_user_command_data.cookies = cookies
@@ -269,39 +313,45 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         elif add_user_command_data.region == RegionEnum.HOYOLAB:
             client = genshin.GenshinClient(cookies=cookies)
         else:
+            logger.error("用户 %s[%s] region 异常", user.full_name, user.id)
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         try:
             if "account_mid_v2" in cookies:
                 logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
-                account_id = await SignIn.get_v2_account_id(client)
-                if account_id is None:
-                    raise GetAccountIdException
-                logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
-                add_user_command_data.cookies["account_id"] = account_id
+                if client.region == types.Region.CHINESE:
+                    account_info = await client.get_hoyolab_user(-1)
+                    account_id = account_info.hoyolab_id
+                    add_user_command_data.cookies["account_id"] = str(account_id)
+                    logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
+                else:
+                    logger.warning("用户 %s[%s] region 也许是不正确的", user.full_name, user.id, client.region.name)
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
+            logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
             await message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except InvalidCookies:
+            logger.info("用户 %s[%s] Cookies已经过期", user.full_name, user.id)
             await message.reply_text("Cookies已经过期，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except GenshinException as exc:
+            logger.info("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
             await message.reply_text(
-                f"获取账号信息发生错误，错误信息为 {str(exc)}，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove()
+                f"获取账号信息发生错误，错误信息为 {exc.original}，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove()
             )
             return ConversationHandler.END
-        except GetAccountIdException:
-            await message.reply_text("获取账号ID发生错误，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
-        except (AttributeError, ValueError):
+        except (AttributeError, ValueError) as exc:
+            logger.warning("用户 %s[%s] Cookies错误", user.full_name, user.id)
+            logger.debug("用户 %s[%s] Cookies错误" % (user.full_name, user.id), exc_info=exc)
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         with contextlib.suppress(Exception):
-            sign_in_client = SignIn(cookie=add_user_command_data.cookies)
-            await sign_in_client.get_s_token()
-            add_user_command_data.cookies = sign_in_client.cookie
-            logger.info(f"用户 {user.full_name}[{user.id}] 绑定时获取 stoken 成功")
+            if cookies.get("login_ticket"):
+                sign_in_client = SignIn(cookie=add_user_command_data.cookies)
+                await sign_in_client.get_s_token()
+                add_user_command_data.cookies = sign_in_client.cookie
+                logger.info("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
         user_info: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定

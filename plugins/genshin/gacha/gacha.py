@@ -22,7 +22,7 @@ from modules.apihelper.hyperion import GachaInfo, GachaInfoObject
 from modules.gacha.banner import BannerType, GachaBanner
 from modules.gacha.player.info import PlayerGachaInfo
 from modules.gacha.system import BannerSystem
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -165,13 +165,14 @@ class Gacha(Plugin, BasePlugin):
         return gacha_item
 
     @handler(CommandHandler, command="gacha", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^非首模拟器(.*)"), block=False)
+    @handler(CommandHandler, command="wish", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡模拟器(.*)"), block=False)
     @restricts(restricts_time=3, restricts_time_of_groups=20)
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        args = get_all_args(context)
+        args = get_args(context)
         gacha_name = "角色活动"
         if len(args) >= 1:
             gacha_name = args[0]
@@ -247,7 +248,7 @@ class Gacha(Plugin, BasePlugin):
     async def set_wish(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        args = get_all_args(context)
+        args = get_args(context)
         try:
             gacha_base_info = await self.handle.gacha_base_info("武器活动")
         except GachaNotFound:

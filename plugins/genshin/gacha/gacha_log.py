@@ -4,48 +4,33 @@ from io import BytesIO
 import genshin
 from aiofiles import open as async_open
 from genshin.models import BannerType
-from telegram import (
-    Document,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    Message,
-    Update,
-    User,
-)
+from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import (
-    CallbackContext,
-    CommandHandler,
-    ConversationHandler,
-    MessageHandler,
-    filters,
-)
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
+from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
 from core.cookies import CookiesService
 from core.cookies.error import CookiesNotFoundError
-from core.plugin import Plugin, conversation, handler
+from core.plugin import Plugin, handler, conversation
 from core.template import TemplateService
 from core.template.models import FileType
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from metadata.scripts.paimon_moe import (
-    GACHA_LOG_PAIMON_MOE_PATH,
-    update_paimon_moe_zh,
-)
+from metadata.scripts.paimon_moe import update_paimon_moe_zh, GACHA_LOG_PAIMON_MOE_PATH
 from modules.apihelper.hyperion import SignIn
 from modules.gacha_log.error import (
-    GachaLogAccountNotFound,
-    GachaLogFileError,
     GachaLogInvalidAuthkey,
-    GachaLogMixedProvider,
-    GachaLogNotFound,
     PaimonMoeGachaLogFileError,
+    GachaLogFileError,
+    GachaLogNotFound,
+    GachaLogAccountNotFound,
+    GachaLogMixedProvider,
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -165,7 +150,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
-        args = get_all_args(context)
+        args = get_args(context)
         logger.info(f"用户 {user.full_name}[{user.id}] 导入抽卡记录命令请求")
         authkey = from_url_get_authkey(args[0] if args else "")
         if not args:
@@ -248,7 +233,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             context.chat_data["uid"] = client.uid
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -284,7 +269,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     @bot_admins_rights_check
     async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         if not args:
             await message.reply_text("请指定用户ID")
             return
@@ -322,7 +307,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.2")
         except GachaLogNotFound:
             buttons = [
-                [InlineKeyboardButton("点我导入", url=f"https://t.me/{context.bot.username}?start=gacha_log_import")]
+                [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
         except GachaLogAccountNotFound:
@@ -331,7 +316,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("导入失败，数据格式错误")
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -350,7 +335,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         message = update.effective_message
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
-        if args := get_all_args(context):
+        if args := get_args(context):
             if "武器" in args:
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
@@ -373,12 +358,12 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 await png_data.reply_photo(message)
         except GachaLogNotFound:
             buttons = [
-                [InlineKeyboardButton("点我导入", url=f"https://t.me/{context.bot.username}?start=gacha_log_import")]
+                [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
         except UserNotFoundError:
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -398,7 +383,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
         all_five = False
-        if args := get_all_args(context):
+        if args := get_args(context):
             if "武器" in args:
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
@@ -438,12 +423,12 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                     await png_data.reply_photo(message)
         except GachaLogNotFound:
             buttons = [
-                [InlineKeyboardButton("点我导入", url=f"https://t.me/{context.bot.username}?start=gacha_log_import")]
+                [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
         except (UserNotFoundError):
             logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

@@ -2,11 +2,11 @@ import os
 import re
 from datetime import datetime, timedelta
 
-from genshin import DataNotPublic, GenshinException
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from genshin import GenshinException, DataNotPublic
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
-from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
-                          filters)
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
@@ -15,7 +15,7 @@ from core.plugin import Plugin, handler
 from core.template.services import RenderResult, TemplateService
 from core.user.error import UserNotFoundError
 from core.user.services import UserService
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -30,7 +30,7 @@ def get_now() -> datetime:
 def check_ledger_month(context: CallbackContext) -> int:
     now_time = get_now()
     month = now_time.month
-    args = get_all_args(context)
+    args = get_args(context)
     if len(args) >= 1:
         month = args[0].replace("月", "")
     if re_data := re.findall(r"\d+", str(month)):
@@ -125,7 +125,7 @@ class Ledger(Plugin, BasePlugin):
             client = await get_genshin_client(user.id)
             render_result = await self._start_get_ledger(client, month)
         except (UserNotFoundError, CookiesNotFoundError):
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

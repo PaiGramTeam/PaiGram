@@ -1,7 +1,7 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
-from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
-                          filters)
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
@@ -41,7 +41,7 @@ class AbyssTeam(Plugin, BasePlugin):
         try:
             client = await get_genshin_client(user.id)
         except (CookiesNotFoundError, UserNotFoundError):
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

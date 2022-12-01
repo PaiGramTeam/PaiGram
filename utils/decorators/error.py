@@ -1,15 +1,17 @@
 import json
 from functools import wraps
-from typing import Callable, Optional, cast
+from typing import Callable, cast, Optional
 
 from aiohttp import ClientConnectorError
-from genshin import DataNotPublic, GenshinException, InvalidCookies, TooManyRequests
+from genshin import InvalidCookies, GenshinException, TooManyRequests, DataNotPublic
 from httpx import ConnectTimeout
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove, Update
-from telegram.error import BadRequest, Forbidden, TimedOut
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram import Update, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from telegram.error import BadRequest, TimedOut, Forbidden
+from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.helpers import create_deep_linked_url
 
-from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
+from core.baseplugin import add_delete_message_job
+from modules.apihelper.error import APIHelperException, ReturnCodeError, APIHelperTimedOut, ResponseException
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 
@@ -22,11 +24,11 @@ async def send_user_notification(update: Update, context: CallbackContext, text:
         return None
     if "重新绑定" in text:
         buttons = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("点我重新绑定", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            [[InlineKeyboardButton("点我重新绑定", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
         )
     elif "通过验证" in text:
         buttons = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("点我通过验证", url=f"https://t.me/{context.bot.username}?start=verify_verification")]]
+            [[InlineKeyboardButton("点我通过验证", url=create_deep_linked_url(context.bot.username, "verify_verification"))]]
         )
     else:
         buttons = ReplyKeyboardRemove()
@@ -39,6 +41,9 @@ async def send_user_notification(update: Update, context: CallbackContext, text:
         return None
     logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.full_name, chat.id, text)
     try:
+        if update.callback_query:
+            await update.callback_query.answer(text, show_alert=True)
+            return None
         return await message.reply_text(text, reply_markup=buttons, allow_sending_without_reply=True)
     except ConnectTimeout:
         logger.error("httpx 模块连接服务器 ConnectTimeout 发送 update_id[%s] 错误信息失败", update.update_id)
@@ -152,11 +157,10 @@ def error_callable(func: Callable) -> Callable:
         if text:
             notice_message = await send_user_notification(update, context, text)
             message = update.effective_message
-            if message:
-                if filters.ChatType.GROUPS.filter(message):
-                    if notice_message:
-                        add_delete_message_job(context, notice_message.chat_id, notice_message.message_id, 60)
-                    add_delete_message_job(context, message.chat_id, message.message_id, 60)
+            if message and not update.callback_query and filters.ChatType.GROUPS.filter(message):
+                if notice_message:
+                    add_delete_message_job(context, notice_message.chat_id, notice_message.message_id, 60)
+                add_delete_message_job(context, message.chat_id, message.message_id, 60)
         else:
             user = update.effective_user
             chat = update.effective_chat

@@ -3,9 +3,9 @@ import typing
 import aiohttp.typedefs
 import genshin  # pylint: disable=W0406
 import yarl
-from genshin import constants, types, utility
+from genshin import constants, types, utility, models
 from genshin.client import routes
-from genshin.utility import ds
+from genshin.utility import generate_dynamic_secret
 
 from modules.apihelper.helpers import get_device_id, get_ds, get_ua, hex_digest
 from utils.patch.methods import patch, patchable
@@ -86,7 +86,7 @@ class BaseClient:
                 "x-rpc-app_version": "1.5.0",
                 "x-rpc-client_type": "4",
                 "x-rpc-language": lang,
-                "ds": ds.generate_dynamic_secret(),
+                "ds": generate_dynamic_secret(),
             }
         elif region == types.Region.CHINESE:
             account_id = self.cookie_manager.user_id
@@ -98,16 +98,16 @@ class BaseClient:
                     device_id = hex_digest(account_mid_v2)
                 else:
                     device_id = DEVICE_ID
-            _app_version, _client_type, _ds = get_ds(new_ds=True, data=data, params=params)
-            ua = get_ua(device="Paimon Build " + device_id[0:5], version=_app_version)
+            app_version, client_type, ds_sign = get_ds(new_ds=True, data=data, params=params)
+            ua = get_ua(device="Paimon Build " + device_id[0:5], version=app_version)
             headers = {
                 "User-Agent": ua,
                 "X_Requested_With": "com.mihoyo.hoyolab",
                 "Referer": "https://webstatic-sea.hoyolab.com",
-                "x-rpc-device_id": get_device_id(ua),
-                "x-rpc-app_version": _app_version,
-                "x-rpc-client_type": _client_type,
-                "ds": _ds,
+                "x-rpc-device_id": get_device_id(device_id),
+                "x-rpc-app_version": app_version,
+                "x-rpc-client_type": client_type,
+                "ds": ds_sign,
             }
         else:
             raise TypeError(f"{region!r} is not a valid region.")
@@ -217,20 +217,26 @@ class DailyRewardClient:
                 else:
                     device_id = DEVICE_ID
             if endpoint == "sign":
-                _app_version, _client_type, _ds = get_ds()
+                app_version, client_type, ds_sign = get_ds()
             else:
-                _app_version, _client_type, _ds = get_ds(new_ds=True, params=params)
-            ua = get_ua(device="Paimon Build " + device_id[0:5], version=_app_version)
+                app_version, client_type, ds_sign = get_ds(new_ds=True, params=params)
+            device = "Paimon Build " + device_id[0:5]
+            ua = get_ua(device=device)
             headers["User-Agent"] = ua
             headers["X_Requested_With"] = "com.mihoyo.hoyolab"
             headers["Referer"] = (
                 "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?"
                 "bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
             )
-            headers["x-rpc-device_id"] = get_device_id(ua)
-            headers["x-rpc-app_version"] = _app_version
-            headers["x-rpc-client_type"] = _client_type
-            headers["ds"] = _ds
+            headers["x-rpc-device_name"] = device
+            headers["x-rpc-device_id"] = get_device_id(device_id)
+            headers["x-rpc-app_version"] = app_version
+            headers["x-rpc-client_type"] = client_type
+            headers["x-rpc-sys_version"] = "12"
+            headers["x-rpc-platform"] = "android"
+            headers["x-rpc-channel"] = "miyousheluodi"
+            headers["x-rpc-device_model"] = device
+            headers["ds"] = ds_sign
 
             validate = kwargs.get("validate")
             challenge = kwargs.get("challenge")
@@ -247,3 +253,44 @@ class DailyRewardClient:
         kwargs.pop("validate", None)
 
         return await self.request(url, method=method, params=params, headers=headers, **kwargs)
+
+
+@patch(genshin.client.components.hoyolab.HoyolabClient)  # noqa
+class HoyolabClient:
+    @patchable
+    async def get_hoyolab_user(
+        self, hoyolab_id: int, *, lang: typing.Optional[str] = None
+    ) -> models.PartialHoyolabUser:
+        """Get a hoyolab user."""
+        # todo: use routes.py instead of putting full urls in methods
+        if self.region == types.Region.OVERSEAS:
+            if hoyolab_id <= 0:
+                raise TypeError(f"{hoyolab_id} is not a valid hoyolab id.")
+            url = "https://bbs-api-os.hoyolab.com/community/painter/wapi/user/full"
+            data = await self.request_hoyolab(url, params=dict(uid=hoyolab_id), lang=lang)
+            return models.FullHoyolabUser(**data["user_info"])
+        elif self.region == types.Region.CHINESE:
+            url = "https://bbs-api.mihoyo.com/user/wapi/getUserFullInfo"
+            account_id = self.cookie_manager.user_id
+            if account_id:
+                device_id = hex_digest(str(account_id))
+            else:
+                account_mid_v2 = get_account_mid_v2(self.cookie_manager.cookies)
+                if account_mid_v2:
+                    device_id = hex_digest(account_mid_v2)
+                else:
+                    device_id = DEVICE_ID
+            ds_sign = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
+            ua = get_ua(device="Paimon Build " + device_id[0:5], version="2.40.0")
+            headers = {
+                "User-Agent": ua,
+                "Referer": "https://bbs.mihoyo.com/",
+                "x-rpc-device_id": get_device_id(device_id),
+                "x-rpc-app_version": "2.40.0",
+                "x-rpc-client_type": "4",
+                "ds": ds_sign,
+            }
+            data = await self.request(url, method="GET", params=dict(gids=2), headers=headers)
+            return models.PartialHoyolabUser(**data["user_info"])
+        else:
+            raise TypeError(f"{self.region!r} is not a valid region.")

@@ -1,15 +1,26 @@
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Tuple, Union, Optional
 
-from enkanetwork import (CharacterInfo, DigitType, EnkaNetworkAPI,
-                         EnkaNetworkResponse, EnkaServerError, Equipments,
-                         EquipmentsStats, EquipmentsType, Forbidden,
-                         HTTPException, Stats, StatsPercentage, UIDNotFounded,
-                         VaildateUIDError)
+from enkanetwork import (
+    CharacterInfo,
+    DigitType,
+    EnkaNetworkAPI,
+    EnkaNetworkResponse,
+    EnkaServerError,
+    Equipments,
+    EquipmentsStats,
+    EquipmentsType,
+    Forbidden,
+    HTTPException,
+    Stats,
+    StatsPercentage,
+    UIDNotFounded,
+    VaildateUIDError,
+)
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import (CallbackContext, CallbackQueryHandler,
-                          CommandHandler, MessageHandler, filters)
+from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import DEFAULT_EnkaAssets
 from core.baseplugin import BasePlugin
@@ -19,9 +30,8 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.shortname import roleToName
-from modules.playercards.helpers import (ArtifactStatsTheory,
-                                         fix_skills_level_data)
-from utils.bot import get_all_args
+from modules.playercards.helpers import ArtifactStatsTheory, fix_skills_level_data
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
@@ -58,7 +68,7 @@ class PlayerCards(Plugin, BasePlugin):
     async def player_cards(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             user_info = await self.user_service.get_user_by_id(user.id)
@@ -67,7 +77,7 @@ class PlayerCards(Plugin, BasePlugin):
             else:
                 uid = user_info.genshin_uid
         except UserNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

@@ -4,13 +4,13 @@ import os
 from sys import executable
 
 from aiofiles import open as async_open
-from telegram import Message, Update
+from telegram import Update, Message
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
 from core.bot import bot
-from core.plugin import Plugin, handler
-from utils.bot import get_all_args
+from core.plugin import handler, Plugin
+from utils.bot import get_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import execute
 from utils.log import logger
@@ -42,7 +42,7 @@ class UpdatePlugin(Plugin):
     async def update(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         logger.info(f"用户 {user.full_name}[{user.id}] update命令请求")
         if self._lock.locked():
             await message.reply_text("程序正在更新 请勿重复操作")

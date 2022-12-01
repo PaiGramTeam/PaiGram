@@ -26,6 +26,9 @@ class CookiesService:
     async def get_cookies(self, user_id: int, region: RegionEnum):
         return await self._repository.get_cookies(user_id, region)
 
+    async def del_cookies(self, user_id: int, region: RegionEnum):
+        return await self._repository.del_cookies(user_id, region)
+
 
 class PublicCookiesService:
     def __init__(self, cookies_repository: CookiesRepository, public_cookies_cache: PublicCookiesCache):

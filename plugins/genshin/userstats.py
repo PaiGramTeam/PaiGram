@@ -3,22 +3,25 @@ from typing import Optional
 
 from genshin import Client
 from genshin.models import GenshinUserStats
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
-                          filters)
+from telegram.ext import (
+    CallbackContext,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
+from telegram.helpers import create_deep_linked_url
 
 from core.baseplugin import BasePlugin
-from core.cookies.error import (CookiesNotFoundError,
-                                TooManyRequestPublicCookies)
+from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
 from core.plugin import Plugin, handler
 from core.template.models import RenderResult
 from core.template.services import TemplateService
 from core.user.error import UserNotFoundError
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
-from utils.helpers import (get_genshin_client, get_public_genshin_client,
-                           url_to_file)
+from utils.helpers import url_to_file, get_genshin_client, get_public_genshin_client
 from utils.log import logger
 
 
@@ -52,7 +55,7 @@ class UserStatsPlugins(Plugin, BasePlugin):
                 client, uid = await get_public_genshin_client(user.id)
             render_result = await self.render(client, uid)
         except UserNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
