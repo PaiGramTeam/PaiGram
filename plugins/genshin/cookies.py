@@ -58,7 +58,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             cookies["account_id"] = ltuid.value
         if login_uid:
             cookies["ltuid"] = login_uid.value
-            cookies["account_id"] = ltuid.value
+            if ltuid:
+                cookies["account_id"] = ltuid.value
         cookie_token = cookie.get("cookie_token")
         cookie_token_v2 = cookie.get("cookie_token_v2")
         if cookie_token:
