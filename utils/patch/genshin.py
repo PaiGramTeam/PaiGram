@@ -5,7 +5,7 @@ import genshin  # pylint: disable=W0406
 import yarl
 from genshin import constants, types, utility, models
 from genshin.client import routes
-from genshin.utility import ds, generate_dynamic_secret
+from genshin.utility import generate_dynamic_secret
 
 from modules.apihelper.helpers import get_ds, get_ua, get_device_id, hex_digest
 from utils.patch.methods import patch, patchable
@@ -86,7 +86,7 @@ class BaseClient:
                 "x-rpc-app_version": "1.5.0",
                 "x-rpc-client_type": "4",
                 "x-rpc-language": lang,
-                "ds": ds.generate_dynamic_secret(),
+                "ds": generate_dynamic_secret(),
             }
         elif region == types.Region.CHINESE:
             account_id = self.cookie_manager.user_id
@@ -98,16 +98,16 @@ class BaseClient:
                     device_id = hex_digest(account_mid_v2)
                 else:
                     device_id = DEVICE_ID
-            _app_version, _client_type, _ds = get_ds(new_ds=True, data=data, params=params)
-            ua = get_ua(device="Paimon Build " + device_id[0:5], version=_app_version)
+            app_version, client_type, ds_sign = get_ds(new_ds=True, data=data, params=params)
+            ua = get_ua(device="Paimon Build " + device_id[0:5], version=app_version)
             headers = {
                 "User-Agent": ua,
                 "X_Requested_With": "com.mihoyo.hoyolab",
                 "Referer": "https://webstatic-sea.hoyolab.com",
-                "x-rpc-device_id": get_device_id(ua),
-                "x-rpc-app_version": _app_version,
-                "x-rpc-client_type": _client_type,
-                "ds": _ds,
+                "x-rpc-device_id": get_device_id(device_id),
+                "x-rpc-app_version": app_version,
+                "x-rpc-client_type": client_type,
+                "ds": ds_sign,
             }
         else:
             raise TypeError(f"{region!r} is not a valid region.")
@@ -217,20 +217,26 @@ class DailyRewardClient:
                 else:
                     device_id = DEVICE_ID
             if endpoint == "sign":
-                _app_version, _client_type, _ds = get_ds()
+                app_version, client_type, ds_sign = get_ds()
             else:
-                _app_version, _client_type, _ds = get_ds(new_ds=True, params=params)
-            ua = get_ua(device="Paimon Build " + device_id[0:5], version=_app_version)
+                app_version, client_type, ds_sign = get_ds(new_ds=True, params=params)
+            device = "Paimon Build " + device_id[0:5]
+            ua = get_ua(device=device)
             headers["User-Agent"] = ua
             headers["X_Requested_With"] = "com.mihoyo.hoyolab"
             headers["Referer"] = (
                 "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?"
                 "bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
             )
-            headers["x-rpc-device_id"] = get_device_id(ua)
-            headers["x-rpc-app_version"] = _app_version
-            headers["x-rpc-client_type"] = _client_type
-            headers["ds"] = _ds
+            headers["x-rpc-device_name"] = device
+            headers["x-rpc-device_id"] = get_device_id(device_id)
+            headers["x-rpc-app_version"] = app_version
+            headers["x-rpc-client_type"] = client_type
+            headers["x-rpc-sys_version"] = "12"
+            headers["x-rpc-platform"] = "android"
+            headers["x-rpc-channel"] = "miyousheluodi"
+            headers["x-rpc-device_model"] = device
+            headers["ds"] = ds_sign
 
             validate = kwargs.get("validate")
             challenge = kwargs.get("challenge")
@@ -274,16 +280,15 @@ class HoyolabClient:
                     device_id = hex_digest(account_mid_v2)
                 else:
                     device_id = DEVICE_ID
-            _ds = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
-            _ua = get_ua(device="Paimon Build " + device_id[0:5], version="2.36.1")
+            ds_sign = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
             ua = get_ua(device="Paimon Build " + device_id[0:5], version="2.40.0")
             headers = {
                 "User-Agent": ua,
                 "Referer": "https://bbs.mihoyo.com/",
-                "x-rpc-device_id": get_device_id(_ua),
+                "x-rpc-device_id": get_device_id(device_id),
                 "x-rpc-app_version": "2.40.0",
                 "x-rpc-client_type": "4",
-                "ds": _ds,
+                "ds": ds_sign,
             }
             data = await self.request(url, method="GET", params=dict(gids=2), headers=headers)
             return models.PartialHoyolabUser(**data["user_info"])
