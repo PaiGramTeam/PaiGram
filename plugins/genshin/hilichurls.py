@@ -7,7 +7,7 @@ from telegram.ext import filters
 
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -27,7 +27,7 @@ class HilichurlsPlugin(Plugin, BasePlugin):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        args = get_all_args(context)
+        args = get_args(context)
         if len(args) >= 1:
             msg = args[0]
         else:

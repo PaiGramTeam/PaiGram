@@ -25,13 +25,21 @@ async def get_chat(chat_id: Union[str, int], ttl: int = 86400) -> Chat:
     return chat_info
 
 
-def get_all_args(context: CallbackContext) -> List[str]:
+def get_args(context: CallbackContext) -> List[str]:
     args = context.args
     match = context.match
     if args is None:
         if match is not None:
             groups = match.groups()
-            return list(groups)
+            command = groups[0]
+            if command:
+                temp = []
+                command_parts = command.split(" ")
+                for command_part in command_parts:
+                    if command_part:
+                        temp.append(command_part)
+                return temp
+            return []
     else:
         if len(args) >= 1:
             return args

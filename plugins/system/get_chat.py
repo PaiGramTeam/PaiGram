@@ -12,7 +12,7 @@ from core.sign import SignServices
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from modules.gacha_log.log import GachaLog
-from utils.bot import get_all_args, get_chat as get_chat_with_cache
+from utils.bot import get_args, get_chat as get_chat_with_cache
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import get_genshin_client
 from utils.log import logger
@@ -111,7 +111,7 @@ class GetChat(Plugin):
         user = update.effective_user
         logger.info(f"用户 {user.full_name}[{user.id}] get_chat 命令请求")
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         if not args:
             await message.reply_text("参数错误，请指定群 id ！")
             return

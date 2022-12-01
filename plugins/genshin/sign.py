@@ -27,7 +27,7 @@ from core.sign.services import SignServices
 from core.user.error import UserNotFoundError
 from core.user.services import UserService
 from modules.apihelper.hyperion import Verification
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -345,7 +345,7 @@ class Sign(Plugin, BasePlugin):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         validate: Optional[str] = None
         if len(args) >= 1:
             msg = None

@@ -30,7 +30,7 @@ from modules.gacha_log.error import (
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -150,7 +150,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
-        args = get_all_args(context)
+        args = get_args(context)
         logger.info(f"用户 {user.full_name}[{user.id}] 导入抽卡记录命令请求")
         authkey = from_url_get_authkey(args[0] if args else "")
         if not args:
@@ -269,7 +269,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     @bot_admins_rights_check
     async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         if not args:
             await message.reply_text("请指定用户ID")
             return
@@ -335,7 +335,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         message = update.effective_message
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
-        if args := get_all_args(context):
+        if args := get_args(context):
             if "武器" in args:
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
@@ -383,7 +383,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
         all_five = False
-        if args := get_all_args(context):
+        if args := get_args(context):
             if "武器" in args:
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:

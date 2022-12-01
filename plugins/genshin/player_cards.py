@@ -31,7 +31,7 @@ from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.shortname import roleToName
 from modules.playercards.helpers import ArtifactStatsTheory, fix_skills_level_data
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
@@ -68,7 +68,7 @@ class PlayerCards(Plugin, BasePlugin):
     async def player_cards(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             user_info = await self.user_service.get_user_by_id(user.id)
