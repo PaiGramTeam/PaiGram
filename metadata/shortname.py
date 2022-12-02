@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import functools
+from typing import List
 
 from metadata.genshin import WEAPON_DATA
 
-__all__ = ["roles", "weapons", "roleToId", "roleToName", "weaponToName", "weaponToId", "not_real_roles"]
+__all__ = ["roles", "weapons", "roleToId", "roleToName", "weaponToName", "weaponToId", "not_real_roles", "roleToTag"]
 
 # noinspection SpellCheckingInspection
 roles = {
@@ -393,3 +394,10 @@ def weaponToName(shortname: str) -> str:
 def weaponToId(name: str) -> int | None:
     """获取武器ID"""
     return next((int(key) for key, value in WEAPON_DATA.items() if weaponToName(name) in value["name"]), None)
+
+
+# noinspection PyPep8Naming
+@functools.lru_cache()
+def roleToTag(role_name: str) -> List[str]:
+    """通过角色名获取TAG"""
+    return next((value for value in roles.values() if value[0] == role_name), [role_name])

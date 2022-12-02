@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
-__all__ = ["BaseEntry", "WeaponEntry", "WeaponsEntry"]
+__all__ = ["BaseEntry", "WeaponEntry", "WeaponsEntry", "StrategyEntry", "StrategyEntryList"]
 
 from thefuzz import fuzz
 
@@ -17,7 +17,8 @@ class BaseEntry(BaseModel):
     title: str
     description: str
     tags: Optional[List[str]] = []
-    html_insertion_markup: Optional[str] = None
+    caption: Optional[str] = None
+    parse_mode: Optional[str] = None
     photo_url: Optional[str] = None
     photo_file_id: Optional[str] = None
 
@@ -50,3 +51,22 @@ class WeaponEntry(BaseEntry):
 
 class WeaponsEntry(BaseModel):
     data: Optional[List[WeaponEntry]]
+
+
+class StrategyEntry(BaseEntry):
+    def compare_to_query(self, search_query: str) -> float:
+        score = 0.0
+        if search_query == self.title:
+            return 100
+        if search_query in self.tags:
+            return 99
+        for tag in self.tags:
+            if search_query in tag:
+                _score = len(search_query) / len(tag)
+                if _score >= score:
+                    score = _score
+        return score
+
+
+class StrategyEntryList(BaseModel):
+    data: Optional[List[StrategyEntry]]

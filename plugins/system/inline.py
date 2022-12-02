@@ -140,14 +140,27 @@ class Inline(Plugin):
                 if simple_search_results:
                     for simple_search_result in simple_search_results:
                         if simple_search_result.photo_file_id:
+                            description = simple_search_result.description
+                            if len(description) >= 10:
+                                description = description[:10]
                             results_list.append(
                                 InlineQueryResultCachedPhoto(
                                     id=str(uuid4()),
-                                    photo_file_id=simple_search_result.photo_file_id,
-                                    description=simple_search_result.description,
                                     title=simple_search_result.title,
+                                    photo_file_id=simple_search_result.photo_file_id,
+                                    description=description,
+                                    caption=simple_search_result.caption,
+                                    parse_mode=simple_search_result.parse_mode,
                                 )
                             )
+                    results_list.append(
+                        InlineQueryResultArticle(
+                            id=str(uuid4()),
+                            title=f"当前查询内容为 {args[0]}",
+                            description="如果无查看图片描述 这是正常的 客户端问题",
+                            input_message_content=InputTextMessageContent(f"当前查询内容为 {args[0]}\n如果无查看图片描述 这是正常的 客户端问题"),
+                        )
+                    )
 
         if not results_list:
             results_list.append(
