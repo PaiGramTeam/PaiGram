@@ -38,7 +38,7 @@ class SearchPlugin(Plugin):
     @handler.command("save_entry", block=False)
     @bot_admins_rights_check
     @restricts()
-    async def save_search(self, update: Update, _: CallbackContext):
+    async def save_entry(self, update: Update, _: CallbackContext):
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 保存条目数据命令请求", user.full_name, user.id)
@@ -53,7 +53,7 @@ class SearchPlugin(Plugin):
     @handler.command("remove_all_entry", block=False)
     @bot_admins_rights_check
     @restricts()
-    async def save_search(self, update: Update, _: CallbackContext):
+    async def remove_all_entry(self, update: Update, _: CallbackContext):
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 删除全部条目数据命令请求", user.full_name, user.id)

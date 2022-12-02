@@ -88,7 +88,7 @@ class Inline(Plugin):
                     id=str(uuid4()),
                     title="武器查询",
                     description="输入武器名称即可查询图片",
-                    input_message_content=InputTextMessageContent(f"请进入Inline模式输入武器名称即可查询图片"),
+                    input_message_content=InputTextMessageContent("请进入Inline模式输入武器名称即可查询图片"),
                 )
             )
         else:

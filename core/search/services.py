@@ -19,7 +19,7 @@ ENTRY_DAYA_PATH.mkdir(parents=True, exist_ok=True)
 
 class SearchServices:
     def __init__(self):
-        self._lock = asyncio.Lock()
+        self._lock = asyncio.Lock()  # 访问和修改操作成员变量必须加锁操作
         self.weapons: List[WeaponEntry] = []
         self.entry_data_path: Path = ENTRY_DAYA_PATH
         self.weapons_entry_data_path = self.entry_data_path / "weapon.json"
@@ -44,17 +44,25 @@ class SearchServices:
                     self.weapons.append(weapon.copy())
 
     async def save_entry(self) -> None:
+        """保存条目
+        :return: None
+        """
         async with self._lock:
             if len(self.weapons) > 0:
                 weapons = WeaponsEntry(data=self.weapons)
                 await self.save_json(self.weapons_entry_data_path, weapons.json())
 
     async def add_entry(self, entry: BaseEntry, update: bool = False, ttl: int = 3600):
+        """添加条目
+        :param entry: 条目数据
+        :param update: 如果条目存在是否覆盖
+        :param ttl: 条目存在时需要多久时间覆盖
+        :return: None
+        """
         async with self._lock:
             replace_time = self.replace_time.get(entry.key)
-            if replace_time:
-                if replace_time <= time.time() + ttl:
-                    return
+            if replace_time and replace_time <= time.time() + ttl:
+                return
             if isinstance(entry, WeaponEntry):
                 for index, value in enumerate(self.weapons):
                     if value.key == entry.key:
@@ -66,6 +74,9 @@ class SearchServices:
                     self.weapons.append(entry)
 
     async def remove_all_entry(self):
+        """移除全部条目
+        :return: None
+        """
         async with self._lock:
             self.weapons = []
             if self.weapons_entry_data_path.exists():
@@ -77,10 +88,10 @@ class SearchServices:
 
     @alru_cache(maxsize=64)
     async def multi_search_combinations(self, search_queries: Tuple[str], results_per_query: int = 3):
-        """多重搜索
-        :param search_queries:
-        :param results_per_query:
-        :return: search results
+        """多个关键词搜索
+        :param search_queries: 搜索文本
+        :param results_per_query: 约定返回的数目
+        :return: 搜索结果
         """
         results = {}
         effective_queries = list(dict.fromkeys(search_queries))
@@ -90,6 +101,11 @@ class SearchServices:
 
     @alru_cache(maxsize=64)
     async def search(self, search_query: Optional[str], amount: int = None) -> Optional[List[BaseEntry]]:
+        """在所有可用条目中搜索适当的结果
+        :param search_query: 搜索文本
+        :param amount: 约定返回的数目
+        :return: 搜索结果
+        """
         # search_entries: Iterable[BaseEntry] = []
         async with self._lock:
             search_entries = itertools.chain(self.weapons)
