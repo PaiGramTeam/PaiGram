@@ -86,9 +86,17 @@ class Inline(Plugin):
             results_list.append(
                 InlineQueryResultArticle(
                     id=str(uuid4()),
-                    title="武器查询",
-                    description="输入武器名称即可查询图片",
-                    input_message_content=InputTextMessageContent("请进入Inline模式输入武器名称即可查询图片"),
+                    title="武器图鉴查询",
+                    description="输入武器名称即可查询武器图鉴",
+                    input_message_content=InputTextMessageContent("武器图鉴查询"),
+                )
+            )
+            results_list.append(
+                InlineQueryResultArticle(
+                    id=str(uuid4()),
+                    title="角色攻略查询",
+                    description="输入角色名即可查询角色攻略",
+                    input_message_content=InputTextMessageContent("角色攻略查询"),
                 )
             )
         else:
