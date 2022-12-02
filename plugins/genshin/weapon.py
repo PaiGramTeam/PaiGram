@@ -5,10 +5,12 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 from core.base.assets import AssetsService, AssetsCouldNotFound
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
+from core.search.models import WeaponEntry
+from core.search.services import SearchServices
 from core.template import TemplateService
 from core.wiki.services import WikiService
 from metadata.genshin import honey_id_to_game_id
-from metadata.shortname import weaponToName
+from metadata.shortname import weaponToName, weapons as _weapons_data
 from modules.wiki.weapon import Weapon
 from utils.bot import get_args
 from utils.decorators.error import error_callable
@@ -27,10 +29,12 @@ class WeaponPlugin(Plugin, BasePlugin):
         template_service: TemplateService = None,
         wiki_service: WikiService = None,
         assets_service: AssetsService = None,
+        search_service: SearchServices = None,
     ):
         self.wiki_service = wiki_service
         self.template_service = template_service
         self.assets_service = assets_service
+        self.search_service = search_service
 
     @handler(CommandHandler, command="weapon", block=False)
     @handler(MessageHandler, filters=filters.Regex("^武器查询(.*)"), block=False)
@@ -122,8 +126,19 @@ class WeaponPlugin(Plugin, BasePlugin):
             "genshin/weapon/weapon.html", template_data, {"width": 540, "height": 540}, ttl=31 * 24 * 60 * 60
         )
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await png_data.reply_photo(
+        reply_photo = await png_data.reply_photo(
             message,
             filename=f"{template_data['weapon_name']}.png",
             allow_sending_without_reply=True,
         )
+        if reply_photo.photo:
+            photo_file_id = reply_photo.photo[0].file_id
+            tags = _weapons_data.get(weapon_name)
+            entry = WeaponEntry(
+                key=f"plugin:weapon:{weapon_name}",
+                title=weapon_name,
+                description=weapon_data.story,
+                tags=tags,
+                photo_file_id=photo_file_id,
+            )
+            await self.search_service.add_entry(entry)

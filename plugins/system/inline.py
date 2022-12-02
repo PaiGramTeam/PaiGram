@@ -2,13 +2,20 @@ import asyncio
 from typing import cast, Dict, Awaitable, List
 from uuid import uuid4
 
-from telegram import InlineQueryResultArticle, InputTextMessageContent, Update, InlineQuery
+from telegram import (
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+    Update,
+    InlineQuery,
+    InlineQueryResultCachedPhoto,
+)
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, InlineQueryHandler
 
 from core.base.assets import AssetsService, AssetsCouldNotFound
 from core.plugin import handler, Plugin
+from core.search.services import SearchServices
 from core.wiki import WikiService
 from utils.decorators.error import error_callable
 from utils.log import logger
@@ -21,12 +28,14 @@ class Inline(Plugin):
         self,
         wiki_service: WikiService = None,
         assets_service: AssetsService = None,
+        search_service: SearchServices = None,
     ):
         self.assets_service = assets_service
         self.wiki_service = wiki_service
         self.weapons_list: List[Dict[str, str]] = []
         self.characters_list: List[Dict[str, str]] = []
         self.refresh_task: List[Awaitable] = []
+        self.search_service = search_service
 
     async def __async_init__(self):
         # todo: 整合进 wiki 或者单独模块 从Redis中读取
@@ -74,7 +83,14 @@ class Inline(Plugin):
         results_list = []
         args = query.split(" ")
         if args[0] == "":
-            pass
+            results_list.append(
+                InlineQueryResultArticle(
+                    id=str(uuid4()),
+                    title="武器查询",
+                    description="输入武器名称即可查询图片",
+                    input_message_content=InputTextMessageContent(f"请进入Inline模式输入武器名称即可查询图片"),
+                )
+            )
         else:
             if "查看武器列表并查询" == args[0]:
                 for weapon in self.weapons_list:
@@ -119,6 +135,19 @@ class Inline(Plugin):
                             ),
                         )
                     )
+            else:
+                simple_search_results = await self.search_service.search(args[0])
+                if simple_search_results:
+                    for simple_search_result in simple_search_results:
+                        if simple_search_result.photo_file_id:
+                            results_list.append(
+                                InlineQueryResultCachedPhoto(
+                                    id=str(uuid4()),
+                                    photo_file_id=simple_search_result.photo_file_id,
+                                    description=simple_search_result.description,
+                                    title=simple_search_result.title,
+                                )
+                            )
 
         if not results_list:
             results_list.append(
