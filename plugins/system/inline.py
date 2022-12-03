@@ -146,6 +146,15 @@ class Inline(Plugin):
             else:
                 simple_search_results = await self.search_service.search(args[0])
                 if simple_search_results:
+                    results_list.append(
+                        InlineQueryResultArticle(
+                            id=str(uuid4()),
+                            title=f"当前查询内容为 {args[0]}",
+                            description="如果无查看图片描述 这是正常的 客户端问题",
+                            thumb_url="https://www.miyoushe.com/_nuxt/img/game-ys.dfc535b.jpg",
+                            input_message_content=InputTextMessageContent(f"当前查询内容为 {args[0]}\n如果无查看图片描述 这是正常的 客户端问题"),
+                        )
+                    )
                     for simple_search_result in simple_search_results:
                         if simple_search_result.photo_file_id:
                             description = simple_search_result.description
@@ -161,14 +170,6 @@ class Inline(Plugin):
                                     parse_mode=simple_search_result.parse_mode,
                                 )
                             )
-                    results_list.append(
-                        InlineQueryResultArticle(
-                            id=str(uuid4()),
-                            title=f"当前查询内容为 {args[0]}",
-                            description="如果无查看图片描述 这是正常的 客户端问题",
-                            input_message_content=InputTextMessageContent(f"当前查询内容为 {args[0]}\n如果无查看图片描述 这是正常的 客户端问题"),
-                        )
-                    )
 
         if not results_list:
             results_list.append(
