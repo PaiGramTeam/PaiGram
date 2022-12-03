@@ -36,16 +36,17 @@ class WeaponEntry(BaseEntry):
             return 100
         if search_query in self.tags:
             return 99
-        for tag in self.tags:
-            if search_query in tag:
-                _score = len(search_query) / len(tag)
+        if self.tags:
+            for tag in self.tags:
+                _score = fuzz.partial_token_set_ratio(tag, search_query)
                 if _score >= score:
                     score = _score
         if score >= 90:
             return score
-        _score = fuzz.partial_token_set_ratio(self.description, search_query)
-        if _score >= score:
-            return _score
+        if self.description:
+            _score = fuzz.partial_token_set_ratio(self.description, search_query)
+            if _score >= score:
+                return _score
         return score
 
 
@@ -60,9 +61,9 @@ class StrategyEntry(BaseEntry):
             return 100
         if search_query in self.tags:
             return 99
-        for tag in self.tags:
-            if search_query in tag:
-                _score = len(search_query) / len(tag)
+        if self.tags:
+            for tag in self.tags:
+                _score = fuzz.partial_token_set_ratio(tag, search_query)
                 if _score >= score:
                     score = _score
         return score

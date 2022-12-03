@@ -28,7 +28,7 @@ class SearchPlugin(Plugin):
         asyncio.create_task(load_data())
 
     @job.run_repeating(interval=datetime.timedelta(hours=1), name="SaveEntryJob")
-    async def save_entry_job(self):
+    async def save_entry_job(self, _: CallbackContext):
         if self._lock.locked():
             logger.warning("条目数据正在保存 跳过本次定时任务")
         else:
