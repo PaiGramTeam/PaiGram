@@ -33,7 +33,9 @@ class SearchPlugin(Plugin):
             logger.warning("条目数据正在保存 跳过本次定时任务")
         else:
             async with self._lock:
+                logger.info("条目数据正在自动保存")
                 await self.search.save_entry()
+                logger.success("条目数据自动保存成功")
 
     @handler.command("save_entry", block=False)
     @bot_admins_rights_check
