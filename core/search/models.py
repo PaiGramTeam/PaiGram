@@ -34,9 +34,9 @@ class WeaponEntry(BaseEntry):
         score = 0.0
         if search_query == self.title:
             return 100
-        if search_query in self.tags:
-            return 99
         if self.tags:
+            if search_query in self.tags:
+                return 99
             for tag in self.tags:
                 _score = fuzz.partial_token_set_ratio(tag, search_query)
                 if _score >= score:
@@ -59,9 +59,9 @@ class StrategyEntry(BaseEntry):
         score = 0.0
         if search_query == self.title:
             return 100
-        if search_query in self.tags:
-            return 99
         if self.tags:
+            if search_query in self.tags:
+                return 99
             for tag in self.tags:
                 _score = fuzz.partial_token_set_ratio(tag, search_query)
                 if _score >= score:
