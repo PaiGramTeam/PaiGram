@@ -42,7 +42,7 @@ class WeaponEntry(BaseEntry):
                 if _score >= score:
                     score = _score
         if score >= 90:
-            return score
+            return score * 0.99
         if self.description:
             _score = fuzz.partial_token_set_ratio(self.description, search_query)
             if _score >= score:
