@@ -132,6 +132,14 @@ typing-extensions = "*"
 test = ["pytest", "pytest-rerunfailures"]
 
 [[package]]
+name = "async-lru"
+version = "1.0.3"
+description = "Simple lru_cache for asyncio"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "async-timeout"
 version = "4.0.2"
 description = "Timeout context manager for asyncio programs"
@@ -159,7 +167,7 @@ python-versions = ">=3.5"
 dev = ["cloudpickle", "coverage[toml] (>=5.0.2)", "furo", "hypothesis", "mypy (>=0.900,!=0.940)", "pre-commit", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "sphinx", "sphinx-notfound-page", "zope.interface"]
 docs = ["furo", "sphinx", "sphinx-notfound-page", "zope.interface"]
 tests = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "zope.interface"]
-tests-no-zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins"]
+tests_no_zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "backports.zoneinfo"
@@ -234,7 +242,7 @@ optional = false
 python-versions = ">=3.6.0"
 
 [package.extras]
-unicode-backport = ["unicodedata2"]
+unicode_backport = ["unicodedata2"]
 
 [[package]]
 name = "click"
@@ -951,7 +959,7 @@ falcon = ["falcon (>=1.4)"]
 fastapi = ["fastapi (>=0.79.0)"]
 flask = ["blinker (>=1.1)", "flask (>=0.11)"]
 httpx = ["httpx (>=0.16.0)"]
-pure-eval = ["asttokens", "executing", "pure-eval"]
+pure_eval = ["asttokens", "executing", "pure-eval"]
 pymongo = ["pymongo (>=3.1)"]
 pyspark = ["pyspark (>=2.4.4)"]
 quart = ["blinker (>=1.1)", "quart (>=0.16.1)"]
@@ -1030,19 +1038,19 @@ aiomysql = ["aiomysql", "greenlet (!=0.4.17)"]
 aiosqlite = ["aiosqlite", "greenlet (!=0.4.17)", "typing_extensions (!=3.10.0.1)"]
 asyncio = ["greenlet (!=0.4.17)"]
 asyncmy = ["asyncmy (>=0.2.3,!=0.2.4)", "greenlet (!=0.4.17)"]
-mariadb-connector = ["mariadb (>=1.0.1,!=1.1.2)"]
+mariadb_connector = ["mariadb (>=1.0.1,!=1.1.2)"]
 mssql = ["pyodbc"]
-mssql-pymssql = ["pymssql"]
-mssql-pyodbc = ["pyodbc"]
+mssql_pymssql = ["pymssql"]
+mssql_pyodbc = ["pyodbc"]
 mypy = ["mypy (>=0.910)", "sqlalchemy2-stubs"]
 mysql = ["mysqlclient (>=1.4.0)", "mysqlclient (>=1.4.0,<2)"]
-mysql-connector = ["mysql-connector-python"]
+mysql_connector = ["mysql-connector-python"]
 oracle = ["cx_oracle (>=7)", "cx_oracle (>=7,<8)"]
 postgresql = ["psycopg2 (>=2.7)"]
-postgresql-asyncpg = ["asyncpg", "greenlet (!=0.4.17)"]
-postgresql-pg8000 = ["pg8000 (>=1.16.6,!=1.29.0)"]
-postgresql-psycopg2binary = ["psycopg2-binary"]
-postgresql-psycopg2cffi = ["psycopg2cffi"]
+postgresql_asyncpg = ["asyncpg", "greenlet (!=0.4.17)"]
+postgresql_pg8000 = ["pg8000 (>=1.16.6,!=1.29.0)"]
+postgresql_psycopg2binary = ["psycopg2-binary"]
+postgresql_psycopg2cffi = ["psycopg2cffi"]
 pymysql = ["pymysql", "pymysql (<1)"]
 sqlcipher = ["sqlcipher3_binary"]
 
@@ -1092,6 +1100,17 @@ description = "Fast and Portable Cryptography Extension Library for Pyrogram"
 category = "main"
 optional = true
 python-versions = "~=3.7"
+
+[[package]]
+name = "thefuzz"
+version = "0.19.0"
+description = "Fuzzy string matching in python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+speedup = ["python-levenshtein (>=0.12)"]
 
 [[package]]
 name = "tomli"
@@ -1274,7 +1293,7 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "0c5cb6b738281012aa5ade35a22efc33159c38c4ddf58140c48a148aa70cb912"
+content-hash = "dda8009b7611580764e09bafcb38c2e32804975869364e017fbea69e38524d73"
 
 [metadata.files]
 aiofiles = [
@@ -1397,6 +1416,10 @@ APScheduler = [
 arko-wrapper = [
     {file = "arko-wrapper-0.2.4.tar.gz", hash = "sha256:92b7771c72f3b18d5193b8b4375f1b0f52cb94d3933b00118c281d6e582819ae"},
     {file = "arko_wrapper-0.2.4-py3-none-any.whl", hash = "sha256:703dcfeeb95c43631d8cba02eebbc57973a3f0bdca7353dfc57b38b257a94774"},
+]
+async-lru = [
+    {file = "async-lru-1.0.3.tar.gz", hash = "sha256:c2cb9b2915eb14e6cf3e717154b40f715bf90e596d73623677affd0d1fbcd32a"},
+    {file = "async_lru-1.0.3-py3-none-any.whl", hash = "sha256:ea692c303feb6211ff260d230dae1583636f13e05c9ae616eada77855b7f415c"},
 ]
 async-timeout = [
     {file = "async-timeout-4.0.2.tar.gz", hash = "sha256:2163e1640ddb52b7a8c80d0a67a08587e5d245cc9c553a74a847056bc2976b15"},
@@ -2279,6 +2302,10 @@ tgcrypto = [
     {file = "TgCrypto-1.2.5-pp39-pypy39_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7dbf607d645c39a577a0f8571039d11ddd2dcdf9656465be75f9e0f540472444"},
     {file = "TgCrypto-1.2.5-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:d6b0c2dc84e632ce7b3d0b767cfe20967e557ad7d71ea5dbd7df2dd544323181"},
     {file = "TgCrypto-1.2.5.tar.gz", hash = "sha256:9bc2cac6fb9a12ef5b08f3dd500174fe374d89b660cce981f57e3138559cb682"},
+]
+thefuzz = [
+    {file = "thefuzz-0.19.0-py2.py3-none-any.whl", hash = "sha256:4fcdde8e40f5ca5e8106bc7665181f9598a9c8b18b0a4d38c41a095ba6788972"},
+    {file = "thefuzz-0.19.0.tar.gz", hash = "sha256:6f7126db2f2c8a54212b05e3a740e45f4291c497d75d20751728f635bb74aa3d"},
 ]
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
