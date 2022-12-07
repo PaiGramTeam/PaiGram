@@ -3,7 +3,7 @@ import datetime
 import json
 from os import PathLike
 from pathlib import Path
-from typing import List, Tuple, Optional, IO, Union
+from typing import Dict, IO, List, Optional, Tuple, Union
 
 import aiofiles
 from genshin import Client, InvalidAuthkey
@@ -16,25 +16,25 @@ from metadata.shortname import roleToId, weaponToId
 from modules.gacha_log.const import GACHA_TYPE_LIST, PAIMONMOE_VERSION
 from modules.gacha_log.error import (
     GachaLogAccountNotFound,
-    GachaLogInvalidAuthkey,
     GachaLogException,
     GachaLogFileError,
+    GachaLogInvalidAuthkey,
+    GachaLogMixedProvider,
     GachaLogNotFound,
     PaimonMoeGachaLogFileError,
-    GachaLogMixedProvider,
 )
 from modules.gacha_log.models import (
-    GachaItem,
     FiveStarItem,
     FourStarItem,
-    Pool,
+    GachaItem,
     GachaLogInfo,
-    UIGFGachaType,
-    ItemType,
     ImportType,
-    UIGFModel,
+    ItemType,
+    Pool,
+    UIGFGachaType,
     UIGFInfo,
     UIGFItem,
+    UIGFModel,
 )
 from utils.const import PROJECT_ROOT
 
@@ -600,7 +600,7 @@ class GachaLog:
         }
 
     @staticmethod
-    def convert_xlsx_to_uigf(file: Union[str, PathLike[str], IO[bytes]], zh_dict: dict) -> dict:
+    def convert_xlsx_to_uigf(file: Union[str, PathLike, IO[bytes]], zh_dict: Dict) -> Dict:
         """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
         :param file: 导出的 xlsx 文件
         :param zh_dict:
