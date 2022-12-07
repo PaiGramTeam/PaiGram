@@ -47,7 +47,7 @@ class Hyperion:
             # https://m.miyoushe.com/ys/#/article/32497914
         :return: post_id
         """
-        rgx = re.compile(r"(?:bbs\.)?mihoyo\.com/[^.]+/article/(?P<article_id>\d+)")
+        rgx = re.compile(r"(?:bbs|www\.)?(?:miyoushe|mihoyo)\.com/[^.]+/article/(?P<article_id>\d+)")
         matches = rgx.search(text)
         if matches is None:
             return -1
