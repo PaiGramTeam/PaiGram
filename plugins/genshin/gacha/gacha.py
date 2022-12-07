@@ -34,6 +34,14 @@ class GachaNotFound(Exception):
         super().__init__(f"{gacha_name} gacha not found")
 
 
+class GachaDataFound(Exception):
+    """卡池数据未找到"""
+
+    def __init__(self, item_id: int):
+        self.item_id = item_id
+        super().__init__(f"item_id[{item_id}] data not found")
+
+
 class GachaRedis:
     def __init__(self, redis: RedisDB):
         self.client = redis.client
@@ -152,12 +160,16 @@ class Gacha(Plugin, BasePlugin):
                 data = WEAPON_DATA.get(str(item_id))
                 avatar = self.assets_service.weapon(item_id)
                 gacha = await avatar.gacha()
+                if gacha is None:
+                    raise GachaDataFound(item_id)
                 data.setdefault("url", gacha.as_uri())
                 gacha_item.append(data)
             elif 10000000 <= item_id <= 19999999:
                 data = AVATAR_DATA.get(str(item_id))
                 avatar = self.assets_service.avatar(item_id)
                 gacha = await avatar.gacha_card()
+                if gacha is None:
+                    raise GachaDataFound(item_id)
                 data.setdefault("url", gacha.as_uri())
                 gacha_item.append(data)
         return gacha_item
@@ -203,7 +215,15 @@ class Gacha(Plugin, BasePlugin):
             player_gacha_info.event_weapon_banner.wish_item_id = 0
         # 执行抽卡
         item_list = self.banner_system.do_pulls(player_gacha_info, banner, 10)
-        data = await self.de_item_list(item_list)
+        try:
+            data = await self.de_item_list(item_list)
+        except GachaDataFound as exc:
+            logger.warning("角色 item_id[%s] 抽卡立绘未找到", exc.item_id)
+            reply_message = await message.reply_text("出错了呜呜呜 ~ 卡池部分数据未找到！")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 60)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 60)
+            return
         player_gacha_banner_info = player_gacha_info.get_banner_info(banner)
         template_data = {
             "name": f"{user.full_name}",
