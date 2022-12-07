@@ -15,7 +15,7 @@ import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from genshin import Client, InvalidCookies, GenshinException
+from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import Character
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel

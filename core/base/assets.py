@@ -14,7 +14,7 @@ from aiofiles import open as async_open
 from aiofiles.os import remove as async_remove
 from enkanetwork import Assets as EnkaAssets
 from enkanetwork.model.assets import CharacterAsset as EnkaCharacterAsset
-from httpx import AsyncClient, HTTPError, HTTPStatusError, URL
+from httpx import AsyncClient, HTTPError, HTTPStatusError, TransportError, URL
 from typing_extensions import Self
 
 from core.service import Service
@@ -151,10 +151,10 @@ class _AssetsService(ABC):
                 result = HONEY_HOST.join(f"img/{honey_name}.png")
                 response = await self.client.get(result, follow_redirects=False)
                 response.raise_for_status()
-            except HTTPStatusError:
-                return None
-            if response.status_code == 200:
                 return result
+            except HTTPStatusError as e:
+                if e.response.status_code != 302:
+                    return None
 
             return HONEY_HOST.join(f"img/{honey_name}.webp")
 
@@ -162,10 +162,15 @@ class _AssetsService(ABC):
         for func in map(lambda x: getattr(self, x), sorted(filter(lambda x: x.startswith("_get_from_"), dir(self)))):
             if (url := await func(item)) is not None:
                 try:
-                    response = await self.client.get(url := str(url))
-                    response.raise_for_status()
-                    if response.status_code == 200:
-                        yield url
+                    for _ in range(5):
+                        try:
+                            response = await self.client.get(url := str(url))
+                            response.raise_for_status()
+                            if response.status_code == 200:
+                                yield url
+                        except (TransportError, SSLZeroReturnError):
+                            await asyncio.sleep(0.2)
+                            continue
                 except HTTPStatusError:
                     continue
 
