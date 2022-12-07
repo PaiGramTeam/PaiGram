@@ -24,10 +24,10 @@ class Hyperion:
     该名称来源于米忽悠的安卓BBS包名结尾，考虑到大部分重要的功能确实是在移动端实现了
     """
 
-    POST_FULL_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFull"
-    POST_FULL_IN_COLLECTION_URL = "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection"
-    GET_NEW_LIST_URL = "https://bbs-api.mihoyo.com/post/wapi/getNewsList"
-    GET_OFFICIAL_RECOMMENDED_POSTS_URL = "https://bbs-api.mihoyo.com/post/wapi/getOfficialRecommendedPosts"
+    POST_FULL_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFull"
+    POST_FULL_IN_COLLECTION_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFullInCollection"
+    GET_NEW_LIST_URL = "https://bbs-api.miyoushe.com/post/wapi/getNewsList"
+    GET_OFFICIAL_RECOMMENDED_POSTS_URL = "https://bbs-api.miyoushe.com/post/wapi/getOfficialRecommendedPosts"
 
     USER_AGENT = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -43,6 +43,8 @@ class Hyperion:
         :param text:
             # https://bbs.mihoyo.com/ys/article/8808224
             # https://m.bbs.mihoyo.com/ys/article/8808224
+            # https://www.miyoushe.com/ys/article/32497914
+            # https://m.miyoushe.com/ys/#/article/32497914
         :return: post_id
         """
         rgx = re.compile(r"(?:bbs\.)?mihoyo\.com/[^.]+/article/(?P<article_id>\d+)")
@@ -58,7 +60,7 @@ class Hyperion:
             return -1
         return art_id
 
-    def get_headers(self, referer: str = "https://bbs.mihoyo.com/"):
+    def get_headers(self, referer: str = "https://www.miyoushe.com/ys/"):
         return {"User-Agent": self.USER_AGENT, "Referer": referer}
 
     @staticmethod
