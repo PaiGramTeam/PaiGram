@@ -294,7 +294,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                 if message.text == channel_info.name:
                     channel_id = channel_info.chat_id
         except KeyError as exc:
-            logger.error("从配置文件获取频道信息发生错误，退出任务", exc)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=exc)
             logger.exception(exc)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END

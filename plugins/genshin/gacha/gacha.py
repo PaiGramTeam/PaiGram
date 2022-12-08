@@ -215,10 +215,10 @@ class Gacha(Plugin, BasePlugin):
             "items": [],
             "wish_name": "",
         }
-        logger.debug(f"{banner.banner_id}")
-        logger.debug(f"{banner.banner_type}")
-        logger.debug(f"{banner.rate_up_items5}")
-        logger.debug(f"{banner.fallback_items5_pool1}")
+        # logger.debug(f"{banner.banner_id}")
+        # logger.debug(f"{banner.banner_type}")
+        # logger.debug(f"{banner.rate_up_items5}")
+        # logger.debug(f"{banner.fallback_items5_pool1}")
         if player_gacha_banner_info.wish_item_id != 0:
             weapon = WEAPON_DATA.get(str(player_gacha_banner_info.wish_item_id))
             if weapon is not None:
