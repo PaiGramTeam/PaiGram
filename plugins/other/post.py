@@ -276,7 +276,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                 name = channel_info.name
                 reply_keyboard.append([f"{name}"])
         except KeyError as error:
-            logger.error("从配置文件获取频道信息发生错误，退出任务", error)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("请选择你要推送的频道", reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))

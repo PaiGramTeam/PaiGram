@@ -191,7 +191,7 @@ class Gacha(Plugin, BasePlugin):
             except GachaNotFound:
                 await message.reply_text("当前卡池正在替换中，请稍后重试。")
                 return
-        logger.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
+        logger.info("用户 %s[%s] 抽卡模拟器命令请求 || 参数 %s", user.full_name, user.id, gacha_name)
         # 用户数据储存和处理
         await message.reply_chat_action(ChatAction.TYPING)
         banner = await self.get_banner(gacha_base_info)
