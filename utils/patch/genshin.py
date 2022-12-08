@@ -192,7 +192,7 @@ class BaseClient:
         url = routes.BBS_URL.get_url(region).join(yarl.URL(url))
         headers = dict(headers or {})
 
-        if self.region == types.Region.OVERSEAS:
+        if self.region == types.Region.CHINESE:
             if self.region == types.Region.CHINESE:
                 account_id = self.cookie_manager.user_id
                 if account_id:
