@@ -1,3 +1,3 @@
 import logging
 
-logger = logging.getLogger("ErrorPush")
+logger = logging.getLogger("ApiHelper")
