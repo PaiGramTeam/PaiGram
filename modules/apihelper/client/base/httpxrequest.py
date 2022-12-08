@@ -4,6 +4,8 @@ from typing import Optional, Type
 
 import httpx
 
+__all__ = ("HTTPXRequest",)
+
 
 class HTTPXRequest(AbstractAsyncContextManager):
     def __init__(self, *args, headers=None, **kwargs):

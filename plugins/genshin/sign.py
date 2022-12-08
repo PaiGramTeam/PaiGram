@@ -26,7 +26,7 @@ from core.sign.models import Sign as SignUser, SignStatusEnum
 from core.sign.services import SignServices
 from core.user.error import UserNotFoundError
 from core.user.services import UserService
-from modules.apihelper.hyperion import Verification
+from modules.apihelper.client.components.verify import Verify
 from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -51,7 +51,7 @@ class SignSystem:
     def __init__(self, redis: RedisDB):
         self.cache = redis.client
         self.qname = "plugin:sign:"
-        self.verification = Verification()
+        self.verify = Verify()
 
     async def get_challenge(self, uid: int) -> Tuple[Optional[str], Optional[str]]:
         data = await self.cache.get(f"{self.qname}{uid}")
@@ -172,7 +172,7 @@ class SignSystem:
                     gt = request_daily_reward.get("gt", "")
                     challenge = request_daily_reward.get("challenge", "")
                     logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
-                    validate = await self.verification.ajax(
+                    validate = await self.verify.ajax(
                         referer=self.REFERER,
                         gt=gt,
                         challenge=challenge,

@@ -12,8 +12,8 @@ from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from modules.apihelper.client.components.verify import Verify
 from modules.apihelper.error import ResponseException
-from modules.apihelper.hyperion import Verification
 from plugins.genshin.verification import VerificationSystem
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -72,7 +72,7 @@ class WebApp(Plugin):
                     except CookiesNotFoundError:
                         await message.reply_text("检测到用户为UID绑定，无需认证", reply_markup=ReplyKeyboardRemove())
                         return
-                    verification = Verification(cookies=client.cookie_manager.cookies)
+                    verify = Verify(cookies=client.cookie_manager.cookies)
                     if validate:
                         _, challenge = await self.verification_system.get_challenge(client.uid)
                         if challenge:
@@ -84,7 +84,7 @@ class WebApp(Plugin):
                                 validate,
                             )
                             try:
-                                await verification.verify(challenge=challenge, validate=validate)
+                                await verify.verify(challenge=challenge, validate=validate)
                                 logger.success("用户 %s[%s] 验证成功", user.full_name, user.id)
                                 await message.reply_text("验证成功", reply_markup=ReplyKeyboardRemove())
                             except ResponseException as exc:
@@ -113,7 +113,7 @@ class WebApp(Plugin):
                         await message.reply_text("账户正常，无需认证")
                         return
                     try:
-                        data = await verification.create(is_high=True)
+                        data = await verify.create(is_high=True)
                         challenge = data["challenge"]
                         gt = data["gt"]
                         logger.success("用户 %s[%s] 创建验证成功\ngt:%s\nchallenge%s", user.full_name, user.id, gt, challenge)

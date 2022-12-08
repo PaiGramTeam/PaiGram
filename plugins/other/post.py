@@ -19,9 +19,9 @@ from core.baseplugin import BasePlugin
 from core.bot import bot
 from core.config import config
 from core.plugin import Plugin, conversation, handler
-from modules.apihelper.base import ArtworkImage
+from modules.apihelper.client.components.hyperion import Hyperion
 from modules.apihelper.error import APIHelperException
-from modules.apihelper.hyperion import Hyperion
+from modules.apihelper.models.genshin.hyperion import ArtworkImage
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

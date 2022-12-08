@@ -18,7 +18,7 @@ from core.plugin import Plugin, conversation, handler
 from core.user.error import UserNotFoundError
 from core.user.models import User
 from core.user.services import UserService
-from modules.apihelper.hyperion import SignIn
+from modules.apihelper.client.components.signin import SignIn
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger

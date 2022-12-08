@@ -13,8 +13,8 @@ from core.cookies.error import CookiesNotFoundError
 from core.plugin import handler, Plugin
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from modules.apihelper.client.components.verify import Verify
 from modules.apihelper.error import ResponseException, APIHelperException
-from modules.apihelper.hyperion import Verification
 from plugins.genshin.sign import SignSystem, NeedChallenge
 from plugins.genshin.verification import VerificationSystem
 from utils.decorators.error import error_callable
@@ -144,9 +144,9 @@ class StartPlugin(Plugin):
             "如果出现频繁验证请求，建议暂停使用本Bot在内的第三方工具查询功能。\n"
             "在暂停使用期间依然出现频繁认证，建议修改密码以保护账号安全。"
         )
-        verification = Verification(cookies=client.cookie_manager.cookies)
+        verification = Verify(cookies=client.cookie_manager.cookies)
         try:
-            data = await verification.create(is_high=True)
+            data = await verification.create()
             challenge = data["challenge"]
             gt = data["gt"]
             logger.success("用户 %s[%s] 创建验证成功\ngt:%s\nchallenge%s", user.full_name, user.id, gt, challenge)

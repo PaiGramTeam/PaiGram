@@ -16,7 +16,8 @@ from core.plugin import Plugin, handler
 from core.template import TemplateService
 from metadata.genshin import AVATAR_DATA, WEAPON_DATA, avatar_to_game_id, weapon_to_game_id
 from metadata.shortname import weaponToName
-from modules.apihelper.hyperion import GachaInfo, GachaInfoObject
+from modules.apihelper.client.components.gacha import Gacha as GachaClient
+from modules.apihelper.models.genshin.gacha import GachaInfo
 from modules.gacha.banner import BannerType, GachaBanner
 from modules.gacha.player.info import PlayerGachaInfo
 from modules.gacha.system import BannerSystem
@@ -51,8 +52,8 @@ class GachaRedis:
 
 
 class GachaHandle:
-    def __init__(self, hyperion: Optional[GachaInfo] = None):
-        self.hyperion = GachaInfo() if hyperion is None else hyperion
+    def __init__(self):
+        self.hyperion = GachaClient()
 
     async def de_banner(self, gacha_id: str, gacha_type: int) -> Optional[GachaBanner]:
         gacha_info = await self.hyperion.get_gacha_info(gacha_id)
@@ -101,7 +102,7 @@ class GachaHandle:
             banner.banner_type = BannerType.STANDARD
         return banner
 
-    async def gacha_base_info(self, gacha_name: str = "角色活动", default: bool = False) -> GachaInfoObject:
+    async def gacha_base_info(self, gacha_name: str = "角色活动", default: bool = False) -> GachaInfo:
         gacha_list_info = await self.hyperion.get_gacha_list_info()
         now = datetime.now()
         for gacha in gacha_list_info:
@@ -137,7 +138,7 @@ class Gacha(Plugin, BasePlugin):
         self._look = asyncio.Lock()
         self.assets_service = assets
 
-    async def get_banner(self, gacha_base_info: GachaInfoObject):
+    async def get_banner(self, gacha_base_info: GachaInfo):
         async with self._look:
             banner = self.banner_cache.get(gacha_base_info.gacha_id)
             if banner is None:

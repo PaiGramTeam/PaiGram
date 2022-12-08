@@ -3,12 +3,14 @@ from typing import Union
 import httpx
 from httpx import Response
 
-from modules.apihelper.error import NetworkException, ResponseException, APIHelperTimedOut
-from modules.apihelper.request.httpxrequest import HTTPXRequest
-from modules.apihelper.typedefs import POST_DATA, JSON_DATA
+from .httpxrequest import HTTPXRequest
+from ...error import NetworkException, ResponseException, APIHelperTimedOut
+from ...typedefs import POST_DATA, JSON_DATA
+
+__all__ = ("HyperionRequest",)
 
 
-class HOYORequest(HTTPXRequest):
+class HyperionRequest(HTTPXRequest):
     async def get(
         self, url: str, *args, de_json: bool = True, re_json_data: bool = False, **kwargs
     ) -> Union[POST_DATA, JSON_DATA, Response]:
