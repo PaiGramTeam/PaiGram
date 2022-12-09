@@ -1,7 +1,7 @@
 import asyncio
 import random
 import time
-from typing import Tuple, Union, Dict, List
+from typing import Tuple, Union, Dict, List, Optional
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember
 from telegram.constants import ParseMode
@@ -316,6 +316,7 @@ class GroupJoiningVerification(Plugin):
                 question_message = await message.reply_markdown_v2(
                     reply_message, reply_markup=InlineKeyboardMarkup(buttons)
                 )
+                question_message.forward_from
             except BadRequest as exc:
                 await message.reply_text("派蒙分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
                 raise exc
@@ -355,10 +356,16 @@ class GroupJoiningVerification(Plugin):
                             continue
                         if find_message.from_user and find_message.from_user.id == user.id:
                             await self.mtp.delete_messages(chat_id=chat.id, message_ids=find_message.id)
-                            if find_message.text is not None and "@" in find_message.text:
+                            text: Optional[str] = None
+                            if find_message.text and "@" in find_message.text:
+                                text = f"{user.full_name} 由于加入群组后，在验证缝隙间发送了带有 @(Mention) 的消息，已被踢出群组，并加入了封禁列表。"
+                            elif find_message.caption and "@" in find_message.caption:
+                                text = f"{user.full_name} 由于加入群组后，在验证缝隙间发送了带有 @(Mention) 的消息，已被踢出群组，并加入了封禁列表。"
+                            elif find_message.forward_from_chat:
+                                text = f"{user.full_name} 由于加入群组后，在验证缝隙间发送了带有 Forward 的消息，已被踢出群组，并加入了封禁列表。"
+                            if text is not None:
                                 await context.bot.ban_chat_member(chat.id, user.id)
                                 button = [[InlineKeyboardButton("解除封禁", callback_data=f"auth_admin|pass|{user.id}")]]
-                                text = f"{user.full_name} 由于加入群组后，" "在验证缝隙间发送了带有 @(Mention) 的消息，已被踢出群组，并加入了封禁列表。"
                                 await question_message.edit_text(text, reply_markup=InlineKeyboardMarkup(button))
                                 if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
                                     schedule.remove()
