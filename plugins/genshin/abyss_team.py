@@ -11,7 +11,7 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.shortname import roleToId
-from modules.apihelper.abyss_team import AbyssTeamData
+from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClient
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -27,7 +27,7 @@ class AbyssTeam(Plugin, BasePlugin):
         self.template_service = template_service
         self.user_service = user_service
         self.assets_service = assets
-        self.team_data = AbyssTeamData()
+        self.team_data = AbyssTeamClient()
 
     @handler(CommandHandler, command="abyss_team", block=False)
     @handler(MessageHandler, filters=filters.Regex("^深渊推荐配队(.*)"), block=False)

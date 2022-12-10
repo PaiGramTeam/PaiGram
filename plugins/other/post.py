@@ -19,9 +19,9 @@ from core.baseplugin import BasePlugin
 from core.bot import bot
 from core.config import config
 from core.plugin import Plugin, conversation, handler
-from modules.apihelper.base import ArtworkImage
+from modules.apihelper.client.components.hyperion import Hyperion
 from modules.apihelper.error import APIHelperException
-from modules.apihelper.hyperion import Hyperion
+from modules.apihelper.models.genshin.hyperion import ArtworkImage
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -275,7 +275,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                 name = channel_info.name
                 reply_keyboard.append([f"{name}"])
         except KeyError as error:
-            logger.error("从配置文件获取频道信息发生错误，退出任务", error)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("请选择你要推送的频道", reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
@@ -293,7 +293,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                 if message.text == channel_info.name:
                     channel_id = channel_info.chat_id
         except KeyError as exc:
-            logger.error("从配置文件获取频道信息发生错误，退出任务", exc)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=exc)
             logger.exception(exc)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END

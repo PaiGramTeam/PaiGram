@@ -3,11 +3,11 @@ import typing
 import aiohttp.typedefs
 import genshin  # pylint: disable=W0406
 import yarl
-from genshin import constants, types, utility, models
+from genshin import constants, types, utility
 from genshin.client import routes
-from genshin.utility import generate_dynamic_secret
+from genshin.utility import generate_dynamic_secret, ds
 
-from modules.apihelper.helpers import get_ds, get_ua, get_device_id, hex_digest
+from modules.apihelper.utility.helpers import get_ds, get_ua, get_device_id, hex_digest
 from utils.patch.methods import patch, patchable
 
 DEVICE_ID = get_device_id()
@@ -169,6 +169,61 @@ class BaseClient:
 
         return response
 
+    @patchable
+    async def request_bbs(
+        self,
+        url: aiohttp.typedefs.StrOrURL,
+        *,
+        lang: typing.Optional[str] = None,
+        region: typing.Optional[types.Region] = None,
+        method: typing.Optional[str] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        data: typing.Any = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
+        **kwargs: typing.Any,
+    ) -> typing.Mapping[str, typing.Any]:
+        """Make a request any bbs endpoint."""
+        if lang is not None and lang not in constants.LANGS:
+            raise ValueError(f"{lang} is not a valid language, must be one of: " + ", ".join(constants.LANGS))
+
+        lang = lang or self.lang
+        region = region or self.region
+
+        url = routes.BBS_URL.get_url(region).join(yarl.URL(url))
+        headers = dict(headers or {})
+
+        if self.region == types.Region.CHINESE:
+            if self.region == types.Region.CHINESE:
+                account_id = self.cookie_manager.user_id
+                if account_id:
+                    device_id = hex_digest(str(account_id))
+                else:
+                    account_mid_v2 = get_account_mid_v2(self.cookie_manager.cookies)
+                    if account_mid_v2:
+                        device_id = hex_digest(account_mid_v2)
+                    else:
+                        device_id = DEVICE_ID
+
+                ds_sign = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
+                ua = get_ua(device="Paimon Build " + device_id[0:5], version="2.40.0")
+                add_headers = {
+                    "User-Agent": ua,
+                    "Referer": "https://www.miyoushe.com/ys/",
+                    "x-rpc-device_id": get_device_id(device_id),
+                    "x-rpc-app_version": "2.40.0",
+                    "x-rpc-client_type": "4",
+                    "ds": ds_sign,
+                }
+                headers.update(add_headers)
+        elif self.region == types.Region.OVERSEAS:
+            headers.update(ds.get_ds_headers(data=data, params=params, region=region, lang=lang or self.lang))
+            headers["Referer"] = str(routes.BBS_REFERER_URL.get_url(self.region))
+        else:
+            raise TypeError(f"{region!r} is not a valid region.")
+
+        data = await self.request(url, method=method, params=params, data=data, headers=headers, **kwargs)
+        return data
+
 
 @patch(genshin.client.components.daily.DailyRewardClient)  # noqa
 class DailyRewardClient:
@@ -253,44 +308,3 @@ class DailyRewardClient:
         kwargs.pop("validate", None)
 
         return await self.request(url, method=method, params=params, headers=headers, **kwargs)
-
-
-@patch(genshin.client.components.hoyolab.HoyolabClient)  # noqa
-class HoyolabClient:
-    @patchable
-    async def get_hoyolab_user(
-        self, hoyolab_id: int, *, lang: typing.Optional[str] = None
-    ) -> models.PartialHoyolabUser:
-        """Get a hoyolab user."""
-        # todo: use routes.py instead of putting full urls in methods
-        if self.region == types.Region.OVERSEAS:
-            if hoyolab_id <= 0:
-                raise TypeError(f"{hoyolab_id} is not a valid hoyolab id.")
-            url = "https://bbs-api-os.hoyolab.com/community/painter/wapi/user/full"
-            data = await self.request_hoyolab(url, params=dict(uid=hoyolab_id), lang=lang)
-            return models.FullHoyolabUser(**data["user_info"])
-        elif self.region == types.Region.CHINESE:
-            url = "https://bbs-api.mihoyo.com/user/wapi/getUserFullInfo"
-            account_id = self.cookie_manager.user_id
-            if account_id:
-                device_id = hex_digest(str(account_id))
-            else:
-                account_mid_v2 = get_account_mid_v2(self.cookie_manager.cookies)
-                if account_mid_v2:
-                    device_id = hex_digest(account_mid_v2)
-                else:
-                    device_id = DEVICE_ID
-            ds_sign = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
-            ua = get_ua(device="Paimon Build " + device_id[0:5], version="2.40.0")
-            headers = {
-                "User-Agent": ua,
-                "Referer": "https://www.miyoushe.com/ys/",
-                "x-rpc-device_id": get_device_id(device_id),
-                "x-rpc-app_version": "2.40.0",
-                "x-rpc-client_type": "4",
-                "ds": ds_sign,
-            }
-            data = await self.request(url, method="GET", params=dict(gids=2), headers=headers)
-            return models.PartialHoyolabUser(**data["user_info"])
-        else:
-            raise TypeError(f"{self.region!r} is not a valid region.")

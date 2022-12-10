@@ -3,6 +3,8 @@ from typing import List, Any
 
 from pydantic import BaseModel, PrivateAttr
 
+__all__ = ("ArtworkImage", "PostInfo")
+
 
 class ArtworkImage(BaseModel):
     art_id: int

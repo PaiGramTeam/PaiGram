@@ -2,7 +2,7 @@ import pytest
 import pytest_asyncio
 from flaky import flaky
 
-from modules.apihelper.hyperion import Hyperion
+from modules.apihelper.client.components.hyperion import Hyperion
 
 
 @pytest_asyncio.fixture

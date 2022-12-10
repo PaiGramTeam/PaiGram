@@ -17,7 +17,7 @@ from core.plugin import Plugin, conversation, handler
 from core.user.error import UserNotFoundError
 from core.user.models import User
 from core.user.services import UserService
-from modules.apihelper.hyperion import SignIn
+from modules.apihelper.client.components.signin import SignIn
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -299,7 +299,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             if "account_mid_v2" in cookies:
                 logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
                 if client.region == types.Region.CHINESE:
-                    account_info = await client.get_hoyolab_user(-1)
+                    account_info = await client.get_hoyolab_user()
                     account_id = account_info.hoyolab_id
                     add_user_command_data.cookies["account_id"] = str(account_id)
                     logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
