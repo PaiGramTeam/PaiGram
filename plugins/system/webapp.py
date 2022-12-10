@@ -138,7 +138,13 @@ class WebApp(Plugin):
                 logger.warning(
                     "用户 %s[%s] WEB_APP_DATA 请求错误 [%s]%s", user.full_name, user.id, result.code, result.message
                 )
-                await message.reply_text(result.message, reply_markup=ReplyKeyboardRemove())
+                if result.path == "verify":
+                    await message.reply_text(
+                        "验证过程中出现问题 %s\n如果继续遇到该问题，请打开米游社→我的角色中尝试手动通过验证" % result.message,
+                        reply_markup=ReplyKeyboardRemove(),
+                    )
+                else:
+                    await message.reply_text("WebApp返回错误 %s" % result.message, reply_markup=ReplyKeyboardRemove())
         else:
             logger.warning("用户 %s[%s] WEB_APP_DATA 非法数据", user.full_name, user.id)
 
