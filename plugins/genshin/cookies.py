@@ -260,17 +260,17 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-
-        # cookie str to dict
-        wrapped = (
-            ArkoWrapper(message.text.split(";")).map(lambda x: x.strip()).map(lambda x: ((y := x.split("="))[0], y[1]))
-        )
-        cookie = {x[0]: x[1] for x in wrapped}
-
         try:
+            # cookie str to dict
+            wrapped = (
+                ArkoWrapper(message.text.split(";"))
+                .map(lambda x: x.strip())
+                .map(lambda x: ((y := x.split("="))[0], y[1]))
+            )
+            cookie = {x[0]: x[1] for x in wrapped}
             cookies = self.parse_cookie(cookie)
         except (AttributeError, ValueError) as exc:
-            logger.info("用户 %s[%s] Cookies解析出现错误", user.full_name, user.id)
+            logger.info("用户 %s[%s] Cookies解析出现错误\ntext:%s", user.full_name, user.id, message.text)
             logger.debug("解析Cookies出现错误", exc_info=exc)
             await message.reply_text("解析Cookies出现错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
