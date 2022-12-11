@@ -264,12 +264,13 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             # cookie str to dict
             wrapped = (
                 ArkoWrapper(message.text.split(";"))
+                .filter(lambda x: x != "")
                 .map(lambda x: x.strip())
                 .map(lambda x: ((y := x.split("="))[0], y[1]))
             )
             cookie = {x[0]: x[1] for x in wrapped}
             cookies = self.parse_cookie(cookie)
-        except (AttributeError, ValueError) as exc:
+        except (AttributeError, ValueError, IndexError) as exc:
             logger.info("用户 %s[%s] Cookies解析出现错误\ntext:%s", user.full_name, user.id, message.text)
             logger.debug("解析Cookies出现错误", exc_info=exc)
             await message.reply_text("解析Cookies出现错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
