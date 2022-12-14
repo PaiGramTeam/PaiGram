@@ -42,18 +42,19 @@ class PublicCookiesService:
         user_list: List[int] = []
         cookies_list = await self._repository.get_all_cookies(RegionEnum.HYPERION)  # 从数据库获取2
         for cookies in cookies_list:
-            if cookies.status and cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
-                continue
-            user_list.append(cookies.user_id)
-        add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HYPERION)
-        logger.info(f"国服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
+            if cookies.status is None or cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
+                user_list.append(cookies.user_id)
+        if len(user_list) > 0:
+            add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HYPERION)
+            logger.info(f"国服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
         user_list.clear()
         cookies_list = await self._repository.get_all_cookies(RegionEnum.HOYOLAB)
         for cookies in cookies_list:
-            if cookies.status and cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
+            if cookies.status is None or cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
                 user_list.append(cookies.user_id)
-        add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HOYOLAB)
-        logger.info(f"国际服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
+        if len(user_list) > 0:
+            add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HOYOLAB)
+            logger.info(f"国际服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
 
     async def get_cookies(self, user_id: int, region: RegionEnum = RegionEnum.NULL):
         """获取公共Cookies
