@@ -42,7 +42,7 @@ class PublicCookiesService:
         user_list: List[int] = []
         cookies_list = await self._repository.get_all_cookies(RegionEnum.HYPERION)  # 从数据库获取2
         for cookies in cookies_list:
-            if cookies.status is not None and cookies.status != CookiesStatusEnum.STATUS_SUCCESS:
+            if cookies.status and cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
                 continue
             user_list.append(cookies.user_id)
         add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HYPERION)
@@ -50,7 +50,7 @@ class PublicCookiesService:
         user_list.clear()
         cookies_list = await self._repository.get_all_cookies(RegionEnum.HOYOLAB)
         for cookies in cookies_list:
-            if cookies.status is not None and cookies.status != CookiesStatusEnum.STATUS_SUCCESS:
+            if cookies.status and cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
                 user_list.append(cookies.user_id)
         add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HOYOLAB)
         logger.info(f"国际服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
