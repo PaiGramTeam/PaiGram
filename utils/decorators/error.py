@@ -146,6 +146,9 @@ def error_callable(func: Callable) -> Callable:
                 text = "气死我了！怎么有人喜欢发一个命令就秒删了！"
             elif "Message is not modified" in exc.message:
                 telegram_warning(update, exc.message)
+            elif "Not enough rights" in exc.message:
+                telegram_warning(update, exc.message)
+                text = "出错了呜呜呜 ~ 权限不足，请检查对应权限是否开启"
             else:
                 logger.error("python-telegram-bot 请求错误")
                 logger.exception(exc)
