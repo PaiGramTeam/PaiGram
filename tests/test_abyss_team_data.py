@@ -4,15 +4,15 @@ import pytest
 import pytest_asyncio
 from flaky import flaky
 
-from modules.apihelper.abyss_team import (AbyssTeamData, FullTeamRate,
-                                          TeamRate, TeamRateResult)
+from modules.apihelper.client.components.abyss import AbyssTeam
+from modules.apihelper.models.genshin.abyss import TeamRateResult, TeamRate, FullTeamRate
 
 LOGGER = logging.getLogger(__name__)
 
 
 @pytest_asyncio.fixture
 async def abyss_team_data():
-    _abyss_team_data = AbyssTeamData()
+    _abyss_team_data = AbyssTeam()
     yield _abyss_team_data
     await _abyss_team_data.close()
 
@@ -20,7 +20,7 @@ async def abyss_team_data():
 # noinspection PyShadowingNames
 @pytest.mark.asyncio
 @flaky(3, 1)
-async def test_abyss_team_data(abyss_team_data: AbyssTeamData):
+async def test_abyss_team_data(abyss_team_data: AbyssTeam):
     team_data = await abyss_team_data.get_data()
     assert isinstance(team_data, TeamRateResult)
     assert isinstance(team_data.rate_list_up[0], TeamRate)

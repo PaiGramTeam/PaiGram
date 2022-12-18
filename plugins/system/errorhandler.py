@@ -38,10 +38,10 @@ class ErrorHandler(Plugin):
         """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
 
         if isinstance(context.error, NetworkError):
-            logger.error("Bot请求异常", exc_info=context.error)
+            logger.error("Bot请求异常 %s", context.error.message)
             return
         if isinstance(context.error, TimedOut):
-            logger.error("Bot请求超时", exc_info=context.error)
+            logger.error("Bot请求超时 %s", context.error.message)
             return
 
         logger.error("处理函数时发生异常")

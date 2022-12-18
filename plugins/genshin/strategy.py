@@ -6,7 +6,9 @@ from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
 from core.baseplugin import BasePlugin
 from core.game.services import GameStrategyService
 from core.plugin import Plugin, handler
-from metadata.shortname import roleToName
+from core.search.models import StrategyEntry
+from core.search.services import SearchServices
+from metadata.shortname import roleToName, roleToTag
 from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -19,8 +21,13 @@ class StrategyPlugin(Plugin, BasePlugin):
 
     KEYBOARD = [[InlineKeyboardButton(text="查看角色攻略列表并查询", switch_inline_query_current_chat="查看角色攻略列表并查询")]]
 
-    def __init__(self, game_strategy_service: GameStrategyService = None):
+    def __init__(
+        self,
+        game_strategy_service: GameStrategyService = None,
+        search_service: SearchServices = None,
+    ):
         self.game_strategy_service = game_strategy_service
+        self.search_service = search_service
 
     @handler(CommandHandler, command="strategy", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色攻略查询(.*)"), block=False)
@@ -51,11 +58,24 @@ class StrategyPlugin(Plugin, BasePlugin):
         logger.info(f"用户 {user.full_name}[{user.id}] 查询角色攻略命令请求 || 参数 {character_name}")
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         file_path = await url_to_file(url, return_path=True)
-        caption = "From 米游社 西风驿站  " f"查看 [原图]({url})"
-        await message.reply_photo(
+        caption = f"From 米游社 西风驿站 查看<a href='{url}'>原图</a>"
+        reply_photo = await message.reply_photo(
             photo=open(file_path, "rb"),
             caption=caption,
             filename=f"{character_name}.png",
             allow_sending_without_reply=True,
-            parse_mode=ParseMode.MARKDOWN_V2,
+            parse_mode=ParseMode.HTML,
         )
+        if reply_photo.photo:
+            tags = roleToTag(character_name)
+            photo_file_id = reply_photo.photo[0].file_id
+            entry = StrategyEntry(
+                key=f"plugin:strategy:{character_name}",
+                title=character_name,
+                description=f"{character_name} 角色攻略",
+                tags=tags,
+                caption=caption,
+                parse_mode="HTML",
+                photo_file_id=photo_file_id,
+            )
+            await self.search_service.add_entry(entry)

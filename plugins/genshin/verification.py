@@ -12,8 +12,8 @@ from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from modules.apihelper.client.components.verify import Verify
 from modules.apihelper.error import ResponseException
-from modules.apihelper.hyperion import Verification
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -62,7 +62,7 @@ class VerificationPlugins(Plugin, BasePlugin):
             await message.reply_text("检测到用户为UID绑定，无需认证")
             return
         is_high: bool = False
-        verification = Verification(cookies=client.cookie_manager.cookies)
+        verification = Verify(cookies=client.cookie_manager.cookies)
         if not context.args:
             try:
                 await client.get_genshin_notes()

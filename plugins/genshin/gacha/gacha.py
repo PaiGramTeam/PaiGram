@@ -18,7 +18,8 @@ from core.template import TemplateService
 from metadata.genshin import (AVATAR_DATA, WEAPON_DATA, avatar_to_game_id,
                               weapon_to_game_id)
 from metadata.shortname import weaponToName
-from modules.apihelper.hyperion import GachaInfo, GachaInfoObject
+from modules.apihelper.client.components.gacha import Gacha as GachaClient
+from modules.apihelper.models.genshin.gacha import GachaInfo
 from modules.gacha.banner import BannerType, GachaBanner
 from modules.gacha.player.info import PlayerGachaInfo
 from modules.gacha.system import BannerSystem
@@ -34,6 +35,14 @@ class GachaNotFound(Exception):
     def __init__(self, gacha_name: str):
         self.gacha_name = gacha_name
         super().__init__(f"{gacha_name} gacha not found")
+
+
+class GachaDataFound(Exception):
+    """卡池数据未找到"""
+
+    def __init__(self, item_id: int):
+        self.item_id = item_id
+        super().__init__(f"item_id[{item_id}] data not found")
 
 
 class GachaRedis:
@@ -53,8 +62,8 @@ class GachaRedis:
 
 
 class GachaHandle:
-    def __init__(self, hyperion: Optional[GachaInfo] = None):
-        self.hyperion = GachaInfo() if hyperion is None else hyperion
+    def __init__(self):
+        self.hyperion = GachaClient()
 
     async def de_banner(self, gacha_id: str, gacha_type: int) -> Optional[GachaBanner]:
         gacha_info = await self.hyperion.get_gacha_info(gacha_id)
@@ -103,7 +112,7 @@ class GachaHandle:
             banner.banner_type = BannerType.STANDARD
         return banner
 
-    async def gacha_base_info(self, gacha_name: str = "角色活动", default: bool = False) -> GachaInfoObject:
+    async def gacha_base_info(self, gacha_name: str = "角色活动", default: bool = False) -> GachaInfo:
         gacha_list_info = await self.hyperion.get_gacha_list_info()
         now = datetime.now()
         for gacha in gacha_list_info:
@@ -139,7 +148,7 @@ class Gacha(Plugin, BasePlugin):
         self._look = asyncio.Lock()
         self.assets_service = assets
 
-    async def get_banner(self, gacha_base_info: GachaInfoObject):
+    async def get_banner(self, gacha_base_info: GachaInfo):
         async with self._look:
             banner = self.banner_cache.get(gacha_base_info.gacha_id)
             if banner is None:
@@ -154,12 +163,16 @@ class Gacha(Plugin, BasePlugin):
                 data = WEAPON_DATA.get(str(item_id))
                 avatar = self.assets_service.weapon(item_id)
                 gacha = await avatar.gacha()
+                if gacha is None:
+                    raise GachaDataFound(item_id)
                 data.setdefault("url", gacha.as_uri())
                 gacha_item.append(data)
             elif 10000000 <= item_id <= 19999999:
                 data = AVATAR_DATA.get(str(item_id))
                 avatar = self.assets_service.avatar(item_id)
                 gacha = await avatar.gacha_card()
+                if gacha is None:
+                    raise GachaDataFound(item_id)
                 data.setdefault("url", gacha.as_uri())
                 gacha_item.append(data)
         return gacha_item
@@ -192,7 +205,7 @@ class Gacha(Plugin, BasePlugin):
             except GachaNotFound:
                 await message.reply_text("当前卡池正在替换中，请稍后重试。")
                 return
-        logger.info(f"用户 {user.full_name}[{user.id}] 抽卡模拟器命令请求 || 参数 {gacha_name}")
+        logger.info("用户 %s[%s] 抽卡模拟器命令请求 || 参数 %s", user.full_name, user.id, gacha_name)
         # 用户数据储存和处理
         await message.reply_chat_action(ChatAction.TYPING)
         banner = await self.get_banner(gacha_base_info)
@@ -205,7 +218,15 @@ class Gacha(Plugin, BasePlugin):
             player_gacha_info.event_weapon_banner.wish_item_id = 0
         # 执行抽卡
         item_list = self.banner_system.do_pulls(player_gacha_info, banner, 10)
-        data = await self.de_item_list(item_list)
+        try:
+            data = await self.de_item_list(item_list)
+        except GachaDataFound as exc:
+            logger.warning("角色 item_id[%s] 抽卡立绘未找到", exc.item_id)
+            reply_message = await message.reply_text("出错了呜呜呜 ~ 卡池部分数据未找到！")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 60)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 60)
+            return
         player_gacha_banner_info = player_gacha_info.get_banner_info(banner)
         template_data = {
             "name": f"{user.full_name}",
@@ -216,10 +237,10 @@ class Gacha(Plugin, BasePlugin):
             "items": [],
             "wish_name": "",
         }
-        logger.debug(f"{banner.banner_id}")
-        logger.debug(f"{banner.banner_type}")
-        logger.debug(f"{banner.rate_up_items5}")
-        logger.debug(f"{banner.fallback_items5_pool1}")
+        # logger.debug(f"{banner.banner_id}")
+        # logger.debug(f"{banner.banner_type}")
+        # logger.debug(f"{banner.rate_up_items5}")
+        # logger.debug(f"{banner.fallback_items5_pool1}")
         if player_gacha_banner_info.wish_item_id != 0:
             weapon = WEAPON_DATA.get(str(player_gacha_banner_info.wish_item_id))
             if weapon is not None:

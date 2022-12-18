@@ -19,7 +19,6 @@ from core.template.models import FileType
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.scripts.paimon_moe import update_paimon_moe_zh, GACHA_LOG_PAIMON_MOE_PATH
-from modules.apihelper.hyperion import SignIn
 from modules.gacha_log.error import (
     GachaLogInvalidAuthkey,
     PaimonMoeGachaLogFileError,
@@ -34,6 +33,7 @@ from utils.bot import get_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
+from utils.genshin import get_authkey_by_stoken
 from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -181,7 +181,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                             lang="zh-cn",
                             uid=user_info.yuanshen_uid,
                         )
-                        authkey = await SignIn.get_authkey_by_stoken(client)
+                        authkey = await get_authkey_by_stoken(client)
         if not authkey:
             await message.reply_text(
                 "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"

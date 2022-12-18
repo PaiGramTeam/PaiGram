@@ -1,23 +1,23 @@
 import contextlib
-from http.cookies import SimpleCookie, CookieError
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import genshin
-from genshin import InvalidCookies, GenshinException, DataNotPublic, types
+from arkowrapper import ArkoWrapper
+from genshin import DataNotPublic, GenshinException, InvalidCookies, types
 from genshin.models import GenshinAccount
-from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, TelegramObject
-from telegram.ext import CallbackContext, filters, ConversationHandler
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update
+from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.models import Cookies
 from core.cookies.services import CookiesService
-from core.plugin import Plugin, handler, conversation
+from core.plugin import Plugin, conversation, handler
 from core.user.error import UserNotFoundError
 from core.user.models import User
 from core.user.services import UserService
-from modules.apihelper.hyperion import SignIn
+from modules.apihelper.client.components.signin import SignIn
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -44,42 +44,26 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         self.cookies_service = cookies_service
         self.user_service = user_service
 
+    # noinspection SpellCheckingInspection
     @staticmethod
-    def parse_cookie(cookie: SimpleCookie) -> Dict[str, str]:
+    def parse_cookie(cookie: Dict[str, str]) -> Dict[str, str]:
         cookies = {}
-        ltoken = cookie.get("ltoken")
-        if ltoken:
-            cookies["ltoken"] = ltoken.value
-        ltuid = cookie.get("ltuid")
-        login_uid = cookie.get("login_uid")
-        if ltuid:
-            cookies["ltuid"] = ltuid.value
-            cookies["account_id"] = ltuid.value
-        if login_uid:
-            cookies["ltuid"] = login_uid.value
-            cookies["account_id"] = ltuid.value
-        cookie_token = cookie.get("cookie_token")
-        cookie_token_v2 = cookie.get("cookie_token_v2")
-        if cookie_token:
-            cookies["cookie_token"] = cookie_token.value
-        if cookie_token_v2:
-            cookies["cookie_token"] = cookie_token_v2.value
-        account_mid_v2 = cookie.get("account_mid_v2")
-        if account_mid_v2:
-            cookies["account_mid_v2"] = account_mid_v2.value
-        cookie_token_v2 = cookie.get("cookie_token_v2")
-        if cookie_token_v2:
-            cookies["cookie_token_v2"] = cookie_token_v2.value
-        ltoken_v2 = cookie.get("ltoken_v2")
-        if ltoken_v2:
-            cookies["ltoken_v2"] = ltoken_v2.value
-        ltmid_v2 = cookie.get("ltmid_v2")
-        if ltmid_v2:
-            cookies["ltmid_v2"] = ltmid_v2.value
-        login_ticket = cookie.get("login_ticket")
-        if login_ticket:
-            cookies["login_ticket"] = login_ticket.value
-        return cookies
+
+        v1_keys = ["ltoken", "ltuid", "login_uid", "cookie_token"]
+        v2_keys = ["ltoken_v2", "ltmid_v2", "account_mid_v2", "cookie_token", "cookie_token_v2", "login_ticket"]
+
+        cookie_is_v1 = None
+
+        for k in v1_keys + v2_keys:
+            v = cookie.get(k)
+            if v is not None and cookie_is_v1 is None:
+                cookie_is_v1 = k not in v2_keys
+            cookies[k] = cookie.get(k)
+
+        if cookie_is_v1:
+            cookies["account_id"] = cookies["ltuid"]
+
+        return {k: v for k, v in cookies.items() if v is not None}
 
     @conversation.entry_point
     @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=True)
@@ -128,7 +112,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         elif message.text == "米游社":
             region = RegionEnum.HYPERION
-            bbs_url = "https://bbs.mihoyo.com/ys/"
+            bbs_url = "https://www.miyoushe.com/ys/"
             bbs_name = "米游社"
         elif message.text == "HoYoLab":
             bbs_url = "https://www.hoyolab.com/home"
@@ -276,22 +260,18 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        str_cookies = message.text
-        cookie = SimpleCookie()
         try:
-            cookie.load(str_cookies)
-        except CookieError:
-            logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
-            await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
-        if len(cookie) == 0:
-            logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
-            await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
-        try:
+            # cookie str to dict
+            wrapped = (
+                ArkoWrapper(message.text.split(";"))
+                .filter(lambda x: x != "")
+                .map(lambda x: x.strip())
+                .map(lambda x: ((y := x.split("="))[0], y[1]))
+            )
+            cookie = {x[0]: x[1] for x in wrapped}
             cookies = self.parse_cookie(cookie)
-        except (AttributeError, ValueError) as exc:
-            logger.info("用户 %s[%s] Cookies解析出现错误", user.full_name, user.id)
+        except (AttributeError, ValueError, IndexError) as exc:
+            logger.info("用户 %s[%s] Cookies解析出现错误\ntext:%s", user.full_name, user.id, message.text)
             logger.debug("解析Cookies出现错误", exc_info=exc)
             await message.reply_text("解析Cookies出现错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -320,7 +300,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             if "account_mid_v2" in cookies:
                 logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
                 if client.region == types.Region.CHINESE:
-                    account_info = await client.get_hoyolab_user(-1)
+                    account_info = await client.get_hoyolab_user()
                     account_id = account_info.hoyolab_id
                     add_user_command_data.cookies["account_id"] = str(account_id)
                     logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)

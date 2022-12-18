@@ -3,7 +3,7 @@ import datetime
 import json
 from os import PathLike
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, IO, List, Optional, Tuple, Union
 
 import aiofiles
 from genshin import Client, InvalidAuthkey
@@ -600,7 +600,7 @@ class GachaLog:
         }
 
     @staticmethod
-    def convert_xlsx_to_uigf(file: Union[str, PathLike[str], IO[bytes]], zh_dict: dict) -> dict:
+    def convert_xlsx_to_uigf(file: Union[str, PathLike, IO[bytes]], zh_dict: Dict) -> Dict:
         """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
         :param file: 导出的 xlsx 文件
         :param zh_dict:

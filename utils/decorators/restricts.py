@@ -78,7 +78,7 @@ def restricts(
 
                 # 洪水防御
                 if restrict_since:
-                    if (time.time() - restrict_since) >= 60 * 5:
+                    if (time.time() - restrict_since) >= 60:
                         del context.user_data["restrict_since"]
                         del context.user_data["usage_count"]
                     else:
@@ -86,8 +86,11 @@ def restricts(
                 else:
                     if count >= 6:
                         context.user_data["restrict_since"] = time.time()
-                        await message.reply_text("你已经触发洪水防御，请等待5分钟")
-                        logger.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制5分钟")
+                        if update.callback_query:
+                            await update.callback_query.answer("你已经触发洪水防御，请等待60秒", show_alert=True)
+                        else:
+                            await message.reply_text("你已经触发洪水防御，请等待60秒")
+                        logger.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制60秒")
                         return return_data
                 # 单次使用限制
                 if command_time:

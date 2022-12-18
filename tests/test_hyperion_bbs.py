@@ -8,8 +8,8 @@ import pytest_asyncio
 from bs4 import BeautifulSoup
 from flaky import flaky
 
-from modules.apihelper.base import PostInfo
-from modules.apihelper.hyperion import Hyperion
+from modules.apihelper.client.components.hyperion import Hyperion
+from modules.apihelper.models.genshin.hyperion import PostInfo
 
 LOGGER = logging.getLogger(__name__)
 

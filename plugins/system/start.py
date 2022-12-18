@@ -1,8 +1,7 @@
 from typing import Optional
 
-from genshin import GenshinException, Region
-from telegram import (KeyboardButton, Message, ReplyKeyboardMarkup,
-                      ReplyKeyboardRemove, Update, User, WebAppInfo)
+from genshin import Region, GenshinException
+from telegram import Update, ReplyKeyboardRemove, Message, User, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.helpers import escape_markdown
@@ -11,12 +10,12 @@ from core.base.redisdb import RedisDB
 from core.config import config
 from core.cookies import CookiesService
 from core.cookies.error import CookiesNotFoundError
-from core.plugin import Plugin, handler
+from core.plugin import handler, Plugin
 from core.user import UserService
 from core.user.error import UserNotFoundError
-from modules.apihelper.error import APIHelperException, ResponseException
-from modules.apihelper.hyperion import Verification
-from plugins.genshin.sign import NeedChallenge, SignSystem
+from modules.apihelper.client.components.verify import Verify
+from modules.apihelper.error import ResponseException, APIHelperException
+from plugins.genshin.sign import SignSystem, NeedChallenge
 from plugins.genshin.verification import VerificationSystem
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -145,9 +144,9 @@ class StartPlugin(Plugin):
             "如果出现频繁验证请求，建议暂停使用本Bot在内的第三方工具查询功能。\n"
             "在暂停使用期间依然出现频繁认证，建议修改密码以保护账号安全。"
         )
-        verification = Verification(cookies=client.cookie_manager.cookies)
+        verification = Verify(cookies=client.cookie_manager.cookies)
         try:
-            data = await verification.create(is_high=True)
+            data = await verification.create()
             challenge = data["challenge"]
             gt = data["gt"]
             logger.success("用户 %s[%s] 创建验证成功\ngt:%s\nchallenge%s", user.full_name, user.id, gt, challenge)

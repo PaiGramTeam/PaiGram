@@ -6,6 +6,8 @@ import time
 import uuid
 from typing import Any, Mapping, Optional
 
+__all__ = ("get_device_id", "hex_digest", "get_ds", "get_recognize_server", "get_ua")
+
 RECOGNIZE_SERVER = {
     "1": "cn_gf01",
     "2": "cn_gf01",
@@ -87,5 +89,5 @@ def get_ua(device: str = "Paimon Build", version: str = "2.36.1"):
     return (
         f"Mozilla/5.0 (Linux; Android 12; {device}; wv) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 "
-        f"{'miHoYoBBS/'+version if version else ''}"
+        f"{'miHoYoBBS/' + version if version else ''}"
     )

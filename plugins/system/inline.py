@@ -1,13 +1,21 @@
 import asyncio
-from typing import Awaitable, Dict, List, cast
+from typing import cast, Dict, Awaitable, List
 from uuid import uuid4
 
-from telegram import InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Update
+from telegram import (
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+    Update,
+    InlineQuery,
+    InlineQueryResultCachedPhoto,
+)
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, InlineQueryHandler
 
-from core.plugin import Plugin, handler
+from core.base.assets import AssetsService, AssetsCouldNotFound
+from core.plugin import handler, Plugin
+from core.search.services import SearchServices
 from core.wiki import WikiService
 from utils.decorators.error import error_callable
 from utils.log import logger
@@ -20,12 +28,14 @@ class Inline(Plugin):
         self,
         wiki_service: WikiService = None,
         assets_service: AssetsService = None,
+        search_service: SearchServices = None,
     ):
         self.assets_service = assets_service
         self.wiki_service = wiki_service
         self.weapons_list: List[Dict[str, str]] = []
         self.characters_list: List[Dict[str, str]] = []
         self.refresh_task: List[Awaitable] = []
+        self.search_service = search_service
 
     async def __async_init__(self):
         # todo: 整合进 wiki 或者单独模块 从Redis中读取
@@ -73,7 +83,22 @@ class Inline(Plugin):
         results_list = []
         args = query.split(" ")
         if args[0] == "":
-            pass
+            results_list.append(
+                InlineQueryResultArticle(
+                    id=str(uuid4()),
+                    title="武器图鉴查询",
+                    description="输入武器名称即可查询武器图鉴",
+                    input_message_content=InputTextMessageContent("武器图鉴查询"),
+                )
+            )
+            results_list.append(
+                InlineQueryResultArticle(
+                    id=str(uuid4()),
+                    title="角色攻略查询",
+                    description="输入角色名即可查询角色攻略",
+                    input_message_content=InputTextMessageContent("角色攻略查询"),
+                )
+            )
         else:
             if "查看武器列表并查询" == args[0]:
                 for weapon in self.weapons_list:
@@ -118,6 +143,33 @@ class Inline(Plugin):
                             ),
                         )
                     )
+            else:
+                simple_search_results = await self.search_service.search(args[0])
+                if simple_search_results:
+                    results_list.append(
+                        InlineQueryResultArticle(
+                            id=str(uuid4()),
+                            title=f"当前查询内容为 {args[0]}",
+                            description="如果无查看图片描述 这是正常的 客户端问题",
+                            thumb_url="https://www.miyoushe.com/_nuxt/img/game-ys.dfc535b.jpg",
+                            input_message_content=InputTextMessageContent(f"当前查询内容为 {args[0]}\n如果无查看图片描述 这是正常的 客户端问题"),
+                        )
+                    )
+                    for simple_search_result in simple_search_results:
+                        if simple_search_result.photo_file_id:
+                            description = simple_search_result.description
+                            if len(description) >= 10:
+                                description = description[:10]
+                            results_list.append(
+                                InlineQueryResultCachedPhoto(
+                                    id=str(uuid4()),
+                                    title=simple_search_result.title,
+                                    photo_file_id=simple_search_result.photo_file_id,
+                                    description=description,
+                                    caption=simple_search_result.caption,
+                                    parse_mode=simple_search_result.parse_mode,
+                                )
+                            )
 
         if not results_list:
             results_list.append(

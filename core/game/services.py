@@ -1,7 +1,6 @@
 from typing import List, Optional
 
-from modules.apihelper.hyperion import Hyperion
-
+from modules.apihelper.client.components.hyperion import Hyperion
 from .cache import GameCache
 
 

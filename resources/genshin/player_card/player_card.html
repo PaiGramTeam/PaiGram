@@ -32,6 +32,23 @@
       .star-5 {
         background-position-y: -4rem;
       }
+      @font-face {
+        font-family: shicon;
+        src: url(fonts/shicon.woff) format("woff");
+        font-weight: 400;
+        font-style: normal;
+        font-display: block
+      }
+
+      .enka-log {
+        line-height: 0;
+        margin-right: 0.3rem
+      }
+      .enka-log:before {
+        content: "\e93a";
+        font-family: shicon;
+        font-size: 1.25em
+      }
     </style>
   </head>
   <body class="text-xl text-neutral-200">
@@ -79,6 +96,13 @@
           </div>
 
           {% include 'genshin/player_card/artifacts.html' %}
+        </div>
+      </div>
+
+      <!-- Logo -->
+      <div class="mt-4 relative">
+        <div class="text-gray-300 text-center opacity-70 text-lg">
+          Data from <span class="enka-log"></span>Enka.Network × Inspired by Miao-Plugin
         </div>
       </div>
     </div>
