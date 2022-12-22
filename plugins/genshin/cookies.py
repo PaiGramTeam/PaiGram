@@ -313,7 +313,9 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         except InvalidCookies:
             logger.info("用户 %s[%s] Cookies已经过期", user.full_name, user.id)
-            await message.reply_text("Cookies已经过期，请检查是否正确", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text(
+                "获取账号信息失败，返回Cookies已经过期，请尝试在无痕浏览器登录通行证后获取Cookies。", reply_markup=ReplyKeyboardRemove()
+            )
             return ConversationHandler.END
         except GenshinException as exc:
             logger.info("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
