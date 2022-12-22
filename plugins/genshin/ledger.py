@@ -2,7 +2,7 @@ import os
 import re
 from datetime import datetime, timedelta
 
-from genshin import GenshinException, DataNotPublic
+from genshin import GenshinException, DataNotPublic, InvalidCookies
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
@@ -123,7 +123,15 @@ class Ledger(Plugin, BasePlugin):
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             client = await get_genshin_client(user.id)
-            render_result = await self._start_get_ledger(client, month)
+            try:
+                render_result = await self._start_get_ledger(client, month)
+            except InvalidCookies:  # 如果抛出InvalidCookies 判断是否真的玄学过期（或权限不足？）
+                await client.get_genshin_user(client.uid)
+                reply_message = await message.reply_text("出错了呜呜呜 ~ 当前账号无法请求旅行札记数据。")
+                if filters.ChatType.GROUPS.filter(message):
+                    self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                    self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                return
         except (UserNotFoundError, CookiesNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
