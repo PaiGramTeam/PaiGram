@@ -86,12 +86,12 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         return CHECK_SERVER
 
     @conversation.entry_point
-    @handler.command(command="mlogin", filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command("qlogin", filters=filters.ChatType.PRIVATE, block=True)
     @error_callable
     async def qrcode_login(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
-        logger.info(f"用户 {user.full_name}[{user.id}] 绑定账号命令请求")
+        logger.info("用户 %s[%s] 绑定账号命令请求", user.full_name, user.id)
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if add_user_command_data is None:
             add_user_command_data = AddUserCommandData()
@@ -113,8 +113,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         sign_in_client = SignIn()
         url = await sign_in_client.create_login_data()
         data = sign_in_client.generate_qrcode(url)
-        text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！该绑定方法仅支持国服，请在3分钟内使用米游社扫码并确认进行绑定。")}'
-        await message.reply_photo(data, caption=text, parse_mode=ParseMode.MARKDOWN_V2)
+        text = f"你好 {user.mention_html()} ！该绑定方法仅支持国服，请在3分钟内使用米游社扫码并确认进行绑定。"
+        await message.reply_photo(data, caption=text, parse_mode=ParseMode.HTML)
         if await sign_in_client.check_login():
             add_user_command_data.cookies = sign_in_client.cookie
             return await self.check_cookies(update, context)
