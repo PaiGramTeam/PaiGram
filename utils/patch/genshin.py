@@ -84,7 +84,7 @@ class BaseClient:
         if region == types.Region.OVERSEAS:
             headers = {
                 "x-rpc-app_version": "1.5.0",
-                "x-rpc-client_type": "4",
+                "x-rpc-client_type": "5",
                 "x-rpc-language": lang,
                 "ds": generate_dynamic_secret(),
             }
