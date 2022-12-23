@@ -133,8 +133,8 @@ class SignIn:
                 logger.debug("QRCODE_GET_API: [%s]%s", res_json.get("retcode"), res_json.get("message"))
                 return False
             logger.debug("QRCODE_GET_API: %s", res_json.get("data"))
-            data = res_json.get("data", {})
-            if data.get("stat", "") == "Confirmed":
+            res_data = res_json.get("data", {})
+            if res_data.get("stat", "") == "Confirmed":
                 return await self.set_cookie(res_json.get("data", {}))
 
     @staticmethod
