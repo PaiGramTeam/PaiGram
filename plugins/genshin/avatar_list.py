@@ -184,7 +184,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
         all_avatars = any(["all" in args, "全部" in args])  # 是否发送全部角色
 
-        logger.info(f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]: all={all_avatars}", extra={"markup": True})
+        logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
 
         client = await self.get_user_client(user, message, context)
         if not client:
@@ -193,20 +193,25 @@ class AvatarListPlugin(Plugin, BasePlugin):
         notice = await message.reply_text("派蒙需要收集整理数据，还请耐心等待哦~")
         await message.reply_chat_action(ChatAction.TYPING)
 
-        characters = await client.get_genshin_characters(client.uid)
-
         try:
+            characters = await client.get_genshin_characters(client.uid)
             avatar_datas: List[AvatarData] = await self.get_avatars_data(
                 characters, client, None if all_avatars else 20
             )
-        except InvalidCookies as e:
+        except InvalidCookies as exc:
             await notice.delete()
-            raise e
+            await client.get_genshin_user(client.uid)
+            logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
+            reply_message = await message.reply_text("出错了呜呜呜 ~ 当前账号无法请求角色数数据。\n请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            return
         except GenshinException as e:
             if e.retcode == -502002:
-                self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
-                notice = await message.reply_text("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~", parse_mode=ParseMode.HTML)
-                self._add_delete_message_job(context, notice.chat_id, notice.message_id, 20)
+                await notice.delete()
+                reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 20)
                 return
             raise e
 
@@ -246,7 +251,10 @@ class AvatarListPlugin(Plugin, BasePlugin):
             await image.reply_photo(message)
 
         logger.info(
-            f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]发送{'文件' if all_avatars else '图片'}成功",
+            "用户 %s[%s] [bold]练度统计[/bold]发送%s成功",
+            user.full_name,
+            user.id,
+            "文件" if all_avatars else "图片",
             extra={"markup": True},
         )
 
