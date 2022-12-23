@@ -51,7 +51,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         cookies = {}
 
         v1_keys = ["ltoken", "ltuid", "login_uid", "cookie_token"]
-        v2_keys = ["ltoken_v2", "ltmid_v2", "account_mid_v2", "cookie_token", "cookie_token_v2", "login_ticket"]
+        v2_keys = ["ltoken_v2", "ltmid_v2", "account_mid_v2", "cookie_token_v2", "login_ticket", "stoken"]
 
         cookie_is_v1 = None
 

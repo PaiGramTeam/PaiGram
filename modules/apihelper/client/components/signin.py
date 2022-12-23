@@ -1,16 +1,15 @@
 import asyncio
 import json
 import random
+import qrcode
+
 from io import BytesIO
 from string import ascii_letters, digits
 from typing import Dict
-
-import qrcode
-from genshin.utility import generate_cn_dynamic_secret
 from httpx import AsyncClient
 
 from ...logger import logger
-from ...utility.helpers import get_device_id
+from ...utility.helpers import get_device_id, get_ds
 
 __all__ = ("SignIn",)
 
@@ -66,8 +65,6 @@ class SignIn:
     async def get_ltoken_by_game_token(self, game_token: str):
         data = {"account_id": self.uid, "game_token": game_token}
         headers = {
-            "x-rpc-app_version": "2.41.2",
-            "DS": generate_cn_dynamic_secret(body=data, salt="osgT0DljLarYxgebPPHJFjdaxPfoiHGt"),
             "x-rpc-aigis": "",
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -78,9 +75,12 @@ class SignIn:
             "x-rpc-device_name": "Chrome 108.0.0.0",
             "x-rpc-device_model": "Windows 10 64-bit",
             "x-rpc-app_id": "bll8iq97cem8",
-            "x-rpc-client_type": "4",
             "User-Agent": "okhttp/4.8.0",
         }
+        app_version, client_type, ds_sign = get_ds(new_ds=True, data=data)
+        headers["x-rpc-app_version"] = app_version
+        headers["x-rpc-client_type"] = client_type
+        headers["DS"] = ds_sign
         res = await self.client.post(
             self.GAME_LTOKEN_API,
             headers=headers,
