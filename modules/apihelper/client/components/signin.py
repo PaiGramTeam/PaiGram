@@ -25,7 +25,7 @@ class SignIn:
     QRCODE_GEN_API = "https://hk4e-sdk.mihoyo.com/hk4e_cn/combo/panda/qrcode/fetch"
     QRCODE_GET_API = "https://hk4e-sdk.mihoyo.com/hk4e_cn/combo/panda/qrcode/query"
     GAME_TOKEN_API = "https://api-takumi.mihoyo.com/auth/api/getCookieAccountInfoByGameToken"
-    GAME_STOKEN_API = "https://passport-api.mihoyo.com/account/ma-cn-session/app/getTokenByGameToken"
+    GAME_LTOKEN_API = "https://passport-api.mihoyo.com/account/ma-cn-session/app/getTokenByGameToken"
 
     def __init__(self, uid: int = 0, cookie: Dict = None):
         self.client = AsyncClient()
@@ -62,7 +62,7 @@ class SignIn:
             if i.get("name") and i.get("token"):
                 self.cookie[i.get("name")] = i.get("token")
 
-    async def get_s_token_by_game_token(self, game_token: str):
+    async def get_ltoken_by_game_token(self, game_token: str):
         data = {"account_id": self.uid, "game_token": game_token}
         headers = {
             "x-rpc-app_version": "2.41.2",
@@ -81,7 +81,7 @@ class SignIn:
             "User-Agent": "okhttp/4.8.0",
         }
         res = await self.client.post(
-            self.GAME_STOKEN_API,
+            self.GAME_LTOKEN_API,
             headers=headers,
             json={"account_id": self.uid, "game_token": game_token},
         )
@@ -112,12 +112,13 @@ class SignIn:
             return False
         self.uid = int(game_token["uid"])
         for item in ["login_uid", "stuid", "ltuid", "account_id"]:
-            self.cookie[item] = self.uid
+            self.cookie[item] = str(self.uid)
         cookie_token_data = await self.get_cookie_token_data(game_token["token"])
-        stoken_data = await self.get_s_token_by_game_token(game_token["token"])
+        ltoken_data = await self.get_ltoken_by_game_token(game_token["token"])
         self.cookie["cookie_token"] = cookie_token_data["data"]["cookie_token"]
-        self.cookie["mid"] = stoken_data["data"]["user_info"]["mid"]
-        self.cookie["stoken"] = stoken_data["data"]["token"]["token"]
+        for item in ["account_mid_v2", "ltmid_v2"]:
+            self.cookie[item] = ltoken_data["data"]["user_info"]["mid"]
+        self.cookie["ltoken_v2"] = ltoken_data["data"]["token"]["token"]
         return True
 
     async def check_login(self):
