@@ -1,6 +1,6 @@
+import asyncio
 import json
 import random
-from asyncio import sleep
 from io import BytesIO
 from string import ascii_letters, digits
 from typing import Dict
@@ -9,6 +9,7 @@ import qrcode
 from genshin.utility import generate_cn_dynamic_secret
 from httpx import AsyncClient
 
+from ...logger import logger
 from ...utility.helpers import get_device_id
 
 __all__ = ("SignIn",)
@@ -124,13 +125,14 @@ class SignIn:
     async def check_login(self):
         data = {"app_id": "4", "ticket": self.ticket, "device": self.device_id}
         for _ in range(20):
-            await sleep(10)
+            await asyncio.sleep(10)
             res = await self.client.post(self.QRCODE_GET_API, json=data)
             res_json = res.json()
             ret_code = res_json.get("retcode", 1)
             if ret_code != 0:
-                print(res_json)
+                logger.debug("QRCODE_GET_API: [%s]%s", res_json.get("retcode"), res_json.get("message"))
                 return False
+            logger.debug("QRCODE_GET_API: %s", res_json.get("data"))
             data = res_json.get("data", {})
             if data.get("stat", "") == "Confirmed":
                 return await self.set_cookie(res_json.get("data", {}))
