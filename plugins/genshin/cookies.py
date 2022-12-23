@@ -233,7 +233,6 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
 
     @staticmethod
     async def check_cookies(update: Update, context: CallbackContext) -> int:
-        # sourcery skip: replace-interpolation-with-fstring
         user = update.effective_user
         message = update.effective_message
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
@@ -275,7 +274,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         except (AttributeError, ValueError) as exc:
             logger.warning("用户 %s[%s] Cookies错误", user.full_name, user.id)
-            logger.debug("用户 %s[%s] Cookies错误" % (user.full_name, user.id), exc_info=exc)
+            logger.debug("用户 %s[%s] Cookies错误", user.full_name, user.id, exc_info=exc)
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         with contextlib.suppress(Exception):
@@ -297,7 +296,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         add_user_command_data.game_uid = user_info.uid
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        logger.info(f"用户 {user.full_name}[{user.id}] 获取账号 {user_info.nickname}[{user_info.uid}] 信息成功")
+        logger.info("用户 %s[%s] 获取账号 {%s}[%s] 信息成功", user.full_name, user.id, user_info.nickname, user_info.uid)
         text = (
             f"*角色信息*\n"
             f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n"
