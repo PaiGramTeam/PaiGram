@@ -38,9 +38,9 @@ class StrategyPlugin(Plugin, BasePlugin):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        args = get_args(context)
+        args = message.text.strip("/strategy ")
         if len(args) >= 1:
-            character_name = args[0]
+            character_name = args
         else:
             reply_message = await message.reply_text("请回复你要查询的攻略的角色名", reply_markup=InlineKeyboardMarkup(self.KEYBOARD))
             if filters.ChatType.GROUPS.filter(reply_message):

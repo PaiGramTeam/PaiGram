@@ -45,14 +45,13 @@ class BirthdayPlugin(Plugin, BasePlugin):
             + "_"
             + rm_starting_str(datetime.now().strftime("%d"), "0")
         )
-        args = get_args(context)
+        args = message.text.strip("/birthday ")
         if len(args) >= 1:
-            msg = args[0]
-            logger.info(f"用户 {user.full_name}[{user.id}] 查询角色生日命令请求 || 参数 {msg}")
-            if re.match(r"\d{1,2}.\d{1,2}", msg):
+            logger.info(f"用户 {user.full_name}[{user.id}] 查询角色生日命令请求 || 参数 {args}")
+            if re.match(r"\d{1,2}.\d{1,2}", args):
                 try:
-                    month = rm_starting_str(re.findall(r"\d+", msg)[0], "0")
-                    day = rm_starting_str(re.findall(r"\d+", msg)[1], "0")
+                    month = rm_starting_str(re.findall(r"\d+", args)[0], "0")
+                    day = rm_starting_str(re.findall(r"\d+", args)[1], "0")
                     key = f"{month}_{day}"
                     day_list = self.birthday_list.get(key, [])
                     date = f"{month}月{day}日"
@@ -68,12 +67,12 @@ class BirthdayPlugin(Plugin, BasePlugin):
                     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
             else:
                 try:
-                    if msg == "派蒙":
+                    if args == "派蒙":
                         name = "派蒙"
                         birthday = [6, 1]
                     else:
-                        name = roleToName(msg)
-                        aid = str(roleToId(msg))
+                        name = roleToName(args)
+                        aid = str(roleToId(args))
                         birthday = AVATAR_DATA[aid]["birthday"]
                     text = f"{name} 的生日是 {birthday[0]}月{birthday[1]}日 哦~"
                     reply_message = await message.reply_text(text)
