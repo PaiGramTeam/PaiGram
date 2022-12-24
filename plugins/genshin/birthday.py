@@ -45,7 +45,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
             + "_"
             + rm_starting_str(datetime.now().strftime("%d"), "0")
         )
-        args = get_args(context)
+        args = get_args(context, True)
         if len(args) >= 1:
             msg = args[0]
             logger.info(f"用户 {user.full_name}[{user.id}] 查询角色生日命令请求 || 参数 {msg}")

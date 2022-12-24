@@ -38,7 +38,7 @@ class StrategyPlugin(Plugin, BasePlugin):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        args = get_args(context)
+        args = get_args(context, True)
         if len(args) >= 1:
             character_name = args[0]
         else:
