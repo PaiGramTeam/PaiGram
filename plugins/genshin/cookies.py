@@ -134,7 +134,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         elif message.text == "米游社":
             region = RegionEnum.HYPERION
-            bbs_url = "https://www.miyoushe.com/ys/"
+            bbs_url = "https://user.mihoyo.com/"
             bbs_name = "米游社"
         elif message.text == "HoYoLab":
             bbs_url = "https://www.hoyolab.com/home"
@@ -163,10 +163,10 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 "<b>关于如何获取Cookies</b>\n"
                 "<b>现在因为网站HttpOnly策略无法通过脚本获取，因此操作只能在PC上运行。</b>\n\n"
                 "PC：\n"
-                f"1、<a href='{bbs_url}'>打开 {bbs_name} 并登录</a>\n"
+                f"1、<a href='{bbs_url}'>打开通行证并登录</a>\n"
                 "2、按F12打开开发者工具\n"
                 "3、将开发者工具切换至网络(Network)并点击过滤栏中的文档(Document)并刷新页面\n"
-                "4、在请求列表找到 <i>/ys</i> 并点击\n"
+                "4、在请求列表中选择第一个并点击\n"
                 "5、找到并复制请求标头(Request Headers)中的Cookie\n"
                 "<u>如发现没有请求标头(Request Headers)大概因为缓存的存在需要你点击禁用缓存(Disable Cache)再次刷新页面</u>"
             )
@@ -263,7 +263,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         except InvalidCookies:
             logger.info("用户 %s[%s] Cookies已经过期", user.full_name, user.id)
             await message.reply_text(
-                "获取账号信息失败，返回Cookies已经过期，请尝试在无痕浏览器登录通行证后获取Cookies。", reply_markup=ReplyKeyboardRemove()
+                "获取账号信息失败，返回Cookies已经过期，请尝试在无痕浏览器中登录获取Cookies。", reply_markup=ReplyKeyboardRemove()
             )
             return ConversationHandler.END
         except GenshinException as exc:
