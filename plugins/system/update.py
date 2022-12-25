@@ -49,14 +49,14 @@ class UpdatePlugin(Plugin):
             return
         async with self._lock:
             reply_text = await message.reply_text("正在更新")
-            logger.info(f"正在更新代码")
+            logger.info("正在更新代码")
             await execute("git fetch --all")
             if len(args) > 0:
                 await execute("git reset --hard origin/main")
             await execute("git pull --all")
             if len(args) > 0:
                 await execute(f"{executable} -m poetry install --extras all")
-            logger.info(f"更新成功 正在重启")
+            logger.info("更新成功 正在重启")
             await reply_text.edit_text("更新成功 正在重启")
             async with async_open(UPDATE_DATA, mode="w", encoding="utf-8") as file:
                 await file.write(reply_text.to_json())
