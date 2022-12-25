@@ -37,7 +37,7 @@ async def update_metadata_from_ambr(overwrite: bool = True):
 
 @contextmanager
 async def stream_request(method, url) -> Iterator[Response]:
-    with client.stream(method=method, url=url) as response:
+    async with client.stream(method=method, url=url) as response:
         yield response
 
 
