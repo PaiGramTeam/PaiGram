@@ -31,10 +31,7 @@ logger = Logger(
 
 @lru_cache
 def _name_filter(record_name: str) -> bool:
-    for name in config.logger.filtered_names + [config.logger.name]:
-        if re.match(rf"^{name}.*?$", record_name):
-            return True
-    return False
+    return any(re.match(rf"^{name}.*?$", record_name) for name in config.logger.filtered_names + [config.logger.name])
 
 
 def name_filter(record: "LogRecord") -> bool:
