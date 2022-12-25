@@ -84,7 +84,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             else:
                 break
         else:
-            logger.warning(f"解析[bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.name, extra={"markup": True})
+            logger.warning("解析[bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.name, extra={"markup": True})
             return None
         if character.id == 10000005:  # 针对男草主
             talents = []

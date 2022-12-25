@@ -106,7 +106,7 @@ class Bot:
                 import_module(pkg)  # 导入插件
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(
-                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]e[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
+                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
                 )
                 continue  # 如有错误则继续
         callback_dict: Dict[int, List[Callable]] = {}
@@ -142,7 +142,7 @@ class Bot:
                 logger.success('插件 "%s" 载入成功', path)
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(
-                    '在安装插件 "%s" 的过程中遇到了错误 [red bold]e[/]', path, type(e).__name__, exc_info=e, extra={"markup": True}
+                    '在安装插件 "%s" 的过程中遇到了错误 [red bold]%s[/]', path, type(e).__name__, exc_info=e, extra={"markup": True}
                 )
         if callback_dict:
             num = sum(len(callback_dict[i]) for i in callback_dict)
@@ -177,7 +177,7 @@ class Bot:
                 import_module(pkg)
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(
-                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]e[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
+                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
                 )
                 raise SystemExit from e
         for base_service_cls in Service.__subclasses__():
@@ -203,7 +203,11 @@ class Bot:
                     import_module(pkg)
                 except Exception as e:  # pylint: disable=W0703
                     logger.exception(
-                        '在导入文件 "%s" 的过程中遇到了错误 [red bold]e[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
+                        '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]',
+                        pkg,
+                        type(e).__name__,
+                        exc_info=e,
+                        extra={"markup": True},
                     )
                     continue
 
