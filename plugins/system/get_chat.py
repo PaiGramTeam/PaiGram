@@ -94,16 +94,16 @@ class GetChat(Plugin):
                     f"\n签到状态：<code>{sign_info.status.name}</code>"
                 )
             else:
-                text += f"\n自动签到：未开启"
+                text += "\n自动签到：未开启"
             with contextlib.suppress(Exception):
                 gacha_log, status = await self.gacha_log.load_history_info(str(chat.id), str(uid))
                 if status:
-                    text += f"\n抽卡记录："
+                    text += "\n抽卡记录："
                     for key, value in gacha_log.item_list.items():
                         text += f"\n   - {key}：{len(value)} 条"
                     text += f"\n   - 最后更新：{gacha_log.update_time.strftime('%Y-%m-%d %H:%M:%S')}"
                 else:
-                    text += f"\n抽卡记录：<code>未导入</code>"
+                    text += "\n抽卡记录：<code>未导入</code>"
         return text
 
     @handler(CommandHandler, command="get_chat", block=False)
