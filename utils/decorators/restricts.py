@@ -57,10 +57,7 @@ def restricts(
             user = update.effective_user
 
             _restricts_time = restricts_time
-            if (
-                restricts_time_of_groups is not None
-                and filters.ChatType.GROUPS.filter(message)
-            ):
+            if restricts_time_of_groups is not None and filters.ChatType.GROUPS.filter(message):
                 _restricts_time = restricts_time_of_groups
 
             async with _lock:

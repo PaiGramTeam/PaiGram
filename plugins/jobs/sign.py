@@ -48,10 +48,10 @@ class SignJob(Plugin):
             if context.job.name == "SignJob":
                 if sign_db.status not in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]:
                     continue
-            elif (
-                context.job.name == "SignAgainJob"
-                and sign_db.status in [SignStatusEnum.STATUS_SUCCESS, SignStatusEnum.ALREADY_CLAIMED]
-            ):
+            elif context.job.name == "SignAgainJob" and sign_db.status in [
+                SignStatusEnum.STATUS_SUCCESS,
+                SignStatusEnum.ALREADY_CLAIMED,
+            ]:
                 continue
             try:
                 client = await get_genshin_client(user_id)

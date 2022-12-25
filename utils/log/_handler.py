@@ -231,9 +231,7 @@ class Handler(DefaultRichHandler):
                 locals_max_length=(getattr(record, "locals_max_length", None) or self.locals_max_length),
                 locals_max_string=(getattr(record, "locals_max_string", None) or self.locals_max_string),
                 locals_max_depth=(
-                    record.locals_max_depth
-                    if hasattr(record, "locals_max_depth")
-                    else self.locals_max_depth
+                    record.locals_max_depth if hasattr(record, "locals_max_depth") else self.locals_max_depth
                 ),
                 suppress=self.tracebacks_suppress,
                 max_frames=self.tracebacks_max_frames,
