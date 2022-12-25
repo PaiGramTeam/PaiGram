@@ -135,12 +135,12 @@ class AvatarListPlugin(Plugin, BasePlugin):
         try:
             response = await self.enka_client.fetch_user(client.uid)
             namecard = (await self.assets_service.namecard(response.player.namecard.id).navbar()).as_uri()
-            avatar = (await self.assets_service.avatar(response.player.icon.id).icon()).as_uri()
+            avatar = (await self.assets_service.avatar(response.player.avatar.id).icon()).as_uri()
             nickname = response.player.nickname
-            if response.player.icon.id in [10000005, 10000007]:
+            if response.player.avatar.id in [10000005, 10000007]:
                 rarity = 5
             else:
-                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.icon.id)]
+                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.avatar.id)]
         except Exception as e:  # pylint: disable=W0703
             logger.debug(f"enka 请求失败: {e}")
             choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
