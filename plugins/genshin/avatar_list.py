@@ -73,22 +73,21 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 )
 
     async def get_avatar_data(self, character: Character, client: Client) -> Optional["AvatarData"]:
-        detail = None
         for _ in range(5):
             try:
                 detail = await client.get_character_details(character)
-            except Exception as e:  # pylint: disable=W0703
-                if isinstance(e, GenshinException) and "Too Many Requests" in e.msg:
+            except Exception as exc:  # pylint: disable=W0703
+                if isinstance(exc, GenshinException) and "Too Many Requests" in exc.msg:
                     await asyncio.sleep(0.2)
                     continue
                 if character.name == "旅行者":
-                    logger.debug(f"解析旅行者数据时遇到了错误：{e}")
+                    logger.debug("解析旅行者数据时遇到了错误：%s", str(exc))
                     return None
-                raise e
+                raise exc
             else:
                 break
         else:
-            logger.warning(f"解析[bold]{character.name}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True})
+            logger.warning("解析[bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.name, extra={"markup": True})
             return None
         if character.id == 10000005:  # 针对男草主
             talents = []
@@ -137,43 +136,43 @@ class AvatarListPlugin(Plugin, BasePlugin):
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
             response = await self.enka_client.fetch_user(client.uid)
-            namecard = (await self.assets_service.namecard(response.player.namecard.id).navbar()).as_uri()
-            avatar = (await self.assets_service.avatar(response.player.icon.id).icon()).as_uri()
+            name_card = (await self.assets_service.namecard(response.player.namecard.id).navbar()).as_uri()
+            avatar = (await self.assets_service.avatar(response.player.avatar.id).icon()).as_uri()
             nickname = response.player.nickname
-            if response.player.icon.id in [10000005, 10000007]:
+            if response.player.avatar.id in [10000005, 10000007]:
                 rarity = 5
             else:
-                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.icon.id)]
-        except Exception as e:  # pylint: disable=W0703
-            logger.debug(f"enka 请求失败: {e}")
+                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.avatar.id)]
+        except Exception as exc:  # pylint: disable=W0703
+            logger.error("enka 请求失败: %s", str(exc))
             choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
             if choices.length == 0:  # 若没有满好感角色、则以好感等级排序
                 choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
-            namecard_choices = (  # 找到与角色对应的满好感名片ID
+            name_card_choices = (  # 找到与角色对应的满好感名片ID
                 ArkoWrapper(choices)
                 .map(lambda x: next(filter(lambda y: y["name"].split(".")[0] == x.name, NAMECARD_DATA.values()), None))
                 .filter(lambda x: x)
                 .map(lambda x: x["id"])
             )
-            namecard = (await self.assets_service.namecard(namecard_choices[0]).navbar()).as_uri()
+            name_card = (await self.assets_service.namecard(name_card_choices[0]).navbar()).as_uri()
             avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
             nickname = update.effective_user.full_name
             if cid in [10000005, 10000007]:
                 rarity = 5
             else:
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
-        return namecard, avatar, nickname, rarity
+        return name_card, avatar, nickname, rarity
 
     async def get_default_final_data(self, characters: Sequence[Character], update: Update):
         nickname = update.effective_user.full_name
         rarity = 5
         # 须弥·正明
-        namecard = (await self.assets_service.namecard(210132).navbar()).as_uri()
+        name_card = (await self.assets_service.namecard(210132).navbar()).as_uri()
         if traveller := next(filter(lambda x: x.id in [10000005, 10000007], characters), None):
             avatar = (await self.assets_service.avatar(traveller.id).icon()).as_uri()
         else:
             avatar = (await self.assets_service.avatar(10000005).icon()).as_uri()
-        return namecard, avatar, nickname, rarity
+        return name_card, avatar, nickname, rarity
 
     @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"), block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
@@ -187,7 +186,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
         all_avatars = any(["all" in args, "全部" in args])  # 是否发送全部角色
 
-        logger.info(f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]: all={all_avatars}", extra={"markup": True})
+        logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
 
         client = await self.get_user_client(user, message, context)
         if not client:
@@ -196,35 +195,40 @@ class AvatarListPlugin(Plugin, BasePlugin):
         notice = await message.reply_text("派蒙需要收集整理数据，还请耐心等待哦~")
         await message.reply_chat_action(ChatAction.TYPING)
 
-        characters = await client.get_genshin_characters(client.uid)
-
         try:
+            characters = await client.get_genshin_characters(client.uid)
             avatar_datas: List[AvatarData] = await self.get_avatars_data(
                 characters, client, None if all_avatars else 20
             )
-        except InvalidCookies as e:
+        except InvalidCookies as exc:
             await notice.delete()
-            raise e
+            await client.get_genshin_user(client.uid)
+            logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
+            reply_message = await message.reply_text("出错了呜呜呜 ~ 当前账号无法请求角色数数据。\n请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。")
+            if filters.ChatType.GROUPS.filter(message):
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+            return
         except GenshinException as e:
             if e.retcode == -502002:
-                self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
-                notice = await message.reply_text("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~", parse_mode=ParseMode.HTML)
-                self._add_delete_message_job(context, notice.chat_id, notice.message_id, 20)
+                await notice.delete()
+                reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 20)
                 return
             raise e
 
         try:
-            namecard, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
-        except Exception as e:
-            logger.debug(f"卡片信息请求失败: {e}")
-            namecard, avatar, nickname, rarity = await self.get_default_final_data(characters, update)
+            name_card, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
+        except Exception as exc:
+            logger.error("卡片信息请求失败", exc_info=exc)
+            name_card, avatar, nickname, rarity = await self.get_default_final_data(characters, update)
 
         render_data = {
             "uid": client.uid,  # 玩家uid
             "nickname": nickname,  # 玩家昵称
             "avatar": avatar,  # 玩家头像
             "rarity": rarity,  # 玩家头像对应的角色星级
-            "namecard": namecard,  # 玩家名片
+            "namecard": name_card,  # 玩家名片
             "avatar_datas": avatar_datas,  # 角色数据
             "has_more": len(characters) != len(avatar_datas),  # 是否显示了全部角色
         }
@@ -249,7 +253,10 @@ class AvatarListPlugin(Plugin, BasePlugin):
             await image.reply_photo(message)
 
         logger.info(
-            f"用户 {user.full_name}[{user.id}] [bold]练度统计[/bold]发送{'文件' if all_avatars else '图片'}成功",
+            "用户 %s[%s] [bold]练度统计[/bold]发送%s成功",
+            user.full_name,
+            user.id,
+            "文件" if all_avatars else "图片",
             extra={"markup": True},
         )
 

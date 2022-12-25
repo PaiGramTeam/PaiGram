@@ -84,7 +84,7 @@ class BaseClient:
         if region == types.Region.OVERSEAS:
             headers = {
                 "x-rpc-app_version": "1.5.0",
-                "x-rpc-client_type": "4",
+                "x-rpc-client_type": "5",
                 "x-rpc-language": lang,
                 "ds": generate_dynamic_secret(),
             }
@@ -204,13 +204,13 @@ class BaseClient:
                     else:
                         device_id = DEVICE_ID
 
-                ds_sign = generate_dynamic_secret("ulInCDohgEs557j0VsPDYnQaaz6KJcv5")
-                ua = get_ua(device="Paimon Build " + device_id[0:5], version="2.40.0")
+                app_version, _, ds_sign = get_ds()
+                ua = get_ua(device="Paimon Build " + device_id[0:5], version=app_version)
                 add_headers = {
                     "User-Agent": ua,
                     "Referer": "https://www.miyoushe.com/ys/",
                     "x-rpc-device_id": get_device_id(device_id),
-                    "x-rpc-app_version": "2.40.0",
+                    "x-rpc-app_version": app_version,
                     "x-rpc-client_type": "4",
                     "ds": ds_sign,
                 }

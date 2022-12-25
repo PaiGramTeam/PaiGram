@@ -2,6 +2,7 @@ import random
 
 from telegram import Poll, Update
 from telegram.constants import ChatAction
+from telegram.error import BadRequest
 from telegram.ext import CallbackContext, CommandHandler, filters
 
 from core.admin import BotAdminService
@@ -50,14 +51,20 @@ class QuizPlugin(Plugin, BasePlugin):
             return None
         random.shuffle(_options)
         index = _options.index(correct_option)
-        poll_message = await update.effective_message.reply_poll(
-            question.text,
-            _options,
-            correct_option_id=index,
-            is_anonymous=False,
-            open_period=self.time_out,
-            type=Poll.QUIZ,
-        )
+        try:
+            poll_message = await message.reply_poll(
+                question.text,
+                _options,
+                correct_option_id=index,
+                is_anonymous=False,
+                open_period=self.time_out,
+                type=Poll.QUIZ,
+            )
+        except BadRequest as exc:
+            if "Not enough rights" in exc.message:
+                poll_message = await message.reply_text("出错了呜呜呜 ~ 权限不足，请请检查投票权限是否开启")
+            else:
+                raise exc
         if filters.ChatType.GROUPS.filter(message):
             self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
             self._add_delete_message_job(context, poll_message.chat_id, poll_message.message_id, 300)

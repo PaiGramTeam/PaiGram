@@ -51,7 +51,7 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
-        logger.info(f"用户 {user.full_name}[{user.id}] set_quiz命令请求")
+        logger.info("用户 %s[%s] set_quiz命令请求", user.full_name, user.id)
         quiz_command_data: QuizCommandData = context.chat_data.get("quiz_command_data")
         if quiz_command_data is None:
             quiz_command_data = QuizCommandData()
@@ -111,8 +111,8 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
         except DataError:
             await update.message.reply_text("Redis数据错误，重载失败", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        except ResponseError as error:
-            logger.error("重载问题失败", error)
+        except ResponseError as exc:
+            logger.error("重载问题失败", exc_info=exc)
             await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await update.message.reply_text("重载成功", reply_markup=ReplyKeyboardRemove())
@@ -190,8 +190,8 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 await update.message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
                 try:
                     await self.quiz_service.refresh_quiz()
-                except ResponseError as error:
-                    logger.error("重载问题失败", error)
+                except ResponseError as exc:
+                    logger.error("重载问题失败", exc_info=exc)
                     await update.message.reply_text(
                         "重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记", reply_markup=ReplyKeyboardRemove()
                     )
@@ -224,8 +224,8 @@ class SetQuizPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await self.quiz_service.delete_question_by_id(question.question_id)
             await update.message.reply_text("删除问题成功", reply_markup=ReplyKeyboardRemove())
             await self.quiz_service.refresh_quiz()
-        except ResponseError as error:
-            logger.error("重载问题失败", error)
+        except ResponseError as exc:
+            logger.error("重载问题失败", exc_info=exc)
             await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await update.message.reply_text("重载配置成功", reply_markup=ReplyKeyboardRemove())

@@ -37,7 +37,7 @@ async def update_metadata_from_ambr(overwrite: bool = True):
 
 @contextmanager
 async def stream_request(method, url) -> Iterator[Response]:
-    with client.stream(method=method, url=url) as response:
+    async with client.stream(method=method, url=url) as response:
         yield response
 
 
@@ -118,14 +118,14 @@ async def update_metadata_from_github(overwrite: bool = True):
                 data = json.dumps(data, ensure_ascii=False)
                 await file.write(data)
             return data
-        except RemoteProtocolError as e:
-            logger.warning(f"在从 {host} 下载元数据的过程中遇到了错误: {repr(e)}")
+        except RemoteProtocolError as exc:
+            logger.warning("在从 %s 下载元数据的过程中遇到了错误: %s", host, str(exc))
             continue
-        except Exception as e:
+        except Exception as exc:
             if num != len(hosts) - 1:
-                logger.error(f"在从 {host} 下载元数据的过程中遇到了错误: {repr(e)}")
+                logger.error("在从 %s 下载元数据的过程中遇到了错误: %s", host, str(exc))
                 continue
-            raise e
+            raise exc
 
 
 def make_github_fast(url: str) -> str:

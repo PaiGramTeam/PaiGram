@@ -124,7 +124,7 @@ class DailyMaterial(Plugin, BasePlugin):
         if (not DATA_FILE_PATH.exists()) or (  # 若缓存不存在
             (datetime.today() - datetime.fromtimestamp(os.stat(DATA_FILE_PATH).st_mtime)).days > 3  # 若缓存过期，超过了3天
         ):
-            self.refresh_task = asyncio.create_task(task_daily())  # 创建后台任务
+            asyncio.create_task(task_daily())  # 创建后台任务
         if not data and DATA_FILE_PATH.exists():  # 若存在，则读取至内存中
             async with async_open(DATA_FILE_PATH) as file:
                 data = json.loads(await file.read())
@@ -149,7 +149,7 @@ class DailyMaterial(Plugin, BasePlugin):
         else:
             # 如果重试了5次都失败了，则直接返回 None
             logger.warning(
-                f"daily_material 解析角色 id 为 [bold]{character.id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
+                "daily_material 解析角色 id 为 [bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.id, extra={"markup": True}
             )
             return None
         # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
@@ -163,7 +163,7 @@ class DailyMaterial(Plugin, BasePlugin):
         try:
             logger.debug("尝试获取已绑定的原神账号")
             client = await get_genshin_client(user.id)
-            logger.debug(f"获取账号数据成功: UID={client.uid}")
+            logger.debug("获取账号数据成功: UID=%s", client.uid)
             characters = await client.get_genshin_characters(client.uid)
             for character in characters:
                 if character.name == "旅行者":  # 跳过主角
@@ -198,9 +198,9 @@ class DailyMaterial(Plugin, BasePlugin):
                     )
                 )
         except (UserNotFoundError, CookiesNotFoundError):
-            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
         except InvalidCookies:
-            logger.info(f"用户({user.full_name} {user.id}) 所绑定的账号信息已失效")
+            logger.info("用户 %s[%s] 所绑定的账号信息已失效", user.full_name, user.id)
         else:
             # 没有异常返回数据
             return client, user_data
@@ -227,7 +227,7 @@ class DailyMaterial(Plugin, BasePlugin):
             time = f"星期{WEEK_MAP[weekday]}"
         full = bool(args and args[-1] == "full")  # 判定最后一个参数是不是 full
 
-        logger.info(f'用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday="{WEEK_MAP[weekday]}" full={full}')
+        logger.info("用户 %s[%s}] 每日素材命令请求 || 参数 weekday=%s full=%s", user.full_name, user.id, WEEK_MAP[weekday], full)
 
         if weekday == 6:
             await message.reply_text(
@@ -297,7 +297,7 @@ class DailyMaterial(Plugin, BasePlugin):
                     try:
                         item = HONEY_DATA[type_][id_]
                     except KeyError:  # 跳过不存在或者已忽略的角色、武器
-                        logger.warning(f"未在 honey 数据中找到 {type_} {id_} 的信息")
+                        logger.warning("未在 honey 数据中找到 %s[%s] 的信息", type_, id_)
                         continue
                     if item[2] < 4:  # 跳过 3 星及以下的武器
                         continue
@@ -316,7 +316,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         material = HONEY_DATA["material"][mid]
                         materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
                     except AssetsCouldNotFound as exc:
-                        logger.warning("%s mid[%s]", exc.message, exc.target)
+                        logger.warning("AssetsCouldNotFound message[%s] target[%s]", exc.message, exc.target)
                         await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
                         return
                 areas.append(
@@ -368,7 +368,7 @@ class DailyMaterial(Plugin, BasePlugin):
         user = update.effective_user
         message = update.effective_message
 
-        logger.info(f"用户 {user.full_name}[{user.id}] 刷新[bold]每日素材[/]缓存命令", extra={"markup": True})
+        logger.info("用户 {%s}[%s] 刷新[bold]每日素材[/]缓存命令", user.full_name, user.id, extra={"markup": True})
         if self.locks[0].locked():
             notice = await message.reply_text("派蒙还在抄每日素材表呢，我有在好好工作哦~")
             self._add_delete_message_job(context, notice.chat_id, notice.message_id, 10)
@@ -467,7 +467,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         the_time.value = time_()
 
         async def task(item_id, name, item_type):
-            logger.debug(f'正在开始下载 "{name}" 的图标素材')
+            logger.debug("正在开始下载 %s 的图标素材", name)
             await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。")
             asset: AssetsServiceType = getattr(self.assets_service, item_type)(item_id)  # 获取素材对象
             asset_list.append(asset.honey_id)
@@ -475,7 +475,7 @@ class DailyMaterial(Plugin, BasePlugin):
             # 并根据图标类型找到下载对应图标的函数
             for icon_type in asset.icon_types:
                 await getattr(asset, icon_type)(True)  # 执行下载函数
-            logger.debug(f'"{name}" 的图标素材下载成功')
+            logger.debug("%s 的图标素材下载成功", name)
             await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。<b>成功！</b>")
 
         for TYPE, ITEMS in HONEY_DATA.items():  # 遍历每个对象

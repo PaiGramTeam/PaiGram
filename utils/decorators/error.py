@@ -103,7 +103,7 @@ def error_callable(func: Callable) -> Callable:
             if exc.retcode in (10001, -100):
                 text = "出错了呜呜呜 ~ Cookie 无效，请尝试重新绑定"
             elif exc.retcode == 10103:
-                text = "出错了呜呜呜 ~ Cookie 有效，但没有绑定到游戏帐户，请尝试重新绑定"
+                text = "出错了呜呜呜 ~ Cookie 有效，但没有绑定到游戏帐户，请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。"
             else:
                 logger.warning("Cookie错误")
                 logger.exception(exc)
@@ -146,6 +146,9 @@ def error_callable(func: Callable) -> Callable:
                 text = "气死我了！怎么有人喜欢发一个命令就秒删了！"
             elif "Message is not modified" in exc.message:
                 telegram_warning(update, exc.message)
+            elif "Not enough rights" in exc.message:
+                telegram_warning(update, exc.message)
+                text = "出错了呜呜呜 ~ 权限不足，请检查对应权限是否开启"
             else:
                 logger.error("python-telegram-bot 请求错误")
                 logger.exception(exc)

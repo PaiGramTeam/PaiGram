@@ -1,4 +1,5 @@
 import contextlib
+import html
 from typing import List
 
 from telegram import (Chat, ChatMember, ChatMemberAdministrator,
@@ -33,17 +34,17 @@ class GetChat(Plugin):
         self.gacha_log = GachaLog()
 
     async def parse_group_chat(self, chat: Chat, admins: List[ChatMember]) -> str:
-        text = f"群 ID：<code>{chat.id}</code>\n" f"群名称：<code>{chat.title}</code>\n"
+        text = f"群 ID：<code>{chat.id}</code>\n群名称：<code>{chat.title}</code>\n"
         if chat.username:
             text += f"群用户名：@{chat.username}\n"
         sign_info = await self.sign_service.get_by_chat_id(chat.id)
         if sign_info:
             text += f"自动签到推送人数：<code>{len(sign_info)}</code>\n"
         if chat.description:
-            text += f"群简介：<code>{chat.description}</code>\n"
+            text += f"群简介：<code>{html.escape(chat.description)}</code>\n"
         if admins:
             for admin in admins:
-                text += f'<a href="tg://user?id={admin.user.id}">{admin.user.full_name}</a> '
+                text += f'<a href="tg://user?id={admin.user.id}">{html.escape(admin.user.full_name)}</a> '
                 if isinstance(admin, ChatMemberAdministrator):
                     text += "C" if admin.can_change_info else "_"
                     text += "D" if admin.can_delete_messages else "_"
@@ -83,7 +84,7 @@ class GetChat(Plugin):
                 await get_genshin_client(chat.id)
             except CookiesNotFoundError:
                 temp = "UID 绑定"
-            text += f"<code>{temp}</code>\n" f"游戏 ID：<code>{uid}</code>"
+            text += f"<code>{temp}</code>\n游戏 ID：<code>{uid}</code>"
             sign_info = await self.sign_service.get_by_user_id(chat.id)
             if sign_info is not None:
                 text += (
@@ -94,23 +95,23 @@ class GetChat(Plugin):
                     f"\n签到状态：<code>{sign_info.status.name}</code>"
                 )
             else:
-                text += f"\n自动签到：未开启"
+                text += "\n自动签到：未开启"
             with contextlib.suppress(Exception):
                 gacha_log, status = await self.gacha_log.load_history_info(str(chat.id), str(uid))
                 if status:
-                    text += f"\n抽卡记录："
+                    text += "\n抽卡记录："
                     for key, value in gacha_log.item_list.items():
                         text += f"\n   - {key}：{len(value)} 条"
                     text += f"\n   - 最后更新：{gacha_log.update_time.strftime('%Y-%m-%d %H:%M:%S')}"
                 else:
-                    text += f"\n抽卡记录：<code>未导入</code>"
+                    text += "\n抽卡记录：<code>未导入</code>"
         return text
 
     @handler(CommandHandler, command="get_chat", block=False)
     @bot_admins_rights_check
     async def get_chat(self, update: Update, context: CallbackContext):
         user = update.effective_user
-        logger.info(f"用户 {user.full_name}[{user.id}] get_chat 命令请求")
+        logger.info("用户 %s[%s] get_chat 命令请求", user.full_name, user.id)
         message = update.effective_message
         args = get_args(context)
         if not args:
@@ -130,5 +131,4 @@ class GetChat(Plugin):
                 text = await self.parse_private_chat(chat)
             await message.reply_text(text, parse_mode="HTML")
         except (BadRequest, Forbidden) as exc:
-            await message.reply_text(f"通过 id 获取会话信息失败，API 返回：{exc}")
-            return
+            await message.reply_text(f"通过 id 获取会话信息失败，API 返回：{exc.message}")

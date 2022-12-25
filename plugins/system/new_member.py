@@ -31,7 +31,7 @@ class BotJoiningGroupsVerification(Plugin):
         from_user = message.from_user
         for new_chat_members_user in message.new_chat_members:
             if new_chat_members_user.id == context.bot.id:
-                logger.info(f"有人邀请BOT进入群 {chat.title}[{chat.id}]")
+                logger.info("有人邀请BOT进入群 %s[%s]", chat.title, chat.id)
                 quit_status = True
                 if from_user is not None:
                     logger.info(f"用户 {from_user.full_name}[{from_user.id}] 在群 {chat.title}[{chat.id}] 邀请BOT")
@@ -42,22 +42,22 @@ class BotJoiningGroupsVerification(Plugin):
                                 quit_status = False
                             else:
                                 logger.warning("不是管理员邀请！退出群聊")
-                        except Exception as exc:
-                            logger.error(f"获取信息出现错误 {repr(exc)}")
+                        except Exception as exc:  # pylint: disable=W0703
+                            logger.error("获取信息出现错误", exc_info=exc)
                     elif config.join_groups == JoinGroups.ALLOW_AUTH_USER:
                         try:
                             user_info = await self.user_service.get_user_by_id(from_user.id)
                             await self.cookies_service.get_cookies(from_user.id, user_info.region)
                         except (UserNotFoundError, CookiesNotFoundError):
-                            logger.warning(f"用户 {from_user.full_name}[{from_user.id}] 邀请请求被拒绝")
+                            logger.warning("用户 %s[%s] 邀请请求被拒绝", from_user.full_name, from_user.id)
                         except Exception as exc:
-                            logger.error(f"获取信息出现错误 {repr(exc)}")
+                            logger.error("获取信息出现错误", exc_info=exc)
                         else:
                             quit_status = False
                     else:
                         quit_status = True
                 else:
-                    logger.info(f"未知用户 在群 {chat.title}[{chat.id}] 邀请BOT")
+                    logger.info("未知用户 在群 %s[%s] 邀请BOT", chat.title, chat.id)
                 if quit_status:
                     await context.bot.send_message(message.chat_id, "派蒙不想进去！不是旅行者的邀请！")
                     await context.bot.leave_chat(chat.id)

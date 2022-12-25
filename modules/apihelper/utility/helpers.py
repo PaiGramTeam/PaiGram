@@ -54,22 +54,19 @@ def get_ds(ds_type: str = None, new_ds: bool = False, data: Any = None, params: 
         c = hex_digest(f"salt={salt}&t={t}&r={r}")
         return f"{t},{r},{c}"
 
-    app_version = "2.36.1"
+    app_version = "2.41.2"
     client_type = "5"
-    salt = "YVEIkzDFNHLeKXLxzqCA9TzxCpWwbIbk"
+    salt = "osgT0DljLarYxgebPPHJFjdaxPfoiHGt"
     ds = old()
     if ds_type in ("android", "2"):
-        app_version = "2.36.1"
         client_type = "2"
-        salt = "n0KjuIrKgLHh08LWSCYP0WXlVXaYvV64"
+        salt = "TsmyHpZg8gFAVKTtlPaL6YwMldzxZJxQ"
         ds = old()
     if ds_type == "android_new":
-        app_version = "2.36.1"
         client_type = "2"
         salt = "t0qEgfub6cvueAPgR5m9aQWWVciEer7v"
         ds = new()
     if new_ds:
-        app_version = "2.36.1"
         client_type = "5"
         salt = "xV8v4Qu54lUKrEYFZkJhB8cuOh9Asafs"
         ds = new()

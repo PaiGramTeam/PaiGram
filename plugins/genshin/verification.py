@@ -49,7 +49,7 @@ class VerificationPlugins(Plugin, BasePlugin):
     async def verify(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        logger.info(f"用户 %s[%s] 发出verify命令", user.full_name, user.id)
+        logger.info("用户 %s[%s] 发出verify命令", user.full_name, user.id)
         try:
             client = await get_genshin_client(user.id)
             if client.region != Region.CHINESE:
