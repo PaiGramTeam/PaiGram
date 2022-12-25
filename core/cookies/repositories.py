@@ -1,6 +1,7 @@
 from typing import cast, List
 
 from sqlalchemy import select
+from sqlalchemy.exc import NoResultFound
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.base.mysql import MySQL
@@ -100,9 +101,9 @@ class CookiesRepository:
             else:
                 raise RegionNotFoundError(region.name)
             results = await session.execute(statement)
-            db_cookies = results.unique().scalar_one()
-            if db_cookies:
-                await session.delete(db_cookies)
-                await session.commit()
-            else:
-                raise CookiesNotFoundError(user_id)
+            try:
+                db_cookies = results.unique().scalar_one()
+            except NoResultFound as exc:
+                raise CookiesNotFoundError(user_id) from exc
+            await session.delete(db_cookies)
+            await session.commit()

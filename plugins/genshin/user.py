@@ -8,6 +8,7 @@ from core.cookies import CookiesService
 from core.cookies.error import CookiesNotFoundError
 from core.cookies.models import Cookies
 from core.plugin import Plugin, handler, conversation
+from core.sign import SignServices
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from utils.decorators.error import error_callable
@@ -30,9 +31,11 @@ class UserPlugin(Plugin.Conversation, BasePlugin.Conversation):
         self,
         user_service: UserService = None,
         cookies_service: CookiesService = None,
+        sign_service: SignServices = None,
     ):
         self.cookies_service = cookies_service
         self.user_service = user_service
+        self.sign_service = sign_service
 
     @conversation.entry_point
     @handler.command(command="deluser", filters=filters.ChatType.PRIVATE, block=True)
@@ -62,9 +65,11 @@ class UserPlugin(Plugin.Conversation, BasePlugin.Conversation):
         if user_info.region == RegionEnum.HYPERION:
             uid = user_info.yuanshen_uid
             region_str = "米游社"
+            del_user_command_data.region = RegionEnum.HYPERION
         elif user_info.region == RegionEnum.HOYOLAB:
             uid = user_info.genshin_uid
             region_str = "HoYoLab"
+            del_user_command_data.region = RegionEnum.HOYOLAB
         else:
             await message.reply_text("数据非法")
             return ConversationHandler.END
@@ -90,6 +95,10 @@ class UserPlugin(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         elif message.text == "确认":
             del_user_command_data: DelUserCommandData = context.chat_data.get("del_user_command_data")
+            sign = await self.sign_service.get_by_user_id(user.id)
+            if sign:
+                await self.sign_service.remove(sign)
+                logger.success("用户 %s[%s] 从数据库删除定时签到成功", user.full_name, user.id)
             try:
                 await self.user_service.del_user_by_id(user.id)
             except UserNotFoundError:
@@ -102,7 +111,7 @@ class UserPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 try:
                     await self.cookies_service.del_cookies(user.id, del_user_command_data.region)
                 except CookiesNotFoundError:
-                    logger.info("用户 %s[%s] Cookies 不存在", user.full_name, user.id)
+                    logger.warning("用户 %s[%s] Cookies 不存在", user.full_name, user.id)
                 else:
                     logger.success("用户 %s[%s] 从数据库删除Cookies成功", user.full_name, user.id)
             await message.reply_text("删除成功")
