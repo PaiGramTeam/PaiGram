@@ -277,7 +277,7 @@ class _AvatarAssets(_AssetsService):
             yield str(AMBR_HOST.join(f"assets/UI/{self.game_name_map[item]}.png"))
 
     async def _get_from_enka(self, item: str) -> AsyncIterator[str | None]:
-        if (item_id := self.game_name_map.get(item, None)) is not None:
+        if (item_id := self.game_name_map.get(item)) is not None:
             yield str(ENKA_HOST.join(f"ui/{item_id}.png"))
 
     @cached_property

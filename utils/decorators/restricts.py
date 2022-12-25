@@ -57,9 +57,8 @@ def restricts(
             user = update.effective_user
 
             _restricts_time = restricts_time
-            if restricts_time_of_groups is not None:
-                if filters.ChatType.GROUPS.filter(message):
-                    _restricts_time = restricts_time_of_groups
+            if restricts_time_of_groups is not None and filters.ChatType.GROUPS.filter(message):
+                _restricts_time = restricts_time_of_groups
 
             async with _lock:
                 user_lock = context.user_data.get("lock")
@@ -68,7 +67,7 @@ def restricts(
 
             # 如果上一个命令还未完成，忽略后续重复调用
             if without_overlapping and user_lock.locked():
-                logger.warning(f"用户 {user.full_name}[{user.id}] 触发 overlapping 该次命令已忽略")
+                logger.warning("用户 %s[%s] 触发 overlapping 该次命令已忽略", user.full_name, user.id)
                 return return_data
 
             async with user_lock:
@@ -90,7 +89,7 @@ def restricts(
                             await update.callback_query.answer("你已经触发洪水防御，请等待60秒", show_alert=True)
                         else:
                             await message.reply_text("你已经触发洪水防御，请等待60秒")
-                        logger.warning(f"用户 {user.full_name}[{user.id}] 触发洪水限制 已被限制60秒")
+                        logger.warning("用户 %s[%s] 触发洪水限制 已被限制60秒", user.full_name, user.id)
                         return return_data
                 # 单次使用限制
                 if command_time:

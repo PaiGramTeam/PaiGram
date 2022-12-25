@@ -1,4 +1,5 @@
 import contextlib
+
 from telegram import Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
@@ -57,7 +58,7 @@ class AdminPlugin(Plugin):
                 await message.reply_text("输入错误")
                 return
         except ValueError as error:
-            logger.error("获取 chat_id 发生错误！ 错误信息为 \n", error)
+            logger.error("获取 chat_id 发生错误！ 错误信息为 \n", exc_info=error)
             await message.reply_text("输入错误")
             return
         try:

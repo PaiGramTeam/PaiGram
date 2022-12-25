@@ -74,7 +74,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
-        logger.info(f"用户 {user.full_name}[{user.id}] 绑定账号命令请求")
+        logger.info("用户 %s[%s] 绑定账号命令请求", user.full_name, user.id)
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if add_user_command_data is None:
             cookies_command_data = AddUserCommandData()
@@ -254,7 +254,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                     add_user_command_data.cookies["account_id"] = str(account_id)
                     logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
                 else:
-                    logger.warning("用户 %s[%s] region 也许是不正确的", user.full_name, user.id, client.region.name)
+                    logger.warning("用户 %s[%s] region[%s] 也许是不正确的", user.full_name, user.id, client.region.name)
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
@@ -352,7 +352,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 await self.cookies_service.update_cookies(
                     user.id, add_user_command_data.cookies, add_user_command_data.region
                 )
-            logger.info(f"用户 {user.full_name}[{user.id}] 绑定账号成功")
+            logger.info("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         else:
