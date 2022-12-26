@@ -24,13 +24,13 @@ spawn = multiprocessing.get_context("spawn")
 class FileFilter:
     """监控文件过滤"""
 
-    def __init__(self, includes: List[str], excludes: List[str]):
+    def __init__(self, includes: List[str], excludes: List[str]) -> None:
         default_includes = ["*.py"]
         self.includes = [default for default in default_includes if default not in excludes]
         self.includes.extend(includes)
         self.includes = list(set(self.includes))
 
-        default_excludes = [".*", ".py[cod]", ".sw.*", "~*"]
+        default_excludes = [".*", ".py[cod]", ".sw.*", "~*", __file__]
         self.excludes = [default for default in default_excludes if default not in includes]
         self.exclude_dirs = []
         for e in excludes:
@@ -107,7 +107,9 @@ class Reloader:
 
         self.should_exit = threading.Event()
 
-        self.watch_filter = FileFilter(reload_includes or [], reload_excludes or [])
+        frame = inspect.currentframe().f_back
+
+        self.watch_filter = FileFilter(reload_includes or [], (reload_excludes or []) + [frame.f_globals["__file__"]])
         self.watcher = watch(
             *self.reload_dirs,
             watch_filter=None,
@@ -115,9 +117,21 @@ class Reloader:
             yield_on_timeout=True,
         )
 
-    def signal_handler(self, *_) -> None:
-        self._process.kill()
-        self.should_exit.set()
+    def get_changes(self) -> Optional[List[Path]]:
+        if not self._process.is_alive():
+            logger.info("目标进程已经关闭")
+            self.should_exit.set()
+        changes = next(self.watcher)
+        if changes:
+            unique_paths = {Path(c[1]) for c in changes}
+            return [p for p in unique_paths if self.watch_filter(p)]
+        return None
+
+    def __iter__(self) -> Iterator[Optional[List[Path]]]:
+        return self
+
+    def __next__(self) -> Optional[List[Path]]:
+        return self.get_changes()
 
     def run(self) -> None:
         self.startup()
@@ -132,17 +146,20 @@ class Reloader:
 
         self.shutdown()
 
-    def pause(self) -> None:
-        if self.should_exit.wait(self.reload_delay):
-            raise StopIteration()
+    # def pause(self) -> None:
+    #     if self.should_exit.wait(self.reload_delay):
+    #         raise StopIteration()
 
-    def __iter__(self) -> Iterator[Optional[List[Path]]]:
-        return self
-
-    def __next__(self) -> Optional[List[Path]]:
-        return self.should_restart()
+    def signal_handler(self, *_) -> None:
+        """当接收到结束信号量时"""
+        self._process.join(3)
+        if self._process.is_alive():
+            self._process.terminate()
+            self._process.join()
+        self.should_exit.set()
 
     def startup(self) -> None:
+        """启动进程"""
         logger.info("重载器正在启动")
 
         for sig in HANDLED_SIGNALS:
@@ -153,21 +170,16 @@ class Reloader:
         logger.success("重载器启动成功")
 
     def restart(self) -> None:
+        """重启进程"""
         self._process.terminate()
         self._process.join()
 
-        self._process = self._process = spawn.Process(target=self._target)
+        self._process = spawn.Process(target=self._target)
         self._process.start()
 
     def shutdown(self) -> None:
+        """关闭进程"""
         self._process.terminate()
         self._process.join()
 
         logger.info("重载器已经关闭")
-
-    def should_restart(self) -> Optional[List[Path]]:
-        changes = next(self.watcher)
-        if changes:
-            unique_paths = {Path(c[1]) for c in changes}
-            return [p for p in unique_paths if self.watch_filter(p)]
-        return None

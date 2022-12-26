@@ -1,3 +1,4 @@
+"""服务"""
 from abc import ABC, abstractmethod
 from typing import Callable
 
@@ -27,5 +28,6 @@ def init_service(func: Callable):
             logger.success(f'服务 "{service.__class__.__name__}" 初始化成功')
             bot.add_service(service)
         except Exception as e:  # pylint: disable=W0703
+            # noinspection PyUnresolvedReferences
             logger.exception(f"来自{func.__module__}的服务初始化失败：{e}")
     return func

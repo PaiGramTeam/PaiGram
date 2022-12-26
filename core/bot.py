@@ -1,3 +1,4 @@
+"""BOT"""
 import asyncio
 import signal
 from functools import wraps
@@ -7,6 +8,7 @@ from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
 
 import pytz
 import uvicorn
+from core.event import Event
 from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
@@ -15,12 +17,12 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.config import config as bot_config
-from core.event import Event
-from core.execute import Executor
+from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
+    from core.executor import Executor
     from asyncio import AbstractEventLoop
     from types import FrameType
 
@@ -34,7 +36,7 @@ class Bot(Singleton):
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
 
-    _executor: Optional[Executor] = None
+    _executor: Optional["Executor"] = None
 
     _startup_funcs: List[Callable] = []
     _shutdown_funcs: List[Callable] = []
@@ -49,7 +51,9 @@ class Bot(Singleton):
             return self._running
 
     @property
-    def executor(self) -> Executor:
+    def executor(self) -> "Executor":
+        from core.executor import Executor
+
         with self._lock:
             if self._executor is None:
                 self._executor = Executor("Bot")
@@ -106,11 +110,11 @@ class Bot(Singleton):
 
     async def _on_startup(self) -> None:
         for func in self._startup_funcs:
-            await self.executor(func, args=[self])
+            await self.executor(func, block=getattr(func, "block", False), args=[self])
 
     async def _on_shutdown(self) -> None:
         for func in self._shutdown_funcs:
-            await self.executor(func, args=[self])
+            await self.executor(func, block=getattr(func, "block", False), args=[self])
 
     async def initialize(self):
         """BOT 初始化"""
@@ -173,7 +177,7 @@ class Bot(Singleton):
 
         task = None
 
-        def stop_handler(signum, frame):
+        def stop_handler(signum, frame) -> None:
             self.stop_signal_handler(signum, frame)
             task.cancel()
 
@@ -216,36 +220,44 @@ class Bot(Singleton):
             loop.run_until_complete(self.idle())
         except (SystemExit, KeyboardInterrupt):
             pass  # 接收到了终止信号
+        except NetworkError as e:
+            if isinstance(e, SSLZeroReturnError):
+                logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
+            else:
+                logger.error("网络连接出现问题, 请检查您的网络状况.")
+        except Exception as e:
+            logger.exception(f"遇到了未知错误: {type(e)}")
         finally:
             loop.run_until_complete(self.stop())
+            raise SystemExit
 
     # decorators
 
-    def on_startup(self) -> Callable[[T], T]:
+    def on_startup(self, func: Callable[P, R]) -> Callable[P, R]:
         """注册一个在 BOT 启动时执行的函数"""
 
-        def decorate(func: Callable[P, R]) -> Callable[P, R]:
-            @wraps(func)
-            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-                self._startup_funcs.append(func)
-                return func(*args, **kwargs)
+        if func not in self._startup_funcs:
+            self._startup_funcs.append(func)
 
-            return wrapper
+        # noinspection PyTypeChecker
+        @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            return func(*args, **kwargs)
 
-        return decorate
+        return wrapper
 
-    def on_shutdown(self) -> Callable[[T], T]:
+    def on_shutdown(self, func: Callable[P, R]) -> Callable[P, R]:
         """注册一个在 BOT 停止时执行的函数"""
 
-        def decorate(func: Callable[P, R]) -> Callable[P, R]:
-            @wraps(func)
-            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-                self._shutdown_funcs.append(func)
-                return func(*args, **kwargs)
+        if func not in self._shutdown_funcs:
+            self._shutdown_funcs.append(func)
 
-            return wrapper
+        # noinspection PyTypeChecker
+        @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            return func(*args, **kwargs)
 
-        return decorate
+        return wrapper
 
 
 bot = Bot()
