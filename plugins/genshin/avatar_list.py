@@ -13,6 +13,7 @@ from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import AssetsService
+from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.config import config
 from core.cookies.error import CookiesNotFoundError
@@ -25,6 +26,7 @@ from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
+from utils.enkanetwork import RedisCache
 from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
@@ -32,12 +34,17 @@ from utils.patch.aiohttp import AioHttpTimeoutException
 
 class AvatarListPlugin(Plugin, BasePlugin):
     def __init__(
-        self, cookies_service: CookiesService, assets_service: AssetsService, template_service: TemplateService
+        self,
+        cookies_service: CookiesService = None,
+        assets_service: AssetsService = None,
+        template_service: TemplateService = None,
+        redis: RedisDB = None,
     ) -> None:
         self.cookies_service = cookies_service
         self.assets_service = assets_service
         self.template_service = template_service
         self.enka_client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
+        self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60))
         self.enka_assets = EnkaAssets(lang="chs")
 
     async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
@@ -224,7 +231,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
         try:
             name_card, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
         except Exception as exc:
-            logger.error("卡片信息请求失败", exc_info=exc)
+            logger.error("卡片信息请求失败 %s", str(exc))
             name_card, avatar, nickname, rarity = await self.get_default_final_data(characters, update)
 
         render_data = {
