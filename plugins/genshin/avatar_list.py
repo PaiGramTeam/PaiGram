@@ -2,8 +2,9 @@
 import asyncio
 from typing import Iterable, List, Optional, Sequence
 
+from aiohttp import ClientConnectorError
 from arkowrapper import ArkoWrapper
-from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI
+from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, VaildateUIDError, UIDNotFounded, HTTPException
 from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
@@ -26,6 +27,7 @@ from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
 from utils.log import logger
+from utils.patch.aiohttp import AioHttpTimeoutException
 
 
 class AvatarListPlugin(Plugin, BasePlugin):
@@ -140,24 +142,29 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 rarity = 5
             else:
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.avatar.id)]
-        except Exception as exc:  # pylint: disable=W0703
-            logger.error("enka 请求失败: %s", str(exc))
-            choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
-            if choices.length == 0:  # 若没有满好感角色、则以好感等级排序
-                choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
-            name_card_choices = (  # 找到与角色对应的满好感名片ID
-                ArkoWrapper(choices)
-                .map(lambda x: next(filter(lambda y: y["name"].split(".")[0] == x.name, NAMECARD_DATA.values()), None))
-                .filter(lambda x: x)
-                .map(lambda x: x["id"])
-            )
-            name_card = (await self.assets_service.namecard(name_card_choices[0]).navbar()).as_uri()
-            avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
-            nickname = update.effective_user.full_name
-            if cid in [10000005, 10000007]:
-                rarity = 5
-            else:
-                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
+            return name_card, avatar, nickname, rarity
+        except (VaildateUIDError, UIDNotFounded, HTTPException) as exc:
+            logger.warning("EnkaNetwork 请求失败: %s", str(exc))
+        except (AioHttpTimeoutException, ClientConnectorError) as exc:
+            logger.warning("EnkaNetwork 请求超时: %s", str(exc))
+        except Exception as exc:
+            logger.error("EnkaNetwork 请求失败: %s", exc_info=exc)
+        choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
+        if choices.length == 0:  # 若没有满好感角色、则以好感等级排序
+            choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
+        name_card_choices = (  # 找到与角色对应的满好感名片ID
+            ArkoWrapper(choices)
+            .map(lambda x: next(filter(lambda y: y["name"].split(".")[0] == x.name, NAMECARD_DATA.values()), None))
+            .filter(lambda x: x)
+            .map(lambda x: x["id"])
+        )
+        name_card = (await self.assets_service.namecard(name_card_choices[0]).navbar()).as_uri()
+        avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
+        nickname = update.effective_user.full_name
+        if cid in [10000005, 10000007]:
+            rarity = 5
+        else:
+            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
         return name_card, avatar, nickname, rarity
 
     async def get_default_final_data(self, characters: Sequence[Character], update: Update):
