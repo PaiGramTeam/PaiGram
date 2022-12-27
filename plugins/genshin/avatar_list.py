@@ -44,7 +44,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
         self.assets_service = assets_service
         self.template_service = template_service
         self.enka_client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
-        self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60))
+        self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60 * 3))
         self.enka_assets = EnkaAssets(lang="chs")
 
     async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
