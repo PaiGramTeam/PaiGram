@@ -95,8 +95,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if add_user_command_data is None:
             add_user_command_data = AddUserCommandData()
-            add_user_command_data.region = RegionEnum.HYPERION
             context.chat_data["add_user_command_data"] = add_user_command_data
+        add_user_command_data.region = RegionEnum.HYPERION
         try:
             user_info = await self.user_service.get_user_by_id(user.id)
         except UserNotFoundError:
@@ -238,9 +238,9 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         cookies = add_user_command_data.cookies
         if add_user_command_data.region == RegionEnum.HYPERION:
-            client = genshin.ChineseClient(cookies=cookies)
+            client = genshin.Client(cookies=cookies, region=types.Region.CHINESE)
         elif add_user_command_data.region == RegionEnum.HOYOLAB:
-            client = genshin.GenshinClient(cookies=cookies)
+            client = genshin.Client(cookies=cookies, region=types.Region.OVERSEAS)
         else:
             logger.error("用户 %s[%s] region 异常", user.full_name, user.id)
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
