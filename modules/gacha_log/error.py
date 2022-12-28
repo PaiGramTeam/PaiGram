@@ -14,7 +14,15 @@ class GachaLogAccountNotFound(GachaLogException):
     pass
 
 
-class GachaLogInvalidAuthkey(GachaLogException):
+class GachaLogAuthkeyException(GachaLogException):
+    pass
+
+
+class GachaLogAuthkeyTimeout(GachaLogAuthkeyException):
+    pass
+
+
+class GachaLogInvalidAuthkey(GachaLogAuthkeyException):
     pass
 
 

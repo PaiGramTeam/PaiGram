@@ -3,6 +3,7 @@ from io import BytesIO
 
 import genshin
 from aiofiles import open as async_open
+from genshin import AuthkeyTimeout
 from genshin.models import BannerType
 from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -26,6 +27,7 @@ from modules.gacha_log.error import (
     GachaLogNotFound,
     GachaLogAccountNotFound,
     GachaLogMixedProvider,
+    GachaLogAuthkeyTimeout,
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
@@ -89,6 +91,8 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             return "导入失败，数据格式错误"
         except GachaLogInvalidAuthkey:
             return "更新数据失败，authkey 无效"
+        except GachaLogAuthkeyTimeout:
+            return "更新数据失败，authkey 已经过期"
         except GachaLogMixedProvider:
             return "导入失败，你已经通过其他方式导入过抽卡记录了，本次无法导入"
         except UserNotFoundError:
