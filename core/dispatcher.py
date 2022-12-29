@@ -1,7 +1,6 @@
 """参数分配器"""
 from abc import ABC, abstractmethod
 from functools import cached_property, partial, wraps
-from multiprocessing import RLock as Lock
 from types import MethodType
 from typing import (
     Any,
@@ -9,7 +8,6 @@ from typing import (
     Dict,
     List,
     Sequence,
-    TYPE_CHECKING,
     Type,
     TypeVar,
     Union,
@@ -17,15 +15,14 @@ from typing import (
 )
 
 from arkowrapper import ArkoWrapper
-from typing_extensions import ParamSpec, Self
+from telegram import Update
+from telegram.ext import CallbackContext
+from typing_extensions import ParamSpec
 
 from core.bot import Bot
 from utils.const import WRAPPER_ASSIGNMENTS
 
-if TYPE_CHECKING:
-    from multiprocessing.synchronize import RLock as LockType
-
-__all__ = ["catch", "AbstractDispatcher", "BaseDispatcher"]
+__all__ = ["catch", "AbstractDispatcher", "BaseDispatcher", "HandlerDispatcher"]
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -34,42 +31,7 @@ R = TypeVar("R")
 TargetType = Union[Type, str, Callable[[Any], bool]]
 
 
-# noinspection PyPep8Naming
-class catch:
-    _lock: "LockType" = Lock()
-
-    _targets: List[TargetType]
-    _catch_map: Dict[List[TargetType], Callable] = {}
-
-    def __init__(self, *targets: Any) -> None:
-        self._targets = list(targets)
-
-    def __call__(self, func: Callable[P, R]) -> Callable[P, R]:
-        with self._lock:
-            self._catch_map.update({list(self._targets): func})
-            self._targets = []
-
-        setattr(func, "_catch_targets", self)
-        return func
-
-    def catch(self, target: TargetType) -> Self:
-        if target not in self._targets:
-            self._targets.append(target)
-        return self
-
-    def verify(self, instance: Any) -> Union[bool, Callable]:
-        """用于验证是否为目标捕获类型"""
-        for targets, func in self._catch_map.items():
-            for target in targets:
-                if target == instance:  # 直接相等
-                    return func
-                # 为 str
-                if isinstance(instance, str) and isinstance(target, type) and target.__name__ == instance:
-                    return func
-        return False
-
-
-def _catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, R]]:
+def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorate(func: Callable[P, R]) -> Callable[P, R]:
         setattr(func, "_catch_targets", targets)
 
@@ -105,22 +67,41 @@ class AbstractDispatcher(ABC):
 class BaseDispatcher(AbstractDispatcher):
     _instances: Sequence[Any]
 
-    def __init__(self, instances: Any) -> None:
-        if not isinstance(instances, Sequence):
-            instances = [instances]
-        self._instances = instances
+    @property
+    def instance_map(self) -> Dict[Union[str, Type[T]], T]:
+        result = {type(k).__name__: k for k in self._instances}
+        result.update({type(k): k for k in self._instances})
+        return result
+
+    def __init__(self, *instances: Any) -> None:
+        self._instances = list(instances)
 
     def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
 
         params = {}
 
         for name, type_hint in get_type_hints(func):
+            params.update(
+                {
+                    name: (
+                        self.instance_map.get(type_hint, None)
+                        or self.instance_map.get(name, None)
+                        or self.instance_map.get(type_hint.__name__, None)
+                    )
+                }
+            )
+        params = {k: v for k, v in params if v is not None}
+        for name, type_hint in get_type_hints(func):
             for catch_func in self.catch_funcs:
                 catch_targets = getattr(catch_func, "_catch_targets")
 
-                if name in catch_targets or type_hint in catch_targets:
-                    params.update({name: catch_func()})
-
+                for catch_target in catch_targets:
+                    if isinstance(catch_target, str):
+                        if name == catch_target or (isinstance(type_hint, type) and type_hint.__name__ == catch_target):
+                            params.update({name: catch_func()})
+                    elif isinstance(catch_target, type):
+                        if name == catch_target.__name__ or type_hint.__name__ == catch_target.__name__:
+                            params.update({name: catch_func()})
         return partial(func, **params)
 
     @catch(Bot)
@@ -130,5 +111,16 @@ class BaseDispatcher(AbstractDispatcher):
         return bot
 
 
-class DefaultDispatcher(BaseDispatcher):
-    ...
+class HandlerDispatcher(BaseDispatcher):
+    def __init__(self, update: Update, context: CallbackContext, *instances: Any) -> None:
+        super().__init__(update, context, *instances)
+        self._update = update
+        self._context = context
+
+    @catch(Update)
+    def catch_update(self) -> Update:
+        return self._update
+
+    @catch(CallbackContext)
+    def catch_context(self) -> CallbackContext:
+        return self._context
