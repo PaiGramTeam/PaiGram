@@ -1,13 +1,19 @@
 """BOT"""
 import asyncio
+import inspect
+import os
 import signal
 from functools import wraps
+from importlib import import_module
+from inspect import Parameter, Signature
+from pathlib import Path
 from signal import SIGABRT, SIGINT, SIGTERM, signal as signal_func
 from ssl import SSLZeroReturnError
-from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
+from typing import Callable, Dict, Iterator, List, Optional, TYPE_CHECKING, Type, TypeVar
 
 import pytz
 import uvicorn
+from async_timeout import timeout
 from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
@@ -16,13 +22,15 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.config import config as bot_config
-from utils.const import WRAPPER_ASSIGNMENTS
+from core.plugin import PluginType
+from core.service import Service
+from utils.const import PROJECT_ROOT, WRAPPER_ASSIGNMENTS
 from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
     from core.executor import Executor
-    from asyncio import AbstractEventLoop
+    from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
 R = TypeVar("R")
@@ -30,7 +38,116 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
-class Bot(Singleton):
+def gen_pkg(root: Path) -> Iterator[str]:
+    """生成可以用于 import_module 导入的字符串"""
+    from utils.const import PROJECT_ROOT
+
+    for path in root.iterdir():
+        if not path.name.startswith("_"):
+            if path.is_dir():
+                yield from gen_pkg(path)
+            elif path.suffix == ".py":
+                yield str(path.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")
+
+
+class Control:
+    _lib: Dict[Type[T], T] = {}
+
+    def _inject(self, signature: Signature, target: Callable[..., T]) -> T:
+        kwargs = {}
+        for name, parameter in signature.parameters.items():
+            if name != "self" and parameter.annotation != Parameter.empty:
+                if value := self._lib.get(parameter.annotation):
+                    kwargs[name] = value
+        return target(**kwargs)
+
+    def init_inject(self, target: Callable[..., T]) -> T:
+        """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
+        if isinstance(target, type):
+            signature = inspect.signature(target.__init__)
+        else:
+            signature = inspect.signature(target)
+        return self._inject(signature, target)
+
+
+class ServiceControl(Control):
+    _services: Dict[Type[Service], Service] = {}
+
+    @property
+    def services(self) -> List[Service]:
+        return list(self._services.values())
+
+    @property
+    def service_map(self) -> Dict[Type[Service], Service]:
+        return self._services
+
+    async def start_base_services(self):
+        for pkg in gen_pkg(PROJECT_ROOT / "core/base"):
+            try:
+                import_module(pkg)
+            except Exception as e:
+                logger.exception(
+                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
+                )
+                raise SystemExit from e
+        for service_cls in Service.__subclasses__():
+            try:
+                if hasattr(service_cls, "from_config"):
+                    instance = service_cls.from_config(bot_config)
+                else:
+                    instance = self.init_inject(service_cls)
+                await instance.start()
+                logger.success('服务 "%s" 初始化成功', service_cls.__name__)
+                self._services.update({service_cls: instance})
+            except Exception as e:
+                logger.exception('服务 "%s" 初始化失败', service_cls.__name__)
+                raise SystemExit from e
+
+    async def start_services(self) -> None:
+        for path in (PROJECT_ROOT / "core").iterdir():
+            if not path.name.startswith("_") and path.is_dir() and path.name != "base":
+                pkg = str(path.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")
+                try:
+                    import_module(pkg)
+                except Exception as e:  # pylint: disable=W0703
+                    logger.exception(
+                        '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]',
+                        pkg,
+                        type(e).__name__,
+                        exc_info=e,
+                        extra={"markup": True},
+                    )
+                    continue
+
+    async def stop_services(self):
+        """关闭服务"""
+        if not self._services:
+            return
+        logger.info("正在关闭服务")
+        for _, service in filter(lambda x: not isinstance(x[1], TgApplication), self._services.items()):
+            async with timeout(5):
+                try:
+                    if hasattr(service, "stop"):
+                        if inspect.iscoroutinefunction(service.stop):
+                            await service.stop()
+                        else:
+                            service.stop()
+                        logger.success('服务 "%s" 关闭成功', service.__class__.__name__)
+                except CancelledError:
+                    logger.warning('服务 "%s" 关闭超时', service.__class__.__name__)
+                except Exception as e:  # pylint: disable=W0703
+                    logger.exception('服务 "%s" 关闭失败', service.__class__.__name__, exc_info=e)
+
+
+class PluginControl(Control):
+    _plugins: List[PluginType] = []
+
+    @property
+    def plugins(self) -> List[PluginType]:
+        return self._plugins
+
+
+class Bot(Singleton, ServiceControl, PluginControl):
     _tg_app: Optional[TgApplication] = None
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
@@ -116,6 +233,7 @@ class Bot(Singleton):
 
     async def initialize(self):
         """BOT 初始化"""
+        await self.start_base_services()
 
     async def shutdown(self):
         """BOT 关闭"""
@@ -132,17 +250,18 @@ class Bot(Singleton):
 
         await self.tg_app.initialize()
 
-        server_config = self.web_server.config
-        server_config.setup_event_loop()
-        if not server_config.loaded:
-            server_config.load()
-        self.web_server.lifespan = server_config.lifespan_class(server_config)
-        await self.web_server.startup()
-        if self.web_server.should_exit:
-            logger.error("web server 启动失败，正在退出")
-            raise SystemExit
+        if not bot_config.webserver.close:
+            server_config = self.web_server.config
+            server_config.setup_event_loop()
+            if not server_config.loaded:
+                server_config.load()
+            self.web_server.lifespan = server_config.lifespan_class(server_config)
+            await self.web_server.startup()
+            if self.web_server.should_exit:
+                logger.error("web server 启动失败，正在退出")
+                raise SystemExit
 
-        self._web_server_task = asyncio.create_task(self.web_server.main_loop())
+            self._web_server_task = asyncio.create_task(self.web_server.main_loop())
 
         for _ in range(5):  # 连接至 telegram 服务器
             try:

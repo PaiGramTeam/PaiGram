@@ -35,7 +35,7 @@ from typing_extensions import ParamSpec
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["Plugin", "handler"]
+__all__ = ["Plugin", "PluginType", "handler"]
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -157,6 +157,9 @@ class Plugin(_Plugin):
 
     def __init_subclass__(cls, **kwargs) -> None:
         delattr(cls, "Conversation")
+
+
+PluginType = TypeVar("PluginType", bound=_Plugin)
 
 
 class HandlerData(TypedDict):

@@ -33,9 +33,9 @@ class ConfigUser(BaseModel):
 class MySqlConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 3306
-    username: str = None
-    password: str = None
-    database: str = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    database: Optional[str] = None
 
     class Config(Settings.Config):
         env_prefix = "db_"
@@ -72,6 +72,7 @@ class MTProtoConfig(Settings):
 
 
 class WebServerConfig(Settings):
+    close: bool = False
     url: AnyUrl = "http://localhost:8080"
     host: str = "localhost"
     port: int = 8080
