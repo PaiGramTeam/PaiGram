@@ -1,7 +1,7 @@
 """执行器"""
 import inspect
 from multiprocessing import RLock as Lock
-from typing import Any, Callable, ClassVar, Dict, Generic, TYPE_CHECKING, TypeVar
+from typing import Any, Callable, ClassVar, Dict, Generic, Optional, TYPE_CHECKING, TypeVar
 
 from telegram.ext import CallbackContext
 
@@ -52,7 +52,7 @@ class Executor:
         target: Callable[P, R],
         *instances: Any,
         block: bool = False,
-        dispatcher: AbstractDispatcher = BaseDispatcher,
+        dispatcher: Optional[AbstractDispatcher] = None,
         lock_id: int = None,
     ) -> R:
 

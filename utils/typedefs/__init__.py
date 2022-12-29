@@ -1,3 +1,4 @@
+import sys
 from logging import Filter, LogRecord
 from pathlib import Path
 from types import TracebackType
@@ -8,7 +9,14 @@ from pydantic import ConstrainedInt
 
 from utils.typedefs._queue import AsyncQueue, BaseQueue, SyncQueue
 
+if sys.version_info >= (3, 9):
+    from types import GenericAlias
+else:
+    # noinspection PyUnresolvedReferences,PyProtectedMember
+    from typing import _GenericAlias as GenericAlias
+
 __all__ = [
+    "GenericAlias",
     "StrOrPath",
     "StrOrURL",
     "StrOrInt",

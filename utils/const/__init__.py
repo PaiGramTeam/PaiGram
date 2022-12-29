@@ -9,5 +9,5 @@ NOT_SET = object()
 # noinspection PyTypeChecker
 WRAPPER_ASSIGNMENTS: List[str] = list(_WRAPPER_ASSIGNMENTS) + [
     "block",
-    "_catch_target",
+    "_catch_targets",
 ]

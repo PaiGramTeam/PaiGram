@@ -17,7 +17,7 @@ from typing import (
     Union,
 )
 
-from telegram.ext import BaseHandler
+from telegram.ext import BaseHandler, TypeHandler
 from typing_extensions import ParamSpec
 
 if TYPE_CHECKING:
@@ -78,21 +78,33 @@ class _Plugin:
         """销毁插件的方法"""
 
     async def install(self) -> None:
+        """安装"""
         from core.bot import bot
 
+        group = id(self)
         with self._lock:
             if not self._initialized:
-                bot.tg_app.add_handlers(self.handlers, group=id(self))
+                for h in self.handlers:
+                    if not isinstance(h, TypeHandler):
+                        bot.tg_app.add_handler(h, group)
+                    else:
+                        bot.tg_app.add_handler(h, -1)
                 await self.initialize()
                 self._initialized = True
 
     async def uninstall(self) -> None:
+        """卸载"""
         from core.bot import bot
+
+        group = id(self)
 
         with self._lock:
             if self._initialized:
-                if id(self) in bot.tg_app.handlers:
+                if group in bot.tg_app.handlers:
                     del bot.tg_app.handlers[id(self)]
+                for h in self.handlers:
+                    if isinstance(h, TypeHandler):
+                        bot.tg_app.remove_handler(h, -1)
                 await self.destroy()
                 self._initialized = False
 

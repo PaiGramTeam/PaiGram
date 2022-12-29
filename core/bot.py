@@ -8,7 +8,6 @@ from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
 
 import pytz
 import uvicorn
-from core.event import Event
 from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
@@ -40,7 +39,6 @@ class Bot(Singleton):
 
     _startup_funcs: List[Callable] = []
     _shutdown_funcs: List[Callable] = []
-    _events: List[Event] = []
 
     _running: False
 
@@ -110,11 +108,11 @@ class Bot(Singleton):
 
     async def _on_startup(self) -> None:
         for func in self._startup_funcs:
-            await self.executor(func, block=getattr(func, "block", False), args=[self])
+            await self.executor(func, block=getattr(func, "block", False))
 
     async def _on_shutdown(self) -> None:
         for func in self._shutdown_funcs:
-            await self.executor(func, block=getattr(func, "block", False), args=[self])
+            await self.executor(func, block=getattr(func, "block", False))
 
     async def initialize(self):
         """BOT 初始化"""
