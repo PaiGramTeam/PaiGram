@@ -23,6 +23,7 @@ from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, 
 from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import DEFAULT_EnkaAssets
+from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.config import config
 from core.plugin import Plugin, handler
@@ -34,6 +35,7 @@ from modules.playercards.helpers import ArtifactStatsTheory
 from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
+from utils.enkanetwork import RedisCache
 from utils.helpers import url_to_file
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -41,9 +43,12 @@ from utils.patch.aiohttp import AioHttpTimeoutException
 
 
 class PlayerCards(Plugin, BasePlugin):
-    def __init__(self, user_service: UserService = None, template_service: TemplateService = None):
+    def __init__(
+        self, user_service: UserService = None, template_service: TemplateService = None, redis: RedisDB = None
+    ):
         self.user_service = user_service
         self.client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
+        self.client.set_cache(RedisCache(redis.client, key="plugin:player_cards:enka_network"))
         self.template_service = template_service
         self.temp_photo: Optional[str] = None
 

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, IO, List, Optional, Tuple, Union
 
 import aiofiles
-from genshin import Client, InvalidAuthkey
+from genshin import Client, InvalidAuthkey, AuthkeyTimeout
 from genshin.models import BannerType
 from openpyxl import load_workbook
 
@@ -22,6 +22,7 @@ from modules.gacha_log.error import (
     GachaLogMixedProvider,
     GachaLogNotFound,
     PaimonMoeGachaLogFileError,
+    GachaLogAuthkeyTimeout,
 )
 from modules.gacha_log.models import (
     FiveStarItem,
@@ -241,6 +242,8 @@ class GachaLog:
                         gacha_log.item_list[pool_name].append(item)
                         temp_id_data[pool_name].append(item.id)
                         new_num += 1
+        except AuthkeyTimeout as exc:
+            raise GachaLogAuthkeyTimeout from exc
         except InvalidAuthkey as exc:
             raise GachaLogInvalidAuthkey from exc
         for i in gacha_log.item_list.values():

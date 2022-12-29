@@ -2,19 +2,18 @@
 import asyncio
 from typing import Iterable, List, Optional, Sequence
 
+from aiohttp import ClientConnectorError
 from arkowrapper import ArkoWrapper
-from enkanetwork import Assets as EnkaAssets
-from enkanetwork import EnkaNetworkAPI
+from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, VaildateUIDError, UIDNotFounded, HTTPException
 from genshin import Client, GenshinException, InvalidCookies
-from genshin.models import (CalculatorCharacterDetails, CalculatorTalent,
-                            Character)
-from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, Message,
-                      Update, User)
+from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import AssetsService
+from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.config import config
 from core.cookies.error import CookiesNotFoundError
@@ -27,18 +26,25 @@ from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
+from utils.enkanetwork import RedisCache
 from utils.helpers import get_genshin_client
 from utils.log import logger
+from utils.patch.aiohttp import AioHttpTimeoutException
 
 
 class AvatarListPlugin(Plugin, BasePlugin):
     def __init__(
-        self, cookies_service: CookiesService, assets_service: AssetsService, template_service: TemplateService
+        self,
+        cookies_service: CookiesService = None,
+        assets_service: AssetsService = None,
+        template_service: TemplateService = None,
+        redis: RedisDB = None,
     ) -> None:
         self.cookies_service = cookies_service
         self.assets_service = assets_service
         self.template_service = template_service
         self.enka_client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
+        self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60 * 3))
         self.enka_assets = EnkaAssets(lang="chs")
 
     async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
@@ -143,24 +149,29 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 rarity = 5
             else:
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.avatar.id)]
-        except Exception as exc:  # pylint: disable=W0703
-            logger.error("enka 请求失败: %s", str(exc))
-            choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
-            if choices.length == 0:  # 若没有满好感角色、则以好感等级排序
-                choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
-            name_card_choices = (  # 找到与角色对应的满好感名片ID
-                ArkoWrapper(choices)
-                .map(lambda x: next(filter(lambda y: y["name"].split(".")[0] == x.name, NAMECARD_DATA.values()), None))
-                .filter(lambda x: x)
-                .map(lambda x: x["id"])
-            )
-            name_card = (await self.assets_service.namecard(name_card_choices[0]).navbar()).as_uri()
-            avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
-            nickname = update.effective_user.full_name
-            if cid in [10000005, 10000007]:
-                rarity = 5
-            else:
-                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
+            return name_card, avatar, nickname, rarity
+        except (VaildateUIDError, UIDNotFounded, HTTPException) as exc:
+            logger.warning("EnkaNetwork 请求失败: %s", str(exc))
+        except (AioHttpTimeoutException, ClientConnectorError) as exc:
+            logger.warning("EnkaNetwork 请求超时: %s", str(exc))
+        except Exception as exc:
+            logger.error("EnkaNetwork 请求失败: %s", exc_info=exc)
+        choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
+        if choices.length == 0:  # 若没有满好感角色、则以好感等级排序
+            choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
+        name_card_choices = (  # 找到与角色对应的满好感名片ID
+            ArkoWrapper(choices)
+            .map(lambda x: next(filter(lambda y: y["name"].split(".")[0] == x.name, NAMECARD_DATA.values()), None))
+            .filter(lambda x: x)
+            .map(lambda x: x["id"])
+        )
+        name_card = (await self.assets_service.namecard(name_card_choices[0]).navbar()).as_uri()
+        avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
+        nickname = update.effective_user.full_name
+        if cid in [10000005, 10000007]:
+            rarity = 5
+        else:
+            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
         return name_card, avatar, nickname, rarity
 
     async def get_default_final_data(self, characters: Sequence[Character], update: Update):
@@ -220,7 +231,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
         try:
             name_card, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
         except Exception as exc:
-            logger.error("卡片信息请求失败", exc_info=exc)
+            logger.error("卡片信息请求失败 %s", str(exc))
             name_card, avatar, nickname, rarity = await self.get_default_final_data(characters, update)
 
         render_data = {
