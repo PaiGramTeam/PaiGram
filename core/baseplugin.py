@@ -32,12 +32,12 @@ async def clean_message(context: CallbackContext):
         elif "Message can't be deleted" in exc.message:
             logger.warning("删除消息 %s message_id[%s] 失败 消息无法删除 可能是没有授权", chat_info, message_id)
         else:
-            logger.warning("删除消息 %s message_id[%s] 失败", chat_info, message_id, exc_info=exc)
+            logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
     except Forbidden as exc:
         if "bot was kicked" in exc.message:
             logger.warning("删除消息 %s message_id[%s] 失败 已经被踢出群", chat_info, message_id)
         else:
-            logger.warning("删除消息 %s message_id[%s] 失败", chat_info, message_id, exc_info=exc)
+            logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
 
 
 def add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int, delete_seconds: int):
