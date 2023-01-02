@@ -24,7 +24,7 @@ class ChatMember(Plugin):
         self.user_service = user_service
         self.bot_admin_service = bot_admin_service
 
-    @handler(ChatMemberHandler, chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER, block=False)
+    @handler.chat_member(chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER, block=False)
     @error_callable
     async def track_chats(self, update: Update, context: CallbackContext) -> None:
         result = extract_status_change(update.my_chat_member)

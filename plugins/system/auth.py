@@ -237,7 +237,7 @@ class GroupJoiningVerification(Plugin):
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
             schedule.remove()
 
-    @handler(ChatMemberHandler, chat_member_types=ChatMemberHandler.CHAT_MEMBER, block=False)
+    @handler.chat_member(chat_member_types=ChatMemberHandler.CHAT_MEMBER, block=False)
     @error_callable
     async def track_users(self, update: Update, context: CallbackContext) -> None:
         chat = update.effective_chat
