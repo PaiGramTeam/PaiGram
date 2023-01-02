@@ -6,13 +6,14 @@ from typing import Tuple, Union, Dict, List, Optional
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, CallbackQueryHandler
+from telegram.ext import CallbackContext, CallbackQueryHandler, ChatMemberHandler
 from telegram.helpers import escape_markdown
 
 from core.base.mtproto import MTProto
 from core.bot import bot
 from core.plugin import Plugin, handler
 from core.quiz import QuizService
+from utils.chatmember import extract_status_change
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -236,11 +237,10 @@ class GroupJoiningVerification(Plugin):
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
             schedule.remove()
 
-    @handler.message.new_chat_members(priority=2)
+    @handler(ChatMemberHandler, chat_member_types=ChatMemberHandler.CHAT_MEMBER, block=False)
     @error_callable
-    async def new_mem(self, update: Update, context: CallbackContext) -> None:
-        message = update.effective_message
-        chat = message.chat
+    async def track_users(self, update: Update, context: CallbackContext) -> None:
+        chat = update.effective_chat
         if len(bot.config.verify_groups) >= 1:
             for verify_group in bot.config.verify_groups:
                 if verify_group == chat.id:
@@ -249,38 +249,38 @@ class GroupJoiningVerification(Plugin):
                 return
         else:
             return
-        for user in message.new_chat_members:
-            if user.id == context.bot.id:
-                return
-            logger.info(f"用户 {user.full_name}[{user.id}] 尝试加入群 {chat.title}[{chat.id}]")
-        not_enough_rights = context.chat_data.get("not_enough_rights", False)
-        if not_enough_rights:
+        new_chat_member = update.chat_member.new_chat_member
+        from_user = update.chat_member.from_user
+        user = new_chat_member.user
+        result = extract_status_change(update.chat_member)
+        if result is None:
             return
+        was_member, is_member = result
         chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
-        if self.is_admin(chat_administrators, message.from_user.id):
-            await message.reply_text("派蒙检测到管理员邀请，自动放行了！")
+        if self.is_admin(chat_administrators, from_user.id) and not user.is_bot:
+            await chat.send_message("派蒙检测到管理员邀请，自动放行了！")
             return
-        for user in message.new_chat_members:
-            if user.is_bot:
-                continue
+        if not user.is_bot:
+            if was_member and not is_member:
+                logger.info("用户 %s[%s] 退出群聊 %s[%s]", user.full_name, user.id, chat.title, chat.id)
+                return
+            logger.info("用户 %s[%s] 尝试加入群 %s[%s]", user.full_name, user.id, chat.title, chat.id)
             question_id_list = await self.quiz_service.get_question_id_list()
             if len(question_id_list) == 0:
-                await message.reply_text("旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
+                await chat.send_message("旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
                 return
             try:
-                await context.bot.restrict_chat_member(
-                    chat_id=message.chat.id, user_id=user.id, permissions=ChatPermissions(can_send_messages=False)
-                )
-            except BadRequest as err:
-                if "Not enough rights" in str(err):
-                    logger.warning(f"权限不够 chat_id[{message.chat_id}]")
-                    # reply_message = await message.reply_markdown_v2(f"派蒙无法修改 {user.mention_markdown_v2()} 的权限！"
-                    #                                                 f"请检查是否给派蒙授权管理了")
-                    context.chat_data["not_enough_rights"] = True
-                    # await context.bot.delete_message(chat.id, reply_message.message_id)
+                await chat.restrict_member(user_id=user.id, permissions=ChatPermissions(can_send_messages=False))
+            except BadRequest as exc:
+                if "Not enough rights" in exc.message:
+                    logger.warning("%s[%s] 权限不够", chat.title, chat.id)
+                    await chat.send_message(
+                        f"派蒙无法修改 {user.mention_html()} 的权限！请检查是否给派蒙授权管理了",
+                        parse_mode=ParseMode.HTML,
+                    )
                     return
                 else:
-                    raise err
+                    raise exc
             question_id = random.choice(question_id_list)  # nosec
             question = await self.quiz_service.get_question(question_id)
             buttons = [
@@ -306,19 +306,25 @@ class GroupJoiningVerification(Plugin):
                 ]
             )
             reply_message = (
-                f"*欢迎来到「提瓦特」世界！* \n" f"问题: {escape_markdown(question.text, version=2)} \n" f"请在 {self.time_out}S 内回答问题"
+                f"*欢迎来到「提瓦特」世界！* \n问题: {escape_markdown(question.text, version=2)} \n请在 {self.time_out}S 内回答问题"
             )
             logger.debug(
-                f"发送入群验证问题 question_id[{question.question_id}] question[{question.text}] \n"
-                f"给{user.full_name}[{user.id}] 在 {chat.title}[{chat.id}]"
+                "发送入群验证问题 %s[%s] \n给%s[%s] 在 %s[%s]",
+                question.text,
+                question.question_id,
+                user.full_name,
+                user.id,
+                chat.title,
+                chat.id,
             )
             try:
-                question_message = await message.reply_markdown_v2(
-                    reply_message, reply_markup=InlineKeyboardMarkup(buttons)
+                question_message = await chat.send_message(
+                    reply_message,
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                    parse_mode=ParseMode.MARKDOWN_V2,
                 )
-                question_message.forward_from
             except BadRequest as exc:
-                await message.reply_text("派蒙分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
+                await chat.send_message("派蒙分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
                 raise exc
             context.job_queue.run_once(
                 callback=self.kick_member_job,
@@ -328,15 +334,15 @@ class GroupJoiningVerification(Plugin):
                 user_id=user.id,
                 job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_kick"},
             )
-            context.job_queue.run_once(
-                callback=self.clean_message_job,
-                when=self.time_out,
-                data=message.message_id,
-                name=f"{chat.id}|{user.id}|auth_clean_join_message",
-                chat_id=chat.id,
-                user_id=user.id,
-                job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_join_message"},
-            )
+            # context.job_queue.run_once(
+            #     callback=self.clean_message_job,
+            #     when=self.time_out,
+            #     data=message.message_id,
+            #     name=f"{chat.id}|{user.id}|auth_clean_join_message",
+            #     chat_id=chat.id,
+            #     user_id=user.id,
+            #    job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_join_message"},
+            # )
             context.job_queue.run_once(
                 callback=self.clean_message_job,
                 when=self.time_out,
@@ -346,10 +352,10 @@ class GroupJoiningVerification(Plugin):
                 user_id=user.id,
                 job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_question_message"},
             )
-            if PYROGRAM_AVAILABLE and self.mtp and (question_message.id - message.id - 1):
+            if PYROGRAM_AVAILABLE and self.mtp:
                 try:
                     messages_list = await self.mtp.get_messages(
-                        chat.id, message_ids=list(range(message.id + 1, question_message.id))
+                        chat.id, message_ids=[question_message.id - 3, question_message.id]
                     )
                     for find_message in messages_list:
                         if find_message.empty:
@@ -369,9 +375,11 @@ class GroupJoiningVerification(Plugin):
                                 await question_message.edit_text(text, reply_markup=InlineKeyboardMarkup(button))
                                 if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
                                     schedule.remove()
-                            logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 验证缝隙间发送消息" "现已删除")
+                            logger.info(
+                                "用户 %s[%s] 在群 %s[%s] 验证缝隙间发送消息 现已删除", user.full_name, user.id, chat.title, chat.id
+                            )
                 except BadRequest as exc:
-                    logger.error(f"后验证处理中发生错误 {repr(exc)}")
+                    logger.error("后验证处理中发生错误 %s", exc.message)
                     logger.exception(exc)
                 except MTPFloodWait:
                     logger.warning("调用 mtp 触发洪水限制")
