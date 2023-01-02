@@ -10,6 +10,7 @@ from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Opti
 import genshin
 import pytz
 from async_timeout import timeout
+from telegram import Update as TelegramUpdate
 from telegram import __version__ as tg_version
 from telegram.error import NetworkError, TimedOut
 from telegram.ext import (
@@ -276,6 +277,7 @@ class Bot:
                         write_timeout=self.config.write_timeout,
                         connect_timeout=self.config.connect_timeout,
                         pool_timeout=self.config.pool_timeout,
+                        allowed_updates=TelegramUpdate.ALL_TYPES,
                     )
                     break
                 except TimedOut:
