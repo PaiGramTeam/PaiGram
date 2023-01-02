@@ -198,8 +198,8 @@ class _ChatJoinRequest(_Handler):
 
 
 class _ChatMember(_Handler):
-    def __init__(self, chat_member_types: int = -1):
-        super().__init__(chat_member_types=chat_member_types)
+    def __init__(self, chat_member_types: int = -1, block: DVInput[bool] = DEFAULT_TRUE):
+        super().__init__(chat_member_types=chat_member_types, block=block)
 
 
 class _ChosenInlineResult(_Handler):
