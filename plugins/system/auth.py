@@ -256,15 +256,17 @@ class GroupJoiningVerification(Plugin):
         if result is None:
             return
         was_member, is_member = result
-        chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
-        if self.is_admin(chat_administrators, from_user.id) and not user.is_bot:
-            await chat.send_message("派蒙检测到管理员邀请，自动放行了！")
+        if was_member and not is_member:
+            logger.info("用户 %s[%s] 退出群聊 %s[%s]", user.full_name, user.id, chat.title, chat.id)
             return
-        if not user.is_bot:
-            if was_member and not is_member:
-                logger.info("用户 %s[%s] 退出群聊 %s[%s]", user.full_name, user.id, chat.title, chat.id)
-                return
+        elif not was_member and is_member:
             logger.info("用户 %s[%s] 尝试加入群 %s[%s]", user.full_name, user.id, chat.title, chat.id)
+            if user.is_bot:
+                return
+            chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
+            if self.is_admin(chat_administrators, from_user.id):
+                await chat.send_message("派蒙检测到管理员邀请，自动放行了！")
+                return
             question_id_list = await self.quiz_service.get_question_id_list()
             if len(question_id_list) == 0:
                 await chat.send_message("旅行者！！！派蒙的问题清单你还没给我！！快去私聊我给我问题！")
