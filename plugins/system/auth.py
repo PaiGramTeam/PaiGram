@@ -5,7 +5,7 @@ from typing import Tuple, Union, Dict, List, Optional
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember, Message, User
 from telegram.constants import ParseMode
-from telegram.error import BadRequest
+from telegram.error import BadRequest, RetryAfter
 from telegram.ext import CallbackContext, CallbackQueryHandler, ChatMemberHandler
 from telegram.helpers import escape_markdown
 
@@ -24,8 +24,8 @@ try:
 
     PYROGRAM_AVAILABLE = True
 except ImportError:
-    MTPBadRequest = Exception
-    MTPFloodWait = Exception
+    MTPBadRequest = BadRequest
+    MTPFloodWait = RetryAfter
     PYROGRAM_AVAILABLE = False
 
 try:
