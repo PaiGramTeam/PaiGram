@@ -1,15 +1,17 @@
 import asyncio
+import json
 import random
 import time
 from typing import Tuple, Union, Dict, List, Optional
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember, Message, User
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, CallbackQueryHandler, ChatMemberHandler
 from telegram.helpers import escape_markdown
 
 from core.base.mtproto import MTProto
+from core.base.redisdb import RedisDB
 from core.bot import bot
 from core.plugin import Plugin, handler
 from core.quiz import QuizService
@@ -24,6 +26,12 @@ try:
     PYROGRAM_AVAILABLE = True
 except ImportError:
     PYROGRAM_AVAILABLE = False
+
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
 
 FullChatPermissions = ChatPermissions(
     can_send_messages=True,
@@ -40,7 +48,7 @@ FullChatPermissions = ChatPermissions(
 class GroupJoiningVerification(Plugin):
     """群验证模块"""
 
-    def __init__(self, quiz_service: QuizService = None, mtp: MTProto = None):
+    def __init__(self, quiz_service: QuizService = None, mtp: MTProto = None, redis: RedisDB = None):
         self.quiz_service = quiz_service
         self.time_out = 120
         self.kick_time = 120
@@ -48,6 +56,7 @@ class GroupJoiningVerification(Plugin):
         self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, List[ChatMember]]] = {}
         self.is_refresh_quiz = False
         self.mtp = mtp.client
+        self.redis = redis.client
 
     async def __async_init__(self):
         logger.info("群验证模块正在刷新问题列表")
@@ -109,6 +118,18 @@ class GroupJoiningVerification(Plugin):
         except BadRequest as exc:
             logger.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败")
             logger.exception(exc)
+
+    async def get_new_chat_members_message(self, user: User, context: CallbackContext) -> Optional[Message]:
+        qname = f"plugin:auth:new_chat_members_message:{user.id}"
+        result = await self.redis.get(qname)
+        if result:
+            data = jsonlib.loads(str(result, encoding="utf-8"))
+            return Message.de_json(data, context.bot)
+        return None
+
+    async def set_new_chat_members_message(self, user: User, message: Message):
+        qname = f"plugin:auth:new_chat_members_message:{user.id}"
+        await self.redis.set(qname, message.to_json(), ex=60)
 
     @handler(CallbackQueryHandler, pattern=r"^auth_admin\|", block=False)
     @error_callable
@@ -237,6 +258,25 @@ class GroupJoiningVerification(Plugin):
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
             schedule.remove()
 
+    @handler.message.new_chat_members(priority=1)
+    @error_callable
+    async def new_mem(self, update: Update, context: CallbackContext) -> None:
+        message = update.effective_message
+        chat = message.chat
+        if len(bot.config.verify_groups) >= 1:
+            for verify_group in bot.config.verify_groups:
+                if verify_group == chat.id:
+                    break
+            else:
+                return
+        else:
+            return
+        for user in message.new_chat_members:
+            if user.id == context.bot.id:
+                return
+            logger.debug("用户 %s[%s] 加入群 %s[%s]", user.full_name, user.id, chat.title, chat.id)
+            await self.set_new_chat_members_message(user, message)
+
     @handler.chat_member(chat_member_types=ChatMemberHandler.CHAT_MEMBER, block=False)
     @error_callable
     async def track_users(self, update: Update, context: CallbackContext) -> None:
@@ -283,6 +323,7 @@ class GroupJoiningVerification(Plugin):
                     return
                 else:
                     raise exc
+            new_chat_members_message = await self.get_new_chat_members_message(user, context)
             question_id = random.choice(question_id_list)  # nosec
             question = await self.quiz_service.get_question(question_id)
             buttons = [
@@ -307,9 +348,18 @@ class GroupJoiningVerification(Plugin):
                     ),
                 ]
             )
-            reply_message = (
-                f"*欢迎来到「提瓦特」世界！* \n问题: {escape_markdown(question.text, version=2)} \n请在 {self.time_out}S 内回答问题"
-            )
+            if new_chat_members_message:
+                reply_message = (
+                    f"*欢迎 {user.mention_markdown_v2()} 来到「提瓦特」世界！* \n"
+                    f"问题: {escape_markdown(question.text, version=2)} \n"
+                    f"请在*{self.time_out}*秒内回答问题"
+                )
+            else:
+                reply_message = (
+                    f"*欢迎来到「提瓦特」世界！* \n"
+                    f"问题: {escape_markdown(question.text, version=2)} \n"
+                    f"请在*{self.time_out}*秒内回答问题"
+                )
             logger.debug(
                 "发送入群验证问题 %s[%s] \n给%s[%s] 在 %s[%s]",
                 question.text,
@@ -320,11 +370,16 @@ class GroupJoiningVerification(Plugin):
                 chat.id,
             )
             try:
-                question_message = await chat.send_message(
-                    reply_message,
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                    parse_mode=ParseMode.MARKDOWN_V2,
-                )
+                if new_chat_members_message:
+                    question_message = await new_chat_members_message.reply_markdown_v2(
+                        reply_message, reply_markup=InlineKeyboardMarkup(buttons), allow_sending_without_reply=True
+                    )
+                else:
+                    question_message = await chat.send_message(
+                        reply_message,
+                        reply_markup=InlineKeyboardMarkup(buttons),
+                        parse_mode=ParseMode.MARKDOWN_V2,
+                    )
             except BadRequest as exc:
                 await chat.send_message("派蒙分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
                 raise exc
@@ -336,15 +391,16 @@ class GroupJoiningVerification(Plugin):
                 user_id=user.id,
                 job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_kick"},
             )
-            # context.job_queue.run_once(
-            #     callback=self.clean_message_job,
-            #     when=self.time_out,
-            #     data=message.message_id,
-            #     name=f"{chat.id}|{user.id}|auth_clean_join_message",
-            #     chat_id=chat.id,
-            #     user_id=user.id,
-            #    job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_join_message"},
-            # )
+            if new_chat_members_message:
+                context.job_queue.run_once(
+                    callback=self.clean_message_job,
+                    when=self.time_out,
+                    data=new_chat_members_message.message_id,
+                    name=f"{chat.id}|{user.id}|auth_clean_join_message",
+                    chat_id=chat.id,
+                    user_id=user.id,
+                    job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_join_message"},
+                )
             context.job_queue.run_once(
                 callback=self.clean_message_job,
                 when=self.time_out,
