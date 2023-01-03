@@ -413,9 +413,14 @@ class GroupJoiningVerification(Plugin):
             )
             if PYROGRAM_AVAILABLE and self.mtp:
                 try:
-                    messages_list = await self.mtp.get_messages(
-                        chat.id, message_ids=[question_message.id - 3, question_message.id]
-                    )
+                    if new_chat_members_message:
+                        if question_message.id - new_chat_members_message.id - 1:
+                            message_ids = list(range(new_chat_members_message.id + 1, question_message.id))
+                        else:
+                            return
+                    else:
+                        message_ids = [question_message.id - 3, question_message.id]
+                    messages_list = await self.mtp.get_messages(chat.id, message_ids=message_ids)
                     for find_message in messages_list:
                         if find_message.empty:
                             continue
