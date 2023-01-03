@@ -184,7 +184,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 "2、按F12打开开发者工具\n"
                 "3、将开发者工具切换至控制台(Console)\n"
                 "4、复制下方的代码，并将其粘贴在控制台中，按下回车\n"
-                f"<pre><code class='javascript'>{javascript}</code></pre>"
+                f"<pre><code class='javascript'>{javascript}</code></pre>\n"
                 "Android：\n"
                 f"1、<a href='{bbs_url}'>通过 Via 打开 {bbs_name} 并登录</a>\n"
                 "2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n"
@@ -192,8 +192,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 "iOS：\n"
                 "1、在App Store上安装Web Inspector，并在iOS设置- Safari浏览器-扩展-允许这些扩展下找到Web Inspector-打开，允许所有网站\n"
                 f"2、<a href='{bbs_url}'>通过 Safari 打开 {bbs_name} 并登录</a>\n"
-                "3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - Console - 点击下方文本框复制下方代码粘贴："
-                f"<pre><code class='javascript'>{javascript}</code></pre>"
+                "3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - Console - 点击下方文本框复制下方代码粘贴：\n"
+                f"<pre><code class='javascript'>{javascript}</code></pre>\n"
                 "4、点击Console下的Execute"
             )
         await message.reply_html(help_message, disable_web_page_preview=True)
@@ -296,7 +296,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         add_user_command_data.game_uid = user_info.uid
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        logger.info("用户 %s[%s] 获取账号 {%s}[%s] 信息成功", user.full_name, user.id, user_info.nickname, user_info.uid)
+        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, user_info.nickname, user_info.uid)
         text = (
             f"*角色信息*\n"
             f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n"

@@ -7,7 +7,7 @@ __all__ = ("Member", "TeamRate", "FullTeamRate", "TeamRateResult")
 
 class Member(BaseModel):
     star: int
-    attr: str
+    avatar: str
     name: str
 
 
