@@ -351,13 +351,13 @@ class GroupJoiningVerification(Plugin):
             )
             if new_chat_members_message:
                 reply_message = (
-                    f"*欢迎 {user.mention_markdown_v2()} 来到「提瓦特」世界！* \n"
+                    f"*欢迎来到「提瓦特」世界！* \n"
                     f"问题: {escape_markdown(question.text, version=2)} \n"
                     f"请在*{self.time_out}*秒内回答问题"
                 )
             else:
                 reply_message = (
-                    f"*欢迎来到「提瓦特」世界！* \n"
+                    f"*欢迎 {user.mention_markdown_v2()} 来到「提瓦特」世界！* \n"
                     f"问题: {escape_markdown(question.text, version=2)} \n"
                     f"请在*{self.time_out}*秒内回答问题"
                 )
