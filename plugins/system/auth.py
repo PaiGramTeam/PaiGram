@@ -24,8 +24,8 @@ try:
 
     PYROGRAM_AVAILABLE = True
 except ImportError:
-    MTPBadRequest = BadRequest
-    MTPFloodWait = RetryAfter
+    MTPBadRequest = ValueError
+    MTPFloodWait = IndexError
     PYROGRAM_AVAILABLE = False
 
 try:
