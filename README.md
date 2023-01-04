@@ -37,7 +37,7 @@ pip install --upgrade poetry
 
 ```bash
 poetry install
-playwright install chromium
+poetry run playwright install chromium
 ```
 
 #### 可选依赖项
@@ -57,13 +57,13 @@ cp .env.example .env
 ### 4. 初始化数据库
 
 ```bash
-alembic upgrade head
+poetry run alembic upgrade head
 ```
 
 ### 5. 运行
 
 ```bash
-python ./run.py
+poetry run python ./run.py
 ```
 
 ## 其他说明
