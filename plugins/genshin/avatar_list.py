@@ -31,6 +31,27 @@ from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
 
+class SkillData(Model):
+    """天赋数据"""
+
+    skill: CalculatorTalent
+    buffed: bool = False
+    """是否得到了命座加成"""
+
+
+class AvatarData(Model):
+    avatar: Character
+    detail: CalculatorCharacterDetails
+    icon: str
+    weapon: Optional[str]
+    skills: List[SkillData]
+
+    def sum_of_skills(self) -> int:
+        sum = 0
+        for skilldata in self.skills:
+            sum += skilldata.skill.level
+        return sum
+        
 
 class AvatarListPlugin(Plugin, BasePlugin):
     def __init__(
@@ -130,14 +151,25 @@ class AvatarListPlugin(Plugin, BasePlugin):
     async def get_avatars_data(
         self, characters: Sequence[Character], client: Client, max_length: int = None
     ) -> List["AvatarData"]:
-        async def _task(c, n):
-            return n, await self.get_avatar_data(c, client)
+        async def _task(c):
+            return await self.get_avatar_data(c, client)
 
         task_results = await asyncio.gather(
-            *[_task(character, num) for num, character in enumerate(characters[:max_length])]
+            *[_task(character) for character in characters]
         )
 
-        return list(filter(lambda x: x, map(lambda x: x[1], sorted(task_results, key=lambda x: x[0]))))
+        return list(filter( lambda x: x, 
+        sorted(task_results, key=lambda x: (
+            x.avatar.level, 
+            x.avatar.rarity, 
+            x.sum_of_skills(), 
+            x.avatar.constellation, 
+            # TODO 如果加入武器排序条件，需要把武器转化为图片url的处理后置
+            # x.weapon.level,
+            # x.weapon.rarity, 
+            # x.weapon.refinement, 
+            x.avatar.friendship)
+        , reverse=True)[:max_length]))
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
@@ -156,23 +188,6 @@ class AvatarListPlugin(Plugin, BasePlugin):
             logger.warning("EnkaNetwork 请求超时: %s", str(exc))
         except Exception as exc:
             logger.error("EnkaNetwork 请求失败: %s", exc_info=exc)
-        choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
-        if choices.length == 0:  # 若没有满好感角色、则以好感等级排序
-            choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
-        name_card_choices = (  # 找到与角色对应的满好感名片ID
-            ArkoWrapper(choices)
-            .map(lambda x: next(filter(lambda y: y["name"].split(".")[0] == x.name, NAMECARD_DATA.values()), None))
-            .filter(lambda x: x)
-            .map(lambda x: x["id"])
-        )
-        name_card = (await self.assets_service.namecard(name_card_choices[0]).navbar()).as_uri()
-        avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
-        nickname = update.effective_user.full_name
-        if cid in [10000005, 10000007]:
-            rarity = 5
-        else:
-            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
-        return name_card, avatar, nickname, rarity
 
     async def get_default_final_data(self, characters: Sequence[Character], update: Update):
         nickname = update.effective_user.full_name
@@ -270,19 +285,3 @@ class AvatarListPlugin(Plugin, BasePlugin):
             "文件" if all_avatars else "图片",
             extra={"markup": True},
         )
-
-
-class SkillData(Model):
-    """天赋数据"""
-
-    skill: CalculatorTalent
-    buffed: bool = False
-    """是否得到了命座加成"""
-
-
-class AvatarData(Model):
-    avatar: Character
-    detail: CalculatorCharacterDetails
-    icon: str
-    weapon: Optional[str]
-    skills: Iterable[SkillData]
