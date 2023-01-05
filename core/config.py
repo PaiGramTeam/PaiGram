@@ -48,8 +48,8 @@ class MySqlConfig(Settings):
 class RedisConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 6379
-    database: int = Field(env="redis_db")
-    password: str = None
+    database: int = Field(default=0, env="redis_db")
+    password: Optional[str] = None
 
     class Config(Settings.Config):
         env_prefix = "redis_"
