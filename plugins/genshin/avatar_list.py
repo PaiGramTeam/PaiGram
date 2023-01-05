@@ -157,26 +157,21 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
         task_results = await asyncio.gather(*[_task(character) for character in characters])
 
-        return list(
-            filter(
-                lambda x: x,
-                sorted(
-                    task_results,
-                    key=lambda x: (
-                        x.avatar.level,
-                        x.avatar.rarity,
-                        x.sum_of_skills(),
-                        x.avatar.constellation,
-                        # TODO 如果加入武器排序条件，需要把武器转化为图片url的处理后置
-                        # x.weapon.level,
-                        # x.weapon.rarity,
-                        # x.weapon.refinement,
-                        x.avatar.friendship,
-                    ),
-                    reverse=True,
-                )[:max_length],
-            )
-        )
+        return sorted(
+            list(filter(lambda x: x, task_results)),
+            key=lambda x: (
+                x.avatar.level,
+                x.avatar.rarity,
+                x.sum_of_skills(),
+                x.avatar.constellation,
+                # TODO 如果加入武器排序条件，需要把武器转化为图片url的处理后置
+                # x.weapon.level,
+                # x.weapon.rarity,
+                # x.weapon.refinement,
+                x.avatar.friendship,
+            ),
+            reverse=True,
+        )[:max_length]
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
