@@ -32,6 +32,28 @@ from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
 
 
+class SkillData(Model):
+    """天赋数据"""
+
+    skill: CalculatorTalent
+    buffed: bool = False
+    """是否得到了命座加成"""
+
+
+class AvatarData(Model):
+    avatar: Character
+    detail: CalculatorCharacterDetails
+    icon: str
+    weapon: Optional[str]
+    skills: List[SkillData]
+
+    def sum_of_skills(self) -> int:
+        total_level = 0
+        for skilldata in self.skills:
+            total_level += skilldata.skill.level
+        return total_level
+
+
 class AvatarListPlugin(Plugin, BasePlugin):
     def __init__(
         self,
@@ -130,14 +152,31 @@ class AvatarListPlugin(Plugin, BasePlugin):
     async def get_avatars_data(
         self, characters: Sequence[Character], client: Client, max_length: int = None
     ) -> List["AvatarData"]:
-        async def _task(c, n):
-            return n, await self.get_avatar_data(c, client)
+        async def _task(c):
+            return await self.get_avatar_data(c, client)
 
-        task_results = await asyncio.gather(
-            *[_task(character, num) for num, character in enumerate(characters[:max_length])]
+        task_results = await asyncio.gather(*[_task(character) for character in characters])
+
+        return list(
+            filter(
+                lambda x: x,
+                sorted(
+                    task_results,
+                    key=lambda x: (
+                        x.avatar.level,
+                        x.avatar.rarity,
+                        x.sum_of_skills(),
+                        x.avatar.constellation,
+                        # TODO 如果加入武器排序条件，需要把武器转化为图片url的处理后置
+                        # x.weapon.level,
+                        # x.weapon.rarity,
+                        # x.weapon.refinement,
+                        x.avatar.friendship,
+                    ),
+                    reverse=True,
+                )[:max_length],
+            )
         )
-
-        return list(filter(lambda x: x, map(lambda x: x[1], sorted(task_results, key=lambda x: x[0]))))
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
@@ -270,19 +309,3 @@ class AvatarListPlugin(Plugin, BasePlugin):
             "文件" if all_avatars else "图片",
             extra={"markup": True},
         )
-
-
-class SkillData(Model):
-    """天赋数据"""
-
-    skill: CalculatorTalent
-    buffed: bool = False
-    """是否得到了命座加成"""
-
-
-class AvatarData(Model):
-    avatar: Character
-    detail: CalculatorCharacterDetails
-    icon: str
-    weapon: Optional[str]
-    skills: Iterable[SkillData]
