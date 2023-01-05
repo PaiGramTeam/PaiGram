@@ -15,8 +15,8 @@ class RedisDB(Service):
     def from_config(cls, config: BotConfig) -> Self:
         return cls(**config.redis.dict())
 
-    def __init__(self, host="127.0.0.1", port=6379, database=0, loop=None):
-        self.client = aioredis.Redis(host=host, port=port, db=database)
+    def __init__(self, host="127.0.0.1", port=6379, database=0, loop=None, password=None):
+        self.client = aioredis.Redis(host=host, port=port, db=database, password=password)
         self.ttl = 600
         self.key_prefix = "paimon_bot"
         self._loop = loop
