@@ -161,7 +161,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
         name_card_choices = (  # 找到与角色对应的满好感名片ID
             ArkoWrapper(choices)
-            .map(lambda x: next(filter(lambda y: y["name"].split(".")[0] == x.name, NAMECARD_DATA.values()), None))
+            .map(lambda x: next(filter(lambda y: y["name"].split("·")[0] == x.name, NAMECARD_DATA.values()), None))
             .filter(lambda x: x)
             .map(lambda x: x["id"])
         )
