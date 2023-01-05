@@ -158,7 +158,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
         task_results = await asyncio.gather(*[_task(character) for character in characters])
 
         return sorted(
-            list(filter( lambda x: x, task_results)),
+            list(filter(lambda x: x, task_results)),
             key=lambda x: (
                 x.avatar.level,
                 x.avatar.rarity,
@@ -170,7 +170,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 # x.weapon.refinement,
                 x.avatar.friendship,
             ),
-            reverse=True
+            reverse=True,
         )[:max_length]
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
