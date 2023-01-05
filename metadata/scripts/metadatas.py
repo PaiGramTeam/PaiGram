@@ -9,8 +9,8 @@ from utils.const import AMBR_HOST, PROJECT_ROOT
 from utils.log import logger
 
 __all__ = ["update_metadata_from_ambr", "update_metadata_from_github", "make_github_fast"]
-RESOURCE_REPO = "tamilpp25/Grasscutter_Resources"
-RESOURCE_BRANCH = "3.2"
+RESOURCE_REPO = "RTPaimon/Grasscutter_Resources"
+RESOURCE_BRANCH = "3.3"
 RESOURCE_ROOT = "Resources"
 RESOURCE_DEFAULT_PATH = f"{RESOURCE_REPO}/{RESOURCE_BRANCH}/{RESOURCE_ROOT}/"
 

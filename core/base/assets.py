@@ -469,7 +469,7 @@ class _NamecardAssets(_AssetsService):
 
     async def _get_from_enka(self, item: str) -> AsyncIterator[str | None]:
         if (url := getattr(self.enka, {"profile": "banner"}.get(item, item), None)) is not None:
-            yield str(url)
+            yield url.url
 
     @cached_property
     def game_name_map(self) -> dict[str, str]:
