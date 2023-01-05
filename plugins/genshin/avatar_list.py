@@ -47,10 +47,10 @@ class AvatarData(Model):
     skills: List[SkillData]
 
     def sum_of_skills(self) -> int:
-        sum = 0
+        total_level = 0
         for skilldata in self.skills:
-            sum += skilldata.skill.level
-        return sum
+            total_level += skilldata.skill.level
+        return total_level
         
 
 class AvatarListPlugin(Plugin, BasePlugin):
