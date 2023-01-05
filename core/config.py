@@ -49,6 +49,7 @@ class RedisConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 6379
     database: int = Field(env="redis_db")
+    password: str = None
 
     class Config(Settings.Config):
         env_prefix = "redis_"
