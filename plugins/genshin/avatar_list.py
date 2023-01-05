@@ -65,42 +65,34 @@ class AvatarListPlugin(Plugin, BasePlugin):
         self.cookies_service = cookies_service
         self.assets_service = assets_service
         self.template_service = template_service
-        self.enka_client = EnkaNetworkAPI(
-            lang="chs", agent=config.enka_network_api_agent)
-        self.enka_client.set_cache(RedisCache(
-            redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60 * 3))
+        self.enka_client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
+        self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60 * 3))
         self.enka_assets = EnkaAssets(lang="chs")
 
     async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
         try:
             return await get_genshin_client(user.id)
         except UserNotFoundError:  # 若未找到账号
-            buttons = [[InlineKeyboardButton(
-                "点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(
-                    context, reply_message.chat_id, reply_message.message_id, 30)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
 
-                self._add_delete_message_job(
-                    context, message.chat_id, message.message_id, 30)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
         except CookiesNotFoundError:
-            buttons = [[InlineKeyboardButton(
-                "点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_msg = await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙绑定账号",
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=ParseMode.HTML,
                 )
-                self._add_delete_message_job(
-                    context, reply_msg.chat_id, reply_msg.message_id, 30)
-                self._add_delete_message_job(
-                    context, message.chat_id, message.message_id, 30)
+                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             else:
                 await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定",
@@ -123,8 +115,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             else:
                 break
         else:
-            logger.warning("解析[bold]%s[/]的数据时遇到了 Too Many Requests 错误",
-                           character.name, extra={"markup": True})
+            logger.warning("解析[bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.name, extra={"markup": True})
             return None
         if character.id == 10000005:  # 针对男草主
             talents = []
@@ -136,13 +127,11 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 if talent.type in ["attack", "skill", "burst"]:
                     talents.append(talent)
         else:
-            talents = [t for t in detail.talents if t.type in [
-                "attack", "skill", "burst"]]
+            talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
         buffed_talents = []
         for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
             if result := list(
-                filter(lambda x: all(
-                    [x.name in constellation.effect]), talents)  # pylint: disable=W0640
+                filter(lambda x: all([x.name in constellation.effect]), talents)  # pylint: disable=W0640
             ):
                 buffed_talents.append(result[0].type)
         return AvatarData(
@@ -166,21 +155,28 @@ class AvatarListPlugin(Plugin, BasePlugin):
         async def _task(c):
             return await self.get_avatar_data(c, client)
 
-        task_results = await asyncio.gather(
-            *[_task(character) for character in characters]
-        )
+        task_results = await asyncio.gather(*[_task(character) for character in characters])
 
-        return list(filter(lambda x: x,
-                           sorted(task_results, key=lambda x: (
-                               x.avatar.level,
-                               x.avatar.rarity,
-                               x.sum_of_skills(),
-                               x.avatar.constellation,
-                               # TODO 如果加入武器排序条件，需要把武器转化为图片url的处理后置
-                               # x.weapon.level,
-                               # x.weapon.rarity,
-                               # x.weapon.refinement,
-                               x.avatar.friendship), reverse=True)[:max_length]))
+        return list(
+            filter(
+                lambda x: x,
+                sorted(
+                    task_results,
+                    key=lambda x: (
+                        x.avatar.level,
+                        x.avatar.rarity,
+                        x.sum_of_skills(),
+                        x.avatar.constellation,
+                        # TODO 如果加入武器排序条件，需要把武器转化为图片url的处理后置
+                        # x.weapon.level,
+                        # x.weapon.rarity,
+                        # x.weapon.refinement,
+                        x.avatar.friendship,
+                    ),
+                    reverse=True,
+                )[:max_length],
+            )
+        )
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
@@ -191,8 +187,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             if response.player.avatar.id in [10000005, 10000007]:
                 rarity = 5
             else:
-                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[
-                    str(response.player.avatar.id)]
+                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.avatar.id)]
             return name_card, avatar, nickname, rarity
         except (VaildateUIDError, UIDNotFounded, HTTPException) as exc:
             logger.warning("EnkaNetwork 请求失败: %s", str(exc))
@@ -200,11 +195,9 @@ class AvatarListPlugin(Plugin, BasePlugin):
             logger.warning("EnkaNetwork 请求超时: %s", str(exc))
         except Exception as exc:
             logger.error("EnkaNetwork 请求失败: %s", exc_info=exc)
-        choices = ArkoWrapper(characters).filter(
-            lambda x: x.friendship == 10)  # 筛选出好感满了的角色
+        choices = ArkoWrapper(characters).filter(lambda x: x.friendship == 10)  # 筛选出好感满了的角色
         if choices.length == 0:  # 若没有满好感角色、则以好感等级排序
-            choices = ArkoWrapper(characters).sort(
-                lambda x: x.friendship, reverse=True)
+            choices = ArkoWrapper(characters).sort(lambda x: x.friendship, reverse=True)
         name_card_choices = (  # 找到与角色对应的满好感名片ID
             ArkoWrapper(choices)
             .map(lambda x: next(filter(lambda y: y["name"].split("·")[0] == x.name, NAMECARD_DATA.values()), None))
@@ -243,8 +236,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
         all_avatars = any(["all" in args, "全部" in args])  # 是否发送全部角色
 
-        logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s",
-                    user.full_name, user.id, all_avatars, extra={"markup": True})
+        logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
 
         client = await self.get_user_client(user, message, context)
         if not client:
@@ -261,21 +253,17 @@ class AvatarListPlugin(Plugin, BasePlugin):
         except InvalidCookies as exc:
             await notice.delete()
             await client.get_genshin_user(client.uid)
-            logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s",
-                           user.full_name, user.id, exc.retcode, exc.original)
+            logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
             reply_message = await message.reply_text("出错了呜呜呜 ~ 当前账号无法请求角色数数据。\n请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。")
             if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(
-                    context, reply_message.chat_id, reply_message.message_id, 30)
-                self._add_delete_message_job(
-                    context, message.chat_id, message.message_id, 30)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
         except GenshinException as e:
             if e.retcode == -502002:
                 await notice.delete()
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
-                self._add_delete_message_job(
-                    context, reply_message.chat_id, reply_message.message_id, 20)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 20)
                 return
             raise e
 
@@ -308,8 +296,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             file_type=FileType.DOCUMENT if as_document else FileType.PHOTO,
             ttl=30 * 24 * 60 * 60,
         )
-        self._add_delete_message_job(
-            context, notice.chat_id, notice.message_id, 5)
+        self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
         if as_document:
             await image.reply_document(message, filename="练度统计.png")
         else:
