@@ -6,10 +6,9 @@ import signal
 from functools import wraps
 from importlib import import_module
 from inspect import Parameter, Signature
-from pathlib import Path
 from signal import SIGABRT, SIGINT, SIGTERM, signal as signal_func
 from ssl import SSLZeroReturnError
-from typing import Callable, Dict, Iterator, List, Optional, TYPE_CHECKING, Type, TypeVar
+from typing import Callable, Dict, Generic, List, Optional, TYPE_CHECKING, Type, TypeVar
 
 import pytz
 import uvicorn
@@ -25,6 +24,7 @@ from core.config import config as bot_config
 from core.plugin import PluginType
 from core.service import Service
 from utils.const import PROJECT_ROOT, WRAPPER_ASSIGNMENTS
+from utils.helpers import gen_pkg
 from utils.log import logger
 from utils.models.signal import Singleton
 
@@ -33,24 +33,16 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
+__all__ = ["Bot", "bot"]
+
 R = TypeVar("R")
 T = TypeVar("T")
 P = ParamSpec("P")
 
 
-def gen_pkg(root: Path) -> Iterator[str]:
-    """生成可以用于 import_module 导入的字符串"""
-    from utils.const import PROJECT_ROOT
+class Control(Generic[T]):
+    """控制类基类"""
 
-    for path in root.iterdir():
-        if not path.name.startswith("_"):
-            if path.is_dir():
-                yield from gen_pkg(path)
-            elif path.suffix == ".py":
-                yield str(path.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")
-
-
-class Control:
     _lib: Dict[Type[T], T] = {}
 
     def _inject(self, signature: Signature, target: Callable[..., T]) -> T:
@@ -62,7 +54,6 @@ class Control:
         return target(**kwargs)
 
     def init_inject(self, target: Callable[..., T]) -> T:
-        """用于实例化Plugin的方法。用于给插件传入一些必要组件，如 MySQL、Redis等"""
         if isinstance(target, type):
             signature = inspect.signature(target.__init__)
         else:
@@ -71,6 +62,8 @@ class Control:
 
 
 class ServiceControl(Control):
+    """服务控制类"""
+
     _services: Dict[Type[Service], Service] = {}
 
     @property
@@ -87,7 +80,11 @@ class ServiceControl(Control):
                 import_module(pkg)
             except Exception as e:
                 logger.exception(
-                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
+                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]',
+                    pkg,
+                    type(e).__name__,
+                    exc_info=e,
+                    extra={"markup": True}
                 )
                 raise SystemExit from e
         for service_cls in Service.__subclasses__():
@@ -104,6 +101,7 @@ class ServiceControl(Control):
                 raise SystemExit from e
 
     async def start_services(self) -> None:
+        await self.start_base_services()
         for path in (PROJECT_ROOT / "core").iterdir():
             if not path.name.startswith("_") and path.is_dir() and path.name != "base":
                 pkg = str(path.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")
@@ -140,6 +138,8 @@ class ServiceControl(Control):
 
 
 class PluginControl(Control):
+    """插件控制类"""
+
     _plugins: List[PluginType] = []
 
     @property
@@ -233,14 +233,16 @@ class Bot(Singleton, ServiceControl, PluginControl):
 
     async def initialize(self):
         """BOT 初始化"""
-        await self.start_base_services()
+        await self.start_services()
 
     async def shutdown(self):
         """BOT 关闭"""
+        await self.stop_services()
 
     async def start(self) -> None:
         """启动 BOT"""
         logger.info("正在启动 BOT 中...")
+        self._running = True
 
         def error_callback(exc: TelegramError) -> None:
             self.tg_app.create_task(self.tg_app.process_error(error=exc, update=None))
@@ -280,7 +282,6 @@ class Bot(Singleton, ServiceControl, PluginControl):
 
         await self._on_startup()
         await self.tg_app.start()
-        self._running = True
         logger.success("BOT 启动成功")
 
     # noinspection PyUnusedLocal
@@ -312,6 +313,7 @@ class Bot(Singleton, ServiceControl, PluginControl):
     async def stop(self):
         """关闭"""
         logger.info("BOT 正在关闭")
+        self._running = False
 
         if self.tg_app.updater.running:
             await self.tg_app.updater.stop()
@@ -326,7 +328,6 @@ class Bot(Singleton, ServiceControl, PluginControl):
             await self._web_server.shutdown()
 
         await self.shutdown()
-        self._running = False
         logger.success("BOT 关闭成功")
 
     def launch(self):

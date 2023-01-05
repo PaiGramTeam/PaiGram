@@ -1,10 +1,9 @@
 """执行器"""
 import inspect
 from multiprocessing import RLock as Lock
-from typing import Any, Callable, ClassVar, Dict, Generic, Optional, TYPE_CHECKING, TypeVar
+from typing import Callable, ClassVar, Dict, Generic, TYPE_CHECKING, Type, TypeVar
 
 from telegram.ext import CallbackContext
-
 # noinspection PyProtectedMember
 from telegram.ext._utils.types import HandlerCallback
 from typing_extensions import ParamSpec, Self
@@ -48,16 +47,16 @@ class Executor:
         self._name = name
 
     async def __call__(
-        self,
-        target: Callable[P, R],
-        *instances: Any,
-        block: bool = False,
-        dispatcher: Optional[AbstractDispatcher] = None,
-        lock_id: int = None,
+            self,
+            target: Callable[P, R],
+            block: bool = False,
+            dispatcher: Type[AbstractDispatcher] = BaseDispatcher,
+            lock_id: int = None,
+            **kwargs,
     ) -> R:
 
         with (HashLock(lock_id or target) if block else do_nothing()):
-            dispatched_func = BaseDispatcher(instances).dispatch(target)
+            dispatched_func = dispatcher(**kwargs).dispatch(target)
 
             if inspect.iscoroutinefunction(target):
                 result = await dispatched_func()
@@ -75,4 +74,4 @@ class HandlerExecutor(Generic[P, R]):
         self.callback = func
 
     async def __call__(self, callback: HandlerCallback, context: CallbackContext) -> R:
-        return await self.executor(self.callback, callback, context)
+        return await self.executor(self.callback, callback=callback, context=CallbackContext)

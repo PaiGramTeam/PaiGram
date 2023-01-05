@@ -47,6 +47,37 @@ def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, 
 class AbstractDispatcher(ABC):
     IGNORED_ATTRS = []
 
+    _args: List[Any] = []
+    _kwargs: Dict[Union[str, Type], Any] = {}
+
+    def __init__(self, *args, **kwargs) -> None:
+        self._args = list(args)
+        self._kwargs = kwargs
+
+        for key, value in self._kwargs:
+            type_arg = type(value)
+            if type_arg != str:
+                if type_arg not in self._kwargs:
+                    self._kwargs[type_arg] = value
+                elif isinstance((arg_v := self._kwargs[type_arg]), list) and getattr(arg_v, "_is_arg_", False):
+                    self._kwargs[type_arg] = [*arg_v, value]
+                    setattr(self._kwargs[type_arg], "_is_arg_", True)
+                else:
+                    self._kwargs[type_arg] = [arg_v, value]
+                    setattr(self._kwargs[type_arg], "_is_arg_", True)
+
+        for arg in args:
+            type_arg = type(arg)
+            if type_arg != str:
+                if type_arg not in self._kwargs:
+                    self._kwargs[type_arg] = arg
+                elif isinstance((arg_v := self._kwargs[type_arg]), list) and getattr(arg_v, "_is_arg_", False):
+                    self._kwargs[type_arg] = [*arg_v, arg]
+                    setattr(self._kwargs[type_arg], "_is_arg_", True)
+                else:
+                    self._kwargs[type_arg] = [arg_v, arg]
+                    setattr(self._kwargs[type_arg], "_is_arg_", True)
+
     @cached_property
     def catch_funcs(self) -> List[MethodType]:
         # noinspection PyTypeChecker
@@ -60,21 +91,12 @@ class AbstractDispatcher(ABC):
         )
 
     @abstractmethod
-    async def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
+    def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
         """将参数分配给函数，从而合成一个无需参数即可执行的函数"""
 
 
 class BaseDispatcher(AbstractDispatcher):
     _instances: Sequence[Any]
-
-    @property
-    def instance_map(self) -> Dict[Union[str, Type[T]], T]:
-        result = {type(k).__name__: k for k in self._instances}
-        result.update({type(k): k for k in self._instances})
-        return result
-
-    def __init__(self, *instances: Any) -> None:
-        self._instances = list(instances)
 
     def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
 
@@ -84,9 +106,9 @@ class BaseDispatcher(AbstractDispatcher):
             params.update(
                 {
                     name: (
-                        self.instance_map.get(type_hint, None)
-                        or self.instance_map.get(name, None)
-                        or self.instance_map.get(type_hint.__name__, None)
+                            self._kwargs.get(type_hint, None)
+                            or self._kwargs.get(name, None)
+                            or self._kwargs.get(type_hint.__name__, None)
                     )
                 }
             )
@@ -112,8 +134,8 @@ class BaseDispatcher(AbstractDispatcher):
 
 
 class HandlerDispatcher(BaseDispatcher):
-    def __init__(self, update: Update, context: CallbackContext, *instances: Any) -> None:
-        super().__init__(update, context, *instances)
+    def __init__(self, update: Update, context: CallbackContext, **kwargs) -> None:
+        super().__init__(update=update, contex=context, **kwargs)
         self._update = update
         self._context = context
 

@@ -22,7 +22,7 @@ class Service(ABC):
 def init_service(func: Callable):
     from core.bot import bot
 
-    if bot.is_running:
+    if bot.running:
         try:
             service = bot.init_inject(func)
             logger.success(f'服务 "{service.__class__.__name__}" 初始化成功')
