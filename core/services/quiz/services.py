@@ -1,15 +1,15 @@
 import asyncio
 from typing import List
 
+from core.base_service import BaseService
 from core.services.quiz.cache import QuizCache
 from core.services.quiz.models import Answer, Question
 from core.services.quiz.repositories import QuizRepository
-from core.service import Service
 
 __all__ = ["QuizService"]
 
 
-class QuizService(Service):
+class QuizService(BaseService):
     def __init__(self, repository: QuizRepository, cache: QuizCache):
         self._repository = repository
         self._cache = cache

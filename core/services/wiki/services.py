@@ -1,6 +1,6 @@
 from typing import List, NoReturn, Optional
 
-from core.service import Service
+from core.base_service import BaseService
 from core.services.wiki.cache import WikiCache
 from modules.wiki.character import Character
 from modules.wiki.weapon import Weapon
@@ -9,7 +9,7 @@ from utils.log import logger
 __all__ = ["WikiService"]
 
 
-class WikiService(Service):
+class WikiService(BaseService):
     def __init__(self, cache: WikiCache):
         self._cache = cache
         """Redis 在这里的作用是作为持久化"""

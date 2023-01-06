@@ -1,15 +1,15 @@
 from typing import List
 
-from core.service import Component
 from sqlmodel import select
 
+from core.base_service import BaseService
 from core.dependence.mysql import MySQL
 from core.services.quiz.models import AnswerDB, QuestionDB
 
 __all__ = ["QuizRepository"]
 
 
-class QuizRepository(Component):
+class QuizRepository(BaseService.Component):
     def __init__(self, mysql: MySQL):
         self.mysql = mysql
 

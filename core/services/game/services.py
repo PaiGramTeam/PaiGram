@@ -1,13 +1,13 @@
 from typing import List, Optional
 
 from core.services.game.cache import GameCache
-from core.service import Service
+from core.base_service import BaseService
 from modules.apihelper.client.components.hyperion import Hyperion
 
 __all__ = ["GameMaterialService", "GameStrategyService"]
 
 
-class GameStrategyService(Service):
+class GameStrategyService(BaseService):
     def __init__(self, cache: GameCache, collections: Optional[List[int]] = None):
         self._cache = cache
         self._hyperion = Hyperion()
@@ -52,7 +52,7 @@ class GameStrategyService(Service):
         return artwork_info.image_urls[0]
 
 
-class GameMaterialService(Service):
+class GameMaterialService(BaseService):
     def __init__(self, cache: GameCache, collections: Optional[List[int]] = None):
         self._cache = cache
         self._hyperion = Hyperion()

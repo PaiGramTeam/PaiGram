@@ -1,16 +1,16 @@
 from typing import List, Optional, cast
 
-from core.service import Component
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.base_service import BaseService
 from core.dependence.mysql import MySQL
 from core.services.sign.models import Sign
 
 __all__ = ["SignRepository"]
 
 
-class SignRepository(Component):
+class SignRepository(BaseService):
     def __init__(self, mysql: MySQL):
         self.mysql = mysql
 

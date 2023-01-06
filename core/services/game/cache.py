@@ -1,13 +1,12 @@
 from typing import List
 
-from core.service import Component
-
+from core.base_service import BaseService
 from core.dependence.redisdb import RedisDB
 
 __all__ = ["GameCache"]
 
 
-class GameCache(Component):
+class GameCache(BaseService.Component):
     def __init__(self, redis: RedisDB, qname: str, ttl: int = 3600):
         self.client = redis.client
         self.qname = qname

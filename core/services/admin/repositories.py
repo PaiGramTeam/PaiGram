@@ -1,6 +1,6 @@
 from typing import List, cast
 
-from core.service import Component
+from core.base_service import BaseService
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -10,7 +10,7 @@ from core.services.admin.models import Admin
 __all__ = ["BotAdminRepository"]
 
 
-class BotAdminRepository(Component):
+class BotAdminRepository(BaseService.Component):
     def __init__(self, mysql: MySQL):
         self.mysql = mysql
 

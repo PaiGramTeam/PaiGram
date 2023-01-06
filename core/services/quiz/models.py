@@ -1,6 +1,5 @@
 from typing import List, Optional
 
-from core.service import Component
 from sqlmodel import Column, Field, ForeignKey, Integer, SQLModel
 
 from utils.baseobject import BaseObject
@@ -9,7 +8,7 @@ from utils.typedefs import JSONDict
 __all__ = ["Answer", "AnswerDB", "Question", "QuestionDB"]
 
 
-class AnswerDB(Component, SQLModel, table=True):
+class AnswerDB(SQLModel, table=True):
     __tablename__ = "answer"
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
@@ -21,7 +20,7 @@ class AnswerDB(Component, SQLModel, table=True):
     text: Optional[str] = Field()
 
 
-class QuestionDB(Component, SQLModel, table=True):
+class QuestionDB(SQLModel, table=True):
     __tablename__ = "question"
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
@@ -29,7 +28,8 @@ class QuestionDB(Component, SQLModel, table=True):
     text: Optional[str] = Field()
 
 
-class Answer(Component, BaseObject):
+class Answer(BaseObject):
+    # todo 用 pydantic.BaseModel 重写
     def __init__(self, answer_id: int = 0, question_id: int = 0, is_correct: bool = True, text: str = ""):
         """Answer类
 
@@ -60,7 +60,7 @@ class Answer(Component, BaseObject):
         return cls(answer_id=data.id, question_id=data.question_id, text=data.text, is_correct=data.is_correct)
 
 
-class Question(Component, BaseObject):
+class Question(BaseObject):
     def __init__(self, question_id: int = 0, text: str = "", answers: List[Answer] = None):
         """Question类
 

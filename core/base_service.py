@@ -1,18 +1,53 @@
-from typing import ClassVar
+from typing import ClassVar, List, Self, Type, TypeVar
+
+__all__ = ["BaseService", "BaseServiceType", "DependenceType", "ComponentType", "get_all_service_types"]
 
 
-class BaseService:
+class _BaseService:
     """服务基类"""
 
-    is_component: ClassVar[bool]
-    is_dependence: ClassVar[bool]
+    _is_component: ClassVar[bool] = False
+    _is_dependence: ClassVar[bool] = False
 
-    def __init_subclass__(cls, component: bool = False, dependence: bool = False) -> None:
-        cls.is_component = component
-        cls.is_dependence = dependence
+    @property
+    def is_component(self) -> bool:
+        return self._is_component
+
+    @property
+    def is_dependence(self) -> bool:
+        return self._is_dependence
+
+    async def __aenter__(self) -> Self:
+        await self.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await self.stop()
 
     async def start(self) -> None:
         """启动服务"""
 
     async def stop(self) -> None:
         """关闭服务"""
+
+
+class _Dependence(_BaseService):
+    _is_dependence: ClassVar[bool] = True
+
+
+class _Component(_BaseService):
+    _is_component: ClassVar[bool] = True
+
+
+class BaseService(_BaseService):
+    Dependence: Type[_BaseService] = _Dependence
+    Component: Type[_BaseService] = _Component
+
+
+BaseServiceType = TypeVar("BaseServiceType", bound=_BaseService)
+DependenceType = TypeVar("DependenceType", bound=_Dependence)
+ComponentType = TypeVar("ComponentType", bound=_Component)
+
+
+def get_all_service_types() -> List[Type[_BaseService]]:
+    return _BaseService.__subclasses__()

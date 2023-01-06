@@ -3,8 +3,8 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import aiofiles
-from core.service import Service
 
+from core.base_service import BaseService
 from core.config import config as bot_config
 from utils.log import logger
 
@@ -19,10 +19,8 @@ except ImportError:
     session = None
     PYROGRAM_AVAILABLE = False
 
-__all__ = ["MTProto"]
 
-
-class MTProto(Service):
+class MTProto(BaseService.Dependence):
     async def get_session(self):
         async with aiofiles.open(self.session_path, mode="r") as f:
             return await f.read()

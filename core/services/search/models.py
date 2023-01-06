@@ -1,14 +1,13 @@
 from abc import abstractmethod
 from typing import List, Optional
 
-from core.service import Component
 from pydantic import BaseModel
 from thefuzz import fuzz
 
 __all__ = ["BaseEntry", "WeaponEntry", "WeaponsEntry", "StrategyEntry", "StrategyEntryList"]
 
 
-class BaseEntry(Component, BaseModel):
+class BaseEntry(BaseModel):
     """所有可搜索条目的基类。
 
     Base class for all searchable entries."""
@@ -29,7 +28,7 @@ class BaseEntry(Component, BaseModel):
         Gives a number ∈[0,100] describing how similar the search query is to this entry."""
 
 
-class WeaponEntry(Component, BaseEntry):
+class WeaponEntry(BaseEntry):
     def compare_to_query(self, search_query: str) -> float:
         score = 0.0
         if search_query == self.title:
@@ -50,11 +49,11 @@ class WeaponEntry(Component, BaseEntry):
         return score
 
 
-class WeaponsEntry(Component, BaseModel):
+class WeaponsEntry(BaseModel):
     data: Optional[List[WeaponEntry]]
 
 
-class StrategyEntry(Component, BaseEntry):
+class StrategyEntry(BaseEntry):
     def compare_to_query(self, search_query: str) -> float:
         score = 0.0
         if search_query == self.title:
@@ -69,5 +68,5 @@ class StrategyEntry(Component, BaseEntry):
         return score
 
 
-class StrategyEntryList(Component, BaseModel):
+class StrategyEntryList(BaseModel):
     data: Optional[List[StrategyEntry]]

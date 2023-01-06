@@ -1,7 +1,7 @@
 """执行器"""
 import inspect
 from multiprocessing import RLock as Lock
-from typing import Callable, ClassVar, Dict, Generic, TYPE_CHECKING, Type, TypeVar
+from typing import Callable, ClassVar, Dict, Generic, Optional, TYPE_CHECKING, Type, TypeVar
 
 from core.dispatcher import AbstractDispatcher, BaseDispatcher
 from telegram.ext import CallbackContext
@@ -16,15 +16,17 @@ from utils.models.lock import HashLock
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["Executor", "HandlerExecutor"]
+__all__ = ["BaseExecutor", "HandlerExecutor"]
 
 T = TypeVar("T")
 R = TypeVar("R")
 P = ParamSpec("P")
 
 
-class Executor:
+class BaseExecutor:
     """执行器
+    Args:
+        name(str): 该执行器的名称。执行器的名称是唯一的。
 
     只支持执行只拥有 POSITIONAL_OR_KEYWORD 和 KEYWORD_ONLY 两种参数类型的函数
     """
@@ -67,12 +69,28 @@ class Executor:
         return result
 
 
-class HandlerExecutor(Generic[P, R]):
+class HandlerExecutor(BaseExecutor, Generic[P, R]):
     callback: Callable[P, R]
-    executor: Executor = Executor("handler")
 
     def __init__(self, func: Callable[P, R]) -> None:
+        super().__init__("handler")
         self.callback = func
 
-    async def __call__(self, callback: HandlerCallback, context: CallbackContext) -> R:
-        return await self.executor(self.callback, callback=callback, context=CallbackContext)
+    # noinspection PyMethodOverriding
+    async def __call__(
+        self,
+        callback: HandlerCallback,
+        context: CallbackContext,
+        block: bool = False,
+        dispatcher: Optional[Type[AbstractDispatcher]] = None,
+        lock_id: int = None,
+        **kwargs,
+    ) -> R:
+        if dispatcher is None:
+            from core.builtins.dispatcher import HandlerDispatcher
+
+            dispatcher = HandlerDispatcher
+
+        return await super().__call__(
+            self.callback, dispatcher=dispatcher, block=block, lock_id=lock_id, callback=callback, context=context
+        )

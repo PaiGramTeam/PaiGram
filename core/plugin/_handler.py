@@ -28,7 +28,7 @@ from typing_extensions import ParamSpec
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["handler"]
+__all__ = ["handler", "conversation"]
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -88,6 +88,7 @@ class _Handler:
         self.kwargs = kwargs
 
     def __call__(self, func: Callable[P, R]) -> Callable[P, R]:
+        """decorator实现，从 func 生成 Handler"""
         handler_datas = getattr(func, _HANDLER_DATA_ATTR_NAME, [])
         handler_datas.append(HandlerFunc(self._type, func, self.kwargs))
         setattr(func, _HANDLER_DATA_ATTR_NAME, handler_datas)

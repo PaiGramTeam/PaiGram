@@ -3,18 +3,18 @@ from typing import List
 import genshin
 from genshin import Game, GenshinException, InvalidCookies, TooManyRequests, types
 
+from core.base_service import BaseService
 from core.services.cookies.cache import PublicCookiesCache
 from core.services.cookies.error import CookieServiceError, CookiesNotFoundError, TooManyRequestPublicCookies
 from core.services.cookies.models import CookiesStatusEnum
 from core.services.cookies.repositories import CookiesRepository
-from core.service import Service
 from utils.log import logger
 from utils.models.base import RegionEnum
 
 __all__ = ["CookiesService", "PublicCookiesService"]
 
 
-class CookiesService(Service):
+class CookiesService(BaseService):
     def __init__(self, cookies_repository: CookiesRepository) -> None:
         self._repository: CookiesRepository = cookies_repository
 
@@ -31,7 +31,7 @@ class CookiesService(Service):
         return await self._repository.del_cookies(user_id, region)
 
 
-class PublicCookiesService(Service):
+class PublicCookiesService(BaseService):
     def __init__(self, cookies_repository: CookiesRepository, public_cookies_cache: PublicCookiesCache):
         self._cache = public_cookies_cache
         self._repository: CookiesRepository = cookies_repository

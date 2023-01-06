@@ -1,7 +1,6 @@
 import asyncio
 
 from utils.const import PROJECT_ROOT
-from utils.reload import Reloader
 
 try:
     import uvloop
@@ -13,6 +12,7 @@ except ImportError:
 
 def main():
     from core.bot import bot
+    from core.builtins.reloader import Reloader
     from core.config import config
 
     if config.auto_reload:

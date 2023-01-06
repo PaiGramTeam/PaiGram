@@ -2,14 +2,13 @@ import enum
 from datetime import datetime
 from typing import Optional
 
-from core.service import Component
 from sqlalchemy import func
 from sqlmodel import Column, DateTime, Enum, Field, SQLModel
 
 __all__ = ["SignStatusEnum", "Sign"]
 
 
-class SignStatusEnum(Component, int, enum.Enum):
+class SignStatusEnum(int, enum.Enum):
     STATUS_SUCCESS = 0  # 签到成功
     INVALID_COOKIES = 1  # Cookie无效
     ALREADY_CLAIMED = 2  # 已经获取奖励
@@ -20,7 +19,7 @@ class SignStatusEnum(Component, int, enum.Enum):
     FORBIDDEN = 7  # 这错误一般为通知失败 机器人被用户BAN
 
 
-class Sign(Component, SQLModel, table=True):
+class Sign(SQLModel, table=True):
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
     id: int = Field(primary_key=True)

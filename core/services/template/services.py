@@ -9,10 +9,10 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, Template
 from playwright.async_api import ViewportSize
 
+from core.base_service import BaseService
+from core.bot import bot
 from core.dependence.aiobrowser import AioBrowser
 from core.dependence.webserver import webapp
-from core.bot import bot
-from core.service import Service
 from core.services.template.cache import HtmlToFileIdCache, TemplatePreviewCache
 from core.services.template.error import QuerySelectorNotFound
 from core.services.template.models import FileType, RenderResult
@@ -22,7 +22,7 @@ from utils.log import logger
 __all__ = ["TemplateService"]
 
 
-class TemplateService(Service):
+class TemplateService(BaseService):
     def __init__(
         self,
         browser: AioBrowser,

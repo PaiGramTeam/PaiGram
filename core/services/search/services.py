@@ -10,8 +10,8 @@ from typing import Dict, List, Optional, Tuple
 import aiofiles
 from async_lru import alru_cache
 
+from core.base_service import BaseService
 from core.services.search.models import BaseEntry, StrategyEntry, StrategyEntryList, WeaponEntry, WeaponsEntry
-from core.service import Service
 from utils.const import PROJECT_ROOT
 
 __all__ = ["SearchServices"]
@@ -20,7 +20,7 @@ ENTRY_DAYA_PATH = PROJECT_ROOT.joinpath("data", "entry")
 ENTRY_DAYA_PATH.mkdir(parents=True, exist_ok=True)
 
 
-class SearchServices(Service):
+class SearchServices(BaseService):
     def __init__(self):
         self._lock = asyncio.Lock()  # 访问和修改操作成员变量必须加锁操作
         self.weapons: List[WeaponEntry] = []

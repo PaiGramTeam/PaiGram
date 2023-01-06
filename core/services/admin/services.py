@@ -3,16 +3,16 @@ from typing import List
 from asyncmy.errors import IntegrityError
 from telegram import Bot
 
+from core.base_service import BaseService
+from core.config import config
 from core.services.admin.cache import BotAdminCache, GroupAdminCache
 from core.services.admin.repositories import BotAdminRepository
-from core.config import config
-from core.service import Component
 from utils.log import logger
 
 __all__ = ["BotAdminService", "GroupAdminService"]
 
 
-class BotAdminService(Component):
+class BotAdminService(BaseService):
     def __init__(self, repository: BotAdminRepository, cache: BotAdminCache):
         self._repository = repository
         self._cache = cache
@@ -49,7 +49,7 @@ class BotAdminService(Component):
         return True
 
 
-class GroupAdminService(Component):
+class GroupAdminService(BaseService):
     def __init__(self, cache: GroupAdminCache):
         self._cache = cache
 

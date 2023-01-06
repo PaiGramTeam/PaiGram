@@ -1,15 +1,15 @@
-from core.service import Service
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
 from typing_extensions import Self
 
+from core.base_service import BaseService
 from core.config import BotConfig
 
 __all__ = ["MySQL"]
 
 
-class MySQL(Service):
+class MySQL(BaseService.Dependence):
     @classmethod
     def from_config(cls, config: BotConfig) -> Self:
         return cls(**config.mysql.dict())

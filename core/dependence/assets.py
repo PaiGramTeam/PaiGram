@@ -12,12 +12,12 @@ from typing import AsyncIterator, Awaitable, Callable, ClassVar, Dict, Optional,
 
 from aiofiles import open as async_open
 from aiofiles.os import remove as async_remove
-from core.service import Service
 from enkanetwork import Assets as EnkaAssets
 from enkanetwork.model.assets import CharacterAsset as EnkaCharacterAsset
 from httpx import AsyncClient, HTTPError, HTTPStatusError, TransportError, URL
 from typing_extensions import Self
 
+from core.base_service import BaseService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA, MATERIAL_DATA, NAMECARD_DATA, WEAPON_DATA
 from metadata.scripts.honey import update_honey_metadata
 from metadata.scripts.metadatas import update_metadata_from_ambr, update_metadata_from_github
@@ -490,7 +490,7 @@ class _NamecardAssets(_AssetsService):
         }
 
 
-class AssetsService(Service):
+class AssetsService(BaseService.Dependence):
     """asset服务
 
     用于储存和管理 asset :
@@ -519,8 +519,10 @@ class AssetsService(Service):
         ):
             setattr(self, attr, globals()[assets_type_name]())
 
-    async def start(self):  # pylint: disable=R0201
+    async def start(self) -> None:  # pylint: disable=R0201
+        """启动 AssetsService 服务，刷新元数据"""
         logger.info("正在刷新元数据")
+        # todo 这3个任务同时异步下载
         await update_metadata_from_github(False)
         await update_metadata_from_ambr(False)
         await update_honey_metadata(False)

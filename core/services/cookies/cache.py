@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from core.service import Component
+from core.base_service import BaseService
 
 from core.dependence.redisdb import RedisDB
 from core.services.cookies.error import CookiesCachePoolExhausted
@@ -10,7 +10,7 @@ from utils.models.base import RegionEnum
 __all__ = ["PublicCookiesCache"]
 
 
-class PublicCookiesCache(Component):
+class PublicCookiesCache(BaseService.Component):
     """使用优先级(score)进行排序，对使用次数最少的Cookies进行审核"""
 
     def __init__(self, redis: RedisDB):

@@ -3,14 +3,14 @@ import pickle  # nosec B403
 from hashlib import sha256
 from typing import Any, Optional
 
-from core.service import Component
+from core.base_service import BaseService
 
 from core.dependence.redisdb import RedisDB
 
 __all__ = ["TemplatePreviewCache", "HtmlToFileIdCache"]
 
 
-class TemplatePreviewCache(Component):
+class TemplatePreviewCache(BaseService.Component):
     """暂存渲染模板的数据用于预览"""
 
     def __init__(self, redis: RedisDB):
@@ -33,7 +33,7 @@ class TemplatePreviewCache(Component):
         return f"{self.qname}:{key}"
 
 
-class HtmlToFileIdCache(Component):
+class HtmlToFileIdCache(BaseService.Component):
     """html to file_id 的缓存"""
 
     def __init__(self, redis: RedisDB):

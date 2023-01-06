@@ -16,13 +16,13 @@ from telegram.ext import BaseHandler, TypeHandler
 # noinspection PyProtectedMember
 from typing_extensions import ParamSpec
 
-from core.plugin._handler import handler
+from core.plugin._handler import handler, conversation
 from core.plugin._job import TimeType, job
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["Plugin", "PluginType", "handler", "job", "TimeType"]
+__all__ = ["Plugin", "PluginType", "handler", "job", "TimeType", "conversation"]
 
 P = ParamSpec("P")
 T = TypeVar("T")

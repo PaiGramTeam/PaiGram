@@ -3,15 +3,15 @@ from typing import cast
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from core.base_service import BaseService
 from core.dependence.mysql import MySQL
-from core.service import Component
 from core.services.user.error import UserNotFoundError
 from core.services.user.models import User
 
 __all__ = ["UserRepository"]
 
 
-class UserRepository(Component):
+class UserRepository(BaseService.Component):
     def __init__(self, mysql: MySQL):
         self.mysql = mysql
 

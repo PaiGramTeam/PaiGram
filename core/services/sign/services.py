@@ -1,11 +1,11 @@
-from core.service import Service
+from core.base_service import BaseService
 from core.services.sign.models import Sign
 from core.services.sign.repositories import SignRepository
 
 __all__ = ["SignServices"]
 
 
-class SignServices(Service):
+class SignServices(BaseService):
     def __init__(self, sign_repository: SignRepository) -> None:
         self._repository: SignRepository = sign_repository
 

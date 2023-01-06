@@ -1,11 +1,11 @@
-from core.service import Service
+from core.base_service import BaseService
 from core.services.user.models import User
 from core.services.user.repositories import UserRepository
 
 __all__ = ["UserService"]
 
 
-class UserService(Service):
+class UserService(BaseService):
     def __init__(self, user_repository: UserRepository) -> None:
         self._repository: UserRepository = user_repository
 

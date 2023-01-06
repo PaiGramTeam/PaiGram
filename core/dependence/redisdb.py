@@ -1,18 +1,18 @@
 import asyncio
 
 import fakeredis.aioredis
-from core.service import Service
 from redis import asyncio as aioredis
 from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError
 from typing_extensions import Self
 
+from core.base_service import BaseService
 from core.config import BotConfig
 from utils.log import logger
 
 __all__ = ["RedisDB"]
 
 
-class RedisDB(Service):
+class RedisDB(BaseService.Dependence):
     @classmethod
     def from_config(cls, config: BotConfig) -> Self:
         return cls(**config.redis.dict())

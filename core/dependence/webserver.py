@@ -3,9 +3,10 @@ from typing import TYPE_CHECKING
 
 import uvicorn
 from fastapi import FastAPI
+from typing_extensions import Self
 
+from core.base_service import BaseService
 from core.config import config as bot_config
-from core.service import Service
 
 if TYPE_CHECKING:
     from core.config import BotConfig
@@ -20,7 +21,7 @@ def index():
     return {"Hello": "Paimon"}
 
 
-class WebServer(Service):
+class WebServer(BaseService.Dependence):
     debug: bool
 
     host: str
@@ -31,7 +32,7 @@ class WebServer(Service):
     _server_task: asyncio.Task
 
     @classmethod
-    def from_config(cls, config: "BotConfig") -> Service:
+    def from_config(cls, config: "BotConfig") -> Self:
         return cls(debug=config.debug, host=config.webserver.host, port=config.webserver.port)
 
     def __init__(self, debug: bool, host: str, port: int):

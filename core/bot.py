@@ -13,7 +13,7 @@ from typing import Callable, Dict, Generic, List, Optional, TYPE_CHECKING, Type,
 import pytz
 import uvicorn
 from async_timeout import timeout
-from core.service import Component, Service
+from core.base_service import BaseService, BaseServiceType, ComponentType, DependenceType, get_all_service_types
 from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
@@ -29,7 +29,7 @@ from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
-    from core.builtins.executor import Executor
+    from core.builtins.executor import BaseExecutor
     from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
@@ -61,13 +61,13 @@ class Control(Generic[T]):
         return self._inject(signature, target)
 
 
-class ComponentControl(Control):
+class ComponentControl(Control[ComponentType]):
     """组件控制类"""
 
-    _components: Dict[Type[Component], Component] = {}
+    _components: Dict[Type[ComponentType], ComponentType] = {}
 
 
-class ServiceControl(Control):
+class ServiceControl(Control[]):
     """服务控制类"""
 
     _services: Dict[Type[Service], Service] = {}
@@ -158,7 +158,7 @@ class Bot(Singleton, BotControl):
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
 
-    _executor: Optional["Executor"] = None
+    _executor: Optional["BaseExecutor"] = None
 
     _startup_funcs: List[Callable] = []
     _shutdown_funcs: List[Callable] = []
@@ -172,12 +172,12 @@ class Bot(Singleton, BotControl):
             return self._running
 
     @property
-    def executor(self) -> "Executor":
-        from core.builtins.executor import Executor
+    def executor(self) -> "BaseExecutor":
+        from core.builtins.executor import BaseExecutor
 
         with self._lock:
             if self._executor is None:
-                self._executor = Executor("Bot")
+                self._executor = BaseExecutor("Bot")
         return self._executor
 
     @property

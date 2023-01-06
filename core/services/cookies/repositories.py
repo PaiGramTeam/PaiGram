@@ -1,10 +1,10 @@
 from typing import List, cast
 
-from core.service import Component
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from core.base_service import BaseService
 from core.dependence.mysql import MySQL
 from core.services.cookies.error import CookiesNotFoundError
 from core.services.cookies.models import Cookies, HoyolabCookie, HyperionCookie
@@ -14,7 +14,7 @@ from utils.models.base import RegionEnum
 __all__ = ["CookiesRepository"]
 
 
-class CookiesRepository(Component):
+class CookiesRepository(BaseService.Component):
     def __init__(self, mysql: MySQL):
         self.mysql = mysql
 
