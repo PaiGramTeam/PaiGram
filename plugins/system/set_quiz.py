@@ -2,15 +2,14 @@ import re
 from typing import List
 
 from redis import DataError, ResponseError
-from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
-                      ReplyKeyboardMarkup, ReplyKeyboardRemove, Update)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, conversation, handler
-from core.quiz import QuizService
-from core.quiz.models import Answer, Question
+from core.services.quiz import QuizService
+from core.services.quiz.models import Answer, Question
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

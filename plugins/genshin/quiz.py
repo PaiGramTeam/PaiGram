@@ -5,10 +5,10 @@ from telegram.constants import ChatAction
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, CommandHandler, filters
 
-from core.admin import BotAdminService
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
-from core.quiz import QuizService
+from core.services.admin import BotAdminService
+from core.services.quiz import QuizService
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger

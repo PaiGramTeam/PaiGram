@@ -1,15 +1,14 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
-                          filters)
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.base.assets import AssetsCouldNotFound, AssetsService
+from core.dependence.assets import AssetsCouldNotFound, AssetsService
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
-from core.search.models import WeaponEntry
-from core.search.services import SearchServices
-from core.template import TemplateService
-from core.wiki.services import WikiService
+from core.services.search.models import WeaponEntry
+from core.services.search.services import SearchServices
+from core.services.template import TemplateService
+from core.services.wiki.services import WikiService
 from metadata.genshin import honey_id_to_game_id
 from metadata.shortname import weaponToName, weapons as _weapons_data
 from modules.wiki.weapon import Weapon

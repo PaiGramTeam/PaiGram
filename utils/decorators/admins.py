@@ -3,9 +3,9 @@ from typing import Callable, cast
 
 from telegram import Update
 
-from core.admin import BotAdminService
 from core.bot import bot
 from core.error import ServiceNotFoundError
+from core.services.admin import BotAdminService
 
 bot_admin_service = bot.services.get(BotAdminService)
 

@@ -3,8 +3,8 @@ import datetime
 
 from telegram.ext import CallbackContext
 
-from core.cookies.services import PublicCookiesService
 from core.plugin import Plugin, job
+from core.services.cookies import PublicCookiesService
 from utils.log import logger
 
 

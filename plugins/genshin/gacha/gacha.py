@@ -7,16 +7,14 @@ import ujson as json
 from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import (CallbackContext, CommandHandler, MessageHandler,
-                          filters)
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.base.assets import AssetsService
-from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
+from core.dependence.assets import AssetsService
+from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.template import TemplateService
-from metadata.genshin import (AVATAR_DATA, WEAPON_DATA, avatar_to_game_id,
-                              weapon_to_game_id)
+from core.services.template import TemplateService
+from metadata.genshin import AVATAR_DATA, WEAPON_DATA, avatar_to_game_id, weapon_to_game_id
 from metadata.shortname import weaponToName
 from modules.apihelper.client.components.gacha import Gacha as GachaClient
 from modules.apihelper.models.genshin.gacha import GachaInfo

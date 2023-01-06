@@ -4,13 +4,13 @@ from telegram import Update, TelegramObject, User, ReplyKeyboardRemove
 from telegram.ext import CallbackContext, filters, ConversationHandler
 
 from core.baseplugin import BasePlugin
-from core.cookies import CookiesService
-from core.cookies.error import CookiesNotFoundError
-from core.cookies.models import Cookies
+from core.services.cookies import CookiesService
+from core.services.cookies import CookiesNotFoundError
+from core.services.cookies import Cookies
 from core.plugin import Plugin, handler, conversation
-from core.sign import SignServices
-from core.user import UserService
-from core.user.error import UserNotFoundError
+from core.services.sign import SignServices
+from core.services.user import UserService
+from core.services.user import UserNotFoundError
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger

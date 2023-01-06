@@ -1,11 +1,11 @@
 import json
-from typing import List, cast, Union
+from typing import List, Union, cast
 
 from telegram import Chat
 from telegram.ext import CallbackContext
 
-from core.base.redisdb import RedisDB
 from core.bot import bot
+from core.dependence.redisdb import RedisDB
 
 redis_db = bot.services.get(RedisDB)
 redis_db = cast(RedisDB, redis_db)

@@ -1,15 +1,14 @@
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError
+from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
-from core.template import TemplateService
-from core.user import UserService
-from core.user.error import UserNotFoundError
+from core.services.cookies import CookiesNotFoundError
+from core.services.template import TemplateService
+from core.services.user import UserNotFoundError, UserService
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClient
 from utils.decorators.error import error_callable

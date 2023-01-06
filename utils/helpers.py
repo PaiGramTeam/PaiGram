@@ -13,11 +13,11 @@ from genshin import Client, types
 from httpx import UnsupportedProtocol
 from typing_extensions import ParamSpec
 
-from core.base.redisdb import RedisDB
 from core.config import config
-from core.cookies.services import CookiesService, PublicCookiesService
+from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
-from core.user.services import UserService
+from core.services.cookies import CookiesService, PublicCookiesService
+from core.services.user import UserService
 from utils.const import REGION_MAP, REQUEST_HEADERS
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
@@ -174,11 +174,11 @@ async def execute(command: Union[str, bytes], pass_error: bool = True) -> str:
 
 
 async def async_re_sub(
-        pattern: Union[str, Pattern],
-        repl: Union[str, Callable[[Match], Union[Awaitable[str], str]]],
-        string: str,
-        count: int = 0,
-        flags: int = 0,
+    pattern: Union[str, Pattern],
+    repl: Union[str, Callable[[Match], Union[Awaitable[str], str]]],
+    string: str,
+    count: int = 0,
+    flags: int = 0,
 ) -> str:
     """
     一个支持 repl 参数为 async 函数的 re.sub
@@ -205,7 +205,7 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1]:]
+            temp = temp[match.span(1)[1] :]
     else:
         while match := re.search(pattern, temp, flags=flags):
             replaced = None
@@ -216,7 +216,7 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1]:]
+            temp = temp[match.span(1)[1] :]
     return result + temp
 
 

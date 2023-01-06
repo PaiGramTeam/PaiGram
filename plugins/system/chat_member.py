@@ -1,13 +1,11 @@
-from telegram import Update, Chat, User
+from telegram import Chat, Update, User
 from telegram.ext import CallbackContext, ChatMemberHandler
 
-from core.admin.services import BotAdminService
-from core.config import config, JoinGroups
-from core.cookies.error import CookiesNotFoundError
-from core.cookies.services import CookiesService
+from core.config import JoinGroups, config
 from core.plugin import Plugin, handler
-from core.user.error import UserNotFoundError
-from core.user.services import UserService
+from core.services.admin.services import BotAdminService
+from core.services.cookies import CookiesNotFoundError, CookiesService
+from core.services.user import UserNotFoundError, UserService
 from utils.chatmember import extract_status_change
 from utils.decorators.error import error_callable
 from utils.log import logger

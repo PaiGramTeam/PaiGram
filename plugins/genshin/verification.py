@@ -4,14 +4,14 @@ from genshin import GenshinException, Region
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Update, WebAppInfo
 from telegram.ext import CallbackContext, filters
 
-from core.base.redisdb import RedisDB
+from core.dependence.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.config import config
-from core.cookies import CookiesService
-from core.cookies.error import CookiesNotFoundError
+from core.services.cookies import CookiesService
+from core.services.cookies import CookiesNotFoundError
 from core.plugin import Plugin, handler
-from core.user import UserService
-from core.user.error import UserNotFoundError
+from core.services.user import UserService
+from core.services.user import UserNotFoundError
 from modules.apihelper.client.components.verify import Verify
 from modules.apihelper.error import ResponseException
 from utils.decorators.error import error_callable

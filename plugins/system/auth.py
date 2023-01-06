@@ -1,19 +1,19 @@
 import asyncio
 import random
 import time
-from typing import Tuple, Union, Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Union
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember, Message, User
+from telegram import ChatMember, ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ParseMode
-from telegram.error import BadRequest, RetryAfter
+from telegram.error import BadRequest
 from telegram.ext import CallbackContext, CallbackQueryHandler, ChatMemberHandler
 from telegram.helpers import escape_markdown
 
-from core.base.mtproto import MTProto
-from core.base.redisdb import RedisDB
 from core.bot import bot
+from core.dependence.mtproto import MTProto
+from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.quiz import QuizService
+from core.services.quiz import QuizService
 from utils.chatmember import extract_status_change
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

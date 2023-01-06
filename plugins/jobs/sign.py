@@ -7,12 +7,12 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext
 
-from core.base.redisdb import RedisDB
-from core.cookies import CookiesService
+from core.dependence.redisdb import RedisDB
+from core.services.cookies import CookiesService
 from core.plugin import Plugin, job
-from core.sign.models import SignStatusEnum
-from core.sign.services import SignServices
-from core.user import UserService
+from core.services.sign.models import SignStatusEnum
+from core.services.sign import SignServices
+from core.services.user import UserService
 from plugins.genshin.sign import NeedChallenge, SignSystem
 from plugins.system.errorhandler import notice_chat_id
 from plugins.system.sign_status import SignStatus

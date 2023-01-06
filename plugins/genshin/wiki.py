@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import CallbackContext, CommandHandler
 
 from core.plugin import Plugin, handler
-from core.wiki.services import WikiService
+from core.services.wiki.services import WikiService
 from utils.decorators.admins import bot_admins_rights_check
 
 

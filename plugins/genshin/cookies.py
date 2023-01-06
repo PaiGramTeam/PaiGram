@@ -11,13 +11,9 @@ from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError
-from core.cookies.models import Cookies
-from core.cookies.services import CookiesService
 from core.plugin import Plugin, conversation, handler
-from core.user.error import UserNotFoundError
-from core.user.models import User
-from core.user.services import UserService
+from core.services.cookies import Cookies, CookiesNotFoundError, CookiesService
+from core.services.user import User, UserNotFoundError, UserService
 from modules.apihelper.client.components.signin import SignIn
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

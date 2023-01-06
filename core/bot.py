@@ -13,6 +13,7 @@ from typing import Callable, Dict, Generic, List, Optional, TYPE_CHECKING, Type,
 import pytz
 import uvicorn
 from async_timeout import timeout
+from core.service import Component, Service
 from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
@@ -22,14 +23,13 @@ from uvicorn import Server
 
 from core.config import config as bot_config
 from core.plugin import PluginType
-from core.service import Service
 from utils.const import PROJECT_ROOT, WRAPPER_ASSIGNMENTS
 from utils.helpers import gen_pkg
 from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
-    from core.executor import Executor
+    from core.builtins.executor import Executor
     from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
@@ -61,6 +61,12 @@ class Control(Generic[T]):
         return self._inject(signature, target)
 
 
+class ComponentControl(Control):
+    """组件控制类"""
+
+    _components: Dict[Type[Component], Component] = {}
+
+
 class ServiceControl(Control):
     """服务控制类"""
 
@@ -80,11 +86,7 @@ class ServiceControl(Control):
                 import_module(pkg)
             except Exception as e:
                 logger.exception(
-                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]',
-                    pkg,
-                    type(e).__name__,
-                    exc_info=e,
-                    extra={"markup": True}
+                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
                 )
                 raise SystemExit from e
         for service_cls in Service.__subclasses__():
@@ -147,7 +149,11 @@ class PluginControl(Control):
         return self._plugins
 
 
-class Bot(Singleton, ServiceControl, PluginControl):
+class BotControl(ComponentControl, ServiceControl, PluginControl):
+    pass
+
+
+class Bot(Singleton, BotControl):
     _tg_app: Optional[TgApplication] = None
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
@@ -167,7 +173,7 @@ class Bot(Singleton, ServiceControl, PluginControl):
 
     @property
     def executor(self) -> "Executor":
-        from core.executor import Executor
+        from core.builtins.executor import Executor
 
         with self._lock:
             if self._executor is None:

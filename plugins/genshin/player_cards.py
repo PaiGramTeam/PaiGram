@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple, Union, Optional
+from typing import Any, List, Optional, Tuple, Union
 
 from enkanetwork import (
     CharacterInfo,
@@ -22,14 +22,13 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.base.assets import DEFAULT_EnkaAssets
-from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.config import config
+from core.dependence.assets import DEFAULT_EnkaAssets
+from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.template import TemplateService
-from core.user import UserService
-from core.user.error import UserNotFoundError
+from core.services.template import TemplateService
+from core.services.user import UserNotFoundError, UserService
 from metadata.shortname import roleToName
 from modules.playercards.helpers import ArtifactStatsTheory
 from utils.bot import get_args
