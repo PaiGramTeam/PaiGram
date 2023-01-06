@@ -40,7 +40,7 @@ async def send_user_notification(update: Update, context: CallbackContext, text:
         logger.warning("错误的消息类型\n %s", json.dumps(update_str, indent=2, ensure_ascii=False))
         return None
     if chat.id == user.id:
-        logger.info("尝试通知用户 %s[%s] 错误信息[%s]", user.full_name, user.id, chat.title, chat.id, text)
+        logger.info("尝试通知用户 %s[%s] 错误信息[%s]", user.full_name, user.id, text)
     else:
         logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id, text)
     try:
