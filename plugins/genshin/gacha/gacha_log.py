@@ -335,7 +335,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CommandHandler, command="gacha_log", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^抽卡记录(.*)"), block=False)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
     @restricts()
     @error_callable
     async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
@@ -383,7 +383,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CommandHandler, command="gacha_count", block=True)
-    @handler(MessageHandler, filters=filters.Regex("^抽卡统计(.*)"), block=True)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=True)
     @restricts()
     @error_callable
     async def command_start_count(self, update: Update, context: CallbackContext) -> None:
