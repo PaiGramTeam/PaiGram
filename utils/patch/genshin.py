@@ -11,6 +11,7 @@ from modules.apihelper.utility.helpers import get_ds, get_ua, get_device_id, hex
 from utils.patch.methods import patch, patchable
 
 DEVICE_ID = get_device_id()
+routes.YSULOG_URL.urls[types.Region.CHINESE] = yarl.URL("https://hk4e-api.mihoyo.com/ysulog/api/")
 
 
 def get_account_mid_v2(cookies: typing.Dict[str, str]) -> typing.Optional[str]:
