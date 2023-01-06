@@ -3,7 +3,6 @@ from io import BytesIO
 
 import genshin
 from aiofiles import open as async_open
-from genshin import AuthkeyTimeout
 from genshin.models import BannerType
 from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -313,6 +312,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.2")
         except GachaLogNotFound:
+            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
@@ -347,7 +347,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
-        logger.info("未查询到用户 %s[%s] 抽卡记录命令请求 || 参数 %s", user.full_name, user.id, pool_type.name)
+        logger.info("用户 %s[%s] 抽卡记录命令请求 || 参数 %s", user.full_name, user.id, pool_type.name)
         try:
             client = await get_genshin_client(user.id, need_cookie=False)
             await message.reply_chat_action(ChatAction.TYPING)
@@ -364,6 +364,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 )
                 await png_data.reply_photo(message)
         except GachaLogNotFound:
+            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
@@ -429,6 +430,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 else:
                     await png_data.reply_photo(message)
         except GachaLogNotFound:
+            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
