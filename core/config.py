@@ -95,6 +95,7 @@ class ErrorConfig(Settings):
     class Config(Settings.Config):
         env_prefix = "error_"
 
+
 class NoticeConfig(Settings):
     user_mismatch: str = "再乱点我叫西风骑士团、千岩军、天领奉行、三十人团和风纪官了！"
 
