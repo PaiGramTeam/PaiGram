@@ -1,4 +1,6 @@
-"""参数分配器"""
+"""参数分发器"""
+import inspect
+from inspect import Signature, Parameter
 from abc import ABC, abstractmethod
 from functools import cached_property, partial, wraps
 from types import MethodType
@@ -45,6 +47,8 @@ def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, 
 
 
 class AbstractDispatcher(ABC):
+    """参数分发器"""
+
     IGNORED_ATTRS = []
 
     _args: List[Any] = []
@@ -98,21 +102,41 @@ class AbstractDispatcher(ABC):
 class BaseDispatcher(AbstractDispatcher):
     _instances: Sequence[Any]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._kwargs = {}
+
     def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
 
         params = {}
+        if isinstance(func, type):
+            signature: Signature = inspect.signature(func.__init__)
+        else:
+            signature: Signature = inspect.signature(func)
+        parameters: Dict[str, Parameter] = dict(signature.parameters)
+        for name, parameter in parameters.items():
+            if isinstance(func, type) and parameter.name == "self":
+                continue
+            annotation = parameter.annotation
+            for catch_func in self.catch_funcs:
+                catch_targets = getattr(catch_func, "_catch_targets")
+                for catch_target in catch_targets:
+                    if isinstance(catch_target, str):
+                        # 比较参数名
+                        if any(
+                            [name == catch_target, isinstance(annotation, type) and annotation.__name__ == catch_target]
+                        ):
+                            params[name] = catch_func()
+                    # 比较参数类型
+                    elif isinstance(catch_target, type) and any(
+                        [
+                            name == catch_target.__name__,
+                            annotation.__name__ == catch_target.__name__,
+                        ]
+                    ):
+                        params[name] = catch_func()
 
-        for name, type_hint in get_type_hints(func):
-            params.update(
-                {
-                    name: (
-                        self._kwargs.get(type_hint, None)
-                        or self._kwargs.get(name, None)
-                        or self._kwargs.get(type_hint.__name__, None)
-                    )
-                }
-            )
-        params = {k: v for k, v in params if v is not None}
+        params = {k: v for k, v in params.items() if v is not None}
         for name, type_hint in get_type_hints(func):
             for catch_func in self.catch_funcs:
                 catch_targets = getattr(catch_func, "_catch_targets")

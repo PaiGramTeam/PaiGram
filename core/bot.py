@@ -1,19 +1,13 @@
 """BOT"""
 import asyncio
-import inspect
-import os
 import signal
 from functools import wraps
-from importlib import import_module
-from inspect import Parameter, Signature
 from signal import SIGABRT, SIGINT, SIGTERM, signal as signal_func
 from ssl import SSLZeroReturnError
-from typing import Callable, Dict, Generic, List, Optional, TYPE_CHECKING, Type, TypeVar
+from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
 
 import pytz
 import uvicorn
-from async_timeout import timeout
-from core.base_service import BaseService, BaseServiceType, ComponentType, DependenceType, get_all_service_types
 from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
@@ -22,14 +16,12 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.config import config as bot_config
-from core.plugin import PluginType
-from utils.const import PROJECT_ROOT, WRAPPER_ASSIGNMENTS
-from utils.helpers import gen_pkg
+from core.manager import ComponentManager, DependenceManager, PluginManager, ServiceManager
+from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
-    from core.builtins.executor import BaseExecutor
     from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
@@ -40,125 +32,14 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
-class Control(Generic[T]):
-    """控制类基类"""
-
-    _lib: Dict[Type[T], T] = {}
-
-    def _inject(self, signature: Signature, target: Callable[..., T]) -> T:
-        kwargs = {}
-        for name, parameter in signature.parameters.items():
-            if name != "self" and parameter.annotation != Parameter.empty:
-                if value := self._lib.get(parameter.annotation):
-                    kwargs[name] = value
-        return target(**kwargs)
-
-    def init_inject(self, target: Callable[..., T]) -> T:
-        if isinstance(target, type):
-            signature = inspect.signature(target.__init__)
-        else:
-            signature = inspect.signature(target)
-        return self._inject(signature, target)
+class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):
+    """BOT 除自身外的生命周期控制"""
 
 
-class ComponentControl(Control[ComponentType]):
-    """组件控制类"""
-
-    _components: Dict[Type[ComponentType], ComponentType] = {}
-
-
-class ServiceControl(Control[]):
-    """服务控制类"""
-
-    _services: Dict[Type[Service], Service] = {}
-
-    @property
-    def services(self) -> List[Service]:
-        return list(self._services.values())
-
-    @property
-    def service_map(self) -> Dict[Type[Service], Service]:
-        return self._services
-
-    async def start_base_services(self):
-        for pkg in gen_pkg(PROJECT_ROOT / "core/base"):
-            try:
-                import_module(pkg)
-            except Exception as e:
-                logger.exception(
-                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
-                )
-                raise SystemExit from e
-        for service_cls in Service.__subclasses__():
-            try:
-                if hasattr(service_cls, "from_config"):
-                    instance = service_cls.from_config(bot_config)
-                else:
-                    instance = self.init_inject(service_cls)
-                await instance.start()
-                logger.success('服务 "%s" 初始化成功', service_cls.__name__)
-                self._services.update({service_cls: instance})
-            except Exception as e:
-                logger.exception('服务 "%s" 初始化失败', service_cls.__name__)
-                raise SystemExit from e
-
-    async def start_services(self) -> None:
-        await self.start_base_services()
-        for path in (PROJECT_ROOT / "core").iterdir():
-            if not path.name.startswith("_") and path.is_dir() and path.name != "base":
-                pkg = str(path.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")
-                try:
-                    import_module(pkg)
-                except Exception as e:  # pylint: disable=W0703
-                    logger.exception(
-                        '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]',
-                        pkg,
-                        type(e).__name__,
-                        exc_info=e,
-                        extra={"markup": True},
-                    )
-                    continue
-
-    async def stop_services(self):
-        """关闭服务"""
-        if not self._services:
-            return
-        logger.info("正在关闭服务")
-        for _, service in filter(lambda x: not isinstance(x[1], TgApplication), self._services.items()):
-            async with timeout(5):
-                try:
-                    if hasattr(service, "stop"):
-                        if inspect.iscoroutinefunction(service.stop):
-                            await service.stop()
-                        else:
-                            service.stop()
-                        logger.success('服务 "%s" 关闭成功', service.__class__.__name__)
-                except CancelledError:
-                    logger.warning('服务 "%s" 关闭超时', service.__class__.__name__)
-                except Exception as e:  # pylint: disable=W0703
-                    logger.exception('服务 "%s" 关闭失败', service.__class__.__name__, exc_info=e)
-
-
-class PluginControl(Control):
-    """插件控制类"""
-
-    _plugins: List[PluginType] = []
-
-    @property
-    def plugins(self) -> List[PluginType]:
-        return self._plugins
-
-
-class BotControl(ComponentControl, ServiceControl, PluginControl):
-    pass
-
-
-class Bot(Singleton, BotControl):
+class Bot(Singleton, Managers):
     _tg_app: Optional[TgApplication] = None
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
-
-    _executor: Optional["BaseExecutor"] = None
 
     _startup_funcs: List[Callable] = []
     _shutdown_funcs: List[Callable] = []
@@ -170,15 +51,6 @@ class Bot(Singleton, BotControl):
         """bot 是否正在运行"""
         with self._lock:
             return self._running
-
-    @property
-    def executor(self) -> "BaseExecutor":
-        from core.builtins.executor import BaseExecutor
-
-        with self._lock:
-            if self._executor is None:
-                self._executor = BaseExecutor("Bot")
-        return self._executor
 
     @property
     def tg_app(self) -> TgApplication:
@@ -239,11 +111,15 @@ class Bot(Singleton, BotControl):
 
     async def initialize(self):
         """BOT 初始化"""
-        await self.start_services()
+        await self.start_dependency()  # 启动基础服务
+        await self.init_components()  # 实例化组件
+        await self.start_services()  # 启动其他服务
+        await self.install_plugins()  # 安装插件
 
     async def shutdown(self):
         """BOT 关闭"""
-        await self.stop_services()
+        await self.stop_services()  # 终止其他服务
+        await self.stop_dependency()  # 启动基础服务
 
     async def start(self) -> None:
         """启动 BOT"""

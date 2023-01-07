@@ -3,13 +3,13 @@ import inspect
 from multiprocessing import RLock as Lock
 from typing import Callable, ClassVar, Dict, Generic, Optional, TYPE_CHECKING, Type, TypeVar
 
-from core.dispatcher import AbstractDispatcher, BaseDispatcher
 from telegram.ext import CallbackContext
 
 # noinspection PyProtectedMember
 from telegram.ext._utils.types import HandlerCallback
 from typing_extensions import ParamSpec, Self
 
+from core.builtins.dispatcher import AbstractDispatcher, BaseDispatcher
 from utils.decorator import do_nothing
 from utils.models.lock import HashLock
 
@@ -44,6 +44,7 @@ class BaseExecutor:
 
     @property
     def name(self) -> str:
+        """当前执行器的名称"""
         return self._name
 
     def __init__(self, name: str) -> None:
@@ -59,8 +60,9 @@ class BaseExecutor:
     ) -> R:
 
         with (HashLock(lock_id or target) if block else do_nothing()):
-            dispatched_func = dispatcher(**kwargs).dispatch(target)
+            dispatched_func = dispatcher(**kwargs).dispatch(target)  # 分发参数，组成新函数
 
+            # 执行
             if inspect.iscoroutinefunction(target):
                 result = await dispatched_func()
             else:
@@ -70,11 +72,13 @@ class BaseExecutor:
 
 
 class HandlerExecutor(BaseExecutor, Generic[P, R]):
-    callback: Callable[P, R]
+    """Handler专用执行器"""
+
+    _callback: Callable[P, R]
 
     def __init__(self, func: Callable[P, R]) -> None:
         super().__init__("handler")
-        self.callback = func
+        self._callback = func
 
     # noinspection PyMethodOverriding
     async def __call__(
@@ -92,5 +96,11 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
             dispatcher = HandlerDispatcher
 
         return await super().__call__(
-            self.callback, dispatcher=dispatcher, block=block, lock_id=lock_id, callback=callback, context=context
+            self._callback,
+            dispatcher=dispatcher,
+            block=block,
+            lock_id=lock_id,
+            callback=callback,
+            context=context,
+            **kwargs,
         )

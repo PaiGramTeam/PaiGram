@@ -1,12 +1,15 @@
 """插件"""
+from itertools import chain
 from multiprocessing import RLock as Lock
 from types import MethodType
 from typing import (
     Callable,
     ClassVar,
+    Iterable,
     List,
     TYPE_CHECKING,
     Tuple,
+    Type,
     TypeVar,
 )
 
@@ -16,13 +19,13 @@ from telegram.ext import BaseHandler, TypeHandler
 # noinspection PyProtectedMember
 from typing_extensions import ParamSpec
 
-from core.plugin._handler import handler, conversation
+from core.plugin._handler import conversation, handler
 from core.plugin._job import TimeType, job
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["Plugin", "PluginType", "handler", "job", "TimeType", "conversation"]
+__all__ = ["Plugin", "PluginType", "handler", "job", "TimeType", "conversation", "get_all_plugins"]
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -136,3 +139,7 @@ class Plugin(_Plugin):
 
 
 PluginType = TypeVar("PluginType", bound=_Plugin)
+
+
+def get_all_plugins() -> Iterable[Type[PluginType]]:
+    return filter(lambda x: x.__name__[0] != "_" and x not in [Plugin], chain(Plugin.__subclasses__(), _Conversation))

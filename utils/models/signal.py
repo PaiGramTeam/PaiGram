@@ -39,13 +39,13 @@ def singleton(cls: Optional[Type[T]] = None) -> Type[T]:
     return wrap if cls is None else wrap(cls)
 
 
-class Singleton(object):
+class Singleton:
     """单例"""
 
     _lock: ClassVar["LockType"] = Lock()
     _instance: ClassVar[Optional[Self]] = None
 
-    def __new__(cls, *args, **kwargs) -> Self:
+    def __new__(cls: Type[T], *args, **kwargs) -> T:
         with cls._lock:
             if cls._instance is None:
                 cls._instance = object.__new__(cls)
