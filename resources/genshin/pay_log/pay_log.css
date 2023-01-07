@@ -76,7 +76,7 @@ body {
     color: #fff;
     font-size: 14px;
     padding: 3px 10px;
-    border-radius: 15px 0px 15px 15px;
+    border-radius: 15px 0 15px 15px;
     z-index: 20;
 }
 
