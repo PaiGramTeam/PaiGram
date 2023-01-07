@@ -157,7 +157,7 @@ class PlayerCards(Plugin, BasePlugin):
 
         result, user_id, uid = await get_player_card_callback(callback_query.data)
         if user.id != user_id:
-            await callback_query.answer(text="这不是你的按钮！\n" "再乱点再按我叫西风骑士团、千岩军、天领奉行和教令院了！", show_alert=True)
+            await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
         logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{result}] uid[{uid}]")
         data = await self._fetch_user(uid)

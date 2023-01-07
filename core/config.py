@@ -96,6 +96,13 @@ class ErrorConfig(Settings):
         env_prefix = "error_"
 
 
+class NoticeConfig(Settings):
+    user_mismatch: str = "再乱点我叫西风骑士团、千岩军、天领奉行、三十人团和风纪官了！"
+
+    class Config(Settings.Config):
+        env_prefix = "notice_"
+
+
 class BotConfig(Settings):
     debug: bool = False
 
@@ -125,6 +132,7 @@ class BotConfig(Settings):
     redis: RedisConfig = RedisConfig()
     mtproto: MTProtoConfig = MTProtoConfig()
     error: ErrorConfig = ErrorConfig()
+    notice: NoticeConfig = NoticeConfig()
 
 
 BotConfig.update_forward_refs()

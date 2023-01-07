@@ -424,7 +424,7 @@ class Sign(Plugin, BasePlugin):
 
         user_id, uid = await get_sign_callback(callback_query.data)
         if user.id != user_id:
-            await callback_query.answer(text="这不是你的按钮！\n" "再乱点再按我叫西风骑士团、千岩军、天领奉行和教令院了！", show_alert=True)
+            await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
         _, challenge = await self.system.get_challenge(uid)
         if not challenge:
