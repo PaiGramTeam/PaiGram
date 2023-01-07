@@ -130,9 +130,7 @@ class Ledger(Plugin, BasePlugin):
                 logger.warning(
                     "用户 %s[%s] 无法请求旅行札记数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original
                 )
-                reply_message = await message.reply_text(
-                    "出错了呜呜呜 ~ 当前账号无法请求旅行札记数据。\n请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。"
-                )
+                reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
                 if filters.ChatType.GROUPS.filter(message):
                     self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                     self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
