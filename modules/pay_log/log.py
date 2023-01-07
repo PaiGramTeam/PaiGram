@@ -1,5 +1,4 @@
 import contextlib
-import json
 from pathlib import Path
 from typing import Tuple, Optional, List, Dict
 
@@ -10,6 +9,12 @@ from genshin.models import TransactionKind, BaseTransaction
 from modules.pay_log.error import PayLogAuthkeyTimeout, PayLogInvalidAuthkey, PayLogNotFound
 from modules.pay_log.models import PayLog as PayLogModel, BaseInfo
 from utils.const import PROJECT_ROOT
+
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
 
 PAY_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "pay_log")
 PAY_LOG_PATH.mkdir(parents=True, exist_ok=True)
@@ -22,7 +27,7 @@ class PayLog:
     @staticmethod
     async def load_json(path):
         async with aiofiles.open(path, "r", encoding="utf-8") as f:
-            return json.loads(await f.read())
+            return jsonlib.loads(await f.read())
 
     @staticmethod
     async def save_json(path, data: PayLogModel):
@@ -62,7 +67,7 @@ class PayLog:
             return PayLogModel(info=BaseInfo(uid=uid), list=[]), False
         try:
             return PayLogModel.parse_obj(await self.load_json(file_path)), True
-        except json.decoder.JSONDecodeError:
+        except jsonlib.decoder.JSONDecodeError:
             return PayLogModel(info=BaseInfo(uid=uid), list=[]), False
 
     async def remove_history_info(
