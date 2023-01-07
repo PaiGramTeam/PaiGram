@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 from sys import executable
 
@@ -15,6 +14,12 @@ from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import execute
 from utils.log import logger
 
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
+
 current_dir = os.getcwd()
 
 UPDATE_DATA = os.path.join(current_dir, "data", "update.json")
@@ -28,7 +33,7 @@ class UpdatePlugin(Plugin):
     async def __async_init__():
         if os.path.exists(UPDATE_DATA):
             async with async_open(UPDATE_DATA) as file:
-                data = json.loads(await file.read())
+                data = jsonlib.loads(await file.read())
             try:
                 reply_text = Message.de_json(data, bot.app.bot)
                 await reply_text.edit_text("重启成功")

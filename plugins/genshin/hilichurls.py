@@ -1,4 +1,3 @@
-import json
 from os import sep
 
 from telegram import Update
@@ -12,6 +11,12 @@ from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
 
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
+
 
 class HilichurlsPlugin(Plugin, BasePlugin):
     """丘丘语字典."""
@@ -19,7 +24,7 @@ class HilichurlsPlugin(Plugin, BasePlugin):
     def __init__(self):
         """加载数据文件.数据整理自 https://wiki.biligame.com/ys By @zhxycn."""
         with open(f"resources{sep}json{sep}hilichurls_dictionary.json", "r", encoding="utf8") as f:
-            self.hilichurls_dictionary = json.load(f)
+            self.hilichurls_dictionary = jsonlib.load(f)
 
     @handler(CommandHandler, command="hilichurls", block=False)
     @restricts()

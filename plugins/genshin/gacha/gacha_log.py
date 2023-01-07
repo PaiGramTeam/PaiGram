@@ -1,4 +1,3 @@
-import json
 from io import BytesIO
 
 import genshin
@@ -39,6 +38,12 @@ from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.models.base import RegionEnum
 
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
+
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
 
@@ -62,7 +67,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def __async_init__(self):
         await update_paimon_moe_zh(False)
         async with async_open(GACHA_LOG_PAIMON_MOE_PATH, "r", encoding="utf-8") as load_f:
-            self.zh_dict = json.loads(await load_f.read())
+            self.zh_dict = jsonlib.loads(await load_f.read())
 
     async def _refresh_user_data(
         self, user: User, data: dict = None, authkey: str = None, verify_uid: bool = True
@@ -117,7 +122,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await (await document.get_file()).download_to_memory(out=out)
             if file_type == "json":
                 # bytesio to json
-                data = json.loads(out.getvalue().decode("utf-8"))
+                data = jsonlib.loads(out.getvalue().decode("utf-8"))
             elif file_type == "xlsx":
                 data = self.gacha_log.convert_xlsx_to_uigf(out, self.zh_dict)
             else:
