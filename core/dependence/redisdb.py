@@ -37,7 +37,7 @@ class RedisDB(BaseService.Dependence):
         self.client = fakeredis.aioredis.FakeRedis()
         await self.ping()
 
-    async def start(self):  # pylint: disable=W0221
+    async def initialize(self):
         logger.info("正在尝试建立与 [red]Redis[/] 连接", extra={"markup": True})
         try:
             await self.ping()
@@ -48,5 +48,5 @@ class RedisDB(BaseService.Dependence):
                 logger.warning("连接 [red]Redis[/] 失败，使用 [red]fakeredis[/] 模拟", extra={"markup": True})
             await self.start_fake_redis()
 
-    async def stop(self):  # pylint: disable=W0221
+    async def shutdown(self):
         await self.client.close()

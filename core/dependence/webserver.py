@@ -11,7 +11,7 @@ from core.config import config as bot_config
 if TYPE_CHECKING:
     from core.config import BotConfig
 
-__all__ = ["webapp", "WebServer"]
+__all__ = ("webapp", "WebServer")
 
 webapp = FastAPI(debug=bot_config.debug)
 
@@ -44,7 +44,7 @@ class WebServer(BaseService.Dependence):
             uvicorn.Config(app=webapp, port=port, use_colors=False, host=host, log_config=None)
         )
 
-    async def start(self):
+    async def initialize(self):
         """启动 service"""
 
         # 暂时只在开发环境启动 webserver 用于开发调试
@@ -55,7 +55,7 @@ class WebServer(BaseService.Dependence):
         self.server.install_signal_handlers = lambda: None
         self._server_task = asyncio.create_task(self.server.serve())
 
-    async def stop(self):
+    async def shutdown(self):
         """关闭 service"""
         if not self.debug:
             return

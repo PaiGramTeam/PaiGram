@@ -29,5 +29,5 @@ class MySQL(BaseService.Dependence):
         async with self.Session() as session:
             yield session
 
-    async def stop(self):
+    async def shutdown(self):
         self.Session.close_all()

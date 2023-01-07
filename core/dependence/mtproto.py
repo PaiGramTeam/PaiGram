@@ -43,7 +43,7 @@ class MTProto(BaseService.Dependence):
             http_proxy_url = urlparse(http_proxy)
             self.proxy = {"scheme": "http", "hostname": http_proxy_url.hostname, "port": http_proxy_url.port}
 
-    async def start(self):  # pylint: disable=W0221
+    async def initialize(self):  # pylint: disable=W0221
         if not PYROGRAM_AVAILABLE:
             logger.info("MTProto 服务需要的 pyrogram 模块未导入 本次服务 client 为 None")
             return
@@ -62,6 +62,6 @@ class MTProto(BaseService.Dependence):
         )
         await self.client.start()
 
-    async def stop(self):  # pylint: disable=W0221
+    async def shutdown(self):  # pylint: disable=W0221
         if self.client is not None:
             await self.client.stop(block=False)

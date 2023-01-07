@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from httpx import Response
     from multiprocessing.synchronize import RLock
 
-__all__ = ["AssetsServiceType", "AssetsService", "AssetsServiceError", "AssetsCouldNotFound", "DEFAULT_EnkaAssets"]
+__all__ = ("AssetsServiceType", "AssetsService", "AssetsServiceError", "AssetsCouldNotFound", "DEFAULT_EnkaAssets")
 
 ICON_TYPE = Union[Callable[[bool], Awaitable[Optional[Path]]], Callable[..., Awaitable[Optional[Path]]]]
 NAME_MAP_TYPE = Dict[str, StrOrURL]
@@ -519,7 +519,7 @@ class AssetsService(BaseService.Dependence):
         ):
             setattr(self, attr, globals()[assets_type_name]())
 
-    async def start(self) -> None:  # pylint: disable=R0201
+    async def initialize(self) -> None:  # pylint: disable=R0201
         """启动 AssetsService 服务，刷新元数据"""
         logger.info("正在刷新元数据")
         # todo 这3个任务同时异步下载

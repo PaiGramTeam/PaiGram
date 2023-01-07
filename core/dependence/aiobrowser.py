@@ -8,7 +8,7 @@ from utils.log import logger
 if TYPE_CHECKING:
     from playwright.async_api import Playwright as AsyncPlaywright, Browser
 
-__all__ = ["AioBrowser"]
+__all__ = ("AioBrowser",)
 
 
 class AioBrowser(BaseService.Dependence):
@@ -23,10 +23,10 @@ class AioBrowser(BaseService.Dependence):
 
     async def get_browser(self):
         if self._browser is None:
-            await self.start()
+            await self.initialize()
         return self._browser
 
-    async def start(self):
+    async def initialize(self):
         if self._playwright is None:
             logger.info("正在尝试启动 [blue]Playwright[/]", extra={"markup": True})
             self._playwright = await async_playwright().start()
@@ -49,7 +49,7 @@ class AioBrowser(BaseService.Dependence):
 
         return self._browser
 
-    async def stop(self):
+    async def shutdown(self):
         if self._browser is not None:
             await self._browser.close()
         if self._playwright is not None:

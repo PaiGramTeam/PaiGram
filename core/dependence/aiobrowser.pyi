@@ -4,7 +4,7 @@ from playwright.async_api import Browser, Playwright as AsyncPlaywright
 
 from core.base_service import BaseService
 
-__all__ = ["AioBrowser"]
+__all__ = ("AioBrowser",)
 
 class AioBrowser(BaseService.Dependence):
     _browser: Browser | None

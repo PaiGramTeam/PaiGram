@@ -13,7 +13,7 @@ except ImportError:
     session = None
     PYROGRAM_AVAILABLE = False
 
-__all__ = ["MTProto"]
+__all__ = ("MTProto",)
 
 class _ProxyType(TypedDict):
     scheme: str

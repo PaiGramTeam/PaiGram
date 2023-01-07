@@ -13,7 +13,7 @@ from typing_extensions import Self
 from core.base_service import BaseService
 from utils.typedefs import StrOrInt
 
-__all__ = ["AssetsServiceType", "AssetsService", "AssetsServiceError", "AssetsCouldNotFound", "DEFAULT_EnkaAssets"]
+__all__ = ("AssetsServiceType", "AssetsService", "AssetsServiceError", "AssetsCouldNotFound", "DEFAULT_EnkaAssets")
 
 ICON_TYPE = Callable[[bool], Awaitable[Path | None]] | Callable[..., Awaitable[Path | None]]
 DEFAULT_EnkaAssets: EnkaAssets

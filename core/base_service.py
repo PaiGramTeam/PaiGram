@@ -1,6 +1,6 @@
 from typing import ClassVar, List, Self, Type, TypeVar
 
-__all__ = ["BaseService", "BaseServiceType", "DependenceType", "ComponentType", "get_all_service_types"]
+__all__ = ("BaseService", "BaseServiceType", "DependenceType", "ComponentType", "get_all_service_types")
 
 
 class _BaseService:
@@ -18,17 +18,17 @@ class _BaseService:
         return self._is_dependence
 
     async def __aenter__(self) -> Self:
-        await self.start()
+        await self.initialize()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        await self.stop()
+        await self.shutdown()
 
-    async def start(self) -> None:
-        """启动服务"""
+    async def initialize(self) -> None:
+        """Initialize resources used by this service"""
 
-    async def stop(self) -> None:
-        """关闭服务"""
+    async def shutdown(self) -> None:
+        """Stop & clear resources used by this service"""
 
 
 class _Dependence(_BaseService):
