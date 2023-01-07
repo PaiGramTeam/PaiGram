@@ -142,4 +142,7 @@ PluginType = TypeVar("PluginType", bound=_Plugin)
 
 
 def get_all_plugins() -> Iterable[Type[PluginType]]:
-    return filter(lambda x: x.__name__[0] != "_" and x not in [Plugin], chain(Plugin.__subclasses__(), _Conversation))
+    return filter(
+        lambda x: x.__name__[0] != "_" and x not in [Plugin],
+        chain(Plugin.__subclasses__(), _Conversation.__subclasses__()),
+    )

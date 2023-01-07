@@ -1,27 +1,22 @@
 """参数分发器"""
+import asyncio
 import inspect
-from inspect import Signature, Parameter
 from abc import ABC, abstractmethod
+from asyncio import AbstractEventLoop
 from functools import cached_property, partial, wraps
+from inspect import Parameter, Signature
+from itertools import chain
 from types import MethodType
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Sequence,
-    Type,
-    TypeVar,
-    Union,
-    get_type_hints,
-)
+
+# noinspection PyUnresolvedReferences,PyProtectedMember
+from typing import Any, Callable, Dict, List, Sequence, Type, TypeVar, Union, _GenericAlias as GenericAlias
 
 from arkowrapper import ArkoWrapper
 from telegram import Update
 from telegram.ext import CallbackContext
 from typing_extensions import ParamSpec
 
-from core.bot import Bot
+from core.bot import Bot, bot
 from utils.const import WRAPPER_ASSIGNMENTS
 
 __all__ = ["catch", "AbstractDispatcher", "BaseDispatcher", "HandlerDispatcher"]
@@ -104,20 +99,34 @@ class BaseDispatcher(AbstractDispatcher):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._kwargs = {}
+
+    def _get_kwargs(self) -> Dict[Type[T], T]:
+        result = {AbstractDispatcher: self, Bot: bot, type(bot.executor): bot.executor}
+        for item in chain(bot.dependency, bot.components, bot.services):
+            result[type(item)] = item
+        return result
 
     def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
-
         params = {}
         if isinstance(func, type):
             signature: Signature = inspect.signature(func.__init__)
         else:
             signature: Signature = inspect.signature(func)
         parameters: Dict[str, Parameter] = dict(signature.parameters)
-        for name, parameter in parameters.items():
-            if isinstance(func, type) and parameter.name == "self":
+
+        for name, parameter in signature.parameters.items():
+            if isinstance(func, type) and name == "self":
+                del parameters[name]
                 continue
             annotation = parameter.annotation
+            # noinspection PyTypeChecker
+            if isinstance(annotation, type) and (value := self._get_kwargs().get(annotation, None)) is not None:
+                params[name] = value
+
+        for name, parameter in list(parameters.items()):
+            annotation = parameter.annotation
+            if isinstance(annotation, GenericAlias):
+                continue
             for catch_func in self.catch_funcs:
                 catch_targets = getattr(catch_func, "_catch_targets")
                 for catch_target in catch_targets:
@@ -127,6 +136,7 @@ class BaseDispatcher(AbstractDispatcher):
                             [name == catch_target, isinstance(annotation, type) and annotation.__name__ == catch_target]
                         ):
                             params[name] = catch_func()
+                            del parameters[name]
                     # 比较参数类型
                     elif isinstance(catch_target, type) and any(
                         [
@@ -135,19 +145,16 @@ class BaseDispatcher(AbstractDispatcher):
                         ]
                     ):
                         params[name] = catch_func()
+                        del parameters[name]
 
-        params = {k: v for k, v in params.items() if v is not None}
-        for name, type_hint in get_type_hints(func):
-            for catch_func in self.catch_funcs:
-                catch_targets = getattr(catch_func, "_catch_targets")
+        for name, parameter in parameters.items():
+            if name in params:
+                continue
+            if parameter.default != Parameter.empty:
+                params[name] = parameter.default
+            else:
+                params[name] = None
 
-                for catch_target in catch_targets:
-                    if isinstance(catch_target, str):
-                        if name == catch_target or (isinstance(type_hint, type) and type_hint.__name__ == catch_target):
-                            params.update({name: catch_func()})
-                    elif isinstance(catch_target, type):
-                        if name == catch_target.__name__ or type_hint.__name__ == catch_target.__name__:
-                            params.update({name: catch_func()})
         return partial(func, **params)
 
     @catch(Bot)
@@ -155,6 +162,11 @@ class BaseDispatcher(AbstractDispatcher):
         from core.bot import bot
 
         return bot
+
+    @catch("loop", AbstractEventLoop)
+    def catch_loop(self) -> AbstractEventLoop:
+
+        return asyncio.get_event_loop()
 
 
 class HandlerDispatcher(BaseDispatcher):

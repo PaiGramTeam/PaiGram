@@ -10,7 +10,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from playwright.async_api import ViewportSize
 
 from core.base_service import BaseService
-from core.bot import bot
+from core.config import config as bot_config
 from core.dependence.aiobrowser import AioBrowser
 from core.dependence.webserver import webapp
 from core.services.template.cache import HtmlToFileIdCache, TemplatePreviewCache
@@ -37,7 +37,7 @@ class TemplateService(BaseService):
             loader=FileSystemLoader(template_dir),
             enable_async=True,
             autoescape=True,
-            auto_reload=bot.config.debug,
+            auto_reload=bot_config.debug,
         )
 
         self.previewer = TemplatePreviewer(self, preview_cache)
@@ -89,7 +89,7 @@ class TemplateService(BaseService):
         start_time = time.time()
         template = self.get_template(template_name)
 
-        if bot.config.debug:
+        if bot_config.debug:
             preview_url = await self.previewer.get_preview_url(template_name, template_data)
             logger.debug(f"调试模板 URL: {preview_url}")
 
@@ -97,7 +97,7 @@ class TemplateService(BaseService):
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
 
         file_id = await self.html_to_file_id_cache.get_data(html, file_type.name)
-        if file_id and not bot.config.debug:
+        if file_id and not bot_config.debug:
             logger.debug(f"{template_name} 命中缓存，返回 file_id {file_id}")
             return RenderResult(
                 html=html,
@@ -152,7 +152,7 @@ class TemplatePreviewer:
 
     async def get_preview_url(self, template: str, data: dict):
         """获取预览 URL"""
-        components = urlsplit(bot.config.webserver.url)
+        components = urlsplit(bot_config.webserver.url)
         path = urljoin("/preview/", template)
         query = {}
 

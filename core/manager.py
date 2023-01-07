@@ -1,3 +1,5 @@
+from arkowrapper import ArkoWrapper
+from asyncio import CancelledError
 from importlib import import_module
 from pathlib import Path
 from typing import Dict, Generic, List, Optional, TYPE_CHECKING, Type, TypeVar
@@ -14,7 +16,6 @@ from utils.log import logger
 
 if TYPE_CHECKING:
     from core.builtins.executor import BaseExecutor
-    from asyncio import CancelledError
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -54,6 +55,10 @@ class DependenceManager(Manager[DependenceType]):
 
     _dependency: Dict[Type[DependenceType], DependenceType] = {}
 
+    @property
+    def dependency(self) -> List[DependenceType]:
+        return list(self._dependency.values())
+
     async def start_dependency(self) -> None:
         _load_module(PROJECT_ROOT / "core/dependence")
 
@@ -77,7 +82,7 @@ class DependenceManager(Manager[DependenceType]):
                 raise SystemExit from e
 
     async def stop_dependency(self) -> None:
-        for dependence in self._dependency:
+        for dependence in self._dependency.values():
             await dependence.shutdown()
 
 
@@ -86,23 +91,37 @@ class ComponentManager(Manager[ComponentType]):
 
     _components: Dict[Type[ComponentType], ComponentType] = {}
 
+    @property
+    def components(self) -> List[ComponentType]:
+        return list(self._components.values())
+
     async def init_components(self):
         for path in filter(
             lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
         ):
             _load_module(path)
-        for component in filter(lambda x: x.is_component, get_all_services()):
-            component: Type[ComponentType]
-            instance: ComponentType
-            try:
-                instance = await self.executor(component)
-                self._lib[component] = instance
-                self._components[component] = instance
+        components = ArkoWrapper(get_all_services()).filter(lambda x: x.is_component)
+        retry_times = 0
+        while components:
+            start_len = len(components)
+            for component in list(components):
+                component: Type[ComponentType]
+                instance: ComponentType
+                try:
+                    instance = await self.executor(component)
+                    self._lib[component] = instance
+                    self._components[component] = instance
+                    components = components.remove(component)
+                except Exception as e:
+                    logger.debug(f'组件 "{component.__name__}" 初始化失败: [red]{e}[/]', extra={"markup": True})
+            end_len = len(components)
+            if start_len == end_len:
+                retry_times += 1
 
-            except Exception as e:
-                logger.exception('组件 "%s" 初始化失败', component.__name__)
-                logger.error(e)
-                # raise SystemExit from e
+            if retry_times > 2:
+                for component in components:
+                    logger.error('组件 "%s" 初始化失败', component.__name__)
+                raise SystemExit
 
 
 class ServiceManager(Manager[BaseServiceType]):
@@ -114,10 +133,6 @@ class ServiceManager(Manager[BaseServiceType]):
     def services(self) -> List[BaseServiceType]:
         return list(self._services.values())
 
-    @property
-    def service_map(self) -> Dict[Type[BaseServiceType], BaseServiceType]:
-        return self._services
-
     async def _initialize_service(self, target: Type[BaseServiceType]) -> BaseServiceType:
         instance: BaseServiceType
         try:
@@ -127,12 +142,12 @@ class ServiceManager(Manager[BaseServiceType]):
                 instance = await self.executor(target)
 
             await instance.initialize()
-            logger.success('基础服务 "%s" 启动成功', target.__name__)
+            logger.success('服务 "%s" 启动成功', target.__name__)
 
             return instance
 
         except Exception as e:
-            logger.exception('基础服务 "%s" 初始化失败，BOT 将自动关闭', target.__name__)
+            logger.exception('服务 "%s" 初始化失败，BOT 将自动关闭', target.__name__)
             raise SystemExit from e
 
     async def start_services(self) -> None:
@@ -152,7 +167,7 @@ class ServiceManager(Manager[BaseServiceType]):
         if not self._services:
             return
         logger.info("正在关闭服务")
-        for service in self._services:
+        for service in self._services.values():
             async with timeout(5):
                 try:
                     await service.shutdown()

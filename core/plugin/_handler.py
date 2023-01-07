@@ -212,25 +212,25 @@ class handler(_Handler):
         self._type = handler_type
         super().__init__(**kwargs)
 
-    def __init_subclass__(cls, **kwargs) -> None:
-        for attr in [
-            "callback_query",
-            "chat_join_request",
-            "chat_member",
-            "chosen_inline_result",
-            "command",
-            "inline_query",
-            "message",
-            "poll_answer",
-            "pool",
-            "pre_checkout_query",
-            "prefix",
-            "shipping_query",
-            "string_command",
-            "string_regex",
-            "type",
-        ]:
-            delattr(cls, attr)
+    # def __init_subclass__(cls, **kwargs) -> None:
+    #     for attr in [
+    #         "callback_query",
+    #         "chat_join_request",
+    #         "chat_member",
+    #         "chosen_inline_result",
+    #         "command",
+    #         "inline_query",
+    #         "message",
+    #         "poll_answer",
+    #         "pool",
+    #         "pre_checkout_query",
+    #         "prefix",
+    #         "shipping_query",
+    #         "string_command",
+    #         "string_regex",
+    #         "type",
+    #     ]:
+    #         delattr(cls, attr)
 
 
 # noinspection PyPep8Naming
