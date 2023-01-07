@@ -50,9 +50,9 @@ class PayLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             logger.debug("尝试获取已绑定的原神账号")
             client = await get_genshin_client(user.id, need_cookie=False)
             new_num = await self.pay_log.get_log_data(user.id, client, authkey)
-            return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
+            return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条充值记录"
         except PayLogNotFound:
-            return "派蒙没有找到你的充值记录，快去氪金吧~"
+            return "派蒙没有找到你的充值记录，快去充值吧~"
         except PayLogAccountNotFound:
             return "导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同"
         except PayLogInvalidAuthkey:
@@ -192,12 +192,12 @@ class PayLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             client = await get_genshin_client(cid, need_cookie=False)
             _, status = await self.pay_log.load_history_info(str(cid), str(client.uid), only_status=True)
             if not status:
-                await message.reply_text("该用户还没有导入抽卡记录")
+                await message.reply_text("该用户还没有导入充值记录")
                 return
             status = await self.pay_log.remove_history_info(str(cid), str(client.uid))
-            await message.reply_text("抽卡记录已强制删除" if status else "抽卡记录删除失败")
+            await message.reply_text("充值记录已强制删除" if status else "充值记录删除失败")
         except PayLogNotFound:
-            await message.reply_text("该用户还没有导入抽卡记录")
+            await message.reply_text("该用户还没有导入充值记录")
         except UserNotFoundError:
             await message.reply_text("该用户暂未绑定账号")
         except (ValueError, IndexError):

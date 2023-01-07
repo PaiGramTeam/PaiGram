@@ -140,14 +140,13 @@ class PayLog:
         return new_num
 
     @staticmethod
-    async def get_month_data(pay_log: PayLogModel, price_data: List[Dict]) -> Tuple[int, int, List[Dict]]:
+    async def get_month_data(pay_log: PayLogModel, price_data: List[Dict]) -> Tuple[int, List[Dict]]:
         """获取月份数据
         :param pay_log: 日志数据
         :param price_data: 商品数据
         :return: 月份数据
         """
         all_amount: int = 0
-        all_pay: int = 0
         months: List[int] = []
         month_datas: List[Dict] = []
         last_month: Optional[Dict] = None
@@ -156,7 +155,6 @@ class PayLog:
             if i.amount <= 0:
                 continue
             all_amount += i.amount
-            all_pay += i.amount
             if i.time.month not in months:
                 months.append(i.time.month)
                 if last_month:
@@ -173,9 +171,6 @@ class PayLog:
             for j in price_data:
                 if i.amount in j["price"]:
                     j["count"] += 1
-                    j["amount"] += i.amount
-                    if i.amount == price_data[0]["price"][0]:
-                        all_amount -= i.amount
                     break
             month_data.append(i)
         if last_month:
@@ -184,7 +179,7 @@ class PayLog:
         if not month_datas:
             raise PayLogNotFound
         month_datas.sort(key=lambda k: k["amount"], reverse=True)
-        return all_amount, all_pay, month_datas
+        return all_amount, month_datas
 
     async def get_analysis(self, user_id: int, client: Client):
         """获取分析数据
@@ -200,14 +195,15 @@ class PayLog:
             {
                 "price": price,
                 "count": 0,
-                "amount": 0,
             }
             for price in [[680], [300], [8080, 12960], [3880, 6560], [2240, 3960], [1090, 1960], [330, 600], [60, 120]]
         ]
         price_data_name = ["大月卡", "小月卡", "648", "328", "198", "98", "30", "6"]
-        all_pay, all_amount, month_datas = await PayLog.get_month_data(pay_log, price_data)
+        real_price = [68, 30, 648, 328, 198, 98, 30, 6]
+        all_amount, month_datas = await PayLog.get_month_data(pay_log, price_data)
+        all_pay = sum((price_data[i]["count"] * real_price[i]) for i in range(len(price_data)))
         datas = [
-            {"value": f"￥{all_pay / 10:.0f}", "name": "总消费"},
+            {"value": f"￥{all_pay:.0f}", "name": "总消费"},
             {"value": all_amount, "name": "总结晶"},
             {"value": f"{month_datas[0]['month']}", "name": "消费最多"},
             {
@@ -224,7 +220,7 @@ class PayLog:
         ]
         pie_datas = [
             {
-                "value": f"{price_data[i]['amount'] / 10:.0f}",
+                "value": f"{price_data[i]['count'] * real_price[i]:.0f}",
                 "name": f"{price_data_name[i]}",
             }
             for i in range(len(price_data))
