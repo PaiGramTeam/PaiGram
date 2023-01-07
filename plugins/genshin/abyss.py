@@ -7,7 +7,7 @@ from typing import Any, Coroutine, List, Match, Optional, Tuple, Union
 
 import ujson as json
 from arkowrapper import ArkoWrapper
-from genshin import Client
+from genshin import Client, GenshinException
 from pytz import timezone
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
 from telegram.constants import ChatAction, ParseMode
@@ -167,6 +167,12 @@ class Abyss(Plugin, BasePlugin):
 
         try:
             images = await self.get_rendered_pic(client, uid, floor, total, previous)
+        except GenshinException as exc:
+            if exc.retcode == 1034:
+                if client.uid != uid:
+                    await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
+                    return
+            raise exc
         except AbyssUnlocked:  # 若深渊未解锁
             await reply_message_func("还未解锁深渊哦~")
             return

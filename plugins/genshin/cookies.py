@@ -159,11 +159,13 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 "<b>关于如何获取Cookies</b>\n"
                 "<b>现在因为网站HttpOnly策略无法通过脚本获取，因此操作只能在PC上运行。</b>\n\n"
                 "PC：\n"
-                f"1、<a href='{bbs_url}'>打开通行证并登录</a>\n"
-                "2、按F12打开开发者工具\n"
-                "3、将开发者工具切换至网络(Network)并点击过滤栏中的文档(Document)并刷新页面\n"
-                "4、在请求列表中选择第一个并点击\n"
-                "5、找到并复制请求标头(Request Headers)中的Cookie\n"
+                "1、<a href='https://www.miyoushe.com/ys/'>打开米游社并登录</a>\n"
+                "2、<a href='https://user.mihoyo.com/'>打开通行证并登录</a>\n"
+                "3、登录完成后刷新米游社和通行证网页\n"
+                "4、进入通行证按F12打开开发者工具\n"
+                "5、将开发者工具切换至网络(Network)并点击过滤栏中的文档(Document)并刷新页面\n"
+                "6、在请求列表中选择第一个并点击\n"
+                "7、找到并复制请求标头(Request Headers)中的<b>Cookie</b>\n"
                 "<u>如发现没有请求标头(Request Headers)大概因为缓存的存在需要你点击禁用缓存(Disable Cache)再次刷新页面</u>"
             )
         else:

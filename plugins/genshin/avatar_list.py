@@ -31,6 +31,28 @@ from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
 
 
+class SkillData(Model):
+    """天赋数据"""
+
+    skill: CalculatorTalent
+    buffed: bool = False
+    """是否得到了命座加成"""
+
+
+class AvatarData(Model):
+    avatar: Character
+    detail: CalculatorCharacterDetails
+    icon: str
+    weapon: Optional[str]
+    skills: List[SkillData]
+
+    def sum_of_skills(self) -> int:
+        total_level = 0
+        for skilldata in self.skills:
+            total_level += skilldata.skill.level
+        return total_level
+
+
 class AvatarListPlugin(Plugin, BasePlugin):
     def __init__(
         self,
@@ -129,14 +151,26 @@ class AvatarListPlugin(Plugin, BasePlugin):
     async def get_avatars_data(
         self, characters: Sequence[Character], client: Client, max_length: int = None
     ) -> List["AvatarData"]:
-        async def _task(c, n):
-            return n, await self.get_avatar_data(c, client)
+        async def _task(c):
+            return await self.get_avatar_data(c, client)
 
-        task_results = await asyncio.gather(
-            *[_task(character, num) for num, character in enumerate(characters[:max_length])]
-        )
+        task_results = await asyncio.gather(*[_task(character) for character in characters])
 
-        return list(filter(lambda x: x, map(lambda x: x[1], sorted(task_results, key=lambda x: x[0]))))
+        return sorted(
+            list(filter(lambda x: x, task_results)),
+            key=lambda x: (
+                x.avatar.level,
+                x.avatar.rarity,
+                x.sum_of_skills(),
+                x.avatar.constellation,
+                # TODO 如果加入武器排序条件，需要把武器转化为图片url的处理后置
+                # x.weapon.level,
+                # x.weapon.rarity,
+                # x.weapon.refinement,
+                x.avatar.friendship,
+            ),
+            reverse=True,
+        )[:max_length]
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
@@ -214,14 +248,14 @@ class AvatarListPlugin(Plugin, BasePlugin):
             await notice.delete()
             await client.get_genshin_user(client.uid)
             logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
-            reply_message = await message.reply_text("出错了呜呜呜 ~ 当前账号无法请求角色数数据。\n请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。")
+            reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
             if filters.ChatType.GROUPS.filter(message):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
         except GenshinException as e:
+            await notice.delete()
             if e.retcode == -502002:
-                await notice.delete()
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 20)
                 return
@@ -269,19 +303,3 @@ class AvatarListPlugin(Plugin, BasePlugin):
             "文件" if all_avatars else "图片",
             extra={"markup": True},
         )
-
-
-class SkillData(Model):
-    """天赋数据"""
-
-    skill: CalculatorTalent
-    buffed: bool = False
-    """是否得到了命座加成"""
-
-
-class AvatarData(Model):
-    avatar: Character
-    detail: CalculatorCharacterDetails
-    icon: str
-    weapon: Optional[str]
-    skills: Iterable[SkillData]

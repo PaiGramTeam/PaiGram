@@ -1,4 +1,3 @@
-import json
 from io import BytesIO
 
 import genshin
@@ -37,6 +36,12 @@ from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.models.base import RegionEnum
 
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
+
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
 
@@ -60,7 +65,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def __async_init__(self):
         await update_paimon_moe_zh(False)
         async with async_open(GACHA_LOG_PAIMON_MOE_PATH, "r", encoding="utf-8") as load_f:
-            self.zh_dict = json.loads(await load_f.read())
+            self.zh_dict = jsonlib.loads(await load_f.read())
 
     async def _refresh_user_data(
         self, user: User, data: dict = None, authkey: str = None, verify_uid: bool = True
@@ -115,7 +120,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await (await document.get_file()).download_to_memory(out=out)
             if file_type == "json":
                 # bytesio to json
-                data = json.loads(out.getvalue().decode("utf-8"))
+                data = jsonlib.loads(out.getvalue().decode("utf-8"))
             elif file_type == "xlsx":
                 data = self.gacha_log.convert_xlsx_to_uigf(out, self.zh_dict)
             else:
@@ -310,6 +315,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.2")
         except GachaLogNotFound:
+            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
@@ -332,7 +338,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CommandHandler, command="gacha_log", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^抽卡记录(.*)"), block=False)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
     @restricts()
     @error_callable
     async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
@@ -344,7 +350,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
-        logger.info("未查询到用户 %s[%s] 抽卡记录命令请求 || 参数 %s", user.full_name, user.id, pool_type.name)
+        logger.info("用户 %s[%s] 抽卡记录命令请求 || 参数 %s", user.full_name, user.id, pool_type.name)
         try:
             client = await get_genshin_client(user.id, need_cookie=False)
             await message.reply_chat_action(ChatAction.TYPING)
@@ -361,6 +367,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 )
                 await png_data.reply_photo(message)
         except GachaLogNotFound:
+            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
@@ -379,7 +386,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CommandHandler, command="gacha_count", block=True)
-    @handler(MessageHandler, filters=filters.Regex("^抽卡统计(.*)"), block=True)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=True)
     @restricts()
     @error_callable
     async def command_start_count(self, update: Update, context: CallbackContext) -> None:
@@ -426,6 +433,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 else:
                     await png_data.reply_photo(message)
         except GachaLogNotFound:
+            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]

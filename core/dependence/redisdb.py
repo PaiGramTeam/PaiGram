@@ -1,4 +1,5 @@
 import asyncio
+from typing import Optional, Union
 
 import fakeredis.aioredis
 from redis import asyncio as aioredis
@@ -17,11 +18,12 @@ class RedisDB(BaseService.Dependence):
     def from_config(cls, config: BotConfig) -> Self:
         return cls(**config.redis.dict())
 
-    def __init__(self, host="127.0.0.1", port=6379, database=0, loop=None):
-        self.client = aioredis.Redis(host=host, port=port, db=database)
+    def __init__(
+        self, host: str = "127.0.0.1", port: int = 6379, database: Union[str, int] = 0, password: Optional[str] = None
+    ):
+        self.client = aioredis.Redis(host=host, port=port, db=database, password=password)
         self.ttl = 600
         self.key_prefix = "paimon_bot"
-        self._loop = loop
 
     async def ping(self):
         # noinspection PyUnresolvedReferences
@@ -36,8 +38,6 @@ class RedisDB(BaseService.Dependence):
         await self.ping()
 
     async def start(self):  # pylint: disable=W0221
-        if self._loop is None:
-            self._loop = asyncio.get_running_loop()
         logger.info("正在尝试建立与 [red]Redis[/] 连接", extra={"markup": True})
         try:
             await self.ping()

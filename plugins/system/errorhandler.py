@@ -1,4 +1,3 @@
-import json
 import os
 import time
 import traceback
@@ -19,6 +18,12 @@ from modules.errorpush import (
     SentryClientException,
 )
 from utils.log import logger
+
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
 
 notice_chat_id = bot.config.error.notification_chat_id
 current_dir = os.getcwd()
@@ -57,7 +62,7 @@ class ErrorHandler(Plugin):
 
         error_text = (
             f"-----Exception while handling an update-----\n"
-            f"update = {json.dumps(update_str, indent=2, ensure_ascii=False)}\n"
+            f"update = {jsonlib.dumps(update_str, indent=2, ensure_ascii=False)}\n"
             f"context.chat_data = {str(context.chat_data)}\n"
             f"context.user_data = {str(context.user_data)}\n"
             "\n"

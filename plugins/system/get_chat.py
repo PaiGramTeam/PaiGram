@@ -11,6 +11,7 @@ from core.services.cookies import CookiesNotFoundError, CookiesService
 from core.services.sign import SignServices
 from core.services.user import UserNotFoundError, UserService
 from modules.gacha_log.log import GachaLog
+from modules.pay_log.log import PayLog
 from utils.bot import get_args, get_chat as get_chat_with_cache
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import get_genshin_client
@@ -29,6 +30,7 @@ class GetChat(Plugin):
         self.user_service = user_service
         self.sign_service = sign_service
         self.gacha_log = GachaLog()
+        self.pay_log = PayLog()
 
     async def parse_group_chat(self, chat: Chat, admins: List[ChatMember]) -> str:
         text = f"群 ID：<code>{chat.id}</code>\n群名称：<code>{chat.title}</code>\n"
@@ -102,6 +104,12 @@ class GetChat(Plugin):
                     text += f"\n   - 最后更新：{gacha_log.update_time.strftime('%Y-%m-%d %H:%M:%S')}"
                 else:
                     text += "\n抽卡记录：<code>未导入</code>"
+            with contextlib.suppress(Exception):
+                pay_log, status = await self.pay_log.load_history_info(str(chat.id), str(uid))
+                if status:
+                    text += f"\n充值记录：" f"\n   - {len(pay_log.list)} 条" f"\n   - 最后更新：{pay_log.info.export_time}"
+                else:
+                    text += "\n充值记录：<code>未导入</code>"
         return text
 
     @handler(CommandHandler, command="get_chat", block=False)

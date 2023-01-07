@@ -1,7 +1,7 @@
 import random
 from typing import Optional
 
-from genshin import Client
+from genshin import Client, GenshinException
 from genshin.models import GenshinUserStats
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -66,6 +66,12 @@ class UserStatsPlugins(Plugin, BasePlugin):
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
+        except GenshinException as exc:
+            if exc.retcode == 1034:
+                if uid:
+                    await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
+                    return
+            raise exc
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多 请稍后重试")
             return
