@@ -11,17 +11,19 @@ import genshin
 import httpx
 from genshin import Client, types
 from httpx import UnsupportedProtocol
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, TYPE_CHECKING
 
 from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
-from core.services.cookies import CookiesService, PublicCookiesService
-from core.services.user import UserService
 from utils.const import REGION_MAP, REQUEST_HEADERS
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 from utils.models.base import RegionEnum
+
+if TYPE_CHECKING:
+    from core.services.cookies import CookiesService, PublicCookiesService
+    from core.services.users import UserService
 
 __all__ = [
     "sha1",
@@ -38,10 +40,10 @@ cache_dir = os.path.join(current_dir, "cache")
 if not os.path.exists(cache_dir):
     os.mkdir(cache_dir)
 
-cookies_service: Optional[CookiesService] = None
-user_service: Optional[UserService] = None
-public_cookies_service: Optional[PublicCookiesService] = None
-redis_db: Optional[RedisDB] = None
+cookies_service: Optional["CookiesService"] = None
+user_service: Optional["UserService"] = None
+public_cookies_service: Optional["PublicCookiesService"] = None
+redis_db: Optional["RedisDB"] = None
 
 genshin_cache: Optional[genshin.RedisCache] = None
 
@@ -79,6 +81,8 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
 
 
 async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True) -> Client:
+    from core.services.cookies import CookiesService, PublicCookiesService
+    from core.services.users import UserService
     from core.bot import bot
 
     global cookies_service, user_service, public_cookies_service, redis_db, genshin_cache
@@ -118,6 +122,9 @@ async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, 
 
 
 async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]]:
+    from core.services.cookies import PublicCookiesService
+    from core.services.users import UserService
+
     if user_service is None:
         raise ServiceNotFoundError(UserService)
     if public_cookies_service is None:

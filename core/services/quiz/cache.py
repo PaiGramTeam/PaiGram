@@ -6,7 +6,7 @@ from core.base_service import BaseService
 from core.dependence.redisdb import RedisDB
 from core.services.quiz.models import Answer, Question
 
-__all__ = ["QuizCache"]
+__all__ = ("QuizCache",)
 
 
 class QuizCache(BaseService.Component):

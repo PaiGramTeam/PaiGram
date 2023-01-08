@@ -5,7 +5,7 @@ from typing import Optional
 from sqlalchemy import func
 from sqlmodel import Column, DateTime, Enum, Field, SQLModel
 
-__all__ = ["SignStatusEnum", "Sign"]
+__all__ = ("SignStatusEnum", "Sign")
 
 
 class SignStatusEnum(int, enum.Enum):

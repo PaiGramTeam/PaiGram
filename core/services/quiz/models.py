@@ -5,7 +5,7 @@ from sqlmodel import Column, Field, ForeignKey, Integer, SQLModel
 from utils.baseobject import BaseObject
 from utils.typedefs import JSONDict
 
-__all__ = ["Answer", "AnswerDB", "Question", "QuestionDB"]
+__all__ = ("Answer", "AnswerDB", "Question", "QuestionDB")
 
 
 class AnswerDB(SQLModel, table=True):

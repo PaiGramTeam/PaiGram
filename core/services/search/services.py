@@ -14,7 +14,7 @@ from core.base_service import BaseService
 from core.services.search.models import BaseEntry, StrategyEntry, StrategyEntryList, WeaponEntry, WeaponsEntry
 from utils.const import PROJECT_ROOT
 
-__all__ = ["SearchServices"]
+__all__ = ("SearchServices",)
 
 ENTRY_DAYA_PATH = PROJECT_ROOT.joinpath("data", "entry")
 ENTRY_DAYA_PATH.mkdir(parents=True, exist_ok=True)
