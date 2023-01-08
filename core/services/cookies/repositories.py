@@ -2,13 +2,11 @@ from typing import Optional, List
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-
+from core.dependence.mysql import MySQL
 from utils.models.base import RegionEnum
-from .models import CookiesDataBase as Cookies
+from core.services.cookies.models import CookiesDataBase as Cookies
 
 __all__ = ("CookiesRepository",)
-
-from ...dependence.mysql import MySQL
 
 
 class CookiesRepository:
@@ -29,14 +27,21 @@ class CookiesRepository:
             session.add(cookies)
             await session.commit()
 
+    async def update(self, cookies: Cookies) -> Cookies:
+        async with AsyncSession(self.engine) as session:
+            session.add(cookies)
+            await session.commit()
+            await session.refresh(cookies)
+            return cookies
+
     async def remove(self, cookies: Cookies):
         async with AsyncSession(self.engine) as session:
             await session.delete(cookies)
             await session.commit()
 
-    async def get_all_by_user_id(self, user_id: int) -> List[Cookies]:
+    async def get_all_by_region(self, region: RegionEnum) -> List[Cookies]:
         async with AsyncSession(self.engine) as session:
-            statement = select(Cookies).where(Cookies.user_id == user_id)
+            statement = select(Cookies).where(Cookies.region == region)
             results = await session.exec(statement)
-            players = results.all()
-            return players
+            cookies = results.all()
+            return cookies

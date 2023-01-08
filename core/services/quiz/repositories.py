@@ -6,7 +6,7 @@ from core.base_service import BaseService
 from core.dependence.mysql import MySQL
 from core.services.quiz.models import AnswerDB, QuestionDB
 
-__all__ = ["QuizRepository"]
+__all__ = ("QuizRepository",)
 
 
 class QuizRepository(BaseService.Component):

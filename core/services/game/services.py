@@ -4,7 +4,7 @@ from core.services.game.cache import GameCache
 from core.base_service import BaseService
 from modules.apihelper.client.components.hyperion import Hyperion
 
-__all__ = ["GameMaterialService", "GameStrategyService"]
+__all__ = ("GameMaterialService", "GameStrategyService")
 
 
 class GameStrategyService(BaseService):

@@ -6,29 +6,29 @@ from genshin import Game, GenshinException, InvalidCookies, TooManyRequests, typ
 from core.base_service import BaseService
 from core.services.cookies.cache import PublicCookiesCache
 from core.services.cookies.error import CookieServiceError, CookiesNotFoundError, TooManyRequestPublicCookies
-from core.services.cookies.models import CookiesStatusEnum
+from core.services.cookies.models import CookiesStatusEnum, CookiesDataBase as Cookies
 from core.services.cookies.repositories import CookiesRepository
 from utils.log import logger
 from utils.models.base import RegionEnum
 
-__all__ = ["CookiesService", "PublicCookiesService"]
+__all__ = ("CookiesService", "PublicCookiesService")
 
 
 class CookiesService(BaseService):
     def __init__(self, cookies_repository: CookiesRepository) -> None:
         self._repository: CookiesRepository = cookies_repository
 
-    async def update_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
-        await self._repository.update_cookies(user_id, cookies, region)
+    async def update(self, cookies: Cookies):
+        await self._repository.update(cookies)
 
-    async def add_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
-        await self._repository.add_cookies(user_id, cookies, region)
+    async def add(self, cookies: Cookies):
+        await self._repository.add(cookies)
 
-    async def get_cookies(self, user_id: int, region: RegionEnum):
-        return await self._repository.get_cookies(user_id, region)
+    async def get(self, user_id: int, region: RegionEnum):
+        return await self._repository.get_by_user_id(user_id, region)
 
-    async def del_cookies(self, user_id: int, region: RegionEnum):
-        return await self._repository.del_cookies(user_id, region)
+    async def remove(self, cookies: Cookies):
+        return await self._repository.remove(cookies)
 
 
 class PublicCookiesService(BaseService):
@@ -43,21 +43,21 @@ class PublicCookiesService(BaseService):
         :return:
         """
         user_list: List[int] = []
-        cookies_list = await self._repository.get_all_cookies(RegionEnum.HYPERION)  # 从数据库获取2
+        cookies_list = await self._repository.get_all_by_region(RegionEnum.HYPERION)  # 从数据库获取2
         for cookies in cookies_list:
             if cookies.status is None or cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
                 user_list.append(cookies.user_id)
         if len(user_list) > 0:
             add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HYPERION)
-            logger.info(f"国服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
+            logger.info("国服公共Cookies池已经添加[%s]个 当前成员数为[%s]", add, count)
         user_list.clear()
-        cookies_list = await self._repository.get_all_cookies(RegionEnum.HOYOLAB)
+        cookies_list = await self._repository.get_all_by_region(RegionEnum.HOYOLAB)
         for cookies in cookies_list:
             if cookies.status is None or cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
                 user_list.append(cookies.user_id)
         if len(user_list) > 0:
             add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HOYOLAB)
-            logger.info(f"国际服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
+            logger.info("国际服公共Cookies池已经添加[%s]个 当前成员数为[%s]", add, count)
 
     async def get_cookies(self, user_id: int, region: RegionEnum = RegionEnum.NULL):
         """获取公共Cookies
@@ -72,15 +72,15 @@ class PublicCookiesService(BaseService):
         while True:
             public_id, count = await self._cache.get_public_cookies(region)
             try:
-                cookies = await self._repository.get_cookies(public_id, region)
+                cookies = await self._repository.get_by_user_id(public_id, region)
             except CookiesNotFoundError:
                 await self._cache.delete_public_cookies(public_id, region)
                 continue
             if region == RegionEnum.HYPERION:
-                client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)
+                client = genshin.Client(cookies=cookies.data, game=types.Game.GENSHIN, region=types.Region.CHINESE)
             elif region == RegionEnum.HOYOLAB:
                 client = genshin.Client(
-                    cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
+                    cookies=cookies.data, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
                 )
             else:
                 raise CookieServiceError
@@ -97,13 +97,13 @@ class PublicCookiesService(BaseService):
                     logger.warning("Cookies无效 ")
                     logger.exception(exc)
                 cookies.status = CookiesStatusEnum.INVALID_COOKIES
-                await self._repository.update_cookies_ex(cookies, region)
+                await self._repository.update(cookies)
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
             except TooManyRequests:
                 logger.warning("用户 [%s] 查询次数太多或操作频繁", public_id)
                 cookies.status = CookiesStatusEnum.TOO_MANY_REQUESTS
-                await self._repository.update_cookies_ex(cookies, region)
+                await self._repository.update(cookies)
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
             except GenshinException as exc:

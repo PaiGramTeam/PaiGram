@@ -6,7 +6,7 @@ from core.services.quiz.cache import QuizCache
 from core.services.quiz.models import Answer, Question
 from core.services.quiz.repositories import QuizRepository
 
-__all__ = ["QuizService"]
+__all__ = ("QuizService",)
 
 
 class QuizService(BaseService):

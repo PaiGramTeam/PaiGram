@@ -2,13 +2,10 @@ from typing import Optional, List
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-
-from utils.models.base import RegionEnum
-from .models import PlayersDataBase as Player
+from core.dependence.mysql import MySQL
+from core.services.players.models import PlayersDataBase as Player, RegionEnum
 
 __all__ = ("PlayersRepository",)
-
-from ...dependence.mysql import MySQL
 
 
 class PlayersRepository:
