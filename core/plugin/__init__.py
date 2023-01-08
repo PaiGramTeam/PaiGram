@@ -1,5 +1,5 @@
 """插件"""
-import copy
+from datetime import timedelta
 from itertools import chain
 from multiprocessing import RLock as Lock
 from types import MethodType
@@ -10,11 +10,15 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Optional,
     TYPE_CHECKING,
     Tuple,
     Type,
     TypeVar,
+    Union,
 )
+
+from pydantic import BaseModel
 
 # noinspection PyProtectedMember
 from telegram.ext import BaseHandler, ConversationHandler, TypeHandler
@@ -22,7 +26,7 @@ from telegram.ext import BaseHandler, ConversationHandler, TypeHandler
 # noinspection PyProtectedMember
 from typing_extensions import ParamSpec
 
-from core.plugin._handler import conversation, handler
+from core.plugin._handler import ConversationData, ConversationDataType, conversation, handler
 from core.plugin._job import TimeType, job
 
 if TYPE_CHECKING:
@@ -134,7 +138,13 @@ class _Plugin:
 class _Conversation(_Plugin):
     """Conversation类"""
 
-    _conversation_kwargs: Dict
+    # noinspection SpellCheckingInspection
+    class Config(BaseModel):
+        allow_reetry: bool = False
+        per_chat: bool = True
+        per_user: bool = True
+        per_message: bool = False
+        conversation_timeout: Optional[Union[float, timedelta]] = None
 
     def __init_subclass__(cls, **kwargs):
         cls._conversation_kwargs = kwargs
@@ -143,51 +153,43 @@ class _Conversation(_Plugin):
 
     @property
     def handlers(self) -> List[HandlerType]:
-        result: List[HandlerType] = []
 
-        entry_points: List[HandlerType] = []
-        states: Dict[Any, List[HandlerType]] = {}
-        fallbacks: List[HandlerType] = []
-        for attr in dir(self):
-            # noinspection PyUnboundLocalVariable
-            if (
-                not (attr.startswith("_") or attr == "handlers")
-                and isinstance(func := getattr(self, attr), Callable)
-                and (handler_datas := getattr(func, _HANDLER_DATA_ATTR_NAME, None))
-            ):
-                conversation_data = getattr(func, _CONVERSATION_HANDLER_ATTR_NAME, None)
-                if attr == "cancel":
-                    handler_datas = copy.deepcopy(handler_datas)
-                    conversation_data = copy.deepcopy(conversation_data)
-                _handlers = self._make_handler(handler_datas)
-                if conversation_data:
-                    if (_type := conversation_data.pop("type")) == "entry":
-                        entry_points.extend(_handlers)
-                    elif _type == "state":
-                        if (key := conversation_data.pop("state")) in states:
-                            states[key].extend(_handlers)
+        with self._lock:
+            if not self._handlers:
+                entry_points: List[HandlerType] = []
+                states: Dict[Any, List[HandlerType]] = {}
+                fallbacks: List[HandlerType] = []
+                for attr in dir(self):
+                    if (
+                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                        and isinstance(func := getattr(self, attr), MethodType)
+                        and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
+                    ):
+                        conversation_data: ConversationData
+                        handlers: List[HandlerType] = []
+                        for data in datas:
+                            handlers.append(data.handler)
+                        if conversation_data := getattr(func, _CONVERSATION_HANDLER_ATTR_NAME, None):
+                            if (_type := conversation_data.type) == ConversationDataType.Entry:
+                                entry_points.extend(handlers)
+                            elif _type == ConversationDataType.State:
+                                if conversation_data.state in states:
+                                    states[conversation_data.state].extend(handlers)
+                                else:
+                                    states[conversation_data.state] = handlers
+                            elif _type == ConversationDataType.Fallback:
+                                fallbacks.extend(handlers)
                         else:
-                            states[key] = _handlers
-                    elif _type == "fallback":
-                        fallbacks.extend(_handlers)
-                else:
-                    result.extend(_handlers)
-        if entry_points or states or fallbacks:
-            result.append(
-                ConversationHandler(
-                    entry_points, states, fallbacks, **self.__class__._conversation_kwargs  # pylint: disable=W0212
-                )
-            )
-        return result
+                            self._handlers.extend(handlers)
+                if entry_points and states and fallbacks:
+                    self._handlers.append(ConversationHandler(entry_points, states, fallbacks, **self.Config().dict()))
+        return self._handlers
 
 
 class Plugin(_Plugin):
     """插件"""
 
     Conversation = _Conversation
-
-    def __init_subclass__(cls, **kwargs) -> None:
-        delattr(cls, "Conversation")
 
 
 PluginType = TypeVar("PluginType", bound=_Plugin)

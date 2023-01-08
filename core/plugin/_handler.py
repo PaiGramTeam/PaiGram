@@ -1,4 +1,5 @@
 from enum import Enum
+from functools import wraps
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from typing import (
@@ -6,6 +7,7 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
+    Generic,
     List,
     Optional,
     Pattern,
@@ -15,6 +17,8 @@ from typing import (
     TypedDict,
     Union,
 )
+
+from pydantic import BaseModel
 
 # noinspection PyProtectedMember
 from telegram._utils.defaultvalue import DEFAULT_TRUE
@@ -26,6 +30,8 @@ from telegram.ext import BaseHandler
 # noinspection PyProtectedMember
 from telegram.ext.filters import BaseFilter
 from typing_extensions import ParamSpec
+
+from utils.const import WRAPPER_ASSIGNMENTS
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
@@ -48,6 +54,12 @@ _ERROR_HANDLER_ATTR_NAME = "_error_handler_data"
 
 _CONVERSATION_HANDLER_ATTR_NAME = "_conversation_handler_data"
 """用于储存生成 ConversationHandler 时所需要的参数（例如 block）的属性名"""
+
+WRAPPER_ASSIGNMENTS += [
+    _HANDLER_DATA_ATTR_NAME,
+    _ERROR_HANDLER_ATTR_NAME,
+    _CONVERSATION_HANDLER_ATTR_NAME,
+]
 
 
 class HandlerData(TypedDict):
@@ -237,39 +249,51 @@ class ConversationDataType(Enum):
     Fallback = "fallback"
 
 
-class ConversationData(TypedDict):
+class ConversationData(BaseModel):
     type: ConversationDataType
-    state: Optional[Any]
+    state: Optional[Any] = None
 
 
 class _ConversationType:
     _type: ClassVar[ConversationDataType]
 
     def __init_subclass__(cls, **kwargs) -> None:
-        ...
+        cls._type = ConversationDataType(cls.__name__.lstrip("_").lower())
 
 
-def _entry(func: Callable[P, T]) -> Callable[P, T]:
-    setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {"type": "entry"})
-    return func
+class _Entry(_ConversationType, Generic[P, R]):
+    __wrapped__: Callable[P, R]
+
+    def __init__(self, func: Callable[P, R]) -> None:
+        wraps(func)(self)
+        setattr(self, _CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
+
+    def __call__(self, *args, **kwargs) -> R:
+        return self.__wrapped__(*args, **kwargs)
 
 
-class _State:
+class _State(_ConversationType):
     def __init__(self, state: Any) -> None:
         self.state = state
 
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
-        setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {"type": "state", "state": self.state})
+        setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type, state=self.state))
         return func
 
 
-def _fallback(func: Callable[P, T]) -> Callable[P, T]:
-    setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {"type": "fallback"})
-    return func
+class _Fallback(_ConversationType, Generic[P, R]):
+    __wrapped__: Callable[P, R]
+
+    def __init__(self, func: Callable[P, R]) -> None:
+        wraps(func)(self)
+        setattr(self, _CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
+
+    def __call__(self, *args, **kwargs) -> R:
+        return self.__wrapped__(*args, **kwargs)
 
 
 # noinspection PyPep8Naming
 class conversation(_Handler):
-    entry_point = _entry
+    entry_point = _Entry
     state = _State
-    fallback = _fallback
+    fallback = _Fallback
