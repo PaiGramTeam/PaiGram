@@ -5,8 +5,8 @@ from genshin import Game, GenshinException, InvalidCookies, TooManyRequests, typ
 
 from core.base_service import BaseService
 from core.services.cookies.cache import PublicCookiesCache
-from core.services.cookies.error import CookieServiceError, CookiesNotFoundError, TooManyRequestPublicCookies
-from core.services.cookies.models import CookiesStatusEnum, CookiesDataBase as Cookies
+from core.services.cookies.error import CookieServiceError, TooManyRequestPublicCookies
+from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStatusEnum
 from core.services.cookies.repositories import CookiesRepository
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -71,9 +71,8 @@ class PublicCookiesService(BaseService):
             raise TooManyRequestPublicCookies(user_id)
         while True:
             public_id, count = await self._cache.get_public_cookies(region)
-            try:
-                cookies = await self._repository.get_by_user_id(public_id, region)
-            except CookiesNotFoundError:
+            cookies = await self._repository.get_by_user_id(public_id, region)
+            if cookies is None:
                 await self._cache.delete_public_cookies(public_id, region)
                 continue
             if region == RegionEnum.HYPERION:
