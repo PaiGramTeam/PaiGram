@@ -4,7 +4,7 @@ import random
 import string
 import time
 import uuid
-from typing import Mapping, Any, Optional
+from typing import Any, Mapping, Optional
 
 __all__ = ("get_device_id", "hex_digest", "get_ds", "get_recognize_server", "get_ua")
 

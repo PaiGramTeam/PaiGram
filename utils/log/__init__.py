@@ -4,10 +4,7 @@ from typing import TYPE_CHECKING
 
 from core.config import config
 from utils.log._config import LoggerConfig
-from utils.log._logger import (
-    LogFilter,
-    Logger,
-)
+from utils.log._logger import LogFilter, Logger
 
 if TYPE_CHECKING:
     from logging import LogRecord

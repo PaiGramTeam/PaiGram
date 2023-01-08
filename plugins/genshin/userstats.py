@@ -14,11 +14,11 @@ from telegram.ext import (
 from telegram.helpers import create_deep_linked_url
 
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
+from core.services.cookies import CookiesNotFoundError, TooManyRequestPublicCookies
 from core.plugin import Plugin, handler
-from core.template.models import RenderResult
-from core.template.services import TemplateService
-from core.user.error import UserNotFoundError
+from core.services.template.models import RenderResult
+from core.services.template.services import TemplateService
+from core.services.user import UserNotFoundError
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file, get_genshin_client, get_public_genshin_client

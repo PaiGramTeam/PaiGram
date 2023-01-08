@@ -1,15 +1,12 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import Update
-from telegram.constants import ChatAction
-from telegram.constants import ParseMode
-from telegram.ext import CommandHandler, CallbackContext
-from telegram.ext import MessageHandler, filters
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ChatAction, ParseMode
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
 from core.baseplugin import BasePlugin
-from core.game.services import GameStrategyService
+from core.services.game import GameStrategyService
 from core.plugin import Plugin, handler
-from core.search.models import StrategyEntry
-from core.search.services import SearchServices
+from core.services.search.models import StrategyEntry
+from core.services.search.services import SearchServices
 from metadata.shortname import roleToName, roleToTag
 from utils.bot import get_args
 from utils.decorators.error import error_callable

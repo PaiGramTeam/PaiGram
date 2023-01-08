@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Union
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from modules.wiki.base import Model, HONEY_HOST, WikiModel
+from modules.wiki.base import HONEY_HOST, Model, WikiModel
 from modules.wiki.other import AttributeType, WeaponType
 
 __all__ = ["Weapon", "WeaponAffix", "WeaponAttribute"]

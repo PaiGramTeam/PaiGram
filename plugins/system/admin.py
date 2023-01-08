@@ -4,8 +4,8 @@ from telegram import Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
-from core.admin import BotAdminService
-from core.plugin import handler, Plugin
+from core.plugin import Plugin, handler
+from core.services.admin import BotAdminService
 from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger
 

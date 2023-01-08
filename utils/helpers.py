@@ -1,13 +1,10 @@
-from __future__ import annotations
-
 import hashlib
 import os
 import re
 from asyncio import create_subprocess_shell
-from asyncio.subprocess import PIPE
 from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import Awaitable, Callable, Match, Optional, Pattern, Tuple, TypeVar, Union, cast
+from typing import Awaitable, Callable, Iterator, Match, Optional, Pattern, Tuple, TypeVar, Union
 
 import aiofiles
 import genshin
@@ -16,50 +13,37 @@ from genshin import Client, types
 from httpx import UnsupportedProtocol
 from typing_extensions import ParamSpec
 
-from core.base.redisdb import RedisDB
-from core.bot import bot
 from core.config import config
-from core.cookies.services import CookiesService, PublicCookiesService
+from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
-from core.user.services import UserService
+from core.services.cookies import CookiesService, PublicCookiesService
+from core.services.user import UserService
+from utils.const import REGION_MAP, REQUEST_HEADERS
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 from utils.models.base import RegionEnum
 
+__all__ = [
+    "sha1",
+    "url_to_file",
+    "gen_pkg",
+    "async_re_sub",
+]
+
 T = TypeVar("T")
 P = ParamSpec("P")
 
-USER_AGENT: str = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/90.0.4430.72 Safari/537.36"
-)
-REQUEST_HEADERS: dict = {"User-Agent": USER_AGENT}
 current_dir = os.getcwd()
 cache_dir = os.path.join(current_dir, "cache")
 if not os.path.exists(cache_dir):
     os.mkdir(cache_dir)
 
-cookies_service = bot.services.get(CookiesService)
-cookies_service = cast(CookiesService, cookies_service)
-user_service = bot.services.get(UserService)
-user_service = cast(UserService, user_service)
-public_cookies_service = bot.services.get(PublicCookiesService)
-public_cookies_service = cast(PublicCookiesService, public_cookies_service)
-redis_db = bot.services.get(RedisDB)
-redis_db = cast(RedisDB, redis_db)
-genshin_cache: Optional[genshin.RedisCache] = None
-if redis_db and config.genshin_ttl:
-    genshin_cache = genshin.RedisCache(redis_db.client, ttl=config.genshin_ttl)
+cookies_service: Optional[CookiesService] = None
+user_service: Optional[UserService] = None
+public_cookies_service: Optional[PublicCookiesService] = None
+redis_db: Optional[RedisDB] = None
 
-REGION_MAP = {
-    "1": RegionEnum.HYPERION,
-    "2": RegionEnum.HYPERION,
-    "5": RegionEnum.HYPERION,
-    "6": RegionEnum.HOYOLAB,
-    "7": RegionEnum.HOYOLAB,
-    "8": RegionEnum.HOYOLAB,
-    "9": RegionEnum.HOYOLAB,
-}
+genshin_cache: Optional[genshin.RedisCache] = None
 
 
 def sha1(text: str) -> str:
@@ -95,6 +79,18 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
 
 
 async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True) -> Client:
+    from core.bot import bot
+
+    global cookies_service, user_service, public_cookies_service, redis_db, genshin_cache
+
+    cookies_service = cookies_service or bot.services.get(CookiesService)
+    user_service = user_service or bot.services.get(UserService)
+    public_cookies_service = public_cookies_service or bot.services.get(PublicCookiesService)
+    redis_db = redis_db or bot.services.get(RedisDB)
+
+    if redis_db and config.genshin_ttl:
+        genshin_cache = genshin.RedisCache(redis_db.client, ttl=config.genshin_ttl)
+
     if user_service is None:
         raise ServiceNotFoundError(UserService)
     if cookies_service is None:
@@ -155,9 +151,13 @@ def region_server(uid: Union[int, str]) -> RegionEnum:
         raise TypeError(f"UID {uid} isn't associated with any region")
 
 
-async def execute(command, pass_error=True):
+async def execute(command: Union[str, bytes], pass_error: bool = True) -> str:
     """Executes command and returns output, with the option of enabling stderr."""
-    executor = await create_subprocess_shell(command, stdout=PIPE, stderr=PIPE, stdin=PIPE)
+    from asyncio import subprocess
+
+    executor = await create_subprocess_shell(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE
+    )
 
     stdout, stderr = await executor.communicate()
     if pass_error:
@@ -174,8 +174,8 @@ async def execute(command, pass_error=True):
 
 
 async def async_re_sub(
-    pattern: str | Pattern,
-    repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
+    pattern: Union[str, Pattern],
+    repl: Union[str, Callable[[Match], Union[Awaitable[str], str]]],
     string: str,
     count: int = 0,
     flags: int = 0,
@@ -218,3 +218,15 @@ async def async_re_sub(
             result += temp[: match.span(1)[0]] + (replaced or repl)
             temp = temp[match.span(1)[1] :]
     return result + temp
+
+
+def gen_pkg(path: Path) -> Iterator[str]:
+    """生成可以用于 import_module 导入的字符串"""
+    from utils.const import PROJECT_ROOT
+
+    for p in path.iterdir():
+        if not p.name.startswith("_"):
+            if p.is_dir():
+                yield from gen_pkg(p)
+            elif p.suffix == ".py":
+                yield str(p.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")

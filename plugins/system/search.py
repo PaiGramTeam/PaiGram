@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import CallbackContext
 
 from core.plugin import handler, Plugin, job
-from core.search.services import SearchServices
+from core.services.search.services import SearchServices
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.restricts import restricts
 from utils.log import logger

@@ -1,10 +1,10 @@
 import datetime
 from enum import Enum
-from typing import List, Dict, Union, Any
+from typing import Any, Dict, List, Union
 
 from pydantic import BaseModel, validator
 
-from metadata.shortname import roleToId, weaponToId, not_real_roles
+from metadata.shortname import not_real_roles, roleToId, weaponToId
 from modules.gacha_log.const import UIGF_VERSION
 
 

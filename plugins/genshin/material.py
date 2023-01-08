@@ -1,10 +1,10 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import filters, ConversationHandler, CommandHandler, MessageHandler, CallbackContext
+from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, MessageHandler, filters
 
 from core.baseplugin import BasePlugin
-from core.game.services import GameMaterialService
 from core.plugin import Plugin, handler
+from core.services.game import GameMaterialService
 from metadata.shortname import roleToName
 from utils.bot import get_args
 from utils.decorators.error import error_callable

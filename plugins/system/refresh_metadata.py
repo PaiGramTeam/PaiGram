@@ -2,7 +2,8 @@ from telegram import Update
 
 from core.plugin import Plugin, handler
 from metadata.scripts.honey import update_honey_metadata
-from metadata.scripts.metadatas import update_metadata_from_ambr, update_metadata_from_github
+from metadata.scripts.metadatas import (update_metadata_from_ambr,
+                                        update_metadata_from_github)
 from metadata.scripts.paimon_moe import update_paimon_moe_zh
 from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger

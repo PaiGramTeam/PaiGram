@@ -6,29 +6,18 @@ import traceback as traceback_
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from types import TracebackType
-from typing import (
-    Any,
-    Callable,
-    List,
-    Mapping,
-    Optional,
-    TYPE_CHECKING,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import (TYPE_CHECKING, Any, Callable, List, Mapping, Optional,
+                    Tuple, Type, Union)
 
 from typing_extensions import Self
 
-from utils.log._handler import (
-    FileHandler,
-    Handler,
-)
+from utils.log._handler import FileHandler, Handler
 from utils.typedefs import LogFilterType
 
 if TYPE_CHECKING:
-    from utils.log._config import LoggerConfig  # pylint: disable=unused-import
     from logging import LogRecord  # pylint: disable=unused-import
+
+    from utils.log._config import LoggerConfig  # pylint: disable=unused-import
 
 __all__ = ["Logger", "LogFilter"]
 
@@ -68,6 +57,7 @@ class Logger(logging.Logger):
             # 控制台 log 配置
             Handler(
                 width=self.config.width,
+                keywords=self.config.keywords,
                 locals_max_length=self.config.traceback_locals_max_length,
                 locals_max_string=self.config.traceback_locals_max_string,
                 locals_max_depth=self.config.traceback_locals_max_depth,
@@ -77,6 +67,7 @@ class Logger(logging.Logger):
             # debug.log 配置
             FileHandler(
                 width=self.config.width,
+                keywords=self.config.keywords,
                 level=10,
                 path=log_path.joinpath("debug/debug.log"),
                 locals_max_depth=1,
@@ -88,6 +79,7 @@ class Logger(logging.Logger):
             # error.log 配置
             FileHandler(
                 width=self.config.width,
+                keywords=self.config.keywords,
                 level=40,
                 path=log_path.joinpath("error/error.log"),
                 locals_max_length=self.config.traceback_locals_max_length,
@@ -114,13 +106,13 @@ class Logger(logging.Logger):
         self.addHandler(error_handler)
 
     def success(
-        self,
-        msg: Any,
-        *args: Any,
-        exc_info: Optional[ExceptionInfoType] = None,
-        stack_info: bool = False,
-        stacklevel: int = 1,
-        extra: Optional[Mapping[str, Any]] = None,
+            self,
+            msg: Any,
+            *args: Any,
+            exc_info: Optional[ExceptionInfoType] = None,
+            stack_info: bool = False,
+            stacklevel: int = 1,
+            extra: Optional[Mapping[str, Any]] = None,
     ) -> None:
         return self.log(
             25,
@@ -133,14 +125,14 @@ class Logger(logging.Logger):
         )
 
     def exception(
-        self,
-        msg: Any = NONE,
-        *args: Any,
-        exc_info: Optional[ExceptionInfoType] = True,
-        stack_info: bool = False,
-        stacklevel: int = 1,
-        extra: Optional[Mapping[str, Any]] = None,
-        **kwargs,
+            self,
+            msg: Any = NONE,
+            *args: Any,
+            exc_info: Optional[ExceptionInfoType] = True,
+            stack_info: bool = False,
+            stacklevel: int = 1,
+            extra: Optional[Mapping[str, Any]] = None,
+            **kwargs,
     ) -> None:  # pylint: disable=W1113
         super(Logger, self).exception(
             "" if msg is NONE else msg,

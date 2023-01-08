@@ -1,22 +1,22 @@
 import asyncio
-from typing import cast, Dict, Awaitable, List
+from typing import Awaitable, Dict, List, cast
 from uuid import uuid4
 
 from telegram import (
+    InlineQuery,
     InlineQueryResultArticle,
+    InlineQueryResultCachedPhoto,
     InputTextMessageContent,
     Update,
-    InlineQuery,
-    InlineQueryResultCachedPhoto,
 )
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, InlineQueryHandler
 
-from core.base.assets import AssetsService, AssetsCouldNotFound
-from core.plugin import handler, Plugin
-from core.search.services import SearchServices
-from core.wiki import WikiService
+from core.dependence.assets import AssetsCouldNotFound, AssetsService
+from core.plugin import Plugin, handler
+from core.services.search.services import SearchServices
+from core.services.wiki import WikiService
 from utils.decorators.error import error_callable
 from utils.log import logger
 

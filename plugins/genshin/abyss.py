@@ -14,15 +14,13 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError, TooManyRequestPublicCookies
-from core.cookies.services import CookiesService
+from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
-from core.template import TemplateService
-from core.template.models import RenderGroupResult, RenderResult
-from core.user import UserService
-from core.user.error import UserNotFoundError
+from core.services.cookies import CookiesNotFoundError, CookiesService, TooManyRequestPublicCookies
+from core.services.template import TemplateService
+from core.services.template.models import RenderGroupResult, RenderResult
+from core.services.user import UserNotFoundError, UserService
 from metadata.genshin import game_id_to_role_id
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts

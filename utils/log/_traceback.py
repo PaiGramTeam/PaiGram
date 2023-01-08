@@ -1,47 +1,20 @@
 import os
 import traceback as traceback_
-from types import (
-    ModuleType,
-    TracebackType,
-)
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    TYPE_CHECKING,
-    Tuple,
-    Type,
-    Union,
-)
+from types import ModuleType, TracebackType
+from typing import (TYPE_CHECKING, Any, Dict, Iterable, List, Mapping,
+                    Optional, Tuple, Type, Union)
 
 from rich import pretty
 from rich.columns import Columns
-from rich.console import (
-    RenderResult,
-    group,
-)
+from rich.console import RenderResult, group
 from rich.highlighter import ReprHighlighter
 from rich.panel import Panel
 from rich.pretty import Pretty
-from rich.syntax import (
-    PygmentsSyntaxTheme,
-    Syntax,
-)
+from rich.syntax import PygmentsSyntaxTheme, Syntax
 from rich.table import Table
-from rich.text import (
-    Text,
-    TextType,
-)
-from rich.traceback import (
-    Frame,
-    PathHighlighter,
-    Stack,
-    Trace,
-    Traceback as BaseTraceback,
-)
+from rich.text import Text, TextType
+from rich.traceback import Frame, PathHighlighter, Stack, Trace
+from rich.traceback import Traceback as BaseTraceback
 
 from utils.log._style import MonokaiProStyle
 

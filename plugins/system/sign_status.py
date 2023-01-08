@@ -1,8 +1,8 @@
 from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext
+from telegram.ext import CallbackContext, CommandHandler
 
 from core.plugin import Plugin, handler
-from core.sign import SignServices
+from core.services.sign import SignServices
 from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger
 

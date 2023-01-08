@@ -1,19 +1,8 @@
 from typing import Dict
 
 from pygments.style import Style as PyStyle
-from pygments.token import (
-    Comment,
-    Error,
-    Generic,
-    Keyword,
-    Literal,
-    Name,
-    Number,
-    Operator,
-    Punctuation,
-    String,
-    Text,
-)
+from pygments.token import (Comment, Error, Generic, Keyword, Literal, Name,
+                            Number, Operator, Punctuation, String, Text)
 from rich.style import Style
 
 __all__ = [

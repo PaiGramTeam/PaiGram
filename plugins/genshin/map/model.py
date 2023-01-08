@@ -1,7 +1,7 @@
 import os
 import time
 from io import BytesIO
-from typing import Optional, List
+from typing import List, Optional
 
 import httpx
 import ujson

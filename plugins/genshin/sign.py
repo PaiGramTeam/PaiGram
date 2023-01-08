@@ -14,18 +14,18 @@ from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
 from telegram.ext import MessageHandler, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.admin.services import BotAdminService
-from core.base.redisdb import RedisDB
+from core.services.admin.services import BotAdminService
+from core.dependence.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.bot import bot
 from core.config import config
-from core.cookies.error import CookiesNotFoundError
-from core.cookies.services import CookiesService
+from core.services.cookies import CookiesNotFoundError
+from core.services.cookies import CookiesService
 from core.plugin import Plugin, handler
-from core.sign.models import Sign as SignUser, SignStatusEnum
-from core.sign.services import SignServices
-from core.user.error import UserNotFoundError
-from core.user.services import UserService
+from core.services.sign.models import Sign as SignUser, SignStatusEnum
+from core.services.sign import SignServices
+from core.services.user import UserNotFoundError
+from core.services.user import UserService
 from modules.apihelper.client.components.verify import Verify
 from utils.bot import get_args
 from utils.decorators.error import error_callable
