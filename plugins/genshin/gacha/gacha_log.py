@@ -62,7 +62,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         self.zh_dict = None
         self.gacha_log = GachaLog()
 
-    async def __async_init__(self):
+    async def initialize(self) -> None:
         await update_paimon_moe_zh(False)
         async with async_open(GACHA_LOG_PAIMON_MOE_PATH, "r", encoding="utf-8") as load_f:
             self.zh_dict = jsonlib.loads(await load_f.read())

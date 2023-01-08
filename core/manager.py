@@ -10,7 +10,7 @@ from typing_extensions import ParamSpec
 from core.base_service import BaseServiceType, ComponentType, DependenceType, get_all_services
 from core.config import config as bot_config
 from core.plugin import PluginType, get_all_plugins
-from utils.const import PROJECT_ROOT
+from utils.const import PLUGIN_DIR, PROJECT_ROOT
 from utils.helpers import gen_pkg
 from utils.log import logger
 
@@ -189,6 +189,8 @@ class PluginManager(Manager[PluginType]):
         return self._plugins
 
     async def install_plugins(self) -> None:
+        for path in filter(lambda x: x.is_dir(), PLUGIN_DIR.iterdir()):
+            _load_module(path)
         for plugin in get_all_plugins():
             try:
                 instance: PluginType = await self.executor(plugin)

@@ -1,10 +1,13 @@
 """插件"""
+import copy
 from itertools import chain
 from multiprocessing import RLock as Lock
 from types import MethodType
 from typing import (
+    Any,
     Callable,
     ClassVar,
+    Dict,
     Iterable,
     List,
     TYPE_CHECKING,
@@ -14,7 +17,7 @@ from typing import (
 )
 
 # noinspection PyProtectedMember
-from telegram.ext import BaseHandler, TypeHandler
+from telegram.ext import BaseHandler, ConversationHandler, TypeHandler
 
 # noinspection PyProtectedMember
 from typing_extensions import ParamSpec
@@ -35,6 +38,9 @@ HandlerType = TypeVar("HandlerType", bound=BaseHandler)
 
 _HANDLER_DATA_ATTR_NAME = "_handler_datas"
 """用于储存生成 handler 时所需要的参数（例如 block）的属性名"""
+
+_CONVERSATION_HANDLER_ATTR_NAME = "_conversation_handler_data"
+"""用于储存生成 ConversationHandler 时所需要的参数（例如 block）的属性名"""
 
 _ERROR_HANDLER_ATTR_NAME = "_error_handler_data"
 
@@ -79,11 +85,11 @@ class _Plugin:
                             self._error_handlers.append(data)
         return self._error_handlers
 
-    async def initialize(self) -> None:
-        """初始化插件的方法"""
+    async def __async_init__(self) -> None:
+        """初始化插件"""
 
-    async def destroy(self) -> None:
-        """销毁插件的方法"""
+    async def __async_del__(self) -> None:
+        """销毁插件"""
 
     async def install(self) -> None:
         """安装"""
@@ -99,7 +105,7 @@ class _Plugin:
                         bot.tg_app.add_handler(h, -1)
                 for h in self.error_handlers:
                     bot.tg_app.add_error_handler(*h)
-                await self.initialize()
+                await self.__async_init__()
                 self._initialized = True
 
     async def uninstall(self) -> None:
@@ -117,7 +123,7 @@ class _Plugin:
                         bot.tg_app.remove_handler(h, -1)
                 for h in self.error_handlers:
                     bot.tg_app.remove_handler(h[0])
-                await self.destroy()
+                await self.__async_del__()
                 self._initialized = False
 
     async def reload(self) -> None:
@@ -127,6 +133,52 @@ class _Plugin:
 
 class _Conversation(_Plugin):
     """Conversation类"""
+
+    _conversation_kwargs: Dict
+
+    def __init_subclass__(cls, **kwargs):
+        cls._conversation_kwargs = kwargs
+        super(_Conversation, cls).__init_subclass__()
+        return cls
+
+    @property
+    def handlers(self) -> List[HandlerType]:
+        result: List[HandlerType] = []
+
+        entry_points: List[HandlerType] = []
+        states: Dict[Any, List[HandlerType]] = {}
+        fallbacks: List[HandlerType] = []
+        for attr in dir(self):
+            # noinspection PyUnboundLocalVariable
+            if (
+                not (attr.startswith("_") or attr == "handlers")
+                and isinstance(func := getattr(self, attr), Callable)
+                and (handler_datas := getattr(func, _HANDLER_DATA_ATTR_NAME, None))
+            ):
+                conversation_data = getattr(func, _CONVERSATION_HANDLER_ATTR_NAME, None)
+                if attr == "cancel":
+                    handler_datas = copy.deepcopy(handler_datas)
+                    conversation_data = copy.deepcopy(conversation_data)
+                _handlers = self._make_handler(handler_datas)
+                if conversation_data:
+                    if (_type := conversation_data.pop("type")) == "entry":
+                        entry_points.extend(_handlers)
+                    elif _type == "state":
+                        if (key := conversation_data.pop("state")) in states:
+                            states[key].extend(_handlers)
+                        else:
+                            states[key] = _handlers
+                    elif _type == "fallback":
+                        fallbacks.extend(_handlers)
+                else:
+                    result.extend(_handlers)
+        if entry_points or states or fallbacks:
+            result.append(
+                ConversationHandler(
+                    entry_points, states, fallbacks, **self.__class__._conversation_kwargs  # pylint: disable=W0212
+                )
+            )
+        return result
 
 
 class Plugin(_Plugin):

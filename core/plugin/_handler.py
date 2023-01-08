@@ -1,8 +1,10 @@
+from enum import Enum
 from importlib import import_module
 from multiprocessing import RLock as Lock
 from typing import (
     Any,
     Callable,
+    ClassVar,
     Dict,
     List,
     Optional,
@@ -212,26 +214,6 @@ class handler(_Handler):
         self._type = handler_type
         super().__init__(**kwargs)
 
-    # def __init_subclass__(cls, **kwargs) -> None:
-    #     for attr in [
-    #         "callback_query",
-    #         "chat_join_request",
-    #         "chat_member",
-    #         "chosen_inline_result",
-    #         "command",
-    #         "inline_query",
-    #         "message",
-    #         "poll_answer",
-    #         "pool",
-    #         "pre_checkout_query",
-    #         "prefix",
-    #         "shipping_query",
-    #         "string_command",
-    #         "string_regex",
-    #         "type",
-    #     ]:
-    #         delattr(cls, attr)
-
 
 # noinspection PyPep8Naming
 class error_handler:
@@ -249,13 +231,31 @@ class error_handler:
         return func
 
 
+class ConversationDataType(Enum):
+    Entry = "entry"
+    State = "state"
+    Fallback = "fallback"
+
+
+class ConversationData(TypedDict):
+    type: ConversationDataType
+    state: Optional[Any]
+
+
+class _ConversationType:
+    _type: ClassVar[ConversationDataType]
+
+    def __init_subclass__(cls, **kwargs) -> None:
+        ...
+
+
 def _entry(func: Callable[P, T]) -> Callable[P, T]:
     setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, {"type": "entry"})
     return func
 
 
 class _State:
-    def __init__(self, state: Any):
+    def __init__(self, state: Any) -> None:
         self.state = state
 
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:

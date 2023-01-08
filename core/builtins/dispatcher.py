@@ -12,11 +12,14 @@ from types import MethodType
 from typing import Any, Callable, Dict, List, Sequence, Type, TypeVar, Union, _GenericAlias as GenericAlias
 
 from arkowrapper import ArkoWrapper
+from fastapi import FastAPI
 from telegram import Update
-from telegram.ext import CallbackContext
+from telegram.ext import Application as TGApplication, CallbackContext
 from typing_extensions import ParamSpec
+from uvicorn import Server
 
 from core.bot import Bot, bot
+from core.config import BotConfig, config as bot_config
 from utils.const import WRAPPER_ASSIGNMENTS
 
 __all__ = ["catch", "AbstractDispatcher", "BaseDispatcher", "HandlerDispatcher"]
@@ -95,13 +98,25 @@ class AbstractDispatcher(ABC):
 
 
 class BaseDispatcher(AbstractDispatcher):
+    """默认参数分发器"""
+
     _instances: Sequence[Any]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def _get_kwargs(self) -> Dict[Type[T], T]:
-        result = {AbstractDispatcher: self, Bot: bot, type(bot.executor): bot.executor}
+
+        result = {
+            AbstractDispatcher: self,
+            Bot: bot,
+            type(bot.executor): bot.executor,
+            FastAPI: bot.web_app,
+            Server: bot.web_server,
+            TGApplication: bot.tg_app,
+            BotConfig: bot_config,
+        }
+        result.update(self._kwargs)
         for item in chain(bot.dependency, bot.components, bot.services):
             result[type(item)] = item
         return result
@@ -157,13 +172,7 @@ class BaseDispatcher(AbstractDispatcher):
 
         return partial(func, **params)
 
-    @catch(Bot)
-    def catch_bot(self) -> "Bot":
-        from core.bot import bot
-
-        return bot
-
-    @catch("loop", AbstractEventLoop)
+    @catch(AbstractEventLoop)
     def catch_loop(self) -> AbstractEventLoop:
 
         return asyncio.get_event_loop()
