@@ -16,10 +16,10 @@ class PlayersRepository:
         async with AsyncSession(self.engine) as session:
             if region:
                 statement = select(Player).where(
-                    Player.user_id == user_id and Player.region == region and Player.is_chosen == 1
+                    (Player.user_id == user_id) and (Player.region == region) and (Player.is_chosen == 1)
                 )
             else:
-                statement = select(Player).where(Player.user_id == user_id and Player.is_chosen == 1)
+                statement = select(Player).where((Player.user_id == user_id) and (Player.is_chosen == 1))
             results = await session.exec(statement)
             return results.first()
 

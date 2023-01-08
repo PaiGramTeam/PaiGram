@@ -16,7 +16,7 @@ class CookiesRepository:
     async def get_by_user_id(self, user_id: int, region: Optional[RegionEnum]) -> Optional[Cookies]:
         async with AsyncSession(self.engine) as session:
             if region:
-                statement = select(Cookies).where(Cookies.user_id == user_id and Cookies.region == region)
+                statement = select(Cookies).where((Cookies.user_id == user_id) and (Cookies.region == region))
             else:
                 statement = select(Cookies).where(Cookies.user_id == user_id)
             results = await session.exec(statement)
