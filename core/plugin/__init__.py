@@ -26,10 +26,11 @@ from telegram.ext import BaseHandler, ConversationHandler, TypeHandler
 # noinspection PyProtectedMember
 from typing_extensions import ParamSpec
 
-from core.plugin._handler import ConversationData, ConversationDataType, conversation, handler
+from core.plugin._handler import ConversationDataType, conversation, handler
 from core.plugin._job import TimeType, job
 
 if TYPE_CHECKING:
+    from core.plugin._handler import ConversationData
     from multiprocessing.synchronize import RLock as LockType
 
 __all__ = ["Plugin", "PluginType", "handler", "job", "TimeType", "conversation", "get_all_plugins"]
@@ -165,7 +166,7 @@ class _Conversation(_Plugin):
                         and isinstance(func := getattr(self, attr), MethodType)
                         and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
                     ):
-                        conversation_data: ConversationData
+                        conversation_data: "ConversationData"
                         handlers: List[HandlerType] = []
                         for data in datas:
                             handlers.append(data.handler)

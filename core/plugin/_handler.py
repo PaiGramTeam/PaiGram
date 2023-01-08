@@ -36,7 +36,7 @@ from utils.const import WRAPPER_ASSIGNMENTS
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["handler", "conversation"]
+__all__ = ["handler", "conversation", "ConversationDataType", "ConversationData"]
 
 P = ParamSpec("P")
 T = TypeVar("T")
