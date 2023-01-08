@@ -16,6 +16,7 @@ COPY --from=dependency /wait-for /wait-for
 WORKDIR /root/app/
 RUN python3 -m venv venv \
     && source  venv/bin/activate \
+    && python3 -m pip install poetry \
     && python3 -m poetry install --extras all
 
 FROM runtime_3
