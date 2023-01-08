@@ -67,8 +67,12 @@
                         <img src="{{ data.ranks.strongest_strike[0].side_icon }}" alt=""/>
                     </div>
                     <div class="rank">
-                        <span>最多承伤: {{ data.ranks.most_damage_taken[0].value }}</span>
-                        <img src="{{ data.ranks.most_damage_taken[0].side_icon }}" alt=""/>
+                        {% if data.ranks.most_damage_taken is defined and data.ranks.most_damage_taken|length > 0 %}
+                            <span>最多承伤: {{ data.ranks.most_damage_taken[0].value }}</span>
+                            <img src="{{ data.ranks.most_damage_taken[0].side_icon }}" alt=""/>
+                        {% else %}
+                            <span>最多承伤: 0</span>
+                        {% endif %}
                     </div>
                 </div>
                 <div style="background-color: rgb(61 76 86 / 60%);">
