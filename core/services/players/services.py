@@ -1,8 +1,9 @@
 from typing import Optional
 
-from .models import PlayersDataBase as Player, RegionEnum
-from .repositories import PlayersRepository
-from ...base_service import BaseService
+from core.base_service import BaseService
+from core.services.players.models import PlayersDataBase as Player, RegionEnum
+from core.services.players.repositories import PlayersRepository
+
 
 __all__ = ("PlayersService",)
 
@@ -19,8 +20,8 @@ class PlayersService(BaseService):
         """
         return await self._repository.get_by_user_id(user_id, region)
 
-    async def add(self, player: Player) -> list[Player]:
-        return await self._repository.add(player)
+    async def add(self, player: Player):
+        await self._repository.add(player)
 
     async def get_all_by_user_id(self, user_id: int) -> list[Player]:
         return await self._repository.get_all_by_user_id(user_id)
