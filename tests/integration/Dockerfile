@@ -5,6 +5,7 @@ RUN apk add --no-cache g++ \
     && python3 -m pip install virtualenv \
     && python3 -m venv venv \
     && source bin/activate \
+    && python3 -m poetry install --extras all \
     && apk del g++
 
 FROM runtime_1 AS runtime_2
