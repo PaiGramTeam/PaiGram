@@ -7,7 +7,7 @@ from core.services.cookies.error import CookiesCachePoolExhausted
 from utils.error import RegionNotFoundError
 from utils.models.base import RegionEnum
 
-__all__ = ["PublicCookiesCache"]
+__all__ = ("PublicCookiesCache",)
 
 
 class PublicCookiesCache(BaseService.Component):

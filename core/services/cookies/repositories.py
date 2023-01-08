@@ -1,112 +1,42 @@
-from typing import List, cast
-
+from typing import Optional, List
 from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from core.base_service import BaseService
-from core.dependence.mysql import MySQL
-from core.services.cookies.error import CookiesNotFoundError
-from core.services.cookies.models import Cookies, HoyolabCookie, HyperionCookie
-from utils.error import RegionNotFoundError
+
 from utils.models.base import RegionEnum
+from .models import CookiesDataBase as Cookies
 
-__all__ = ["CookiesRepository"]
+__all__ = ("CookiesRepository",)
+
+from ...dependence.mysql import MySQL
 
 
-class CookiesRepository(BaseService.Component):
+class CookiesRepository:
     def __init__(self, mysql: MySQL):
-        self.mysql = mysql
+        self.engine = mysql.engine
 
-    async def add_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
-        async with self.mysql.Session() as session:
-            session = cast(AsyncSession, session)
-            if region == RegionEnum.HYPERION:
-                db_data = HyperionCookie(user_id=user_id, cookies=cookies)
-            elif region == RegionEnum.HOYOLAB:
-                db_data = HoyolabCookie(user_id=user_id, cookies=cookies)
+    async def get_by_user_id(self, user_id: int, region: Optional[RegionEnum]) -> Optional[Cookies]:
+        async with AsyncSession(self.engine) as session:
+            if region:
+                statement = select(Cookies).where(Cookies.user_id == user_id and Cookies.region == region)
             else:
-                raise RegionNotFoundError(region.name)
-            session.add(db_data)
-            await session.commit()
-
-    async def update_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
-        async with self.mysql.Session() as session:
-            session = cast(AsyncSession, session)
-            if region == RegionEnum.HYPERION:
-                statement = select(HyperionCookie).where(HyperionCookie.user_id == user_id)
-            elif region == RegionEnum.HOYOLAB:
-                statement = select(HoyolabCookie).where(HoyolabCookie.user_id == user_id)
-            else:
-                raise RegionNotFoundError(region.name)
+                statement = select(Cookies).where(Cookies.user_id == user_id)
             results = await session.exec(statement)
-            db_cookies = results.first()
-            if db_cookies is None:
-                raise CookiesNotFoundError(user_id)
-            db_cookies = db_cookies[0]
-            db_cookies.cookies = cookies
-            session.add(db_cookies)
-            await session.commit()
-            await session.refresh(db_cookies)
+            return results.first()
 
-    async def update_cookies_ex(self, cookies: Cookies, region: RegionEnum):
-        async with self.mysql.Session() as session:
-            session = cast(AsyncSession, session)
-            if region not in [RegionEnum.HYPERION, RegionEnum.HOYOLAB]:
-                raise RegionNotFoundError(region.name)
+    async def add(self, cookies: Cookies):
+        async with AsyncSession(self.engine) as session:
             session.add(cookies)
             await session.commit()
-            await session.refresh(cookies)
 
-    async def get_cookies(self, user_id, region: RegionEnum) -> Cookies:
-        async with self.mysql.Session() as session:
-            session = cast(AsyncSession, session)
-            if region == RegionEnum.HYPERION:
-                statement = select(HyperionCookie).where(HyperionCookie.user_id == user_id)
-                results = await session.exec(statement)
-                db_cookies = results.first()
-                if db_cookies is None:
-                    raise CookiesNotFoundError(user_id)
-                return db_cookies[0]
-            elif region == RegionEnum.HOYOLAB:
-                statement = select(HoyolabCookie).where(HoyolabCookie.user_id == user_id)
-                results = await session.exec(statement)
-                db_cookies = results.first()
-                if db_cookies is None:
-                    raise CookiesNotFoundError(user_id)
-                return db_cookies[0]
-            else:
-                raise RegionNotFoundError(region.name)
-
-    async def get_all_cookies(self, region: RegionEnum) -> List[Cookies]:
-        async with self.mysql.Session() as session:
-            session = cast(AsyncSession, session)
-            if region == RegionEnum.HYPERION:
-                statement = select(HyperionCookie)
-                results = await session.exec(statement)
-                db_cookies = results.all()
-                return [cookies[0] for cookies in db_cookies]
-            elif region == RegionEnum.HOYOLAB:
-                statement = select(HoyolabCookie)
-                results = await session.exec(statement)
-                db_cookies = results.all()
-                return [cookies[0] for cookies in db_cookies]
-            else:
-                raise RegionNotFoundError(region.name)
-
-    async def del_cookies(self, user_id, region: RegionEnum):
-        async with self.mysql.Session() as session:
-            session = cast(AsyncSession, session)
-            if region == RegionEnum.HYPERION:
-                statement = select(HyperionCookie).where(HyperionCookie.user_id == user_id)
-            elif region == RegionEnum.HOYOLAB:
-                statement = select(HoyolabCookie).where(HoyolabCookie.user_id == user_id)
-            else:
-                raise RegionNotFoundError(region.name)
-            results = await session.execute(statement)
-            try:
-                db_cookies = results.unique().scalar_one()
-            except NoResultFound as exc:
-                raise CookiesNotFoundError(user_id) from exc
-            await session.delete(db_cookies)
+    async def remove(self, cookies: Cookies):
+        async with AsyncSession(self.engine) as session:
+            await session.delete(cookies)
             await session.commit()
+
+    async def get_all_by_user_id(self, user_id: int) -> List[Cookies]:
+        async with AsyncSession(self.engine) as session:
+            statement = select(Cookies).where(Cookies.user_id == user_id)
+            results = await session.exec(statement)
+            players = results.all()
+            return players
