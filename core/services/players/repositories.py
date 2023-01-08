@@ -5,11 +5,12 @@ from sqlmodel import select
 from core.dependence.mysql import MySQL
 from core.services.players.models import PlayersDataBase as Player, RegionEnum
 from core.sqlmodel.session import AsyncSession
+from core.base_service import BaseService
 
 __all__ = ("PlayersRepository",)
 
 
-class PlayersRepository:
+class PlayersRepository(BaseService.Component):
     def __init__(self, mysql: MySQL):
         self.engine = mysql.engine
 

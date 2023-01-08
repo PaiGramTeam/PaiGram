@@ -6,11 +6,12 @@ from core.dependence.mysql import MySQL
 from utils.models.base import RegionEnum
 from core.services.cookies.models import CookiesDataBase as Cookies
 from core.sqlmodel.session import AsyncSession
+from core.base_service import BaseService
 
 __all__ = ("CookiesRepository",)
 
 
-class CookiesRepository:
+class CookiesRepository(BaseService.Component):
     def __init__(self, mysql: MySQL):
         self.engine = mysql.engine
 
