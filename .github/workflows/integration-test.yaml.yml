@@ -1,0 +1,19 @@
+name: CI-Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [ opened, synchronize ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup integration test environment
+        run: cp tests/integration/.env.example tests/integration/.env
+      - name: Perform integration test with docker compose
+        run: docker-compose -f tests/integration/docker-compose.yaml up --build --abort-on-container-exit
