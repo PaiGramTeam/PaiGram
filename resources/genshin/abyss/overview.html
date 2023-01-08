@@ -71,18 +71,26 @@
                             <span>最多承伤: {{ data.ranks.most_damage_taken[0].value }}</span>
                             <img src="{{ data.ranks.most_damage_taken[0].side_icon }}" alt=""/>
                         {% else %}
-                            <span>最多承伤: 0</span>
+                            <span>最多承伤: </span>
                         {% endif %}
                     </div>
                 </div>
                 <div style="background-color: rgb(61 76 86 / 60%);">
                     <div class="rank">
-                        <span>元素爆发: {{ data.ranks.most_bursts_used[0].value }}</span>
-                        <img src="{{ data.ranks.most_bursts_used[0].side_icon }}" alt=""/>
+                        {% if data.ranks.most_bursts_used is defined and data.ranks.most_bursts_used|length > 0 %}
+                            <span>元素爆发: {{ data.ranks.most_bursts_used[0].value }}</span>
+                            <img src="{{ data.ranks.most_bursts_used[0].side_icon }}" alt=""/>
+                        {% else %}
+                            <span>元素爆发: </span>
+                        {% endif %}
                     </div>
                     <div class="rank">
-                        <span>元素战技: {{ data.ranks.most_skills_used[0].value }}</span>
-                        <img src="{{ data.ranks.most_skills_used[0].side_icon }}" alt=""/>
+                        {% if data.ranks.most_skills_used is defined and data.ranks.most_skills_used|length > 0 %}
+                            <span>元素战技: {{ data.ranks.most_skills_used[0].value }}</span>
+                            <img src="{{ data.ranks.most_skills_used[0].side_icon }}" alt=""/>
+                        {% else %}
+                            <span>元素战技: </span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
