@@ -12,6 +12,7 @@ from telegram.helpers import escape_markdown
 from core.bot import bot
 from core.dependence.mtproto import MTProto
 from core.dependence.redisdb import RedisDB
+from core.config import config
 from core.plugin import Plugin, handler
 from core.services.quiz import QuizService
 from utils.chatmember import extract_status_change
@@ -151,7 +152,7 @@ class GroupJoiningVerification(Plugin):
         chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
         if not self.is_admin(chat_administrators, user.id):
             logger.debug(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 非群管理")
-            await callback_query.answer(text="你不是管理！\n" "再乱点我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
+            await callback_query.answer(text="你不是管理！\n" + config.notice.user_mismatch, show_alert=True)
             return
         result, user_id = await admin_callback(callback_query.data)
         try:
@@ -216,7 +217,7 @@ class GroupJoiningVerification(Plugin):
         user_id, result, question, answer = await query_callback(callback_query.data)
         logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth认证命令 ")
         if user.id != user_id:
-            await callback_query.answer(text="这不是你的验证！\n" "再乱点再按我叫西风骑士团、千岩军和天领奉行了！", show_alert=True)
+            await callback_query.answer(text="这不是你的验证！\n" + config.notice.user_mismatch, show_alert=True)
             return
         logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
         if result:
