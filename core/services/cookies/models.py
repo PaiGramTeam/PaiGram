@@ -27,4 +27,4 @@ class Cookies(SQLModel):
 
 
 class CookiesDataBase(Cookies, table=True):
-    __tablename__ = "players"
+    __tablename__ = "cookies"
