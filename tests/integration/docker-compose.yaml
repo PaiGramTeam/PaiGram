@@ -22,10 +22,10 @@ services:
       dockerfile: "tests/integration/Dockerfile"
     environment:
       - MYSQL_HOST=mysql
-      - MYSQL_PORT=${MYSQL_PORT}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_PORT=${DB_PORT}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_DATABASE}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DATABASE=0

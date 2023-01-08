@@ -1,9 +1,10 @@
 FROM python:3.8.11-alpine3.14 AS base
 
 FROM base AS runtime_1
-RUN apk add --no-cache g++                                \
-    && python3 -m pip install virtualenv                  \
-    && python3 -m poetry install --extras all             \
+RUN apk add --no-cache g++ \
+    && python3 -m pip install virtualenv \
+    && python3 -m venv venv \
+    && source bin/activate \
     && apk del g++
 
 FROM runtime_1 AS runtime_2
