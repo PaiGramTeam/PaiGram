@@ -1,12 +1,14 @@
+import contextlib
+
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlmodel.ext.asyncio.session import AsyncSession
 from typing_extensions import Self
 
 from core.base_service import BaseService
 from core.config import BotConfig
+from core.sqlmodel.session import AsyncSession
 
-__all__ = ["MySQL"]
+__all__ = ("MySQL",)
 
 
 class MySQL(BaseService.Dependence):
@@ -24,10 +26,9 @@ class MySQL(BaseService.Dependence):
         self.engine = create_async_engine(self.url)
         self.Session = sessionmaker(bind=self.engine, class_=AsyncSession)
 
-    async def get_session(self):
-        """获取会话"""
-        async with self.Session() as session:
-            yield session
+    @contextlib.asynccontextmanager
+    async def session(self) -> AsyncSession:
+        yield self.Session()
 
     async def shutdown(self):
         self.Session.close_all()

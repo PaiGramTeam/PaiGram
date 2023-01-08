@@ -1,11 +1,11 @@
 from typing import Optional, List
 
-from sqlalchemy import select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select
 
 from core.base_service import BaseService
 from core.dependence.mysql import MySQL
 from core.services.users.models import UserDataBase as User
+from core.sqlmodel.session import AsyncSession
 
 __all__ = ("UserRepository",)
 

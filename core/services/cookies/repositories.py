@@ -1,10 +1,11 @@
 from typing import Optional, List
-from sqlalchemy import select
-from sqlmodel.ext.asyncio.session import AsyncSession
+
+from sqlmodel import select
 
 from core.dependence.mysql import MySQL
 from utils.models.base import RegionEnum
 from core.services.cookies.models import CookiesDataBase as Cookies
+from core.sqlmodel.session import AsyncSession
 
 __all__ = ("CookiesRepository",)
 

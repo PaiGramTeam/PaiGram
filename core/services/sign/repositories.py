@@ -1,11 +1,11 @@
-from typing import List, Optional, cast
+from typing import List, Optional
 
-from sqlalchemy import select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select
 
 from core.base_service import BaseService
 from core.dependence.mysql import MySQL
 from core.services.sign.models import Sign
+from core.sqlmodel.session import AsyncSession
 
 __all__ = ("SignRepository",)
 
