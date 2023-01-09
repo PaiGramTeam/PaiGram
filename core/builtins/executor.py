@@ -1,19 +1,18 @@
 """执行器"""
 import inspect
 from multiprocessing import RLock as Lock
+from functools import cached_property
 from typing import Callable, ClassVar, Dict, Generic, Optional, TYPE_CHECKING, Type, TypeVar
 
+from telegram import Update
 from telegram.ext import CallbackContext
-
-# noinspection PyProtectedMember
-from telegram.ext._utils.types import HandlerCallback
 from typing_extensions import ParamSpec, Self
 
-from core.builtins.dispatcher import AbstractDispatcher, BaseDispatcher
 from utils.decorator import do_nothing
 from utils.models.lock import HashLock
 
 if TYPE_CHECKING:
+    from core.builtins.dispatcher import AbstractDispatcher
     from multiprocessing.synchronize import RLock as LockType
 
 __all__ = ["BaseExecutor", "HandlerExecutor"]
@@ -42,7 +41,7 @@ class BaseExecutor:
                 cls._instances.update({name: instance})
         return instance
 
-    @property
+    @cached_property
     def name(self) -> str:
         """当前执行器的名称"""
         return self._name
@@ -54,13 +53,16 @@ class BaseExecutor:
         self,
         target: Callable[P, R],
         block: bool = False,
-        dispatcher: Type[AbstractDispatcher] = BaseDispatcher,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
         lock_id: int = None,
         **kwargs,
     ) -> R:
+        from core.builtins.dispatcher import BaseDispatcher
 
+        dispatcher = dispatcher or BaseDispatcher
         with (HashLock(lock_id or target) if block else do_nothing()):
-            dispatched_func = dispatcher(**kwargs).dispatch(target)  # 分发参数，组成新函数
+            dispatcher_instance = dispatcher(**kwargs)
+            dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
 
             # 执行
             if inspect.iscoroutinefunction(target):
@@ -83,24 +85,27 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
     # noinspection PyMethodOverriding
     async def __call__(
         self,
-        callback: HandlerCallback,
+        update: Update,
         context: CallbackContext,
         block: bool = False,
-        dispatcher: Optional[Type[AbstractDispatcher]] = None,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
         lock_id: int = None,
         **kwargs,
     ) -> R:
+        from core.builtins.contexts import handler_contexts
+
         if dispatcher is None:
             from core.builtins.dispatcher import HandlerDispatcher
 
             dispatcher = HandlerDispatcher
 
-        return await super().__call__(
-            self._callback,
-            dispatcher=dispatcher,
-            block=block,
-            lock_id=lock_id,
-            callback=callback,
-            context=context,
-            **kwargs,
-        )
+        with handler_contexts(update, context):
+            return await super().__call__(
+                self._callback,
+                dispatcher=dispatcher,
+                block=block,
+                lock_id=lock_id,
+                update=update,
+                context=context,
+                **kwargs,
+            )

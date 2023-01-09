@@ -33,10 +33,12 @@ P = ParamSpec("P")
 
 
 class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):
-    """BOT 除自身外的生命周期控制"""
+    """BOT 除自身外的生命周期管理类"""
 
 
 class Bot(Singleton, Managers):
+    """BOT"""
+
     _tg_app: Optional[TgApplication] = None
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
@@ -119,14 +121,14 @@ class Bot(Singleton, Managers):
     async def shutdown(self):
         """BOT 关闭"""
         await self.stop_services()  # 终止其他服务
-        await self.stop_dependency()  # 启动基础服务
+        await self.stop_dependency()  # 终止基础服务
 
     async def start(self) -> None:
         """启动 BOT"""
         logger.info("正在启动 BOT 中...")
-        self._running = True
 
         def error_callback(exc: TelegramError) -> None:
+            """错误信息回调"""
             self.tg_app.create_task(self.tg_app.process_error(error=exc, update=None))
 
         await self.initialize()
@@ -134,7 +136,7 @@ class Bot(Singleton, Managers):
 
         await self.tg_app.initialize()
 
-        if not bot_config.webserver.close:
+        if not bot_config.webserver.close:  # 如果使用 web app
             server_config = self.web_server.config
             server_config.setup_event_loop()
             if not server_config.loaded:
@@ -143,7 +145,7 @@ class Bot(Singleton, Managers):
             await self.web_server.startup()
             if self.web_server.should_exit:
                 logger.error("web server 启动失败，正在退出")
-                raise SystemExit
+                raise SystemExit from None
 
             self._web_server_task = asyncio.create_task(self.web_server.main_loop())
 
@@ -160,17 +162,20 @@ class Bot(Singleton, Managers):
                     logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
                 else:
                     logger.error("网络连接出现问题, 请检查您的网络状况.")
-                raise SystemExit
+                raise SystemExit from e
 
         await self._on_startup()
         await self.tg_app.start()
+        self._running = True
         logger.success("BOT 启动成功")
 
     # noinspection PyUnusedLocal
     def stop_signal_handler(self, signum: int, frame: "FrameType"):
+        """终止信号处理"""
         signals = {k: v for v, k in signal.__dict__.items() if v.startswith("SIG") and not v.startswith("SIG_")}
         logger.debug(f"接收到了终止信号 {signals[signum]} 正在退出...")
-        self._web_server_task.cancel()
+        if self._web_server_task:
+            self._web_server_task.cancel()
 
     async def idle(self) -> None:
         """在接收到中止信号之前，堵塞loop"""
@@ -207,7 +212,10 @@ class Bot(Singleton, Managers):
 
         await self.tg_app.shutdown()
         if self._web_server is not None:
-            await self._web_server.shutdown()
+            try:
+                await self._web_server.shutdown()
+            except AttributeError:
+                pass
 
         await self.shutdown()
         logger.success("BOT 关闭成功")
@@ -219,7 +227,7 @@ class Bot(Singleton, Managers):
             loop.run_until_complete(self.start())
             loop.run_until_complete(self.idle())
         except (SystemExit, KeyboardInterrupt):
-            pass  # 接收到了终止信号
+            logger.debug("接收到了终止信号，BOT 即将关闭")  # 接收到了终止信号
         except NetworkError as e:
             if isinstance(e, SSLZeroReturnError):
                 logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
@@ -229,7 +237,9 @@ class Bot(Singleton, Managers):
             logger.exception(f"遇到了未知错误: {type(e)}")
         finally:
             loop.run_until_complete(self.stop())
-            raise SystemExit
+
+            if bot_config.reload:
+                raise SystemExit from None
 
     # decorators
 

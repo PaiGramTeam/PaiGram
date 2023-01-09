@@ -1,22 +1,9 @@
+from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
 from importlib import import_module
 from multiprocessing import RLock as Lock
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    Generic,
-    List,
-    Optional,
-    Pattern,
-    TYPE_CHECKING,
-    Type,
-    TypeVar,
-    TypedDict,
-    Union,
-)
+from typing import Any, Callable, ClassVar, Dict, Generic, List, Optional, Pattern, TYPE_CHECKING, Type, TypeVar, Union
 
 from pydantic import BaseModel
 
@@ -31,12 +18,13 @@ from telegram.ext import BaseHandler
 from telegram.ext.filters import BaseFilter
 from typing_extensions import ParamSpec
 
-from utils.const import WRAPPER_ASSIGNMENTS
+from utils.const import WRAPPER_ASSIGNMENTS as _WRAPPER_ASSIGNMENTS
 
 if TYPE_CHECKING:
+    from core.builtins.dispatcher import AbstractDispatcher
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["handler", "conversation", "ConversationDataType", "ConversationData"]
+__all__ = ["handler", "conversation", "ConversationDataType", "ConversationData", "HandlerData"]
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -45,67 +33,73 @@ R = TypeVar("R")
 HandlerType = TypeVar("HandlerType", bound=BaseHandler)
 HandlerCls = Type[HandlerType]
 
-_Module = import_module("telegram.ext")
+Module = import_module("telegram.ext")
 
-_HANDLER_DATA_ATTR_NAME = "_handler_datas"
+HANDLER_DATA_ATTR_NAME = "_handler_datas"
 """用于储存生成 handler 时所需要的参数（例如 block）的属性名"""
 
-_ERROR_HANDLER_ATTR_NAME = "_error_handler_data"
+ERROR_HANDLER_ATTR_NAME = "_error_handler_data"
 
-_CONVERSATION_HANDLER_ATTR_NAME = "_conversation_handler_data"
+CONVERSATION_HANDLER_ATTR_NAME = "_conversation_handler_data"
 """用于储存生成 ConversationHandler 时所需要的参数（例如 block）的属性名"""
 
-WRAPPER_ASSIGNMENTS += [
-    _HANDLER_DATA_ATTR_NAME,
-    _ERROR_HANDLER_ATTR_NAME,
-    _CONVERSATION_HANDLER_ATTR_NAME,
+WRAPPER_ASSIGNMENTS = _WRAPPER_ASSIGNMENTS + [
+    HANDLER_DATA_ATTR_NAME,
+    ERROR_HANDLER_ATTR_NAME,
+    CONVERSATION_HANDLER_ATTR_NAME,
 ]
 
 
-class HandlerData(TypedDict):
+@dataclass(init=True)
+class HandlerData:
     type: Type
-    func: Callable
-    args: Dict[str, Any]
+    kwargs: Dict[str, Any]
+    dispatcher: Optional[Type["AbstractDispatcher"]] = None
 
 
 class HandlerFunc:
     """处理器函数"""
 
     _lock: "LockType" = Lock()
-    _handler: Optional[HandlerType] = None
+    _handler: Optional["HandlerType"] = None
 
-    def __init__(self, handler_type: HandlerCls, func: Callable[P, R], kwargs: Dict):
-        from core.builtins.executor import HandlerExecutor
-
+    def __init__(self, handler_type: "HandlerCls", func: Callable[P, R], kwargs: Dict):
         self.type = handler_type
-        self.callback = HandlerExecutor(func)
+        self.callback = func
         self.kwargs = kwargs
 
     @property
-    def handler(self) -> HandlerType:
+    def handler(self) -> "HandlerType":
         with self._lock:
             if self._handler is None:
-                self._handler = self._handler or self.type(**self.kwargs, callback=self.callback)
+                from core.builtins.executor import HandlerExecutor
+
+                self._handler = self._handler or self.type(
+                    **self.kwargs, callback=wraps(HandlerExecutor(self.callback), assigned=WRAPPER_ASSIGNMENTS)
+                )
         return self._handler
 
 
 class _Handler:
-    _type: Type[HandlerType]
+    _type: Type["HandlerType"]
 
     kwargs: Dict[str, Any] = {}
 
     def __init_subclass__(cls, **kwargs) -> None:
         """用于获取 python-telegram-bot 中对应的 handler class"""
-        cls._type = getattr(_Module, f"{cls.__name__.strip('_')}Handler", None)
 
-    def __init__(self, **kwargs) -> None:
+        cls._type = getattr(Module, f"{cls.__name__.strip('_')}Handler", None)
+
+    def __init__(self, dispatcher: Optional[Type["AbstractDispatcher"]] = None, **kwargs) -> None:
+        self.dispatcher = dispatcher
         self.kwargs = kwargs
 
     def __call__(self, func: Callable[P, R]) -> Callable[P, R]:
         """decorator实现，从 func 生成 Handler"""
-        handler_datas = getattr(func, _HANDLER_DATA_ATTR_NAME, [])
-        handler_datas.append(HandlerFunc(self._type, func, self.kwargs))
-        setattr(func, _HANDLER_DATA_ATTR_NAME, handler_datas)
+
+        handler_datas = getattr(func, HANDLER_DATA_ATTR_NAME, [])
+        handler_datas.append(HandlerData(type=self._type, kwargs=self.kwargs, dispatcher=self.dispatcher))
+        setattr(func, HANDLER_DATA_ATTR_NAME, handler_datas)
 
         return func
 
@@ -222,7 +216,9 @@ class handler(_Handler):
     string_regex = _StringRegex
     type = _Type
 
-    def __init__(self, handler_type: Union[Callable[P, HandlerType], Type[HandlerType]], **kwargs: P.kwargs) -> None:
+    def __init__(
+        self, handler_type: Union[Callable[P, "HandlerType"], Type["HandlerType"]], **kwargs: P.kwargs
+    ) -> None:
         self._type = handler_type
         super().__init__(**kwargs)
 
@@ -236,9 +232,9 @@ class error_handler:
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
         self._func = func or self._func
 
-        handler_datas = getattr(func, _ERROR_HANDLER_ATTR_NAME, [])
+        handler_datas = getattr(func, ERROR_HANDLER_ATTR_NAME, [])
         handler_datas.append((self._func or func, self._block))
-        setattr(func, _ERROR_HANDLER_ATTR_NAME, handler_datas)
+        setattr(func, ERROR_HANDLER_ATTR_NAME, handler_datas)
 
         return func
 
@@ -266,7 +262,7 @@ class _Entry(_ConversationType, Generic[P, R]):
 
     def __init__(self, func: Callable[P, R]) -> None:
         wraps(func)(self)
-        setattr(self, _CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
+        setattr(self, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
 
     def __call__(self, *args, **kwargs) -> R:
         return self.__wrapped__(*args, **kwargs)
@@ -277,7 +273,7 @@ class _State(_ConversationType):
         self.state = state
 
     def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
-        setattr(func, _CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type, state=self.state))
+        setattr(func, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type, state=self.state))
         return func
 
 
@@ -286,7 +282,7 @@ class _Fallback(_ConversationType, Generic[P, R]):
 
     def __init__(self, func: Callable[P, R]) -> None:
         wraps(func)(self)
-        setattr(self, _CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
+        setattr(self, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
 
     def __call__(self, *args, **kwargs) -> R:
         return self.__wrapped__(*args, **kwargs)

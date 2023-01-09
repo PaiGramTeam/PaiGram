@@ -1,21 +1,23 @@
-from arkowrapper import ArkoWrapper
 from asyncio import CancelledError
 from importlib import import_module
 from pathlib import Path
 from typing import Dict, Generic, List, Optional, TYPE_CHECKING, Type, TypeVar
 
+from arkowrapper import ArkoWrapper
 from async_timeout import timeout
 from typing_extensions import ParamSpec
 
 from core.base_service import BaseServiceType, ComponentType, DependenceType, get_all_services
 from core.config import config as bot_config
-from core.plugin import PluginType, get_all_plugins
 from utils.const import PLUGIN_DIR, PROJECT_ROOT
 from utils.helpers import gen_pkg
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from core.plugin import PluginType
     from core.builtins.executor import BaseExecutor
+
+__all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager")
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -25,10 +27,11 @@ P = ParamSpec("P")
 def _load_module(path: Path) -> None:
     for pkg in gen_pkg(path):
         try:
+            logger.debug('正在导入 "%s"', pkg)
             import_module(pkg)
         except Exception as e:
             logger.exception(
-                '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
+                '在导入 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
             )
             raise SystemExit from e
 
@@ -102,6 +105,7 @@ class ComponentManager(Manager[ComponentType]):
             _load_module(path)
         components = ArkoWrapper(get_all_services()).filter(lambda x: x.is_component)
         retry_times = 0
+        max_retry_times = len(components)
         while components:
             start_len = len(components)
             for component in list(components):
@@ -118,7 +122,7 @@ class ComponentManager(Manager[ComponentType]):
             if start_len == end_len:
                 retry_times += 1
 
-            if retry_times > 2:
+            if retry_times == max_retry_times and components:
                 for component in components:
                     logger.error('组件 "%s" 初始化失败', component.__name__)
                 raise SystemExit
@@ -178,29 +182,34 @@ class ServiceManager(Manager[BaseServiceType]):
                     logger.exception('服务 "%s" 关闭失败', service.__class__.__name__, exc_info=e)
 
 
-class PluginManager(Manager[PluginType]):
+class PluginManager(Manager["PluginType"]):
     """插件管理"""
 
-    _plugins: List[PluginType] = []
+    _plugins: List["PluginType"] = []
 
     @property
-    def plugins(self) -> List[PluginType]:
+    def plugins(self) -> List["PluginType"]:
         """所有已经加载的插件"""
         return self._plugins
 
     async def install_plugins(self) -> None:
+        """安装所有插件"""
+        from core.plugin import get_all_plugins
+
         for path in filter(lambda x: x.is_dir(), PLUGIN_DIR.iterdir()):
             _load_module(path)
         for plugin in get_all_plugins():
+            plugin: Type["PluginType"]
             try:
-                instance: PluginType = await self.executor(plugin)
+                instance: "PluginType" = await self.executor(plugin)
             except Exception as e:
                 logger.exception('插件 "%s" 初始化失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
             self._plugins.append(instance)
 
             try:
-                await plugin.install()
+                await instance.install()
+                logger.success('插件 "%s" 安装成功', f"{plugin.__module__}.{plugin.__name__}")
             except Exception as e:
                 logger.exception('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
