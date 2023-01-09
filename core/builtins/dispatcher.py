@@ -32,7 +32,7 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.bot import Bot
-from core.builtins.contexts import TGContext, TGUpdate, BotContext
+from core.builtins.contexts import BotContext, TGContext, TGUpdate
 from core.config import BotConfig, config as bot_config
 from utils.const import WRAPPER_ASSIGNMENTS
 
@@ -120,11 +120,22 @@ class AbstractDispatcher(ABC):
         return list(
             ArkoWrapper(dir(self))
             .filter(lambda x: not x.startswith("_"))
-            .filter(lambda x: x not in self.IGNORED_ATTRS + ["dispatch", "catch_funcs"])
+            .filter(lambda x: x not in self.IGNORED_ATTRS + ["dispatch", "catch_funcs", "cache_func_map"])
             .map(lambda x: getattr(self, x))
             .filter(lambda x: isinstance(x, MethodType))
             .filter(lambda x: hasattr(x, "_catch_targets"))
         )
+
+    @cached_property
+    def cache_func_map(self) -> Dict[Union[str, Type[T]], Callable[..., T]]:
+        result = {}
+        for catch_func in self.catch_funcs:
+            catch_targets = getattr(catch_func, _CATCH_TARGET_ATTR)
+            for catch_target in catch_targets:
+                result[catch_target] = catch_func
+                # if isinstance(catch_target, type):
+                #     result[catch_target.__name__] = catch_func
+        return result
 
     @abstractmethod
     def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
@@ -167,27 +178,13 @@ class BaseDispatcher(AbstractDispatcher):
 
         for name, parameter in list(parameters.items()):
             annotation = parameter.annotation
-            if isinstance(annotation, GenericAlias):
+            if annotation != Any and isinstance(annotation, GenericAlias):
                 continue
-            for catch_func in self.catch_funcs:
-                catch_targets = getattr(catch_func, _CATCH_TARGET_ATTR)
-                for catch_target in catch_targets:
-                    if isinstance(catch_target, str):
-                        # 比较参数名
-                        if any(
-                            [name == catch_target, isinstance(annotation, type) and annotation.__name__ == catch_target]
-                        ):
-                            params[name] = catch_func()
-                            del parameters[name]
-                    # 比较参数类型
-                    elif isinstance(catch_target, type) and any(
-                        [
-                            name == catch_target.__name__,
-                            annotation.__name__ == catch_target.__name__,
-                        ]
-                    ):
-                        params[name] = catch_func()
-                        del parameters[name]
+
+            catch_func = self.cache_func_map.get(annotation, None) or self.cache_func_map.get(name, None)
+            if catch_func is not None:
+                params[name] = catch_func()
+                del parameters[name]
 
         for name, parameter in parameters.items():
             if name in params:
