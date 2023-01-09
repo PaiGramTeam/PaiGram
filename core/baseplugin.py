@@ -1,10 +1,15 @@
-from telegram import Update, ReplyKeyboardRemove
+from typing import TYPE_CHECKING, Optional, Union
+
+from telegram import Update, ReplyKeyboardRemove, Chat
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler
 
 from core.plugin import handler, conversation
 from utils.bot import get_chat
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from core.application import Application
 
 
 async def clean_message(context: CallbackContext):
@@ -40,21 +45,19 @@ async def clean_message(context: CallbackContext):
             logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
 
 
-def add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int, delete_seconds: int):
-    context.job_queue.run_once(
-        callback=clean_message,
-        when=delete_seconds,
-        data=message_id,
-        name=f"{chat_id}|{message_id}|clean_message",
-        chat_id=chat_id,
-        job_kwargs={"replace_existing": True, "id": f"{chat_id}|{message_id}|clean_message"},
-    )
-
-
 class _BasePlugin:
-    @staticmethod
-    def _add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int, delete_seconds: int = 60):
-        return add_delete_message_job(context, chat_id, message_id, delete_seconds)
+    _app: Optional["Application"] = None
+
+    def _add_delete_message_job(self, chat_id: int, message_id: int, delete_seconds: int = 60):
+        self._app.job_queue.run_once(
+            callback=clean_message,
+            when=delete_seconds,
+            data=message_id,
+            name=f"{chat_id}|{message_id}|clean_message",
+            chat_id=chat_id,
+            job_kwargs={"replace_existing": True, "id": f"{chat_id}|{message_id}|clean_message"},
+        )
+
 
 
 class _Conversation(_BasePlugin):

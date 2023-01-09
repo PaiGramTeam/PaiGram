@@ -15,7 +15,7 @@ from utils.typedefs import StrOrPath
 if TYPE_CHECKING:
     from multiprocessing.process import BaseProcess
 
-__all__ = ["Reloader"]
+__all__ = ("Reloader",)
 
 multiprocessing.allow_connection_pickling()
 spawn = multiprocessing.get_context("spawn")
@@ -145,10 +145,6 @@ class Reloader:
                 self.restart()
 
         self.shutdown()
-
-    # def pause(self) -> None:
-    #     if self.should_exit.wait(self.reload_delay):
-    #         raise StopIteration()
 
     def signal_handler(self, *_) -> None:
         """当接收到结束信号量时"""

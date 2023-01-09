@@ -17,7 +17,7 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.config import config as bot_config
-from core.manager import ComponentManager, DependenceManager, PluginManager, ServiceManager
+from core.manager import Managers
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 from utils.models.signal import Singleton
@@ -30,10 +30,6 @@ __all__ = ("Application",)
 R = TypeVar("R")
 T = TypeVar("T")
 P = ParamSpec("P")
-
-
-class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):
-    """BOT 除自身外的生命周期管理类"""
 
 
 class Application(Singleton, Managers):
@@ -108,14 +104,6 @@ class Application(Singleton, Managers):
                 )
         return self._web_server
 
-    async def _on_startup(self) -> None:
-        for func in self._startup_funcs:
-            await self.executor(func, block=getattr(func, "block", False))
-
-    async def _on_shutdown(self) -> None:
-        for func in self._shutdown_funcs:
-            await self.executor(func, block=getattr(func, "block", False))
-
     async def initialize(self):
         """BOT 初始化"""
         await self.start_dependency()  # 启动基础服务
@@ -169,7 +157,6 @@ class Application(Singleton, Managers):
                     logger.error("网络连接出现问题, 请检查您的网络状况.")
                 raise SystemExit from e
 
-        await self._on_startup()
         await self.tg_app.start()
         self._running = True
         logger.success("BOT 启动成功")
@@ -209,8 +196,6 @@ class Application(Singleton, Managers):
 
         if self.tg_app.updater.running:
             await self.tg_app.updater.stop()
-
-        await self._on_shutdown()
 
         if self.tg_app.running:
             await self.tg_app.stop()

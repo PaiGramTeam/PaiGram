@@ -1,7 +1,6 @@
 import asyncio
 
 from core.application import Application
-from core.builtins.dispatcher import set_default_kwargs
 from utils.const import PROJECT_ROOT
 from core.builtins.reloader import Reloader
 from core.config import config
@@ -16,7 +15,6 @@ except ImportError:
 
 def run():
     app = Application()
-    set_default_kwargs(app)
     app.launch()
 
 

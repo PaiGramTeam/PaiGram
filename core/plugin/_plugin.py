@@ -68,13 +68,14 @@ class _Plugin(PluginFuncs):
     _error_handlers: Optional[List[Tuple[Callable, bool]]] = None
     _jobs: Optional[List[Job]] = None
 
+    _app: Optional["Application"] = None
+
     @property
     def handlers(self) -> List[HandlerType]:
         """该插件的所有 handler"""
         with self._lock:
             if self._handlers is None:
                 self._handlers = []
-                from core.builtins.executor import HandlerExecutor
 
                 for attr in dir(self):
                     if (
@@ -86,7 +87,7 @@ class _Plugin(PluginFuncs):
                             data: "HandlerData"
                             self._handlers.append(
                                 data.type(
-                                    callback=wraps(func)(HandlerExecutor(func, dispatcher=data.dispatcher)),
+                                    callback=func,
                                     **data.kwargs,
                                 )
                             )
@@ -108,7 +109,6 @@ class _Plugin(PluginFuncs):
         return self._error_handlers
 
     def _install_jobs(self, app: "Application") -> None:
-        from core.builtins.executor import JobExecutor
 
         if self._jobs is None:
             self._jobs = []
@@ -123,7 +123,7 @@ class _Plugin(PluginFuncs):
                     data: "JobData"
                     self._jobs.append(
                         getattr(app.tg_app.job_queue, data.type)(
-                            callback=wraps(func)(JobExecutor(func, dispatcher=data.dispatcher)),
+                            callback=func,
                             **data.kwargs,
                             **{
                                 key: value
@@ -137,6 +137,10 @@ class _Plugin(PluginFuncs):
     def jobs(self) -> List[Job]:
         return self._jobs
 
+    @property
+    def app(self) -> Optional["Application"]:
+        return self._app
+
     async def __async_init__(self) -> None:
         """初始化插件"""
 
@@ -149,7 +153,7 @@ class _Plugin(PluginFuncs):
         group = id(self)
         with self._lock:
             if not self._installed:
-                self._install_jobs()
+                self._install_jobs(app)
                 for h in self.handlers:
                     if not isinstance(h, TypeHandler):
                         app.tg_app.add_handler(h, group)

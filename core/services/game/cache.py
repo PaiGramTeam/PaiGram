@@ -7,10 +7,10 @@ __all__ = ["GameCache"]
 
 
 class GameCache(BaseService.Component):
-    def __init__(self, redis: RedisDB, qname: str, ttl: int = 3600):
+    def __init__(self, redis: RedisDB):
         self.client = redis.client
-        self.qname = qname
-        self.ttl = ttl
+        self.qname = "game"
+        self.ttl = 60
 
     async def get_url_list(self, character_name: str):
         qname = f"{self.qname}:{character_name}"

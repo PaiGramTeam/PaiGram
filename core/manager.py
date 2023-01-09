@@ -1,7 +1,8 @@
+import inspect
 from asyncio import CancelledError
 from importlib import import_module
 from pathlib import Path
-from typing import Dict, Generic, List, Optional, TYPE_CHECKING, Type, TypeVar
+from typing import Dict, Generic, List, Optional, TYPE_CHECKING, Type, TypeVar, Callable, Tuple
 
 from arkowrapper import ArkoWrapper
 from async_timeout import timeout
@@ -16,9 +17,8 @@ from utils.log import logger
 if TYPE_CHECKING:
     from core.application import Application
     from core.plugin import PluginType
-    from core.builtins.executor import BaseExecutor
 
-__all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager")
+__all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager", "Managers")
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -40,18 +40,18 @@ def _load_module(path: Path) -> None:
 class Manager(Generic[T]):
     """生命周期控制基类"""
 
-    _executor: Optional["BaseExecutor"] = None
     _lib: Dict[Type[T], T] = {}
 
-    @property
-    def executor(self) -> "BaseExecutor":
-        """执行器"""
-        from core.builtins.executor import BaseExecutor
-
-        if self._executor is None:
-            self._executor = BaseExecutor("Bot")
-
-        return self._executor
+    @staticmethod
+    def _inject(target: Callable[..., T], *dependencies: Dict[Type[object], object]) -> T:
+        signature = inspect.signature(target.__init__)
+        kwargs = {}
+        for name, parameter in signature.parameters.items():
+            if name != "self" and parameter.annotation != inspect.Parameter.empty:
+                for dependence in dependencies:
+                    if value := dependence.get(parameter.annotation):
+                        kwargs[name] = value
+        return target(**kwargs)
 
 
 class DependenceManager(Manager[DependenceType]):
@@ -71,13 +71,10 @@ class DependenceManager(Manager[DependenceType]):
             instance: DependenceType
             try:
                 if hasattr(dependence, "from_config"):  # 如果有 from_config 方法
-                    instance = dependence.from_config(bot_config)  # 用 from_config 实例化服务
+                    instance = dependence.from_config(bot_config)
                 else:
-                    instance = await self.executor(dependence)
-
-                await instance.initialize()
+                    instance = dependence()
                 logger.success('基础服务 "%s" 启动成功', dependence.__name__)
-
                 self._lib[dependence] = instance
                 self._dependency[dependence] = instance
 
@@ -94,6 +91,7 @@ class ComponentManager(Manager[ComponentType]):
     """组件管理"""
 
     _components: Dict[Type[ComponentType], ComponentType] = {}
+    _dependency: Dict[Type[DependenceType], DependenceType] = {}
 
     @property
     def components(self) -> List[ComponentType]:
@@ -101,7 +99,7 @@ class ComponentManager(Manager[ComponentType]):
 
     async def init_components(self):
         for path in filter(
-            lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
+                lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
         ):
             _load_module(path)
         components = ArkoWrapper(get_all_services()).filter(lambda x: x.is_component)
@@ -113,7 +111,7 @@ class ComponentManager(Manager[ComponentType]):
                 component: Type[ComponentType]
                 instance: ComponentType
                 try:
-                    instance = await self.executor(component)
+                    instance = self._inject(component, self._dependency)
                     self._lib[component] = instance
                     self._components[component] = instance
                     components = components.remove(component)
@@ -133,6 +131,8 @@ class ServiceManager(Manager[BaseServiceType]):
     """服务控制类"""
 
     _services: Dict[Type[BaseServiceType], BaseServiceType] = {}
+    _components: Dict[Type[ComponentType], ComponentType] = {}
+    _dependency: Dict[Type[DependenceType], DependenceType] = {}
 
     @property
     def services(self) -> List[BaseServiceType]:
@@ -141,11 +141,7 @@ class ServiceManager(Manager[BaseServiceType]):
     async def _initialize_service(self, target: Type[BaseServiceType]) -> BaseServiceType:
         instance: BaseServiceType
         try:
-            if hasattr(target, "from_config"):  # 如果有 from_config 方法
-                instance = target.from_config(bot_config)  # 用 from_config 实例化服务
-            else:
-                instance = await self.executor(target)
-
+            instance = self._inject(target, self._components, self._dependency)
             await instance.initialize()
             logger.success('服务 "%s" 启动成功', target.__name__)
 
@@ -157,7 +153,7 @@ class ServiceManager(Manager[BaseServiceType]):
 
     async def start_services(self) -> None:
         for path in filter(
-            lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
+                lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
         ):
             _load_module(path)
 
@@ -187,6 +183,9 @@ class PluginManager(Manager["PluginType"]):
     """插件管理"""
 
     _plugins: List["PluginType"] = []
+    _services: Dict[Type[BaseServiceType], BaseServiceType] = {}
+    _components: Dict[Type[ComponentType], ComponentType] = {}
+    _dependency: Dict[Type[DependenceType], DependenceType] = {}
 
     @property
     def plugins(self) -> List["PluginType"]:
@@ -202,7 +201,8 @@ class PluginManager(Manager["PluginType"]):
         for plugin in get_all_plugins():
             plugin: Type["PluginType"]
             try:
-                instance: "PluginType" = await self.executor(plugin)
+                instance: "PluginType" = self._inject(plugin, self._components, self._dependency, self._services)
+                instance.__setattr__("_app", app)
             except Exception as e:
                 logger.exception('插件 "%s" 初始化失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
@@ -221,3 +221,7 @@ class PluginManager(Manager["PluginType"]):
                 await plugin.uninstall()
             except Exception as e:
                 logger.exception('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+
+
+class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):
+    """BOT 除自身外的生命周期管理类"""
