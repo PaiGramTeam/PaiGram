@@ -31,8 +31,8 @@ from telegram.ext import Application as TGApplication, CallbackContext, Job
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
-from core.bot import Bot, bot
-from core.builtins.contexts import TGContext, TGUpdate
+from core.bot import Bot
+from core.builtins.contexts import TGContext, TGUpdate, BotContext
 from core.config import BotConfig, config as bot_config
 from utils.const import WRAPPER_ASSIGNMENTS
 
@@ -45,6 +45,7 @@ __all__ = [
     "BaseDispatcher",
     "HandlerDispatcher",
     "JobDispatcher",
+    "ErrorHandlerDispatcher",
 ]
 
 T = TypeVar("T")
@@ -52,6 +53,8 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 TargetType = Union[Type, str, Callable[[Any], bool]]
+
+bot = BotContext.get()
 
 _lock: "LockType" = Lock()
 
@@ -231,6 +234,12 @@ class HandlerDispatcher(BaseDispatcher):
     @catch(Chat)
     def catch_chat(self) -> Chat:
         return self._update.effective_chat
+
+
+class ErrorHandlerDispatcher(HandlerDispatcher):
+    @catch(Exception)
+    def catch_error(self) -> Exception:
+        return self._context.error
 
 
 class JobDispatcher(BaseDispatcher):

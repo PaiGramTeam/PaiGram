@@ -7,14 +7,12 @@ from multiprocessing import RLock as Lock
 from types import MethodType
 from typing import (
     Any,
-    Callable,
     ClassVar,
     Dict,
     Iterable,
     List,
     Optional,
     TYPE_CHECKING,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -28,11 +26,12 @@ from telegram.ext import BaseHandler, ConversationHandler, Job, TypeHandler
 # noinspection PyProtectedMember
 from typing_extensions import ParamSpec
 
+from core.builtins.contexts import BotContext
 from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
 
 if TYPE_CHECKING:
-    from core.plugin._handler import ConversationData, HandlerData
+    from core.plugin._handler import ConversationData, HandlerData, ErrorHandlerData
     from core.plugin._job import JobData
     from multiprocessing.synchronize import RLock as LockType
 
@@ -64,7 +63,7 @@ class _Plugin(PluginFuncs):
     _installed: bool = False
 
     _handlers: Optional[List[HandlerType]] = None
-    _error_handlers: Optional[List[Tuple[Callable, bool]]] = None
+    _error_handlers: Optional[List["ErrorHandlerData"]] = None
     _jobs: Optional[List[Job]] = None
 
     @property
@@ -77,9 +76,9 @@ class _Plugin(PluginFuncs):
 
                 for attr in dir(self):
                     if (
-                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                        and isinstance(func := getattr(self, attr), MethodType)
-                        and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
+                            not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                            and isinstance(func := getattr(self, attr), MethodType)
+                            and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
                     ):
                         for data in datas:
                             data: "HandlerData"
@@ -92,32 +91,39 @@ class _Plugin(PluginFuncs):
         return self._handlers
 
     @property
-    def error_handlers(self) -> List[Tuple[Callable, bool]]:
+    def error_handlers(self) -> List["ErrorHandlerData"]:
         with self._lock:
             if self._error_handlers is None:
+                from core.builtins.executor import HandlerExecutor
+
                 self._error_handlers = []
                 for attr in dir(self):
                     if (
-                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                        and isinstance(func := getattr(self, attr), MethodType)
-                        and (datas := getattr(func, _ERROR_HANDLER_ATTR_NAME, []))
+                            not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                            and isinstance(func := getattr(self, attr), MethodType)
+                            and (datas := getattr(func, _ERROR_HANDLER_ATTR_NAME, []))
                     ):
                         for data in datas:
+                            data: "ErrorHandlerData"
+
+                            data.func = wraps(func)(HandlerExecutor(func, dispatcher=data.dispatcher))
+
                             self._error_handlers.append(data)
         return self._error_handlers
 
     def _install_jobs(self) -> None:
-        from core.bot import bot
         from core.builtins.executor import JobExecutor
+
+        bot = BotContext.get()
 
         if self._jobs is None:
             self._jobs = []
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                and isinstance(func := getattr(self, attr), MethodType)
-                and (datas := getattr(func, _JOB_ATTR_NAME, []))
+                    not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                    and isinstance(func := getattr(self, attr), MethodType)
+                    and (datas := getattr(func, _JOB_ATTR_NAME, []))
             ):
                 for data in datas:
                     data: "JobData"
@@ -149,37 +155,40 @@ class _Plugin(PluginFuncs):
 
     async def install(self) -> None:
         """安装"""
-        from core.bot import bot
-
+        bot = BotContext.get()
         group = id(self)
         with self._lock:
             if not self._installed:
                 self._install_jobs()
+
                 for h in self.handlers:
                     if not isinstance(h, TypeHandler):
                         bot.tg_app.add_handler(h, group)
                     else:
                         bot.tg_app.add_handler(h, -1)
+
                 for h in self.error_handlers:
-                    bot.tg_app.add_error_handler(*h)
+                    bot.tg_app.add_error_handler(h.func, h.block)
+
                 await self.__async_init__()
                 self._installed = True
 
     async def uninstall(self) -> None:
         """卸载"""
-        from core.bot import bot
-
+        bot = BotContext.get()
         group = id(self)
 
         with self._lock:
             if self._installed:
                 if group in bot.tg_app.handlers:
                     del bot.tg_app.handlers[id(self)]
+
                 for h in self.handlers:
                     if isinstance(h, TypeHandler):
                         bot.tg_app.remove_handler(h, -1)
                 for h in self.error_handlers:
-                    bot.tg_app.remove_handler(h[0])
+                    bot.tg_app.remove_error_handler(h.func)
+
                 for j in bot.tg_app.job_queue.jobs():
                     j.schedule_removal()
                 await self.__async_del__()
@@ -216,9 +225,9 @@ class _Conversation(_Plugin, ConversationFuncs):
                 fallbacks: List[HandlerType] = []
                 for attr in dir(self):
                     if (
-                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                        and isinstance(func := getattr(self, attr), MethodType)
-                        and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
+                            not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                            and isinstance(func := getattr(self, attr), MethodType)
+                            and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
                     ):
                         conversation_data: "ConversationData"
                         handlers: List[HandlerType] = []

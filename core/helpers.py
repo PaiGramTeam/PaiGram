@@ -4,12 +4,12 @@ import ujson as json
 from telegram import Chat
 from telegram.ext import CallbackContext
 
-from core.bot import bot
-from core.builtins.contexts import TGContext
+from core.builtins.contexts import BotContext, TGContext
 from core.dependence.redisdb import RedisDB
 
 
 async def get_chat(chat_id: Union[str, int], redis: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
+    bot = BotContext.get()
     if not redis:
         return await bot.tg_app.bot.get_chat(chat_id)
     qname = f"bot:chat:{chat_id}"

@@ -12,8 +12,6 @@ from telegram._utils.defaultvalue import DEFAULT_TRUE
 # noinspection PyProtectedMember
 from telegram._utils.types import DVInput
 from telegram.ext import BaseHandler
-
-# noinspection PyProtectedMember
 from telegram.ext.filters import BaseFilter
 from typing_extensions import ParamSpec
 
@@ -22,7 +20,15 @@ from utils.const import WRAPPER_ASSIGNMENTS as _WRAPPER_ASSIGNMENTS
 if TYPE_CHECKING:
     from core.builtins.dispatcher import AbstractDispatcher
 
-__all__ = ["handler", "conversation", "ConversationDataType", "ConversationData", "HandlerData"]
+__all__ = [
+    "handler",
+    "conversation",
+    "ConversationDataType",
+    "ConversationData",
+    "HandlerData",
+    "ErrorHandlerData",
+    "error_handler",
+]
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -251,22 +257,6 @@ class handler(_Handler):
         super().__init__(dispatcher=dispatcher, **kwargs)
 
 
-# noinspection PyPep8Naming
-class error_handler:
-    def __init__(self, func: Callable[P, T] = None, *, block: bool = DEFAULT_TRUE):
-        self._func = func
-        self._block = block
-
-    def __call__(self, func: Callable[P, T] = None) -> Callable[P, T]:
-        self._func = func or self._func
-
-        handler_datas = getattr(func, ERROR_HANDLER_ATTR_NAME, [])
-        handler_datas.append((self._func or func, self._block))
-        setattr(func, ERROR_HANDLER_ATTR_NAME, handler_datas)
-
-        return func
-
-
 class ConversationDataType(Enum):
     Entry = "entry"
     State = "state"
@@ -321,3 +311,37 @@ class conversation(_Handler):
     entry_point = _Entry
     state = _State
     fallback = _Fallback
+
+
+@dataclass(init=True)
+class ErrorHandlerData:
+    block: bool
+    func: Optional[Callable] = None
+    dispatcher: Optional[Type["AbstractDispatcher"]] = None
+
+
+# noinspection PyPep8Naming
+class error_handler:
+    def __init__(
+        self,
+        *,
+        block: bool = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
+    ):
+        self._block = block
+        if dispatcher is None:
+            from core.builtins.dispatcher import ErrorHandlerDispatcher
+
+            dispatcher = ErrorHandlerDispatcher
+
+        self._dispatcher = dispatcher
+
+    def __call__(self, func: Callable[P, T]) -> Callable[P, T]:
+        self._func = func
+        wraps(func)(self)
+
+        handler_datas = getattr(func, ERROR_HANDLER_ATTR_NAME, [])
+        handler_datas.append(ErrorHandlerData(block=self._block, dispatcher=self._dispatcher))
+        setattr(self._func, ERROR_HANDLER_ATTR_NAME, handler_datas)
+
+        return self._func

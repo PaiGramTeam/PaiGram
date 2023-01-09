@@ -15,6 +15,7 @@ from telegram.request import HTTPXRequest
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
+from core.builtins.contexts import bot_context
 from core.config import config as bot_config
 from core.manager import ComponentManager, DependenceManager, PluginManager, ServiceManager
 from utils.const import WRAPPER_ASSIGNMENTS
@@ -223,23 +224,24 @@ class Bot(Singleton, Managers):
     def launch(self):
         """启动"""
         loop = asyncio.get_event_loop()
-        try:
-            loop.run_until_complete(self.start())
-            loop.run_until_complete(self.idle())
-        except (SystemExit, KeyboardInterrupt):
-            logger.debug("接收到了终止信号，BOT 即将关闭")  # 接收到了终止信号
-        except NetworkError as e:
-            if isinstance(e, SSLZeroReturnError):
-                logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
-            else:
-                logger.error("网络连接出现问题, 请检查您的网络状况.")
-        except Exception as e:
-            logger.exception(f"遇到了未知错误: {type(e)}")
-        finally:
-            loop.run_until_complete(self.stop())
+        with bot_context(self):
+            try:
+                loop.run_until_complete(self.start())
+                loop.run_until_complete(self.idle())
+            except (SystemExit, KeyboardInterrupt):
+                logger.debug("接收到了终止信号，BOT 即将关闭")  # 接收到了终止信号
+            except NetworkError as e:
+                if isinstance(e, SSLZeroReturnError):
+                    logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
+                else:
+                    logger.error("网络连接出现问题, 请检查您的网络状况.")
+            except Exception as e:
+                logger.exception(f"遇到了未知错误: {type(e)}")
+            finally:
+                loop.run_until_complete(self.stop())
 
-            if bot_config.reload:
-                raise SystemExit from None
+                if bot_config.reload:
+                    raise SystemExit from None
 
     # decorators
 
