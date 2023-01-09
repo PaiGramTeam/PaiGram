@@ -1,4 +1,5 @@
 """插件"""
+from dataclasses import asdict
 from datetime import timedelta
 from functools import wraps
 from itertools import chain
@@ -22,7 +23,7 @@ from typing import (
 from pydantic import BaseModel
 
 # noinspection PyProtectedMember
-from telegram.ext import BaseHandler, ConversationHandler, TypeHandler
+from telegram.ext import BaseHandler, ConversationHandler, Job, TypeHandler
 
 # noinspection PyProtectedMember
 from typing_extensions import ParamSpec
@@ -32,6 +33,7 @@ from core.plugin._handler import ConversationDataType
 
 if TYPE_CHECKING:
     from core.plugin._handler import ConversationData, HandlerData
+    from core.plugin._job import JobData
     from multiprocessing.synchronize import RLock as LockType
 
 __all__ = ["Plugin", "PluginType", "get_all_plugins"]
@@ -50,6 +52,8 @@ _CONVERSATION_HANDLER_ATTR_NAME = "_conversation_handler_data"
 
 _ERROR_HANDLER_ATTR_NAME = "_error_handler_data"
 
+_JOB_ATTR_NAME = "_job_data"
+
 _EXCLUDE_ATTRS = ["handlers", "jobs", "error_handlers"]
 
 
@@ -57,16 +61,18 @@ class _Plugin(PluginFuncs):
     """插件"""
 
     _lock: ClassVar["LockType"] = Lock()
-    _initialized: bool = False
+    _installed: bool = False
 
-    _handlers: List[HandlerType] = []
-    _error_handlers: List[Tuple[Callable, bool]] = []
+    _handlers: Optional[List[HandlerType]] = None
+    _error_handlers: Optional[List[Tuple[Callable, bool]]] = None
+    _jobs: Optional[List[Job]] = None
 
     @property
     def handlers(self) -> List[HandlerType]:
         """该插件的所有 handler"""
         with self._lock:
-            if not self._handlers:
+            if self._handlers is None:
+                self._handlers = []
                 from core.builtins.executor import HandlerExecutor
 
                 for attr in dir(self):
@@ -77,13 +83,19 @@ class _Plugin(PluginFuncs):
                     ):
                         for data in datas:
                             data: "HandlerData"
-                            self._handlers.append(data.type(callback=wraps(func)(HandlerExecutor(func)), **data.kwargs))
+                            self._handlers.append(
+                                data.type(
+                                    callback=wraps(func)(HandlerExecutor(func, dispatcher=data.dispatcher)),
+                                    **data.kwargs,
+                                )
+                            )
         return self._handlers
 
     @property
     def error_handlers(self) -> List[Tuple[Callable, bool]]:
         with self._lock:
-            if not self._error_handlers:
+            if self._error_handlers is None:
+                self._error_handlers = []
                 for attr in dir(self):
                     if (
                         not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
@@ -93,6 +105,41 @@ class _Plugin(PluginFuncs):
                         for data in datas:
                             self._error_handlers.append(data)
         return self._error_handlers
+
+    def _install_jobs(self) -> None:
+        from core.bot import bot
+        from core.builtins.executor import JobExecutor
+
+        if self._jobs is None:
+            self._jobs = []
+        for attr in dir(self):
+            # noinspection PyUnboundLocalVariable
+            if (
+                not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                and isinstance(func := getattr(self, attr), MethodType)
+                and (datas := getattr(func, _JOB_ATTR_NAME, []))
+            ):
+                for data in datas:
+                    data: "JobData"
+                    self._jobs.append(
+                        getattr(bot.tg_app.job_queue, data.type)(
+                            callback=wraps(func)(JobExecutor(func, dispatcher=data.dispatcher)),
+                            **data.kwargs,
+                            **{
+                                key: value
+                                for key, value in asdict(data).items()
+                                if key not in ["type", "kwargs", "dispatcher"]
+                            },
+                        )
+                    )
+
+    @property
+    def jobs(self) -> List[Job]:
+        with self._lock:
+            if self._jobs is None:
+                self._jobs = []
+                self._install_jobs()
+        return self._jobs
 
     async def __async_init__(self) -> None:
         """初始化插件"""
@@ -106,7 +153,8 @@ class _Plugin(PluginFuncs):
 
         group = id(self)
         with self._lock:
-            if not self._initialized:
+            if not self._installed:
+                self._install_jobs()
                 for h in self.handlers:
                     if not isinstance(h, TypeHandler):
                         bot.tg_app.add_handler(h, group)
@@ -115,7 +163,7 @@ class _Plugin(PluginFuncs):
                 for h in self.error_handlers:
                     bot.tg_app.add_error_handler(*h)
                 await self.__async_init__()
-                self._initialized = True
+                self._installed = True
 
     async def uninstall(self) -> None:
         """卸载"""
@@ -124,7 +172,7 @@ class _Plugin(PluginFuncs):
         group = id(self)
 
         with self._lock:
-            if self._initialized:
+            if self._installed:
                 if group in bot.tg_app.handlers:
                     del bot.tg_app.handlers[id(self)]
                 for h in self.handlers:
@@ -132,8 +180,10 @@ class _Plugin(PluginFuncs):
                         bot.tg_app.remove_handler(h, -1)
                 for h in self.error_handlers:
                     bot.tg_app.remove_handler(h[0])
+                for j in bot.tg_app.job_queue.jobs():
+                    j.schedule_removal()
                 await self.__async_del__()
-                self._initialized = False
+                self._installed = False
 
     async def reload(self) -> None:
         await self.uninstall()

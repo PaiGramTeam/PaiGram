@@ -11,6 +11,7 @@ __all__ = [
     "TGContext",
     "TGUpdate",
     "handler_contexts",
+    "job_contexts",
 ]
 
 TGContext: ContextVar["CallbackContext"] = ContextVar("TGContext")
@@ -26,3 +27,12 @@ def handler_contexts(update: "Update", context: "CallbackContext") -> None:
     finally:
         TGContext.reset(context_token)
         TGUpdate.reset(update_token)
+
+
+@contextmanager
+def job_contexts(context: "CallbackContext") -> None:
+    token = TGContext.set(context)
+    try:
+        yield
+    finally:
+        TGContext.reset(token)

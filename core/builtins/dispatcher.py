@@ -27,7 +27,7 @@ from typing import (
 from arkowrapper import ArkoWrapper
 from fastapi import FastAPI
 from telegram import Chat, Message, Update, User
-from telegram.ext import Application as TGApplication, CallbackContext
+from telegram.ext import Application as TGApplication, CallbackContext, Job
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
@@ -39,7 +39,13 @@ from utils.const import WRAPPER_ASSIGNMENTS
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["catch", "AbstractDispatcher", "BaseDispatcher", "HandlerDispatcher"]
+__all__ = [
+    "catch",
+    "AbstractDispatcher",
+    "BaseDispatcher",
+    "HandlerDispatcher",
+    "JobDispatcher",
+]
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -58,6 +64,8 @@ _default_kwargs: Dict[Type[T], T] = {
     BotConfig: bot_config,
 }
 
+_CATCH_TARGET_ATTR = "_catch_targets"
+
 
 def get_default_kwargs() -> Dict[Type[T], T]:
     global _default_kwargs
@@ -70,7 +78,7 @@ def get_default_kwargs() -> Dict[Type[T], T]:
 
 def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorate(func: Callable[P, R]) -> Callable[P, R]:
-        setattr(func, "_catch_targets", targets)
+        setattr(func, _CATCH_TARGET_ATTR, targets)
 
         @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -132,6 +140,7 @@ class BaseDispatcher(AbstractDispatcher):
         return result
 
     def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
+        """分发参数给 func"""
         params = {}
         if isinstance(func, type):
             signature: Signature = inspect.signature(func.__init__)
@@ -158,7 +167,7 @@ class BaseDispatcher(AbstractDispatcher):
             if isinstance(annotation, GenericAlias):
                 continue
             for catch_func in self.catch_funcs:
-                catch_targets = getattr(catch_func, "_catch_targets")
+                catch_targets = getattr(catch_func, _CATCH_TARGET_ATTR)
                 for catch_target in catch_targets:
                     if isinstance(catch_target, str):
                         # 比较参数名
@@ -194,6 +203,8 @@ class BaseDispatcher(AbstractDispatcher):
 
 
 class HandlerDispatcher(BaseDispatcher):
+    """Handler 参数分发器"""
+
     def __init__(self, update: Optional[Update] = None, context: Optional[CallbackContext] = None, **kwargs) -> None:
         update = update or TGUpdate.get()
         context = context or TGContext.get()
@@ -220,3 +231,20 @@ class HandlerDispatcher(BaseDispatcher):
     @catch(Chat)
     def catch_chat(self) -> Chat:
         return self._update.effective_chat
+
+
+class JobDispatcher(BaseDispatcher):
+    """Job 参数分发器"""
+
+    def __init__(self, context: Optional[CallbackContext] = None, **kwargs) -> None:
+        context = context or TGContext.get()
+        super().__init__(context=context, **kwargs)
+        self._context = context
+
+    @catch("data")
+    def catch_data(self) -> Any:
+        return self._context.job.data
+
+    @catch(Job)
+    def catch_job(self) -> Job:
+        return self._context.job

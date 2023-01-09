@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
 from importlib import import_module
-from multiprocessing import RLock as Lock
 from typing import Any, Callable, ClassVar, Dict, Generic, List, Optional, Pattern, TYPE_CHECKING, Type, TypeVar, Union
 
 from pydantic import BaseModel
@@ -22,7 +21,6 @@ from utils.const import WRAPPER_ASSIGNMENTS as _WRAPPER_ASSIGNMENTS
 
 if TYPE_CHECKING:
     from core.builtins.dispatcher import AbstractDispatcher
-    from multiprocessing.synchronize import RLock as LockType
 
 __all__ = ["handler", "conversation", "ConversationDataType", "ConversationData", "HandlerData"]
 
@@ -57,29 +55,6 @@ class HandlerData:
     dispatcher: Optional[Type["AbstractDispatcher"]] = None
 
 
-class HandlerFunc:
-    """处理器函数"""
-
-    _lock: "LockType" = Lock()
-    _handler: Optional["HandlerType"] = None
-
-    def __init__(self, handler_type: "HandlerCls", func: Callable[P, R], kwargs: Dict):
-        self.type = handler_type
-        self.callback = func
-        self.kwargs = kwargs
-
-    @property
-    def handler(self) -> "HandlerType":
-        with self._lock:
-            if self._handler is None:
-                from core.builtins.executor import HandlerExecutor
-
-                self._handler = self._handler or self.type(
-                    **self.kwargs, callback=wraps(HandlerExecutor(self.callback), assigned=WRAPPER_ASSIGNMENTS)
-                )
-        return self._handler
-
-
 class _Handler:
     _type: Type["HandlerType"]
 
@@ -108,56 +83,88 @@ class _CallbackQuery(_Handler):
     def __init__(
         self,
         pattern: Union[str, Pattern, type, Callable[[object], Optional[bool]]] = None,
+        *,
         block: DVInput[bool] = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
     ):
-        super(_CallbackQuery, self).__init__(pattern=pattern, block=block)
+        super(_CallbackQuery, self).__init__(pattern=pattern, block=block, dispatcher=dispatcher)
 
 
 class _ChatJoinRequest(_Handler):
-    def __init__(self, block: DVInput[bool] = DEFAULT_TRUE):
-        super(_ChatJoinRequest, self).__init__(block=block)
+    def __init__(self, *, block: DVInput[bool] = DEFAULT_TRUE, dispatcher: Optional[Type["AbstractDispatcher"]] = None):
+        super(_ChatJoinRequest, self).__init__(block=block, dispatcher=dispatcher)
 
 
 class _ChatMember(_Handler):
-    def __init__(self, chat_member_types: int = -1, block: DVInput[bool] = DEFAULT_TRUE):
-        super().__init__(chat_member_types=chat_member_types, block=block)
+    def __init__(
+        self,
+        chat_member_types: int = -1,
+        *,
+        block: DVInput[bool] = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
+    ):
+        super().__init__(chat_member_types=chat_member_types, block=block, dispatcher=dispatcher)
 
 
 class _ChosenInlineResult(_Handler):
-    def __init__(self, block: DVInput[bool] = DEFAULT_TRUE, pattern: Union[str, Pattern] = None):
-        super().__init__(block=block, pattern=pattern)
+    def __init__(
+        self,
+        block: DVInput[bool] = DEFAULT_TRUE,
+        *,
+        pattern: Union[str, Pattern] = None,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
+    ):
+        super().__init__(block=block, pattern=pattern, dispatcher=dispatcher)
 
 
 class _Command(_Handler):
-    def __init__(self, command: str, filters: "BaseFilter" = None, block: DVInput[bool] = DEFAULT_TRUE):
-        super(_Command, self).__init__(command=command, filters=filters, block=block)
+    def __init__(
+        self,
+        command: str,
+        filters: "BaseFilter" = None,
+        *,
+        block: DVInput[bool] = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
+    ):
+        super(_Command, self).__init__(command=command, filters=filters, block=block, dispatcher=dispatcher)
 
 
 class _InlineQuery(_Handler):
     def __init__(
-        self, pattern: Union[str, Pattern] = None, block: DVInput[bool] = DEFAULT_TRUE, chat_types: List[str] = None
+        self,
+        pattern: Union[str, Pattern] = None,
+        chat_types: List[str] = None,
+        *,
+        block: DVInput[bool] = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
     ):
-        super(_InlineQuery, self).__init__(pattern=pattern, block=block, chat_types=chat_types)
+        super(_InlineQuery, self).__init__(pattern=pattern, block=block, chat_types=chat_types, dispatcher=dispatcher)
 
 
 class _Message(_Handler):
-    def __init__(self, filters: BaseFilter, block: DVInput[bool] = DEFAULT_TRUE) -> None:
-        super(_Message, self).__init__(filters=filters, block=block)
+    def __init__(
+        self,
+        filters: BaseFilter,
+        *,
+        block: DVInput[bool] = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
+    ) -> None:
+        super(_Message, self).__init__(filters=filters, block=block, dispatcher=dispatcher)
 
 
 class _PollAnswer(_Handler):
-    def __init__(self, block: DVInput[bool] = DEFAULT_TRUE):
-        super(_PollAnswer, self).__init__(block=block)
+    def __init__(self, *, block: DVInput[bool] = DEFAULT_TRUE, dispatcher: Optional[Type["AbstractDispatcher"]] = None):
+        super(_PollAnswer, self).__init__(block=block, dispatcher=dispatcher)
 
 
 class _Poll(_Handler):
-    def __init__(self, block: DVInput[bool] = DEFAULT_TRUE):
-        super(_Poll, self).__init__(block=block)
+    def __init__(self, *, block: DVInput[bool] = DEFAULT_TRUE, dispatcher: Optional[Type["AbstractDispatcher"]] = None):
+        super(_Poll, self).__init__(block=block, dispatcher=dispatcher)
 
 
 class _PreCheckoutQuery(_Handler):
-    def __init__(self, block: DVInput[bool] = DEFAULT_TRUE):
-        super(_PreCheckoutQuery, self).__init__(block=block)
+    def __init__(self, *, block: DVInput[bool] = DEFAULT_TRUE, dispatcher: Optional[Type["AbstractDispatcher"]] = None):
+        super(_PreCheckoutQuery, self).__init__(block=block, dispatcher=dispatcher)
 
 
 class _Prefix(_Handler):
@@ -166,24 +173,40 @@ class _Prefix(_Handler):
         prefix: str,
         command: str,
         filters: BaseFilter = None,
+        *,
         block: DVInput[bool] = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
     ):
-        super(_Prefix, self).__init__(prefix=prefix, command=command, filters=filters, block=block)
+        super(_Prefix, self).__init__(
+            prefix=prefix, command=command, filters=filters, block=block, dispatcher=dispatcher
+        )
 
 
 class _ShippingQuery(_Handler):
-    def __init__(self, block: DVInput[bool] = DEFAULT_TRUE):
-        super(_ShippingQuery, self).__init__(block=block)
+    def __init__(self, *, block: DVInput[bool] = DEFAULT_TRUE, dispatcher: Optional[Type["AbstractDispatcher"]] = None):
+        super(_ShippingQuery, self).__init__(block=block, dispatcher=dispatcher)
 
 
 class _StringCommand(_Handler):
-    def __init__(self, command: str):
-        super(_StringCommand, self).__init__(command=command)
+    def __init__(
+        self,
+        command: str,
+        *,
+        block: DVInput[bool] = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
+    ):
+        super(_StringCommand, self).__init__(command=command, block=block, dispatcher=dispatcher)
 
 
 class _StringRegex(_Handler):
-    def __init__(self, pattern: Union[str, Pattern], block: DVInput[bool] = DEFAULT_TRUE):
-        super(_StringRegex, self).__init__(pattern=pattern, block=block)
+    def __init__(
+        self,
+        pattern: Union[str, Pattern],
+        *,
+        block: DVInput[bool] = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
+    ):
+        super(_StringRegex, self).__init__(pattern=pattern, block=block, dispatcher=dispatcher)
 
 
 class _Type(_Handler):
@@ -192,10 +215,11 @@ class _Type(_Handler):
         self,
         type: Type,
         strict: bool = False,
-        block: DVInput[bool] = DEFAULT_TRUE
-        # pylint: disable=redefined-builtin
-    ):
-        super(_Type, self).__init__(type=type, strict=strict, block=block)
+        *,
+        block: DVInput[bool] = DEFAULT_TRUE,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
+    ):  # pylint: disable=redefined-builtin
+        super(_Type, self).__init__(type=type, strict=strict, block=block, dispatcher=dispatcher)
 
 
 # noinspection PyPep8Naming
@@ -217,10 +241,14 @@ class handler(_Handler):
     type = _Type
 
     def __init__(
-        self, handler_type: Union[Callable[P, "HandlerType"], Type["HandlerType"]], **kwargs: P.kwargs
+        self,
+        handler_type: Union[Callable[P, "HandlerType"], Type["HandlerType"]],
+        *,
+        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
+        **kwargs: P.kwargs,
     ) -> None:
         self._type = handler_type
-        super().__init__(**kwargs)
+        super().__init__(dispatcher=dispatcher, **kwargs)
 
 
 # noinspection PyPep8Naming
