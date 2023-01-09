@@ -9,8 +9,9 @@ from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
 import pytz
 import uvicorn
 from fastapi import FastAPI
+from telegram import Bot
 from telegram.error import NetworkError, TelegramError, TimedOut
-from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
+from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults, JobQueue
 from telegram.request import HTTPXRequest
 from typing_extensions import ParamSpec
 from uvicorn import Server
@@ -22,10 +23,9 @@ from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
-    from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
-__all__ = ["Bot", "bot"]
+__all__ = ("Application",)
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -36,8 +36,8 @@ class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManage
     """BOT 除自身外的生命周期管理类"""
 
 
-class Bot(Singleton, Managers):
-    """BOT"""
+class Application(Singleton, Managers):
+    """Application"""
 
     _tg_app: Optional[TgApplication] = None
     _web_server: "Server" = None
@@ -47,6 +47,9 @@ class Bot(Singleton, Managers):
     _shutdown_funcs: List[Callable] = []
 
     _running: False
+
+    def __init__(self):
+        self._running = False
 
     @property
     def running(self) -> bool:
@@ -79,6 +82,13 @@ class Bot(Singleton, Managers):
         return self._tg_app
 
     @property
+    def bot(self) -> Optional[Bot]:
+        return self._tg_app.bot
+
+    @property
+    def job_queue(self) -> Optional[JobQueue]:
+        return self._tg_app.job_queue
+
     def web_app(self) -> FastAPI:
         """fastapi app"""
         return self.web_server.config.app
@@ -88,8 +98,6 @@ class Bot(Singleton, Managers):
         """uvicorn server"""
         with self._lock:
             if self._web_server is None:
-                from uvicorn import Server
-
                 self._web_server = Server(
                     uvicorn.Config(
                         app=FastAPI(debug=bot_config.debug),
@@ -99,9 +107,6 @@ class Bot(Singleton, Managers):
                     )
                 )
         return self._web_server
-
-    def __init__(self) -> None:
-        self._running = False
 
     async def _on_startup(self) -> None:
         for func in self._startup_funcs:
@@ -116,7 +121,7 @@ class Bot(Singleton, Managers):
         await self.start_dependency()  # 启动基础服务
         await self.init_components()  # 实例化组件
         await self.start_services()  # 启动其他服务
-        await self.install_plugins()  # 安装插件
+        await self.install_plugins(app=self)  # 安装插件
 
     async def shutdown(self):
         """BOT 关闭"""
@@ -268,6 +273,3 @@ class Bot(Singleton, Managers):
             return func(*args, **kwargs)
 
         return wrapper
-
-
-bot = Bot()

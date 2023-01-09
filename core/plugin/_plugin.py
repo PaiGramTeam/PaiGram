@@ -32,6 +32,7 @@ from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
 
 if TYPE_CHECKING:
+    from core.application import Application
     from core.plugin._handler import ConversationData, HandlerData
     from core.plugin._job import JobData
     from multiprocessing.synchronize import RLock as LockType
@@ -106,8 +107,7 @@ class _Plugin(PluginFuncs):
                             self._error_handlers.append(data)
         return self._error_handlers
 
-    def _install_jobs(self) -> None:
-        from core.bot import bot
+    def _install_jobs(self, app: "Application") -> None:
         from core.builtins.executor import JobExecutor
 
         if self._jobs is None:
@@ -122,7 +122,7 @@ class _Plugin(PluginFuncs):
                 for data in datas:
                     data: "JobData"
                     self._jobs.append(
-                        getattr(bot.tg_app.job_queue, data.type)(
+                        getattr(app.tg_app.job_queue, data.type)(
                             callback=wraps(func)(JobExecutor(func, dispatcher=data.dispatcher)),
                             **data.kwargs,
                             **{
@@ -135,10 +135,6 @@ class _Plugin(PluginFuncs):
 
     @property
     def jobs(self) -> List[Job]:
-        with self._lock:
-            if self._jobs is None:
-                self._jobs = []
-                self._install_jobs()
         return self._jobs
 
     async def __async_init__(self) -> None:
@@ -147,9 +143,8 @@ class _Plugin(PluginFuncs):
     async def __async_del__(self) -> None:
         """销毁插件"""
 
-    async def install(self) -> None:
+    async def install(self, app: "Application") -> None:
         """安装"""
-        from core.bot import bot
 
         group = id(self)
         with self._lock:
@@ -157,37 +152,36 @@ class _Plugin(PluginFuncs):
                 self._install_jobs()
                 for h in self.handlers:
                     if not isinstance(h, TypeHandler):
-                        bot.tg_app.add_handler(h, group)
+                        app.tg_app.add_handler(h, group)
                     else:
-                        bot.tg_app.add_handler(h, -1)
+                        app.tg_app.add_handler(h, -1)
                 for h in self.error_handlers:
-                    bot.tg_app.add_error_handler(*h)
+                    app.tg_app.add_error_handler(*h)
                 await self.__async_init__()
                 self._installed = True
 
-    async def uninstall(self) -> None:
+    async def uninstall(self, app: "Application") -> None:
         """卸载"""
-        from core.bot import bot
 
         group = id(self)
 
         with self._lock:
             if self._installed:
-                if group in bot.tg_app.handlers:
-                    del bot.tg_app.handlers[id(self)]
+                if group in app.tg_app.handlers:
+                    del app.tg_app.handlers[id(self)]
                 for h in self.handlers:
                     if isinstance(h, TypeHandler):
-                        bot.tg_app.remove_handler(h, -1)
+                        app.tg_app.remove_handler(h, -1)
                 for h in self.error_handlers:
-                    bot.tg_app.remove_handler(h[0])
-                for j in bot.tg_app.job_queue.jobs():
+                    app.tg_app.remove_handler(h[0])
+                for j in app.tg_app.job_queue.jobs():
                     j.schedule_removal()
                 await self.__async_del__()
                 self._installed = False
 
-    async def reload(self) -> None:
-        await self.uninstall()
-        await self.install()
+    async def reload(self, app: "Application") -> None:
+        await self.uninstall(app)
+        await self.install(app)
 
 
 class _Conversation(_Plugin, ConversationFuncs):

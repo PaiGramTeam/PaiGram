@@ -4,7 +4,6 @@ import ujson as json
 from telegram import Chat
 from telegram.ext import CallbackContext
 
-from core.bot import bot
 from core.builtins.contexts import TGContext
 from core.dependence.redisdb import RedisDB
 

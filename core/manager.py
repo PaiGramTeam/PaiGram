@@ -14,6 +14,7 @@ from utils.helpers import gen_pkg
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from core.application import Application
     from core.plugin import PluginType
     from core.builtins.executor import BaseExecutor
 
@@ -192,7 +193,7 @@ class PluginManager(Manager["PluginType"]):
         """所有已经加载的插件"""
         return self._plugins
 
-    async def install_plugins(self) -> None:
+    async def install_plugins(self, app: "Application") -> None:
         """安装所有插件"""
         from core.plugin import get_all_plugins
 
@@ -208,7 +209,7 @@ class PluginManager(Manager["PluginType"]):
             self._plugins.append(instance)
 
             try:
-                await instance.install()
+                await instance.install(app)
                 logger.success('插件 "%s" 安装成功', f"{plugin.__module__}.{plugin.__name__}")
             except Exception as e:
                 logger.exception('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)

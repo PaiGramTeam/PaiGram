@@ -31,21 +31,21 @@ from telegram.ext import Application as TGApplication, CallbackContext, Job
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
-from core.bot import Bot, bot
 from core.builtins.contexts import TGContext, TGUpdate
 from core.config import BotConfig, config as bot_config
 from utils.const import WRAPPER_ASSIGNMENTS
 
 if TYPE_CHECKING:
+    from core.application import Application
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = [
+__all__ = (
     "catch",
     "AbstractDispatcher",
     "BaseDispatcher",
     "HandlerDispatcher",
     "JobDispatcher",
-]
+)
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -55,25 +55,35 @@ TargetType = Union[Type, str, Callable[[Any], bool]]
 
 _lock: "LockType" = Lock()
 
-_default_kwargs: Dict[Type[T], T] = {
-    Bot: bot,
-    type(bot.executor): bot.executor,
-    FastAPI: bot.web_app,
-    Server: bot.web_server,
-    TGApplication: bot.tg_app,
-    BotConfig: bot_config,
-}
+_default_kwargs: Dict[Type[T], T] = {}
+_default_application: Optional["Application"] = None
 
 _CATCH_TARGET_ATTR = "_catch_targets"
 
 
 def get_default_kwargs() -> Dict[Type[T], T]:
     global _default_kwargs
+    global _default_application
     with _lock:
-        if not bot.running:
-            for obj in chain(bot.dependency, bot.components, bot.services):
+        if not _default_application.running:
+            for obj in chain(
+                _default_application.dependency, _default_application.components, _default_application.services
+            ):
                 _default_kwargs[type(obj)] = obj
     return _default_kwargs
+
+
+def set_default_kwargs(app: "Application"):
+    global _default_kwargs
+    global _default_application
+    _default_application = app
+    _default_kwargs = {
+        type(app.executor): app.executor,
+        FastAPI: app.web_app,
+        Server: app.web_server,
+        TGApplication: app.tg_app,
+        BotConfig: bot_config,
+    }
 
 
 def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, R]]:

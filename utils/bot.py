@@ -4,11 +4,8 @@ from typing import List, Union, cast
 from telegram import Chat
 from telegram.ext import CallbackContext
 
-from core.bot import bot
-from core.dependence.redisdb import RedisDB
 
-redis_db = bot.services.get(RedisDB)
-redis_db = cast(RedisDB, redis_db)
+from core.dependence.redisdb import RedisDB
 
 
 async def get_chat(chat_id: Union[str, int], ttl: int = 86400) -> Chat:
