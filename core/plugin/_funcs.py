@@ -61,6 +61,7 @@ class PluginFuncs:
         chat: Optional[Union[int, Chat]] = None,
         context: Optional[CallbackContext] = None,
     ) -> Job:
+        """延迟删除消息"""
         update = TGUpdate.get()
         message = message or update.effective_message
 

@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
-__all__ = ["Bot", "bot"]
+__all__ = ["Bot"]
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -270,6 +270,3 @@ class Bot(Singleton, Managers):
             return func(*args, **kwargs)
 
         return wrapper
-
-
-bot = Bot()

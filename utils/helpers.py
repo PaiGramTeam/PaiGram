@@ -80,11 +80,11 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
     return file_dir if return_path else Path(file_dir).as_uri()
 
 
-async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True) -> Client:
-    from core.services.cookies import CookiesService, PublicCookiesService
-    from core.services.users import UserService
-    from core.bot import bot
-
+async def get_genshin_client(
+        user_id: int,
+        region: Optional[RegionEnum] = None,
+        need_cookie: bool = True,
+) -> Client:
     global cookies_service, user_service, public_cookies_service, redis_db, genshin_cache
 
     cookies_service = cookies_service or bot.services.get(CookiesService)
@@ -181,11 +181,11 @@ async def execute(command: Union[str, bytes], pass_error: bool = True) -> str:
 
 
 async def async_re_sub(
-    pattern: Union[str, Pattern],
-    repl: Union[str, Callable[[Match], Union[Awaitable[str], str]]],
-    string: str,
-    count: int = 0,
-    flags: int = 0,
+        pattern: Union[str, Pattern],
+        repl: Union[str, Callable[[Match], Union[Awaitable[str], str]]],
+        string: str,
+        count: int = 0,
+        flags: int = 0,
 ) -> str:
     """
     一个支持 repl 参数为 async 函数的 re.sub
@@ -212,7 +212,7 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1] :]
+            temp = temp[match.span(1)[1]:]
     else:
         while match := re.search(pattern, temp, flags=flags):
             replaced = None
@@ -223,7 +223,7 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1] :]
+            temp = temp[match.span(1)[1]:]
     return result + temp
 
 
