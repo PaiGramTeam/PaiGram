@@ -9,11 +9,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_DATABASE: integration_test
+          MYSQL_ROOT_PASSWORD: 123456test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup integration test environment
-        run: cp tests/integration/.env.example tests/integration/.env
-      - name: Perform integration test with docker compose
-        run: docker-compose -f tests/integration/docker-compose.yaml up --build --abort-on-container-exit
+        run: cp tests/integration/.env.example .env && cp tests/integration/.env.example tests/integration/.env
+      - name: Create venv
+        run: |
+          pip install --upgrade pip
+          python3 -m venv env
+          source env/bin/activate
+      - name: Install requirements
+        run: |
+          python3 -m pip install --upgrade poetry
+          python3 -m poetry install --extras all
+      - name: Run test
+        run: |
+          python3 -m pytest tests/integration
