@@ -10,6 +10,7 @@ on:
 
 jobs:
   ci:
+    name: Integration Test
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -31,11 +32,9 @@ jobs:
       - name: Install requirements
         run: |
           source venv/bin/activate
-          echo "VIRTUAL ENV:" $VIRTUAL_ENV
           python3 -m pip install --upgrade poetry
           python3 -m poetry install --extras all
       - name: Run test
         run: |
           source venv/bin/activate
-          echo "VIRTUAL ENV:" $VIRTUAL_ENV
           python3 -m pytest tests/integration

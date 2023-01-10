@@ -36,12 +36,15 @@ jobs:
         id: cache
         uses: syphar/restore-virtualenv@v1.2
       - name: Create venv
-        if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          pip install --upgrade poetry
-          poetry config virtualenvs.create false
-          poetry install
-          poetry install --extras test
+          pip install --upgrade pip
+          python3 -m venv venv
+      - name: Install requirements
+        run: |
+          source venv/bin/activate
+          python3 -m pip install --upgrade poetry
+          python3 -m poetry install --extras all
       - name: Test with pytest
         run: |
+          source venv/bin/activate
           python -m pytest

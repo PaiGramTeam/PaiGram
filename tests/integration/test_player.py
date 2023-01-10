@@ -4,8 +4,6 @@ import pytest
 import pytest_asyncio
 from sqlmodel import SQLModel
 
-from core.config import config
-from core.dependence.mysql import MySQL
 from core.services.players import PlayersService
 from core.services.players.models import PlayersDataBase, RegionEnum
 from core.services.players.repositories import PlayersRepository
@@ -27,22 +25,13 @@ data = PlayersDataBase(
 
 
 @pytest_asyncio.fixture()
-async def mysql():
-    _mysql = MySQL.from_config(config=config)
-    logger.info("URL :%s", _mysql.url)
-    return _mysql
-
-
-# noinspection PyShadowingNames
-@pytest_asyncio.fixture()
-def service(mysql):
+def players_service(mysql):
     repository = PlayersRepository(mysql)
     return PlayersService(repository)
 
 
-# noinspection PyShadowingNames
 @pytest.mark.asyncio
-async def test_init_models(mysql):
+async def test_init_create_all(mysql):
     async with mysql.engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
@@ -50,5 +39,24 @@ async def test_init_models(mysql):
 
 # noinspection PyShadowingNames
 @pytest.mark.asyncio
-async def test_add_player(service):
-    await service.add(data)
+async def test_add_player(players_service):
+    await players_service.add(data)
+
+
+# noinspection PyShadowingNames
+@pytest.mark.asyncio
+async def test_get_player_by_user_id(players_service):
+    data = await players_service.get_player_by_user_id(1, None)
+    assert isinstance(data, PlayersDataBase)
+    assert data.nickname == "nickname"
+    assert data.signature == "signature"
+    assert data.waifu_id == 6
+
+
+# noinspection PyShadowingNames
+@pytest.mark.asyncio
+async def test_remove_all_by_user_id(players_service):
+    await players_service.remove_all_by_user_id(1)
+    data = await players_service.get_player_by_user_id(1, None)
+    assert not isinstance(data, PlayersDataBase)
+    assert data is None
