@@ -1,26 +1,18 @@
-FROM python:3.8.11-alpine3.14 AS base
+FROM python:3.9
 
-FROM base AS runtime_1
-RUN apk add --no-cache g++
-
-FROM runtime_1 AS runtime_2
-RUN apk add --no-cache libstdc++
-
-FROM base AS dependency
-ADD https://raw.githubusercontent.com/eficode/wait-for/master/wait-for /wait-for
-RUN chmod a+x /wait-for
-
-FROM runtime_2 AS runtime_3
 COPY . /root/app/
-COPY --from=dependency /wait-for /wait-for
 WORKDIR /root/app/
-RUN python3 -m venv venv \
-    && source  venv/bin/activate \
-    && python3 -m pip install poetry \
-    && python3 -m poetry install --extras all
 
-FROM runtime_3
-ENTRYPOINT echo "Waiting for database (sleep=25s)..." && sleep 25 \
-    && echo "Waiting for API ${MYSQL_HOST}:${MYSQL_PORT} ${REDIS_HOST}:${REDIS_PORT}..." \
-    && /wait-for ${MYSQL_HOST}:${MYSQL_PORT} ${REDIS_HOST}:${REDIS_PORT} -- \
-     python3 -m pytest tests/integration
+ENV VIRTUAL_ENV=/root/app/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade poetry
+RUN python3 -m poetry install --extras all
+
+RUN ls -l
+
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
+RUN chmod +x /wait
+CMD /wait && python3 -m pytest tests/integration

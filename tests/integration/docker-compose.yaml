@@ -3,13 +3,13 @@ version: "3.9"
 services:
 
   mysql:
-    image: "mysql:8"
+    image: "mysql:5.7"
     logging:
       driver: none
     environment:
       - MYSQL_ROOT_HOST=%
-      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_DATABASE}
 
   redis:
     image: "redis:6.2"
@@ -21,11 +21,11 @@ services:
       context: "../../"
       dockerfile: "tests/integration/Dockerfile"
     environment:
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=${DB_PORT}
-      - MYSQL_USER=${DB_USERNAME}
-      - MYSQL_PASSWORD=${DB_PASSWORD}
-      - MYSQL_DATABASE=${DB_DATABASE}
+      - DB_HOST=mysql
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DATABASE=0
