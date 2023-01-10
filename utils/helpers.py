@@ -11,17 +11,19 @@ import genshin
 import httpx
 from genshin import Client, types
 from httpx import UnsupportedProtocol
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, TYPE_CHECKING
 
 from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
-from core.services.cookies import CookiesService, PublicCookiesService
-from core.services.user import UserService
 from utils.const import REGION_MAP, REQUEST_HEADERS
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 from utils.models.base import RegionEnum
+
+if TYPE_CHECKING:
+    from core.services.cookies import CookiesService, PublicCookiesService
+    from core.services.users import UserService
 
 __all__ = [
     "sha1",
@@ -38,10 +40,10 @@ cache_dir = os.path.join(current_dir, "cache")
 if not os.path.exists(cache_dir):
     os.mkdir(cache_dir)
 
-cookies_service: Optional[CookiesService] = None
-user_service: Optional[UserService] = None
-public_cookies_service: Optional[PublicCookiesService] = None
-redis_db: Optional[RedisDB] = None
+cookies_service: Optional["CookiesService"] = None
+user_service: Optional["UserService"] = None
+public_cookies_service: Optional["PublicCookiesService"] = None
+redis_db: Optional["RedisDB"] = None
 
 genshin_cache: Optional[genshin.RedisCache] = None
 
@@ -78,9 +80,11 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
     return file_dir if return_path else Path(file_dir).as_uri()
 
 
-async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True) -> Client:
-    from core.bot import bot
-
+async def get_genshin_client(
+        user_id: int,
+        region: Optional[RegionEnum] = None,
+        need_cookie: bool = True,
+) -> Client:
     global cookies_service, user_service, public_cookies_service, redis_db, genshin_cache
 
     cookies_service = cookies_service or bot.services.get(CookiesService)
@@ -118,6 +122,9 @@ async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, 
 
 
 async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]]:
+    from core.services.cookies import PublicCookiesService
+    from core.services.users import UserService
+
     if user_service is None:
         raise ServiceNotFoundError(UserService)
     if public_cookies_service is None:
@@ -174,11 +181,11 @@ async def execute(command: Union[str, bytes], pass_error: bool = True) -> str:
 
 
 async def async_re_sub(
-    pattern: Union[str, Pattern],
-    repl: Union[str, Callable[[Match], Union[Awaitable[str], str]]],
-    string: str,
-    count: int = 0,
-    flags: int = 0,
+        pattern: Union[str, Pattern],
+        repl: Union[str, Callable[[Match], Union[Awaitable[str], str]]],
+        string: str,
+        count: int = 0,
+        flags: int = 0,
 ) -> str:
     """
     一个支持 repl 参数为 async 函数的 re.sub
@@ -205,7 +212,7 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1] :]
+            temp = temp[match.span(1)[1]:]
     else:
         while match := re.search(pattern, temp, flags=flags):
             replaced = None
@@ -216,7 +223,7 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1] :]
+            temp = temp[match.span(1)[1]:]
     return result + temp
 
 

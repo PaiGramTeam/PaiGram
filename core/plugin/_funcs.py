@@ -1,16 +1,25 @@
-from telegram import Update, ReplyKeyboardRemove
-from telegram.error import BadRequest, Forbidden
-from telegram.ext import CallbackContext, ConversationHandler
+from typing import Optional, Union
 
-from core.plugin import handler, conversation
-from utils.bot import get_chat
+from telegram import Chat, Message, ReplyKeyboardRemove, Update
+from telegram.error import BadRequest, Forbidden
+from telegram.ext import CallbackContext, ConversationHandler, Job
+
+from core.builtins.contexts import TGContext, TGUpdate
+from core.helpers import get_chat
+from core.plugin._handler import conversation, handler
 from utils.log import logger
 
+__all__ = (
+    "PluginFuncs",
+    "ConversationFuncs",
+)
 
-async def clean_message(context: CallbackContext):
+
+async def _delete_message(context: CallbackContext) -> None:
     job = context.job
     message_id = job.data
     chat_info = f"chat_id[{job.chat_id}]"
+
     try:
         chat = await get_chat(job.chat_id)
         full_name = chat.full_name
@@ -22,7 +31,9 @@ async def clean_message(context: CallbackContext):
         logger.warning("获取 chat info 失败 %s", exc.message)
     except Exception as exc:
         logger.warning("获取 chat info 消息失败 %s", str(exc))
+
     logger.debug("删除消息 %s message_id[%s]", chat_info, message_id)
+
     try:
         # noinspection PyTypeChecker
         await context.bot.delete_message(chat_id=job.chat_id, message_id=message_id)
@@ -40,30 +51,43 @@ async def clean_message(context: CallbackContext):
             logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
 
 
-def add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int, delete_seconds: int):
-    context.job_queue.run_once(
-        callback=clean_message,
-        when=delete_seconds,
-        data=message_id,
-        name=f"{chat_id}|{message_id}|clean_message",
-        chat_id=chat_id,
-        job_kwargs={"replace_existing": True, "id": f"{chat_id}|{message_id}|clean_message"},
-    )
+# noinspection PyMethodMayBeStatic
+class PluginFuncs:
+    async def add_delete_message_job(
+        self,
+        delete_seconds: int = 60,
+        message: Optional[Union[int, Message]] = None,
+        *,
+        chat: Optional[Union[int, Chat]] = None,
+        context: Optional[CallbackContext] = None,
+    ) -> Job:
+        """延迟删除消息"""
+        update = TGUpdate.get()
+        message = message or update.effective_message
+
+        if isinstance(message, Message):
+            if chat is None:
+                chat = message.chat_id
+            message = message.id
+
+        chat = chat.id if isinstance(chat, Chat) else chat
+
+        if context is None:
+            context = TGContext.get()
+
+        return context.job_queue.run_once(
+            callback=_delete_message,
+            when=delete_seconds,
+            data=message,
+            name=f"{chat}|{message}|delete_message",
+            chat_id=chat,
+            job_kwargs={"replace_existing": True, "id": f"{chat}|{message}|delete_message"},
+        )
 
 
-class _BasePlugin:
-    @staticmethod
-    def _add_delete_message_job(context: CallbackContext, chat_id: int, message_id: int, delete_seconds: int = 60):
-        return add_delete_message_job(context, chat_id, message_id, delete_seconds)
-
-
-class _Conversation(_BasePlugin):
+class ConversationFuncs:
     @conversation.fallback
     @handler.command(command="cancel", block=True)
-    async def cancel(self, update: Update, _: CallbackContext) -> int:
+    async def cancel(self, update: Update) -> int:
         await update.effective_message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
-
-
-class BasePlugin(_BasePlugin):
-    Conversation = _Conversation

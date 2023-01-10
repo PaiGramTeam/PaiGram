@@ -4,7 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from thefuzz import fuzz
 
-__all__ = ["BaseEntry", "WeaponEntry", "WeaponsEntry", "StrategyEntry", "StrategyEntryList"]
+__all__ = ("BaseEntry", "WeaponEntry", "WeaponsEntry", "StrategyEntry", "StrategyEntryList")
 
 
 class BaseEntry(BaseModel):

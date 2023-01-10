@@ -1,31 +1,32 @@
-import json
-from typing import List, Union, cast
+from typing import List, Optional, Union
 
+import ujson as json
 from telegram import Chat
 from telegram.ext import CallbackContext
 
-from core.bot import bot
+from core.builtins.contexts import BotContext, TGContext
 from core.dependence.redisdb import RedisDB
 
-redis_db = bot.services.get(RedisDB)
-redis_db = cast(RedisDB, redis_db)
 
-
-async def get_chat(chat_id: Union[str, int], ttl: int = 86400) -> Chat:
-    if not redis_db:
-        return await bot.app.bot.get_chat(chat_id)
+async def get_chat(chat_id: Union[str, int], redis: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
+    bot = BotContext.get()
+    if not redis:
+        return await bot.tg_app.bot.get_chat(chat_id)
     qname = f"bot:chat:{chat_id}"
-    data = await redis_db.client.get(qname)
+    data = await redis.client.get(qname)
     if data:
         json_data = json.loads(data)
-        return Chat.de_json(json_data, bot.app.bot)
-    chat_info = await bot.app.bot.get_chat(chat_id)
-    await redis_db.client.set(qname, chat_info.to_json())
-    await redis_db.client.expire(qname, ttl)
+        return Chat.de_json(json_data, bot.tg_app.bot)
+    chat_info = await bot.tg_app.bot.get_chat(chat_id)
+    await redis.client.set(qname, chat_info.to_json())
+    await redis.client.expire(qname, ttl)
     return chat_info
 
 
-def get_args(context: CallbackContext) -> List[str]:
+def get_args(context: Optional[CallbackContext] = None) -> List[str]:
+    if context is None:
+        context = TGContext.get()
+
     args = context.args
     match = context.match
     if args is None:
