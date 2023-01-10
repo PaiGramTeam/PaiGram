@@ -26,7 +26,7 @@ from typing import (
 
 from arkowrapper import ArkoWrapper
 from fastapi import FastAPI
-from telegram import Chat, Message, Update, User
+from telegram import Bot as TGBot, Chat, Message, Update, User
 from telegram.ext import Application as TGApplication, CallbackContext, Job
 from typing_extensions import ParamSpec
 from uvicorn import Server
@@ -60,6 +60,7 @@ _lock: "LockType" = Lock()
 
 _default_kwargs: Dict[Type[T], T] = {
     Bot: bot,
+    TGBot: bot.tg_app.bot,
     type(bot.executor): bot.executor,
     FastAPI: bot.web_app,
     Server: bot.web_server,
@@ -70,11 +71,11 @@ _default_kwargs: Dict[Type[T], T] = {
 _CATCH_TARGET_ATTR = "_catch_targets"
 
 
-def get_default_kwargs() -> Dict[Type[T], T]:
+def _get_default_kwargs() -> Dict[Type[T], T]:
     global _default_kwargs
     with _lock:
         if not bot.running:
-            for obj in chain(bot.dependency, bot.components, bot.services):
+            for obj in chain(bot.dependency, bot.components, bot.services, bot.plugins):
                 _default_kwargs[type(obj)] = obj
     return _default_kwargs
 
@@ -148,7 +149,7 @@ class BaseDispatcher(AbstractDispatcher):
     _instances: Sequence[Any]
 
     def _get_kwargs(self) -> Dict[Type[T], T]:
-        result = get_default_kwargs()
+        result = _get_default_kwargs()
         result[AbstractDispatcher] = self
         result.update(self._kwargs)
         return result

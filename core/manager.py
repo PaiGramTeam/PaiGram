@@ -62,6 +62,10 @@ class DependenceManager(Manager[DependenceType]):
     def dependency(self) -> List[DependenceType]:
         return list(self._dependency.values())
 
+    @property
+    def dependency_map(self) -> Dict[Type[DependenceType], DependenceType]:
+        return self._dependency
+
     async def start_dependency(self) -> None:
         _load_module(PROJECT_ROOT / "core/dependence")
 
@@ -97,6 +101,10 @@ class ComponentManager(Manager[ComponentType]):
     @property
     def components(self) -> List[ComponentType]:
         return list(self._components.values())
+
+    @property
+    def components_map(self) -> Dict[Type[ComponentType], ComponentType]:
+        return self._components
 
     async def init_components(self):
         for path in filter(
@@ -136,6 +144,10 @@ class ServiceManager(Manager[BaseServiceType]):
     @property
     def services(self) -> List[BaseServiceType]:
         return list(self._services.values())
+
+    @property
+    def services_map(self) -> Dict[Type[BaseServiceType], BaseServiceType]:
+        return self._services
 
     async def _initialize_service(self, target: Type[BaseServiceType]) -> BaseServiceType:
         instance: BaseServiceType
@@ -185,11 +197,15 @@ class ServiceManager(Manager[BaseServiceType]):
 class PluginManager(Manager["PluginType"]):
     """插件管理"""
 
-    _plugins: List["PluginType"] = []
+    _plugins: Dict[Type["PluginType"], "PluginType"] = {}
 
     @property
     def plugins(self) -> List["PluginType"]:
         """所有已经加载的插件"""
+        return list(self._plugins.values())
+
+    @property
+    def plugins_map(self) -> Dict[Type["PluginType"], "PluginType"]:
         return self._plugins
 
     async def install_plugins(self) -> None:
@@ -200,12 +216,14 @@ class PluginManager(Manager["PluginType"]):
             _load_module(path)
         for plugin in get_all_plugins():
             plugin: Type["PluginType"]
+
             try:
                 instance: "PluginType" = await self.executor(plugin)
             except Exception as e:
                 logger.exception('插件 "%s" 初始化失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
-            self._plugins.append(instance)
+
+            self._plugins[plugin] = instance
 
             try:
                 await instance.install()
@@ -215,7 +233,7 @@ class PluginManager(Manager["PluginType"]):
                 continue
 
     async def uninstall_plugins(self) -> None:
-        for plugin in self._plugins:
+        for plugin in self._plugins.values():
             try:
                 await plugin.uninstall()
             except Exception as e:

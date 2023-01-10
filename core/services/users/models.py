@@ -4,7 +4,11 @@ from typing import Optional
 
 from sqlmodel import SQLModel, Field, DateTime, Column, Enum
 
-__all__ = ("User", "UserDataBase")
+__all__ = (
+    "User",
+    "UserDataBase",
+    "PermissionsEnum",
+)
 
 
 class PermissionsEnum(int, enum.Enum):

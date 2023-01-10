@@ -1,6 +1,6 @@
 """执行器"""
 import inspect
-from functools import cached_property, wraps
+from functools import cached_property
 from multiprocessing import RLock as Lock
 from typing import Callable, ClassVar, Dict, Generic, Optional, TYPE_CHECKING, Type, TypeVar
 

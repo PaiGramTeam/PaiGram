@@ -1,7 +1,7 @@
 """目录常量"""
 from pathlib import Path
 
-__all__ = ["PROJECT_ROOT", "CORE_DIR", "PLUGIN_DIR", "RESOURCE_DIR"]
+__all__ = ["PROJECT_ROOT", "CORE_DIR", "PLUGIN_DIR", "RESOURCE_DIR", "CACHE_DIR"]
 
 # 项目根目录
 PROJECT_ROOT = Path(__file__).joinpath("../../..").resolve()
