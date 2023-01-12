@@ -25,15 +25,21 @@ class PlayersRepository(BaseService.Component):
             results = await session.exec(statement)
             return results.first()
 
-    async def add(self, player: Player):
+    async def add(self, player: Player) -> None:
         async with AsyncSession(self.engine) as session:
             session.add(player)
             await session.commit()
 
-    async def remove(self, player: Player):
+    async def remove(self, player: Player) -> None:
         async with AsyncSession(self.engine) as session:
             await session.delete(player)
             await session.commit()
+
+    async def update(self, player: Player) -> None:
+        async with AsyncSession(self.engine) as session:
+            session.add(player)
+            await session.commit()
+            await session.refresh(player)
 
     async def get_all_by_user_id(self, user_id: int) -> List[Player]:
         async with AsyncSession(self.engine) as session:

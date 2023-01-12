@@ -22,6 +22,9 @@ class PlayersService(BaseService):
     async def add(self, player: Player) -> None:
         await self._repository.add(player)
 
+    async def update(self, player: Player) -> None:
+        await self._repository.update(player)
+
     async def get_all_by_user_id(self, user_id: int) -> List[Player]:
         return await self._repository.get_all_by_user_id(user_id)
 
