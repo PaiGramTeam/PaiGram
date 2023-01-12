@@ -178,7 +178,6 @@ class PayLog:
             month_data.clear()
         if not month_datas:
             raise PayLogNotFound
-        month_datas.sort(key=lambda k: k["amount"], reverse=True)
         return all_amount, month_datas
 
     async def get_analysis(self, user_id: int, client: Client):
@@ -201,18 +200,19 @@ class PayLog:
         price_data_name = ["大月卡", "小月卡", "648", "328", "198", "98", "30", "6"]
         real_price = [68, 30, 648, 328, 198, 98, 30, 6]
         all_amount, month_datas = await PayLog.get_month_data(pay_log, price_data)
+        month_data = sorted(month_datas, key=lambda k: k["amount"], reverse=True)
         all_pay = sum((price_data[i]["count"] * real_price[i]) for i in range(len(price_data)))
         datas = [
             {"value": f"￥{all_pay:.0f}", "name": "总消费"},
             {"value": all_amount, "name": "总结晶"},
-            {"value": f"{month_datas[0]['month']}", "name": "消费最多"},
+            {"value": f"{month_data[0]['month']}", "name": "消费最多"},
             {
-                "value": f"￥{month_datas[0]['amount'] / 10:.0f}",
-                "name": f"{month_datas[0]['month']}消费",
+                "value": f"￥{month_data[0]['amount'] / 10:.0f}",
+                "name": f"{month_data[0]['month']}消费",
             },
             *[
                 {
-                    "value": price_data[i]["count"],
+                    "value": price_data[i]["count"] if i != 0 else "*",
                     "name": f"{price_data_name[i]}",
                 }
                 for i in range(len(price_data))

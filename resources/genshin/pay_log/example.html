@@ -44,7 +44,7 @@
       </div>
       <div class="data_line">
         <div class="data_line_item">
-          <div class="num">1</div>
+          <div class="num">*</div>
           <div class="lable">大月卡</div>
         </div>
         <div class="data_line_item">
@@ -97,7 +97,7 @@
   const barData = JSON.parse(`[{"month": "1月", "amount": 1000}]`);
   const myChart1 = echarts.init(document.querySelector('#chartContainer'), null, { renderer: 'svg' });
   const xData = barData.map(v => v.month)
-  const yData = barData.map(v => v.amount / 10)
+  const yData = barData.map(v => v.amount)
   // 指定图表的配置项和数据
   const option = {
     animation: false,
@@ -109,14 +109,14 @@
       x:'left',
       y:'top',
       show: true,
-      data: [{ name: '金额' }]
+      data: [{ name: '结晶' }]
     },
     yAxis: {
       type: 'value'
     },
     series: [
       {
-        name:'金额',
+        name:'结晶',
         data: yData,
         type: 'bar',
         itemStyle: {

@@ -101,7 +101,7 @@ class PayLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text(
                 "<b>开始导入充值历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
                 "（非 paimon.moe 导出的文件数据）</b>\n\n"
-                "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
+                "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（国服）\n"
                 "<b>注意：导入的数据将会与旧数据进行合并。</b>",
                 parse_mode="html",
             )
@@ -122,9 +122,9 @@ class PayLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def import_data_from_message(self, update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
-        if message.document:
-            await self.import_from_file(user, message)
-            return ConversationHandler.END
+        if not message.text:
+            await message.reply_text("输入错误，请重新输入")
+            return INPUT_URL
         authkey = from_url_get_authkey(message.text)
         reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后")
         await message.reply_chat_action(ChatAction.TYPING)
