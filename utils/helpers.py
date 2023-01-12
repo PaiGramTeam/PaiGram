@@ -2,24 +2,12 @@ import hashlib
 import os
 import re
 from asyncio import create_subprocess_shell
+from functools import lru_cache
 from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import Awaitable, Callable, Iterator, Match, Optional, Pattern, Tuple, TypeVar, Union
+from typing import Awaitable, Callable, Iterator, Match, Pattern, TypeVar, Union
 
-import genshin
-from genshin import Client, types
-from typing_extensions import ParamSpec, TYPE_CHECKING
-
-from core.config import config
-from core.dependence.redisdb import RedisDB
-from core.error import ServiceNotFoundError
-from utils.const import REGION_MAP
-from utils.models.base import RegionEnum
-from functools import lru_cache
-
-if TYPE_CHECKING:
-    from core.services.cookies import CookiesService, PublicCookiesService
-    from core.services.users import UserService
+from typing_extensions import ParamSpec
 
 __all__ = [
     "sha1",
@@ -30,102 +18,12 @@ __all__ = [
 T = TypeVar("T")
 P = ParamSpec("P")
 
-current_dir = os.getcwd()
-cache_dir = os.path.join(current_dir, "cache")
-if not os.path.exists(cache_dir):
-    os.mkdir(cache_dir)
-
-cookies_service: Optional["CookiesService"] = None
-user_service: Optional["UserService"] = None
-public_cookies_service: Optional["PublicCookiesService"] = None
-redis_db: Optional["RedisDB"] = None
-
-genshin_cache: Optional[genshin.RedisCache] = None
-
 
 @lru_cache(64)
 def sha1(text: str) -> str:
     _sha1 = hashlib.sha1()
     _sha1.update(text.encode())
     return _sha1.hexdigest()
-
-
-async def get_genshin_client(
-    user_id: int,
-    region: Optional[RegionEnum] = None,
-    need_cookie: bool = True,
-) -> Client:
-    global cookies_service, user_service, public_cookies_service, redis_db, genshin_cache
-
-    cookies_service = cookies_service or bot.services.get(CookiesService)
-    user_service = user_service or bot.services.get(UserService)
-    public_cookies_service = public_cookies_service or bot.services.get(PublicCookiesService)
-    redis_db = redis_db or bot.services.get(RedisDB)
-
-    if redis_db and config.genshin_ttl:
-        genshin_cache = genshin.RedisCache(redis_db.client, ttl=config.genshin_ttl)
-
-    if user_service is None:
-        raise ServiceNotFoundError(UserService)
-    if cookies_service is None:
-        raise ServiceNotFoundError(CookiesService)
-    user = await user_service.get_user_by_id(user_id)
-    if region is None:
-        region = user.region
-    cookies = None
-    if need_cookie:
-        cookies = await cookies_service.get_cookies(user_id, region)
-        cookies = cookies.cookies
-    if region == RegionEnum.HYPERION:
-        uid = user.yuanshen_uid
-        client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
-    elif region == RegionEnum.HOYOLAB:
-        uid = user.genshin_uid
-        client = genshin.Client(
-            cookies=cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid
-        )
-    else:
-        raise TypeError("region is not RegionEnum.NULL")
-    if genshin_cache:
-        client.cache = genshin_cache
-    return client
-
-
-async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]]:
-    from core.services.cookies import PublicCookiesService
-    from core.services.users import UserService
-
-    if user_service is None:
-        raise ServiceNotFoundError(UserService)
-    if public_cookies_service is None:
-        raise ServiceNotFoundError(PublicCookiesService)
-    user = await user_service.get_user_by_id(user_id)
-    region = user.region
-    cookies = await public_cookies_service.get_cookies(user_id, region)
-    if region == RegionEnum.HYPERION:
-        uid = user.yuanshen_uid
-        client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)
-    elif region == RegionEnum.HOYOLAB:
-        uid = user.genshin_uid
-        client = genshin.Client(
-            cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
-        )
-    else:
-        raise TypeError("region is not RegionEnum.NULL")
-    if genshin_cache:
-        client.cache = genshin_cache
-    return client, uid
-
-
-def region_server(uid: Union[int, str]) -> RegionEnum:
-    if isinstance(uid, (int, str)):
-        region = REGION_MAP.get(str(uid)[0])
-    else:
-        raise TypeError("UID variable type error")
-    if region:
-        return region
-    else:
-        raise TypeError(f"UID {uid} isn't associated with any region")
 
 
 async def execute(command: Union[str, bytes], pass_error: bool = True) -> str:

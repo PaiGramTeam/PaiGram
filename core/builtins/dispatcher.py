@@ -54,27 +54,33 @@ R = TypeVar("R")
 
 TargetType = Union[Type, str, Callable[[Any], bool]]
 
-bot = BotContext.get()
+bot: Optional[Bot] = None
 
 _lock: "LockType" = Lock()
 
-_default_kwargs: Dict[Type[T], T] = {
-    Bot: bot,
-    TGBot: bot.tg_app.bot,
-    type(bot.executor): bot.executor,
-    FastAPI: bot.web_app,
-    Server: bot.web_server,
-    TGApplication: bot.tg_app,
-    BotConfig: bot_config,
-}
+_default_kwargs: Dict[Type[T], T] = {}
 
 _CATCH_TARGET_ATTR = "_catch_targets"
 
 
 def _get_default_kwargs() -> Dict[Type[T], T]:
-    global _default_kwargs
+    global _default_kwargs, bot
     with _lock:
-        if not bot.running:
+        if not _default_kwargs:
+            try:
+                bot = BotContext.get()
+                _default_kwargs = {
+                    Bot: bot,
+                    TGBot: bot.tg_app.bot,
+                    type(bot.executor): bot.executor,
+                    FastAPI: bot.web_app,
+                    Server: bot.web_server,
+                    TGApplication: bot.tg_app,
+                    BotConfig: bot_config,
+                }
+            except LookupError:
+                pass
+        if bot is not None and not bot.running:
             for obj in chain(bot.dependency, bot.components, bot.services, bot.plugins):
                 _default_kwargs[type(obj)] = obj
     return _default_kwargs

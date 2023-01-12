@@ -8,18 +8,23 @@ from core.builtins.contexts import BotContext, TGContext
 from core.dependence.redisdb import RedisDB
 
 
-async def get_chat(chat_id: Union[str, int], redis: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
+async def get_chat(chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
     bot = BotContext.get()
-    if not redis:
+    redis_db: RedisDB = redis_db or bot.services_map.get(RedisDB, None)
+
+    if not redis_db:
         return await bot.tg_app.bot.get_chat(chat_id)
+
     qname = f"bot:chat:{chat_id}"
-    data = await redis.client.get(qname)
+
+    data = await redis_db.client.get(qname)
     if data:
         json_data = json.loads(data)
         return Chat.de_json(json_data, bot.tg_app.bot)
+
     chat_info = await bot.tg_app.bot.get_chat(chat_id)
-    await redis.client.set(qname, chat_info.to_json())
-    await redis.client.expire(qname, ttl)
+    await redis_db.client.set(qname, chat_info.to_json())
+    await redis_db.client.expire(qname, ttl)
     return chat_info
 
 
@@ -29,18 +34,16 @@ def get_args(context: Optional[CallbackContext] = None) -> List[str]:
 
     args = context.args
     match = context.match
+
     if args is None:
-        if match is not None:
-            groups = match.groups()
-            command = groups[0]
-            if command:
-                temp = []
-                command_parts = command.split(" ")
-                for command_part in command_parts:
-                    if command_part:
-                        temp.append(command_part)
-                return temp
-            return []
+        if match is not None and (command := match.groups()[0]):
+            temp = []
+            command_parts = command.split(" ")
+            for command_part in command_parts:
+                if command_part:
+                    temp.append(command_part)
+            return temp
+        return []
     else:
         if len(args) >= 1:
             return args

@@ -10,6 +10,7 @@ from typing_extensions import ParamSpec, Self
 
 from core.builtins.contexts import handler_contexts, job_contexts
 from utils.decorator import do_nothing
+from utils.log import logger
 from utils.models.lock import HashLock
 
 if TYPE_CHECKING:
@@ -34,7 +35,7 @@ class BaseExecutor:
     _lock: ClassVar["LockType"] = Lock()
     _instances: ClassVar[Dict[str, Self]] = {}
 
-    def __new__(cls, name: str, *args, **kwargs):
+    def __new__(cls: Type[T], name: str, *args, **kwargs) -> T:
         with cls._lock:
             if (instance := cls._instances.get(name, None)) is None:
                 instance = object.__new__(cls)
@@ -57,6 +58,7 @@ class BaseExecutor:
         block: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
         lock_id: int = None,
+        raise_error: bool = True,
         **kwargs,
     ) -> R:
         from core.builtins.dispatcher import BaseDispatcher
@@ -67,10 +69,15 @@ class BaseExecutor:
             dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
 
             # 执行
-            if inspect.iscoroutinefunction(target):
-                result = await dispatched_func()
-            else:
-                result = dispatched_func()
+            try:
+                if inspect.iscoroutinefunction(target):
+                    result = await dispatched_func()
+                else:
+                    result = dispatched_func()
+            except Exception as e:
+                if raise_error:
+                    raise e
+                logger.error("执行错误：%s", e, exc_info=e)
 
         return result
 
@@ -80,12 +87,18 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
 
     _callback: Callable[P, R]
 
-    def __init__(self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None) -> None:
+    def __init__(
+        self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None, handle_errors: bool = True
+    ) -> None:
         if dispatcher is None:
             from core.builtins.dispatcher import HandlerDispatcher
 
             dispatcher = HandlerDispatcher
         super().__init__("handler", dispatcher)
+        if handle_errors:
+            from utils.decorators.error import error_callable
+
+            self._callback = error_callable(func)
         self._callback = func
 
     # noinspection PyMethodOverriding
@@ -106,6 +119,7 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
                 lock_id=lock_id,
                 update=update,
                 context=context,
+                raise_error=True,
                 **kwargs,
             )
 
@@ -127,6 +141,7 @@ class JobExecutor(BaseExecutor):
         block: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
         lock_id: int = None,
+        raise_error: bool = True,
         **kwargs,
     ) -> R:
         with job_contexts(context):
@@ -136,5 +151,6 @@ class JobExecutor(BaseExecutor):
                 block=block,
                 lock_id=lock_id,
                 context=context,
+                raise_error=raise_error,
                 **kwargs,
             )

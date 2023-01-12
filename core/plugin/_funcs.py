@@ -58,15 +58,14 @@ async def _delete_message(context: CallbackContext) -> None:
             logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
 
 
-# noinspection PyMethodMayBeStatic
 class PluginFuncs:
-    async def add_delete_message_job(
-            self,
-            delete_seconds: int = 60,
-            message: Optional[Union[int, Message]] = None,
-            *,
-            chat: Optional[Union[int, Chat]] = None,
-            context: Optional[CallbackContext] = None,
+    @staticmethod
+    def add_delete_message_job(
+        delete_seconds: int = 60,
+        message: Optional[Union[int, Message]] = None,
+        *,
+        chat: Optional[Union[int, Chat]] = None,
+        context: Optional[CallbackContext] = None,
     ) -> Job:
         """延迟删除消息"""
         update = TGUpdate.get()
@@ -91,7 +90,8 @@ class PluginFuncs:
             job_kwargs={"replace_existing": True, "id": f"{chat}|{message}|delete_message"},
         )
 
-    async def url_to_file(self, url: str, return_path: bool = False) -> str:
+    @staticmethod
+    async def url_to_file(url: str, return_path: bool = False) -> str:
         url_sha1 = sha1(url)  # url 的 hash 值
         pathed_url = Path(url)
 
