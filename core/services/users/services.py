@@ -1,12 +1,11 @@
 from typing import List
 
 from core.base_service import BaseService
-from core.config import config
 from core.services.users.cache import UserAdminCache
-from core.services.users.models import UserDataBase as User, PermissionsEnum
+from core.services.users.models import PermissionsEnum, UserDataBase as User
 from core.services.users.repositories import UserRepository
 
-__all__ = ("UserService",)
+__all__ = ("UserService", "UserAdminService")
 
 
 class UserService(BaseService):

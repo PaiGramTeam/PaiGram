@@ -1,15 +1,15 @@
 from functools import wraps
-from typing import Callable, Optional, cast
-from core.builtins.contexts import TGContext, TGUpdate
+from typing import Callable, Optional
 
 from aiohttp import ClientConnectorError
 from genshin import DataNotPublic, GenshinException, InvalidCookies, TooManyRequests
 from httpx import ConnectTimeout
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, ReplyKeyboardRemove, Update
 from telegram.error import BadRequest, Forbidden, TimedOut
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
 
+from core.builtins.contexts import TGContext, TGUpdate
 from core.plugin import Plugin
 from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
 from utils.error import UrlResourcesNotFoundError
@@ -19,6 +19,8 @@ try:
     import ujson as json
 except ImportError:
     import json
+
+__all__ = ("error_callable",)
 
 ERROR_MSG_PREFIX = "出错了呜呜呜 ~ "
 SERVER_CONNECT_ERROR_MSG = "服务器连接超时 服务器熟啦 ~ 请稍后再试"

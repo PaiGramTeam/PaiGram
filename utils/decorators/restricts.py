@@ -1,12 +1,23 @@
 import asyncio
 import time
 from functools import wraps
-from typing import Any, Callable, Optional, cast
+from typing import Callable, Optional, TYPE_CHECKING, TypeVar, Union
 
-from telegram import Update
-from telegram.ext import CallbackContext, filters
+from telegram.ext import filters
+from typing_extensions import ParamSpec
 
+from core.builtins.contexts import TGContext, TGUpdate
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram.ext import CallbackContext
+    from telegram import Update
+
+__all__ = ("restricts",)
+
+T = TypeVar("T")
+R = TypeVar("R")
+P = ParamSpec("P")
 
 _lock = asyncio.Lock()
 
@@ -14,7 +25,7 @@ _lock = asyncio.Lock()
 def restricts(
     restricts_time: int = 9,
     restricts_time_of_groups: Optional[int] = None,
-    return_data: Any = None,
+    return_data: T = None,
     without_overlapping: bool = False,
 ):
     """用于装饰在指定函数预防洪水攻击的装饰器
@@ -40,19 +51,12 @@ def restricts(
     :param without_overlapping: 两次命令时间不覆盖，在上一条一样的命令返回之前，忽略重复调用
     """
 
-    def decorator(func: Callable):
+    def decorator(func: Callable[P, R]) -> Callable[P, Union[R, T]]:
         @wraps(func)
-        async def restricts_func(*args, **kwargs):
-            if len(args) == 3:
-                # self update context
-                _, update, context = args
-            elif len(args) == 2:
-                # update context
-                update, context = args
-            else:
-                return await func(*args, **kwargs)
-            update = cast(Update, update)
-            context = cast(CallbackContext, context)
+        async def restricts_func(*args: P.args, **kwargs: P.kwargs) -> Union[R, T]:
+            update: "Update" = TGUpdate.get()
+            context: "CallbackContext" = TGContext.get()
+
             message = update.effective_message
             user = update.effective_user
 
