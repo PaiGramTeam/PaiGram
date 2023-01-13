@@ -15,9 +15,9 @@ class RegionEnum(int, enum.Enum):
 class Player(SQLModel):
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
     id: int = Field(primary_key=True)
-    user_id: int = Field(unique=True)
-    account_id: int = Field(unique=True)
-    player_id: int = Field(unique=True)
+    user_id: int = Field()
+    account_id: int = Field()
+    player_id: int = Field()
     nickname: Optional[str] = Field()
     signature: Optional[str] = Field()
     hand_image: Optional[int] = Field()

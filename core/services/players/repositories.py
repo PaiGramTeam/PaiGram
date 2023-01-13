@@ -17,11 +17,14 @@ class PlayersRepository(BaseService.Component):
     async def get_by_user_id(self, user_id: int, region: Optional[RegionEnum]) -> Optional[Player]:
         async with AsyncSession(self.engine) as session:
             if region:
-                statement = select(Player).where(
-                    (Player.user_id == user_id) and (Player.region == region) and (Player.is_chosen == 1)
+                statement = (
+                    select(Player)
+                    .where(Player.user_id == user_id)
+                    .where(Player.region == region)
+                    .where(Player.is_chosen == 1)
                 )
             else:
-                statement = select(Player).where((Player.user_id == user_id) and (Player.is_chosen == 1))
+                statement = select(Player).where(Player.user_id == user_id).where(Player.is_chosen == 1)
             results = await session.exec(statement)
             return results.first()
 
