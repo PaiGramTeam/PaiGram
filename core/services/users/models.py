@@ -22,7 +22,7 @@ class User(SQLModel):
     id: int = Field(primary_key=True)
     user_id: int = Field(unique=True)
     permissions: PermissionsEnum = Field(sa_column=Column(Enum(PermissionsEnum)))
-    locale: Optional[str] = Field(unique=True)
+    locale: Optional[str] = Field()
     ban_end_time: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True)))
     ban_start_time: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True)))
     is_banned: Optional[int] = Field()
