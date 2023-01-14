@@ -82,7 +82,7 @@ class PublicCookiesService:
             else:
                 raise CookieServiceError
             try:
-                record_card = await client.get_record_card()
+                record_card = (await client.get_record_cards())[0]
                 if record_card.game == Game.GENSHIN and region == RegionEnum.HYPERION:
                     await client.get_partial_genshin_user(record_card.uid)
             except InvalidCookies as exc:

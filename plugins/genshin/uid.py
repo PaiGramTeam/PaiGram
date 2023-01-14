@@ -125,7 +125,7 @@ class SetUserUid(Plugin.Conversation, BasePlugin.Conversation):
         else:
             return ConversationHandler.END
         try:
-            user_info = await client.get_record_card(hoyolab_uid)
+            user_info = (await client.get_record_cards(hoyolab_uid))[0]
         except DataNotPublic:
             await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())
             logger.warning(f"获取账号信息发生错误 hoyolab_uid[{hoyolab_uid}] 账户信息未公开")
