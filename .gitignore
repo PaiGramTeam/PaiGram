@@ -11,6 +11,9 @@
 .idea/
 out/
 
+# macOS Finder
+**/.DS_Store
+
 ### Python ###
 
 # Environments
