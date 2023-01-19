@@ -1,5 +1,6 @@
 from typing import Any, List, Tuple, Union, Optional
 
+import ujson
 from enkanetwork import (
     CharacterInfo,
     DigitType,
@@ -31,6 +32,7 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.shortname import roleToName
+from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
 from utils.bot import get_args
 from utils.decorators.error import error_callable
@@ -47,24 +49,38 @@ class PlayerCards(Plugin, BasePlugin):
         self, user_service: UserService = None, template_service: TemplateService = None, redis: RedisDB = None
     ):
         self.user_service = user_service
-        self.client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
-        self.client.set_cache(RedisCache(redis.client, key="plugin:player_cards:enka_network"))
+        self.client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent, cache=False)
+        self.cache = RedisCache(redis.client, key="plugin:player_cards:enka_network")
+        self.player_cards_file = PlayerCardsFile()
         self.template_service = template_service
         self.temp_photo: Optional[str] = None
 
     async def _fetch_user(self, uid) -> Union[EnkaNetworkResponse, str]:
         try:
-            return await self.client.fetch_user(uid)
+            data = await self.cache.get(uid)
+            if data is not None:
+                return EnkaNetworkResponse.parse_obj(data)
+            user = await self.client.http.fetch_user(uid)
+            data = user["content"].decode("utf-8", "surrogatepass")  # type: ignore
+            data = ujson.loads(data)
+            data = await self.player_cards_file.merge_info(uid, data)
+            await self.cache.set(uid, data)
+            return EnkaNetworkResponse.parse_obj(data)
         except EnkaServerError:
-            return "Enka.Network 服务请求错误，请稍后重试"
+            error = "Enka.Network 服务请求错误，请稍后重试"
         except Forbidden:
-            return "Enka.Network 服务请求被拒绝，请稍后重试"
+            error = "Enka.Network 服务请求被拒绝，请稍后重试"
         except AioHttpTimeoutException:
-            return "Enka.Network 服务请求超时，请稍后重试"
+            error = "Enka.Network 服务请求超时，请稍后重试"
         except HTTPException:
-            return "Enka.Network HTTP 服务请求错误，请稍后重试"
+            error = "Enka.Network HTTP 服务请求错误，请稍后重试"
         except (UIDNotFounded, VaildateUIDError):
-            return "UID 未找到，可能为服务器抽风，请稍后重试"
+            error = "UID 未找到，可能为服务器抽风，请稍后重试"
+        old_data = await self.player_cards_file.load_history_info(uid)
+        if old_data is not None:
+            logger.warning("UID %s | 角色卡片使用历史数据 | %s", uid, error)
+            return EnkaNetworkResponse.parse_obj(old_data)
+        return error
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
@@ -105,20 +121,15 @@ class PlayerCards(Plugin, BasePlugin):
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
         else:
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求")
-            buttons = []
-            temp = []
-            for index, value in enumerate(data.characters):
-                temp.append(
-                    InlineKeyboardButton(
-                        value.name,
-                        callback_data=f"get_player_card|{user.id}|{uid}|{value.name}",
-                    )
+            buttons = [
+                InlineKeyboardButton(
+                    value.name,
+                    callback_data=f"get_player_card|{user.id}|{uid}|{value.name}",
                 )
-                if index == 3:
-                    buttons.append(temp)
-                    temp = []
-            if len(temp) > 0:
-                buttons.append(temp)
+                for value in data.characters
+                if value.name
+            ]
+            buttons = [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
             if isinstance(self.temp_photo, str):
                 photo = self.temp_photo
             else:

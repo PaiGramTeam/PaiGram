@@ -67,7 +67,7 @@ class PayLog:
             return PayLogModel(info=BaseInfo(uid=uid), list=[]), False
         try:
             return PayLogModel.parse_obj(await self.load_json(file_path)), True
-        except jsonlib.decoder.JSONDecodeError:
+        except jsonlib.JSONDecodeError:
             return PayLogModel(info=BaseInfo(uid=uid), list=[]), False
 
     async def remove_history_info(
