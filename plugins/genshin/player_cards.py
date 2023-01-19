@@ -1,6 +1,6 @@
-import json
 from typing import Any, List, Tuple, Union, Optional
 
+import ujson
 from enkanetwork import (
     CharacterInfo,
     DigitType,
@@ -61,8 +61,8 @@ class PlayerCards(Plugin, BasePlugin):
             if data is not None:
                 return EnkaNetworkResponse.parse_obj(data)
             user = await self.client.http.fetch_user(uid)
-            data = user["content"]
-            data = json.loads(data)  # type: ignore
+            data = user["content"].decode("utf-8", "surrogatepass")  # type: ignore
+            data = ujson.loads(data)
             data = await self.player_cards_file.merge_info(uid, data)
             await self.cache.set(uid, data)
             return EnkaNetworkResponse.parse_obj(data)
