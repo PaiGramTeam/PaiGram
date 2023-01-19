@@ -78,7 +78,7 @@ class PlayerCards(Plugin, BasePlugin):
             error = "UID 未找到，可能为服务器抽风，请稍后重试"
         old_data = await self.player_cards_file.load_history_info(uid)
         if old_data is not None:
-            logger.warn("UID %s | 角色卡片使用历史数据 | %s", uid, error)
+            logger.warning("UID %s | 角色卡片使用历史数据 | %s", uid, error)
             return EnkaNetworkResponse.parse_obj(old_data)
         return error
 

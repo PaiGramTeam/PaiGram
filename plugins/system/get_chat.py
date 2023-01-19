@@ -108,15 +108,11 @@ class GetChat(Plugin):
 
     async def parse_private_pay_log(self, chat_id: int, uid: int) -> str:
         pay_log, status = await self.pay_log.load_history_info(str(chat_id), str(uid))
-        if status:
-            text = (
-                f"\n充值记录："
-                f"\n   - 已导入 {len(pay_log.list)} 条"
-                f"\n   - 最后更新：{pay_log.info.export_time}"
-            )
-        else:
-            text = "\n充值记录：<code>未导入</code>"
-        return text
+        return (
+            f"\n充值记录：\n   - 已导入 {len(pay_log.list)} 条\n   - 最后更新：{pay_log.info.export_time}"
+            if status
+            else "\n充值记录：<code>未导入</code>"
+        )
 
     @staticmethod
     def get_file_modify_time(path: str) -> datetime:
