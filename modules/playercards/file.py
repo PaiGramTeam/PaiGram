@@ -1,10 +1,7 @@
-import math
 from pathlib import Path
-from typing import Optional, Dict, Union, List
+from typing import Optional, Dict, Union
 
 import aiofiles
-from enkanetwork.model.base import EnkaNetworkResponse
-from telegram import InlineKeyboardButton
 
 from utils.const import PROJECT_ROOT
 
@@ -67,50 +64,3 @@ class PlayerCardsFile:
                 data["avatarInfoList"].append(i)
         await self.save_json(self.get_file_path(uid), data)
         return data
-
-    @staticmethod
-    def gen_button(
-        data: EnkaNetworkResponse,
-        user_id: Union[str, int],
-        uid: int,
-        page: int = 1,
-    ) -> List[List[InlineKeyboardButton]]:
-        """生成按钮"""
-        buttons = [
-            InlineKeyboardButton(
-                value.name,
-                callback_data=f"get_player_card|{user_id}|{uid}|{value.name}",
-            )
-            for value in data.characters
-            if value.name
-        ]
-        all_buttons = [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
-        send_buttons = all_buttons[(page - 1) * 3 : page * 3]
-        last_page = page - 1 if page > 1 else 0
-        all_page = math.ceil(len(all_buttons) / 3)
-        next_page = page + 1 if page < all_page and all_page > 1 else 0
-        last_button = []
-        if last_page:
-            last_button.append(
-                InlineKeyboardButton(
-                    "<< 上一页",
-                    callback_data=f"get_player_card|{user_id}|{uid}|{last_page}",
-                )
-            )
-        if last_page or next_page:
-            last_button.append(
-                InlineKeyboardButton(
-                    f"{page}/{all_page}",
-                    callback_data=f"get_player_card|{user_id}|{uid}|empty_data",
-                )
-            )
-        if next_page:
-            last_button.append(
-                InlineKeyboardButton(
-                    "下一页 >>",
-                    callback_data=f"get_player_card|{user_id}|{uid}|{next_page}",
-                )
-            )
-        if last_button:
-            send_buttons.append(last_button)
-        return send_buttons
