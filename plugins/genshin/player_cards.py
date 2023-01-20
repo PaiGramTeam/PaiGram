@@ -1,3 +1,4 @@
+import math
 from typing import Any, List, Tuple, Union, Optional
 
 import ujson
@@ -121,15 +122,7 @@ class PlayerCards(Plugin, BasePlugin):
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
         else:
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求")
-            buttons = [
-                InlineKeyboardButton(
-                    value.name,
-                    callback_data=f"get_player_card|{user.id}|{uid}|{value.name}",
-                )
-                for value in data.characters
-                if value.name
-            ]
-            buttons = [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
+            buttons = self.gen_button(data, user.id, uid)
             if isinstance(self.temp_photo, str):
                 photo = self.temp_photo
             else:
@@ -170,7 +163,15 @@ class PlayerCards(Plugin, BasePlugin):
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{result}] uid[{uid}]")
+        if result == "empty_data":
+            await callback_query.answer(text="此按钮不可用", show_alert=True)
+            return
+        page = 0
+        if result.isdigit():
+            page = int(result)
+            logger.info("用户 %s[%s] 角色卡片查询命令请求 || page[%s] uid[%s]", user.full_name, user.id, page, uid)
+        else:
+            logger.info("用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]", user.full_name, user.id, result, uid)
         data = await self._fetch_user(uid)
         if isinstance(data, str):
             await message.reply_text(data)
@@ -178,6 +179,11 @@ class PlayerCards(Plugin, BasePlugin):
         if data.characters is None:
             await message.delete()
             await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
+            return
+        if page:
+            buttons = self.gen_button(data, user.id, uid, page)
+            await message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
+            await callback_query.answer(f"已切换到第 {page} 页", show_alert=False)
             return
         for characters in data.characters:
             if characters.name == result:
@@ -191,6 +197,53 @@ class PlayerCards(Plugin, BasePlugin):
         render_result = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
         render_result.filename = f"player_card_{uid}_{result}.png"
         await render_result.edit_media(message)
+
+    @staticmethod
+    def gen_button(
+        data: EnkaNetworkResponse,
+        user_id: Union[str, int],
+        uid: int,
+        page: int = 1,
+    ) -> List[List[InlineKeyboardButton]]:
+        """生成按钮"""
+        buttons = [
+            InlineKeyboardButton(
+                value.name,
+                callback_data=f"get_player_card|{user_id}|{uid}|{value.name}",
+            )
+            for value in data.characters
+            if value.name
+        ]
+        all_buttons = [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
+        send_buttons = all_buttons[(page - 1) * 3 : page * 3]
+        last_page = page - 1 if page > 1 else 0
+        all_page = math.ceil(len(all_buttons) / 3)
+        next_page = page + 1 if page < all_page and all_page > 1 else 0
+        last_button = []
+        if last_page:
+            last_button.append(
+                InlineKeyboardButton(
+                    "<< 上一页",
+                    callback_data=f"get_player_card|{user_id}|{uid}|{last_page}",
+                )
+            )
+        if last_page or next_page:
+            last_button.append(
+                InlineKeyboardButton(
+                    f"{page}/{all_page}",
+                    callback_data=f"get_player_card|{user_id}|{uid}|empty_data",
+                )
+            )
+        if next_page:
+            last_button.append(
+                InlineKeyboardButton(
+                    "下一页 >>",
+                    callback_data=f"get_player_card|{user_id}|{uid}|{next_page}",
+                )
+            )
+        if last_button:
+            send_buttons.append(last_button)
+        return send_buttons
 
 
 class Artifact(BaseModel):
