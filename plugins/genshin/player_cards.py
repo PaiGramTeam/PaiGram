@@ -121,15 +121,7 @@ class PlayerCards(Plugin, BasePlugin):
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
         else:
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求")
-            buttons = [
-                InlineKeyboardButton(
-                    value.name,
-                    callback_data=f"get_player_card|{user.id}|{uid}|{value.name}",
-                )
-                for value in data.characters
-                if value.name
-            ]
-            buttons = [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
+            buttons = self.player_cards_file.gen_button(data, user.id, uid)
             if isinstance(self.temp_photo, str):
                 photo = self.temp_photo
             else:
@@ -170,7 +162,15 @@ class PlayerCards(Plugin, BasePlugin):
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{result}] uid[{uid}]")
+        if result == "empty_data":
+            await callback_query.answer(text="此按钮不可用", show_alert=True)
+            return
+        page = 0
+        if result.isdigit():
+            page = int(result)
+            logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || page[{page}] uid[{uid}]")
+        else:
+            logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{result}] uid[{uid}]")
         data = await self._fetch_user(uid)
         if isinstance(data, str):
             await message.reply_text(data)
@@ -178,6 +178,11 @@ class PlayerCards(Plugin, BasePlugin):
         if data.characters is None:
             await message.delete()
             await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
+            return
+        if page:
+            buttons = self.player_cards_file.gen_button(data, user.id, uid, page)
+            await message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
+            await callback_query.answer("已切换到第 {} 页".format(page), show_alert=False)
             return
         for characters in data.characters:
             if characters.name == result:
