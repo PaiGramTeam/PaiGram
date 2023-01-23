@@ -21,6 +21,7 @@ dotenv.load_dotenv()
 class JoinGroups(str, Enum):
     NO_ALLOW = "NO_ALLOW"
     ALLOW_AUTH_USER = "ALLOW_AUTH_USER"
+    ALLOW_USER = "ALLOW_USER"
     ALLOW_ALL = "ALLOW_ALL"
 
 

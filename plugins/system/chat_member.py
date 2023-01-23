@@ -71,6 +71,15 @@ class ChatMember(Plugin):
                 logger.error("获取信息出现错误", exc_info=exc)
             else:
                 quit_status = False
+        elif config.join_groups == JoinGroups.ALLOW_USER:
+            try:
+                await self.user_service.get_user_by_id(user.id)
+            except UserNotFoundError:
+                logger.warning("用户 %s[%s] 邀请请求被拒绝", user.full_name, user.id)
+            except Exception as exc:
+                logger.error("获取信息出现错误", exc_info=exc)
+            else:
+                quit_status = False
         elif config.join_groups == JoinGroups.ALLOW_ALL:
             quit_status = False
         else:
