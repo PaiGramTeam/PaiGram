@@ -74,7 +74,7 @@ class Inline(Plugin):
 
     @handler(InlineQueryHandler, block=False)
     @error_callable
-    async def inline_query(self, update: Update, _: CallbackContext) -> None:
+    async def inline_query(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         ilq = cast(InlineQuery, update.inline_query)
         query = ilq.query
@@ -111,7 +111,7 @@ class Inline(Plugin):
                             description=f"查看武器列表并查询 {name}",
                             thumb_url=icon,
                             input_message_content=InputTextMessageContent(
-                                f"武器查询{name}", parse_mode=ParseMode.MARKDOWN_V2
+                                f"/weapon@{context.bot.username} {name}", parse_mode=ParseMode.MARKDOWN_V2
                             ),
                         )
                     )
@@ -126,7 +126,7 @@ class Inline(Plugin):
                             description=f"查看角色攻略列表并查询 {name}",
                             thumb_url=icon,
                             input_message_content=InputTextMessageContent(
-                                f"角色攻略查询{name}", parse_mode=ParseMode.MARKDOWN_V2
+                                f"/strategy@{context.bot.username} {name}", parse_mode=ParseMode.MARKDOWN_V2
                             ),
                         )
                     )
@@ -139,7 +139,7 @@ class Inline(Plugin):
                             title=role_name,
                             description=f"查看角色培养素材列表并查询 {role_name}",
                             input_message_content=InputTextMessageContent(
-                                f"角色培养素材查询{role_name}", parse_mode=ParseMode.MARKDOWN_V2
+                                f"/material@{context.bot.username} {role_name}", parse_mode=ParseMode.MARKDOWN_V2
                             ),
                         )
                     )
