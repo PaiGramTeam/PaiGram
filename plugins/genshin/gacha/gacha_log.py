@@ -1,3 +1,4 @@
+import contextlib
 from io import BytesIO
 
 import genshin
@@ -192,7 +193,8 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                             lang="zh-cn",
                             uid=user_info.yuanshen_uid,
                         )
-                        authkey = await get_authkey_by_stoken(client)
+                        with contextlib.suppress(Exception):
+                            authkey = await get_authkey_by_stoken(client)
         if not authkey:
             await message.reply_text(
                 "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
