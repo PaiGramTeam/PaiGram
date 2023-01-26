@@ -29,26 +29,21 @@ def restricts(
     without_overlapping: bool = False,
 ):
     """用于装饰在指定函数预防洪水攻击的装饰器
+    如果修饰的函数属于 `telegram.ext.ConversationHandler`,
+    则参数 `return_data` 必须传入 `telegram.ext.ConversationHandler.END`
 
-    被修饰的函数生声明必须为
+    **我真™是服了某些闲着没事干的群友了**
 
-    async def command_func(update, context)
-    或
-    async def command_func(self, update, context
+    Args:
+        restricts_time (int): 基础限制时间，单位为秒，默认为 9
+        restricts_time_of_groups (int | None): 对群限制的时间，单位为秒，默认为 None
+        return_data (Any):
+            返回的数据, 对于 `telegram.ext.ConversationHandler` 需要传入
+            `telegram.ext.ConversationHandler.END` , 默认为 None
+        without_overlapping (bool): 两次命令时间不覆盖，在上一条一样的命令返回之前，忽略重复调用, 默认为 False
 
-    如果修饰的函数属于
-    ConversationHandler
-    参数
-    return_data
-    必须传入
-    ConversationHandler.END
-
-    我真™是服了某些闲着没事干的群友了
-
-    :param restricts_time: 基础限制时间
-    :param restricts_time_of_groups: 对群限制的时间
-    :param return_data: 返回的数据对于 ConversationHandler 需要传入 ConversationHandler.END
-    :param without_overlapping: 两次命令时间不覆盖，在上一条一样的命令返回之前，忽略重复调用
+    Returns:
+        被装饰后的函数
     """
 
     def decorator(func: Callable[P, R]) -> Callable[P, Union[R, T]]:

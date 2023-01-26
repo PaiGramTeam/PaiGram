@@ -35,6 +35,7 @@ from core.bot import Bot
 from core.builtins.contexts import BotContext, TGContext, TGUpdate
 from core.config import BotConfig, config as bot_config
 from utils.const import WRAPPER_ASSIGNMENTS
+from utils.typedefs import R, T
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
@@ -46,11 +47,10 @@ __all__ = [
     "HandlerDispatcher",
     "JobDispatcher",
     "ErrorHandlerDispatcher",
+    "dispatched",
 ]
 
-T = TypeVar("T")
 P = ParamSpec("P")
-R = TypeVar("R")
 
 TargetType = Union[Type, str, Callable[[Any], bool]]
 
@@ -261,3 +261,14 @@ class JobDispatcher(BaseDispatcher):
     @catch(Job)
     def catch_job(self) -> Job:
         return self._context.job
+
+
+def dispatched(dispatcher: Type[AbstractDispatcher] = BaseDispatcher):
+    def decorate(func: Callable[P, R]) -> Callable[P, R]:
+        @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            return dispatcher().dispatch(func)(*args, **kwargs)
+
+        return wrapper
+
+    return decorate

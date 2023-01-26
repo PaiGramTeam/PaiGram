@@ -11,13 +11,13 @@ import uvicorn
 from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
-from telegram.request import HTTPXRequest
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.builtins.contexts import bot_context
 from core.config import config as bot_config
 from core.manager import ComponentManager, DependenceManager, PluginManager, ServiceManager
+from modules.override.telegram import HTTPXRequest
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 from utils.models.signal import Singleton
@@ -232,11 +232,11 @@ class Bot(Singleton, Managers):
                 logger.debug("接收到了终止信号，BOT 即将关闭")  # 接收到了终止信号
             except NetworkError as e:
                 if isinstance(e, SSLZeroReturnError):
-                    logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
+                    logger.critical("代理服务出现异常, 请检查您的代理服务是否配置成功.")
                 else:
-                    logger.error("网络连接出现问题, 请检查您的网络状况.")
+                    logger.critical("网络连接出现问题, 请检查您的网络状况.")
             except Exception as e:
-                logger.exception(f"遇到了未知错误: {type(e)}")
+                logger.critical(f"遇到了未知错误: {type(e)}", exc_info=e)
             finally:
                 loop.run_until_complete(self.stop())
 

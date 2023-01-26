@@ -7,6 +7,8 @@ __all__ = ("RegionEnum", "Player", "PlayersDataBase")
 
 
 class RegionEnum(int, enum.Enum):
+    """账号数据所在服务器"""
+
     NULL = 0
     HYPERION = 1  # 米忽悠国服 hyperion
     HOYOLAB = 2  # 米忽悠国际服 hoyolab

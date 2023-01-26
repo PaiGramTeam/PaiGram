@@ -1,11 +1,11 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from sqlmodel import select
 
+from core.base_service import BaseService
 from core.dependence.mysql import MySQL
 from core.services.players.models import PlayersDataBase as Player, RegionEnum
 from core.sqlmodel.session import AsyncSession
-from core.base_service import BaseService
 
 __all__ = ("PlayersRepository",)
 
@@ -14,7 +14,7 @@ class PlayersRepository(BaseService.Component):
     def __init__(self, mysql: MySQL):
         self.engine = mysql.engine
 
-    async def get_by_user_id(self, user_id: int, region: Optional[RegionEnum]) -> Optional[Player]:
+    async def get_by_user_id(self, user_id: int, region: Optional[RegionEnum] = None) -> Optional[Player]:
         async with AsyncSession(self.engine) as session:
             if region:
                 statement = (
