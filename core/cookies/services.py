@@ -27,6 +27,13 @@ class CookiesService:
     async def del_cookies(self, user_id: int, region: RegionEnum):
         return await self._repository.del_cookies(user_id, region)
 
+    async def add_or_update_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
+        try:
+            await self.get_cookies(user_id, region)
+            await self.update_cookies(user_id, cookies, region)
+        except CookiesNotFoundError:
+            await self.add_cookies(user_id, cookies, region)
+
 
 class PublicCookiesService:
     def __init__(self, cookies_repository: CookiesRepository, public_cookies_cache: PublicCookiesCache):

@@ -27,7 +27,6 @@ from utils.models.base import RegionEnum
 
 class AddUserCommandData(TelegramObject):
     user: Optional[User] = None
-    cookies_database_data: Optional[Cookies] = None
     region: RegionEnum = RegionEnum.NULL
     cookies: dict = {}
     game_uid: int = 0
@@ -75,10 +74,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 绑定账号命令请求", user.full_name, user.id)
-        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
-        if add_user_command_data is None:
-            cookies_command_data = AddUserCommandData()
-            context.chat_data["add_user_command_data"] = cookies_command_data
+        cookies_command_data = AddUserCommandData()
+        context.chat_data["add_user_command_data"] = cookies_command_data
 
         text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！请选择要绑定的服务器！或回复退出取消操作")}'
         reply_keyboard = [["米游社", "HoYoLab"], ["退出"]]
@@ -92,10 +89,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 绑定账号命令请求", user.full_name, user.id)
-        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
-        if add_user_command_data is None:
-            add_user_command_data = AddUserCommandData()
-            context.chat_data["add_user_command_data"] = add_user_command_data
+        add_user_command_data = AddUserCommandData()
+        context.chat_data["add_user_command_data"] = add_user_command_data
         add_user_command_data.region = RegionEnum.HYPERION
         try:
             user_info = await self.user_service.get_user_by_id(user.id)
@@ -103,8 +98,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             user_info = None
         if user_info is not None:
             try:
-                cookies_database_data = await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
-                add_user_command_data.cookies_database_data = cookies_database_data
+                await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
             except CookiesNotFoundError:
                 await message.reply_text("你已经绑定UID，如果继续操作会覆盖当前UID。")
             else:
@@ -149,8 +143,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             user_info = None
         if user_info is not None:
             try:
-                cookies_database_data = await self.cookies_service.get_cookies(user.id, region)
-                add_user_command_data.cookies_database_data = cookies_database_data
+                await self.cookies_service.get_cookies(user.id, region)
             except CookiesNotFoundError:
                 await message.reply_text("你已经绑定UID，如果继续操作会覆盖当前UID。")
             else:
@@ -346,14 +339,9 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                     await message.reply_text("数据错误")
                     return ConversationHandler.END
                 await self.user_service.update_user(user_db)
-            if add_user_command_data.cookies_database_data is None:
-                await self.cookies_service.add_cookies(
-                    user.id, add_user_command_data.cookies, add_user_command_data.region
-                )
-            else:
-                await self.cookies_service.update_cookies(
-                    user.id, add_user_command_data.cookies, add_user_command_data.region
-                )
+            await self.cookies_service.add_or_update_cookies(
+                user.id, add_user_command_data.cookies, add_user_command_data.region
+            )
             logger.info("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
