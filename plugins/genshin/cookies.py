@@ -27,7 +27,6 @@ from utils.models.base import RegionEnum
 
 class AddUserCommandData(TelegramObject):
     user: Optional[User] = None
-    cookies_database_data: Optional[Cookies] = None
     region: RegionEnum = RegionEnum.NULL
     cookies: dict = {}
     game_uid: int = 0
@@ -99,8 +98,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             user_info = None
         if user_info is not None:
             try:
-                cookies_database_data = await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
-                add_user_command_data.cookies_database_data = cookies_database_data
+                await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
             except CookiesNotFoundError:
                 await message.reply_text("你已经绑定UID，如果继续操作会覆盖当前UID。")
             else:
@@ -145,8 +143,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             user_info = None
         if user_info is not None:
             try:
-                cookies_database_data = await self.cookies_service.get_cookies(user.id, region)
-                add_user_command_data.cookies_database_data = cookies_database_data
+                await self.cookies_service.get_cookies(user.id, region)
             except CookiesNotFoundError:
                 await message.reply_text("你已经绑定UID，如果继续操作会覆盖当前UID。")
             else:
