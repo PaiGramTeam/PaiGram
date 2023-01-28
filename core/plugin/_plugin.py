@@ -21,6 +21,12 @@ from typing import (
 from pydantic import BaseModel
 
 # noinspection PyProtectedMember
+from telegram._utils.defaultvalue import DEFAULT_TRUE
+
+# noinspection PyProtectedMember
+from telegram._utils.types import DVInput
+
+# noinspection PyProtectedMember
 from telegram.ext import BaseHandler, ConversationHandler, Job, TypeHandler
 
 # noinspection PyProtectedMember
@@ -76,9 +82,9 @@ class _Plugin(PluginFuncs):
 
                 for attr in dir(self):
                     if (
-                            not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                            and isinstance(func := getattr(self, attr), MethodType)
-                            and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
+                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                        and isinstance(func := getattr(self, attr), MethodType)
+                        and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
                     ):
                         for data in datas:
                             data: "HandlerData"
@@ -99,9 +105,9 @@ class _Plugin(PluginFuncs):
                 self._error_handlers = []
                 for attr in dir(self):
                     if (
-                            not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                            and isinstance(func := getattr(self, attr), MethodType)
-                            and (datas := getattr(func, _ERROR_HANDLER_ATTR_NAME, []))
+                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                        and isinstance(func := getattr(self, attr), MethodType)
+                        and (datas := getattr(func, _ERROR_HANDLER_ATTR_NAME, []))
                     ):
                         for data in datas:
                             data: "ErrorHandlerData"
@@ -121,9 +127,9 @@ class _Plugin(PluginFuncs):
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                    not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                    and isinstance(func := getattr(self, attr), MethodType)
-                    and (datas := getattr(func, _JOB_ATTR_NAME, []))
+                not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                and isinstance(func := getattr(self, attr), MethodType)
+                and (datas := getattr(func, _JOB_ATTR_NAME, []))
             ):
                 for data in datas:
                     data: "JobData"
@@ -204,11 +210,14 @@ class _Conversation(_Plugin, ConversationFuncs):
 
     # noinspection SpellCheckingInspection
     class Config(BaseModel):
-        allow_reetry: bool = False
+        allow_reentry: bool = False
         per_chat: bool = True
         per_user: bool = True
         per_message: bool = False
         conversation_timeout: Optional[Union[float, timedelta]] = None
+        name: Optional[str] = None
+        map_to_parent: Optional[Dict[object, object]] = None
+        block: DVInput[bool] = DEFAULT_TRUE
 
     def __init_subclass__(cls, **kwargs):
         cls._conversation_kwargs = kwargs
@@ -219,34 +228,47 @@ class _Conversation(_Plugin, ConversationFuncs):
     def handlers(self) -> List[HandlerType]:
 
         with self._lock:
-            if not self._handlers:
+            if self._handlers is None:
+                from core.builtins.executor import HandlerExecutor
+
+                self._handlers = []
+
                 entry_points: List[HandlerType] = []
                 states: Dict[Any, List[HandlerType]] = {}
                 fallbacks: List[HandlerType] = []
                 for attr in dir(self):
                     if (
-                            not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                            and isinstance(func := getattr(self, attr), MethodType)
-                            and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
+                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                        and isinstance(func := getattr(self, attr), MethodType)
+                        and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
                     ):
                         conversation_data: "ConversationData"
+
                         handlers: List[HandlerType] = []
                         for data in datas:
-                            handlers.append(data.handler)
+                            handlers.append(
+                                data.type(
+                                    callback=wraps(func)(HandlerExecutor(func, dispatcher=data.dispatcher)),
+                                    **data.kwargs,
+                                )
+                            )
+
                         if conversation_data := getattr(func, _CONVERSATION_HANDLER_ATTR_NAME, None):
-                            if (_type := conversation_data.type) == ConversationDataType.Entry:
+                            if (_type := conversation_data.type) is ConversationDataType.Entry:
                                 entry_points.extend(handlers)
-                            elif _type == ConversationDataType.State:
+                            elif _type is ConversationDataType.State:
                                 if conversation_data.state in states:
                                     states[conversation_data.state].extend(handlers)
                                 else:
                                     states[conversation_data.state] = handlers
-                            elif _type == ConversationDataType.Fallback:
+                            elif _type is ConversationDataType.Fallback:
                                 fallbacks.extend(handlers)
                         else:
                             self._handlers.extend(handlers)
-                if entry_points and states and fallbacks:
-                    self._handlers.append(ConversationHandler(entry_points, states, fallbacks, **self.Config().dict()))
+                kwargs = self._conversation_kwargs
+                kwargs.update(self.Config().dict())
+                self._handlers.append(ConversationHandler(entry_points, states, fallbacks, **kwargs))
+
         return self._handlers
 
 

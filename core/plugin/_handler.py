@@ -56,7 +56,7 @@ WRAPPER_ASSIGNMENTS = _WRAPPER_ASSIGNMENTS + [
 
 @dataclass(init=True)
 class HandlerData:
-    type: Type
+    type: Type[HandlerType]
     kwargs: Dict[str, Any]
     dispatcher: Optional[Type["AbstractDispatcher"]] = None
 
@@ -258,12 +258,16 @@ class handler(_Handler):
 
 
 class ConversationDataType(Enum):
+    """conversation handler 的类型"""
+
     Entry = "entry"
     State = "state"
     Fallback = "fallback"
 
 
 class ConversationData(BaseModel):
+    """用于储存 conversation handler 的数据"""
+
     type: ConversationDataType
     state: Optional[Any] = None
 

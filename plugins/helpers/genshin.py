@@ -1,8 +1,7 @@
 from functools import lru_cache
-from typing import Optional, TYPE_CHECKING, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import genshin
-from genshin import Client
 
 from core.config import BotConfig
 from core.dependence.redisdb import RedisDB
@@ -13,9 +12,6 @@ from core.services.players import PlayersService
 from core.services.users import UserService
 from utils.const import REGION_MAP
 from utils.models.base import RegionEnum
-
-if TYPE_CHECKING:
-    from core.services.cookies.models import CookiesDataBase
 
 __all__ = ("GenshinHelper",)
 
@@ -57,12 +53,12 @@ class GenshinHelper(Plugin):
 
     async def get_genshin_client(
         self, user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True
-    ) -> Client:
+    ) -> genshin.Client:
         """通过 user_id 和 region 获取私有的 `genshin.Client`"""
         player = await self.players_service.get_player_by_user_id(user_id, region)
         cookies = None
         if need_cookie:
-            cookie_model: "CookiesDataBase" = await self.cookies_service.get(player.user_id, player.region)
+            cookie_model = await self.cookies_service.get(player.user_id, player.region)
             cookies = cookie_model.data
 
         uid = player.player_id

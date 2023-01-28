@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from core.base_service import BaseService
 from core.services.users.cache import UserAdminCache
@@ -12,7 +12,7 @@ class UserService(BaseService):
     def __init__(self, user_repository: UserRepository) -> None:
         self._repository: UserRepository = user_repository
 
-    async def get_user_by_id(self, user_id: int) -> User:
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
         """从数据库获取用户信息
         :param user_id:用户ID
         :return: User

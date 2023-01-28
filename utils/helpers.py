@@ -96,7 +96,10 @@ async def async_re_sub(
 
 
 def gen_pkg(path: Path) -> Iterator[str]:
-    """生成可以用于 import_module 导入的字符串"""
+    """遍历 path 生成可以用于 import_module 导入的字符串
+
+    注意: 此方法会遍历当前目录下所有的、文件名为以非 '_' 开头的 '.py' 文件，并将他们导入
+    """
     from utils.const import PROJECT_ROOT
 
     for p in path.iterdir():

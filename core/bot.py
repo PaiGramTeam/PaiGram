@@ -10,7 +10,12 @@ import pytz
 import uvicorn
 from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
-from telegram.ext import AIORateLimiter, Application as TgApplication, Defaults
+from telegram.ext import (
+    AIORateLimiter,
+    Application as TgApplication,
+    ApplicationBuilder as TGApplicationBuilder,
+    Defaults,
+)
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
@@ -61,7 +66,8 @@ class Bot(Singleton, Managers):
         with self._lock:
             if self._tg_app is None:
                 self._tg_app = (
-                    TgApplication.builder()
+                    TGApplicationBuilder()
+                    # .application_class(TgApplication)
                     .rate_limiter(AIORateLimiter())
                     .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
                     .token(bot_config.bot_token)
@@ -121,6 +127,7 @@ class Bot(Singleton, Managers):
 
     async def shutdown(self):
         """BOT 关闭"""
+        await self.uninstall_plugins()  # 卸载插件
         await self.stop_services()  # 终止其他服务
         await self.stop_dependency()  # 终止基础服务
 
@@ -224,7 +231,7 @@ class Bot(Singleton, Managers):
     def launch(self):
         """启动"""
         loop = asyncio.get_event_loop()
-        with bot_context(self):
+        with bot_context(self):  # 设置 bot context
             try:
                 loop.run_until_complete(self.start())
                 loop.run_until_complete(self.idle())

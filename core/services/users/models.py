@@ -29,4 +29,4 @@ class User(SQLModel):
 
 
 class UserDataBase(User, table=True):
-    __tablename__ = "users"
+    __tablename__ = "user"

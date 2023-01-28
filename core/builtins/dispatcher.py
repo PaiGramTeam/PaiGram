@@ -134,7 +134,7 @@ class AbstractDispatcher(ABC):
         )
 
     @cached_property
-    def cache_func_map(self) -> Dict[Union[str, Type[T]], Callable[..., T]]:
+    def catch_func_map(self) -> Dict[Union[str, Type[T]], Callable[..., T]]:
         result = {}
         for catch_func in self.catch_funcs:
             catch_targets = getattr(catch_func, _CATCH_TARGET_ATTR)
@@ -188,7 +188,7 @@ class BaseDispatcher(AbstractDispatcher):
             if annotation != Any and isinstance(annotation, GenericAlias):
                 continue
 
-            catch_func = self.cache_func_map.get(annotation, None) or self.cache_func_map.get(name, None)
+            catch_func = self.catch_func_map.get(annotation, None) or self.catch_func_map.get(name, None)
             if catch_func is not None:
                 params[name] = catch_func()
                 del parameters[name]
