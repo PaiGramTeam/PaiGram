@@ -20,5 +20,5 @@ class UserAdminCache(BaseService.Component):
     async def set(self, user_id: int) -> bool:
         return await self.client.sadd(self.qname, user_id)
 
-    async def remove(self, user_id: int):
-        await self.client.srem(self.qname, user_id)
+    async def remove(self, user_id: int) -> bool:
+        return await self.client.srem(self.qname, user_id)
