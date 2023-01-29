@@ -21,12 +21,10 @@ def bot_admins_rights_check(func: Callable) -> Callable:
         if service is None:
             raise ServiceNotFoundError("BotAdminService")
 
-        admin_list = await service.get_admin_list()
-
         message = update.effective_message
         user = update.effective_user
 
-        if user.id in admin_list:
+        if await service.is_admin(user.id):
             return await func(*args, **kwargs)
         else:
             await message.reply_text("权限不足")

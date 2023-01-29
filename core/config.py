@@ -25,11 +25,6 @@ class ConfigChannel(BaseModel):
     chat_id: int
 
 
-class ConfigUser(BaseModel):
-    username: Optional[str]
-    user_id: int
-
-
 class MySqlConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 3306
@@ -124,11 +119,11 @@ class BotConfig(Settings):
     bot_token: str = ""
     """BOT的token"""
 
+    owner: Optional[int] = None
+
     channels: List["ConfigChannel"] = []
     """文章推送群组"""
 
-    admins: List["ConfigUser"] = []
-    """BOT 管理员"""
     verify_groups: List[Union[int, str]] = []
     """启用群验证功能的群组"""
     join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
