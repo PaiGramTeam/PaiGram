@@ -3,16 +3,16 @@ from typing import Optional
 from urllib.parse import urlencode, urljoin, urlsplit
 from uuid import uuid4
 
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, Template
 from playwright.async_api import ViewportSize
 
 from core.base_service import BaseService
+from core.bot import Bot
 from core.config import config as bot_config
 from core.dependence.aiobrowser import AioBrowser
-from core.dependence.webserver import webapp
 from core.services.template.cache import HtmlToFileIdCache, TemplatePreviewCache
 from core.services.template.error import QuerySelectorNotFound
 from core.services.template.models import FileType, RenderResult
@@ -25,6 +25,7 @@ __all__ = ["TemplateService"]
 class TemplateService(BaseService):
     def __init__(
         self,
+        bot: Bot,
         browser: AioBrowser,
         html_to_file_id_cache: HtmlToFileIdCache,
         preview_cache: TemplatePreviewCache,
@@ -39,8 +40,10 @@ class TemplateService(BaseService):
             autoescape=True,
             auto_reload=bot_config.debug,
         )
+        self.using_preview = bot_config.debug and bot_config.webserver.switch
 
-        self.previewer = TemplatePreviewer(self, preview_cache)
+        if self.using_preview:
+            self.previewer = TemplatePreviewer(self, preview_cache, bot.web_app)
 
         self.html_to_file_id_cache = html_to_file_id_cache
 
@@ -89,7 +92,7 @@ class TemplateService(BaseService):
         start_time = time.time()
         template = self.get_template(template_name)
 
-        if bot_config.debug:
+        if self.using_preview:
             preview_url = await self.previewer.get_preview_url(template_name, template_data)
             logger.debug(f"调试模板 URL: {preview_url}")
 
@@ -144,8 +147,14 @@ class TemplateService(BaseService):
         )
 
 
-class TemplatePreviewer:
-    def __init__(self, template_service: TemplateService, cache: TemplatePreviewCache):
+class TemplatePreviewer(BaseService, load=bot_config.webserver.switch):
+    def __init__(
+        self,
+        template_service: TemplateService,
+        cache: TemplatePreviewCache,
+        web_app: FastAPI,
+    ):
+        self.web_app = web_app
         self.template_service = template_service
         self.cache = cache
         self.register_routes()
@@ -168,7 +177,7 @@ class TemplatePreviewer:
     def register_routes(self):
         """注册预览用到的路由"""
 
-        @webapp.get("/preview/{path:path}")
+        @self.web_app.get("/preview/{path:path}")
         async def preview_template(path: str, key: Optional[str] = None):  # pylint: disable=W0612
             # 如果是 /preview/ 开头的静态文件，直接返回内容。比如使用相对链接 ../ 引入的静态资源
             if not path.endswith(".html"):
@@ -193,4 +202,4 @@ class TemplatePreviewer:
         for name in ["cache", "resources"]:
             directory = PROJECT_ROOT / name
             directory.mkdir(exist_ok=True)
-            webapp.mount(f"/{name}", StaticFiles(directory=PROJECT_ROOT / name), name=name)
+            self.web_app.mount(f"/{name}", StaticFiles(directory=PROJECT_ROOT / name), name=name)

@@ -10,8 +10,15 @@ except ImportError:
     uvloop = None
 
 
-def main():
+def run():
     from core.bot import Bot
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    Bot().launch()
+
+
+def main():
     from core.builtins.reloader import Reloader
     from core.config import config
 
@@ -19,14 +26,14 @@ def main():
         reload_config = config.reload
 
         Reloader(
-            Bot().launch,
+            run,
             reload_delay=reload_config.delay,
             reload_dirs=list(set(reload_config.dirs + [PROJECT_ROOT])),
             reload_includes=reload_config.include,
             reload_excludes=reload_config.exclude,
         ).run()
     else:
-        Bot().launch()
+        run()
 
 
 if __name__ == "__main__":

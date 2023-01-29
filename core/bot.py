@@ -141,10 +141,11 @@ class Bot(Singleton, Managers):
 
         await self.initialize()
         logger.success("BOT 初始化成功")
+        logger.debug("BOT 开始启动")
 
         await self.tg_app.initialize()
 
-        if not bot_config.webserver.close:  # 如果使用 web app
+        if bot_config.webserver.switch:  # 如果使用 web app
             server_config = self.web_server.config
             server_config.setup_event_loop()
             if not server_config.loaded:
@@ -220,10 +221,7 @@ class Bot(Singleton, Managers):
 
         await self.tg_app.shutdown()
         if self._web_server is not None:
-            try:
-                await self._web_server.shutdown()
-            except AttributeError:
-                pass
+            await self._web_server.shutdown()
 
         await self.shutdown()
         logger.success("BOT 关闭成功")
@@ -249,6 +247,7 @@ class Bot(Singleton, Managers):
 
                 if bot_config.reload:
                     raise SystemExit from None
+                breakpoint()
 
     # decorators
 

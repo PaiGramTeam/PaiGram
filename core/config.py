@@ -68,7 +68,9 @@ class MTProtoConfig(Settings):
 
 
 class WebServerConfig(Settings):
-    close: bool = False
+    switch: bool = False
+    """WebServer开关"""
+
     url: AnyUrl = "http://localhost:8080"
     host: str = "localhost"
     port: int = 8080
