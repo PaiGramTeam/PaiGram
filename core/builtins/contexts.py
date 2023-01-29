@@ -4,7 +4,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from core.bot import Bot
+    from core.application import Application
     from telegram.ext import CallbackContext
     from telegram import Update
 
@@ -19,11 +19,11 @@ __all__ = [
 
 TGContext: ContextVar["CallbackContext"] = ContextVar("TGContext")
 TGUpdate: ContextVar["Update"] = ContextVar("TGUpdate")
-BotContext: ContextVar["Bot"] = ContextVar("BotContext")
+BotContext: ContextVar["Application"] = ContextVar("BotContext")
 
 
 @contextmanager
-def bot_context(bot: "Bot") -> None:
+def bot_context(bot: "Application") -> None:
     token = BotContext.set(bot)
     try:
         yield

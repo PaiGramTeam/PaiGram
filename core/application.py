@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
-__all__ = ["Bot"]
+__all__ = ["Application"]
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -42,7 +42,7 @@ class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManage
     """BOT 除自身外的生命周期管理类"""
 
 
-class Bot(Singleton, Managers):
+class Application(Singleton, Managers):
     """BOT"""
 
     _tg_app: Optional[TelegramApplication] = None

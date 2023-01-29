@@ -10,7 +10,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from playwright.async_api import ViewportSize
 
 from core.base_service import BaseService
-from core.bot import Bot
+from core.application import Application
 from core.config import config as bot_config
 from core.dependence.aiobrowser import AioBrowser
 from core.services.template.cache import HtmlToFileIdCache, TemplatePreviewCache
@@ -25,7 +25,7 @@ __all__ = ["TemplateService"]
 class TemplateService(BaseService):
     def __init__(
         self,
-        bot: Bot,
+        bot: Application,
         browser: AioBrowser,
         html_to_file_id_cache: HtmlToFileIdCache,
         preview_cache: TemplatePreviewCache,

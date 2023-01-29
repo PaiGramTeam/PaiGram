@@ -31,7 +31,7 @@ from telegram.ext import Application as TGApplication, CallbackContext, Job
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
-from core.bot import Bot
+from core.application import Application
 from core.builtins.contexts import BotContext, TGContext, TGUpdate
 from core.config import BotConfig, config as bot_config
 from utils.const import WRAPPER_ASSIGNMENTS
@@ -54,7 +54,7 @@ P = ParamSpec("P")
 
 TargetType = Union[Type, str, Callable[[Any], bool]]
 
-bot: Optional[Bot] = None
+bot: Optional[Application] = None
 
 _lock: "LockType" = Lock()
 
@@ -70,7 +70,7 @@ def _get_default_kwargs() -> Dict[Type[T], T]:
             try:
                 bot = BotContext.get()
                 _default_kwargs = {
-                    Bot: bot,
+                    Application: bot,
                     TGBot: bot.tg_app.bot,
                     type(bot.executor): bot.executor,
                     FastAPI: bot.web_app if bot_config.webserver.switch else None,

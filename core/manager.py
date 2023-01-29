@@ -31,11 +31,7 @@ def _load_module(path: Path) -> None:
             import_module(pkg)
         except Exception as e:
             logger.exception(
-                '在导入 "%s" 的过程中遇到了错误 [red bold]%s[/]',
-                pkg,
-                type(e).__name__,
-                exc_info=e,
-                extra={"markup": True}
+                '在导入 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
             )
             raise SystemExit from e
 
@@ -52,7 +48,7 @@ class Manager(Generic[T]):
         from core.builtins.executor import BaseExecutor
 
         if self._executor is None:
-            self._executor = BaseExecutor("Bot")
+            self._executor = BaseExecutor("Application")
 
         return self._executor
 
@@ -112,7 +108,7 @@ class ComponentManager(Manager[ComponentType]):
 
     async def init_components(self):
         for path in filter(
-                lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
+            lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
         ):
             _load_module(path)
         components = ArkoWrapper(get_all_services()).filter(lambda x: x.is_component)
@@ -172,7 +168,7 @@ class ServiceManager(Manager[BaseServiceType]):
 
     async def start_services(self) -> None:
         for path in filter(
-                lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
+            lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
         ):
             _load_module(path)
 
