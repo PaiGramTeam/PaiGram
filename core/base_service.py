@@ -1,5 +1,5 @@
-from typing import ClassVar, Iterable, List, Type, TypeVar
 from itertools import chain
+from typing import ClassVar, Iterable, Type, TypeVar
 
 from typing_extensions import Self
 
@@ -12,9 +12,10 @@ class _BaseService:
     _is_component: ClassVar[bool] = False
     _is_dependence: ClassVar[bool] = False
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, load: bool = True, **kwargs):
         cls.is_dependence = cls._is_dependence
         cls.is_component = cls._is_component
+        cls._load = load
 
     async def __aenter__(self) -> Self:
         await self.initialize()
@@ -48,8 +49,9 @@ DependenceType = TypeVar("DependenceType", bound=_Dependence)
 ComponentType = TypeVar("ComponentType", bound=_Component)
 
 
+# noinspection PyProtectedMember
 def get_all_services() -> Iterable[Type[_BaseService]]:
     return filter(
-        lambda x: x.__name__[0] != "_" and x not in [BaseService],
+        lambda x: x.__name__[0] != "_" and x not in [BaseService] and x._load,
         chain(BaseService.__subclasses__(), _Dependence.__subclasses__(), _Component.__subclasses__()),
     )

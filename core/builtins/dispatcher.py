@@ -73,8 +73,8 @@ def _get_default_kwargs() -> Dict[Type[T], T]:
                     Bot: bot,
                     TGBot: bot.tg_app.bot,
                     type(bot.executor): bot.executor,
-                    FastAPI: bot.web_app,
-                    Server: bot.web_server,
+                    FastAPI: bot.web_app if bot_config.webserver.switch else None,
+                    Server: bot.web_server if bot_config.webserver.switch else None,
                     TGApplication: bot.tg_app,
                     BotConfig: bot_config,
                 }
@@ -83,7 +83,7 @@ def _get_default_kwargs() -> Dict[Type[T], T]:
         if bot is not None and not bot.running:
             for obj in chain(bot.dependency, bot.components, bot.services, bot.plugins):
                 _default_kwargs[type(obj)] = obj
-    return _default_kwargs
+    return {k: v for k, v in _default_kwargs.items() if v is not None}
 
 
 def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, R]]:
