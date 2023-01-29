@@ -247,7 +247,6 @@ class Application(Singleton, Managers):
 
                 if bot_config.reload:
                     raise SystemExit from None
-                breakpoint()
 
     # decorators
 

@@ -1,4 +1,4 @@
-from asyncio import CancelledError
+import asyncio
 from importlib import import_module
 from pathlib import Path
 from typing import Dict, Generic, List, Optional, TYPE_CHECKING, Type, TypeVar
@@ -89,8 +89,21 @@ class DependenceManager(Manager[DependenceType]):
                 raise SystemExit from e
 
     async def stop_dependency(self) -> None:
+        async def task(d):
+            try:
+                async with timeout(5):
+                    await d.shutdown()
+                    logger.debug('基础服务 "%s" 关闭成功' % d.__class__.__name__)
+            except asyncio.TimeoutError:
+                logger.warning('基础服务 "%s" 关闭超时' % d.__class__.__name__)
+            except Exception as e:
+                logger.error('基础服务 "%s" 关闭错误' % d.__class__.__name__, exc_info=e)
+
+        tasks = []
         for dependence in self._dependency.values():
-            await dependence.shutdown()
+            tasks.append(asyncio.create_task(task(dependence)))
+
+        await asyncio.gather(*tasks)
 
 
 class ComponentManager(Manager[ComponentType]):
@@ -182,16 +195,23 @@ class ServiceManager(Manager[BaseServiceType]):
         """关闭服务"""
         if not self._services:
             return
+
+        async def task(s):
+            try:
+                async with timeout(5):
+                    await s.shutdown()
+                    logger.success('服务 "%s" 关闭成功', s.__class__.__name__)
+            except asyncio.TimeoutError:
+                logger.warning('服务 "%s" 关闭超时', s.__class__.__name__)
+            except Exception as e:
+                logger.warning('服务 "%s" 关闭失败', s.__class__.__name__, exc_info=e)
+
         logger.info("正在关闭服务")
+        tasks = []
         for service in self._services.values():
-            async with timeout(5):
-                try:
-                    await service.shutdown()
-                    logger.success('服务 "%s" 关闭成功', service.__class__.__name__)
-                except CancelledError:
-                    logger.warning('服务 "%s" 关闭超时', service.__class__.__name__)
-                except Exception as e:  # pylint: disable=W0703
-                    logger.exception('服务 "%s" 关闭失败', service.__class__.__name__, exc_info=e)
+            tasks.append(asyncio.create_task(task(service)))
+
+        await asyncio.gather(*tasks)
 
 
 class PluginManager(Manager["PluginType"]):
