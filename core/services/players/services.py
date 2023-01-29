@@ -11,7 +11,7 @@ class PlayersService(BaseService):
     def __init__(self, players_repository: PlayersRepository) -> None:
         self._repository = players_repository
 
-    async def get_player_by_user_id(self, user_id: int, region: Optional[RegionEnum]) -> Optional[Player]:
+    async def get_player_by_user_id(self, user_id: int, region: Optional[RegionEnum] = None) -> Optional[Player]:
         """从数据库获取用户信息
         :param user_id:用户ID
         :param region:
@@ -21,6 +21,9 @@ class PlayersService(BaseService):
 
     async def add(self, player: Player) -> None:
         await self._repository.add(player)
+
+    async def update(self, player: Player) -> None:
+        await self._repository.update(player)
 
     async def get_all_by_user_id(self, user_id: int) -> List[Player]:
         return await self._repository.get_all_by_user_id(user_id)

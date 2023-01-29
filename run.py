@@ -11,22 +11,22 @@ except ImportError:
 
 
 def main():
-    from core.bot import bot
+    from core.bot import Bot
     from core.builtins.reloader import Reloader
     from core.config import config
 
-    if config.auto_reload:
+    if config.auto_reload:  # 是否启动重载器
         reload_config = config.reload
 
         Reloader(
-            bot.launch,
+            Bot().launch,
             reload_delay=reload_config.delay,
             reload_dirs=list(set(reload_config.dirs + [PROJECT_ROOT])),
             reload_includes=reload_config.include,
             reload_excludes=reload_config.exclude,
         ).run()
     else:
-        bot.launch()
+        Bot().launch()
 
 
 if __name__ == "__main__":

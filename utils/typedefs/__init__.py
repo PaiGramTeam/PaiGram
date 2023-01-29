@@ -1,12 +1,7 @@
 import sys
-from logging import Filter, LogRecord
-from pathlib import Path
-from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Optional, TYPE_CHECKING, Tuple, Type, Union
 
-from httpx import URL
-from pydantic import ConstrainedInt
-
+from utils.typedefs._generics import *
 from utils.typedefs._queue import AsyncQueue, BaseQueue, SyncQueue
 
 if sys.version_info >= (3, 9):
@@ -26,22 +21,45 @@ __all__ = [
     "JSONType",
     "LogFilterType",
     "NaturalNumber",
+    # queue
     "BaseQueue",
     "SyncQueue",
     "AsyncQueue",
+    # generics
+    "P",
+    "T",
+    "R",
 ]
 
-StrOrPath = Union[str, Path]
-StrOrURL = Union[str, URL]
+if TYPE_CHECKING:
+    from pathlib import Path
+    from httpx import URL
+    from logging import Filter, LogRecord
+    from pydantic import ConstrainedInt
+    from types import TracebackType
+
+    StrOrPath = Union[str, Path]
+    StrOrURL = Union[str, URL]
+    LogFilterType = Union[Filter, Callable[[LogRecord], int]]
+
+    SysExcInfoType = Union[Tuple[Type[BaseException], BaseException, Optional[TracebackType]], Tuple[None, None, None]]
+
+    class NaturalNumber(ConstrainedInt):
+        """自然数"""
+
+        ge = 0
+
+else:
+    StrOrPath = Union[str, "Path"]
+    StrOrURL = Union[str, "URL"]
+    LogFilterType = Union["Filter", Callable[["LogRecord"], int]]
+    SysExcInfoType = Union[
+        Tuple[Type[BaseException], BaseException, Optional["TracebackType"]], Tuple[None, None, None]
+    ]
+    NaturalNumber = int
+
 StrOrInt = Union[str, int]
 
-SysExcInfoType = Union[Tuple[Type[BaseException], BaseException, Optional[TracebackType]], Tuple[None, None, None]]
 ExceptionInfoType = Union[bool, SysExcInfoType, BaseException]
 JSONDict = Dict[str, Any]
 JSONType = Union[JSONDict, list]
-
-LogFilterType = Union[Filter, Callable[[LogRecord], int]]
-
-
-class NaturalNumber(ConstrainedInt):
-    ge = 0

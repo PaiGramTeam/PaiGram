@@ -6,10 +6,11 @@ from core.dependence.redisdb import RedisDB
 __all__ = ["GameCache"]
 
 
-class GameCache(BaseService.Component):
-    def __init__(self, redis: RedisDB, qname: str, ttl: int = 3600):
+class GameCache:
+    qname: str
+
+    def __init__(self, redis: RedisDB, ttl: int = 3600):
         self.client = redis.client
-        self.qname = qname
         self.ttl = ttl
 
     async def get_url_list(self, character_name: str):
@@ -22,3 +23,11 @@ class GameCache(BaseService.Component):
         await self.client.lpush(qname, *str_list)
         await self.client.expire(qname, self.ttl)
         return await self.client.llen(qname)
+
+
+class GameCacheForStrategy(BaseService.Dependence, GameCache):
+    qname = "game:strategy"
+
+
+class GameCacheForMaterial(BaseService.Dependence, GameCache):
+    qname = "game:material"

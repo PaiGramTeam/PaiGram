@@ -1,13 +1,11 @@
 from functools import wraps
-from typing import Callable, cast
+from typing import Callable
 
-from telegram import Update
-
-from core.bot import bot
+from core.builtins.contexts import BotContext, TGUpdate
 from core.error import ServiceNotFoundError
-from core.services.admin import BotAdminService
+from core.services.users.services import UserAdminService
 
-bot_admin_service = bot.services.get(BotAdminService)
+__all__ = ("bot_admins_rights_check",)
 
 
 def bot_admins_rights_check(func: Callable) -> Callable:
@@ -15,20 +13,19 @@ def bot_admins_rights_check(func: Callable) -> Callable:
 
     @wraps(func)
     async def decorator(*args, **kwargs):
-        if len(args) == 3:
-            # self update context
-            _, update, _ = args
-        elif len(args) == 2:
-            # update context
-            update, _ = args
-        else:
-            return await func(*args, **kwargs)
-        if bot_admin_service is None:
+        update = TGUpdate.get()
+        bot = BotContext.get()
+
+        service: UserAdminService = bot.services_map.get(UserAdminService, None)
+
+        if service is None:
             raise ServiceNotFoundError("BotAdminService")
-        admin_list = await bot_admin_service.get_admin_list()
-        update = cast(Update, update)
+
+        admin_list = await service.get_admin_list()
+
         message = update.effective_message
         user = update.effective_user
+
         if user.id in admin_list:
             return await func(*args, **kwargs)
         else:

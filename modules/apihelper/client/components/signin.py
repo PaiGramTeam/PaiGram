@@ -14,6 +14,7 @@ from ...utility.helpers import get_device_id, get_ds
 __all__ = ("SignIn",)
 
 
+# noinspection SpellCheckingInspection
 class SignIn:
     S_TOKEN_URL = (
         "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?login_ticket={0}&token_types=3&uid={1}"

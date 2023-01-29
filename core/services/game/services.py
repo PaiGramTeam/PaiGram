@@ -1,14 +1,14 @@
 from typing import List, Optional
 
-from core.services.game.cache import GameCache
 from core.base_service import BaseService
+from core.services.game.cache import GameCacheForMaterial, GameCacheForStrategy
 from modules.apihelper.client.components.hyperion import Hyperion
 
 __all__ = ("GameMaterialService", "GameStrategyService")
 
 
 class GameStrategyService(BaseService):
-    def __init__(self, cache: GameCache, collections: Optional[List[int]] = None):
+    def __init__(self, cache: GameCacheForStrategy, collections: Optional[List[int]] = None):
         self._cache = cache
         self._hyperion = Hyperion()
         if collections is None:
@@ -53,7 +53,7 @@ class GameStrategyService(BaseService):
 
 
 class GameMaterialService(BaseService):
-    def __init__(self, cache: GameCache, collections: Optional[List[int]] = None):
+    def __init__(self, cache: GameCacheForMaterial, collections: Optional[List[int]] = None):
         self._cache = cache
         self._hyperion = Hyperion()
         self._collections = [428421, 1164644] if collections is None else collections

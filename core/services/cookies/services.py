@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import genshin
 from genshin import Game, GenshinException, InvalidCookies, TooManyRequests, types
@@ -24,10 +24,10 @@ class CookiesService(BaseService):
     async def add(self, cookies: Cookies):
         await self._repository.add(cookies)
 
-    async def get(self, user_id: int, region: RegionEnum):
+    async def get(self, user_id: int, region: RegionEnum) -> Optional[Cookies]:
         return await self._repository.get_by_user_id(user_id, region)
 
-    async def remove(self, cookies: Cookies):
+    async def remove(self, cookies: Cookies) -> None:
         return await self._repository.remove(cookies)
 
 

@@ -1,12 +1,23 @@
 import asyncio
 import time
 from functools import wraps
-from typing import Any, Callable, Optional, cast
+from typing import Callable, Optional, TYPE_CHECKING, TypeVar, Union
 
-from telegram import Update
-from telegram.ext import CallbackContext, filters
+from telegram.ext import filters
+from typing_extensions import ParamSpec
 
+from core.builtins.contexts import TGContext, TGUpdate
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram.ext import CallbackContext
+    from telegram import Update
+
+__all__ = ("restricts",)
+
+T = TypeVar("T")
+R = TypeVar("R")
+P = ParamSpec("P")
 
 _lock = asyncio.Lock()
 
@@ -14,45 +25,33 @@ _lock = asyncio.Lock()
 def restricts(
     restricts_time: int = 9,
     restricts_time_of_groups: Optional[int] = None,
-    return_data: Any = None,
+    return_data: T = None,
     without_overlapping: bool = False,
 ):
     """用于装饰在指定函数预防洪水攻击的装饰器
+    如果修饰的函数属于 `telegram.ext.ConversationHandler`,
+    则参数 `return_data` 必须传入 `telegram.ext.ConversationHandler.END`
 
-    被修饰的函数生声明必须为
+    **我真™是服了某些闲着没事干的群友了**
 
-    async def command_func(update, context)
-    或
-    async def command_func(self, update, context
+    Args:
+        restricts_time (int): 基础限制时间，单位为秒，默认为 9
+        restricts_time_of_groups (int | None): 对群限制的时间，单位为秒，默认为 None
+        return_data (Any):
+            返回的数据, 对于 `telegram.ext.ConversationHandler` 需要传入
+            `telegram.ext.ConversationHandler.END` , 默认为 None
+        without_overlapping (bool): 两次命令时间不覆盖，在上一条一样的命令返回之前，忽略重复调用, 默认为 False
 
-    如果修饰的函数属于
-    ConversationHandler
-    参数
-    return_data
-    必须传入
-    ConversationHandler.END
-
-    我真™是服了某些闲着没事干的群友了
-
-    :param restricts_time: 基础限制时间
-    :param restricts_time_of_groups: 对群限制的时间
-    :param return_data: 返回的数据对于 ConversationHandler 需要传入 ConversationHandler.END
-    :param without_overlapping: 两次命令时间不覆盖，在上一条一样的命令返回之前，忽略重复调用
+    Returns:
+        被装饰后的函数
     """
 
-    def decorator(func: Callable):
+    def decorator(func: Callable[P, R]) -> Callable[P, Union[R, T]]:
         @wraps(func)
-        async def restricts_func(*args, **kwargs):
-            if len(args) == 3:
-                # self update context
-                _, update, context = args
-            elif len(args) == 2:
-                # update context
-                update, context = args
-            else:
-                return await func(*args, **kwargs)
-            update = cast(Update, update)
-            context = cast(CallbackContext, context)
+        async def restricts_func(*args: P.args, **kwargs: P.kwargs) -> Union[R, T]:
+            update: "Update" = TGUpdate.get()
+            context: "CallbackContext" = TGContext.get()
+
             message = update.effective_message
             user = update.effective_user
 

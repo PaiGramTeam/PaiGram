@@ -2,32 +2,15 @@ import hashlib
 import os
 import re
 from asyncio import create_subprocess_shell
+from functools import lru_cache
 from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import Awaitable, Callable, Iterator, Match, Optional, Pattern, Tuple, TypeVar, Union
+from typing import Awaitable, Callable, Iterator, Match, Pattern, TypeVar, Union
 
-import aiofiles
-import genshin
-import httpx
-from genshin import Client, types
-from httpx import UnsupportedProtocol
-from typing_extensions import ParamSpec, TYPE_CHECKING
-
-from core.config import config
-from core.dependence.redisdb import RedisDB
-from core.error import ServiceNotFoundError
-from utils.const import REGION_MAP, REQUEST_HEADERS
-from utils.error import UrlResourcesNotFoundError
-from utils.log import logger
-from utils.models.base import RegionEnum
-
-if TYPE_CHECKING:
-    from core.services.cookies import CookiesService, PublicCookiesService
-    from core.services.users import UserService
+from typing_extensions import ParamSpec
 
 __all__ = [
     "sha1",
-    "url_to_file",
     "gen_pkg",
     "async_re_sub",
 ]
@@ -35,127 +18,12 @@ __all__ = [
 T = TypeVar("T")
 P = ParamSpec("P")
 
-current_dir = os.getcwd()
-cache_dir = os.path.join(current_dir, "cache")
-if not os.path.exists(cache_dir):
-    os.mkdir(cache_dir)
 
-cookies_service: Optional["CookiesService"] = None
-user_service: Optional["UserService"] = None
-public_cookies_service: Optional["PublicCookiesService"] = None
-redis_db: Optional["RedisDB"] = None
-
-genshin_cache: Optional[genshin.RedisCache] = None
-
-
+@lru_cache(64)
 def sha1(text: str) -> str:
     _sha1 = hashlib.sha1()
     _sha1.update(text.encode())
     return _sha1.hexdigest()
-
-
-async def url_to_file(url: str, return_path: bool = False) -> str:
-    url_sha1 = sha1(url)
-    url_file_name = os.path.basename(url)
-    _, extension = os.path.splitext(url_file_name)
-    temp_file_name = url_sha1 + extension
-    file_dir = os.path.join(cache_dir, temp_file_name)
-    if not os.path.exists(file_dir):
-        async with httpx.AsyncClient(headers=REQUEST_HEADERS) as client:
-            try:
-                data = await client.get(url)
-            except UnsupportedProtocol:
-                logger.error("连接不支持 url[%s]", url)
-                return ""
-        if data.is_error:
-            logger.error("请求出现错误 url[%s] status_code[%s]", url, data.status_code)
-            raise UrlResourcesNotFoundError(url)
-        if data.status_code != 200:
-            logger.error("url_to_file 获取url[%s] 错误 status_code[%s]", url, data.status_code)
-            raise UrlResourcesNotFoundError(url)
-        async with aiofiles.open(file_dir, mode="wb") as f:
-            await f.write(data.content)
-    logger.debug("url_to_file 获取url[%s] 并下载到 file_dir[%s]", url, file_dir)
-
-    return file_dir if return_path else Path(file_dir).as_uri()
-
-
-async def get_genshin_client(user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True) -> Client:
-    from core.services.cookies import CookiesService, PublicCookiesService
-    from core.services.users import UserService
-    from core.bot import bot
-
-    global cookies_service, user_service, public_cookies_service, redis_db, genshin_cache
-
-    cookies_service = cookies_service or bot.services.get(CookiesService)
-    user_service = user_service or bot.services.get(UserService)
-    public_cookies_service = public_cookies_service or bot.services.get(PublicCookiesService)
-    redis_db = redis_db or bot.services.get(RedisDB)
-
-    if redis_db and config.genshin_ttl:
-        genshin_cache = genshin.RedisCache(redis_db.client, ttl=config.genshin_ttl)
-
-    if user_service is None:
-        raise ServiceNotFoundError(UserService)
-    if cookies_service is None:
-        raise ServiceNotFoundError(CookiesService)
-    user = await user_service.get_user_by_id(user_id)
-    if region is None:
-        region = user.region
-    cookies = None
-    if need_cookie:
-        cookies = await cookies_service.get_cookies(user_id, region)
-        cookies = cookies.cookies
-    if region == RegionEnum.HYPERION:
-        uid = user.yuanshen_uid
-        client = genshin.Client(cookies=cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE, uid=uid)
-    elif region == RegionEnum.HOYOLAB:
-        uid = user.genshin_uid
-        client = genshin.Client(
-            cookies=cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn", uid=uid
-        )
-    else:
-        raise TypeError("region is not RegionEnum.NULL")
-    if genshin_cache:
-        client.cache = genshin_cache
-    return client
-
-
-async def get_public_genshin_client(user_id: int) -> Tuple[Client, Optional[int]]:
-    from core.services.cookies import PublicCookiesService
-    from core.services.users import UserService
-
-    if user_service is None:
-        raise ServiceNotFoundError(UserService)
-    if public_cookies_service is None:
-        raise ServiceNotFoundError(PublicCookiesService)
-    user = await user_service.get_user_by_id(user_id)
-    region = user.region
-    cookies = await public_cookies_service.get_cookies(user_id, region)
-    if region == RegionEnum.HYPERION:
-        uid = user.yuanshen_uid
-        client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)
-    elif region == RegionEnum.HOYOLAB:
-        uid = user.genshin_uid
-        client = genshin.Client(
-            cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
-        )
-    else:
-        raise TypeError("region is not RegionEnum.NULL")
-    if genshin_cache:
-        client.cache = genshin_cache
-    return client, uid
-
-
-def region_server(uid: Union[int, str]) -> RegionEnum:
-    if isinstance(uid, (int, str)):
-        region = REGION_MAP.get(str(uid)[0])
-    else:
-        raise TypeError("UID variable type error")
-    if region:
-        return region
-    else:
-        raise TypeError(f"UID {uid} isn't associated with any region")
 
 
 async def execute(command: Union[str, bytes], pass_error: bool = True) -> str:
@@ -228,7 +96,10 @@ async def async_re_sub(
 
 
 def gen_pkg(path: Path) -> Iterator[str]:
-    """生成可以用于 import_module 导入的字符串"""
+    """遍历 path 生成可以用于 import_module 导入的字符串
+
+    注意: 此方法会遍历当前目录下所有的、文件名为以非 '_' 开头的 '.py' 文件，并将他们导入
+    """
     from utils.const import PROJECT_ROOT
 
     for p in path.iterdir():

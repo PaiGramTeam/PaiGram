@@ -7,6 +7,8 @@ __all__ = ("RegionEnum", "Player", "PlayersDataBase")
 
 
 class RegionEnum(int, enum.Enum):
+    """账号数据所在服务器"""
+
     NULL = 0
     HYPERION = 1  # 米忽悠国服 hyperion
     HOYOLAB = 2  # 米忽悠国际服 hoyolab
@@ -15,9 +17,9 @@ class RegionEnum(int, enum.Enum):
 class Player(SQLModel):
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
     id: int = Field(primary_key=True)
-    user_id: int = Field(unique=True)
-    account_id: int = Field(unique=True)
-    player_id: int = Field(unique=True)
+    user_id: int = Field()
+    account_id: int = Field()
+    player_id: int = Field()
     nickname: Optional[str] = Field()
     signature: Optional[str] = Field()
     hand_image: Optional[int] = Field()
