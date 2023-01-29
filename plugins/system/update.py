@@ -3,12 +3,13 @@ import os
 from sys import executable
 
 from aiofiles import open as async_open
-from telegram import Update, Message
+from telegram import Message, Update
 from telegram.error import BadRequest, Forbidden
-from telegram.ext import CallbackContext, CommandHandler
+from telegram.ext import CallbackContext
 
+from core.builtins.contexts import BotContext
 from core.helpers import get_args
-from core.plugin import handler, Plugin
+from core.plugin import Plugin, handler
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import execute
 from utils.log import logger
@@ -33,7 +34,7 @@ class UpdatePlugin(Plugin):
             async with async_open(UPDATE_DATA) as file:
                 data = jsonlib.loads(await file.read())
             try:
-                reply_text = Message.de_json(data, None)
+                reply_text = Message.de_json(data, BotContext.get().tg_app.bot)
                 await reply_text.edit_text("重启成功")
             except (BadRequest, Forbidden, KeyError) as exc:
                 logger.error("UpdatePlugin 编辑消息出现错误")

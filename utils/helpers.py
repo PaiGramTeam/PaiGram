@@ -9,11 +9,7 @@ from typing import Awaitable, Callable, Iterator, Match, Pattern, TypeVar, Union
 
 from typing_extensions import ParamSpec
 
-__all__ = [
-    "sha1",
-    "gen_pkg",
-    "async_re_sub",
-]
+__all__ = ["sha1", "gen_pkg", "async_re_sub", "execute"]
 
 T = TypeVar("T")
 P = ParamSpec("P")
