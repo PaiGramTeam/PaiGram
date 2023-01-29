@@ -127,7 +127,7 @@ class AbstractDispatcher(ABC):
         return list(
             ArkoWrapper(dir(self))
             .filter(lambda x: not x.startswith("_"))
-            .filter(lambda x: x not in self.IGNORED_ATTRS + ["dispatch", "catch_funcs", "cache_func_map"])
+            .filter(lambda x: x not in self.IGNORED_ATTRS + ["dispatch", "catch_funcs", "catch_func_map"])
             .map(lambda x: getattr(self, x))
             .filter(lambda x: isinstance(x, MethodType))
             .filter(lambda x: hasattr(x, "_catch_targets"))
