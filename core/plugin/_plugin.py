@@ -153,10 +153,10 @@ class _Plugin(PluginFuncs):
                 self._install_jobs()
         return self._jobs
 
-    async def __async_init__(self) -> None:
+    async def initialize(self) -> None:
         """初始化插件"""
 
-    async def __async_del__(self) -> None:
+    async def shutdown(self) -> None:
         """销毁插件"""
 
     async def install(self) -> None:
@@ -176,7 +176,7 @@ class _Plugin(PluginFuncs):
                 for h in self.error_handlers:
                     bot.tg_app.add_error_handler(h.func, h.block)
 
-                await self.__async_init__()
+                await self.initialize()
                 self._installed = True
 
     async def uninstall(self) -> None:
@@ -197,7 +197,7 @@ class _Plugin(PluginFuncs):
 
                 for j in bot.tg_app.job_queue.jobs():
                     j.schedule_removal()
-                await self.__async_del__()
+                await self.shutdown()
                 self._installed = False
 
     async def reload(self) -> None:
