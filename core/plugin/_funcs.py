@@ -8,13 +8,18 @@ from telegram import Chat, Message, ReplyKeyboardRemove, Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler, Job
 
-from core.builtins.contexts import TGContext, TGUpdate
-from core.helpers import get_chat
+from core.builtins.contexts import ApplicationContext, TGContext, TGUpdate
+from core.dependence.redisdb import RedisDB
 from core.plugin._handler import conversation, handler
 from utils.const import CACHE_DIR, REQUEST_HEADERS
 from utils.error import UrlResourcesNotFoundError
 from utils.helpers import sha1
 from utils.log import logger
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 __all__ = (
     "PluginFuncs",
@@ -28,7 +33,7 @@ async def _delete_message(context: CallbackContext) -> None:
     chat_info = f"chat_id[{job.chat_id}]"
 
     try:
-        chat = await get_chat(job.chat_id)
+        chat = await PluginFuncs.get_chat(job.chat_id)
         full_name = chat.full_name
         if full_name:
             chat_info = f"{full_name}[{chat.id}]"
@@ -59,6 +64,27 @@ async def _delete_message(context: CallbackContext) -> None:
 
 
 class PluginFuncs:
+    @staticmethod
+    async def get_chat(chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
+
+        bot = ApplicationContext.get()
+        redis_db: RedisDB = redis_db or bot.services_map.get(RedisDB, None)
+
+        if not redis_db:
+            return await bot.tg_app.bot.get_chat(chat_id)
+
+        qname = f"bot:chat:{chat_id}"
+
+        data = await redis_db.client.get(qname)
+        if data:
+            json_data = json.loads(data)
+            return Chat.de_json(json_data, bot.tg_app.bot)
+
+        chat_info = await bot.tg_app.bot.get_chat(chat_id)
+        await redis_db.client.set(qname, chat_info.to_json())
+        await redis_db.client.expire(qname, ttl)
+        return chat_info
+
     @staticmethod
     def add_delete_message_job(
         message: Optional[Union[int, Message]] = None,

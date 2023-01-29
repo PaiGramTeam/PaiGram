@@ -19,7 +19,7 @@ from telegram.ext import (
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
-from core.builtins.contexts import bot_context
+from core.builtins.contexts import application_context
 from core.config import config as bot_config
 from core.manager import ComponentManager, DependenceManager, PluginManager, ServiceManager
 from modules.override.telegram import HTTPXRequest
@@ -229,7 +229,7 @@ class Application(Singleton, Managers):
     def launch(self):
         """启动"""
         loop = asyncio.get_event_loop()
-        with bot_context(self):  # 设置 bot context
+        with application_context(self):  # 设置 bot context
             try:
                 loop.run_until_complete(self.start())
                 loop.run_until_complete(self.idle())

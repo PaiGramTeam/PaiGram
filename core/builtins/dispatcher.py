@@ -32,7 +32,7 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.application import Application
-from core.builtins.contexts import BotContext, TGContext, TGUpdate
+from core.builtins.contexts import ApplicationContext, TGContext, TGUpdate
 from core.config import BotConfig, config as bot_config
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.typedefs import R, T
@@ -68,7 +68,7 @@ def _get_default_kwargs() -> Dict[Type[T], T]:
     with _lock:
         if not _default_kwargs:
             try:
-                bot = BotContext.get()
+                bot = ApplicationContext.get()
                 _default_kwargs = {
                     Application: bot,
                     TGBot: bot.tg_app.bot,

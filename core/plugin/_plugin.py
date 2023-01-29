@@ -32,7 +32,7 @@ from telegram.ext import BaseHandler, ConversationHandler, Job, TypeHandler
 # noinspection PyProtectedMember
 from typing_extensions import ParamSpec
 
-from core.builtins.contexts import BotContext
+from core.builtins.contexts import ApplicationContext
 from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
 from utils.const import WRAPPER_ASSIGNMENTS
@@ -122,7 +122,7 @@ class _Plugin(PluginFuncs):
     def _install_jobs(self) -> None:
         from core.builtins.executor import JobExecutor
 
-        bot = BotContext.get()
+        bot = ApplicationContext.get()
 
         if self._jobs is None:
             self._jobs = []
@@ -163,7 +163,7 @@ class _Plugin(PluginFuncs):
 
     async def install(self) -> None:
         """安装"""
-        bot = BotContext.get()
+        bot = ApplicationContext.get()
         group = id(self)
         with self._lock:
             if not self._installed:
@@ -183,7 +183,7 @@ class _Plugin(PluginFuncs):
 
     async def uninstall(self) -> None:
         """卸载"""
-        bot = BotContext.get()
+        bot = ApplicationContext.get()
         group = id(self)
 
         with self._lock:

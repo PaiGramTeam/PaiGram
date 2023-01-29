@@ -11,24 +11,24 @@ if TYPE_CHECKING:
 __all__ = [
     "TGContext",
     "TGUpdate",
-    "BotContext",
-    "bot_context",
+    "ApplicationContext",
+    "application_context",
     "handler_contexts",
     "job_contexts",
 ]
 
 TGContext: ContextVar["CallbackContext"] = ContextVar("TGContext")
 TGUpdate: ContextVar["Update"] = ContextVar("TGUpdate")
-BotContext: ContextVar["Application"] = ContextVar("BotContext")
+ApplicationContext: ContextVar["Application"] = ContextVar("ApplicationContext")
 
 
 @contextmanager
-def bot_context(bot: "Application") -> None:
-    token = BotContext.set(bot)
+def application_context(bot: "Application") -> None:
+    token = ApplicationContext.set(bot)
     try:
         yield
     finally:
-        BotContext.reset(token)
+        ApplicationContext.reset(token)
 
 
 @contextmanager

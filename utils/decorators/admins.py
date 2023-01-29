@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Callable
 
-from core.builtins.contexts import BotContext, TGUpdate
+from core.builtins.contexts import ApplicationContext, TGUpdate
 from core.error import ServiceNotFoundError
 from core.services.users.services import UserAdminService
 from utils.const import WRAPPER_ASSIGNMENTS
@@ -15,7 +15,7 @@ def bot_admins_rights_check(func: Callable) -> Callable:
     @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
     async def decorator(*args, **kwargs):
         update = TGUpdate.get()
-        bot = BotContext.get()
+        bot = ApplicationContext.get()
 
         service: UserAdminService = bot.services_map.get(UserAdminService, None)
 
