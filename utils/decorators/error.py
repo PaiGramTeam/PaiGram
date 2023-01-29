@@ -173,8 +173,8 @@ def error_callable(func: Callable) -> Callable:
             message = update.effective_message
             if message and not update.callback_query and filters.ChatType.GROUPS.filter(message):
                 if notice_message:
-                    Plugin.add_delete_message_job(60, notice_message)
-                Plugin.add_delete_message_job(60, message)
+                    Plugin.add_delete_message_job(notice_message)
+                Plugin.add_delete_message_job(message)
         else:
             user = update.effective_user
             chat = update.effective_chat

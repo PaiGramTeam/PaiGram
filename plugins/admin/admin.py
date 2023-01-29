@@ -12,8 +12,8 @@ class AdminPlugin(Plugin):
     def __init__(self, user_admin_service: UserAdminService = None):
         self.user_admin_service = user_admin_service
 
-    @handler.command("add_admin", block=False)
     @bot_admins_rights_check
+    @handler.command("add_admin", block=False)
     async def add_admin(self, update: Update):
         message = update.effective_message
         reply_to_message = message.reply_to_message
@@ -32,8 +32,8 @@ class AdminPlugin(Plugin):
         else:
             await message.reply_text("请回复对应消息")
 
-    @handler.command("del_admin", block=False)
     @bot_admins_rights_check
+    @handler.command("del_admin", block=False)
     async def del_admin(self, update: Update):
         message = update.effective_message
         reply_to_message = message.reply_to_message

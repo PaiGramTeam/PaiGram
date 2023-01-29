@@ -24,7 +24,6 @@ class ChatMember(Plugin):
         self.user_admin_service = user_admin_service
 
     @handler.chat_member(chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER, block=False)
-    @error_callable
     async def track_chats(self, update: Update, context: CallbackContext) -> None:
         result = extract_status_change(update.my_chat_member)
         if result is None:

@@ -31,8 +31,8 @@ class Log(Plugin):
             logger.exception(exc)
         return pb_url
 
-    @handler(CommandHandler, command="send_log", block=False)
     @bot_admins_rights_check
+    @handler.command(command="send_log", block=False)
     async def send_log(self, update: Update, _: CallbackContext):
         user = update.effective_user
         logger.info(f"用户 {user.full_name}[{user.id}] send_log 命令请求")

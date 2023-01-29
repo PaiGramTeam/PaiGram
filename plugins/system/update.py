@@ -8,7 +8,6 @@ from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext
 
 from core.builtins.contexts import BotContext
-from core.helpers import get_args
 from core.plugin import Plugin, handler
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import execute
@@ -46,7 +45,7 @@ class UpdatePlugin(Plugin):
     async def update(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
-        args = get_args(context)
+        args = self.get_args(context)
         logger.info(f"用户 {user.full_name}[{user.id}] update命令请求")
         if self.lock.locked():
             await message.reply_text("程序正在更新 请勿重复操作")

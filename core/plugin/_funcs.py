@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import aiofiles
 import httpx
@@ -61,9 +61,9 @@ async def _delete_message(context: CallbackContext) -> None:
 class PluginFuncs:
     @staticmethod
     def add_delete_message_job(
-        delete_seconds: int = 60,
         message: Optional[Union[int, Message]] = None,
         *,
+        delay: int = 60,
         chat: Optional[Union[int, Chat]] = None,
         context: Optional[CallbackContext] = None,
     ) -> Job:
@@ -83,7 +83,7 @@ class PluginFuncs:
 
         return context.job_queue.run_once(
             callback=_delete_message,
-            when=delete_seconds,
+            when=delay,
             data=message,
             name=f"{chat}|{message}|delete_message",
             chat_id=chat,
@@ -120,6 +120,27 @@ class PluginFuncs:
         logger.debug("url_to_file 获取url[%s] 并下载到 file_dir[%s]", url, file_path)
 
         return file_path if return_path else Path(file_path).as_uri()
+
+    @staticmethod
+    def get_args(context: Optional[CallbackContext] = None) -> List[str]:
+        context = context or TGContext.get()
+
+        args = context.args
+        match = context.match
+
+        if args is None:
+            if match is not None and (command := match.groups()[0]):
+                temp = []
+                command_parts = command.split(" ")
+                for command_part in command_parts:
+                    if command_part:
+                        temp.append(command_part)
+                return temp
+            return []
+        else:
+            if len(args) >= 1:
+                return args
+        return []
 
 
 class ConversationFuncs:
