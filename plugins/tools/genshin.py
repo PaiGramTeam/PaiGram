@@ -53,12 +53,16 @@ class GenshinHelper(Plugin):
 
     async def get_genshin_client(
         self, user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True
-    ) -> genshin.Client:
+    ) -> Optional[genshin.Client]:
         """通过 user_id 和 region 获取私有的 `genshin.Client`"""
         player = await self.players_service.get_player_by_user_id(user_id, region)
+        if player is None:
+            return
         cookies = None
         if need_cookie:
             cookie_model = await self.cookies_service.get(player.user_id, player.region)
+            if cookie_model is None:
+                return
             cookies = cookie_model.data
 
         uid = player.player_id
