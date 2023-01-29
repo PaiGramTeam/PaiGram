@@ -12,6 +12,10 @@ NOT_SET = object()
 WRAPPER_ASSIGNMENTS: List[str] = list(_WRAPPER_ASSIGNMENTS) + [
     "block",
     "_catch_targets",
+    "_handler_datas",
+    "_conversation_handler_data",
+    "_error_handler_data",
+    "_job_data",
 ]
 
 USER_AGENT: str = (

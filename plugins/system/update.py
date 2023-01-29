@@ -41,8 +41,8 @@ class UpdatePlugin(Plugin):
                 logger.exception(exc)
             os.remove(UPDATE_DATA)
 
-    @handler.command("update", block=False)
     @bot_admins_rights_check
+    @handler.command("update", block=False)
     async def update(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message

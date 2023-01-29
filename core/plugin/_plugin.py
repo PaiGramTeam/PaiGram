@@ -1,7 +1,7 @@
 """插件"""
 from dataclasses import asdict
 from datetime import timedelta
-from functools import wraps
+from functools import partial, wraps
 from itertools import chain
 from multiprocessing import RLock as Lock
 from types import MethodType
@@ -35,6 +35,7 @@ from typing_extensions import ParamSpec
 from core.builtins.contexts import BotContext
 from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
+from utils.const import WRAPPER_ASSIGNMENTS
 
 if TYPE_CHECKING:
     from core.plugin._handler import ConversationData, HandlerData, ErrorHandlerData
@@ -43,6 +44,7 @@ if TYPE_CHECKING:
 
 __all__ = ["Plugin", "PluginType", "get_all_plugins"]
 
+wraps = partial(wraps, assigned=WRAPPER_ASSIGNMENTS)
 P = ParamSpec("P")
 T = TypeVar("T")
 R = TypeVar("R")

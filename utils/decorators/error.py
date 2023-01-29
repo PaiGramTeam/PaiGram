@@ -12,6 +12,7 @@ from telegram.helpers import create_deep_linked_url
 from core.builtins.contexts import TGContext, TGUpdate
 from core.plugin import Plugin
 from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
+from utils.const import WRAPPER_ASSIGNMENTS
 from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 
@@ -91,7 +92,7 @@ def error_callable(func: Callable) -> Callable:
     非常感谢 @Bibo-Joshi 提出的建议
     """
 
-    @wraps(func)
+    @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
     async def decorator(*args, **kwargs):
         update = TGUpdate.get()
 
