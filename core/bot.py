@@ -12,8 +12,8 @@ from fastapi import FastAPI
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import (
     AIORateLimiter,
-    Application as TgApplication,
-    ApplicationBuilder as TGApplicationBuilder,
+    Application as TelegramApplication,
+    ApplicationBuilder as TelegramApplicationBuilder,
     Defaults,
 )
 from typing_extensions import ParamSpec
@@ -45,7 +45,7 @@ class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManage
 class Bot(Singleton, Managers):
     """BOT"""
 
-    _tg_app: Optional[TgApplication] = None
+    _tg_app: Optional[TelegramApplication] = None
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
 
@@ -61,12 +61,12 @@ class Bot(Singleton, Managers):
             return self._running
 
     @property
-    def tg_app(self) -> TgApplication:
+    def tg_app(self) -> TelegramApplication:
         """telegram app"""
         with self._lock:
             if self._tg_app is None:
                 self._tg_app = (
-                    TGApplicationBuilder()
+                    TelegramApplicationBuilder()
                     # .application_class(TgApplication)
                     .rate_limiter(AIORateLimiter())
                     .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
