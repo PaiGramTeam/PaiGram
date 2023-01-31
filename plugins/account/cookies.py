@@ -297,7 +297,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
             )
             if cookies_database:
                 account_cookies_plugin_data.cookies_data_base = cookies_database
-            else:
                 await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
@@ -324,11 +323,20 @@ class AccountCookiesPlugin(Plugin.Conversation):
         elif message.text == "确认":
             if account_cookies_plugin_data.player:
                 cookies = account_cookies_plugin_data.cookies_data_base
-                cookies.data = account_cookies_plugin_data.cookies
-                await self.cookies_service.update(cookies)
+                if cookies:
+                    cookies.data = account_cookies_plugin_data.cookies
+                    await self.cookies_service.update(cookies)
+                else:
+                    cookies = Cookies(
+                        user_id=user.id,
+                        account_id=account_cookies_plugin_data.account_id,
+                        data=account_cookies_plugin_data.cookies,
+                        region=account_cookies_plugin_data.region,
+                        is_share=True,  # todo 用户可以自行选择是否将Cookies加入公共池
+                    )
+                    await self.cookies_service.add(cookies)
                 logger.success("用户 %s[%s] 更新Cookies", user.full_name, user.id)
             else:
-                logger.success("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
                 player = Player(
                     user_id=user.id,
                     account_id=account_cookies_plugin_data.account_id,

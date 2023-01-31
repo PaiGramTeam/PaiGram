@@ -67,6 +67,7 @@ class GenshinHelper(Plugin):
             cookies = cookie_model.data
 
         uid = player.player_id
+        region = player.region
         if region == RegionEnum.HYPERION:  # 国服
             game_region = genshin.types.Region.CHINESE
         elif region == RegionEnum.HOYOLAB:  # 国际服
