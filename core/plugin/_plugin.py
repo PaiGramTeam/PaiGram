@@ -36,6 +36,7 @@ from core.builtins.contexts import ApplicationContext
 from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
 from utils.const import WRAPPER_ASSIGNMENTS
+from utils.log import logger
 
 if TYPE_CHECKING:
     from core.plugin._handler import ConversationData, HandlerData, ErrorHandlerData
@@ -241,7 +242,7 @@ class _Conversation(_Plugin, ConversationFuncs):
                 for attr in dir(self):
                     if (
                         not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                        and isinstance(func := getattr(self, attr), MethodType)
+                        and (func := getattr(self, attr, None)) is not None
                         and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
                     ):
                         conversation_data: "ConversationData"
@@ -265,12 +266,18 @@ class _Conversation(_Plugin, ConversationFuncs):
                                     states[conversation_data.state] = handlers
                             elif _type is ConversationDataType.Fallback:
                                 fallbacks.extend(handlers)
+                            else:
+                                self._handlers.extend(handlers)
                         else:
                             self._handlers.extend(handlers)
-                kwargs = self._conversation_kwargs
-                kwargs.update(self.Config().dict())
-                self._handlers.append(ConversationHandler(entry_points, states, fallbacks, **kwargs))
-
+                if entry_points and states and fallbacks:
+                    kwargs = self._conversation_kwargs
+                    kwargs.update(self.Config().dict())
+                    self._handlers.append(ConversationHandler(entry_points, states, fallbacks, **kwargs))
+                else:
+                    temp_dict = {"entry_points": entry_points, "states": states, "fallbacks": fallbacks}
+                    reason = map(lambda x: f"'{x[0]}'", filter(lambda x: not x[1], temp_dict.items()))
+                    logger.warning(f"'{self.__class__.__name__}' 因缺少 {', '.join(reason)} 而生成无法生成 ConversationHandler")
         return self._handlers
 
 

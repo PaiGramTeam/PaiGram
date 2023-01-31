@@ -61,9 +61,13 @@ class BaseExecutor:
         raise_error: bool = True,
         **kwargs,
     ) -> R:
-        from core.builtins.dispatcher import BaseDispatcher
 
-        dispatcher = self._dispatcher or dispatcher or BaseDispatcher
+        dispatcher = self._dispatcher or dispatcher
+        if dispatcher is None:
+            from core.builtins.dispatcher import BaseDispatcher
+
+            dispatcher = BaseDispatcher
+
         with (HashLock(lock_id or target) if block else do_nothing()):
             dispatcher_instance = dispatcher(**kwargs)
             dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
@@ -109,19 +113,29 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
         block: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
         lock_id: int = None,
+        raise_error: bool = True,
         **kwargs,
     ) -> R:
         with handler_contexts(update, context):
-            return await super().__call__(
-                self._callback,
-                dispatcher=dispatcher,
-                block=block,
-                lock_id=lock_id,
-                update=update,
-                context=context,
-                raise_error=True,
-                **kwargs,
-            )
+            dispatcher = self._dispatcher or dispatcher
+            if dispatcher is None:
+                from core.builtins.dispatcher import BaseDispatcher
+
+                dispatcher = BaseDispatcher
+
+            with (HashLock(lock_id or self._callback) if block else do_nothing()):
+                dispatcher_instance = dispatcher(**kwargs)
+                dispatched_func = dispatcher_instance.dispatch(self._callback)  # 分发参数，组成新函数
+
+                # 执行
+                try:
+                    result = await dispatched_func()
+                except Exception as e:
+                    if raise_error:
+                        raise e
+                    logger.error("执行错误：%s", e, exc_info=e)
+
+            return result
 
 
 class JobExecutor(BaseExecutor):

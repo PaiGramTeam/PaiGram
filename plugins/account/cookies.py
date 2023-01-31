@@ -11,12 +11,11 @@ from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.plugin import Plugin, conversation, handler
-from core.services.cookies.services import CookiesService
 from core.services.cookies.models import CookiesDataBase as Cookies
-from core.services.players.services import PlayersService
+from core.services.cookies.services import CookiesService
 from core.services.players.models import PlayersDataBase as Player, RegionEnum
+from core.services.players.services import PlayersService
 from modules.apihelper.client.components.signin import SignIn
-from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
 
@@ -77,11 +76,10 @@ class AccountCookiesPlugin(Plugin.Conversation):
 
         return {k: v for k, v in cookies.items() if v is not None}
 
+    @restricts()
     @conversation.entry_point
     @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=True)
     @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=True)
-    @restricts()
-    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
@@ -100,7 +98,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
 
     @conversation.entry_point
     @handler.command("qlogin", filters=filters.ChatType.PRIVATE, block=True)
-    @error_callable
     async def qrcode_login(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
@@ -126,9 +123,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_SERVER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
     async def check_server(self, update: Update, context: CallbackContext) -> int:
-        user = update.effective_user
         message = update.effective_message
         account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
         if message.text == "退出":
@@ -192,7 +187,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
 
     @conversation.state(state=INPUT_COOKIES)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
     async def input_cookies(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
@@ -321,7 +315,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
 
     @conversation.state(state=COMMAND_RESULT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
