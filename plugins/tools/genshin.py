@@ -7,11 +7,12 @@ from core.config import BotConfig
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin
-from core.services.cookies import CookiesService, PublicCookiesService
-from core.services.players import PlayersService
+from core.services.cookies.services import CookiesService, PublicCookiesService
+from core.services.players.services import PlayersService
+from core.services.players.models import RegionEnum
 from core.services.users import UserService
 from utils.const import REGION_MAP
-from utils.models.base import RegionEnum
+
 
 __all__ = ("GenshinHelper",)
 
