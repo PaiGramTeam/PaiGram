@@ -55,7 +55,7 @@ class GenshinHelper(Plugin):
         self, user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True
     ) -> genshin.Client:
         """通过 user_id 和 region 获取私有的 `genshin.Client`"""
-        player = await self.players_service.get_player_by_user_id(user_id, region)
+        player = await self.players_service.get_player(user_id, region)
         cookies = None
         if need_cookie:
             cookie_model = await self.cookies_service.get(player.user_id, player.region)
@@ -78,7 +78,7 @@ class GenshinHelper(Plugin):
 
     async def get_public_genshin_client(self, user_id: int) -> Tuple[genshin.Client, int]:
         """通过 user_id 获取公共的 `genshin.Client`"""
-        player = await self.players_service.get_player_by_user_id(user_id)
+        player = await self.players_service.get_player(user_id)
 
         region = player.region
         cookies = await self.public_cookies_service.get_cookies(user_id, region)

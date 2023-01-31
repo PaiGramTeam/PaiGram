@@ -60,10 +60,8 @@ class ChatMember(Plugin):
                 logger.error("获取信息出现错误", exc_info=exc)
         elif config.join_groups == JoinGroups.ALLOW_AUTH_USER:
             try:
-                player_info = await self.players_service.get_player_by_user_id(user.id)
-                if player_info:
-                    if await self.cookies_service.get(user.id, player_info.region):
-                        quit_status = False
+                if await self.cookies_service.get(user.id):
+                    quit_status = False
             except Exception as exc:  # pylint: disable=W0703
                 logger.error("获取信息出现错误", exc_info=exc)
         elif config.join_groups == JoinGroups.ALLOW_ALL:

@@ -21,8 +21,8 @@ class PlayersService(BaseService):
     ) -> Optional[Player]:
         return await self._repository.get(user_id, player_id, account_id, region, is_chosen)
 
-    async def get_player_by_user_id(self, user_id: int, region: Optional[RegionEnum] = None) -> Optional[Player]:
-        return await self._repository.get(user_id, region=region)
+    async def get_player(self, user_id: int, region: Optional[RegionEnum] = None) -> Optional[Player]:
+        return await self._repository.get(user_id, region=region, is_chosen=True)
 
     async def add(self, player: Player) -> None:
         await self._repository.add(player)
