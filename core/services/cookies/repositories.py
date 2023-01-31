@@ -15,12 +15,18 @@ class CookiesRepository(BaseService.Component):
     def __init__(self, mysql: MySQL):
         self.engine = mysql.engine
 
-    async def get_by_user_id(self, user_id: int, region: Optional[RegionEnum]) -> Optional[Cookies]:
+    async def get(
+        self,
+        user_id: int,
+        account_id: Optional[int] = None,
+        region: Optional[RegionEnum] = None,
+    ) -> Optional[Cookies]:
         async with AsyncSession(self.engine) as session:
-            if region:
-                statement = select(Cookies).where(Cookies.user_id == user_id).where(Cookies.region == region)
-            else:
-                statement = select(Cookies).where(Cookies.user_id == user_id)
+            statement = select(Cookies).where(Cookies.user_id == user_id)
+            if account_id is not None:
+                statement.where(Cookies.account_id == account_id)
+            if region is not None:
+                statement.where(Cookies.region == region)
             results = await session.exec(statement)
             return results.first()
 

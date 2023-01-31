@@ -1,7 +1,7 @@
 import enum
 from typing import Optional
 
-from sqlmodel import SQLModel, Field, Enum, Column
+from sqlmodel import SQLModel, Field, Enum, Column, Boolean
 
 __all__ = ("RegionEnum", "Player", "PlayersDataBase")
 
@@ -26,7 +26,7 @@ class Player(SQLModel):
     name_card_id: Optional[int] = Field()
     waifu_id: Optional[int] = Field()
     region: RegionEnum = Field(sa_column=Column(Enum(RegionEnum)))
-    is_chosen: int = Field()
+    is_chosen: Optional[bool] = Field(sa_column=Column(Boolean))
 
 
 class PlayersDataBase(Player, table=True):
