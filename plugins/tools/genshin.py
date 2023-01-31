@@ -66,12 +66,12 @@ class GenshinHelper(Plugin):
             cookies = cookie_model.data
 
         uid = player.player_id
-        if region is RegionEnum.HYPERION:  # 国服
+        if region == RegionEnum.HYPERION:  # 国服
             game_region = genshin.types.Region.CHINESE
-        elif region is RegionEnum.HOYOLAB:  # 国际服
+        elif region == RegionEnum.HOYOLAB:  # 国际服
             game_region = genshin.types.Region.OVERSEAS
         else:
-            raise TypeError("Region is not `RegionEnum.NULL`")
+            raise TypeError("Region is not None")
 
         client = genshin.Client(cookies, lang="zh-cn", game=genshin.types.Game.GENSHIN, region=game_region, uid=uid)
 

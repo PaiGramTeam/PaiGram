@@ -296,8 +296,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 user.id, player_info.account_id, account_cookies_plugin_data.region
             )
             if cookies_database:
-                account_cookies_plugin_data.cookies = cookies_database
-                await message.reply_text("你已经绑定UID，如果继续操作会覆盖当前UID。")
+                account_cookies_plugin_data.cookies_data_base = cookies_database
             else:
                 await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         reply_keyboard = [["确认", "退出"]]
