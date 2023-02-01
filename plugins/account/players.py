@@ -118,8 +118,9 @@ class PlayersManagesPlugin(Plugin):
             return
 
         main_player = await self.players_service.get(user.id, is_chosen=True)
-        main_player.is_chosen = False
-        await self.players_service.update(main_player)
+        if main_player and player.id != player.id:
+            main_player.is_chosen = False
+            await self.players_service.update(main_player)
 
         player.is_chosen = True
         await self.players_service.update(player)
@@ -127,8 +128,8 @@ class PlayersManagesPlugin(Plugin):
         buttons = [
             [
                 InlineKeyboardButton(
-                    "« 返回玩家列表",
-                    callback_data=f"players_manager|list",
+                    "« 返回",
+                    callback_data=f"players_manager|get|{user.id}|{player.player_id}",
                 )
             ],
         ]
