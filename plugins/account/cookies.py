@@ -32,8 +32,9 @@ class AccountCookiesPluginData(TelegramObject):
     region: RegionEnum = RegionEnum.NULL
     cookies: dict = {}
     account_id: int = 0
-    player_id: int = 0
+    # player_id: int = 0
     sign_in_client: Optional[SignIn] = None
+    genshin_account: Optional[GenshinAccount] = None
 
     def reset(self):
         self.player = None
@@ -41,8 +42,9 @@ class AccountCookiesPluginData(TelegramObject):
         self.region = RegionEnum.NULL
         self.cookies = {}
         self.account_id = 0
-        self.player_id = 0
+        # self.player_id = 0
         self.sign_in_client = None
+        self.genshin_account = None
 
 
 CHECK_SERVER, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10103)
@@ -278,18 +280,18 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 await sign_in_client.get_s_token()
                 account_cookies_plugin_data.cookies = sign_in_client.cookie
                 logger.info("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
-        user_info: Optional[GenshinAccount] = None
+        genshin_account: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定
-        for genshin_account in genshin_accounts:
-            if genshin_account.level >= level:  # 获取账号等级最高的
-                level = genshin_account.level
-                user_info = genshin_account
-        if user_info is None:
+        for temp in genshin_accounts:
+            if temp.level >= level:  # 获取账号等级最高的
+                level = temp.level
+                genshin_account = temp
+        if genshin_account is None:
             await message.reply_text("未找到原神账号，请确认账号信息无误。")
             return ConversationHandler.END
-        account_cookies_plugin_data.game_uid = user_info.uid
-        player_info = await self.players_service.get(user.id, user_info.uid, account_cookies_plugin_data.region)
+        account_cookies_plugin_data.genshin_account = genshin_account
+        player_info = await self.players_service.get(user.id, genshin_account.uid, account_cookies_plugin_data.region)
         account_cookies_plugin_data.player = player_info
         if player_info:
             cookies_database = await self.cookies_service.get(
@@ -300,13 +302,15 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, user_info.nickname, user_info.uid)
+        logger.info(
+            "用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, genshin_account.nickname, genshin_account.uid
+        )
         text = (
             f"*角色信息*\n"
-            f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n"
-            f"角色等级：{user_info.level}\n"
-            f"UID：`{user_info.uid}`\n"
-            f"服务器名称：`{user_info.server_name}`\n"
+            f"角色名称：{escape_markdown(genshin_account.nickname, version=2)}\n"
+            f"角色等级：{genshin_account.level}\n"
+            f"UID：`{genshin_account.uid}`\n"
+            f"服务器名称：`{genshin_account.server_name}`\n"
         )
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return COMMAND_RESULT
@@ -321,7 +325,12 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         elif message.text == "确认":
-            if account_cookies_plugin_data.player:
+            player = account_cookies_plugin_data.player
+            genshin_account = account_cookies_plugin_data.genshin_account
+            if player:
+                if player.nickname != genshin_account.nickname:
+                    player.nickname = genshin_account.nickname
+                    await self.players_service.update(player)
                 cookies = account_cookies_plugin_data.cookies_data_base
                 if cookies:
                     cookies.data = account_cookies_plugin_data.cookies
@@ -340,7 +349,8 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 player = Player(
                     user_id=user.id,
                     account_id=account_cookies_plugin_data.account_id,
-                    player_id=account_cookies_plugin_data.player_id,
+                    player_id=genshin_account.uid,
+                    nickname=genshin_account.nickname,
                     region=account_cookies_plugin_data.region,
                     is_chosen=True,  # todo 多账号
                 )
