@@ -22,17 +22,17 @@ class PlayersManagesPlugin(Plugin):
         self.players_service = players
 
     @staticmethod
-    def players_manages_callback(callback_query_data: str) -> Tuple[str, int, int]:
+    def players_manager_callback(callback_query_data: str) -> Tuple[str, int, int]:
         _data = callback_query_data.split("|")
         _handle = _data[-3]
         _user_id = int(_data[-2])
         _player_id = int(_data[-1])
-        logger.debug("players_manage_callback函数返回 handle[%s] user_id[%s] player_id[%s]", _handle, _user_id, _player_id)
+        logger.debug("players_manager_callback函数返回 handle[%s] user_id[%s] player_id[%s]", _handle, _user_id, _player_id)
         return _handle, _user_id, _player_id
 
     @handler.command(command="player", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="players", filters=filters.ChatType.PRIVATE, block=False)
-    @handler.callback_query(r"^players_manage\|list\|", block=False)
+    @handler.callback_query(r"^players_manager\|list\|", block=False)
     async def command_start(self, update: Update) -> None:
         callback_query = update.callback_query
         user = update.effective_user
@@ -51,7 +51,7 @@ class PlayersManagesPlugin(Plugin):
                 [
                     InlineKeyboardButton(
                         text,
-                        callback_data=f"players_manage|get|{user.id}|{player.player_id}",
+                        callback_data=f"players_manager|get|{user.id}|{player.player_id}",
                     )
                 ]
             )
@@ -60,13 +60,13 @@ class PlayersManagesPlugin(Plugin):
         else:
             await message.reply_text("从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons))
 
-    @handler.callback_query(r"^players_manage\|get\|", block=False)
+    @handler.callback_query(r"^players_manager\|get\|", block=False)
     @restricts(without_overlapping=True)
     async def get_player_cards(self, update: Update) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
-        _, user_id, player_id = self.players_manages_callback(callback_query.data)
+        _, user_id, player_id = self.players_manager_callback(callback_query.data)
         if user.id != user_id:
             if callback_query.message:
                 await callback_query.message.delete()
@@ -81,17 +81,17 @@ class PlayersManagesPlugin(Plugin):
             [
                 InlineKeyboardButton(
                     "设置为主账号",
-                    callback_data=f"players_manage|main|{user.id}|{player.player_id}",
+                    callback_data=f"players_manager|main|{user.id}|{player.player_id}",
                 ),
                 InlineKeyboardButton(
                     "删除账号",
-                    callback_data=f"players_manage|del|{user.id}|{player.player_id}",
+                    callback_data=f"players_manager|del|{user.id}|{player.player_id}",
                 ),
             ],
             [
                 InlineKeyboardButton(
                     "« 返回玩家列表",
-                    callback_data=f"players_manage|list",
+                    callback_data=f"players_manager|list",
                 )
             ],
         ]
@@ -100,13 +100,13 @@ class PlayersManagesPlugin(Plugin):
             f"这里是 {player.player_id} {player.nickname}\n你想用这个账号做什么？", reply_markup=InlineKeyboardMarkup(buttons)
         )
 
-    @handler.callback_query(r"^players_manage\|main\|", block=False)
+    @handler.callback_query(r"^players_manager\|main\|", block=False)
     @restricts(without_overlapping=True)
     async def get_player_cards(self, update: Update) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
-        _, user_id, player_id = self.players_manages_callback(callback_query.data)
+        _, user_id, player_id = self.players_manager_callback(callback_query.data)
         if user.id != user_id:
             if callback_query.message:
                 await callback_query.message.delete()
@@ -128,7 +128,7 @@ class PlayersManagesPlugin(Plugin):
             [
                 InlineKeyboardButton(
                     "« 返回玩家列表",
-                    callback_data=f"players_manage|list",
+                    callback_data=f"players_manager|list",
                 )
             ],
         ]
@@ -137,13 +137,13 @@ class PlayersManagesPlugin(Plugin):
             f"成功设置 {player.player_id} {player.nickname} 为主账号", reply_markup=InlineKeyboardMarkup(buttons)
         )
 
-    @handler.callback_query(r"^players_manage\|del\|", block=False)
+    @handler.callback_query(r"^players_manager\|del\|", block=False)
     @restricts(without_overlapping=True)
     async def get_player_cards(self, update: Update) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
-        _handle, user_id, player_id = self.players_manages_callback(callback_query.data)
+        _handle, user_id, player_id = self.players_manager_callback(callback_query.data)
         if user.id != user_id:
             if callback_query.message:
                 await callback_query.message.delete()
@@ -159,7 +159,7 @@ class PlayersManagesPlugin(Plugin):
                 [
                     InlineKeyboardButton(
                         "« 返回玩家列表",
-                        callback_data=f"players_manage|list",
+                        callback_data=f"players_manager|list",
                     )
                 ],
             ]
@@ -175,19 +175,19 @@ class PlayersManagesPlugin(Plugin):
                 [
                     InlineKeyboardButton(
                         "不要",
-                        callback_data=f"players_manage|get|{user.id}|{player.player_id}",
+                        callback_data=f"players_manager|get|{user.id}|{player.player_id}",
                     )
                 ],
                 [
                     InlineKeyboardButton(
                         "是的我非常确定",
-                        callback_data=f"players_manage|del|true|{user.id}|{player.player_id}",
+                        callback_data=f"players_manager|del|true|{user.id}|{player.player_id}",
                     )
                 ],
                 [
                     InlineKeyboardButton(
                         "取消操作",
-                        callback_data=f"players_manage|get|{user.id}|{player.player_id}",
+                        callback_data=f"players_manager|get|{user.id}|{player.player_id}",
                     )
                 ],
             ]
