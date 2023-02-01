@@ -42,7 +42,7 @@ class CookiesRepository(BaseService.Component):
             await session.refresh(cookies)
             return cookies
 
-    async def remove(self, cookies: Cookies) -> None:
+    async def delete(self, cookies: Cookies) -> None:
         async with AsyncSession(self.engine) as session:
             await session.delete(cookies)
             await session.commit()

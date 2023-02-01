@@ -32,8 +32,8 @@ class CookiesService(BaseService):
     ) -> Optional[Cookies]:
         return await self._repository.get(user_id, account_id, region)
 
-    async def remove(self, cookies: Cookies) -> None:
-        return await self._repository.remove(cookies)
+    async def delete(self, cookies: Cookies) -> None:
+        return await self._repository.delete(cookies)
 
 
 class PublicCookiesService(BaseService):

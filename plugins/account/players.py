@@ -164,6 +164,9 @@ class PlayersManagesPlugin(Plugin):
                 ],
             ]
             await self.players_service.delete(player)
+            cookies = await self.cookies_service.get(player.user_id, player.account_id, player.region)
+            if cookies:
+                await self.cookies_service.delete(cookies)
             await callback_query.edit_message_text(
                 f"成功删除 {player.player_id} {player.nickname}", reply_markup=InlineKeyboardMarkup(buttons)
             )
