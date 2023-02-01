@@ -11,7 +11,7 @@ from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.plugin import Plugin, conversation, handler
-from core.services.cookies.models import CookiesDataBase as Cookies
+from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStatusEnum
 from core.services.cookies.services import CookiesService
 from core.services.players.models import PlayersDataBase as Player, RegionEnum
 from core.services.players.services import PlayersService
@@ -334,6 +334,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 cookies = account_cookies_plugin_data.cookies_data_base
                 if cookies:
                     cookies.data = account_cookies_plugin_data.cookies
+                    cookies.status = CookiesStatusEnum.STATUS_SUCCESS
                     await self.cookies_service.update(cookies)
                 else:
                     cookies = Cookies(
@@ -352,6 +353,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     player_id=genshin_account.uid,
                     nickname=genshin_account.nickname,
                     region=account_cookies_plugin_data.region,
+                    status=CookiesStatusEnum.STATUS_SUCCESS,
                     is_chosen=True,  # todo 多账号
                 )
                 await self.players_service.add(player)
