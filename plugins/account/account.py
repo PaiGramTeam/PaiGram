@@ -2,6 +2,7 @@ from typing import Optional
 
 import genshin
 from genshin import DataNotPublic, GenshinException, types
+from genshin.models import RecordCard
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
@@ -20,15 +21,17 @@ __all__ = ("BindAccountPlugin",)
 
 class BindAccountPluginData(TelegramObject):
     player: Optional[Player] = None
+    record_card: Optional[RecordCard] = None
     region: RegionEnum = RegionEnum.HYPERION
     account_id: int = 0
-    player_id: int = 0
+    # player_id: int = 0
 
     def reset(self):
         self.player = None
         self.region = RegionEnum.NULL
-        self.player_id = 0
+        # self.player_id = 0
         self.account_id = 0
+        self.record_card = None
 
 
 CHECK_SERVER, CHECK_UID, COMMAND_RESULT = range(10100, 10103)
@@ -111,15 +114,15 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if region == RegionEnum.HYPERION:
-            client = genshin.Client(cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.CHINESE)
+            client = genshin.Client(cookies=cookies.data, game=types.Game.GENSHIN, region=types.Region.CHINESE)
         elif region == RegionEnum.HOYOLAB:
             client = genshin.Client(
-                cookies=cookies.cookies, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
+                cookies=cookies.data, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
             )
         else:
             return ConversationHandler.END
         try:
-            user_info = await client.get_record_card(account_id)
+            record_card = await client.get_record_card(account_id)
         except DataNotPublic:
             await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())
             logger.warning("获取账号信息发生错误 %s 账户信息未公开", account_id)
@@ -129,25 +132,27 @@ class BindAccountPlugin(Plugin.Conversation):
             logger.error("获取账号信息发生错误")
             logger.exception(exc)
             return ConversationHandler.END
-        if user_info.game != types.Game.GENSHIN:
+        if record_card.game != types.Game.GENSHIN:
             await message.reply_text("角色信息查询返回非原神游戏信息，" "请设置展示主界面为原神", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        player_info = await self.players_service.get(user.id, user_info.uid, bind_account_plugin_data.region)
+        player_info = await self.players_service.get(
+            user.id, player_id=record_card.uid, region=bind_account_plugin_data.region
+        )
         if player_info:
             await message.reply_text("你已经绑定该账号")
             return ConversationHandler.END
-        bind_account_plugin_data.player = player_info
+        bind_account_plugin_data.account_id = account_id
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, user_info.nickname, user_info.uid)
+        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, record_card.nickname, record_card.uid)
         text = (
             f"*角色信息*\n"
-            f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n"
-            f"角色等级：{user_info.level}\n"
-            f"UID：`{user_info.uid}`\n"
-            f"服务器名称：`{user_info.server_name}`\n"
+            f"角色名称：{escape_markdown(record_card.nickname, version=2)}\n"
+            f"角色等级：{record_card.level}\n"
+            f"UID：`{record_card.uid}`\n"
+            f"服务器名称：`{record_card.server_name}`\n"
         )
-        bind_account_plugin_data.player_id = user_info.uid
+        bind_account_plugin_data.record_card = record_card
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return COMMAND_RESULT
 
@@ -162,23 +167,21 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         elif message.text == "确认":
-            if bind_account_plugin_data.player:
-                is_chosen = True
-                player_info = await self.players_service.get_player(user.id)  # 寻找主账号
-                if player_info.is_chosen:
-                    is_chosen = False
-                player = Player(
-                    user_id=user.id,
-                    account_id=bind_account_plugin_data.account_id,
-                    player_id=bind_account_plugin_data.player_id,
-                    region=bind_account_plugin_data.region,
-                    is_chosen=is_chosen,  # todo 多账号
-                )
-                await self.players_service.add(player)
-                logger.success("用户 %s[%s] 绑定UID账号成功", user.full_name, user.id)
-            else:
-                await message.reply_text("数据错误")
-                return ConversationHandler.END
+            record_card = bind_account_plugin_data.record_card
+            is_chosen = True
+            player_info = await self.players_service.get_player(user.id)  # 寻找主账号
+            if player_info.is_chosen:
+                is_chosen = False
+            player = Player(
+                user_id=user.id,
+                account_id=bind_account_plugin_data.account_id,
+                player_id=record_card.uid,
+                nickname=record_card.nickname,
+                region=bind_account_plugin_data.region,
+                is_chosen=is_chosen,  # todo 多账号
+            )
+            await self.players_service.add(player)
+            logger.success("用户 %s[%s] 绑定UID账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         else:

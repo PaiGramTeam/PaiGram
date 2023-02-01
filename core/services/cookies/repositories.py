@@ -24,9 +24,9 @@ class CookiesRepository(BaseService.Component):
         async with AsyncSession(self.engine) as session:
             statement = select(Cookies).where(Cookies.user_id == user_id)
             if account_id is not None:
-                statement.where(Cookies.account_id == account_id)
+                statement = statement.where(Cookies.account_id == account_id)
             if region is not None:
-                statement.where(Cookies.region == region)
+                statement = statement.where(Cookies.region == region)
             results = await session.exec(statement)
             return results.first()
 

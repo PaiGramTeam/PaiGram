@@ -25,13 +25,13 @@ class PlayersRepository(BaseService.Component):
         async with AsyncSession(self.engine) as session:
             statement = select(Player).where(Player.user_id == user_id)
             if player_id is not None:
-                statement.where(Player.player_id == player_id)
+                statement = statement.where(Player.player_id == player_id)
             if account_id is not None:
-                statement.where(Player.account_id == account_id)
+                statement = statement.where(Player.account_id == account_id)
             if region is not None:
-                statement.where(Player.region == region)
+                statement = statement.where(Player.region == region)
             if is_chosen is not None:
-                statement.where(Player.is_chosen == is_chosen)
+                statement = statement.where(Player.is_chosen == is_chosen)
             results = await session.exec(statement)
             return results.first()
 

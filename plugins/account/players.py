@@ -118,7 +118,7 @@ class PlayersManagesPlugin(Plugin):
             return
 
         main_player = await self.players_service.get(user.id, is_chosen=True)
-        if main_player and player.id != player.id:
+        if main_player and player.id != main_player.id:
             main_player.is_chosen = False
             await self.players_service.update(main_player)
 
