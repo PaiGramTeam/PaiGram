@@ -8,8 +8,9 @@ from core.services.cookies.cache import PublicCookiesCache
 from core.services.cookies.error import CookieServiceError, TooManyRequestPublicCookies
 from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStatusEnum
 from core.services.cookies.repositories import CookiesRepository
+from core.services.players.models import RegionEnum
 from utils.log import logger
-from utils.models.base import RegionEnum
+
 
 __all__ = ("CookiesService", "PublicCookiesService")
 
@@ -42,6 +43,11 @@ class PublicCookiesService(BaseService):
         self._repository: CookiesRepository = cookies_repository
         self.count: int = 0
         self.user_times_limiter = 3 * 3
+
+    async def initialize(self) -> None:
+        logger.info("正在初始化公共Cookies池")
+        await self.refresh()
+        logger.success("刷新公共Cookies池成功")
 
     async def refresh(self):
         """刷新公共Cookies 定时任务
@@ -76,7 +82,7 @@ class PublicCookiesService(BaseService):
             raise TooManyRequestPublicCookies(user_id)
         while True:
             public_id, count = await self._cache.get_public_cookies(region)
-            cookies = await self._repository.get_by_user_id(public_id, region)
+            cookies = await self._repository.get(public_id, region=region)
             if cookies is None:
                 await self._cache.delete_public_cookies(public_id, region)
                 continue
