@@ -36,4 +36,7 @@ class PlayersService(BaseService):
     async def remove_all_by_user_id(self, user_id: int):
         players = await self._repository.get_all_by_user_id(user_id)
         for player in players:
-            await self._repository.remove(player)
+            await self._repository.delete(player)
+
+    async def delete(self, player: Player):
+        await self._repository.delete(player)
