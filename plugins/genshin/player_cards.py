@@ -144,7 +144,7 @@ class PlayerCards(Plugin, BasePlugin):
         await render_result.reply_photo(message, filename=f"player_card_{uid}_{character_name}.png")
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
-    @restricts(restricts_time_of_groups=20, without_overlapping=True)
+    @restricts(restricts_time=3, without_overlapping=True)
     @error_callable
     async def get_player_cards(self, update: Update, _: CallbackContext) -> None:
         callback_query = update.callback_query
