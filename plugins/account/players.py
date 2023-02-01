@@ -32,7 +32,7 @@ class PlayersManagesPlugin(Plugin):
 
     @handler.command(command="player", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="players", filters=filters.ChatType.PRIVATE, block=False)
-    @handler.callback_query(r"^players_manager\|list\|", block=False)
+    @handler.callback_query(r"^players_manager\|list", block=False)
     async def command_start(self, update: Update) -> None:
         callback_query = update.callback_query
         user = update.effective_user
@@ -62,7 +62,7 @@ class PlayersManagesPlugin(Plugin):
 
     @handler.callback_query(r"^players_manager\|get\|", block=False)
     @restricts(without_overlapping=True)
-    async def get_player_cards(self, update: Update) -> None:
+    async def get_player(self, update: Update) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
@@ -102,7 +102,7 @@ class PlayersManagesPlugin(Plugin):
 
     @handler.callback_query(r"^players_manager\|main\|", block=False)
     @restricts(without_overlapping=True)
-    async def get_player_cards(self, update: Update) -> None:
+    async def set_main(self, update: Update) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
@@ -139,7 +139,7 @@ class PlayersManagesPlugin(Plugin):
 
     @handler.callback_query(r"^players_manager\|del\|", block=False)
     @restricts(without_overlapping=True)
-    async def get_player_cards(self, update: Update) -> None:
+    async def delete(self, update: Update) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
