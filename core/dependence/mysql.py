@@ -1,5 +1,7 @@
 import contextlib
+from typing import Optional
 
+from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
 from typing_extensions import Self
@@ -16,13 +18,27 @@ class MySQL(BaseService.Dependence):
     def from_config(cls, config: BotConfig) -> Self:
         return cls(**config.mysql.dict())
 
-    def __init__(self, host: str, port: int, username: str, password: str, database: str):
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        database: Optional[str] = None,
+    ):
         self.database = database
         self.password = password
-        self.user = username
+        self.username = username
         self.port = port
         self.host = host
-        self.url = f"mysql+asyncmy://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        self.url = URL.create(
+            "mysql+asyncmy",
+            username=self.username,
+            password=self.password,
+            host=self.host,
+            port=self.port,
+            database=self.database,
+        )
         self.engine = create_async_engine(self.url)
         self.Session = sessionmaker(bind=self.engine, class_=AsyncSession)
 
