@@ -20,11 +20,6 @@ class JoinGroups(str, Enum):
     ALLOW_ALL = "ALLOW_ALL"
 
 
-class ConfigChannel(BaseModel):
-    name: str
-    chat_id: int
-
-
 class MySqlConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 3306
@@ -48,7 +43,7 @@ class RedisConfig(Settings):
 
 class LoggerConfig(Settings):
     name: str = "TGPaimon"
-    width: int = 180
+    width: Optional[int] = None
     time_format: str = "[%Y-%m-%d %X]"
     traceback_max_frames: int = 20
     path: Path = PROJECT_ROOT / "logs"
@@ -123,7 +118,7 @@ class BotConfig(Settings):
 
     owner: Optional[int] = None
 
-    channels: List["ConfigChannel"] = []
+    channels: List[int] = []
     """文章推送群组"""
 
     verify_groups: List[Union[int, str]] = []

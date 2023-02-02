@@ -6,7 +6,7 @@ from pydantic import BaseSettings
 
 from utils.const import PROJECT_ROOT
 
-__all__ = ["LoggerConfig"]
+__all__ = ("LoggerConfig",)
 
 
 class LoggerConfig(BaseSettings):
@@ -26,7 +26,7 @@ class LoggerConfig(BaseSettings):
     level: Optional[Union[str, int]] = None
 
     debug: bool = False
-    width: int = 180
+    width: Optional[int] = None
     keywords: List[str] = []
     time_format: str = "[%Y-%m-%d %X]"
     capture_warnings: bool = True

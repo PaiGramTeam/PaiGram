@@ -9,7 +9,7 @@ from utils.log._logger import LogFilter, Logger
 if TYPE_CHECKING:
     from logging import LogRecord
 
-__all__ = ["logger"]
+__all__ = ("logger",)
 
 logger = Logger(
     LoggerConfig(
