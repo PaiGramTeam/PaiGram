@@ -3,8 +3,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import (TYPE_CHECKING, Any, Callable, Iterable, List, Literal,
-                    Optional, Union)
+from typing import TYPE_CHECKING, Any, Callable, Iterable, List, Literal, Optional, Union
 
 from rich.console import Console
 from rich.logging import LogRender as DefaultLogRender
@@ -20,10 +19,9 @@ from utils.log._traceback import Traceback
 if TYPE_CHECKING:
     from logging import LogRecord  # pylint: disable=unused-import
 
-    from rich.console import (  # pylint: disable=unused-import
-        ConsoleRenderable, RenderableType)
+    from rich.console import ConsoleRenderable, RenderableType  # pylint: disable=unused-import
 
-__all__ = ["LogRender", "Handler", "FileHandler"]
+__all__ = ("LogRender", "Handler", "FileHandler")
 
 FormatTimeCallable = Callable[[datetime], Text]
 

@@ -34,9 +34,9 @@ class BirthdayPlugin(Plugin):
     @handler.command(command="birthday", block=False)
     async def command_start(self, user: User, message: Message) -> None:
         key = (
-                rm_starting_str(datetime.now().strftime("%m"), "0")
-                + "_"
-                + rm_starting_str(datetime.now().strftime("%d"), "0")
+            rm_starting_str(datetime.now().strftime("%m"), "0")
+            + "_"
+            + rm_starting_str(datetime.now().strftime("%d"), "0")
         )
         args = self.get_args()
 

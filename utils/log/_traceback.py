@@ -1,8 +1,7 @@
 import os
 import traceback as traceback_
 from types import ModuleType, TracebackType
-from typing import (TYPE_CHECKING, Any, Dict, Iterable, List, Mapping,
-                    Optional, Tuple, Type, Union)
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 from rich import pretty
 from rich.columns import Columns
@@ -21,7 +20,7 @@ from utils.log._style import MonokaiProStyle
 if TYPE_CHECKING:
     from rich.console import ConsoleRenderable  # pylint: disable=W0611
 
-__all__ = ["render_scope", "Traceback"]
+__all__ = ("render_scope", "Traceback")
 
 
 def render_scope(
