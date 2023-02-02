@@ -83,7 +83,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         return CHECK_SERVER
 
     @conversation.entry_point
-    @handler.command("qlogin", filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command("qlogin", filters=filters.ChatType.PRIVATE, block=False)
     @error_callable
     async def qrcode_login(self, update: Update, context: CallbackContext):
         user = update.effective_user
