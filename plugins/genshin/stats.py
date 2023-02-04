@@ -5,14 +5,8 @@ from genshin import Client, GenshinException
 from genshin.models import GenshinUserStats
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import (
-    CallbackContext,
-    CommandHandler,
-    MessageHandler,
-    filters,
-)
+from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
-
 
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.plugin import Plugin, handler
@@ -68,9 +62,8 @@ class PlayerStatsPlugins(Plugin):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self.add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
-
-                self.add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_message, delay=30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
@@ -141,13 +134,12 @@ class PlayerStatsPlugins(Plugin):
             full_page=True,
         )
 
-    @staticmethod
-    async def cache_images(data: GenshinUserStats) -> None:
+    async def cache_images(self, data: GenshinUserStats) -> None:
         """缓存所有图片到本地"""
         # TODO: 并发下载所有资源
 
         # 探索地区
         for item in data.explorations:
             item.__config__.allow_mutation = True
-            item.icon = await url_to_file(item.icon)
-            item.cover = await url_to_file(item.cover)
+            item.icon = await self.download_resource(item.icon)
+            item.cover = await self.download_resource(item.cover)
