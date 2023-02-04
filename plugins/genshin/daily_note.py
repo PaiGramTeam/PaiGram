@@ -10,10 +10,8 @@ from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
 
 from core.plugin import Plugin, handler
-from core.services.cookies import CookiesService
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from core.services.users import UserService
 from plugins.tools.genshin import GenshinHelper
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -26,14 +24,10 @@ class DailyNotePlugin(Plugin):
 
     def __init__(
         self,
-        user: UserService,
-        cookies: CookiesService,
         template: TemplateService,
         helper: GenshinHelper,
     ):
         self.template_service = template
-        self.cookies_service = cookies
-        self.user_service = user
         self.helper = helper
 
     async def _get_daily_note(self, client: genshin.Client) -> RenderResult:
@@ -102,7 +96,7 @@ class DailyNotePlugin(Plugin):
     @handler.command(command="dailynote", block=False)
     @handler.message(filters=filters.Regex("^当前状态(.*)"), block=False)
     async def command_start(self, user: User, message: Message, bot: Bot) -> Optional[int]:
-        logger.info(f"用户 {user.full_name}[{user.id}] 查询游戏状态命令请求")
+        logger.info("用户 %s[%s] 每日便签命令请求", user.full_name, user.id)
 
         try:
             # 获取当前用户的 genshin.Client
