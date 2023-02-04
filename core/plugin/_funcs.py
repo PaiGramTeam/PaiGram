@@ -117,7 +117,7 @@ class PluginFuncs:
         )
 
     @staticmethod
-    async def url_to_file(url: str, return_path: bool = False) -> str:
+    async def download_resource(url: str, return_path: bool = False) -> str:
         url_sha1 = sha1(url)  # url 的 hash 值
         pathed_url = Path(url)
 
