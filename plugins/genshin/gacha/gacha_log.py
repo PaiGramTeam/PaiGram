@@ -216,7 +216,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         return ConversationHandler.END
 
     @conversation.state(state=INPUT_URL)
-    @handler.message(filters=~filters.COMMAND, block=False)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
     @restricts()
     @error_callable
     async def import_data_from_message(self, update: Update, _: CallbackContext) -> int:
