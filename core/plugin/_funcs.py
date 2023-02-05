@@ -90,6 +90,7 @@ class PluginFuncs:
         message: Optional[Union[int, Message]] = None,
         *,
         delay: int = 60,
+        name: Optional[str] = None,
         chat: Optional[Union[int, Chat]] = None,
         context: Optional[CallbackContext] = None,
     ) -> Job:
@@ -111,7 +112,7 @@ class PluginFuncs:
             callback=_delete_message,
             when=delay,
             data=message,
-            name=f"{chat}|{message}|delete_message",
+            name=f"{chat}|{message}|{name}|delete_message" if name else f"{chat}|{message}|delete_message",
             chat_id=chat,
             job_kwargs={"replace_existing": True, "id": f"{chat}|{message}|delete_message"},
         )
@@ -137,13 +138,13 @@ class PluginFuncs:
                     raise UrlResourcesNotFoundError(url)
 
                 if response.status_code != 200:
-                    logger.error("url_to_file 获取url[%s] 错误 status_code[%s]", url, response.status_code)
+                    logger.error("download_resource 获取url[%s] 错误 status_code[%s]", url, response.status_code)
                     raise UrlResourcesNotFoundError(url)
 
             async with aiofiles.open(file_path, mode="wb") as f:
                 await f.write(response.content)
 
-        logger.debug("url_to_file 获取url[%s] 并下载到 file_dir[%s]", url, file_path)
+        logger.debug("download_resource 获取url[%s] 并下载到 file_dir[%s]", url, file_path)
 
         return file_path if return_path else Path(file_path).as_uri()
 
