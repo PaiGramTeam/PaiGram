@@ -120,6 +120,7 @@ class Application(Singleton, Managers):
 
     async def initialize(self):
         """BOT 初始化"""
+        self.set_application(application=self)  # 设置 application
         await self.start_dependency()  # 启动基础服务
         await self.init_components()  # 实例化组件
         await self.start_services()  # 启动其他服务

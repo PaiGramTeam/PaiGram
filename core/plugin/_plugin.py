@@ -39,11 +39,12 @@ from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from core.application import Application
     from core.plugin._handler import ConversationData, HandlerData, ErrorHandlerData
     from core.plugin._job import JobData
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["Plugin", "PluginType", "get_all_plugins"]
+__all__ = ("Plugin", "PluginType", "get_all_plugins")
 
 wraps = partial(wraps, assigned=WRAPPER_ASSIGNMENTS)
 P = ParamSpec("P")
@@ -74,6 +75,16 @@ class _Plugin(PluginFuncs):
     _handlers: Optional[List[HandlerType]] = None
     _error_handlers: Optional[List["ErrorHandlerData"]] = None
     _jobs: Optional[List[Job]] = None
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+
+    @property
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError("No application was set for this Plugin.")
+        return self._application
 
     @property
     def handlers(self) -> List[HandlerType]:
