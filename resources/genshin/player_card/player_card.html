@@ -71,11 +71,11 @@
                 {{ character.name }}
               </div>
               <div
-                class="flex flex-row justify-end text-2xl text-shadow space-x-2"
+                class="flex flex-row justify-end text-2xl text-shadow space-x-6"
               >
-                <div class="characters-level pr-4">UID {{ uid }}</div>
-                <div class="characters-level">Lv.{{ character.level }}</div>
-                <div class="characters-level bg-red-600 rounded-lg px-2">
+                <div>UID {{ uid }}</div>
+                <div>Lv.{{ character.level }}</div>
+                <div class="rounded-lg pl-1 pr-3 {% if character.friendship_level >= 10 %} bg-red-600 {% else %} bg-gray-600 {% endif %}">
                   ❤ {{ character.friendship_level }}
                 </div>
               </div>
