@@ -10,9 +10,9 @@ from telegram.helpers import create_deep_linked_url
 
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.plugin import Plugin, handler
+from core.services.players.error import PlayerNotFoundError
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from core.services.users.error import UserNotFoundError
 from plugins.tools.genshin import GenshinHelper
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -50,13 +50,13 @@ class PlayerStatsPlugins(Plugin):
         try:
             client = await self.helper.get_genshin_client(user.id)
             if client is None:
-                client = await self.helper.get_public_genshin_client(user.id)
+                client, uid = await self.helper.get_public_genshin_client(user.id)
                 if client is None:
-                    raise UserNotFoundError
+                    raise PlayerNotFoundError
             else:
                 uid = client.uid
             render_result = await self.render(client, uid)
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
