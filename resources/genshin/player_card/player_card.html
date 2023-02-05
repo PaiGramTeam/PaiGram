@@ -75,8 +75,9 @@
               >
                 <div class="characters-level pr-4">UID {{ uid }}</div>
                 <div class="characters-level">Lv.{{ character.level }}</div>
-                <div class="characters-level bg-red-600 rounded-lg px-2">
-                  ❤ {{ character.friendship_level }}
+                <div class="rounded-lg px-2 {% if character.friendship_level >= 10 %} bg-red-600 {% else %} bg-gray-600 {% endif %}">
+                  ❤
+                  <div class="characters-level px-2">{{ character.friendship_level }}</div>
                 </div>
               </div>
             </div>
