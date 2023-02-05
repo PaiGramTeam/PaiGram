@@ -33,7 +33,7 @@ class UpdatePlugin(Plugin):
             async with async_open(UPDATE_DATA) as file:
                 data = jsonlib.loads(await file.read())
             try:
-                reply_text = Message.de_json(data, ApplicationContext.get().tg_app.bot)
+                reply_text = Message.de_json(data, ApplicationContext.get().telegram.bot)
                 await reply_text.edit_text("重启成功")
             except (BadRequest, Forbidden, KeyError) as exc:
                 logger.error("UpdatePlugin 编辑消息出现错误")

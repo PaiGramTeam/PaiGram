@@ -71,16 +71,16 @@ class PluginFuncs:
         redis_db: RedisDB = redis_db or bot.services_map.get(RedisDB, None)
 
         if not redis_db:
-            return await bot.tg_app.bot.get_chat(chat_id)
+            return await bot.telegram.bot.get_chat(chat_id)
 
         qname = f"bot:chat:{chat_id}"
 
         data = await redis_db.client.get(qname)
         if data:
             json_data = json.loads(data)
-            return Chat.de_json(json_data, bot.tg_app.bot)
+            return Chat.de_json(json_data, bot.telegram.bot)
 
-        chat_info = await bot.tg_app.bot.get_chat(chat_id)
+        chat_info = await bot.telegram.bot.get_chat(chat_id)
         await redis_db.client.set(qname, chat_info.to_json())
         await redis_db.client.expire(qname, ttl)
         return chat_info

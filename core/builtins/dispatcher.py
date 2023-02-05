@@ -40,7 +40,7 @@ from utils.typedefs import R, T
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = [
+__all__ = (
     "catch",
     "AbstractDispatcher",
     "BaseDispatcher",
@@ -48,7 +48,7 @@ __all__ = [
     "JobDispatcher",
     "ErrorHandlerDispatcher",
     "dispatched",
-]
+)
 
 P = ParamSpec("P")
 
@@ -71,11 +71,11 @@ def _get_default_kwargs() -> Dict[Type[T], T]:
                 bot = ApplicationContext.get()
                 _default_kwargs = {
                     Application: bot,
-                    TGBot: bot.tg_app.bot,
+                    TGBot: bot.telegram.bot,
                     type(bot.executor): bot.executor,
                     FastAPI: bot.web_app if bot_config.webserver.switch else None,
                     Server: bot.web_server if bot_config.webserver.switch else None,
-                    TGApplication: bot.tg_app,
+                    TGApplication: bot.telegram,
                     BotConfig: bot_config,
                 }
             except LookupError:

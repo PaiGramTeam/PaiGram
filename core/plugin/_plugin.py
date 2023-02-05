@@ -148,7 +148,7 @@ class _Plugin(PluginFuncs):
                 for data in datas:
                     data: "JobData"
                     self._jobs.append(
-                        getattr(bot.tg_app.job_queue, data.type)(
+                        getattr(bot.telegram.job_queue, data.type)(
                             callback=wraps(func)(JobExecutor(func, dispatcher=data.dispatcher)),
                             **data.kwargs,
                             **{
@@ -183,12 +183,12 @@ class _Plugin(PluginFuncs):
 
                 for h in self.handlers:
                     if not isinstance(h, TypeHandler):
-                        bot.tg_app.add_handler(h, group)
+                        bot.telegram.add_handler(h, group)
                     else:
-                        bot.tg_app.add_handler(h, -1)
+                        bot.telegram.add_handler(h, -1)
 
                 for h in self.error_handlers:
-                    bot.tg_app.add_error_handler(h.func, h.block)
+                    bot.telegram.add_error_handler(h.func, h.block)
 
                 await self.initialize()
                 self._installed = True
@@ -200,16 +200,16 @@ class _Plugin(PluginFuncs):
 
         with self._lock:
             if self._installed:
-                if group in bot.tg_app.handlers:
-                    del bot.tg_app.handlers[id(self)]
+                if group in bot.telegram.handlers:
+                    del bot.telegram.handlers[id(self)]
 
                 for h in self.handlers:
                     if isinstance(h, TypeHandler):
-                        bot.tg_app.remove_handler(h, -1)
+                        bot.telegram.remove_handler(h, -1)
                 for h in self.error_handlers:
-                    bot.tg_app.remove_error_handler(h.func)
+                    bot.telegram.remove_error_handler(h.func)
 
-                for j in bot.tg_app.job_queue.jobs():
+                for j in bot.telegram.job_queue.jobs():
                     j.schedule_removal()
                 await self.shutdown()
                 self._installed = False

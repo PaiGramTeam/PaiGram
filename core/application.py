@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
-__all__ = ["Application"]
+__all__ = ("Application",)
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -45,7 +45,7 @@ class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManage
 class Application(Singleton, Managers):
     """BOT"""
 
-    _tg_app: Optional[TelegramApplication] = None
+    _telegram: Optional[TelegramApplication] = None
     _web_server: "Server" = None
     _web_server_task: Optional[asyncio.Task] = None
 
@@ -61,11 +61,11 @@ class Application(Singleton, Managers):
             return self._running
 
     @property
-    def tg_app(self) -> TelegramApplication:
+    def telegram(self) -> TelegramApplication:
         """telegram app"""
         with self._lock:
-            if self._tg_app is None:
-                self._tg_app = (
+            if self._telegram is None:
+                self._telegram = (
                     TelegramApplicationBuilder()
                     # .application_class(TgApplication)
                     .rate_limiter(AIORateLimiter())
@@ -83,7 +83,7 @@ class Application(Singleton, Managers):
                     )
                     .build()
                 )
-        return self._tg_app
+        return self._telegram
 
     @property
     def web_app(self) -> FastAPI:
@@ -138,13 +138,13 @@ class Application(Singleton, Managers):
 
         def error_callback(exc: TelegramError) -> None:
             """错误信息回调"""
-            self.tg_app.create_task(self.tg_app.process_error(error=exc, update=None))
+            self.telegram.create_task(self.telegram.process_error(error=exc, update=None))
 
         await self.initialize()
         logger.success("BOT 初始化成功")
         logger.debug("BOT 开始启动")
 
-        await self.tg_app.initialize()
+        await self.telegram.initialize()
 
         if bot_config.webserver.switch:  # 如果使用 web app
             server_config = self.web_server.config
@@ -161,7 +161,7 @@ class Application(Singleton, Managers):
 
         for _ in range(5):  # 连接至 telegram 服务器
             try:
-                await self.tg_app.updater.start_polling(error_callback=error_callback)
+                await self.telegram.updater.start_polling(error_callback=error_callback)
                 break
             except TimedOut:
                 logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试", extra={"markup": True})
@@ -175,7 +175,7 @@ class Application(Singleton, Managers):
                 raise SystemExit from e
 
         await self._on_startup()
-        await self.tg_app.start()
+        await self.telegram.start()
         self._running = True
         logger.success("BOT 启动成功")
 
@@ -212,15 +212,15 @@ class Application(Singleton, Managers):
         logger.info("BOT 正在关闭")
         self._running = False
 
-        if self.tg_app.updater.running:
-            await self.tg_app.updater.stop()
+        if self.telegram.updater.running:
+            await self.telegram.updater.stop()
 
         await self._on_shutdown()
 
-        if self.tg_app.running:
-            await self.tg_app.stop()
+        if self.telegram.running:
+            await self.telegram.stop()
 
-        await self.tg_app.shutdown()
+        await self.telegram.shutdown()
         if self._web_server is not None:
             await self._web_server.shutdown()
 
