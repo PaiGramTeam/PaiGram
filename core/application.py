@@ -95,8 +95,6 @@ class Application(Singleton, Managers):
         """uvicorn server"""
         with self._lock:
             if self._web_server is None:
-                from uvicorn import Server
-
                 self._web_server = Server(
                     uvicorn.Config(
                         app=FastAPI(debug=bot_config.debug),
