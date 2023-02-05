@@ -9,7 +9,6 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.builtins.contexts import ApplicationContext
 from core.dependence.assets import AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
