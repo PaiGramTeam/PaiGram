@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from typing_extensions import Self
 
 from core.base_service import BaseService
-from core.config import BotConfig
+from core.config import ApplicationConfig
 from core.sqlmodel.session import AsyncSession
 
 __all__ = ("MySQL",)
@@ -15,7 +15,7 @@ __all__ = ("MySQL",)
 
 class MySQL(BaseService.Dependence):
     @classmethod
-    def from_config(cls, config: BotConfig) -> Self:
+    def from_config(cls, config: ApplicationConfig) -> Self:
         return cls(**config.mysql.dict())
 
     def __init__(

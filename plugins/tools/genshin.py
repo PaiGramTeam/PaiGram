@@ -3,16 +3,15 @@ from typing import Optional, Tuple, Union
 
 import genshin
 
-from core.config import BotConfig
+from core.config import ApplicationConfig
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin
 from core.services.cookies.services import CookiesService, PublicCookiesService
-from core.services.players.services import PlayersService
 from core.services.players.models import RegionEnum
+from core.services.players.services import PlayersService
 from core.services.users import UserService
 from utils.const import REGION_MAP
-
 
 __all__ = ("GenshinHelper",)
 
@@ -25,7 +24,7 @@ class GenshinHelper(Plugin):
         user: UserService,
         redis: RedisDB,
         player: PlayersService,
-        bot_config: BotConfig,
+        application_config: ApplicationConfig,
     ) -> None:
         self.cookies_service = cookies
         self.public_cookies_service = public_cookies
@@ -33,8 +32,8 @@ class GenshinHelper(Plugin):
         self.redis_db = redis
         self.players_service = player
 
-        if self.redis_db and bot_config.genshin_ttl:
-            self.genshin_cache = genshin.RedisCache(self.redis_db.client, ttl=bot_config.genshin_ttl)
+        if self.redis_db and application_config.genshin_ttl:
+            self.genshin_cache = genshin.RedisCache(self.redis_db.client, ttl=application_config.genshin_ttl)
         else:
             self.genshin_cache = None
 

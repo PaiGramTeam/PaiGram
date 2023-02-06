@@ -1,15 +1,22 @@
 import hashlib
 import os
 import re
+from abc import ABC
 from asyncio import create_subprocess_shell
 from functools import lru_cache
-from inspect import iscoroutinefunction
+from inspect import isabstract as inspect_isabstract, iscoroutinefunction
 from pathlib import Path
-from typing import Awaitable, Callable, Iterator, Match, Pattern, TypeVar, Union
+from typing import Awaitable, Callable, Iterator, Match, Pattern, Type, TypeVar, Union
 
 from typing_extensions import ParamSpec
 
-__all__ = ["sha1", "gen_pkg", "async_re_sub", "execute"]
+__all__ = [
+    "sha1",
+    "gen_pkg",
+    "async_re_sub",
+    "execute",
+    "isabstract",
+]
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -104,3 +111,7 @@ def gen_pkg(path: Path) -> Iterator[str]:
                 yield from gen_pkg(p)
             elif p.suffix == ".py":
                 yield str(p.relative_to(PROJECT_ROOT).with_suffix("")).replace(os.sep, ".")
+
+
+def isabstract(target: Type) -> bool:
+    return any([inspect_isabstract(target), isinstance(target, type) and ABC in target.__bases__])

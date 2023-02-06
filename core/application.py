@@ -43,7 +43,7 @@ class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManage
 
 
 class Application(Singleton, Managers):
-    """BOT"""
+    """Application"""
 
     _telegram: Optional[TelegramApplication] = None
     _web_server: "Server" = None

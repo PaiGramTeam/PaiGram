@@ -1,4 +1,5 @@
 """插件"""
+from abc import ABC
 from dataclasses import asdict
 from datetime import timedelta
 from functools import partial, wraps
@@ -36,6 +37,7 @@ from core.builtins.contexts import ApplicationContext
 from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
 from utils.const import WRAPPER_ASSIGNMENTS
+from utils.helpers import isabstract
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -219,7 +221,7 @@ class _Plugin(PluginFuncs):
         await self.install()
 
 
-class _Conversation(_Plugin, ConversationFuncs):
+class _Conversation(_Plugin, ConversationFuncs, ABC):
     """Conversation类"""
 
     # noinspection SpellCheckingInspection
@@ -240,7 +242,6 @@ class _Conversation(_Plugin, ConversationFuncs):
 
     @property
     def handlers(self) -> List[HandlerType]:
-
         with self._lock:
             if self._handlers is None:
                 from core.builtins.executor import HandlerExecutor
@@ -292,7 +293,7 @@ class _Conversation(_Plugin, ConversationFuncs):
         return self._handlers
 
 
-class Plugin(_Plugin):
+class Plugin(_Plugin, ABC):
     """插件"""
 
     Conversation = _Conversation
@@ -304,6 +305,6 @@ PluginType = TypeVar("PluginType", bound=_Plugin)
 def get_all_plugins() -> Iterable[Type[PluginType]]:
     """获取所有 Plugin 的子类"""
     return filter(
-        lambda x: x.__name__[0] != "_" and x not in [Plugin, _Plugin, _Conversation],
+        lambda x: x.__name__[0] != "_" and not isabstract(x),
         chain(Plugin.__subclasses__(), _Conversation.__subclasses__()),
     )

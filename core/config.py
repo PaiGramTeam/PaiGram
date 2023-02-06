@@ -3,13 +3,13 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import dotenv
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import AnyUrl, Field
 
 from utils.const import PROJECT_ROOT
 from utils.models.base import Settings
 from utils.typedefs import NaturalNumber
 
-__all__ = ["BotConfig", "config", "JoinGroups"]
+__all__ = ["ApplicationConfig", "config", "JoinGroups"]
 
 dotenv.load_dotenv()
 
@@ -102,7 +102,7 @@ class NoticeConfig(Settings):
         env_prefix = "notice_"
 
 
-class BotConfig(Settings):
+class ApplicationConfig(Settings):
     debug: bool = False
     """debug 开关"""
     retry: int = 5
@@ -149,5 +149,5 @@ class BotConfig(Settings):
     notice: NoticeConfig = NoticeConfig()
 
 
-BotConfig.update_forward_refs()
-config = BotConfig()
+ApplicationConfig.update_forward_refs()
+config = ApplicationConfig()
