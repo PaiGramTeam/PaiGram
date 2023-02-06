@@ -60,7 +60,7 @@ class GenshinHelper(Plugin):
             return
         cookies = None
         if need_cookie:
-            cookie_model = await self.cookies_service.get(player.user_id, player.region)
+            cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
             if cookie_model is None:
                 return
             cookies = cookie_model.data

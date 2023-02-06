@@ -93,8 +93,8 @@ class DailyNotePlugin(Plugin):
 
     # noinspection SpellCheckingInspection
     @restricts(30)
-    @handler.command(command="dailynote", block=False)
-    @handler.message(filters=filters.Regex("^当前状态(.*)"), block=False)
+    @handler.command("dailynote", block=False)
+    @handler.message(filters.Regex("^当前状态(.*)"), block=False)
     async def command_start(self, user: User, message: Message, bot: Bot) -> Optional[int]:
         logger.info("用户 %s[%s] 每日便签命令请求", user.full_name, user.id)
 

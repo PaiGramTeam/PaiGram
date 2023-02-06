@@ -1,9 +1,11 @@
-from os import sep
+from typing import Dict
 
+from aiofiles import open as async_open
 from telegram import Message, User
 from telegram.ext import CallbackContext, filters
 
 from core.plugin import Plugin, handler
+from utils.const import RESOURCE_DIR
 from utils.decorators.restricts import restricts
 from utils.log import logger
 
@@ -19,15 +21,16 @@ __all__ = ("HilichurlsPlugin",)
 class HilichurlsPlugin(Plugin):
     """丘丘语字典."""
 
-    def __init__(self):
+    hilichurls_dictionary: Dict[str, str]
+
+    async def initialize(self) -> None:
         """加载数据文件.数据整理自 https://wiki.biligame.com/ys By @zhxycn."""
-        with open(f"resources{sep}json{sep}hilichurls_dictionary.json", "r", encoding="utf8") as f:
-            self.hilichurls_dictionary = jsonlib.load(f)
+        async with async_open(RESOURCE_DIR / "json/hilichurls_dictionary.json", encoding="utf-8") as file:
+            self.hilichurls_dictionary = jsonlib.loads(await file.read())
 
     @restricts()
     @handler.command(command="hilichurls", block=False)
     async def command_start(self, user: User, message: Message, context: CallbackContext) -> None:
-
         args = self.get_args(context)
         if len(args) >= 1:
             msg = args[0]
