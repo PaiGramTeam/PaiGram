@@ -11,12 +11,13 @@ from enkanetwork import (
     Equipments,
     EquipmentsStats,
     EquipmentsType,
-    Forbidden,
     HTTPException,
     Stats,
     StatsPercentage,
-    UIDNotFounded,
     VaildateUIDError,
+    EnkaServerMaintanance,
+    EnkaServerUnknown,
+    EnkaServerRateLimit,
 )
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -50,7 +51,7 @@ class PlayerCards(Plugin, BasePlugin):
         self, user_service: UserService = None, template_service: TemplateService = None, redis: RedisDB = None
     ):
         self.user_service = user_service
-        self.client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent, cache=False)
+        self.client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent, cache=False)
         self.cache = RedisCache(redis.client, key="plugin:player_cards:enka_network")
         self.player_cards_file = PlayerCardsFile()
         self.template_service = template_service
@@ -61,22 +62,26 @@ class PlayerCards(Plugin, BasePlugin):
             data = await self.cache.get(uid)
             if data is not None:
                 return EnkaNetworkResponse.parse_obj(data)
-            user = await self.client.http.fetch_user(uid)
+            user = await self.client.http.fetch_user_by_uid(uid)
             data = user["content"].decode("utf-8", "surrogatepass")  # type: ignore
             data = ujson.loads(data)
             data = await self.player_cards_file.merge_info(uid, data)
             await self.cache.set(uid, data)
             return EnkaNetworkResponse.parse_obj(data)
-        except EnkaServerError:
-            error = "Enka.Network 服务请求错误，请稍后重试"
-        except Forbidden:
-            error = "Enka.Network 服务请求被拒绝，请稍后重试"
         except AioHttpTimeoutException:
             error = "Enka.Network 服务请求超时，请稍后重试"
+        except EnkaServerRateLimit:
+            error = "Enka.Network 已对此API进行速率限制，请稍后重试"
+        except EnkaServerMaintanance:
+            error = "Enka.Network 正在维护，请等待5-8小时或1天"
+        except EnkaServerError:
+            error = "Enka.Network 服务请求错误，请稍后重试"
+        except EnkaServerUnknown:
+            error = "Enka.Network 服务瞬间爆炸，请稍后重试"
+        except (VaildateUIDError, VaildateUIDError):
+            error = "UID 未找到，可能为服务器抽风，请稍后重试"
         except HTTPException:
             error = "Enka.Network HTTP 服务请求错误，请稍后重试"
-        except (UIDNotFounded, VaildateUIDError):
-            error = "UID 未找到，可能为服务器抽风，请稍后重试"
         old_data = await self.player_cards_file.load_history_info(uid)
         if old_data is not None:
             logger.warning("UID %s | 角色卡片使用历史数据 | %s", uid, error)
