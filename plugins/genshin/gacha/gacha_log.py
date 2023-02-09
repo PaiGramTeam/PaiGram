@@ -216,7 +216,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         return ConversationHandler.END
 
     @conversation.state(state=INPUT_URL)
-    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
+    @handler.message(filters=~filters.COMMAND, block=False)
     @restricts()
     @error_callable
     async def import_data_from_message(self, update: Update, _: CallbackContext) -> int:
@@ -225,6 +225,9 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         if message.document:
             await self.import_from_file(user, message)
             return ConversationHandler.END
+        elif not message.text:
+            await message.reply_text("请发送正确的抽卡记录链接")
+            return INPUT_URL
         authkey = from_url_get_authkey(message.text)
         reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后")
         await message.reply_chat_action(ChatAction.TYPING)
