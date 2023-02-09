@@ -42,7 +42,6 @@ class SignJob(Plugin):
             if sign_db.status in [
                 SignStatusEnum.INVALID_COOKIES,
                 SignStatusEnum.FORBIDDEN,
-                SignStatusEnum.NEED_CHALLENGE,
             ]:
                 continue
             if context.job.name == "SignJob":
@@ -77,8 +76,7 @@ class SignJob(Plugin):
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
             except NeedChallenge:
                 text = "签到失败，触发验证码风控"
-                if context.job.name == "SignAgainJob":
-                    sign_db.status = SignStatusEnum.NEED_CHALLENGE
+                sign_db.status = SignStatusEnum.NEED_CHALLENGE
             except Exception as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
                 logger.exception(exc)
