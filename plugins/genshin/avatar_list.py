@@ -4,7 +4,7 @@ from typing import Iterable, List, Optional, Sequence
 
 from aiohttp import ClientConnectorError
 from arkowrapper import ArkoWrapper
-from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, VaildateUIDError, UIDNotFounded, HTTPException
+from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, VaildateUIDError, HTTPException, EnkaPlayerNotFound
 from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
@@ -65,7 +65,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
         self.cookies_service = cookies_service
         self.assets_service = assets_service
         self.template_service = template_service
-        self.enka_client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
+        self.enka_client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent)
         self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60 * 3))
         self.enka_assets = EnkaAssets(lang="chs")
 
@@ -184,7 +184,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             else:
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.avatar.id)]
             return name_card, avatar, nickname, rarity
-        except (VaildateUIDError, UIDNotFounded, HTTPException) as exc:
+        except (VaildateUIDError, EnkaPlayerNotFound, HTTPException) as exc:
             logger.warning("EnkaNetwork 请求失败: %s", str(exc))
         except (AioHttpTimeoutException, ClientConnectorError) as exc:
             logger.warning("EnkaNetwork 请求超时: %s", str(exc))

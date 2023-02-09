@@ -26,11 +26,12 @@ class SignIn:
     QRCODE_GET_API = "https://hk4e-sdk.mihoyo.com/hk4e_cn/combo/panda/qrcode/query"
     GAME_TOKEN_API = "https://api-takumi.mihoyo.com/auth/api/getCookieAccountInfoByGameToken"
     GAME_LTOKEN_API = "https://passport-api.mihoyo.com/account/ma-cn-session/app/getTokenByGameToken"
+    COOKIES_GET_API = "https://passport-api.mihoyo.com/account/auth/api/getCookieAccountInfoBySToken"
 
     def __init__(self, uid: int = 0, cookie: Dict = None):
         self.client = AsyncClient()
         self.uid = uid
-        self.cookie = cookie if cookie is not None else {}
+        self.cookie = cookie.copy() if cookie is not None else {}
         self.parse_uid()
         self.ticket = None
         self.device_id = None
@@ -136,6 +137,29 @@ class SignIn:
             res_data = res_json.get("data", {})
             if res_data.get("stat", "") == "Confirmed":
                 return await self.set_cookie(res_json.get("data", {}))
+
+    async def get_cookie_account_info_by_stoken(self, stoken, uid):
+        headers = {
+            "x-rpc-app_version": "2.11.1",
+            "User-Agent": (
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+                "AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.11.1"
+            ),
+            "x-rpc-client_type": "5",
+            "Referer": "https://webstatic.mihoyo.com/",
+            "Origin": "https://webstatic.mihoyo.com",
+        }
+        params = {
+            "stoken": stoken,
+            "uid": uid,
+        }
+        res = await self.client.get(
+            self.COOKIES_GET_API,
+            headers=headers,
+            params=params,
+        )
+        res_json = res.json()
+        return res_json.get("data", {}).get("cookie_token", "")
 
     @staticmethod
     def generate_qrcode(url: str) -> bytes:

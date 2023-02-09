@@ -42,7 +42,6 @@ class SignJob(Plugin):
             if sign_db.status in [
                 SignStatusEnum.INVALID_COOKIES,
                 SignStatusEnum.FORBIDDEN,
-                SignStatusEnum.NEED_CHALLENGE,
             ]:
                 continue
             if context.job.name == "SignJob":
@@ -72,11 +71,11 @@ class SignJob(Plugin):
                 text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
             except ClientConnectorError as exc:
-                logger.warning(f"aiohttp 请求错误 {repr(exc)}")
+                logger.warning("aiohttp 请求错误 %s", str(exc))
                 text = "签到失败了呜呜呜 ~ 链接服务器发生错误 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
             except NeedChallenge:
-                text = "签到失败，触发验证码风控，自动签到自动关闭"
+                text = "签到失败，触发验证码风控"
                 sign_db.status = SignStatusEnum.NEED_CHALLENGE
             except Exception as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
@@ -87,12 +86,10 @@ class SignJob(Plugin):
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
             except BadRequest as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
-                logger.exception(exc)
+                logger.error("执行自动签到时发生错误 message[%s] user_id[%s]", exc.message, user_id)
                 sign_db.status = SignStatusEnum.BAD_REQUEST
             except Forbidden as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
-                logger.exception(exc)
+                logger.error("执行自动签到时发生错误 message[%s] user_id[%s]", exc.message, user_id)
                 sign_db.status = SignStatusEnum.FORBIDDEN
             except Exception as exc:
                 logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
