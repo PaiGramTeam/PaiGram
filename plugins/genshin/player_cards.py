@@ -18,6 +18,7 @@ from enkanetwork import (
     EnkaServerMaintanance,
     EnkaServerUnknown,
     EnkaServerRateLimit,
+    EnkaPlayerNotFound,
 )
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -78,8 +79,10 @@ class PlayerCards(Plugin, BasePlugin):
             error = "Enka.Network 服务请求错误，请稍后重试"
         except EnkaServerUnknown:
             error = "Enka.Network 服务瞬间爆炸，请稍后重试"
-        except (VaildateUIDError, VaildateUIDError):
+        except EnkaPlayerNotFound:
             error = "UID 未找到，可能为服务器抽风，请稍后重试"
+        except VaildateUIDError:
+            error = "未找到玩家，请检查您的UID/用户名"
         except HTTPException:
             error = "Enka.Network HTTP 服务请求错误，请稍后重试"
         old_data = await self.player_cards_file.load_history_info(uid)
