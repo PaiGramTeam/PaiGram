@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 httpx= "^0.23.3"
-ujson = "^5.6.0"
+ujson = "^5.7.0"
 genshin = { git = "https://github.com/thesadru/genshin.py" }
 Jinja2 = "^3.1.2"
 python-telegram-bot = { version = "^20.0", extras = ["ext", "rate-limiter"] }
