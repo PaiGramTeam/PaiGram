@@ -5,12 +5,12 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
 SHELL ["/bin/bash", "-c"]
 WORKDIR /app
 RUN echo "deb http://ftp.us.debian.org/debian buster main non-free" >> /etc/apt/sources.list.d/fonts.list \
-    && apt update                                     \
+    && apt update                                  \
     # clone
-    && apt install git wget curl -y                           \
+    && apt install git wget curl -y                \
     && git clone -b main https://github.com/luoshuijs/TGPaimonBot.git /app \
     # install dependencies \
-    && pip install virtualenv poetry               \
+    && pip install virtualenv==20.19.0 poetry==1.3.2  \
     && python3 -m virtualenv venv/                 \
     && . venv/bin/activate                         \
     && poetry config virtualenvs.create false      \

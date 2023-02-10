@@ -83,6 +83,11 @@ docker-compose version
 
 ### 2. 克隆项目
 
+```bash
+git clone https://github.com/luoshuijs/TGPaimonBot.git
+cd TGPaimonBot
+```
+
 ### 3. 修改配置
 
 ```bash
