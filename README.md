@@ -66,6 +66,53 @@ poetry run alembic upgrade head
 poetry run python ./run.py
 ```
 
+## 使用 Docker Compose
+
+### 1. 安装 `docker` 和 `docker-compose`
+
+```bash
+curl -fsSL https://get.docker.com | bash -s docker
+```
+
+```bash
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+docker-compose version
+```
+
+### 2. 克隆项目
+
+### 3. 修改配置
+
+```bash
+cp .env.example .env
+cp docker-compose.gen.yml docker-compose.yml
+```
+
+```dotenv
+# MySQL
+DB_HOST=mysql
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD="root"
+DB_DATABASE=paimon
+
+# Redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_PASSWORD=""
+````
+
+以及 bot token 等参数。
+
+### 4. 运行
+
+```bash
+docker-compose up -d
+```
+
 ## 其他说明
 
 这个项目目前正在扩展，加入更多原神相关娱乐和信息查询功能，敬请期待。
