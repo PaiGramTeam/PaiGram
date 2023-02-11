@@ -13,7 +13,17 @@ from core.services.players.services import PlayersService
 from core.services.users import UserService
 from utils.const import REGION_MAP
 
-__all__ = ("GenshinHelper",)
+__all__ = ("GenshinHelper", "UserNotFoundError", "CookiesNotFoundError")
+
+
+class UserNotFoundError(Exception):
+    def __init__(self, user_id):
+        super().__init__(f"User not found, user_id: {user_id}")
+
+
+class CookiesNotFoundError(Exception):
+    def __init__(self, user_id):
+        super().__init__(f"{user_id} cookies not found")
 
 
 class GenshinHelper(Plugin):
@@ -57,12 +67,12 @@ class GenshinHelper(Plugin):
         """通过 user_id 和 region 获取私有的 `genshin.Client`"""
         player = await self.players_service.get_player(user_id, region)
         if player is None:
-            return
+            raise UserNotFoundError(user_id)
         cookies = None
         if need_cookie:
             cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
             if cookie_model is None:
-                return
+                raise CookiesNotFoundError(user_id)
             cookies = cookie_model.data
 
         uid = player.player_id

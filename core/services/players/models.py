@@ -1,7 +1,7 @@
 import enum
 from typing import Optional
 
-from sqlmodel import SQLModel, Field, Enum, Column, Boolean
+from sqlmodel import Boolean, Column, Enum, Field, SQLModel
 
 __all__ = ("RegionEnum", "Player", "PlayersDataBase")
 

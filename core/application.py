@@ -20,7 +20,7 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.builtins.contexts import application_context
-from core.config import config as bot_config
+from core.config import config as application_config
 from core.manager import ComponentManager, DependenceManager, PluginManager, ServiceManager
 from modules.override.telegram import HTTPXRequest
 from utils.const import WRAPPER_ASSIGNMENTS
@@ -70,15 +70,15 @@ class Application(Singleton, Managers):
                     # .application_class(TgApplication)
                     .rate_limiter(AIORateLimiter())
                     .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
-                    .token(bot_config.bot_token)
+                    .token(application_config.bot_token)
                     .request(
                         HTTPXRequest(
                             256,
-                            proxy_url=bot_config.proxy_url,
-                            read_timeout=bot_config.read_timeout,
-                            write_timeout=bot_config.write_timeout,
-                            connect_timeout=bot_config.connect_timeout,
-                            pool_timeout=bot_config.pool_timeout,
+                            proxy_url=application_config.proxy_url,
+                            read_timeout=application_config.read_timeout,
+                            write_timeout=application_config.write_timeout,
+                            connect_timeout=application_config.connect_timeout,
+                            pool_timeout=application_config.pool_timeout,
                         )
                     )
                     .build()
@@ -97,9 +97,9 @@ class Application(Singleton, Managers):
             if self._web_server is None:
                 self._web_server = Server(
                     uvicorn.Config(
-                        app=FastAPI(debug=bot_config.debug),
-                        port=bot_config.webserver.port,
-                        host=bot_config.webserver.host,
+                        app=FastAPI(debug=application_config.debug),
+                        port=application_config.webserver.port,
+                        host=application_config.webserver.host,
                         log_config=None,
                     )
                 )
@@ -144,7 +144,7 @@ class Application(Singleton, Managers):
 
         await self.telegram.initialize()
 
-        if bot_config.webserver.switch:  # 如果使用 web app
+        if application_config.webserver.switch:  # 如果使用 web app
             server_config = self.web_server.config
             server_config.setup_event_loop()
             if not server_config.loaded:
@@ -220,7 +220,10 @@ class Application(Singleton, Managers):
 
         await self.telegram.shutdown()
         if self._web_server is not None:
-            await self._web_server.shutdown()
+            try:
+                await self._web_server.shutdown()
+            except AttributeError:
+                pass
 
         await self.shutdown()
         logger.success("BOT 关闭成功")
@@ -244,7 +247,7 @@ class Application(Singleton, Managers):
             finally:
                 loop.run_until_complete(self.stop())
 
-                if bot_config.reload:
+                if application_config.reload:
                     raise SystemExit from None
 
     # decorators
