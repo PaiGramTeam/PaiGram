@@ -5,12 +5,12 @@ from itertools import chain
 from logging.config import fileConfig
 from typing import Iterator
 
+from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel
 
-from alembic import context
 from utils.const import CORE_DIR, PLUGIN_DIR, PROJECT_ROOT
 from utils.log import logger
 
@@ -39,7 +39,7 @@ def import_models():
         try:
             import_module(pkg)  # 导入 models
         except Exception as e:  # pylint: disable=W0703
-            logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]')
+            logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True})
 
 
 # register our models for alembic to auto-generate migrations
