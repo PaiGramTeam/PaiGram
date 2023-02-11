@@ -10,7 +10,7 @@
     <div class="flex space-x-3 items-center">
       <div class="italic">Lv.{{ weapon.level }}</div>
       <div
-        class="rounded px-2 text-base {% weapon.refinement == 5 %} bg-red-600 {% else %} bg-gray-600 {% endif %}"
+        class="rounded px-2 text-base {% if weapon.refinement == 5 %} bg-red-600 {% else %} bg-gray-600 {% endif %}"
       >
         精{{ weapon.refinement }}
       </div>
