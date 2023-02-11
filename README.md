@@ -88,7 +88,7 @@ git clone https://github.com/luoshuijs/TGPaimonBot.git
 cd TGPaimonBot
 ```
 
-### 3. 修改配置
+### 3. 修改配置文件
 
 ```bash
 cp .env.example .env
