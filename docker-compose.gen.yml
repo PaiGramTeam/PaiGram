@@ -1,0 +1,37 @@
+version: '3.1'
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - ./redis_data:/data
+    logging:
+      driver: none
+
+  mysql:
+    image: ubuntu/mysql:8.0-22.04_beta
+    restart: always
+    volumes:
+      - ./db_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=root
+      - MYSQL_DATABASE=paimon
+    logging:
+      driver: none
+
+  paimon:
+    image: rtpaimon/tgpaimonbot:latest
+    restart: always
+    environment:
+      - WAIT_HOSTS=mysql:3306, redis:6379
+    depends_on:
+      - redis
+      - mysql
+    volumes:
+      - ./.env:/app/.env
+      - ./cache:/app/cache
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./report:/app/report
