@@ -22,7 +22,7 @@ services:
       driver: none
 
   paimon:
-    image: rtpaimon/tgpaimonbot:latest
+    image: rtpaimon/tgpaimonbot:v3
     restart: always
     environment:
       - WAIT_HOSTS=mysql:3306, redis:6379
