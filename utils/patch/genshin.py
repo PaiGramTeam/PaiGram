@@ -1,5 +1,6 @@
 import asyncio
 import typing
+import warnings
 
 import aiohttp.typedefs
 import genshin  # pylint: disable=W0406
@@ -10,7 +11,6 @@ from genshin.utility import generate_dynamic_secret, ds
 
 from modules.apihelper.utility.helpers import get_ds, get_ua, get_device_id, hex_digest
 from utils.patch.methods import patch, patchable
-from utils.log import logger
 
 DEVICE_ID = get_device_id()
 UPDATE_CHARACTERS = False
@@ -66,7 +66,7 @@ class CalculatorClient:
                 await update_task
                 UPDATE_CHARACTERS = True
             except Exception as e:
-                logger.warning(f"Failed to update characters: {e!r}")
+                warnings.warn(f"Failed to update characters: {e!r}")
 
         return data
 

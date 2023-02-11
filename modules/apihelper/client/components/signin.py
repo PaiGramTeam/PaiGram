@@ -91,7 +91,7 @@ class SignIn:
 
     async def create_login_data(self) -> str:
         self.device_id = get_device_id("".join(random.choices((ascii_letters + digits), k=64)))
-        data = {"app_id": "4", "device": self.device_id}
+        data = {"app_id": "8", "device": self.device_id}
         res = await self.client.post(self.QRCODE_GEN_API, json=data)
         res_json = res.json()
         url = res_json.get("data", {}).get("url", "")
@@ -124,7 +124,7 @@ class SignIn:
         return True
 
     async def check_login(self):
-        data = {"app_id": "4", "ticket": self.ticket, "device": self.device_id}
+        data = {"app_id": "8", "ticket": self.ticket, "device": self.device_id}
         for _ in range(20):
             await asyncio.sleep(10)
             res = await self.client.post(self.QRCODE_GET_API, json=data)
