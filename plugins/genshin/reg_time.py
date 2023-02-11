@@ -1,6 +1,6 @@
 from datetime import datetime
 
-import ujson
+
 from genshin import Client
 from genshin.client.routes import InternationalRoute  # noqa F401
 from genshin.utility import recognize_genshin_server, get_ds_headers
@@ -22,6 +22,12 @@ from utils.decorators.restricts import restricts
 from utils.genshin import fetch_hk4e_token_by_cookie, recognize_genshin_game_biz
 from utils.helpers import get_genshin_client
 from utils.log import logger
+
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
 
 REG_TIME_URL = InternationalRoute(
     overseas="https://sg-hk4e-api.hoyoverse.com/event/e20220928anniversary/game_data",
@@ -60,7 +66,7 @@ class RegTimePlugin(Plugin, BasePlugin):
             lang="zh-cn",
         )
         data = await client.cookie_manager.request(url, method="GET", params=params, headers=headers)
-        if time := ujson.loads(data.get("data", "{}")).get("1", 0):
+        if time := jsonlib.loads(data.get("data", "{}")).get("1", 0):
             return datetime.fromtimestamp(time).strftime("%Y-%m-%d %H:%M:%S")
         raise RegTimePlugin.NotFoundRegTimeError
 
