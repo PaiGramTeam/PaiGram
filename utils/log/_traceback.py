@@ -114,7 +114,6 @@ class Traceback(BaseTraceback):
     locals_max_depth: Optional[int]
 
     def __init__(self, *args, locals_max_depth: Optional[int] = None, **kwargs):
-
         kwargs.update({"show_locals": True})
         super(Traceback, self).__init__(*args, **kwargs)
         self.locals_max_depth = locals_max_depth
@@ -291,7 +290,6 @@ class Traceback(BaseTraceback):
 
         excluded = False
         for frame_index, frame in enumerate(stack.frames):
-
             if exclude_frames and frame_index in exclude_frames:
                 excluded = True
                 continue

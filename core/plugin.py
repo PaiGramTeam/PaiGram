@@ -62,7 +62,6 @@ class _Plugin:
         return result
 
     def _new_chat_members_handler_funcs(self) -> List[Tuple[int, Callable]]:
-
         result = []
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
