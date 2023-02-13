@@ -1,8 +1,8 @@
-version: '3.1'
+version: "3.1"
 
 services:
   redis:
-    image: redis:7-alpine
+    image: docker.io/redis:7-alpine
     restart: always
     volumes:
       - ./redis_data:/data
@@ -10,7 +10,7 @@ services:
       driver: none
 
   mysql:
-    image: ubuntu/mysql:8.0-22.04_beta
+    image: docker.io/ubuntu/mysql:8.0-22.04_beta
     restart: always
     volumes:
       - ./db_data:/var/lib/mysql
@@ -22,7 +22,7 @@ services:
       driver: none
 
   paimon:
-    image: rtpaimon/tgpaimonbot:v3
+    image: docker.io/rtpaimon/tgpaimonbot:v3
     restart: always
     environment:
       - WAIT_HOSTS=mysql:3306, redis:6379
