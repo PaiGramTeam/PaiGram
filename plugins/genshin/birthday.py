@@ -63,7 +63,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
             + "_"
             + rm_starting_str(datetime.now().strftime("%d"), "0")
         )
-        return self.birthday_list.get(key, [])
+        return (self.birthday_list.get(key, [])).copy()
 
     @handler(CommandHandler, command="birthday", block=False)
     @restricts()
