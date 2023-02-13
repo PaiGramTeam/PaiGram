@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import List
 
 from genshin import Client, GenshinException
 from genshin.client.routes import Route
@@ -56,7 +57,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
         self.user_service = user_service
         self.cookie_service = cookie_service
 
-    def get_today_birthday(self):
+    def get_today_birthday(self) -> List[str]:
         key = (
             rm_starting_str(datetime.now().strftime("%m"), "0")
             + "_"
@@ -164,14 +165,17 @@ class BirthdayPlugin(Plugin, BasePlugin):
                 text = "此功能当前只支持国服账号哦~"
             else:
                 await fetch_hk4e_token_by_cookie(client)
-                for name in today_list:
+                for name in today_list.copy():
                     if role_id := roleToId(name):
                         try:
                             await self.get_card(client, role_id)
                         except GenshinException as e:
-                            if e.retcode not in {-512008, -512009}:  # 未过生日、已领取过
-                                raise e
-                text = f"成功领取了 {'、'.join(today_list)} 的生日画片~"
+                            if e.retcode in {-512008, -512009}:  # 未过生日、已领取过
+                                today_list.remove(name)
+                if today_list:
+                    text = f"成功领取了 {'、'.join(today_list)} 的生日画片~"
+                else:
+                    text = "没有领取到生日画片哦 ~ 可能是已经领取过了"
             reply_message = await message.reply_text(text)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
