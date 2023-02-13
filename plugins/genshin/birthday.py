@@ -145,7 +145,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
         await client.cookie_manager.request(url, method="POST", params=params, json=json)
 
     @handler(CommandHandler, command="birthday_card", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^领取生日画片$"), block=False)
+    @handler(MessageHandler, filters=filters.Regex("^领取角色生日画片$"), block=False)
     @restricts()
     @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
