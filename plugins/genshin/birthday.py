@@ -4,7 +4,7 @@ from typing import List
 
 from genshin import Client, GenshinException
 from genshin.client.routes import Route
-from genshin.utility import recognize_genshin_server, get_ds_headers
+from genshin.utility import recognize_genshin_server
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import CommandHandler, CallbackContext, MessageHandler
@@ -148,7 +148,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
     @handler(MessageHandler, filters=filters.Regex("^领取角色生日画片$"), block=False)
     @restricts()
     @error_callable
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_birthday_card_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 领取生日画片命令请求", user.full_name, user.id)
