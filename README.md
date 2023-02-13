@@ -8,7 +8,6 @@
 <a href="https://www.codacy.com/gh/luoshuijs/TGPaimonBot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=luoshuijs/TGPaimonBot&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/810a80be4cbe4b7284ab7634941423c4"/></a>
 </div>
 
-
 <p>
 <img src="https://user-images.githubusercontent.com/70872201/190447002-119a8819-b111-4a96-a0b3-701c5e256137.png" align="right" width="100px">
 <h2 align="left">简介</h2>
@@ -30,7 +29,7 @@
 ### 1. 安装 `poetry`
 
 ```bash
-pip install --upgrade poetry 
+pip install --upgrade poetry
 ```
 
 ### 2. 安装依赖
@@ -54,6 +53,8 @@ poetry install --extras pyro
 cp .env.example .env
 ```
 
+详细配置说明见 [Wiki/Env Settings](https://github.com/luoshuijs/TGPaimonBot/wiki/Env-Settings)
+
 ### 4. 初始化数据库
 
 ```bash
@@ -66,57 +67,13 @@ poetry run alembic upgrade head
 poetry run python ./run.py
 ```
 
-## 使用 Docker Compose
+## 使用 Docker 部署
 
-### 1. 安装 `docker` 和 `docker-compose`
+详见 [Wiki/Deploy with Docker](https://github.com/luoshuijs/TGPaimonBot/wiki/Deploy-with-Docker)
 
-```bash
-curl -fsSL https://get.docker.com | bash -s docker
-```
+## 使用 Podman 部署
 
-```bash
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-docker-compose version
-```
-
-### 2. 克隆项目
-
-```bash
-git clone https://github.com/luoshuijs/TGPaimonBot.git
-cd TGPaimonBot
-```
-
-### 3. 修改配置文件
-
-```bash
-cp .env.example .env
-cp docker-compose.gen.yml docker-compose.yml
-```
-
-```dotenv
-# MySQL
-DB_HOST=mysql
-DB_PORT=3306
-DB_USERNAME=root
-DB_PASSWORD="root"
-DB_DATABASE=paimon
-
-# Redis
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_DB=0
-REDIS_PASSWORD=""
-````
-
-以及 bot token 等参数。
-
-### 4. 运行
-
-```bash
-docker-compose up -d
-```
+详见 [Wiki/Deploy with Podman](https://github.com/luoshuijs/TGPaimonBot/wiki/Deploy-with-Podman)
 
 ## 其他说明
 
@@ -124,11 +81,11 @@ docker-compose up -d
 
 ## Thanks
 
-|                                Nickname                                 | Introduce        |
-|:-----------------------------------------------------------------------:|------------------|
-|          [原神抽卡全机制总结](https://www.bilibili.com/read/cv10468091)          | 本项目抽卡模拟器使用的逻辑    |
-| [西风驿站 猫冬](https://bbs.mihoyo.com/ys/accountCenter/postList?id=74019947) | 本项目攻略图图源         |
-|           [Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)           | 本项使用的抽卡图片和前端资源来源 |
-|       [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw)        | 本项目参考的爬虫代码       |
-|                  [Enka.Network](https://enka.network)                   | 角色卡片的数据来源        |
-|      [miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin)       | 角色卡片的参考项目        |
+|                                   Nickname                                    | Introduce                        |
+| :---------------------------------------------------------------------------: | -------------------------------- |
+|        [原神抽卡全机制总结](https://www.bilibili.com/read/cv10468091)         | 本项目抽卡模拟器使用的逻辑       |
+| [西风驿站 猫冬](https://bbs.mihoyo.com/ys/accountCenter/postList?id=74019947) | 本项目攻略图图源                 |
+|              [Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)              | 本项使用的抽卡图片和前端资源来源 |
+|          [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw)           | 本项目参考的爬虫代码             |
+|                     [Enka.Network](https://enka.network)                      | 角色卡片的数据来源               |
+|         [miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin)          | 角色卡片的参考项目               |
