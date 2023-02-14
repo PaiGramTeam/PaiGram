@@ -25,7 +25,7 @@ aiofiles = "^23.1.0"
 python-dotenv = "^0.21.0"
 alembic = "^1.9.0"
 black = "^23.1.0"
-rich = "^13.0.0"
+rich = "^13.3.1"
 enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
 TgCrypto = { version = "^1.2.5", optional = true }
 Pyrogram = { version = "^2.0.70", optional = true }
