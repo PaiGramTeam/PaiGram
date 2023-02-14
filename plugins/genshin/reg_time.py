@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-from genshin import Client
+from genshin import Client, GenshinException
 from genshin.client.routes import InternationalRoute  # noqa F401
 from genshin.utility import recognize_genshin_server, get_ds_headers
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -107,6 +107,11 @@ class RegTimePlugin(Plugin, BasePlugin):
                     parse_mode=ParseMode.HTML,
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
+        except GenshinException as exc:
+            if exc.retcode == -501101:
+                await message.reply_text("当前角色冒险等阶未达到10级，暂时无法获取信息")
+            else:
+                raise exc
         except RegTimePlugin.NotFoundRegTimeError:
             await message.reply_text("未找到你的原神账号 [{game_uid}] 注册时间，仅限 2022 年 10 月 之前注册的账号")
 
