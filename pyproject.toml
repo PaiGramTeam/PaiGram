@@ -29,7 +29,7 @@ rich = "^13.0.0"
 enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
 TgCrypto = { version = "^1.2.5", optional = true }
 Pyrogram = { version = "^2.0.70", optional = true }
-pytest = { version = "^7.2.0", optional = true }
+pytest = { version = "^7.2.1", optional = true }
 pytest-asyncio = { version = "^0.20.3", optional = true }
 flaky = { version = "^3.7.0", optional = true }
 lxml = "^4.9.2"
