@@ -153,5 +153,10 @@ class Ledger(Plugin, BasePlugin):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
+        except GenshinException as exc:
+            if exc.retcode == -120:
+                await message.reply_text("当前角色冒险等阶不足，暂时无法获取信息")
+                return
+            raise exc
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await render_result.reply_photo(message, filename=f"{client.uid}.png", allow_sending_without_reply=True)
