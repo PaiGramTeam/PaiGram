@@ -237,14 +237,14 @@ zookeeper = ["kazoo"]
 
 [[package]]
 name = "arko-wrapper"
-version = "0.2.5"
+version = "0.2.7"
 description = "给你的Python迭代器加上魔法"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "arko-wrapper-0.2.5.tar.gz", hash = "sha256:8bad00e8c5d5107cebd773a6a5c0f697695cc86784d32a0d8d7fa6cc0726dbe5"},
-    {file = "arko_wrapper-0.2.5-py3-none-any.whl", hash = "sha256:54ed01efd29bee7ec5481a4796ae025b2336f367f7d230500f0aee9ddeb9ff39"},
+    {file = "arko-wrapper-0.2.7.tar.gz", hash = "sha256:828198fd29402c6b3f43e597efccb60f06c1ddf2ba9d586a4f7910bbdb716f71"},
+    {file = "arko_wrapper-0.2.7-py3-none-any.whl", hash = "sha256:4ed07b2070cbd1730e9c6d42951a7722da4bab58ccd181b7702a440d378ffdea"},
 ]
 
 [package.dependencies]
@@ -2905,4 +2905,4 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "bdf94b1b997e2d9b7f6c344359460ffd6e0bcc50b2654d113f8f9a7e27270fe5"
+content-hash = "daca761919e277681bf49757e30369afcadf93e57ca0ccdb371b8919b8771ef5"
