@@ -8,7 +8,7 @@ RUN echo "deb http://ftp.us.debian.org/debian buster main non-free" >> /etc/apt/
     && apt update                                  \
     # clone
     && apt install git wget curl -y                \
-    && git clone -b main https://github.com/luoshuijs/TGPaimonBot.git /app \
+    && git clone -b main https://github.com/PaiGramTeam/PaiGram.git /app \
     # install dependencies \
     && pip install virtualenv==20.19.0 poetry==1.3.2  \
     && python3 -m virtualenv venv/                 \

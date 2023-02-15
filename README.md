@@ -5,7 +5,7 @@
 <img src="https://img.shields.io/badge/works%20on-my%20machine-brightgreen">
 <img src="https://img.shields.io/badge/status-%E5%92%95%E5%92%95%E5%92%95-blue">
 <a href="https://black.readthedocs.io/en/stable/index.html"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="code_style" /></a>
-<a href="https://www.codacy.com/gh/luoshuijs/TGPaimonBot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=luoshuijs/TGPaimonBot&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/810a80be4cbe4b7284ab7634941423c4"/></a>
+<a href="https://www.codacy.com/gh/PaiGramTeam/PaiGram/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PaiGramTeam/PaiGram&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/810a80be4cbe4b7284ab7634941423c4"/></a>
 </div>
 
 <p>
@@ -53,7 +53,7 @@ poetry install --extras pyro
 cp .env.example .env
 ```
 
-详细配置说明见 [Wiki/Env Settings](https://github.com/luoshuijs/TGPaimonBot/wiki/Env-Settings)
+详细配置说明见 [Wiki/Env Settings](https://github.com/PaiGramTeam/PaiGram/wiki/Env-Settings)
 
 ### 4. 初始化数据库
 
@@ -69,11 +69,11 @@ poetry run python ./run.py
 
 ## 使用 Docker 部署
 
-详见 [Wiki/Deploy with Docker](https://github.com/luoshuijs/TGPaimonBot/wiki/Deploy-with-Docker)
+详见 [Wiki/Deploy with Docker](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker)
 
 ## 使用 Podman 部署
 
-详见 [Wiki/Deploy with Podman](https://github.com/luoshuijs/TGPaimonBot/wiki/Deploy-with-Podman)
+详见 [Wiki/Deploy with Podman](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Podman)
 
 ## 其他说明
 
