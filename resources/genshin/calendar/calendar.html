@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="shortcut icon" href="#"/>
+    <link rel="stylesheet" type="text/css" href="common.css"/>
+    <title>miao-plugin</title>
+    <link rel="stylesheet" type="text/css" href="calendar.css"/>
+</head>
+<body class="elem-hydro calendar-mode" style=transform:scale(1)>
+<div class="container elem-bg" id="container">
+    <div class="calendar">
+        <div class="cal-bg for-calendar-mode">
+            <table class="cont-table" border-collapse="collapse">
+                <tr class="tr thead">
+                    {% for d in date_list %}
+                    <td colspan="{{ d.date.__len__() }}" class="td month">{{ d.month }}月</td>
+                    {% endfor %}
+                </tr>
+                <tr class="tr thead">
+                    {% for d in date_list %}
+                    {% for dn in range(d.date.__len__()) %}
+                    <td class="td date {{ 'current-date' if d.is_today[dn] else ''}}">
+                        <span class="date-num">{{ d.date[dn] }}日</span>
+                        <span class="date-week">周{{ d.week[dn] }}</span>
+                    </td>
+                    {% endfor %}
+                    {% endfor %}
+                </tr>
+                <tr class="tr">
+                    {% for d in date_list %}
+                    {% for dn in range(d.date.__len__()) %}
+                    <td class="line {{ 'current-date' if d.is_today[dn] else ''}}">
+                    </td>
+                    {% endfor %}
+                    {% endfor %}
+                </tr>
+            </table>
+        </div>
+        <div class="cal-bg for-list-mode">
+            <table class="cont-table" border-collapse="collapse">
+                <tr class="tr thead">
+                    <td class="td month">活动列表</td>
+                </tr>
+                <tr class="tr">
+                    <td class="line"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="cal-list {{ char_mode }} char-num-{{ char_num }}">
+            <div class="cal-abyss-cont">
+                {% for li in abyss %}
+                <div class="cal-item type-abyss" style="left:{{ li.left }}%;width:{{li.width}}%">
+                    <div class="info">
+                        <img src="img/abyss-icon.png" class="cal-icon"/>
+                        <strong>{{ li.title }}</strong>
+                        <span>{{ li.label }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% for lis in list %}
+            {% for li in lis %}
+            <div
+                    class="cal-item type-{{ li.type }} {{'small-mode' if li.width < 20 else ''}}"
+                    style="left:{{ li.left }}%;width:{{li.width}}%"
+                    data-id="{{li.id}}"
+                    data-type="{{li.type}}">
+                {% if li.banner %}
+                <div class="banner" style="background-image:url('{{li.banner}}')"></div>
+                {% endif %}
+                <div class="info">
+                    {% if li.type == "character" %}
+                    <img src="{{ li.face }}" class="character-img"/>
+                    {% else %}
+                    <img src="{{ li.icon }}" class="cal-icon"/>
+                    {% endif %}
+                    <strong>{{ li.title }}</strong>
+                    <span>{{ li.label }}</span>
+                </div>
+            </div>
+            {% endfor %}
+            {% endfor %}
+        </div>
+        <div class="now-line" style="left:{{now_left}}%"></div>
+        <div class="now-line line2" style="left:{{now_left}}%"></div>
+    </div>
+    <div class="now-time">
+        <span>当前时间：{{now_time}}</span>
+    </div>
+    <div class="copyright">Inspired By Miao-Plugin</div>
+</div>
+</body>
+</html>
