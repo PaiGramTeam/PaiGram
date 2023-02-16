@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Dict
 
 from telegram import Update
@@ -38,7 +39,9 @@ class CalendarPlugin(Plugin, BasePlugin):
         if data := await self.cache.get("plugin:calendar"):
             return jsonlib.loads(data.decode("utf-8"))
         data = await self.calendar.get_photo_data(self.assets_service)
-        await self.cache.set("plugin:calendar", jsonlib.dumps(data, default=lambda x: x.dict()), ex=1800)
+        now = datetime.now()
+        next_hour = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+        await self.cache.set("plugin:calendar", jsonlib.dumps(data, default=lambda x: x.dict()), ex=next_hour - now)
         return data
 
     @handler.command("calendar", block=False)
