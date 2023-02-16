@@ -19,6 +19,7 @@ from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId, roleToName
+from modules.apihelper.client.components.calendar import Calendar
 from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -48,12 +49,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
         cookie_service: CookiesService = None,
     ):
         """Load Data."""
-        self.birthday_list = {}
-        for value in AVATAR_DATA.values():
-            key = "_".join([str(i) for i in value["birthday"]])
-            data = self.birthday_list.get(key, [])
-            data.append(value["name"])
-            self.birthday_list.update({key: data})
+        self.birthday_list = Calendar.gen_birthday_list()
         self.user_service = user_service
         self.cookie_service = cookie_service
 

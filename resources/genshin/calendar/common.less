@@ -340,13 +340,13 @@ ul.cont-msg, .cont-footer ul {
     }
   }
 
-  @stars: 1, 2, 3, 4, 5;
+  @stars: 4, 5;
   each(@stars, {
     &.star@{value} {
-      background-image: url("img/bg@{value}.png");
+      background-image: url("../abyss/background/roleStarBg@{value}.png");
     }
     &.opacity-bg.star@{value} {
-      background-image: url("img/bg@{value}-o.png");
+      background-image: url("../abyss/background/roleStarBg@{value}.png");
     }
   })
 }

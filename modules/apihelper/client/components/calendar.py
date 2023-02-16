@@ -5,8 +5,10 @@ from typing import List, Tuple, Optional, Dict, Union, Any
 from httpx import AsyncClient
 
 from core.base.assets import AssetsService
+from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId
-from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime
+from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
+from modules.wiki.character import Character
 
 
 class Calendar:
@@ -34,6 +36,17 @@ class Calendar:
 
     def __init__(self):
         self.client = AsyncClient()
+        self.birthday_list = self.gen_birthday_list()
+
+    @staticmethod
+    def gen_birthday_list() -> Dict[str, List[str]]:
+        birthday_list = {}
+        for value in AVATAR_DATA.values():
+            key = "_".join([str(i) for i in value["birthday"]])
+            data = birthday_list.get(key, [])
+            data.append(value["name"])
+            birthday_list[key] = data
+        return birthday_list
 
     async def req_cal_data(self) -> Tuple[List[List[ActDetail]], Dict[str, ActTime]]:
         list_data = await self.client.get(self.ANNOUNCEMENT_LIST)
@@ -146,6 +159,25 @@ class Calendar:
             label = f"{s_date.strftime('%m-%d %H:%M')} ~ {e_date.strftime('%m-%d %H:%M')}"
         act.label = label
 
+    @staticmethod
+    async def parse_type(act: FinalAct, assets: AssetsService) -> None:
+        if "神铸赋形" in act.title:
+            act.type = ActEnum.weapon
+            act.title = re.sub(r"(单手剑|双手剑|长柄武器|弓|法器|·)", "", act.title)
+            act.sort = 2
+        elif "祈愿" in act.title:
+            act.type = ActEnum.character
+            if reg_ret := re.search(r"·(.*)\(", act.title):
+                char_name = reg_ret[1]
+                char = assets.avatar(roleToId(char_name))
+                act.banner = (await assets.namecard(char.id).navbar()).as_uri()
+                act.face = (await char.icon()).as_uri()
+                act.sort = 1
+        elif "纪行" in act.title:
+            act.type = ActEnum.no_display
+        elif act.title == "深渊":
+            act.type = ActEnum.abyss
+
     async def get_list(
         self,
         ds: ActDetail,
@@ -168,24 +200,7 @@ class Calendar:
 
         if act.id in self.IGNORE_IDS or self.IGNORE_RE.findall(act.title) or (detail and not detail.display):
             return None
-
-        if "神铸赋形" in act.title:
-            act.type = ActEnum.weapon
-            act.title = re.sub(r"(单手剑|双手剑|长柄武器|弓|法器|·)", "", act.title)
-            act.sort = 2
-        elif "祈愿" in act.title:
-            act.type = ActEnum.character
-            if reg_ret := re.search(r"·(.*)\(", act.title):
-                char_name = reg_ret[1]
-                char = assets.avatar(roleToId(char_name))
-                act.banner = (await assets.namecard(char.id).navbar()).as_uri()
-                act.face = (await char.icon()).as_uri()
-                act.sort = 1
-        elif "纪行" in act.title:
-            act.type = ActEnum.no_display
-        elif act.title == "深渊":
-            act.type = ActEnum.abyss
-
+        await self.parse_type(act, assets)
         s_date, e_date = self.count_width(act, detail, ds, start_time, end_time, total_range)
         self.parse_label(act, is_act, s_date, e_date)
 
@@ -221,24 +236,52 @@ class Calendar:
                 ret.append(ds)
         return ret
 
+    async def get_birthday_char(
+        self, date_list: List[Date], assets: AssetsService
+    ) -> Tuple[int, Dict[int, Dict[int, List[BirthChar]]]]:
+        birthday_char_num = 0
+        birthday_char_line = 0
+        birthday_chars = {}
+        for date in date_list:
+            birthday_chars[date.month] = {}
+            for d in date.date:
+                key = f"{date.month}_{d}"
+                if char := self.birthday_list.get(key):
+                    birthday_char_line = max(len(char), birthday_char_line)
+                    birthday_chars[date.month][d] = []
+                    for c in char:
+                        character = await Character.get_by_name(c)
+                        birthday_chars[date.month][d].append(
+                            BirthChar(
+                                name=c,
+                                star=character.rarity,
+                                icon=(await assets.avatar(roleToId(c)).icon()).as_uri(),
+                            )
+                        )
+                        birthday_char_num += 1
+        return birthday_char_line, birthday_chars
+
     @staticmethod
-    def merge_list(target: List[FinalAct]) -> Tuple[List[List[FinalAct]], int, int]:
+    def get_merge_next(target: List[FinalAct], li: FinalAct) -> Optional[FinalAct]:
+        for li2 in target:
+            if (li2.mergeStatus == 1) and (li.left + li.width <= li2.left):
+                return li2
+
+    def merge_list(self, target: List[FinalAct]) -> Tuple[List[List[FinalAct]], int, int]:
         char_count = 0
         char_old = 0
         ret: List[List[FinalAct]] = []
-        for li in target:
+        for idx, li in enumerate(target):
             if li.type == ActEnum.character:
                 char_count += 1
                 if li.left == 0:
                     char_old += 1
                 li.idx = char_count
             if li.mergeStatus == 1:
-                for li2 in target:
-                    if (li2.mergeStatus == 1) and (li.left + li.width <= li2.left):
-                        li.mergeStatus = 2
-                        li2.mergeStatus = 2
-                        ret.append([li, li2])
-                        break
+                if li2 := self.get_merge_next(target[idx + 1 :], li):
+                    li.mergeStatus = 2
+                    li2.mergeStatus = 2
+                    ret.append([li, li2])
             if li.mergeStatus != 2:
                 li.mergeStatus = 2
                 ret.append([li])
@@ -254,6 +297,7 @@ class Calendar:
             total_range,
             now_left,
         ) = await self.get_date_list()
+        birthday_char_line, birthday_chars = await self.get_birthday_char(date_list, assets)
         target: List[FinalAct] = []
         abyss: List[FinalAct] = []
 
@@ -284,5 +328,6 @@ class Calendar:
             "abyss": abyss,
             "char_mode": f"char-{char_count}-{char_old}",
             "now_time": now.strftime("%Y-%m-%d %H:%M"),
-            "char_num": 0,
+            "birthday_char_line": birthday_char_line,
+            "birthday_chars": birthday_chars,
         }

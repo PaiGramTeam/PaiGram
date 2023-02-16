@@ -382,35 +382,17 @@ ul.cont-msg li strong,
   height: 84%;
   margin: 8%;
 }
-.item-icon.star1 {
-  background-image: url("img/bg1.png");
-}
-.item-icon.opacity-bg.star1 {
-  background-image: url("img/bg1-o.png");
-}
-.item-icon.star2 {
-  background-image: url("img/bg2.png");
-}
-.item-icon.opacity-bg.star2 {
-  background-image: url("img/bg2-o.png");
-}
-.item-icon.star3 {
-  background-image: url("img/bg3.png");
-}
-.item-icon.opacity-bg.star3 {
-  background-image: url("img/bg3-o.png");
-}
 .item-icon.star4 {
-  background-image: url("img/bg4.png");
+  background-image: url("../abyss/background/roleStarBg4.png");
 }
 .item-icon.opacity-bg.star4 {
-  background-image: url("img/bg4-o.png");
+  background-image: url("../abyss/background/roleStarBg4.png");
 }
 .item-icon.star5 {
-  background-image: url("img/bg5.png");
+  background-image: url("../abyss/background/roleStarBg5.png");
 }
 .item-icon.opacity-bg.star5 {
-  background-image: url("img/bg5-o.png");
+  background-image: url("../abyss/background/roleStarBg5.png");
 }
 .item-list {
   display: flex;

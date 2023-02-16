@@ -32,6 +32,14 @@
                     {% for d in date_list %}
                     {% for dn in range(d.date.__len__()) %}
                     <td class="line {{ 'current-date' if d.is_today[dn] else ''}}">
+                        {% for char in birthday_chars[d.month][d.date[dn]] %}
+                        <div class="card">
+                            <div class="item-icon star{{ char.star }}">
+                                <div class="img" style="background-image:url('{{ char.icon }}')"></div>
+                                <span class="char-name">{{ char.name }}{{ '生日' if char.name.__len__() < 4 else '' }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </td>
                     {% endfor %}
                     {% endfor %}
@@ -48,7 +56,7 @@
                 </tr>
             </table>
         </div>
-        <div class="cal-list {{ char_mode }} char-num-{{ char_num }}">
+        <div class="cal-list {{ char_mode }} char-num-{{ birthday_char_line }}">
             <div class="cal-abyss-cont">
                 {% for li in abyss %}
                 <div class="cal-item type-abyss" style="left:{{ li.left }}%;width:{{li.width}}%">

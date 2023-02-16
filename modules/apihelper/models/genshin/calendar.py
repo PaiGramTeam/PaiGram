@@ -57,3 +57,9 @@ class ActTime(BaseModel):
     start: str = ""
     end: str = ""
     display: bool = True
+
+
+class BirthChar(BaseModel):
+    name: str
+    star: int
+    icon: str
