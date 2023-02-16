@@ -14,6 +14,7 @@ from modules.wiki.character import Character
 
 class Calendar:
     """原神活动日历"""
+
     ANNOUNCEMENT_LIST = "https://hk4e-api.mihoyo.com/common/hk4e_cn/announcement/api/getAnnList"
     ANNOUNCEMENT_PARAMS = {
         "game": "hk4e",
