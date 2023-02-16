@@ -68,13 +68,15 @@ class Calendar:
         for idx, data in enumerate(list_data.get("data", {}).get("list", [])):
             for item in data.get("list", []):
                 new_list_data[idx].append(ActDetail(**item))
+        time_map = {}
         req = await self.client.get(self.MIAO_API)
-        miao_data = req.json()
-        time_map = {key: ActTime(**value) for key, value in miao_data.get("data", {}).items()}
+        if req.status_code == 200:
+            miao_data = req.json()
+            time_map.update({key: ActTime(**value) for key, value in miao_data.get("data", {}).items()})
         req = await self.client.get(self.REMOTE_API)
-        remote_data = req.json()
-        remote_map = {key: ActTime(**value) for key, value in remote_data.get("data", {}).items()}
-        time_map.update(remote_map)
+        if req.status_code == 200:
+            remote_data = req.json()
+            time_map.update({key: ActTime(**value) for key, value in remote_data.get("data", {}).items()})
         return new_list_data, time_map
 
     @staticmethod
