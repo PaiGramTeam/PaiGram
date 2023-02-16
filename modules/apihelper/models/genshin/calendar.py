@@ -1,4 +1,3 @@
-from datetime import timedelta
 from enum import Enum
 from typing import List
 
@@ -39,7 +38,7 @@ class FinalAct(BaseModel):
     idx: int = 0
     start: str = ""
     end: str = ""
-    duration: timedelta = timedelta(0)
+    duration: int = 0
 
 
 class ActDetail(BaseModel):

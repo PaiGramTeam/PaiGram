@@ -8,7 +8,7 @@
     <title>Calendar</title>
     <link rel="stylesheet" type="text/css" href="calendar.css"/>
 </head>
-<body class="elem-hydro calendar-mode" style=transform:scale(1)>
+<body class="elem-hydro {{ display_mode }}-mode" style=transform:scale(1)>
 <div class="container elem-bg" id="container">
     <div class="calendar">
         <div class="cal-bg for-calendar-mode">
@@ -32,7 +32,7 @@
                     {% for d in date_list %}
                     {% for dn in range(d.date.__len__()) %}
                     <td class="line {{ 'current-date' if d.is_today[dn] else ''}}">
-                        {% for char in birthday_chars[d.month][d.date[dn]] %}
+                        {% for char in birthday_chars[d.month|string][d.date[dn]|string] %}
                         <div class="card">
                             <div class="item-icon star{{ char.star }}">
                                 <div class="img" style="background-image:url('{{ char.icon }}')"></div>

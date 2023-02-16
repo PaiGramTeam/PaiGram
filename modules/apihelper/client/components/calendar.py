@@ -149,7 +149,7 @@ class Calendar:
 
         act.left = s_range / total_range * 100
         act.width = e_range / total_range * 100 - act.left
-        act.duration = e_time - s_time
+        act.duration = (e_time - s_time).total_seconds()
         act.start = s_date.strftime("%m-%d %H:%M")
         act.end = e_date.strftime("%m-%d %H:%M")
         return s_date, e_date
@@ -248,19 +248,19 @@ class Calendar:
 
     async def get_birthday_char(
         self, date_list: List[Date], assets: AssetsService
-    ) -> Tuple[int, Dict[int, Dict[int, List[BirthChar]]]]:
+    ) -> Tuple[int, Dict[str, Dict[str, List[BirthChar]]]]:
         birthday_char_line = 0
         birthday_chars = {}
         for date in date_list:
-            birthday_chars[date.month] = {}
+            birthday_chars[str(date.month)] = {}
             for d in date.date:
                 key = f"{date.month}_{d}"
                 if char := self.birthday_list.get(key):
                     birthday_char_line = max(len(char), birthday_char_line)
-                    birthday_chars[date.month][d] = []
+                    birthday_chars[str(date.month)][str(d)] = []
                     for c in char:
                         character = await Character.get_by_name(c)
-                        birthday_chars[date.month][d].append(
+                        birthday_chars[str(date.month)][str(d)].append(
                             BirthChar(
                                 name=c,
                                 star=character.rarity,
@@ -295,7 +295,7 @@ class Calendar:
                 ret.append([li])
         return ret, char_count, char_old
 
-    async def get_photo_data(self, assets: AssetsService):
+    async def get_photo_data(self, assets: AssetsService) -> Dict:
         now = self.get_now_hour()
         list_data, time_map = await self.req_cal_data()
         (
@@ -328,9 +328,6 @@ class Calendar:
         target, char_count, char_old = self.merge_list(target)
         return {
             "date_list": date_list,
-            "start_time": start_time,
-            "end_time": end_time,
-            "total_range": total_range,
             "now_left": now_left,
             "list": target,
             "abyss": abyss,
