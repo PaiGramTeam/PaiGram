@@ -21,7 +21,7 @@ except ImportError:
 
 
 class CalendarPlugin(Plugin, BasePlugin):
-    """深渊数据查询"""
+    """活动日历查询"""
 
     def __init__(
         self,

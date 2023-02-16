@@ -13,6 +13,7 @@ from modules.wiki.character import Character
 
 
 class Calendar:
+    """原神活动日历"""
     ANNOUNCEMENT_LIST = "https://hk4e-api.mihoyo.com/common/hk4e_cn/announcement/api/getAnnList"
     ANNOUNCEMENT_PARAMS = {
         "game": "hk4e",
@@ -43,6 +44,7 @@ class Calendar:
 
     @staticmethod
     def gen_birthday_list() -> Dict[str, List[str]]:
+        """生成生日列表"""
         birthday_list = {}
         for value in AVATAR_DATA.values():
             key = "_".join([str(i) for i in value["birthday"]])
@@ -53,9 +55,11 @@ class Calendar:
 
     @staticmethod
     def get_now_hour() -> datetime:
+        """获取当前时间"""
         return datetime.now().replace(minute=0, second=0, microsecond=0)
 
     async def req_cal_data(self) -> Tuple[List[List[ActDetail]], Dict[str, ActTime]]:
+        """请求日历数据"""
         list_data = await self.client.get(self.ANNOUNCEMENT_LIST, params=self.ANNOUNCEMENT_PARAMS)
         list_data = list_data.json()
 
@@ -74,10 +78,12 @@ class Calendar:
 
     @staticmethod
     def date_to_weekday(date_: datetime) -> str:
+        """日期转换为星期"""
         time = ["一", "二", "三", "四", "五", "六", "日"]
         return time[date_.weekday()]
 
     async def get_date_list(self) -> Tuple[List[Date], datetime, datetime, timedelta, float]:
+        """获取日历数据"""
         data_list: List[Date] = []
         today = self.get_now_hour()
         temp = today - timedelta(days=7)
@@ -114,6 +120,7 @@ class Calendar:
 
     @staticmethod
     def human_read(d: timedelta) -> str:
+        """将日期转换为人类可读"""
         hour = d.seconds // 3600
         minute = d.seconds // 60 % 60
         if minute >= 59:
@@ -134,6 +141,8 @@ class Calendar:
         end_time: datetime,
         total_range: timedelta,
     ) -> Tuple[datetime, datetime]:
+        """计算宽度"""
+
         def get_date(d1: str, d2: str) -> datetime:
             if d1 and len(d1) > 6:
                 return datetime.strptime(d1, "%Y-%m-%d %H:%M:%S")
@@ -155,6 +164,7 @@ class Calendar:
         return s_date, e_date
 
     def parse_label(self, act: FinalAct, is_act: bool, s_date: datetime, e_date: datetime) -> None:
+        """解析活动标签"""
         now = self.get_now_hour()
         label = ""
         if self.FULL_TIME_RE.findall(act.title) or e_date - s_date > timedelta(days=365):
@@ -171,6 +181,7 @@ class Calendar:
 
     @staticmethod
     async def parse_type(act: FinalAct, assets: AssetsService) -> None:
+        """解析活动类型"""
         if "神铸赋形" in act.title:
             act.type = ActEnum.weapon
             act.title = re.sub(r"(单手剑|双手剑|长柄武器|弓|法器|·)", "", act.title)
@@ -198,6 +209,7 @@ class Calendar:
         is_act: bool,
         assets: AssetsService,
     ) -> Optional[FinalAct]:
+        """获取活动列表"""
         act = FinalAct(
             id=ds.ann_id,
             type=ActEnum.activity if is_act else ActEnum.normal,
@@ -220,6 +232,7 @@ class Calendar:
 
     @staticmethod
     def get_abyss_cal(start_time: datetime, end_time: datetime) -> List[List[Union[datetime, str]]]:
+        """获取深渊日历"""
         last = datetime.now().replace(day=1) - timedelta(days=2)
         last_month = last.month
         curr = datetime.now()
@@ -249,6 +262,7 @@ class Calendar:
     async def get_birthday_char(
         self, date_list: List[Date], assets: AssetsService
     ) -> Tuple[int, Dict[str, Dict[str, List[BirthChar]]]]:
+        """获取生日角色"""
         birthday_char_line = 0
         birthday_chars = {}
         for date in date_list:
@@ -271,11 +285,14 @@ class Calendar:
 
     @staticmethod
     def get_merge_next(target: List[FinalAct], li: FinalAct) -> Optional[FinalAct]:
-        for li2 in target:
-            if (li2.mergeStatus == 1) and (li.left + li.width <= li2.left):
-                return li2
+        """获取下一个可以合并的活动"""
+        return next(
+            (li2 for li2 in target if (li2.mergeStatus == 1) and (li.left + li.width <= li2.left)),
+            None,
+        )
 
     def merge_list(self, target: List[FinalAct]) -> Tuple[List[List[FinalAct]], int, int]:
+        """将两个活动合并为一行"""
         char_count = 0
         char_old = 0
         ret: List[List[FinalAct]] = []
@@ -296,6 +313,7 @@ class Calendar:
         return ret, char_count, char_old
 
     async def get_photo_data(self, assets: AssetsService) -> Dict:
+        """获取数据"""
         now = self.get_now_hour()
         list_data, time_map = await self.req_cal_data()
         (

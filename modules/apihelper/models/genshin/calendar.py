@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 
 class Date(BaseModel):
+    """日历日期"""
     month: int
     date: List[int]
     week: List[str]
@@ -12,6 +13,7 @@ class Date(BaseModel):
 
 
 class ActEnum(str, Enum):
+    """活动类型"""
     character = "character"
     weapon = "weapon"
     activity = "activity"
@@ -24,6 +26,7 @@ class ActEnum(str, Enum):
 
 
 class FinalAct(BaseModel):
+    """最终活动数据"""
     id: int
     type: ActEnum
     title: str
@@ -42,6 +45,7 @@ class FinalAct(BaseModel):
 
 
 class ActDetail(BaseModel):
+    """活动详情"""
     ann_id: int = 0
     banner: str = ""
     tag_icon: str = ""
@@ -52,6 +56,7 @@ class ActDetail(BaseModel):
 
 
 class ActTime(BaseModel):
+    """活动时间"""
     title: str = ""
     start: str = ""
     end: str = ""
@@ -59,6 +64,7 @@ class ActTime(BaseModel):
 
 
 class BirthChar(BaseModel):
+    """生日角色"""
     name: str
     star: int
     icon: str
