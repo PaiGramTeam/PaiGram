@@ -21,7 +21,7 @@ from uvicorn import Server
 
 from core.builtins.contexts import application_context
 from core.config import config as application_config
-from core.manager import ComponentManager, DependenceManager, PluginManager, ServiceManager
+from core.manager import Managers
 from modules.override.telegram import HTTPXRequest
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
@@ -36,10 +36,6 @@ __all__ = ("Application",)
 R = TypeVar("R")
 T = TypeVar("T")
 P = ParamSpec("P")
-
-
-class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):
-    """BOT 除自身外的生命周期管理类"""
 
 
 class Application(Singleton, Managers):

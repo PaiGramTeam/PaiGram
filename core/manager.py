@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from core.plugin import PluginType
     from core.builtins.executor import BaseExecutor
 
-__all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager")
+__all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager", "Managers")
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -273,3 +273,7 @@ class PluginManager(Manager["PluginType"]):
                 await plugin.uninstall()
             except Exception as e:
                 logger.exception('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+
+
+class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):
+    """BOT 除自身外的生命周期管理类"""
