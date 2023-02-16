@@ -164,16 +164,16 @@ body {
 
 /********  ELEM  ********/
 
-@elems: hydro;
+@elems: hydro, anemo, cryo, electro, geo, pyro, dendro;
 
 each(@elems, {
   .elem-@{value} .talent-icon {
-    background-image: url("img/talent-@{value}.png");
+    background-image: url("../player_card/img/talent-@{value}.png");
   }
 
   .elem-@{value} .elem-bg,
   .@{value}-bg {
-    background-image: url("img/bg-@{value}.jpg");
+    background-image: url("../player_card/img/bg-@{value}.jpg");
   }
 })
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width">
     <link rel="shortcut icon" href="#"/>
     <link rel="stylesheet" type="text/css" href="common.css"/>
-    <title>miao-plugin</title>
+    <title>Calendar</title>
     <link rel="stylesheet" type="text/css" href="calendar.css"/>
 </head>
 <body class="elem-hydro calendar-mode" style=transform:scale(1)>
@@ -63,7 +63,7 @@
             {% for lis in list %}
             {% for li in lis %}
             <div
-                    class="cal-item type-{{ li.type }} {{'small-mode' if li.width < 20 else ''}}"
+                    class="cal-item type-{{ li.type }} {{ 'li-idx-' if li.idx else ''}}{{ li.idx if li.idx else '' }} {{'small-mode' if li.width < 20 else ''}} li-col{{ lis.index(li) }}"
                     style="left:{{ li.left }}%;width:{{li.width}}%"
                     data-id="{{li.id}}"
                     data-type="{{li.type}}">

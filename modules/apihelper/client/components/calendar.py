@@ -1,10 +1,12 @@
 import re
-
 from datetime import datetime, timedelta
+from typing import List, Tuple, Optional, Dict, Union, Any
+
 from httpx import AsyncClient
 
 from core.base.assets import AssetsService
 from metadata.shortname import roleToId
+from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime
 
 
 class Calendar:
@@ -33,66 +35,52 @@ class Calendar:
     def __init__(self):
         self.client = AsyncClient()
 
-    async def reqCalData(self):
+    async def req_cal_data(self) -> Tuple[List[List[ActDetail]], Dict[str, ActTime]]:
         list_data = await self.client.get(self.ANNOUNCEMENT_LIST)
         list_data = list_data.json()
 
+        new_list_data = [[], []]
+        for idx, data in enumerate(list_data.get("data", {}).get("list", [])):
+            for item in data.get("list", []):
+                new_list_data[idx].append(ActDetail(**item))
+
         req = await self.client.get(self.MIAO_API)
         miao_data = req.json()
-        time_map = dict(miao_data["data"].items())
-        return list_data, time_map
+        time_map = {key: ActTime(**value) for key, value in miao_data.get("data", {}).items()}
+        return new_list_data, time_map
 
-    async def getDateList(self):
-        def weekday(date_: datetime):
-            time = ["一", "二", "三", "四", "五", "六", "日"]
-            return time[date_.weekday()]
+    @staticmethod
+    def date_to_weekday(date_: datetime) -> str:
+        time = ["一", "二", "三", "四", "五", "六", "日"]
+        return time[date_.weekday()]
 
-        data_list = []
-        month = 0
-        date = []
-        week = []
-        is_today = []
+    async def get_date_list(self) -> Tuple[List[Date], datetime, datetime, timedelta, float]:
+        data_list: List[Date] = []
         today = datetime.now()
         temp = today - timedelta(days=7)
-        start_date = temp
-        end_date = today
+        month = 0
+        date, week, is_today = [], [], []
+        start_date, end_date = None, None
         for i in range(13):
             temp += timedelta(days=1)
-            m = temp.month
-            d = temp.day
-            w = weekday(temp)
+            m, d, w = temp.month, temp.day, self.date_to_weekday(temp)
             if month == 0:
                 start_date = temp
                 month = m
             if month != m and len(date) > 0:
-                data_list.append(
-                    {
-                        "month": month,
-                        "date": date,
-                        "week": week,
-                        "is_today": is_today,
-                    }
-                )
-                date = []
-                week = []
+                data_list.append(Date(month=month, date=date, week=week, is_today=is_today))
+                date, week, is_today = [], [], []
                 month = m
             date.append(d)
             week.append(w)
-            is_today.append(temp.date() == today.date())
+            is_today.append(temp == today)
             if i == 12:
-                data_list.append(
-                    {
-                        "month": month,
-                        "date": date,
-                        "week": week,
-                        "is_today": is_today,
-                    }
-                )
+                data_list.append(Date(month=month, date=date, week=week, is_today=is_today))
                 end_date = temp
         start_time = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_time = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
-        total_range = end_time - start_time
-        now_left = (datetime.now() - start_time) / total_range * 100
+        total_range: timedelta = end_time - start_time
+        now_left: float = (datetime.now() - start_time) / total_range * 100
         return (
             data_list,
             start_time,
@@ -101,110 +89,112 @@ class Calendar:
             now_left,
         )
 
-    async def get_list(
-        self,
-        ds,
-        target,
-        start_time,
-        end_time,
-        total_range,
-        now,
-        time_map,
-        is_act: bool,
-        assets: AssetsService,
-    ):
-        an_type = "activity" if is_act else "normal"
-        an_id = ds.get("ann_id", 0)
-        an_title = ds["title"]
-        an_banner = ds.get("banner", "") if is_act else ""
-        extra = {
-            "sort": 5 if is_act else 10,
-        }
-        detail = time_map.get(str(an_id), {})
+    @staticmethod
+    def human_read(d: timedelta) -> str:
+        hour = d.seconds // 3600
+        minute = d.seconds // 60 % 60
+        text = ""
+        if d.days:
+            text += f"{d.days}天"
+        if hour:
+            text += f"{hour}小时"
+        if minute:
+            text += f"{minute}分钟"
+        return text
 
-        if an_id in self.IGNORE_IDS or self.IGNORE_RE.findall(an_title) or detail.get("display", False):
-            return
-
-        if "神铸赋形" in an_title:
-            an_type = "weapon"
-            an_title = re.sub(r"(单手剑|双手剑|长柄武器|弓|法器|·)", "", an_title)
-            extra["sort"] = 2
-        elif "祈愿" in an_title:
-            an_type = "character"
-            reg_ret = re.search(r"·(.*)\(", an_title)
-            if reg_ret:
-                char_name = reg_ret[1]
-                char = assets.avatar(roleToId(char_name))
-                # extra["banner2"] = (await assets.namecard(char.id).navbar()).as_uri()
-                extra["face"] = (await char.icon()).as_uri()
-                extra["character"] = char_name
-                extra["sort"] = 1
-        elif "纪行" in an_title:
-            an_type = "pass"
-        elif an_title == "深渊":
-            an_type = "abyss"
-
-        def get_data(d1, d2):
+    @staticmethod
+    def count_width(
+        act: FinalAct,
+        detail: Optional[ActTime],
+        ds: ActDetail,
+        start_time: datetime,
+        end_time: datetime,
+        total_range: timedelta,
+    ) -> Tuple[datetime, datetime]:
+        def get_date(d1: str, d2: str) -> datetime:
             if d1 and len(d1) > 6:
                 return datetime.strptime(d1, "%Y-%m-%d %H:%M:%S")
             return datetime.strptime(d2, "%Y-%m-%d %H:%M:%S")
 
-        def human_read(d: timedelta):
-            hour = d.seconds // 3600
-            minute = d.seconds // 60 % 60
-            text = ""
-            if d.days:
-                text += f"{d.days}天"
-            if hour:
-                text += f"{hour}小时"
-            if minute:
-                text += f"{minute}分钟"
-            return text
+        s_date = get_date(detail and detail.start, ds.start_time)
+        e_date = get_date(detail and detail.end, ds.end_time)
+        s_time = max(s_date, start_time)
+        e_time = min(e_date, end_time)
 
-        sDate = get_data(detail.get("start"), ds["start_time"])
-        eDate = get_data(detail.get("end"), ds["end_time"])
-        sTime = max(sDate, start_time)
-        eTime = min(eDate, end_time)
+        s_range = s_time - start_time
+        e_range = e_time - start_time
 
-        sRange = sTime - start_time
-        eRange = eTime - start_time
+        act.left = s_range / total_range * 100
+        act.width = e_range / total_range * 100 - act.left
+        act.duration = e_time - s_time
+        act.start = s_date.strftime("%m-%d %H:%M")
+        act.end = e_date.strftime("%m-%d %H:%M")
+        return s_date, e_date
 
-        left = sRange / total_range * 100
-        width = eRange / total_range * 100 - left
-
+    def parse_label(self, act: FinalAct, is_act: bool, s_date: datetime, e_date: datetime) -> None:
+        now = datetime.now()
         label = ""
-        if self.FULL_TIME_RE.findall(an_title) or eDate - sDate > timedelta(days=365):
-            label = f"{sDate.strftime('%m-%d %H:%M')} 后永久有效" if sDate < now else "永久有效"
-        elif sDate < now < eDate:
-            label = f'{eDate.strftime("%m-%d %H:%M")} ({human_read(eDate - now)}后结束)'
-            if width > (38 if is_act else 55):
-                label = f"{sDate.strftime('%m-%d %H:%M')} ~ {label}"
-        elif sDate > now:
-            label = f'{sDate.strftime("%m-%d %H:%M")} ({human_read(sDate - now)}后开始)'
+        if self.FULL_TIME_RE.findall(act.title) or e_date - s_date > timedelta(days=365):
+            label = f"{s_date.strftime('%m-%d %H:%M')} 后永久有效" if s_date < now else "永久有效"
+        elif s_date < now < e_date:
+            label = f'{e_date.strftime("%m-%d %H:%M")} ({self.human_read(e_date - now)}后结束)'
+            if act.width > (38 if is_act else 55):
+                label = f"{s_date.strftime('%m-%d %H:%M')} ~ {label}"
+        elif s_date > now:
+            label = f'{s_date.strftime("%m-%d %H:%M")} ({self.human_read(s_date - now)}后开始)'
         elif is_act:
-            label = f"{sDate.strftime('%m-%d %H:%M')} ~ {eDate.strftime('%m-%d %H:%M')}"
+            label = f"{s_date.strftime('%m-%d %H:%M')} ~ {e_date.strftime('%m-%d %H:%M')}"
+        act.label = label
 
-        if sDate <= end_time and eDate >= start_time:
-            target.append(
-                {
-                    "id": an_id,
-                    "type": an_type,
-                    "title": an_title,
-                    "banner": an_banner,
-                    "mergeStatus": 1 if an_type in {"activity", "normal"} else 0,
-                    "icon": ds.get("tag_icon", ""),
-                    "left": left,
-                    "width": width,
-                    "label": label,
-                    "duration": eTime - sTime,
-                    "start": sDate.strftime("%m-%d %H:%M"),
-                    "end": eDate.strftime("%m-%d %H:%M"),
-                    **extra,
-                }
-            )
+    async def get_list(
+        self,
+        ds: ActDetail,
+        start_time: datetime,
+        end_time: datetime,
+        total_range: timedelta,
+        time_map: Dict[str, ActTime],
+        is_act: bool,
+        assets: AssetsService,
+    ) -> Optional[FinalAct]:
+        act = FinalAct(
+            id=ds.ann_id,
+            type=ActEnum.activity if is_act else ActEnum.normal,
+            title=ds.title,
+            banner=ds.banner if is_act else "",
+            sort=5 if is_act else 10,
+            icon=ds.tag_icon,
+        )
+        detail: Optional[ActTime] = time_map.get(str(act.id))
+
+        if act.id in self.IGNORE_IDS or self.IGNORE_RE.findall(act.title) or (detail and not detail.display):
+            return None
+
+        if "神铸赋形" in act.title:
+            act.type = ActEnum.weapon
+            act.title = re.sub(r"(单手剑|双手剑|长柄武器|弓|法器|·)", "", act.title)
+            act.sort = 2
+        elif "祈愿" in act.title:
+            act.type = ActEnum.character
+            if reg_ret := re.search(r"·(.*)\(", act.title):
+                char_name = reg_ret[1]
+                char = assets.avatar(roleToId(char_name))
+                act.banner = (await assets.namecard(char.id).navbar()).as_uri()
+                act.face = (await char.icon()).as_uri()
+                act.sort = 1
+        elif "纪行" in act.title:
+            act.type = ActEnum.no_display
+        elif act.title == "深渊":
+            act.type = ActEnum.abyss
+
+        s_date, e_date = self.count_width(act, detail, ds, start_time, end_time, total_range)
+        self.parse_label(act, is_act, s_date, e_date)
+
+        if s_date <= end_time and e_date >= start_time:
+            act.mergeStatus = 1 if act.type in {ActEnum.activity, ActEnum.normal} else 0
+            return act
 
     @staticmethod
-    def getAbyssCal(start_time, end_time):
+    def get_abyss_cal(start_time: datetime, end_time: datetime) -> List[List[Union[datetime, str]]]:
         last = datetime.now().replace(day=1) - timedelta(days=2)
         last_month = last.month
         curr = datetime.now()
@@ -231,62 +221,68 @@ class Calendar:
                 ret.append(ds)
         return ret
 
+    @staticmethod
+    def merge_list(target: List[FinalAct]) -> Tuple[List[List[FinalAct]], int, int]:
+        char_count = 0
+        char_old = 0
+        ret: List[List[FinalAct]] = []
+        for li in target:
+            if li.type == ActEnum.character:
+                char_count += 1
+                if li.left == 0:
+                    char_old += 1
+                li.idx = char_count
+            if li.mergeStatus == 1:
+                for li2 in target:
+                    if (li2.mergeStatus == 1) and (li.left + li.width <= li2.left):
+                        li.mergeStatus = 2
+                        li2.mergeStatus = 2
+                        ret.append([li, li2])
+                        break
+            if li.mergeStatus != 2:
+                li.mergeStatus = 2
+                ret.append([li])
+        return ret, char_count, char_old
+
     async def get(self, assets: AssetsService):
         now = datetime.now()
-        list_data, time_map = await self.reqCalData()
+        list_data, time_map = await self.req_cal_data()
         (
             date_list,
             start_time,
             end_time,
             total_range,
             now_left,
-        ) = await self.getDateList()
-        target = []
-        abyss = []
+        ) = await self.get_date_list()
+        target: List[FinalAct] = []
+        abyss: List[FinalAct] = []
 
-        for ds in list_data["data"]["list"][1]["list"]:
-            await self.get_list(ds, target, start_time, end_time, total_range, now, time_map, True, assets)
-        for ds in list_data["data"]["list"][0]["list"]:
-            await self.get_list(ds, target, start_time, end_time, total_range, now, time_map, False, assets)
-        abyss_cal = self.getAbyssCal(start_time, end_time)
+        for ds in list_data[1]:
+            if act := await self.get_list(ds, start_time, end_time, total_range, time_map, True, assets):
+                target.append(act)
+        for ds in list_data[0]:
+            if act := await self.get_list(ds, start_time, end_time, total_range, time_map, False, assets):
+                target.append(act)
+        abyss_cal = self.get_abyss_cal(start_time, end_time)
         for t in abyss_cal:
-            ds = {
-                "title": f"「深境螺旋」· {t[2]}",
-                "start_time": t[0].strftime("%Y-%m-%d %H:%M:%S"),
-                "end_time": t[1].strftime("%Y-%m-%d %H:%M:%S"),
-            }
-            await self.get_list(ds, abyss, start_time, end_time, total_range, now, {}, True, assets)
-        target.sort(key=lambda x: (x["sort"], x["start"], x["duration"]))
-
-        char_count = 0
-        char_old = 0
-        ret = []
-        for li in target:
-            if li["type"] == "character":
-                char_count += 1
-                if li["left"] == 0:
-                    char_old += 1
-                li["idx"] = char_count
-            if li["mergeStatus"] == 1:
-                for li2 in target:
-                    if (li2["mergeStatus"] == 1) and (li["left"] + li["width"] <= li2["left"]):
-                        li["mergeStatus"] = 2
-                        li2["mergeStatus"] = 2
-                        ret.append([li, li2])
-                        break
-            if li["mergeStatus"] != 2:
-                li["mergeStatus"] = 2
-                ret.append([li])
+            ds = ActDetail(
+                title=f"「深境螺旋」· {t[2]}",
+                start_time=t[0].strftime("%Y-%m-%d %H:%M:%S"),
+                end_time=t[1].strftime("%Y-%m-%d %H:%M:%S"),
+            )
+            if act := await self.get_list(ds, start_time, end_time, total_range, {}, True, assets):
+                abyss.append(act)
+        target.sort(key=lambda x: (x.sort, x.start, x.duration))
+        target, char_count, char_old = self.merge_list(target)
         return {
             "date_list": date_list,
             "start_time": start_time,
             "end_time": end_time,
             "total_range": total_range,
             "now_left": now_left,
-            "list": ret,
+            "list": target,
             "abyss": abyss,
             "char_mode": f"char-{char_count}-{char_old}",
             "now_time": now.strftime("%Y-%m-%d %H:%M"),
-            "now_date": now.strftime("%Y-%m-%d"),
             "char_num": 0,
         }
