@@ -1,28 +1,31 @@
 import re
 from datetime import datetime, timedelta
-from typing import List, Tuple, Optional, Dict, Union, Any
+from typing import List, Tuple, Optional, Dict, Union
 
 from httpx import AsyncClient
 
 from core.base.assets import AssetsService
 from metadata.genshin import AVATAR_DATA
+from metadata.scripts.metadatas import RESOURCE_DEFAULT_PATH
 from metadata.shortname import roleToId
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
 from modules.wiki.character import Character
 
 
 class Calendar:
-    ANNOUNCEMENT_LIST = (
-        "https://hk4e-api.mihoyo.com/common/hk4e_cn/announcement/api/getAnnList"
-        "?game=hk4e&game_biz=hk4e_cn&lang=zh-cn&bundle_id=hk4e_cn&platform=pc&"
-        "region=cn_gf01&level=55&uid=100000000"
-    )
-    ANNOUNCEMENT_DETAIL = (
-        "https://hk4e-api.mihoyo.com/common/hk4e_cn/announcement/api/getAnnContent"
-        "?game=hk4e&game_biz=hk4e_cn&lang=zh-cn&bundle_id=hk4e_cn&platform=pc&"
-        "region=cn_gf01&level=55&uid=100000000"
-    )
+    ANNOUNCEMENT_LIST = "https://hk4e-api.mihoyo.com/common/hk4e_cn/announcement/api/getAnnList"
+    ANNOUNCEMENT_PARAMS = {
+        "game": "hk4e",
+        "game_biz": "hk4e_cn",
+        "lang": "zh-cn",
+        "bundle_id": "hk4e_cn",
+        "platform": "pc",
+        "region": "cn_gf01",
+        "level": "55",
+        "uid": "100000000",
+    }
     MIAO_API = "http://miaoapi.cn/api/calendar"
+    REMOTE_API = f"https://raw.fastgit.org/{RESOURCE_DEFAULT_PATH}calendar.json"
     IGNORE_IDS = [
         495,  # 有奖问卷调查开启！
         1263,  # 米游社《原神》专属工具一览
@@ -48,18 +51,25 @@ class Calendar:
             birthday_list[key] = data
         return birthday_list
 
+    @staticmethod
+    def get_now_hour() -> datetime:
+        return datetime.now().replace(minute=0, second=0, microsecond=0)
+
     async def req_cal_data(self) -> Tuple[List[List[ActDetail]], Dict[str, ActTime]]:
-        list_data = await self.client.get(self.ANNOUNCEMENT_LIST)
+        list_data = await self.client.get(self.ANNOUNCEMENT_LIST, params=self.ANNOUNCEMENT_PARAMS)
         list_data = list_data.json()
 
         new_list_data = [[], []]
         for idx, data in enumerate(list_data.get("data", {}).get("list", [])):
             for item in data.get("list", []):
                 new_list_data[idx].append(ActDetail(**item))
-
         req = await self.client.get(self.MIAO_API)
         miao_data = req.json()
         time_map = {key: ActTime(**value) for key, value in miao_data.get("data", {}).items()}
+        req = await self.client.get(self.REMOTE_API)
+        remote_data = req.json()
+        remote_map = {key: ActTime(**value) for key, value in remote_data.get("data", {}).items()}
+        time_map.update(remote_map)
         return new_list_data, time_map
 
     @staticmethod
@@ -69,7 +79,7 @@ class Calendar:
 
     async def get_date_list(self) -> Tuple[List[Date], datetime, datetime, timedelta, float]:
         data_list: List[Date] = []
-        today = datetime.now()
+        today = self.get_now_hour()
         temp = today - timedelta(days=7)
         month = 0
         date, week, is_today = [], [], []
@@ -93,7 +103,7 @@ class Calendar:
         start_time = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_time = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
         total_range: timedelta = end_time - start_time
-        now_left: float = (datetime.now() - start_time) / total_range * 100
+        now_left: float = (self.get_now_hour() - start_time) / total_range * 100
         return (
             data_list,
             start_time,
@@ -106,13 +116,13 @@ class Calendar:
     def human_read(d: timedelta) -> str:
         hour = d.seconds // 3600
         minute = d.seconds // 60 % 60
+        if minute >= 59:
+            hour += 1
         text = ""
         if d.days:
             text += f"{d.days}天"
         if hour:
             text += f"{hour}小时"
-        if minute:
-            text += f"{minute}分钟"
         return text
 
     @staticmethod
@@ -145,7 +155,7 @@ class Calendar:
         return s_date, e_date
 
     def parse_label(self, act: FinalAct, is_act: bool, s_date: datetime, e_date: datetime) -> None:
-        now = datetime.now()
+        now = self.get_now_hour()
         label = ""
         if self.FULL_TIME_RE.findall(act.title) or e_date - s_date > timedelta(days=365):
             label = f"{s_date.strftime('%m-%d %H:%M')} 后永久有效" if s_date < now else "永久有效"
@@ -239,7 +249,6 @@ class Calendar:
     async def get_birthday_char(
         self, date_list: List[Date], assets: AssetsService
     ) -> Tuple[int, Dict[int, Dict[int, List[BirthChar]]]]:
-        birthday_char_num = 0
         birthday_char_line = 0
         birthday_chars = {}
         for date in date_list:
@@ -258,7 +267,6 @@ class Calendar:
                                 icon=(await assets.avatar(roleToId(c)).icon()).as_uri(),
                             )
                         )
-                        birthday_char_num += 1
         return birthday_char_line, birthday_chars
 
     @staticmethod
@@ -287,8 +295,8 @@ class Calendar:
                 ret.append([li])
         return ret, char_count, char_old
 
-    async def get(self, assets: AssetsService):
-        now = datetime.now()
+    async def get_photo_data(self, assets: AssetsService):
+        now = self.get_now_hour()
         list_data, time_map = await self.req_cal_data()
         (
             date_list,
@@ -327,7 +335,7 @@ class Calendar:
             "list": target,
             "abyss": abyss,
             "char_mode": f"char-{char_count}-{char_old}",
-            "now_time": now.strftime("%Y-%m-%d %H:%M"),
+            "now_time": now.strftime("%Y-%m-%d %H 时"),
             "birthday_char_line": birthday_char_line,
             "birthday_chars": birthday_chars,
         }

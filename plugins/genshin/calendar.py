@@ -30,10 +30,9 @@ class CalendarPlugin(Plugin, BasePlugin):
     async def command_start(self, update: Update, _: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-
-        reply_text = await message.reply_text("派蒙需要时间整理数据，还请耐心等待哦~")
+        logger.info("用户 %s[%s] 查询日历", user.full_name, user.id)
         await message.reply_chat_action(ChatAction.TYPING)
-        data = await self.calendar.get(self.assets_service)
+        data = await self.calendar.get_photo_data(self.assets_service)
         image = await self.template_service.render(
             "genshin/calendar/calendar.html",
             data,
@@ -41,6 +40,3 @@ class CalendarPlugin(Plugin, BasePlugin):
         )
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await image.reply_photo(message)
-        if reply_text is not None:
-            await reply_text.delete()
-        logger.info(f"用户 {user.full_name}[{user.id}] [bold]查询日历[/bold]: 成功发送图片", extra={"markup": True})
