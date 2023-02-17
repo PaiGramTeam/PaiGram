@@ -1,6 +1,6 @@
 from typing import Optional, List, Tuple
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
@@ -177,16 +177,33 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         return await self.send_post_info(post_handler_data, message, post_id)
 
+    @staticmethod
+    def parse_post_text(soup: BeautifulSoup, post_subject: str) -> str:
+        def parse_tag(_tag: Tag) -> str:
+            if _tag.name == "a" and _tag.get("href"):
+                return f"[{escape_markdown(_tag.get_text(), version=2)}]({_tag.get('href')})"
+            return escape_markdown(_tag.get_text(), version=2)
+
+        post_p = soup.find_all("p")
+        post_text = f"*{escape_markdown(post_subject, version=2)}*\n\n"
+        start = True
+        for p in post_p:
+            t = p.get_text()
+            if not t and start:
+                continue
+            start = False
+            for tag in p.contents:
+                post_text += parse_tag(tag)
+            post_text += "\n"
+        return post_text
+
     async def send_post_info(self, post_handler_data: PostHandlerData, message: Message, post_id: int) -> int:
         post_info = await self.bbs.get_post_info(2, post_id)
         post_images = await self.bbs.get_images_by_post_id(2, post_id)
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
-        post_p = post_soup.find_all("p")
-        post_text = f"*{escape_markdown(post_subject, version=2)}*\n" f"\n"
-        for p in post_p:
-            post_text += f"{escape_markdown(p.get_text(), version=2)}\n"
+        post_text = self.parse_post_text(post_soup, post_subject)
         post_text += f"[source](https://www.miyoushe.com/ys/article/{post_id})"
         if len(post_text) >= MessageLimit.CAPTION_LENGTH:
             post_text = post_text[: MessageLimit.CAPTION_LENGTH]
@@ -366,7 +383,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
         for index, _ in enumerate(post_handler_data.post_images):
             if index + 1 not in post_handler_data.delete_photo:
                 post_images.append(post_handler_data.post_images[index])
-        post_text += f" @{channel_name}"
+        post_text += f" @{escape_markdown(channel_name, version=2)}"
         for tag in post_handler_data.tags:
             post_text += f" \\#{tag}"
         try:
