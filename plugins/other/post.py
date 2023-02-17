@@ -183,6 +183,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             if _tag.name == "a" and _tag.get("href"):
                 return f"[{escape_markdown(_tag.get_text(), version=2)}]({_tag.get('href')})"
             return escape_markdown(_tag.get_text(), version=2)
+
         post_p = soup.find_all("p")
         post_text = f"*{escape_markdown(post_subject, version=2)}*\n\n"
         start = True
