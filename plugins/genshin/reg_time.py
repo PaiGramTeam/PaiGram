@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-from genshin import Client, GenshinException
+from genshin import Client, GenshinException, InvalidCookies
 from genshin.client.routes import InternationalRoute  # noqa F401
 from genshin.utility import recognize_genshin_server, get_ds_headers
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -89,7 +89,16 @@ class RegTimePlugin(Plugin, BasePlugin):
         try:
             client = await get_genshin_client(user.id)
             game_uid = client.uid
-            reg_time = await self.get_reg_time_from_cache(client)
+            try:
+                reg_time = await self.get_reg_time_from_cache(client)
+            except InvalidCookies as exc:
+                await client.get_genshin_user(client.uid)
+                logger.warning("用户 %s[%s] 无法请求注册时间 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
+                reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，")
+                if filters.ChatType.GROUPS.filter(message):
+                    self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                    self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                return
             await message.reply_text(f"你的原神账号 [{game_uid}] 注册时间为：{reg_time}")
         except (UserNotFoundError, CookiesNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
