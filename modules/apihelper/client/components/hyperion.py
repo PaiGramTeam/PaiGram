@@ -122,7 +122,7 @@ class Hyperion:
         response = await self.client.get(
             url, params=self.get_images_params(resize=2000) if image else None, timeout=10, de_json=False
         )
-        return ArtworkImage(art_id=art_id, page=page, data=response.content)
+        return ArtworkImage(art_id=art_id, page=page, ext=url.split(".")[-1], data=response.content)
 
     async def get_new_list(self, gids: int, type_id: int, page_size: int = 20):
         """
