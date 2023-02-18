@@ -25,8 +25,7 @@ class ArtworkImage(BaseModel):
             return InputMediaPhoto(self.data, *args, **kwargs)
         elif file_type in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
             return InputMediaVideo(self.data, *args, **kwargs)
-        else:
-            return InputMediaDocument(self.data, *args, **kwargs)
+        return InputMediaDocument(self.data, *args, **kwargs)
 
 
 class PostInfo(BaseModel):
