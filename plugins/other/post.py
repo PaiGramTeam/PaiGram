@@ -5,7 +5,6 @@ from telegram import (
     Update,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
-    InputMediaPhoto,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
@@ -210,8 +209,8 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割")
         try:
             if len(post_images) > 1:
-                media = [InputMediaPhoto(img_info.data) for img_info in post_images]
-                media[0] = InputMediaPhoto(post_images[0].data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
+                media = [img_info.input_media() for img_info in post_images if img_info.format]
+                media[0] = post_images[0].input_media(caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
                 if len(media) > 10:
                     media = media[:10]
                     await message.reply_text("获取到的图片已经超过10张，为了保证发送成功，已经删除一部分图片")
@@ -388,8 +387,8 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             post_text += f" \\#{tag}"
         try:
             if len(post_images) > 1:
-                media = [InputMediaPhoto(img_info.data) for img_info in post_images]
-                media[0] = InputMediaPhoto(post_images[0].data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
+                media = [img_info.input_media() for img_info in post_images if img_info.format]
+                media[0] = post_images[0].input_media(caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
                 await context.bot.send_media_group(channel_id, media=media)
             elif len(post_images) == 1:
                 image = post_images[0]

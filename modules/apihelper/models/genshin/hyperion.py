@@ -1,9 +1,11 @@
 import imghdr
-from typing import List, Any
+from typing import List, Any, Union
 
 from pydantic import BaseModel, PrivateAttr
 
 __all__ = ("ArtworkImage", "PostInfo")
+
+from telegram import InputMediaPhoto, InputMediaVideo, InputMediaDocument
 
 
 class ArtworkImage(BaseModel):
@@ -14,10 +16,18 @@ class ArtworkImage(BaseModel):
 
     @property
     def format(self) -> str:
-        if self.is_error:
-            return ""
+        return "" if self.is_error else imghdr.what(None, self.data)
+
+    def input_media(self, *args, **kwargs) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
+        file_type = self.format
+        if not file_type:
+            return None
+        elif file_type in {"jpeg", "png", "webp"}:
+            return InputMediaPhoto(self.data, *args, **kwargs)
+        elif file_type in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
+            return InputMediaVideo(self.data, *args, **kwargs)
         else:
-            imghdr.what(None, self.data)
+            return InputMediaDocument(self.data, *args, **kwargs)
 
 
 class PostInfo(BaseModel):
