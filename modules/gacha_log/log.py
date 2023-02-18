@@ -1,6 +1,8 @@
+import asyncio
 import contextlib
 import datetime
 import json
+from concurrent.futures import ThreadPoolExecutor
 from os import PathLike
 from pathlib import Path
 from typing import Dict, IO, List, Optional, Tuple, Union
@@ -160,6 +162,17 @@ class GachaLog:
         except Exception as exc:  # pylint: disable=W0703
             raise GachaLogFileError from exc
 
+    @staticmethod
+    def import_data_backend(all_items: List[GachaItem], gacha_log: GachaLogInfo, temp_id_data: Dict) -> int:
+        new_num = 0
+        for item_info in all_items:
+            pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
+            if item_info.id not in temp_id_data[pool_name]:
+                gacha_log.item_list[pool_name].append(item_info)
+                temp_id_data[pool_name].append(item_info.id)
+                new_num += 1
+        return new_num
+
     async def import_gacha_log_data(self, user_id: int, client: Client, data: dict, verify_uid: bool = True) -> int:
         new_num = 0
         try:
@@ -185,12 +198,10 @@ class GachaLog:
             temp_id_data = {
                 pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()
             }
-            for item_info in all_items:
-                pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
-                if item_info.id not in temp_id_data[pool_name]:
-                    gacha_log.item_list[pool_name].append(item_info)
-                    temp_id_data[pool_name].append(item_info.id)
-                    new_num += 1
+            # 使用新进程进行遍历，避免堵塞主进程
+            executor = ThreadPoolExecutor()
+            loop = asyncio.get_event_loop()
+            new_num = await loop.run_in_executor(executor, self.import_data_backend, all_items, gacha_log, temp_id_data)
             for i in gacha_log.item_list.values():
                 # 检查导入后的数据是否合法
                 await self.verify_data(i)
