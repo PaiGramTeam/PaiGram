@@ -11,6 +11,7 @@ from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
+from core.config import config
 from core.cookies import CookiesService
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler, conversation
@@ -115,8 +116,8 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         else:
             await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
             return
-        if document.file_size > 2 * 1024 * 1024:
-            await message.reply_text("文件过大，请发送小于 2 MB 的文件")
+        if document.file_size > config.plugin.download_file_max_size * 1024 * 1024:
+            await message.reply_text(f"文件过大，请发送小于 {config.plugin.download_file_max_size} MB 的文件")
             return
         try:
             out = BytesIO()
