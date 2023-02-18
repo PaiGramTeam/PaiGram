@@ -104,6 +104,13 @@ class NoticeConfig(Settings):
         env_prefix = "notice_"
 
 
+class PluginConfig(Settings):
+    download_file_max_size: int = 5
+
+    class Config(Settings.Config):
+        env_prefix = "plugin_"
+
+
 class BotConfig(Settings):
     debug: bool = False
 
@@ -134,6 +141,7 @@ class BotConfig(Settings):
     mtproto: MTProtoConfig = MTProtoConfig()
     error: ErrorConfig = ErrorConfig()
     notice: NoticeConfig = NoticeConfig()
+    plugin: PluginConfig = PluginConfig()
 
 
 BotConfig.update_forward_refs()
