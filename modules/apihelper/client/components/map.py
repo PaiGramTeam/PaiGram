@@ -1,5 +1,4 @@
 import json
-from io import BytesIO
 from pathlib import Path
 from typing import Dict, Union
 
@@ -13,23 +12,28 @@ MAP_PATH.mkdir(parents=True, exist_ok=True)
 
 
 class MapException(Exception):
-    """ 提瓦特地图异常 """
+    """提瓦特地图异常"""
 
     def __init__(self, message: str):
         self.message = message
 
 
 class MapHelper:
-    """ 提瓦特大地图 """
+    """提瓦特大地图"""
 
     MAP_API_URL = "https://map.minigg.cn/map/get_map"
     LABEL_URL = "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/label/tree?app_sn=ys_obc"
     COUNT_URL = "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/point/list"
     COUNT_PARAMS = {"app_sn": "ys_obc", "map_id": "2"}
     MAP_ID_LIST = [
-        "2",  # 提瓦特
-        "7",  # 渊下宫
-        "9",  # 层岩巨渊·地下矿区
+        "2",
+        "7",
+        "9",
+    ]
+    MAP_NAME_LIST = [
+        "提瓦特大陆",
+        "渊下宫",
+        "层岩巨渊·地下矿区",
     ]
 
     def __init__(self):
@@ -43,7 +47,7 @@ class MapHelper:
 
     @staticmethod
     def load(data: Dict, path: Path) -> None:
-        """ 加载文件 """
+        """加载文件"""
         if not path.exists():
             return
         data.clear()
@@ -81,17 +85,17 @@ class MapHelper:
                     data[map_id][label.name] = len([i for i in list_data.point_list if i.label_id == label.id])
         self.save(data, self.label_count_path)
 
-    def get_label_count(self, map_id: str, label_name: str) -> int:
+    def get_label_count(self, map_id: Union[str, int], label_name: str) -> int:
         """获取标签数量"""
-        return self.label_count.get(map_id, {}).get(label_name, 0)
+        return self.label_count.get(str(map_id), {}).get(label_name, 0)
 
-    async def get_map(self, name: str, map_id: str) -> bytes:
+    async def get_map(self, map_id: Union[str, int], name: str) -> bytes:
         """获取资源图片"""
         req = await self.client.get(
             self.MAP_API_URL,
             params={
                 "resource_name": name,
-                "map_id": map_id,
+                "map_id": str(map_id),
                 "is_cluster": False,
             },
             timeout=60,
