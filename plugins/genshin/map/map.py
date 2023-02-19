@@ -40,9 +40,15 @@ class Map(Plugin, BasePlugin):
         await message.reply_chat_action(ChatAction.TYPING)
         if len(args) >= 1:
             resource_name = args[0]
+            region_name = None
+            zoom = None
+            if len(args) >= 2:
+                region_name = args[1]
+            if len(args) >= 3:
+                zoom = args[2]
         else:
             logger.info(f"用户: {user.full_name} [{user.id}] 使用了 map 命令")
-            await message.reply_text("请输入要查找的资源，或私聊派蒙发送 `/map list` 查看资源列表", parse_mode="Markdown")
+            await message.reply_text("请按以下格式发送指令`/map <资源名称> [区域名称] [地图缩放等级]`，或私聊派蒙发送 `/map list` 查看资源列表", parse_mode="Markdown")
             return
         if resource_name in ("list", "列表"):
             if filters.ChatType.GROUPS.filter(message):
@@ -55,13 +61,14 @@ class Map(Plugin, BasePlugin):
             text = self.map_helper.get_resource_list_mes()
             await message.reply_text(text)
             return
-        logger.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 {resource_name}")
-        text = await self.map_helper.get_resource_map_mes(resource_name)
+        logger.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 {resource_name}，区域 {region_name}，缩放 {zoom}")
+        text, img_f = await self.map_helper.get_resource_map_mes(resource_name, region_name, zoom)
         if "不知道" in text or "没有找到" in text:
             await message.reply_text(text, parse_mode="Markdown")
             return
-        img = Image.open(f"cache{sep}map.jpg")
+        img = Image.open(img_f)
+        img_f.seek(0)
         if img.size[0] > 2048 or img.size[1] > 2048:
-            await message.reply_document(open(f"cache{sep}map.jpg", mode="rb+"), caption=text)
+            await message.reply_document(img_f, caption=text)
         else:
-            await message.reply_photo(open(f"cache{sep}map.jpg", mode="rb+"), caption=text)
+            await message.reply_photo(img_f, caption=text)

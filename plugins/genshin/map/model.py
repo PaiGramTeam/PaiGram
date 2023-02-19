@@ -7,6 +7,8 @@ import httpx
 import ujson
 from PIL import Image, ImageMath
 
+import copy
+
 from utils.helpers import REQUEST_HEADERS
 
 Image.MAX_IMAGE_PIXELS = None
@@ -16,17 +18,20 @@ RESOURCE_ICON_OFFSET = (-int(150 * 0.5 * ZOOM), -int(150 * ZOOM))
 
 
 class MapHelper:
+    MAP_ID = 2
     LABEL_URL = "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/label/tree?app_sn=ys_obc"
-    POINT_LIST_URL = "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/point/list?map_id=2&app_sn=ys_obc"
-    MAP_URL = "https://api-static.mihoyo.com/common/map_user/ys_obc/v1/map/info?map_id=2&app_sn=ys_obc&lang=zh-cn"
+    POINT_LIST_URL = "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/point/list?map_id={}&app_sn=ys_obc"
+    MAP_URL = "https://api-static.mihoyo.com/common/map_user/ys_obc/v1/map/info?map_id={}&app_sn=ys_obc&lang=zh-cn"
+    ANCHOR_URL = "https://api-static.mihoyo.com/common/map_user/ys_obc/v1/map/map_anchor/list?map_id={}&app_sn=ys_obc&lang=zh-cn"
+    REGION_URL = "https://api-static.mihoyo.com/common/map_user/ys_obc/v1/map/get_map_pageLabel?map_id={}&app_sn=ys_obc&lang=zh-cn"
 
     def __init__(self, cache_dir_name: str = "cache"):
         self._current_dir = os.getcwd()
         self._output_dir = os.path.join(self._current_dir, cache_dir_name)
         self._resources_icon_dir = os.path.join(self._current_dir, "resources", "icon")
-        self._cache_dir = os.path.join(self._current_dir, "cache")
+        self._cache_dir = os.path.join(self._current_dir, cache_dir_name)
         self._map_dir = os.path.join(self._cache_dir, "map_icon.jpg")
-        self.client = httpx.AsyncClient(headers=REQUEST_HEADERS, timeout=10.0)
+        self.client = httpx.AsyncClient(headers=REQUEST_HEADERS, timeout=30.0)
         self.all_resource_type: dict = {}
         """这个字典保存所有资源类型
         "1": {
@@ -62,6 +67,15 @@ class MapHelper:
             "display_state": 1
         }
         """
+        
+        self.all_regions: dict = dict()
+        """这个列表保存所有地点信息
+        "蒙德": {
+            "center": [-111.96，-200.87],
+            "zoom": -1
+            }
+        """
+        
         self.date: str = ""
         """记录上次更新"all_resource_point_list"的日期
         """
@@ -77,8 +91,7 @@ class MapHelper:
     async def download_icon(self, url):
         """下载图片 返回Image对象
         :param url:
-        :return:
-        """
+        :return:        """
         resp = await self.client.get(url=url)
         if resp.status_code != 200:
             raise ValueError(f"获取图片数据失败，错误代码 {resp.status_code}")
@@ -105,11 +118,11 @@ class MapHelper:
         裁切地图需要最新的资源点位置，所以要先调用 up_label_and_point_list 再更新地图
         :return: None
         """
-        map_info = await self.download_json(self.MAP_URL)
+        map_info = await self.download_json(self.MAP_URL.format(self.MAP_ID))
         map_info = map_info["data"]["info"]["detail"]
         map_info = ujson.loads(map_info)
 
-        map_url_list = map_info["slices"][0]
+        map_url_list = map_info["slices"]
         origin = map_info["origin"]
 
         x_start = map_info["total_size"][1]
@@ -134,16 +147,26 @@ class MapHelper:
         y = int(y_end - y_start)
         self.map_icon = Image.new("RGB", (x, y))
         x_offset = 0
-        for i in map_url_list:
-            map_url = i["url"]
-            map_icon = await self.download_icon(map_url)
-            self.map_icon.paste(map_icon, (int(-x_start) + x_offset, int(-y_start)))
-            x_offset += map_icon.size[0]
+        y_offset = 0
+        for row in map_url_list:
+            for tile in row:
+                map_url = tile["url"]
+                map_icon = await self.download_icon(map_url)
+                self.map_icon.paste(map_icon, (int(-x_start) + x_offset, int(-y_start) + y_offset))
+                x_offset += map_icon.size[0]
+            x_offset = 0
+            y_offset += map_icon.size[1]
 
     async def up_label_and_point_list(self):
         """更新label列表和资源点列表
         :return:
         """
+        def parse_anchors(anchors, zoom=-1):
+            for anchor in anchors:
+                center_x = (float(anchor['r_x'])+float(anchor['l_x']))/2
+                center_y = (float(anchor['r_y'])+float(anchor['l_y']))/2
+                self.all_regions[anchor['name']] = {'center':[center_x, center_y], 'zoom': zoom}
+                parse_anchors(anchor.get('children',[]), zoom=zoom+(2.5-zoom)/2)
         label_data = await self.download_json(self.LABEL_URL)
         for label in label_data["data"]["tree"]:
             self.all_resource_type[str(label["id"])] = label
@@ -152,8 +175,15 @@ class MapHelper:
                 self.can_query_type_list[sublist["name"]] = str(sublist["id"])
                 await self.up_icon_image(sublist)
             label["children"] = []
-        test = await self.download_json(self.POINT_LIST_URL)
+        test = await self.download_json(self.POINT_LIST_URL.format(self.MAP_ID))
         self.all_resource_point_list = test["data"]["point_list"]
+        anchor_data = await self.download_json(self.ANCHOR_URL.format(self.MAP_ID))
+        parse_anchors(anchor_data['data']['list'])
+        region_data = await self.download_json(self.REGION_URL.format(self.MAP_ID))
+        for region in region_data['data']['list']:
+            if region['map_id']==self.MAP_ID and region['jump_type']=='coordinate':
+                center = [float(i) for i in region['center'].split(',')]
+                self.all_regions[region['name']] = {'center':center[::-1], 'zoom':float(region['zoom'])-0.5}
         self.date = time.strftime("%d")
 
     async def up_icon_image(self, sublist: dict):
@@ -189,18 +219,23 @@ class MapHelper:
             with open(icon_path, "wb") as icon_file:
                 bg.save(icon_file)
 
-    async def get_resource_map_mes(self, name):
+    async def get_resource_map_mes(self, name, region=None, zoom=None):
         if self.date != time.strftime("%d"):
             await self.init_point_list_and_map()
         if name not in self.can_query_type_list:
-            return f"派蒙还不知道 {name} 在哪里呢，可以发送 `/map list` 查看资源列表"
+            return f"派蒙还不知道 {name} 在哪里呢，可以发送 `/map list` 查看资源列表", None
+        if region is not None and region not in self.all_regions:
+            return f"派蒙还不知道 {region} 是哪里呢", None
+        if region is not None:
+            region = copy.deepcopy(self.all_regions[region])
+            region['zoom'] = float(zoom or region['zoom'])
         resource_id = self.can_query_type_list[name]
-        map_res = ResourceMap(self.all_resource_point_list, self.map_icon, self.center, resource_id)
+        map_res = ResourceMap(self._cache_dir, self.all_resource_point_list, self.map_icon, self.center, resource_id, region)
         count = map_res.get_resource_count()
         if not count:
-            return f"派蒙没有找到 {name} 的位置，可能米游社wiki还没更新"
-        map_res.gen_jpg()
-        return f"派蒙一共找到 {name} 的 {count} 个位置点\n* 数据来源于米游社wiki"
+            return f"派蒙没有找到 {name} 的位置，可能米游社wiki还没更新", None
+        img = map_res.gen_jpg()
+        return f"派蒙一共找到 {name} 的 {count} 个位置点\n* 数据来源于米游社wiki", img
 
     def get_resource_list_mes(self):
         temp = {list_id: [] for list_id in self.all_resource_type if self.all_resource_type[list_id]["depth"] == 1}
@@ -223,7 +258,8 @@ class MapHelper:
 
 
 class ResourceMap:
-    def __init__(self, all_resource_point_list: List[dict], map_icon: Image, center: List[float], resource_id: int):
+    def __init__(self, cache_dir_name: str, all_resource_point_list: List[dict], map_icon: Image, center: List[float], resource_id: int, region: dict = None):
+        self.cache_dir_name = cache_dir_name
         self.all_resource_point_list = all_resource_point_list
         self.resource_id = resource_id
         self.center = center
@@ -236,12 +272,23 @@ class ResourceMap:
         self.x_end = 0
         self.y_end = 0
         resource_icon = Image.open(self.get_icon_path())
-        self.resource_icon = resource_icon.resize((int(150 * ZOOM), int(150 * ZOOM)))
+        self.resource_icon = resource_icon
         self.resource_xy_list = self.get_resource_point_list()
+        self.region = self.convert_region(region) #{"center": "1183.49, -116.41", "zoom": -1}
 
+    def convert_region(self, region):
+        if region is None:
+            return [0, 0, self.map_size[0], self.map_size[1]]
+        center = [region['center'][0], region['center'][1]]
+        center[0] += self.center[0]
+        center[1] += self.center[1]
+        width = self.map_size[0]/2**(region['zoom']+3)
+        height = self.map_size[1]/2**(region['zoom']+3)
+        return [center[0]-width/2, center[1]-height/2, center[0]+width/2, center[1]+height/2]
+    
     def get_icon_path(self):
         # 检查有没有图标，有返回正确图标，没有返回默认图标
-        icon_path = os.path.join(f"resources{os.sep}icon", f"{self.resource_id}.png")
+        icon_path = os.path.join(self.cache_dir_name, f"{self.resource_id}.png")
         if os.path.exists(icon_path):
             return icon_path
         return os.path.join(f"resources{os.sep}icon{os.sep}0.png")
@@ -257,6 +304,8 @@ class ResourceMap:
         return temp_list
 
     def paste(self):
+        icon_size = int(max(min((self.y_end-self.y_start)/200, (self.x_end-self.x_start)/200, 150), 45))
+        self.resource_icon = self.resource_icon.resize((icon_size, icon_size))
         for x, y in self.resource_xy_list:
             # 把资源图片贴到地图上
             # 这时地图已经裁切过了，要以裁切后的地图左上角为中心再转换一次坐标
@@ -280,6 +329,12 @@ class ResourceMap:
         self.y_start -= 150
         self.x_end += 150
         self.y_end += 150
+        
+        self.x_start = max(self.x_start, self.region[0])
+        self.y_start = max(self.y_start, self.region[1])
+        self.x_end = min(self.x_end, self.region[2])
+        self.y_end = min(self.y_end, self.region[3])
+        
 
         # 如果图片裁切得太小会看不出资源的位置在哪，检查图片裁切的长和宽看够不够1000，不到1000的按1000裁切
         if (self.x_end - self.x_start) < 1000:
@@ -291,16 +346,24 @@ class ResourceMap:
             self.y_start = center - 500
             self.y_end = center + 500
 
+        self.x_start = int(self.x_start)
+        self.y_start = int(self.y_start)
+        self.x_end = int(self.x_end)
+        self.y_end = int(self.y_end)
+        
+
         self.map_image = self.map_image.crop((self.x_start, self.y_start, self.x_end, self.y_end))
 
     def gen_jpg(self):
         if not self.resource_xy_list:
             return "没有这个资源的信息"
-        if not os.path.exists("cache"):
-            os.mkdir("cache")  # 查找 cache 目录 (缓存目录) 是否存在，如果不存在则创建
         self.crop()
         self.paste()
-        self.map_image.save(f"cache{os.sep}map.jpg", format="JPEG")
+        output = BytesIO()
+        self.map_image.save(output, format="JPEG")
+        output.seek(0)
+        output.name = 'map.jpg'
+        return output
 
     def get_resource_count(self):
         return len(self.resource_xy_list)
