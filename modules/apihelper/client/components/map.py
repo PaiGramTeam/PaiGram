@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Dict, Union
 
-from httpx import AsyncClient
+from httpx import AsyncClient, HTTPError
 
 from modules.apihelper.models.genshin.map import LabelTree, ListData
 from utils.const import PROJECT_ROOT
@@ -91,15 +91,18 @@ class MapHelper:
 
     async def get_map(self, map_id: Union[str, int], name: str) -> bytes:
         """获取资源图片"""
-        req = await self.client.get(
-            self.MAP_API_URL,
-            params={
-                "resource_name": name,
-                "map_id": str(map_id),
-                "is_cluster": False,
-            },
-            timeout=60,
-        )
+        try:
+            req = await self.client.get(
+                self.MAP_API_URL,
+                params={
+                    "resource_name": name,
+                    "map_id": str(map_id),
+                    "is_cluster": False,
+                },
+                timeout=60,
+            )
+        except HTTPError as e:
+            raise MapException("请求超时，请稍后再试") from e
         if req.headers.get("content-type") == "image/jpeg":
             return req.content
         if req.headers.get("content-type") == "application/json":
