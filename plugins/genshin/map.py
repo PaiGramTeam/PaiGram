@@ -138,7 +138,7 @@ class Map(Plugin, BasePlugin):
                 return
             await message.reply_text("请指定要查找的资源名称。", parse_mode="Markdown")
             return
-        logger.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 {resource_name}")
+        logger.info("用户: %s [%s] 使用 map 命令查询了 %s", user.username, user.id, resource_name)
         if resource_name not in self.map_helper.query_map:
             await message.reply_text("没有找到该资源。", parse_mode="Markdown")
             return
@@ -174,7 +174,7 @@ class Map(Plugin, BasePlugin):
             _user_id = int(_data[1])
             _map_id = _data[2]
             _name = _data[3]
-            logger.debug(f"callback_query_data 函数返回 user_id[{_user_id}] map_id[{_map_id}] name[{_name}]")
+            logger.debug("callback_query_data 函数返回 user_id[%s] map_id[%s] name[%s]", _user_id, _map_id, _name)
             return _user_id, _map_id, _name
 
         user_id, map_id, name = await get_map_callback(callback_query.data)

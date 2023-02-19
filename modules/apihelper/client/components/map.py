@@ -54,9 +54,10 @@ class MapHelper:
         with open(path, "r", encoding="utf-8") as f:
             data.update(json.load(f))
 
-    @staticmethod
-    def save(data: Dict, path: Path) -> None:
+    def save(self, data: Dict, path: Path) -> None:
         """保存查询映射"""
+        if path not in [self.query_map_path, self.label_count_path]:
+            return
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
