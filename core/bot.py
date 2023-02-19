@@ -260,7 +260,7 @@ class Bot:
         self.app = (
             TgApplication.builder()
             .read_timeout(self.config.read_timeout)
-            .write_timeout(self.config.read_timeout)
+            .write_timeout(self.config.write_timeout)
             .connect_timeout(self.config.connect_timeout)
             .pool_timeout(self.config.pool_timeout)
             .get_updates_read_timeout(self.config.update_read_timeout)
