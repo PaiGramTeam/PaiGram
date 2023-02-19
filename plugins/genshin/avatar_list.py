@@ -175,7 +175,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
-            response = await self.enka_client.fetch_user(client.uid)
+            response = await self.enka_client.fetch_user(client.uid, info=True)
             name_card = (await self.assets_service.namecard(response.player.namecard.id).navbar()).as_uri()
             avatar = (await self.assets_service.avatar(response.player.avatar.id).icon()).as_uri()
             nickname = response.player.nickname

@@ -12,13 +12,9 @@ class RedisCache(Cache):
         self.redis = redis
         self.ttl = ttl
         self.key = key
-        super().__init__(1024, 60 * 3)
 
     def get_qname(self, key):
-        if self.key:
-            return f"{self.key}:{key}"
-        else:
-            return f"enka_network:{key}"
+        return f"{self.key}:{key}" if self.key else f"enka_network:{key}"
 
     async def get(self, key) -> Optional[Dict[str, Any]]:
         qname = self.get_qname(key)
