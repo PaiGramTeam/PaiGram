@@ -158,7 +158,7 @@ class Map(Plugin, BasePlugin):
     @handler(CallbackQueryHandler, pattern=r"^get_map\|", block=False)
     @restricts(restricts_time=3, without_overlapping=True)
     @error_callable
-    async def get_player_cards(self, update: Update, _: CallbackContext) -> None:
+    async def get_maps(self, update: Update, _: CallbackContext) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
         message = callback_query.message
