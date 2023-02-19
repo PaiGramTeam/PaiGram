@@ -122,10 +122,14 @@ class BotConfig(Settings):
     join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
 
     timeout: int = 10
-    read_timeout: float = 2
+    read_timeout: Optional[float] = None
     write_timeout: Optional[float] = None
     connect_timeout: Optional[float] = None
     pool_timeout: Optional[float] = None
+    update_read_timeout: Optional[float] = None
+    update_write_timeout: Optional[float] = None
+    update_connect_timeout: Optional[float] = None
+    update_pool_timeout: Optional[float] = None
 
     genshin_ttl: Optional[int] = None
 

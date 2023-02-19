@@ -259,6 +259,14 @@ class Bot:
         logger.info("正在初始化BOT")
         self.app = (
             TgApplication.builder()
+            .read_timeout(self.config.read_timeout)
+            .write_timeout(self.config.write_timeout)
+            .connect_timeout(self.config.connect_timeout)
+            .pool_timeout(self.config.pool_timeout)
+            .get_updates_read_timeout(self.config.update_read_timeout)
+            .get_updates_write_timeout(self.config.update_write_timeout)
+            .get_updates_connect_timeout(self.config.update_connect_timeout)
+            .get_updates_pool_timeout(self.config.update_pool_timeout)
             .rate_limiter(AIORateLimiter())
             .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
             .token(self._config.bot_token)
@@ -271,10 +279,6 @@ class Bot:
                     self.app.run_polling(
                         close_loop=False,
                         timeout=self.config.timeout,
-                        read_timeout=self.config.read_timeout,
-                        write_timeout=self.config.write_timeout,
-                        connect_timeout=self.config.connect_timeout,
-                        pool_timeout=self.config.pool_timeout,
                         allowed_updates=Update.ALL_TYPES,
                     )
                     break
