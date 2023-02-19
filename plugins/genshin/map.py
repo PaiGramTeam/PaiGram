@@ -118,18 +118,24 @@ class Map(Plugin, BasePlugin):
         return f"派蒙一共找到了 {name} 的 {count} 个位置点\n* 数据来源于米游社wiki"
 
     @handler(CommandHandler, command="map", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^资源点查询(.*)"), block=False)
+    @handler(MessageHandler, filters=filters.Regex("^(?P<name>.*)(在哪里|在哪|哪里有|哪儿有|哪有|在哪儿)$"), block=False)
+    @handler(MessageHandler, filters=filters.Regex("^(哪里有|哪儿有|哪有)(?P<name>.*)$"), block=False)
     @error_callable
     @restricts(restricts_time=20)
     async def command_start(self, update: Update, context: CallbackContext):
         message = update.effective_message
         args = context.args
+        group_dict = context.match and context.match.groupdict()
         user = update.effective_user
+        resource_name = None
         await message.reply_chat_action(ChatAction.TYPING)
-        if len(args) >= 1:
+        if args and len(args) >= 1:
             resource_name = args[0]
-        else:
-            logger.info(f"用户: {user.full_name} [{user.id}] 使用了 map 命令")
+        elif group_dict:
+            resource_name = group_dict.get("name", None)
+        if not resource_name:
+            if group_dict:
+                return
             await message.reply_text("请指定要查找的资源名称。", parse_mode="Markdown")
             return
         logger.info(f"用户: {user.full_name} [{user.id}] 使用 map 命令查询了 {resource_name}")
