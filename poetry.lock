@@ -255,15 +255,18 @@ test = ["pytest", "pytest-rerunfailures"]
 
 [[package]]
 name = "async-lru"
-version = "1.0.3"
+version = "2.0.1"
 description = "Simple lru_cache for asyncio"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.8"
 files = [
-    {file = "async-lru-1.0.3.tar.gz", hash = "sha256:c2cb9b2915eb14e6cf3e717154b40f715bf90e596d73623677affd0d1fbcd32a"},
-    {file = "async_lru-1.0.3-py3-none-any.whl", hash = "sha256:ea692c303feb6211ff260d230dae1583636f13e05c9ae616eada77855b7f415c"},
+    {file = "async-lru-2.0.1.tar.gz", hash = "sha256:2bba4fe007a7da40a8da0388a370e2beae2f602edef12b2e705ae4c781d0fc31"},
+    {file = "async_lru-2.0.1-py3-none-any.whl", hash = "sha256:4abb67e22d36fa92205602798fdface58e396c1555c2ab57e29b35725b016d2f"},
 ]
+
+[package.dependencies]
+typing-extensions = ">=4.0.0"
 
 [[package]]
 name = "async-timeout"
@@ -2904,4 +2907,4 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "2be49a675775fb01971640b7bc9dfd22a457a05d0fbb5b3d129100b774499f8e"
+content-hash = "693f2b02f02c211f656fb91c4f15aeaab0dc2d574aed419c629b1c1520561929"
