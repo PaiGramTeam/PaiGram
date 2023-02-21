@@ -206,7 +206,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
                 ArkoWrapper(message.text.split(";"))
                 .filter(lambda x: x != "")
                 .map(lambda x: x.strip())
-                .map(lambda x: ((y := x.split("="))[0], y[1]))
+                .map(lambda x: ((y := x.split("=", 1))[0], y[1]))
             )
             cookie = {x[0]: x[1] for x in wrapped}
             cookies = self.parse_cookie(cookie)
