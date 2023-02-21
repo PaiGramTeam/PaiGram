@@ -22,9 +22,11 @@ class CookiesModel(BaseModel):
 
     account_mid_v2: Optional[str] = None
     cookie_token_v2: Optional[str] = None
+    account_id_v2: Optional[IntStr] = None
 
     ltoken_v2: Optional[str] = None
     ltmid_v2: Optional[str] = None
+    ltuid_v2: Optional[IntStr] = None
 
     @property
     def is_v1(self) -> bool:
@@ -60,4 +62,8 @@ class CookiesModel(BaseModel):
             return self.login_uid
         if self.stuid:
             return self.stuid
+        if self.account_id_v2:
+            return self.account_id_v2
+        if self.ltuid_v2:
+            return self.ltuid_v2
         return None
