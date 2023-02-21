@@ -47,19 +47,11 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
     def parse_cookie(cookie: Dict[str, str]) -> Dict[str, str]:
         cookies = {}
 
-        v1_keys = ["ltoken", "ltuid", "login_uid", "cookie_token"]
-        v2_keys = ["ltoken_v2", "ltmid_v2", "account_mid_v2", "cookie_token_v2", "login_ticket", "stoken"]
-
-        cookie_is_v1 = None
+        v1_keys = ["ltoken", "ltuid", "account_id", "cookie_token", "stoken", "stuid", "login_uid", "login_ticket"]
+        v2_keys = ["ltoken_v2", "ltmid_v2", "ltuid_v2", "account_mid_v2", "cookie_token_v2", "account_id_v2"]
 
         for k in v1_keys + v2_keys:
-            v = cookie.get(k)
-            if v is not None and cookie_is_v1 is None:
-                cookie_is_v1 = k not in v2_keys
             cookies[k] = cookie.get(k)
-
-        if cookie_is_v1:
-            cookies["account_id"] = cookies["ltuid"]
 
         return {k: v for k, v in cookies.items() if v is not None}
 
