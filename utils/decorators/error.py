@@ -48,8 +48,8 @@ async def send_user_notification(update: Update, context: CallbackContext, text:
             await update.callback_query.answer(text, show_alert=True)
             return None
         return await message.reply_text(text, reply_markup=buttons, allow_sending_without_reply=True)
-    except ConnectTimeout:
-        logger.error("httpx 模块连接服务器 ConnectTimeout 发送 update_id[%s] 错误信息失败", update.update_id)
+    except TimedOut:
+        logger.error("发送 update_id[%s] 错误信息失败 连接超时", update.update_id)
     except BadRequest as exc:
         logger.error("发送 update_id[%s] 错误信息失败 错误信息为 [%s]", update.update_id, exc.message)
     except Forbidden as exc:
