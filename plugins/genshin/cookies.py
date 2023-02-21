@@ -12,13 +12,12 @@ from telegram.helpers import escape_markdown
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
-from core.cookies.models import Cookies
 from core.cookies.services import CookiesService
 from core.plugin import Plugin, conversation, handler
 from core.user.error import UserNotFoundError
 from core.user.models import User
 from core.user.services import UserService
-from modules.apihelper.client.components.signin import SignIn
+from modules.apihelper.client.components.authclient import AuthClient
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
@@ -31,7 +30,6 @@ class AddUserCommandData(TelegramObject):
     cookies: dict = {}
     game_uid: int = 0
     phone: int = 0
-    sign_in_client: Optional[SignIn] = None
 
 
 CHECK_SERVER, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10103)
@@ -104,13 +102,13 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             else:
                 await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         add_user_command_data.user = user_info
-        sign_in_client = SignIn()
-        url = await sign_in_client.create_login_data()
-        data = sign_in_client.generate_qrcode(url)
+        auth_client = AuthClient()
+        url, ticket = await auth_client.create_qrcode_login()
+        data = auth_client.generate_qrcode(url)
         text = f"你好 {user.mention_html()} ！该绑定方法仅支持国服，请在3分钟内使用米游社扫码并确认进行绑定。"
         await message.reply_photo(data, caption=text, parse_mode=ParseMode.HTML)
-        if await sign_in_client.check_login():
-            add_user_command_data.cookies = sign_in_client.cookie
+        if await auth_client.check_qrcode_login(ticket):
+            add_user_command_data.cookies = auth_client.cookies.to_dict()
             return await self.check_cookies(update, context)
         else:
             await message.reply_markdown_v2("可能是验证码已过期或者你没有同意授权，请重新发送命令进行绑定。")
@@ -272,16 +270,17 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         with contextlib.suppress(Exception):
             if cookies.get("login_ticket"):
-                sign_in_client = SignIn(cookie=add_user_command_data.cookies)
-                await sign_in_client.get_s_token()
-                add_user_command_data.cookies = sign_in_client.cookie
-                logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
-                stoken = add_user_command_data.cookies.get("stoken")
-                account_id = add_user_command_data.cookies.get("account_id")
-                if stoken and account_id:
-                    cookie_token = await sign_in_client.get_cookie_account_info_by_stoken(stoken, account_id)
-                    add_user_command_data.cookies["cookie_token"] = cookie_token
-                    logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
+                auth_client = AuthClient(cookies=add_user_command_data.cookies)
+                if await auth_client.get_stoken_by_login_ticket():
+                    logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
+                    add_user_command_data.cookies = auth_client.cookies.to_dict()
+                    if await auth_client.get_cookie_token_by_stoken():
+                        logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
+                        add_user_command_data.cookies = auth_client.cookies.to_dict()
+                        if await auth_client.get_ltoken_by_stoken():
+                            logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
+                            auth_client.cookies.remove_v2()
+                            add_user_command_data.cookies = auth_client.cookies.to_dict()
         user_info: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定
