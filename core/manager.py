@@ -153,7 +153,7 @@ class ComponentManager(Manager[ComponentType]):
                     components = components.remove(component)
                 except Exception as e:
                     logger.debug(f'组件 "{component.__name__}" 初始化失败: [red]{e}[/]', extra={"markup": True})
-            end_len = len(components)
+            end_len = len(list(components))
             if start_len == end_len:
                 retry_times += 1
 
