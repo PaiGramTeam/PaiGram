@@ -15,7 +15,8 @@ from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStat
 from core.services.cookies.services import CookiesService
 from core.services.players.models import PlayersDataBase as Player, RegionEnum
 from core.services.players.services import PlayersService
-from modules.apihelper.client.components.signin import SignIn
+from modules.apihelper.client.components.authclient import AuthClient
+from modules.apihelper.models.genshin.cookies import CookiesModel
 from utils.decorators.restricts import restricts
 from utils.log import logger
 
@@ -33,7 +34,6 @@ class AccountCookiesPluginData(TelegramObject):
     cookies: dict = {}
     account_id: int = 0
     # player_id: int = 0
-    sign_in_client: Optional[SignIn] = None
     genshin_account: Optional[GenshinAccount] = None
 
     def reset(self):
@@ -103,15 +103,13 @@ class AccountCookiesPlugin(Plugin.Conversation):
         else:
             account_cookies_plugin_data.reset()
         account_cookies_plugin_data.region = RegionEnum.HYPERION
-        sign_in_client = SignIn()
-        url = await sign_in_client.create_login_data()
-        data = sign_in_client.generate_qrcode(url)
+        auth_client = AuthClient()
+        url, ticket = await auth_client.create_qrcode_login()
+        data = auth_client.generate_qrcode(url)
         text = f"你好 {user.mention_html()} ！该绑定方法仅支持国服，请在3分钟内使用米游社扫码并确认进行绑定。"
         await message.reply_photo(data, caption=text, parse_mode=ParseMode.HTML)
         if await auth_client.check_qrcode_login(ticket):
-            add_user_command_data.cookies = auth_client.cookies.to_dict()
-        if await sign_in_client.check_login():
-            account_cookies_plugin_data.cookies = sign_in_client.cookie
+            account_cookies_plugin_data.cookies = auth_client.cookies.to_dict()
             return await self.check_cookies(update, context)
         else:
             await message.reply_markdown_v2("可能是验证码已过期或者你没有同意授权，请重新发送命令进行绑定。")
@@ -213,18 +211,12 @@ class AccountCookiesPlugin(Plugin.Conversation):
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
-        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
-        cookies = CookiesModel(**add_user_command_data.cookies)
-        if add_user_command_data.region == RegionEnum.HYPERION:
-            client = genshin.Client(cookies=cookies.to_dict(), region=types.Region.CHINESE)
-        elif add_user_command_data.region == RegionEnum.HOYOLAB:
-            client = genshin.Client(cookies=cookies.to_dict(), region=types.Region.OVERSEAS)
         account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
-        cookies = account_cookies_plugin_data.cookies
+        cookies = CookiesModel(**account_cookies_plugin_data.cookies)
         if account_cookies_plugin_data.region == RegionEnum.HYPERION:
-            client = genshin.Client(cookies=cookies, region=types.Region.CHINESE)
+            client = genshin.Client(cookies=cookies.to_dict(), region=types.Region.CHINESE)
         elif account_cookies_plugin_data.region == RegionEnum.HOYOLAB:
-            client = genshin.Client(cookies=cookies, region=types.Region.OVERSEAS)
+            client = genshin.Client(cookies=cookies.to_dict(), region=types.Region.OVERSEAS)
         else:
             logger.error("用户 %s[%s] region 异常", user.full_name, user.id)
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
@@ -242,22 +234,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
                         logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
                     else:
                         logger.warning("用户 %s[%s] region[%s] 也许是不正确的", user.full_name, user.id, client.region.name)
-            if "account_mid_v2" in cookies:
-                logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
-                if client.region == types.Region.CHINESE:
-                    account_info = await client.get_hoyolab_user()
-                    account_id = account_info.hoyolab_id
-                    account_cookies_plugin_data.account_id = account_id
-                    logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
-                else:
-                    logger.warning("用户 %s[%s] region[%s] 也许是不正确的", user.full_name, user.id, client.region.name)
-                    raise AccountIdNotFound
-            else:
-                account_id = client.hoyolab_id
-                if account_id:
-                    account_cookies_plugin_data.account_id = account_id
-                else:
-                    raise AccountIdNotFound
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
@@ -294,7 +270,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                         if await auth_client.get_ltoken_by_stoken():
                             logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
                             auth_client.cookies.remove_v2()
-        user_info: Optional[GenshinAccount] = None
+        genshin_account: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定
         for temp in genshin_accounts:
@@ -327,7 +303,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             f"服务器名称：`{genshin_account.server_name}`\n"
         )
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-        add_user_command_data.cookies = auth_client.cookies.to_dict()
+        account_cookies_plugin_data.cookies = auth_client.cookies.to_dict()
         return COMMAND_RESULT
 
     @conversation.state(state=COMMAND_RESULT)
@@ -368,7 +344,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     player_id=genshin_account.uid,
                     nickname=genshin_account.nickname,
                     region=account_cookies_plugin_data.region,
-                    status=CookiesStatusEnum.STATUS_SUCCESS,
                     is_chosen=True,  # todo 多账号
                 )
                 await self.players_service.add(player)
