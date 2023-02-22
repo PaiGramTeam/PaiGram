@@ -9,9 +9,9 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, Template
 from playwright.async_api import ViewportSize
 
+from core.application import Application
 from core.base_service import BaseService
-from core.bot import Bot
-from core.config import config as bot_config
+from core.config import config as application_config
 from core.dependence.aiobrowser import AioBrowser
 from core.services.template.cache import HtmlToFileIdCache, TemplatePreviewCache
 from core.services.template.error import QuerySelectorNotFound
@@ -19,13 +19,13 @@ from core.services.template.models import FileType, RenderResult
 from utils.const import PROJECT_ROOT
 from utils.log import logger
 
-__all__ = ["TemplateService"]
+__all__ = ["TemplateService", "TemplatePreviewer"]
 
 
 class TemplateService(BaseService):
     def __init__(
         self,
-        bot: Bot,
+        bot: Application,
         browser: AioBrowser,
         html_to_file_id_cache: HtmlToFileIdCache,
         preview_cache: TemplatePreviewCache,
@@ -38,9 +38,9 @@ class TemplateService(BaseService):
             loader=FileSystemLoader(template_dir),
             enable_async=True,
             autoescape=True,
-            auto_reload=bot_config.debug,
+            auto_reload=application_config.debug,
         )
-        self.using_preview = bot_config.debug and bot_config.webserver.switch
+        self.using_preview = application_config.debug and application_config.webserver.switch
 
         if self.using_preview:
             self.previewer = TemplatePreviewer(self, preview_cache, bot.web_app)
@@ -94,13 +94,13 @@ class TemplateService(BaseService):
 
         if self.using_preview:
             preview_url = await self.previewer.get_preview_url(template_name, template_data)
-            logger.debug(f"调试模板 URL: {preview_url}")
+            logger.debug(f"调试模板 URL: \n{preview_url}")
 
         html = await template.render_async(**template_data)
         logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
 
         file_id = await self.html_to_file_id_cache.get_data(html, file_type.name)
-        if file_id and not bot_config.debug:
+        if file_id and not application_config.debug:
             logger.debug(f"{template_name} 命中缓存，返回 file_id {file_id}")
             return RenderResult(
                 html=html,
@@ -147,7 +147,7 @@ class TemplateService(BaseService):
         )
 
 
-class TemplatePreviewer(BaseService, load=bot_config.webserver.switch):
+class TemplatePreviewer(BaseService, load=application_config.webserver.switch and application_config.debug):
     def __init__(
         self,
         template_service: TemplateService,
@@ -161,7 +161,7 @@ class TemplatePreviewer(BaseService, load=bot_config.webserver.switch):
 
     async def get_preview_url(self, template: str, data: dict):
         """获取预览 URL"""
-        components = urlsplit(bot_config.webserver.url)
+        components = urlsplit(application_config.webserver.url)
         path = urljoin("/preview/", template)
         query = {}
 

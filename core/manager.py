@@ -1,4 +1,4 @@
-from asyncio import CancelledError
+import asyncio
 from importlib import import_module
 from pathlib import Path
 from typing import Dict, Generic, List, Optional, TYPE_CHECKING, Type, TypeVar
@@ -14,10 +14,11 @@ from utils.helpers import gen_pkg
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from core.application import Application
     from core.plugin import PluginType
     from core.builtins.executor import BaseExecutor
 
-__all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager")
+__all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager", "Managers")
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -31,11 +32,7 @@ def _load_module(path: Path) -> None:
             import_module(pkg)
         except Exception as e:
             logger.exception(
-                '在导入 "%s" 的过程中遇到了错误 [red bold]%s[/]',
-                pkg,
-                type(e).__name__,
-                exc_info=e,
-                extra={"markup": True}
+                '在导入 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
             )
             raise SystemExit from e
 
@@ -52,7 +49,7 @@ class Manager(Generic[T]):
         from core.builtins.executor import BaseExecutor
 
         if self._executor is None:
-            self._executor = BaseExecutor("Bot")
+            self._executor = BaseExecutor("Application")
 
         return self._executor
 
@@ -93,8 +90,21 @@ class DependenceManager(Manager[DependenceType]):
                 raise SystemExit from e
 
     async def stop_dependency(self) -> None:
+        async def task(d):
+            try:
+                async with timeout(5):
+                    await d.shutdown()
+                    logger.debug('基础服务 "%s" 关闭成功' % d.__class__.__name__)
+            except asyncio.TimeoutError:
+                logger.warning('基础服务 "%s" 关闭超时' % d.__class__.__name__)
+            except Exception as e:
+                logger.error('基础服务 "%s" 关闭错误' % d.__class__.__name__, exc_info=e)
+
+        tasks = []
         for dependence in self._dependency.values():
-            await dependence.shutdown()
+            tasks.append(asyncio.create_task(task(dependence)))
+
+        await asyncio.gather(*tasks)
 
 
 class ComponentManager(Manager[ComponentType]):
@@ -112,7 +122,7 @@ class ComponentManager(Manager[ComponentType]):
 
     async def init_components(self):
         for path in filter(
-                lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
+            lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
         ):
             _load_module(path)
         components = ArkoWrapper(get_all_services()).filter(lambda x: x.is_component)
@@ -172,7 +182,7 @@ class ServiceManager(Manager[BaseServiceType]):
 
     async def start_services(self) -> None:
         for path in filter(
-                lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
+            lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
         ):
             _load_module(path)
 
@@ -186,22 +196,39 @@ class ServiceManager(Manager[BaseServiceType]):
         """关闭服务"""
         if not self._services:
             return
+
+        async def task(s):
+            try:
+                async with timeout(5):
+                    await s.shutdown()
+                    logger.success('服务 "%s" 关闭成功', s.__class__.__name__)
+            except asyncio.TimeoutError:
+                logger.warning('服务 "%s" 关闭超时', s.__class__.__name__)
+            except Exception as e:
+                logger.warning('服务 "%s" 关闭失败', s.__class__.__name__, exc_info=e)
+
         logger.info("正在关闭服务")
+        tasks = []
         for service in self._services.values():
-            async with timeout(5):
-                try:
-                    await service.shutdown()
-                    logger.success('服务 "%s" 关闭成功', service.__class__.__name__)
-                except CancelledError:
-                    logger.warning('服务 "%s" 关闭超时', service.__class__.__name__)
-                except Exception as e:  # pylint: disable=W0703
-                    logger.exception('服务 "%s" 关闭失败', service.__class__.__name__, exc_info=e)
+            tasks.append(asyncio.create_task(task(service)))
+
+        await asyncio.gather(*tasks)
 
 
 class PluginManager(Manager["PluginType"]):
     """插件管理"""
 
     _plugins: Dict[Type["PluginType"], "PluginType"] = {}
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+
+    @property
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError("No application was set for this PluginManager.")
+        return self._application
 
     @property
     def plugins(self) -> List["PluginType"]:
@@ -230,6 +257,9 @@ class PluginManager(Manager["PluginType"]):
 
             self._plugins[plugin] = instance
 
+            if self._application is not None:
+                instance.set_application(self._application)
+
             try:
                 await instance.install()
                 logger.success('插件 "%s" 安装成功', f"{plugin.__module__}.{plugin.__name__}")
@@ -243,3 +273,7 @@ class PluginManager(Manager["PluginType"]):
                 await plugin.uninstall()
             except Exception as e:
                 logger.exception('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+
+
+class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):
+    """BOT 除自身外的生命周期管理类"""

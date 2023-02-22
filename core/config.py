@@ -3,13 +3,13 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import dotenv
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import AnyUrl, Field
 
 from utils.const import PROJECT_ROOT
 from utils.models.base import Settings
 from utils.typedefs import NaturalNumber
 
-__all__ = ["BotConfig", "config", "JoinGroups"]
+__all__ = ["ApplicationConfig", "config", "JoinGroups"]
 
 dotenv.load_dotenv()
 
@@ -18,16 +18,6 @@ class JoinGroups(str, Enum):
     NO_ALLOW = "NO_ALLOW"
     ALLOW_AUTH_USER = "ALLOW_AUTH_USER"
     ALLOW_ALL = "ALLOW_ALL"
-
-
-class ConfigChannel(BaseModel):
-    name: str
-    chat_id: int
-
-
-class ConfigUser(BaseModel):
-    username: Optional[str]
-    user_id: int
 
 
 class MySqlConfig(Settings):
@@ -53,7 +43,7 @@ class RedisConfig(Settings):
 
 class LoggerConfig(Settings):
     name: str = "TGPaimon"
-    width: int = 180
+    width: Optional[int] = None
     time_format: str = "[%Y-%m-%d %X]"
     traceback_max_frames: int = 20
     path: Path = PROJECT_ROOT / "logs"
@@ -112,7 +102,7 @@ class NoticeConfig(Settings):
         env_prefix = "notice_"
 
 
-class BotConfig(Settings):
+class ApplicationConfig(Settings):
     debug: bool = False
     """debug 开关"""
     retry: int = 5
@@ -126,11 +116,11 @@ class BotConfig(Settings):
     bot_token: str = ""
     """BOT的token"""
 
-    channels: List["ConfigChannel"] = []
+    owner: Optional[int] = None
+
+    channels: List[int] = []
     """文章推送群组"""
 
-    admins: List["ConfigUser"] = []
-    """BOT 管理员"""
     verify_groups: List[Union[int, str]] = []
     """启用群验证功能的群组"""
     join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
@@ -159,5 +149,5 @@ class BotConfig(Settings):
     notice: NoticeConfig = NoticeConfig()
 
 
-BotConfig.update_forward_refs()
-config = BotConfig()
+ApplicationConfig.update_forward_refs()
+config = ApplicationConfig()

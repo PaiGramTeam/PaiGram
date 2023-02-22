@@ -8,7 +8,6 @@ from inspect import Parameter, Signature
 from itertools import chain
 from multiprocessing import RLock as Lock
 from types import MethodType
-
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from typing import (
     Any,
@@ -31,16 +30,16 @@ from telegram.ext import Application as TGApplication, CallbackContext, Job
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
-from core.bot import Bot
-from core.builtins.contexts import BotContext, TGContext, TGUpdate
-from core.config import BotConfig, config as bot_config
+from core.application import Application
+from core.builtins.contexts import ApplicationContext, TGContext, TGUpdate
+from core.config import ApplicationConfig, config as application_config
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.typedefs import R, T
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = [
+__all__ = (
     "catch",
     "AbstractDispatcher",
     "BaseDispatcher",
@@ -48,13 +47,13 @@ __all__ = [
     "JobDispatcher",
     "ErrorHandlerDispatcher",
     "dispatched",
-]
+)
 
 P = ParamSpec("P")
 
 TargetType = Union[Type, str, Callable[[Any], bool]]
 
-bot: Optional[Bot] = None
+application: Optional[Application] = None
 
 _lock: "LockType" = Lock()
 
@@ -64,24 +63,25 @@ _CATCH_TARGET_ATTR = "_catch_targets"
 
 
 def _get_default_kwargs() -> Dict[Type[T], T]:
-    global _default_kwargs, bot
+    global _default_kwargs, application
     with _lock:
         if not _default_kwargs:
             try:
-                bot = BotContext.get()
+                application = ApplicationContext.get()
+
                 _default_kwargs = {
-                    Bot: bot,
-                    TGBot: bot.tg_app.bot,
-                    type(bot.executor): bot.executor,
-                    FastAPI: bot.web_app if bot_config.webserver.switch else None,
-                    Server: bot.web_server if bot_config.webserver.switch else None,
-                    TGApplication: bot.tg_app,
-                    BotConfig: bot_config,
+                    Application: application,
+                    TGBot: application.telegram.bot,
+                    type(application.executor): application.executor,
+                    FastAPI: application.web_app if application_config.webserver.switch else None,
+                    Server: application.web_server if application_config.webserver.switch else None,
+                    TGApplication: application.telegram,
+                    ApplicationConfig: application_config,
                 }
             except LookupError:
                 pass
-        if bot is not None and not bot.running:
-            for obj in chain(bot.dependency, bot.components, bot.services, bot.plugins):
+        if application is not None and not application.running:
+            for obj in chain(application.dependency, application.components, application.services, application.plugins):
                 _default_kwargs[type(obj)] = obj
     return {k: v for k, v in _default_kwargs.items() if v is not None}
 
@@ -171,10 +171,10 @@ class BaseDispatcher(AbstractDispatcher):
 
         for name, parameter in signature.parameters.items():
             if any(
-                [
-                    name == "self" and isinstance(func, (type, MethodType)),
-                    parameter.kind in [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL],
-                ]
+                    [
+                        name == "self" and isinstance(func, (type, MethodType)),
+                        parameter.kind in [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL],
+                    ]
             ):
                 del parameters[name]
                 continue
@@ -205,7 +205,6 @@ class BaseDispatcher(AbstractDispatcher):
 
     @catch(AbstractEventLoop)
     def catch_loop(self) -> AbstractEventLoop:
-
         return asyncio.get_event_loop()
 
 

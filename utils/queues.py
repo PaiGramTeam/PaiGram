@@ -9,8 +9,7 @@ from heapq import heappop, heappush
 from queue import Empty as SyncQueueEmpty
 from queue import Full as SyncQueueFull
 from threading import Condition, Lock
-from typing import (TYPE_CHECKING, Any, Callable, Deque, Generic, List,
-                    NoReturn, Optional, Set, TypeVar)
+from typing import TYPE_CHECKING, Any, Callable, Deque, Generic, List, NoReturn, Optional, Set, TypeVar
 
 from utils.typedefs import AsyncQueue, SyncQueue
 

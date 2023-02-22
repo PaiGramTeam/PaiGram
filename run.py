@@ -11,11 +11,11 @@ except ImportError:
 
 
 def run():
-    from core.bot import Bot
+    from core.application import Application
     from dotenv import load_dotenv
 
     load_dotenv()
-    Bot().launch()
+    Application().launch()
 
 
 def main():

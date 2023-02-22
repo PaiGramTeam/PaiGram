@@ -2,7 +2,19 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
 from importlib import import_module
-from typing import Any, Callable, ClassVar, Dict, Generic, List, Optional, Pattern, TYPE_CHECKING, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Pattern,
+    TYPE_CHECKING,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pydantic import BaseModel
 
@@ -47,11 +59,16 @@ ERROR_HANDLER_ATTR_NAME = "_error_handler_data"
 CONVERSATION_HANDLER_ATTR_NAME = "_conversation_handler_data"
 """用于储存生成 ConversationHandler 时所需要的参数（例如 block）的属性名"""
 
-WRAPPER_ASSIGNMENTS = _WRAPPER_ASSIGNMENTS + [
-    HANDLER_DATA_ATTR_NAME,
-    ERROR_HANDLER_ATTR_NAME,
-    CONVERSATION_HANDLER_ATTR_NAME,
-]
+WRAPPER_ASSIGNMENTS = list(
+    set(
+        _WRAPPER_ASSIGNMENTS
+        + [
+            HANDLER_DATA_ATTR_NAME,
+            ERROR_HANDLER_ATTR_NAME,
+            CONVERSATION_HANDLER_ATTR_NAME,
+        ]
+    )
+)
 
 
 @dataclass(init=True)
@@ -126,7 +143,7 @@ class _ChosenInlineResult(_Handler):
 class _Command(_Handler):
     def __init__(
         self,
-        command: str,
+        command: Union[str, List[str]],
         filters: "BaseFilter" = None,
         *,
         block: DVInput[bool] = DEFAULT_TRUE,
@@ -279,15 +296,14 @@ class _ConversationType:
         cls._type = ConversationDataType(cls.__name__.lstrip("_").lower())
 
 
-class _Entry(_ConversationType, Generic[P, R]):
-    __wrapped__: Callable[P, R]
+def _entry(func: Callable[P, R]) -> Callable[P, R]:
+    setattr(func, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=ConversationDataType.Entry))
 
-    def __init__(self, func: Callable[P, R]) -> None:
-        wraps(func)(self)
-        setattr(self, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
+    @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        return func(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs) -> R:
-        return self.__wrapped__(*args, **kwargs)
+    return wrapped
 
 
 class _State(_ConversationType):
@@ -299,22 +315,21 @@ class _State(_ConversationType):
         return func
 
 
-class _Fallback(_ConversationType, Generic[P, R]):
-    __wrapped__: Callable[P, R]
+def _fallback(func: Callable[P, R]) -> Callable[P, R]:
+    setattr(func, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=ConversationDataType.Fallback))
 
-    def __init__(self, func: Callable[P, R]) -> None:
-        wraps(func)(self)
-        setattr(self, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
+    @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        return func(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs) -> R:
-        return self.__wrapped__(*args, **kwargs)
+    return wrapped
 
 
 # noinspection PyPep8Naming
 class conversation(_Handler):
-    entry_point = _Entry
+    entry_point = _entry
     state = _State
-    fallback = _Fallback
+    fallback = _fallback
 
 
 @dataclass(init=True)
@@ -342,7 +357,7 @@ class error_handler:
 
     def __call__(self, func: Callable[P, T]) -> Callable[P, T]:
         self._func = func
-        wraps(func)(self)
+        wraps(func, assigned=WRAPPER_ASSIGNMENTS)(self)
 
         handler_datas = getattr(func, ERROR_HANDLER_ATTR_NAME, [])
         handler_datas.append(ErrorHandlerData(block=self._block, dispatcher=self._dispatcher))

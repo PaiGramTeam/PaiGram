@@ -3,17 +3,27 @@ from typing import Optional, Tuple, Union
 
 import genshin
 
-from core.config import BotConfig
+from core.config import ApplicationConfig
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin
-from core.services.cookies import CookiesService, PublicCookiesService
-from core.services.players import PlayersService
+from core.services.cookies.services import CookiesService, PublicCookiesService
+from core.services.players.models import RegionEnum
+from core.services.players.services import PlayersService
 from core.services.users import UserService
 from utils.const import REGION_MAP
-from utils.models.base import RegionEnum
 
-__all__ = ("GenshinHelper",)
+__all__ = ("GenshinHelper", "UserNotFoundError", "CookiesNotFoundError")
+
+
+class UserNotFoundError(Exception):
+    def __init__(self, user_id):
+        super().__init__(f"User not found, user_id: {user_id}")
+
+
+class CookiesNotFoundError(Exception):
+    def __init__(self, user_id):
+        super().__init__(f"{user_id} cookies not found")
 
 
 class GenshinHelper(Plugin):
@@ -24,7 +34,7 @@ class GenshinHelper(Plugin):
         user: UserService,
         redis: RedisDB,
         player: PlayersService,
-        bot_config: BotConfig,
+        application_config: ApplicationConfig,
     ) -> None:
         self.cookies_service = cookies
         self.public_cookies_service = public_cookies
@@ -32,8 +42,8 @@ class GenshinHelper(Plugin):
         self.redis_db = redis
         self.players_service = player
 
-        if self.redis_db and bot_config.genshin_ttl:
-            self.genshin_cache = genshin.RedisCache(self.redis_db.client, ttl=bot_config.genshin_ttl)
+        if self.redis_db and application_config.genshin_ttl:
+            self.genshin_cache = genshin.RedisCache(self.redis_db.client, ttl=application_config.genshin_ttl)
         else:
             self.genshin_cache = None
 
@@ -53,21 +63,26 @@ class GenshinHelper(Plugin):
 
     async def get_genshin_client(
         self, user_id: int, region: Optional[RegionEnum] = None, need_cookie: bool = True
-    ) -> genshin.Client:
+    ) -> Optional[genshin.Client]:
         """通过 user_id 和 region 获取私有的 `genshin.Client`"""
-        player = await self.players_service.get_player_by_user_id(user_id, region)
+        player = await self.players_service.get_player(user_id, region)
+        if player is None:
+            raise UserNotFoundError(user_id)
         cookies = None
         if need_cookie:
-            cookie_model = await self.cookies_service.get(player.user_id, player.region)
+            cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
+            if cookie_model is None:
+                raise CookiesNotFoundError(user_id)
             cookies = cookie_model.data
 
         uid = player.player_id
-        if region is RegionEnum.HYPERION:  # 国服
+        region = player.region
+        if region == RegionEnum.HYPERION:  # 国服
             game_region = genshin.types.Region.CHINESE
-        elif region is RegionEnum.HOYOLAB:  # 国际服
+        elif region == RegionEnum.HOYOLAB:  # 国际服
             game_region = genshin.types.Region.OVERSEAS
         else:
-            raise TypeError("Region is not `RegionEnum.NULL`")
+            raise TypeError("Region is not None")
 
         client = genshin.Client(cookies, lang="zh-cn", game=genshin.types.Game.GENSHIN, region=game_region, uid=uid)
 
@@ -78,7 +93,7 @@ class GenshinHelper(Plugin):
 
     async def get_public_genshin_client(self, user_id: int) -> Tuple[genshin.Client, int]:
         """通过 user_id 获取公共的 `genshin.Client`"""
-        player = await self.players_service.get_player_by_user_id(user_id)
+        player = await self.players_service.get_player(user_id)
 
         region = player.region
         cookies = await self.public_cookies_service.get_cookies(user_id, region)

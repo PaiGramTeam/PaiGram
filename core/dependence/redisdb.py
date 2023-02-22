@@ -7,7 +7,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutErr
 from typing_extensions import Self
 
 from core.base_service import BaseService
-from core.config import BotConfig
+from core.config import ApplicationConfig
 from utils.log import logger
 
 __all__ = ["RedisDB"]
@@ -15,7 +15,7 @@ __all__ = ["RedisDB"]
 
 class RedisDB(BaseService.Dependence):
     @classmethod
-    def from_config(cls, config: BotConfig) -> Self:
+    def from_config(cls, config: ApplicationConfig) -> Self:
         return cls(**config.redis.dict())
 
     def __init__(

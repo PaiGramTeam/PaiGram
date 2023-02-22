@@ -1,7 +1,10 @@
+from abc import ABC
 from itertools import chain
 from typing import ClassVar, Iterable, Type, TypeVar
 
 from typing_extensions import Self
+
+from utils.helpers import isabstract
 
 __all__ = ("BaseService", "BaseServiceType", "DependenceType", "ComponentType", "get_all_services")
 
@@ -31,15 +34,15 @@ class _BaseService:
         """Stop & clear resources used by this service"""
 
 
-class _Dependence(_BaseService):
+class _Dependence(_BaseService, ABC):
     _is_dependence: ClassVar[bool] = True
 
 
-class _Component(_BaseService):
+class _Component(_BaseService, ABC):
     _is_component: ClassVar[bool] = True
 
 
-class BaseService(_BaseService):
+class BaseService(_BaseService, ABC):
     Dependence: Type[_BaseService] = _Dependence
     Component: Type[_BaseService] = _Component
 
@@ -52,6 +55,6 @@ ComponentType = TypeVar("ComponentType", bound=_Component)
 # noinspection PyProtectedMember
 def get_all_services() -> Iterable[Type[_BaseService]]:
     return filter(
-        lambda x: x.__name__[0] != "_" and x not in [BaseService] and x._load,
+        lambda x: x.__name__[0] != "_" and x._load and not isabstract(x),
         chain(BaseService.__subclasses__(), _Dependence.__subclasses__(), _Component.__subclasses__()),
     )

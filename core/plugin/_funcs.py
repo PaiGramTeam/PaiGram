@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import aiofiles
 import httpx
@@ -8,13 +8,18 @@ from telegram import Chat, Message, ReplyKeyboardRemove, Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler, Job
 
-from core.builtins.contexts import TGContext, TGUpdate
-from core.helpers import get_chat
+from core.builtins.contexts import ApplicationContext, TGContext, TGUpdate
+from core.dependence.redisdb import RedisDB
 from core.plugin._handler import conversation, handler
 from utils.const import CACHE_DIR, REQUEST_HEADERS
 from utils.error import UrlResourcesNotFoundError
 from utils.helpers import sha1
 from utils.log import logger
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 __all__ = (
     "PluginFuncs",
@@ -28,7 +33,7 @@ async def _delete_message(context: CallbackContext) -> None:
     chat_info = f"chat_id[{job.chat_id}]"
 
     try:
-        chat = await get_chat(job.chat_id)
+        chat = await PluginFuncs.get_chat(job.chat_id)
         full_name = chat.full_name
         if full_name:
             chat_info = f"{full_name}[{chat.id}]"
@@ -60,10 +65,32 @@ async def _delete_message(context: CallbackContext) -> None:
 
 class PluginFuncs:
     @staticmethod
+    async def get_chat(chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
+
+        bot = ApplicationContext.get()
+        redis_db: RedisDB = redis_db or bot.services_map.get(RedisDB, None)
+
+        if not redis_db:
+            return await bot.telegram.bot.get_chat(chat_id)
+
+        qname = f"bot:chat:{chat_id}"
+
+        data = await redis_db.client.get(qname)
+        if data:
+            json_data = json.loads(data)
+            return Chat.de_json(json_data, bot.telegram.bot)
+
+        chat_info = await bot.telegram.bot.get_chat(chat_id)
+        await redis_db.client.set(qname, chat_info.to_json())
+        await redis_db.client.expire(qname, ttl)
+        return chat_info
+
+    @staticmethod
     def add_delete_message_job(
-        delete_seconds: int = 60,
         message: Optional[Union[int, Message]] = None,
         *,
+        delay: int = 60,
+        name: Optional[str] = None,
         chat: Optional[Union[int, Chat]] = None,
         context: Optional[CallbackContext] = None,
     ) -> Job:
@@ -83,15 +110,15 @@ class PluginFuncs:
 
         return context.job_queue.run_once(
             callback=_delete_message,
-            when=delete_seconds,
+            when=delay,
             data=message,
-            name=f"{chat}|{message}|delete_message",
+            name=f"{chat}|{message}|{name}|delete_message" if name else f"{chat}|{message}|delete_message",
             chat_id=chat,
             job_kwargs={"replace_existing": True, "id": f"{chat}|{message}|delete_message"},
         )
 
     @staticmethod
-    async def url_to_file(url: str, return_path: bool = False) -> str:
+    async def download_resource(url: str, return_path: bool = False) -> str:
         url_sha1 = sha1(url)  # url 的 hash 值
         pathed_url = Path(url)
 
@@ -111,15 +138,36 @@ class PluginFuncs:
                     raise UrlResourcesNotFoundError(url)
 
                 if response.status_code != 200:
-                    logger.error("url_to_file 获取url[%s] 错误 status_code[%s]", url, response.status_code)
+                    logger.error("download_resource 获取url[%s] 错误 status_code[%s]", url, response.status_code)
                     raise UrlResourcesNotFoundError(url)
 
             async with aiofiles.open(file_path, mode="wb") as f:
                 await f.write(response.content)
 
-        logger.debug("url_to_file 获取url[%s] 并下载到 file_dir[%s]", url, file_path)
+        logger.debug("download_resource 获取url[%s] 并下载到 file_dir[%s]", url, file_path)
 
         return file_path if return_path else Path(file_path).as_uri()
+
+    @staticmethod
+    def get_args(context: Optional[CallbackContext] = None) -> List[str]:
+        context = context or TGContext.get()
+
+        args = context.args
+        match = context.match
+
+        if args is None:
+            if match is not None and (command := match.groups()[0]):
+                temp = []
+                command_parts = command.split(" ")
+                for command_part in command_parts:
+                    if command_part:
+                        temp.append(command_part)
+                return temp
+            return []
+        else:
+            if len(args) >= 1:
+                return args
+        return []
 
 
 class ConversationFuncs:

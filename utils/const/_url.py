@@ -1,6 +1,6 @@
 from httpx import URL
 
-__all__ = ['HONEY_HOST', 'ENKA_HOST', 'AMBR_HOST', 'CELESTIA_HOST']
+__all__ = ("HONEY_HOST", "ENKA_HOST", "AMBR_HOST", "CELESTIA_HOST")
 
 HONEY_HOST = URL("https://genshin.honeyhunterworld.com/")
 ENKA_HOST = URL("https://enka.network/")

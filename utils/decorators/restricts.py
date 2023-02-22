@@ -7,6 +7,7 @@ from telegram.ext import filters
 from typing_extensions import ParamSpec
 
 from core.builtins.contexts import TGContext, TGUpdate
+from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -47,7 +48,7 @@ def restricts(
     """
 
     def decorator(func: Callable[P, R]) -> Callable[P, Union[R, T]]:
-        @wraps(func)
+        @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
         async def restricts_func(*args: P.args, **kwargs: P.kwargs) -> Union[R, T]:
             update: "Update" = TGUpdate.get()
             context: "CallbackContext" = TGContext.get()

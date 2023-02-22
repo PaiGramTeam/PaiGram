@@ -6,8 +6,7 @@ import traceback as traceback_
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from types import TracebackType
-from typing import (TYPE_CHECKING, Any, Callable, List, Mapping, Optional,
-                    Tuple, Type, Union)
+from typing import TYPE_CHECKING, Any, Callable, List, Mapping, Optional, Tuple, Type, Union
 
 from typing_extensions import Self
 
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
 
     from utils.log._config import LoggerConfig  # pylint: disable=unused-import
 
-__all__ = ["Logger", "LogFilter"]
+__all__ = ("Logger", "LogFilter")
 
 SysExcInfoType = Union[
     Tuple[Type[BaseException], BaseException, Optional[TracebackType]],
@@ -95,7 +94,7 @@ class Logger(logging.Logger):
             datefmt=self.config.time_format,
             handlers=[handler, debug_handler, error_handler],
         )
-        if config.capture_warnings:
+        if self.config.capture_warnings:
             logging.captureWarnings(True)
             warnings_logger = logging.getLogger("py.warnings")
             warnings_logger.addHandler(handler)
@@ -106,13 +105,13 @@ class Logger(logging.Logger):
         self.addHandler(error_handler)
 
     def success(
-            self,
-            msg: Any,
-            *args: Any,
-            exc_info: Optional[ExceptionInfoType] = None,
-            stack_info: bool = False,
-            stacklevel: int = 1,
-            extra: Optional[Mapping[str, Any]] = None,
+        self,
+        msg: Any,
+        *args: Any,
+        exc_info: Optional[ExceptionInfoType] = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Optional[Mapping[str, Any]] = None,
     ) -> None:
         return self.log(
             25,
@@ -125,14 +124,14 @@ class Logger(logging.Logger):
         )
 
     def exception(
-            self,
-            msg: Any = NONE,
-            *args: Any,
-            exc_info: Optional[ExceptionInfoType] = True,
-            stack_info: bool = False,
-            stacklevel: int = 1,
-            extra: Optional[Mapping[str, Any]] = None,
-            **kwargs,
+        self,
+        msg: Any = NONE,
+        *args: Any,
+        exc_info: Optional[ExceptionInfoType] = True,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Optional[Mapping[str, Any]] = None,
+        **kwargs,
     ) -> None:  # pylint: disable=W1113
         super(Logger, self).exception(
             "" if msg is NONE else msg,
