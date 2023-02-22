@@ -198,10 +198,13 @@ class GachaLog:
             temp_id_data = {
                 pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()
             }
-            # 使用新进程进行遍历，避免堵塞主进程
-            executor = ThreadPoolExecutor()
+            # 使用新线程进行遍历，避免堵塞主线程
             loop = asyncio.get_event_loop()
-            new_num = await loop.run_in_executor(executor, self.import_data_backend, all_items, gacha_log, temp_id_data)
+            # 可以使用with语句来确保线程执行完成后及时被清理
+            with ThreadPoolExecutor() as executor:
+                new_num = await loop.run_in_executor(
+                    executor, self.import_data_backend, all_items, gacha_log, temp_id_data
+                )
             for i in gacha_log.item_list.values():
                 # 检查导入后的数据是否合法
                 await self.verify_data(i)
