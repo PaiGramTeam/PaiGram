@@ -128,21 +128,15 @@ class WeaponPlugin(Plugin):
             allow_sending_without_reply=True,
         )
         if reply_photo.photo:
-            photo_file_id = reply_photo.photo[0].file_id
-            tags = _weapons_data.get(weapon_name)
-            entry = WeaponEntry(
-                key=f"plugin:weapon:{weapon_name}",
-                title=weapon_name,
-                description=weapon_data.story,
-                tags=tags,
-                photo_file_id=photo_file_id,
-            )
-            await self.search_service.add_entry(entry)
-
-    @bot_admins_rights_check
-    @handler(CommandHandler, command="refresh_wiki", block=False)
-    async def refresh_wiki(self, update: Update, _: CallbackContext):
-        message = update.effective_message
-        await message.reply_text("正在刷新Wiki缓存，请稍等")
-        await self.wiki_service.refresh_wiki()
-        await message.reply_text("刷新Wiki缓存成功")
+            description = weapon_data.story
+            if description:
+                photo_file_id = reply_photo.photo[0].file_id
+                tags = _weapons_data.get(weapon_name)
+                entry = WeaponEntry(
+                    key=f"plugin:weapon:{weapon_name}",
+                    title=weapon_name,
+                    description=description,
+                    tags=tags,
+                    photo_file_id=photo_file_id,
+                )
+                await self.search_service.add_entry(entry)

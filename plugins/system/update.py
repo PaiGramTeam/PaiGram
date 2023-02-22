@@ -35,9 +35,10 @@ class UpdatePlugin(Plugin):
             try:
                 reply_text = Message.de_json(data, ApplicationContext.get().telegram.bot)
                 await reply_text.edit_text("重启成功")
-            except (BadRequest, Forbidden, KeyError) as exc:
-                logger.error("UpdatePlugin 编辑消息出现错误")
-                logger.exception(exc)
+            except NetworkError as exc:
+                logger.error("UpdatePlugin 编辑消息出现错误 %s", exc.message)
+            except KeyError as exc:
+                logger.error("UpdatePlugin 编辑消息出现错误", exc_info=exc)
             os.remove(UPDATE_DATA)
 
     @bot_admins_rights_check

@@ -1,4 +1,6 @@
+import asyncio
 import typing
+import warnings
 
 import aiohttp.typedefs
 import genshin  # pylint: disable=W0406
@@ -11,18 +13,63 @@ from modules.apihelper.utility.helpers import get_ds, get_ua, get_device_id, hex
 from utils.patch.methods import patch, patchable
 
 DEVICE_ID = get_device_id()
+UPDATE_CHARACTERS = False
 
 
 def get_account_mid_v2(cookies: typing.Dict[str, str]) -> typing.Optional[str]:
-    for name, value in cookies.items():
-        if name == "account_mid_v2":
-            return value
-
-    return None
+    return next(
+        (value for name, value in cookies.items() if name == "account_mid_v2"),
+        None,
+    )
 
 
 @patch(genshin.client.components.calculator.CalculatorClient)  # noqa
 class CalculatorClient:
+    @patchable
+    async def request_calculator(
+        self,
+        endpoint: str,
+        *,
+        method: str = "POST",
+        lang: typing.Optional[str] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        data: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
+        **kwargs: typing.Any,
+    ) -> typing.Mapping[str, typing.Any]:
+        global UPDATE_CHARACTERS
+        params = dict(params or {})
+        headers = dict(headers or {})
+
+        base_url = routes.CALCULATOR_URL.get_url(self.region)
+        url = base_url / endpoint
+
+        if method == "GET":
+            params["lang"] = lang or self.lang
+            data = None
+        else:
+            data = dict(data or {})
+            data["lang"] = lang or self.lang
+
+        if self.region == types.Region.CHINESE:
+            headers["referer"] = str(routes.CALCULATOR_REFERER_URL.get_url())
+
+        update_task = (
+            None
+            if UPDATE_CHARACTERS
+            else asyncio.create_task(utility.update_characters_any(lang or self.lang, lenient=True))
+        )
+        data = await self.request(url, method=method, params=params, data=data, headers=headers, **kwargs)
+
+        if update_task:
+            try:
+                await update_task
+                UPDATE_CHARACTERS = True
+            except Exception as e:
+                warnings.warn(f"Failed to update characters: {e!r}")
+
+        return data
+
     @patchable
     async def get_character_details(
         self,

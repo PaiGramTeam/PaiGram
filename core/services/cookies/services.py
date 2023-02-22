@@ -36,6 +36,13 @@ class CookiesService(BaseService):
     async def delete(self, cookies: Cookies) -> None:
         return await self._repository.delete(cookies)
 
+    async def add_or_update_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
+        try:
+            await self.get_cookies(user_id, region)
+            await self.update_cookies(user_id, cookies, region)
+        except CookiesNotFoundError:
+            await self.add_cookies(user_id, cookies, region)
+
 
 class PublicCookiesService(BaseService):
     def __init__(self, cookies_repository: CookiesRepository, public_cookies_cache: PublicCookiesCache):
@@ -95,7 +102,7 @@ class PublicCookiesService(BaseService):
             else:
                 raise CookieServiceError
             try:
-                record_card = await client.get_record_card()
+                record_card = (await client.get_record_cards())[0]
                 if record_card.game == Game.GENSHIN and region == RegionEnum.HYPERION:
                     await client.get_partial_genshin_user(record_card.uid)
             except InvalidCookies as exc:

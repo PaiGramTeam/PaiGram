@@ -62,19 +62,11 @@ class AccountCookiesPlugin(Plugin.Conversation):
     def parse_cookie(cookie: Dict[str, str]) -> Dict[str, str]:
         cookies = {}
 
-        v1_keys = ["ltoken", "ltuid", "login_uid", "cookie_token"]
-        v2_keys = ["ltoken_v2", "ltmid_v2", "account_mid_v2", "cookie_token_v2", "login_ticket", "stoken"]
-
-        cookie_is_v1 = None
+        v1_keys = ["ltoken", "ltuid", "account_id", "cookie_token", "stoken", "stuid", "login_uid", "login_ticket"]
+        v2_keys = ["ltoken_v2", "ltmid_v2", "ltuid_v2", "account_mid_v2", "cookie_token_v2", "account_id_v2"]
 
         for k in v1_keys + v2_keys:
-            v = cookie.get(k)
-            if v is not None and cookie_is_v1 is None:
-                cookie_is_v1 = k not in v2_keys
             cookies[k] = cookie.get(k)
-
-        if cookie_is_v1:
-            cookies["account_id"] = cookies["ltuid"]
 
         return {k: v for k, v in cookies.items() if v is not None}
 
@@ -116,6 +108,8 @@ class AccountCookiesPlugin(Plugin.Conversation):
         data = sign_in_client.generate_qrcode(url)
         text = f"你好 {user.mention_html()} ！该绑定方法仅支持国服，请在3分钟内使用米游社扫码并确认进行绑定。"
         await message.reply_photo(data, caption=text, parse_mode=ParseMode.HTML)
+        if await auth_client.check_qrcode_login(ticket):
+            add_user_command_data.cookies = auth_client.cookies.to_dict()
         if await sign_in_client.check_login():
             account_cookies_plugin_data.cookies = sign_in_client.cookie
             return await self.check_cookies(update, context)
@@ -149,13 +143,11 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 "<b>关于如何获取Cookies</b>\n"
                 "<b>现在因为网站HttpOnly策略无法通过脚本获取，因此操作只能在PC上运行。</b>\n\n"
                 "PC：\n"
-                "1、<a href='https://www.miyoushe.com/ys/'>打开米游社并登录</a>\n"
-                "2、<a href='https://user.mihoyo.com/'>打开通行证并登录</a>\n"
-                "3、登录完成后刷新米游社和通行证网页\n"
-                "4、进入通行证按F12打开开发者工具\n"
-                "5、将开发者工具切换至网络(Network)并点击过滤栏中的文档(Document)并刷新页面\n"
-                "6、在请求列表中选择第一个并点击\n"
-                "7、找到并复制请求标头(Request Headers)中的<b>Cookie</b>\n"
+                "1、<a href='https://user.mihoyo.com/'>打开通行证并登录</a>\n"
+                "2、进入通行证按F12打开开发者工具\n"
+                "3、将开发者工具切换至网络(Network)并点击过滤栏中的文档(Document)并刷新页面\n"
+                "4、在请求列表中选择第一个并点击\n"
+                "5、找到并复制请求标头(Request Headers)中的<b>Cookie</b>\n"
                 "<u>如发现没有请求标头(Request Headers)大概因为缓存的存在需要你点击禁用缓存(Disable Cache)再次刷新页面</u>"
             )
         else:
@@ -202,7 +194,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 ArkoWrapper(message.text.split(";"))
                 .filter(lambda x: x != "")
                 .map(lambda x: x.strip())
-                .map(lambda x: ((y := x.split("="))[0], y[1]))
+                .map(lambda x: ((y := x.split("=", 1))[0], y[1]))
             )
             cookie = {x[0]: x[1] for x in wrapped}
             cookies = self.parse_cookie(cookie)
@@ -221,6 +213,12 @@ class AccountCookiesPlugin(Plugin.Conversation):
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
+        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
+        cookies = CookiesModel(**add_user_command_data.cookies)
+        if add_user_command_data.region == RegionEnum.HYPERION:
+            client = genshin.Client(cookies=cookies.to_dict(), region=types.Region.CHINESE)
+        elif add_user_command_data.region == RegionEnum.HOYOLAB:
+            client = genshin.Client(cookies=cookies.to_dict(), region=types.Region.OVERSEAS)
         account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
         cookies = account_cookies_plugin_data.cookies
         if account_cookies_plugin_data.region == RegionEnum.HYPERION:
@@ -231,7 +229,19 @@ class AccountCookiesPlugin(Plugin.Conversation):
             logger.error("用户 %s[%s] region 异常", user.full_name, user.id)
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
+        if not cookies.check():
+            await message.reply_text("检测到Cookie不完整，可能会出现问题。", reply_markup=ReplyKeyboardRemove())
         try:
+            if client.cookie_manager.user_id is None:
+                if cookies.is_v2:
+                    logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
+                    if client.region == types.Region.CHINESE:
+                        account_info = await client.get_hoyolab_user()
+                        account_id = account_info.hoyolab_id
+                        cookies.set_v2_uid(account_id)
+                        logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
+                    else:
+                        logger.warning("用户 %s[%s] region[%s] 也许是不正确的", user.full_name, user.id, client.region.name)
             if "account_mid_v2" in cookies:
                 logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
                 if client.region == types.Region.CHINESE:
@@ -275,12 +285,16 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         with contextlib.suppress(Exception):
-            if cookies.get("login_ticket"):
-                sign_in_client = SignIn(cookie=account_cookies_plugin_data.cookies)
-                await sign_in_client.get_s_token()
-                account_cookies_plugin_data.cookies = sign_in_client.cookie
-                logger.info("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
-        genshin_account: Optional[GenshinAccount] = None
+            if cookies.login_ticket is not None:
+                auth_client = AuthClient(cookies=cookies)
+                if await auth_client.get_stoken_by_login_ticket():
+                    logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
+                    if await auth_client.get_cookie_token_by_stoken():
+                        logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
+                        if await auth_client.get_ltoken_by_stoken():
+                            logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
+                            auth_client.cookies.remove_v2()
+        user_info: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定
         for temp in genshin_accounts:
@@ -313,6 +327,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             f"服务器名称：`{genshin_account.server_name}`\n"
         )
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        add_user_command_data.cookies = auth_client.cookies.to_dict()
         return COMMAND_RESULT
 
     @conversation.state(state=COMMAND_RESULT)

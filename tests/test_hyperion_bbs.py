@@ -40,6 +40,20 @@ async def test_get_post_info(hyperion):
 # noinspection PyShadowingNames
 @pytest.mark.asyncio
 @flaky(3, 1)
+async def test_get_video_post_info(hyperion):
+    post_info = await hyperion.get_post_info(2, 33846648)
+    assert post_info
+    assert isinstance(post_info, PostInfo)
+    assert post_info["post"]["post"]["post_id"] == "33846648"
+    assert post_info.post_id == 33846648
+    assert post_info["post"]["post"]["subject"] == "当然是原神了"
+    assert post_info.subject == "当然是原神了"
+    assert len(post_info.video_urls) == 1
+
+
+# noinspection PyShadowingNames
+@pytest.mark.asyncio
+@flaky(3, 1)
 async def test_get_images_by_post_id(hyperion):
     post_images = await hyperion.get_images_by_post_id(2, 29023709)
     assert len(post_images) == 1

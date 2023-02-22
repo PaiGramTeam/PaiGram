@@ -459,8 +459,18 @@ class _NamecardAssets(_AssetsService):
     def game_name(self) -> str:
         return NAMECARD_DATA[str(self.id)]["icon"]
 
+    @lru_cache
+    def _get_id_from_avatar_id(self, avatar_id: Union[int, str]) -> int:
+        avatar_icon_name = AVATAR_DATA[str(avatar_id)]["icon"].replace("AvatarIcon", "NameCardIcon")
+        for namecard_id, namecard_data in NAMECARD_DATA.items():
+            if namecard_data["icon"] == avatar_icon_name:
+                return int(namecard_id)
+        raise ValueError(avatar_id)
+
     def __call__(self, target: int) -> "_NamecardAssets":
         result = _NamecardAssets(self.client)
+        if target > 10000000:
+            target = self._get_id_from_avatar_id(target)
         result.id = target
         result.enka = DEFAULT_EnkaAssets.namecards(target)
         return result

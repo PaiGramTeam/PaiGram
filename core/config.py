@@ -17,6 +17,7 @@ dotenv.load_dotenv()
 class JoinGroups(str, Enum):
     NO_ALLOW = "NO_ALLOW"
     ALLOW_AUTH_USER = "ALLOW_AUTH_USER"
+    ALLOW_USER = "ALLOW_USER"
     ALLOW_ALL = "ALLOW_ALL"
 
 
@@ -127,10 +128,14 @@ class ApplicationConfig(Settings):
     """是否允许机器人被邀请到其它群组"""
 
     timeout: int = 10
-    read_timeout: float = 2
+    read_timeout: Optional[float] = None
     write_timeout: Optional[float] = None
     connect_timeout: Optional[float] = None
     pool_timeout: Optional[float] = None
+    update_read_timeout: Optional[float] = None
+    update_write_timeout: Optional[float] = None
+    update_connect_timeout: Optional[float] = None
+    update_pool_timeout: Optional[float] = None
 
     genshin_ttl: Optional[int] = None
 

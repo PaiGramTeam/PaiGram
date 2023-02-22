@@ -11,6 +11,9 @@
 .idea/
 out/
 
+# macOS Finder
+**/.DS_Store
+
 ### Python ###
 
 # Environments
@@ -37,6 +40,11 @@ data/
 plugins/genshin/daily/daily.json
 metadata/data/
 resources/assets/
+
+### Docker ###
+redis_data/
+db_data/
+docker-compose.yml
 
 ### DotEnv ###
 .env

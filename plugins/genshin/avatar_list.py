@@ -4,13 +4,7 @@ from typing import List, Optional, Sequence
 
 from aiohttp import ClientConnectorError
 from arkowrapper import ArkoWrapper
-from enkanetwork import (
-    Assets as EnkaAssets,
-    EnkaNetworkAPI,
-    HTTPException,
-    VaildateUIDError,
-    VaildateUIDError as UIDNotFounded,
-)
+from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, VaildateUIDError, HTTPException, EnkaPlayerNotFound
 from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
@@ -178,7 +172,7 @@ class AvatarListPlugin(Plugin):
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
-            response = await self.enka_client.fetch_user(client.uid)
+            response = await self.enka_client.fetch_user(client.uid, info=True)
             name_card = (await self.assets_service.namecard(response.player.namecard.id).navbar()).as_uri()
             avatar = (await self.assets_service.avatar(response.player.avatar.id).icon()).as_uri()
             nickname = response.player.nickname
@@ -187,7 +181,7 @@ class AvatarListPlugin(Plugin):
             else:
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.avatar.id)]
             return name_card, avatar, nickname, rarity
-        except (VaildateUIDError, UIDNotFounded, HTTPException) as exc:
+        except (VaildateUIDError, EnkaPlayerNotFound, HTTPException) as exc:
             logger.warning("EnkaNetwork 请求失败: %s", str(exc))
         except (AioHttpTimeoutException, ClientConnectorError) as exc:
             logger.warning("EnkaNetwork 请求超时: %s", str(exc))
@@ -261,7 +255,7 @@ class AvatarListPlugin(Plugin):
             await notice.delete()
             if e.retcode == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
-                self.add_delete_message_job(reply_message, delay=30)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 20)
                 return
             raise e
 
