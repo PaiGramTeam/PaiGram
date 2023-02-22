@@ -1,5 +1,5 @@
 import imghdr
-from typing import Any, List
+from typing import Any, List, Union
 
 from pydantic import BaseModel, PrivateAttr
 
