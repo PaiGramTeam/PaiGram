@@ -1,15 +1,18 @@
 import re
 from datetime import datetime, timedelta
-from typing import List, Tuple, Optional, Dict, Union
+from typing import List, Tuple, Optional, Dict, Union, TYPE_CHECKING
 
 from httpx import AsyncClient
 
-from core.base.assets import AssetsService
 from metadata.genshin import AVATAR_DATA
 from metadata.scripts.metadatas import RESOURCE_DEFAULT_PATH
 from metadata.shortname import roleToId
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
 from modules.wiki.character import Character
+
+
+if TYPE_CHECKING:
+    from core.dependence.assets import AssetsService
 
 
 class Calendar:

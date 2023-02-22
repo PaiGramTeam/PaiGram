@@ -50,18 +50,21 @@ class Manager(Generic[T]):
     @property
     def application(self) -> "Application":
         if self._application is None:
-            raise RuntimeError("No application was set for this PluginManager.")
+            raise RuntimeError(f"No application was set for this {self.__class__.__name__}.")
         return self._application
 
     @property
     def executor(self) -> "BaseExecutor":
         """执行器"""
+        if self._executor is None:
+            raise RuntimeError(f"No executor was set for this {self.__class__.__name__}.")
+        return self._executor
+
+    def build_executor(self, name: str):
         from core.builtins.executor import BaseExecutor
 
-        if self._executor is None:
-            self._executor = BaseExecutor("Application")
-
-        return self._executor
+        self._executor = BaseExecutor(name)
+        self._executor.set_application(self.application)
 
 
 class DependenceManager(Manager[DependenceType]):

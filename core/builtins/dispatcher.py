@@ -50,8 +50,6 @@ P = ParamSpec("P")
 
 TargetType = Union[Type, str, Callable[[Any], bool]]
 
-_default_kwargs: Dict[Type[T], T] = {}
-
 _CATCH_TARGET_ATTR = "_catch_targets"
 
 
@@ -140,16 +138,8 @@ class BaseDispatcher(AbstractDispatcher):
         return result
 
     def _get_default_kwargs(self) -> Dict[Type[T], T]:
+        _default_kwargs = {}
         application = self.application
-        _default_kwargs = {
-            Application: application,
-            TGBot: application.telegram.bot,
-            type(application.managers.executor): application.managers.executor,
-            FastAPI: application.web_app if application_config.webserver.switch else None,
-            Server: application.web_server if application_config.webserver.switch else None,
-            TGApplication: application.telegram,
-            ApplicationConfig: application_config,
-        }
         if not application.running:
             for obj in chain(
                 application.managers.dependency,

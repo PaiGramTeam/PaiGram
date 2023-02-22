@@ -28,6 +28,7 @@ from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
+    from core.manager import Managers
     from asyncio import AbstractEventLoop, CancelledError
     from types import FrameType
 
@@ -50,6 +51,7 @@ class Application(Singleton):
         self.telegram = telegram
         self.web_server = web_server
         self.managers.set_application(application=self)  # 给 managers 设置 application
+        self.managers.build_executor("Application")
 
     @classmethod
     def build(cls):
@@ -218,8 +220,8 @@ class Application(Singleton):
         try:
             loop.run_until_complete(self.start())
             loop.run_until_complete(self.idle())
-        except (SystemExit, KeyboardInterrupt):
-            logger.debug("接收到了终止信号，BOT 即将关闭")  # 接收到了终止信号
+        except (SystemExit, KeyboardInterrupt) as exc:
+            logger.debug("接收到了终止信号，BOT 即将关闭", exc_info=exc)  # 接收到了终止信号
         except NetworkError as e:
             if isinstance(e, SSLZeroReturnError):
                 logger.critical("代理服务出现异常, 请检查您的代理服务是否配置成功.")
