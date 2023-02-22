@@ -42,6 +42,16 @@ class Manager(Generic[T]):
 
     _executor: Optional["BaseExecutor"] = None
     _lib: Dict[Type[T], T] = {}
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+
+    @property
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError("No application was set for this PluginManager.")
+        return self._application
 
     @property
     def executor(self) -> "BaseExecutor":
@@ -219,16 +229,6 @@ class PluginManager(Manager["PluginType"]):
     """插件管理"""
 
     _plugins: Dict[Type["PluginType"], "PluginType"] = {}
-    _application: "Optional[Application]" = None
-
-    def set_application(self, application: "Application") -> None:
-        self._application = application
-
-    @property
-    def application(self) -> "Application":
-        if self._application is None:
-            raise RuntimeError("No application was set for this PluginManager.")
-        return self._application
 
     @property
     def plugins(self) -> List["PluginType"]:

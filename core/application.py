@@ -4,7 +4,7 @@ import signal
 from functools import wraps
 from signal import SIGABRT, SIGINT, SIGTERM, signal as signal_func
 from ssl import SSLZeroReturnError
-from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
+from typing import Callable, List, TYPE_CHECKING, TypeVar
 
 import pytz
 import uvicorn
@@ -19,7 +19,7 @@ from telegram.ext import (
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
-from core.builtins.contexts import application_context
+
 from core.config import config as application_config
 from core.manager import Managers
 from modules.override.telegram import HTTPXRequest
@@ -38,17 +38,49 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
-class Application(Singleton, Managers):
+class Application(Singleton):
     """Application"""
-
-    _telegram: Optional[TelegramApplication] = None
-    _web_server: "Server" = None
-    _web_server_task: Optional[asyncio.Task] = None
 
     _startup_funcs: List[Callable] = []
     _shutdown_funcs: List[Callable] = []
 
-    _running: False
+    def __init__(self, managers: "Managers", telegram: "TelegramApplication", web_server: "Server") -> None:
+        self._running = False
+        self.managers = managers
+        self.telegram = telegram
+        self.web_server = web_server
+        self.managers.set_application(application=self)  # 给 managers 设置 application
+
+    @classmethod
+    def build(cls):
+        managers = Managers()
+        telegram = (
+            TelegramApplicationBuilder()
+            # .application_class(TgApplication)
+            .rate_limiter(AIORateLimiter())
+            .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
+            .token(application_config.bot_token)
+            .request(
+                HTTPXRequest(
+                    256,
+                    proxy_url=application_config.proxy_url,
+                    read_timeout=application_config.read_timeout,
+                    write_timeout=application_config.write_timeout,
+                    connect_timeout=application_config.connect_timeout,
+                    pool_timeout=application_config.pool_timeout,
+                )
+            )
+            .build()
+        )
+        web_server = Server(
+            uvicorn.Config(
+                app=FastAPI(debug=application_config.debug),
+                port=application_config.webserver.port,
+                host=application_config.webserver.host,
+                log_config=None,
+            )
+        )
+        return cls(managers, telegram, web_server)
 
     @property
     def running(self) -> bool:
@@ -57,74 +89,30 @@ class Application(Singleton, Managers):
             return self._running
 
     @property
-    def telegram(self) -> TelegramApplication:
-        """telegram app"""
-        with self._lock:
-            if self._telegram is None:
-                self._telegram = (
-                    TelegramApplicationBuilder()
-                    # .application_class(TgApplication)
-                    .rate_limiter(AIORateLimiter())
-                    .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
-                    .token(application_config.bot_token)
-                    .request(
-                        HTTPXRequest(
-                            256,
-                            proxy_url=application_config.proxy_url,
-                            read_timeout=application_config.read_timeout,
-                            write_timeout=application_config.write_timeout,
-                            connect_timeout=application_config.connect_timeout,
-                            pool_timeout=application_config.pool_timeout,
-                        )
-                    )
-                    .build()
-                )
-        return self._telegram
-
-    @property
     def web_app(self) -> FastAPI:
         """fastapi app"""
         return self.web_server.config.app
 
-    @property
-    def web_server(self) -> Server:
-        """uvicorn server"""
-        with self._lock:
-            if self._web_server is None:
-                self._web_server = Server(
-                    uvicorn.Config(
-                        app=FastAPI(debug=application_config.debug),
-                        port=application_config.webserver.port,
-                        host=application_config.webserver.host,
-                        log_config=None,
-                    )
-                )
-        return self._web_server
-
-    def __init__(self) -> None:
-        self._running = False
-
     async def _on_startup(self) -> None:
         for func in self._startup_funcs:
-            await self.executor(func, block=getattr(func, "block", False))
+            await self.managers.executor(func, block=getattr(func, "block", False))
 
     async def _on_shutdown(self) -> None:
         for func in self._shutdown_funcs:
-            await self.executor(func, block=getattr(func, "block", False))
+            await self.managers.executor(func, block=getattr(func, "block", False))
 
     async def initialize(self):
         """BOT 初始化"""
-        self.set_application(application=self)  # 设置 application
-        await self.start_dependency()  # 启动基础服务
-        await self.init_components()  # 实例化组件
-        await self.start_services()  # 启动其他服务
-        await self.install_plugins()  # 安装插件
+        await self.managers.start_dependency()  # 启动基础服务
+        await self.managers.init_components()  # 实例化组件
+        await self.managers.start_services()  # 启动其他服务
+        await self.managers.install_plugins()  # 安装插件
 
     async def shutdown(self):
         """BOT 关闭"""
-        await self.uninstall_plugins()  # 卸载插件
-        await self.stop_services()  # 终止其他服务
-        await self.stop_dependency()  # 终止基础服务
+        await self.managers.uninstall_plugins()  # 卸载插件
+        await self.managers.stop_services()  # 终止其他服务
+        await self.managers.stop_dependency()  # 终止基础服务
 
     async def start(self) -> None:
         """启动 BOT"""
@@ -215,9 +203,9 @@ class Application(Singleton, Managers):
             await self.telegram.stop()
 
         await self.telegram.shutdown()
-        if self._web_server is not None:
+        if self.web_server is not None:
             try:
-                await self._web_server.shutdown()
+                await self.web_server.shutdown()
             except AttributeError:
                 pass
 
@@ -227,26 +215,23 @@ class Application(Singleton, Managers):
     def launch(self):
         """启动"""
         loop = asyncio.get_event_loop()
-        with application_context(self):  # 设置 bot context
-            try:
-                loop.run_until_complete(self.start())
-                loop.run_until_complete(self.idle())
-            except (SystemExit, KeyboardInterrupt):
-                logger.debug("接收到了终止信号，BOT 即将关闭")  # 接收到了终止信号
-            except NetworkError as e:
-                if isinstance(e, SSLZeroReturnError):
-                    logger.critical("代理服务出现异常, 请检查您的代理服务是否配置成功.")
-                else:
-                    logger.critical("网络连接出现问题, 请检查您的网络状况.")
-            except Exception as e:
-                logger.critical(f"遇到了未知错误: {type(e)}", exc_info=e)
-            finally:
-                loop.run_until_complete(self.stop())
+        try:
+            loop.run_until_complete(self.start())
+            loop.run_until_complete(self.idle())
+        except (SystemExit, KeyboardInterrupt):
+            logger.debug("接收到了终止信号，BOT 即将关闭")  # 接收到了终止信号
+        except NetworkError as e:
+            if isinstance(e, SSLZeroReturnError):
+                logger.critical("代理服务出现异常, 请检查您的代理服务是否配置成功.")
+            else:
+                logger.critical("网络连接出现问题, 请检查您的网络状况.")
+        except Exception as e:
+            logger.critical(f"遇到了未知错误: {type(e)}", exc_info=e)
+        finally:
+            loop.run_until_complete(self.stop())
 
-                if application_config.reload:
-                    raise SystemExit from None
-
-    # decorators
+            if application_config.reload:
+                raise SystemExit from None
 
     def on_startup(self, func: Callable[P, R]) -> Callable[P, R]:
         """注册一个在 BOT 启动时执行的函数"""

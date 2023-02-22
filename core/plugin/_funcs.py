@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, TYPE_CHECKING
 
 import aiofiles
 import httpx
@@ -8,13 +8,16 @@ from telegram import Chat, Message, ReplyKeyboardRemove, Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler, Job
 
-from core.builtins.contexts import ApplicationContext, TGContext, TGUpdate
+from core.builtins.contexts import TGContext, TGUpdate
 from core.dependence.redisdb import RedisDB
 from core.plugin._handler import conversation, handler
 from utils.const import CACHE_DIR, REQUEST_HEADERS
 from utils.error import UrlResourcesNotFoundError
 from utils.helpers import sha1
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from core.application import Application
 
 try:
     import ujson as json
@@ -64,13 +67,23 @@ async def _delete_message(context: CallbackContext) -> None:
 
 
 class PluginFuncs:
-    @staticmethod
-    async def get_chat(chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
-        bot = ApplicationContext.get()
-        redis_db: RedisDB = redis_db or bot.services_map.get(RedisDB, None)
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+
+    @property
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError("No application was set for this PluginManager.")
+        return self._application
+
+    async def get_chat(self, chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
+        application = self.application
+        redis_db: RedisDB = redis_db or self.application.managers.services_map.get(RedisDB, None)
 
         if not redis_db:
-            return await bot.telegram.bot.get_chat(chat_id)
+            return await application.telegram.bot.get_chat(chat_id)
 
         qname = f"bot:chat:{chat_id}"
 

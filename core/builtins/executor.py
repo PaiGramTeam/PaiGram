@@ -14,10 +14,11 @@ from utils.log import logger
 from utils.models.lock import HashLock
 
 if TYPE_CHECKING:
+    from core.application import Application
     from core.builtins.dispatcher import AbstractDispatcher
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["BaseExecutor", "HandlerExecutor", "JobExecutor"]
+__all__ = ("BaseExecutor", "HandlerExecutor", "JobExecutor")
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -34,6 +35,17 @@ class BaseExecutor:
 
     _lock: ClassVar["LockType"] = Lock()
     _instances: ClassVar[Dict[str, Self]] = {}
+
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+
+    @property
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError(f"No application was set for this {self.__class__.__name__}.")
+        return self._application
 
     def __new__(cls: Type[T], name: str, *args, **kwargs) -> T:
         with cls._lock:

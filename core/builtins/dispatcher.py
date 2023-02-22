@@ -6,7 +6,6 @@ from asyncio import AbstractEventLoop
 from functools import cached_property, partial, wraps
 from inspect import Parameter, Signature
 from itertools import chain
-from multiprocessing import RLock as Lock
 from types import MethodType
 
 # noinspection PyUnresolvedReferences,PyProtectedMember
@@ -32,13 +31,10 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.application import Application
-from core.builtins.contexts import ApplicationContext, TGContext, TGUpdate
+from core.builtins.contexts import TGContext, TGUpdate
 from core.config import ApplicationConfig, config as application_config
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.typedefs import R, T
-
-if TYPE_CHECKING:
-    from multiprocessing.synchronize import RLock as LockType
 
 __all__ = (
     "catch",
@@ -54,37 +50,9 @@ P = ParamSpec("P")
 
 TargetType = Union[Type, str, Callable[[Any], bool]]
 
-application: Optional[Application] = None
-
-_lock: "LockType" = Lock()
-
 _default_kwargs: Dict[Type[T], T] = {}
 
 _CATCH_TARGET_ATTR = "_catch_targets"
-
-
-def _get_default_kwargs() -> Dict[Type[T], T]:
-    global _default_kwargs, application
-    with _lock:
-        if not _default_kwargs:
-            try:
-                application = ApplicationContext.get()
-
-                _default_kwargs = {
-                    Application: application,
-                    TGBot: application.telegram.bot,
-                    type(application.executor): application.executor,
-                    FastAPI: application.web_app if application_config.webserver.switch else None,
-                    Server: application.web_server if application_config.webserver.switch else None,
-                    TGApplication: application.telegram,
-                    ApplicationConfig: application_config,
-                }
-            except LookupError:
-                pass
-        if application is not None and not application.running:
-            for obj in chain(application.dependency, application.components, application.services, application.plugins):
-                _default_kwargs[type(obj)] = obj
-    return {k: v for k, v in _default_kwargs.items() if v is not None}
 
 
 def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -107,6 +75,16 @@ class AbstractDispatcher(ABC):
 
     _args: List[Any] = []
     _kwargs: Dict[Union[str, Type], Any] = {}
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+
+    @property
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError(f"No application was set for this {self.__class__.__name__}.")
+        return self._application
 
     def __init__(self, *args, **kwargs) -> None:
         self._args = list(args)
@@ -156,10 +134,31 @@ class BaseDispatcher(AbstractDispatcher):
     _instances: Sequence[Any]
 
     def _get_kwargs(self) -> Dict[Type[T], T]:
-        result = _get_default_kwargs()
+        result = self._get_default_kwargs()
         result[AbstractDispatcher] = self
         result.update(self._kwargs)
         return result
+
+    def _get_default_kwargs(self) -> Dict[Type[T], T]:
+        application = self.application
+        _default_kwargs = {
+            Application: application,
+            TGBot: application.telegram.bot,
+            type(application.managers.executor): application.managers.executor,
+            FastAPI: application.web_app if application_config.webserver.switch else None,
+            Server: application.web_server if application_config.webserver.switch else None,
+            TGApplication: application.telegram,
+            ApplicationConfig: application_config,
+        }
+        if not application.running:
+            for obj in chain(
+                application.managers.dependency,
+                application.managers.components,
+                application.managers.services,
+                application.managers.plugins,
+            ):
+                _default_kwargs[type(obj)] = obj
+        return {k: v for k, v in _default_kwargs.items() if v is not None}
 
     def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
         """分发参数给 func"""

@@ -3,11 +3,10 @@ import os
 from sys import executable
 
 from aiofiles import open as async_open
+from httpx import NetworkError
 from telegram import Message, Update
-from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext
 
-from core.builtins.contexts import ApplicationContext
 from core.plugin import Plugin, handler
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import execute
@@ -33,7 +32,7 @@ class UpdatePlugin(Plugin):
             async with async_open(UPDATE_DATA) as file:
                 data = jsonlib.loads(await file.read())
             try:
-                reply_text = Message.de_json(data, ApplicationContext.get().telegram.bot)
+                reply_text = Message.de_json(data, self.application.telegram.bot)
                 await reply_text.edit_text("重启成功")
             except NetworkError as exc:
                 logger.error("UpdatePlugin 编辑消息出现错误 %s", exc.message)

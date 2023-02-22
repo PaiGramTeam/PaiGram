@@ -4,31 +4,18 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from core.application import Application
     from telegram.ext import CallbackContext
     from telegram import Update
 
 __all__ = [
     "TGContext",
     "TGUpdate",
-    "ApplicationContext",
-    "application_context",
     "handler_contexts",
     "job_contexts",
 ]
 
 TGContext: ContextVar["CallbackContext"] = ContextVar("TGContext")
 TGUpdate: ContextVar["Update"] = ContextVar("TGUpdate")
-ApplicationContext: ContextVar["Application"] = ContextVar("ApplicationContext")
-
-
-@contextmanager
-def application_context(bot: "Application") -> None:
-    token = ApplicationContext.set(bot)
-    try:
-        yield
-    finally:
-        ApplicationContext.reset(token)
 
 
 @contextmanager

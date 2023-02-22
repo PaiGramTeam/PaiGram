@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Callable
 
-from core.builtins.contexts import ApplicationContext, TGUpdate
+from core.builtins.contexts import TGUpdate
 from core.error import ServiceNotFoundError
 from core.services.users.services import UserAdminService
 from utils.const import WRAPPER_ASSIGNMENTS
