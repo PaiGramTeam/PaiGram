@@ -15,6 +15,8 @@ from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
 
+from aiohttp import ClientSession
+
 
 class Map(Plugin, BasePlugin):
     """资源点查询"""
@@ -139,6 +141,9 @@ class Map(Plugin, BasePlugin):
             await message.reply_text("请指定要查找的资源名称。", parse_mode="Markdown")
             return
         logger.info("用户: %s [%s] 使用 map 命令查询了 %s", user.username, user.id, resource_name)
+        vt_list = await self.fetch_video_populars(resource_name)
+        video_reply = "\n".join(f"[{title}]({link})" for (link, title) in vt_list)
+        await message.reply_text(video_reply, parse_mode="Markdown")
         if resource_name not in self.map_helper.query_map:
             # 消息来源于群组中并且无法找到默认不回复即可
             if filters.ChatType.GROUPS.filter(message) and group_dict is not None:
@@ -201,3 +206,34 @@ class Map(Plugin, BasePlugin):
         await self.map_helper.refresh_label_count()
         await self.clear_cache()
         await msg.edit_text("正在刷新地图数据，请耐心等待...\n刷新成功")
+
+    @staticmethod
+    async def fetch_video(mid, keyword):
+        headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 "
+            "Safari/537.36 Edg/107.0.1418.24"
+        }
+        async with ClientSession(headers=headers) as session:
+            resp = await session.get("https://www.bilibili.com")
+            async with session.get(
+                f"https://api.bilibili.com/x/space/wbi/arc/search?mid={mid}&keyword={keyword}",
+                cookies=resp.cookies,
+            ) as r:
+                response = await r.json()
+
+        if response["code"]:
+            logger.error("请求B站 [%s] 视频搜索出错！", str(mid))
+            logger.debug("cookies: [%s]", str(resp.cookies))
+
+            # 搜索出错
+            return []
+
+        vlist = response["data"]["list"]["vlist"]
+        vt_list = [("https://www.bilibili.com/video/av" + str(video["aid"]), video["title"]) for video in vlist]
+        return vt_list
+
+    @staticmethod
+    async def fetch_video_populars(keyword="丘丘人"):
+        popular_up_mid = (431073645, 635041, 1773346)
+        # 月月，紫薇，莴苣
+        return sum(Map.fetch_video(mid, keyword) for mid in popular_up_mid)
