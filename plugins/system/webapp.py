@@ -1,8 +1,8 @@
 from typing import Optional
 
-from genshin import Region, GenshinException
+from genshin import GenshinException, Region
 from pydantic import BaseModel
-from telegram import ReplyKeyboardRemove, Update, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
+from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, WebAppInfo
 from telegram.ext import CallbackContext, filters
 
 from core.base.redisdb import RedisDB
@@ -140,7 +140,7 @@ class WebApp(Plugin):
                 )
                 if result.path == "verify":
                     await message.reply_text(
-                        "验证过程中出现问题 %s\n如果继续遇到该问题，请打开米游社→我的角色中尝试手动通过验证" % result.message,
+                        "验证过程中出现问题 %s\n" "如果继续遇到该问题，请打开米游社→我的角色中尝试手动通过验证，或发送 /verify 进行手动验证" % result.message,
                         reply_markup=ReplyKeyboardRemove(),
                     )
                 else:
