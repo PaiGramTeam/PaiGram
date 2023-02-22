@@ -140,10 +140,15 @@ class Map(Plugin, BasePlugin):
             return
         logger.info("用户: %s [%s] 使用 map 命令查询了 %s", user.username, user.id, resource_name)
         if resource_name not in self.map_helper.query_map:
+            # 消息来源于群组中并且无法找到默认不回复即可
+            if filters.ChatType.GROUPS.filter(message) and group_dict is not None:
+                return
             await message.reply_text("没有找到该资源。", parse_mode="Markdown")
             return
         maps = self.get_show_map(resource_name)
         if len(maps) == 0:
+            if filters.ChatType.GROUPS.filter(message) and group_dict is not None:
+                return
             await message.reply_text("没有找到该资源。", parse_mode="Markdown")
             return
         if len(maps) == 1:
