@@ -66,7 +66,6 @@ async def _delete_message(context: CallbackContext) -> None:
 class PluginFuncs:
     @staticmethod
     async def get_chat(chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
-
         bot = ApplicationContext.get()
         redis_db: RedisDB = redis_db or bot.services_map.get(RedisDB, None)
 

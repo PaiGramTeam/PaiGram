@@ -61,14 +61,13 @@ class BaseExecutor:
         raise_error: bool = True,
         **kwargs,
     ) -> R:
-
         dispatcher = self._dispatcher or dispatcher
         if dispatcher is None:
             from core.builtins.dispatcher import BaseDispatcher
 
             dispatcher = BaseDispatcher
 
-        with (HashLock(lock_id or target) if block else do_nothing()):
+        with HashLock(lock_id or target) if block else do_nothing():
             dispatcher_instance = dispatcher(**kwargs)
             dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
 
@@ -123,7 +122,7 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
 
                 dispatcher = BaseDispatcher
 
-            with (HashLock(lock_id or self._callback) if block else do_nothing()):
+            with HashLock(lock_id or self._callback) if block else do_nothing():
                 dispatcher_instance = dispatcher(**kwargs)
                 dispatched_func = dispatcher_instance.dispatch(self._callback)  # 分发参数，组成新函数
 

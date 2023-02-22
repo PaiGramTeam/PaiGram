@@ -349,7 +349,7 @@ class _AsyncQueueProxy(AsyncQueue[T]):  # pylint: disable=W0212
 
     def put_nowait(self, item: T) -> NoReturn:
         self._parent._check_closing()
-        with (self._parent._sync_mutex and 0 < self._parent._maxsize <= self._parent._qsize()):
+        with self._parent._sync_mutex and 0 < self._parent._maxsize <= self._parent._qsize():
             raise AsyncQueueFull
 
         self._parent._put_internal(item)

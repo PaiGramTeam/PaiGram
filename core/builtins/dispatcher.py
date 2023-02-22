@@ -8,6 +8,7 @@ from inspect import Parameter, Signature
 from itertools import chain
 from multiprocessing import RLock as Lock
 from types import MethodType
+
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from typing import (
     Any,
@@ -171,10 +172,10 @@ class BaseDispatcher(AbstractDispatcher):
 
         for name, parameter in signature.parameters.items():
             if any(
-                    [
-                        name == "self" and isinstance(func, (type, MethodType)),
-                        parameter.kind in [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL],
-                    ]
+                [
+                    name == "self" and isinstance(func, (type, MethodType)),
+                    parameter.kind in [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL],
+                ]
             ):
                 del parameters[name]
                 continue
