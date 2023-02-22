@@ -89,16 +89,11 @@ class WebApp(Plugin):
                                 await message.reply_text("验证成功", reply_markup=ReplyKeyboardRemove())
                             except ResponseException as exc:
                                 logger.warning(
-                                    "用户 %s[%s] 验证失效 API返回 [%s]%s",
-                                    user.full_name,
-                                    user.id,
-                                    exc.code,
-                                    exc.message
+                                    "用户 %s[%s] 验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message
                                 )
                                 if "拼图已过期" in exc.message:
                                     await message.reply_text(
-                                        "验证失败，拼图已过期，请稍后重试或更换使用环境进行验证",
-                                        reply_markup=ReplyKeyboardRemove()
+                                        "验证失败，拼图已过期，请稍后重试或更换使用环境进行验证", reply_markup=ReplyKeyboardRemove()
                                     )
                                 else:
                                     await message.reply_text(
@@ -107,10 +102,7 @@ class WebApp(Plugin):
                                     )
                         else:
                             logger.warning("用户 %s[%s] 验证失效 请求已经过期", user.full_name, user.id)
-                            await message.reply_text(
-                                "验证失效 请求已经过期 请稍后重试",
-                                reply_markup=ReplyKeyboardRemove()
-                            )
+                            await message.reply_text("验证失效 请求已经过期 请稍后重试", reply_markup=ReplyKeyboardRemove())
                         return
                     try:
                         await client.get_genshin_notes()
@@ -124,24 +116,11 @@ class WebApp(Plugin):
                         data = await verify.create(is_high=True)
                         challenge = data["challenge"]
                         gt = data["gt"]
-                        logger.success(
-                            "用户 %s[%s] 创建验证成功\ngt:%s\nchallenge%s",
-                            user.full_name,
-                            user.id,
-                            gt,
-                            challenge
-                        )
+                        logger.success("用户 %s[%s] 创建验证成功\ngt:%s\nchallenge%s", user.full_name, user.id, gt, challenge)
                     except ResponseException as exc:
-                        logger.warning(
-                            "用户 %s[%s] 创建验证失效 API返回 [%s]%s",
-                            user.full_name,
-                            user.id,
-                            exc.code,
-                            exc.message
-                        )
+                        logger.warning("用户 %s[%s] 创建验证失效 API返回 [%s]%s", user.full_name, user.id, exc.code, exc.message)
                         await message.reply_text(
-                            f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试",
-                            reply_markup=ReplyKeyboardRemove()
+                            f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试", reply_markup=ReplyKeyboardRemove()
                         )
                         return
                     await self.verification_system.set_challenge(client.uid, gt, challenge)
