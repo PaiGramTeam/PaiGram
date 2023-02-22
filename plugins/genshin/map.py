@@ -5,9 +5,8 @@ from telegram import Update, Message, InputMediaDocument, InputMediaPhoto, Inlin
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
 
-from core.base.redisdb import RedisDB
-from core.baseplugin import BasePlugin
 from core.config import config
+from core.dependence.redisdb import RedisDB
 from core.plugin import handler, Plugin
 from modules.apihelper.client.components.map import MapHelper, MapException
 from utils.decorators.admins import bot_admins_rights_check
@@ -16,10 +15,10 @@ from utils.decorators.restricts import restricts
 from utils.log import logger
 
 
-class Map(Plugin, BasePlugin):
+class Map(Plugin):
     """资源点查询"""
 
-    def __init__(self, redis: RedisDB = None):
+    def __init__(self, redis: RedisDB):
         self.cache = redis.client
         self.cache_photo_key = "plugin:map:photo:"
         self.cache_doc_key = "plugin:map:doc:"

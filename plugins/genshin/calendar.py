@@ -5,11 +5,10 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, MessageHandler, filters
 
-from core.base.assets import AssetsService
-from core.base.redisdb import RedisDB
-from core.baseplugin import BasePlugin
+from core.dependence.assets import AssetsService
+from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.template import TemplateService
+from core.services.template import TemplateService
 from modules.apihelper.client.components.calendar import Calendar
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -21,14 +20,14 @@ except ImportError:
     import json as jsonlib
 
 
-class CalendarPlugin(Plugin, BasePlugin):
+class CalendarPlugin(Plugin):
     """活动日历查询"""
 
     def __init__(
         self,
-        template_service: TemplateService = None,
-        assets_service: AssetsService = None,
-        redis: RedisDB = None,
+        template_service: TemplateService,
+        assets_service: AssetsService,
+        redis: RedisDB,
     ):
         self.template_service = template_service
         self.assets_service = assets_service
