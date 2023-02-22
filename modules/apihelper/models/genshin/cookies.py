@@ -67,3 +67,24 @@ class CookiesModel(BaseModel):
         if self.ltuid_v2:
             return self.ltuid_v2
         return None
+
+    def set_v2_uid(self, user_id: int):
+        if self.ltuid_v2 is None and self.ltoken_v2:
+            self.ltuid_v2 = user_id
+        if self.account_id_v2 is None and self.account_mid_v2:
+            self.account_id_v2 = user_id
+
+    def check(self) -> bool:
+        """检查Cookies是否完整
+        :return: 成功返回 True 失败返回 False
+        """
+        # 以下任何缺一都导致问题
+        if (self.account_mid_v2 is None) ^ (self.cookie_token_v2 is None):
+            return False
+        if (self.ltoken_v2 is None) ^ (self.ltmid_v2 is None):
+            return False
+        if (self.ltoken is None) ^ (self.ltuid is None):
+            return False
+        if (self.account_id is None) ^ (self.account_id is None):
+            return False
+        return True
