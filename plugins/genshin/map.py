@@ -213,13 +213,19 @@ class Map(Plugin, BasePlugin):
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 "
             "Safari/537.36 Edg/107.0.1418.24"
         }
-        async with ClientSession(headers=headers) as session:
-            resp = await session.get("https://www.bilibili.com")
-            async with session.get(
-                f"https://api.bilibili.com/x/space/wbi/arc/search?mid={mid}&keyword={keyword}",
-                cookies=resp.cookies,
-            ) as r:
-                response = await r.json()
+        try:
+            async with ClientSession(headers=headers) as session:
+                resp = await session.get("https://www.bilibili.com")
+                async with session.get(
+                    f"https://api.bilibili.com/x/space/wbi/arc/search?mid={mid}&keyword={keyword}",
+                    cookies=resp.cookies,
+                ) as r:
+                    response = await r.json()
+        except ConnectionError:
+            logger.error("请求B站视频搜索出错！")
+
+            # 网络错误
+            return []
 
         if response["code"]:
             logger.error("请求B站 [%s] 视频搜索出错！", str(mid))
