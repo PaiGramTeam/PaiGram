@@ -212,6 +212,9 @@ class HandlerDispatcher(BaseDispatcher):
         self._update = update
         self._context = context
 
+    def _get_kwargs(self) -> Dict[Type[T], T]:
+        return {}
+
     @catch(Update)
     def catch_update(self) -> Update:
         return self._update
