@@ -25,7 +25,7 @@ __all__ = ["TemplateService", "TemplatePreviewer"]
 class TemplateService(BaseService):
     def __init__(
         self,
-        bot: Application,
+        app: Application,
         browser: AioBrowser,
         html_to_file_id_cache: HtmlToFileIdCache,
         preview_cache: TemplatePreviewCache,
@@ -43,7 +43,7 @@ class TemplateService(BaseService):
         self.using_preview = application_config.debug and application_config.webserver.switch
 
         if self.using_preview:
-            self.previewer = TemplatePreviewer(self, preview_cache, bot.web_app)
+            self.previewer = TemplatePreviewer(self, preview_cache, app.web_app)
 
         self.html_to_file_id_cache = html_to_file_id_cache
 

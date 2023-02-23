@@ -25,14 +25,13 @@ from typing import (
 
 from arkowrapper import ArkoWrapper
 from fastapi import FastAPI
-from telegram import Bot as TGBot, Chat, Message, Update, User
-from telegram.ext import Application as TGApplication, CallbackContext, Job
+from telegram import Chat, Message, Update, User
+from telegram.ext import CallbackContext, Job, Application as TelegramApplication
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.application import Application
 from core.builtins.contexts import TGContext, TGUpdate
-from core.config import ApplicationConfig, config as application_config
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.typedefs import R, T
 
@@ -138,8 +137,13 @@ class BaseDispatcher(AbstractDispatcher):
         return result
 
     def _get_default_kwargs(self) -> Dict[Type[T], T]:
-        _default_kwargs = {}
         application = self.application
+        _default_kwargs = {
+            Application: application,
+            FastAPI: application.web_app,
+            Server: application.web_server,
+            TelegramApplication: application.telegram,
+        }
         if not application.running:
             for obj in chain(
                 application.managers.dependency,
