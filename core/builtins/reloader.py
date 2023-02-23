@@ -172,12 +172,12 @@ class Reloader:
 
     def restart(self) -> None:
         """重启进程"""
-        logger.info("正在关闭目标进程", extra={"tag": "Reloader"})
         self._process.terminate()
         self._process.join(10)
 
         self._process = spawn.Process(target=self._target)
         self._process.start()
+        logger.info("目标进程已经重载", extra={"tag": "Reloader"})
 
     def shutdown(self) -> None:
         """关闭进程"""
