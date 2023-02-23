@@ -150,7 +150,7 @@ class _Plugin(PluginFuncs):
                 for data in datas:
                     data: "JobData"
                     executor = JobExecutor(func, dispatcher=data.dispatcher)
-                    executor.set_application(self.application)
+                    executor.set_application(application=self.application)
                     self._jobs.append(
                         getattr(self.application.telegram.job_queue, data.type)(
                             callback=wraps(func)(executor),

@@ -81,7 +81,7 @@ class BaseExecutor:
 
         with HashLock(lock_id or target) if block else do_nothing():
             dispatcher_instance = dispatcher(**kwargs)
-            dispatcher_instance.set_application(self.application)
+            dispatcher_instance.set_application(application=self.application)
             dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
 
             # 执行
