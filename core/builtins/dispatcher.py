@@ -3,10 +3,10 @@ import asyncio
 import inspect
 from abc import ABC, abstractmethod
 from asyncio import AbstractEventLoop
-from functools import cached_property, partial, wraps
+from functools import cached_property, lru_cache, partial, wraps
 from inspect import Parameter, Signature
 from itertools import chain
-from types import MethodType
+from types import GenericAlias, MethodType
 
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from typing import (
@@ -20,13 +20,12 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    _GenericAlias as GenericAlias,
 )
 
 from arkowrapper import ArkoWrapper
 from fastapi import FastAPI
-from telegram import Chat, Message, Update, User
-from telegram.ext import CallbackContext, Job, Application as TelegramApplication
+from telegram import Bot as TelegramBot, Chat, Message, Update, User
+from telegram.ext import Application as TelegramApplication, CallbackContext, Job
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
@@ -63,6 +62,14 @@ def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, 
         return wrapper
 
     return decorate
+
+
+@lru_cache(64)
+def get_signature(func: Union[type, Callable]) -> Signature:
+    if isinstance(func, type):
+        return inspect.signature(func.__init__)
+    else:
+        return inspect.signature(func)
 
 
 class AbstractDispatcher(ABC):
@@ -103,7 +110,9 @@ class AbstractDispatcher(ABC):
         return list(
             ArkoWrapper(dir(self))
             .filter(lambda x: not x.startswith("_"))
-            .filter(lambda x: x not in self.IGNORED_ATTRS + ["dispatch", "catch_funcs", "catch_func_map"])
+            .filter(
+                lambda x: x not in self.IGNORED_ATTRS + ["dispatch", "catch_funcs", "catch_func_map", "dispatch_funcs"]
+            )
             .map(lambda x: getattr(self, x))
             .filter(lambda x: isinstance(x, MethodType))
             .filter(lambda x: hasattr(x, "_catch_targets"))
@@ -120,9 +129,50 @@ class AbstractDispatcher(ABC):
                 #     result[catch_target.__name__] = catch_func
         return result
 
+    @cached_property
+    def dispatch_funcs(self) -> List[MethodType]:
+        return list(
+            ArkoWrapper(dir(self))
+            .filter(lambda x: x.startswith("dispatch_by_"))
+            .map(lambda x: getattr(self, x))
+            .filter(lambda x: isinstance(x, MethodType))
+        )
+
     @abstractmethod
+    def dispatch_by_default(self, parameter: Parameter) -> Parameter:
+        """默认的 dispatch 方法"""
+
+    @abstractmethod
+    def dispatch_by_catch_funcs(self, parameter: Parameter) -> Parameter:
+        """使用 catch_func 获取并分配参数"""
+
     def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
         """将参数分配给函数，从而合成一个无需参数即可执行的函数"""
+        params = {}
+        signature = get_signature(func)
+        parameters: Dict[str, Parameter] = dict(signature.parameters)
+
+        for name, parameter in list(parameters.items()):
+            parameter: Parameter
+            if any(
+                [
+                    name == "self" and isinstance(func, (type, MethodType)),
+                    parameter.kind in [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL],
+                ]
+            ):
+                del parameters[name]
+                continue
+
+            for dispatch_func in self.dispatch_funcs:
+                parameters[name] = dispatch_func(parameter)
+
+        for name, parameter in parameters.items():
+            if parameter.default != Parameter.empty:
+                params[name] = parameter.default
+            else:
+                params[name] = None
+
+        return partial(func, **params)
 
 
 class BaseDispatcher(AbstractDispatcher):
@@ -143,6 +193,7 @@ class BaseDispatcher(AbstractDispatcher):
             FastAPI: application.web_app,
             Server: application.web_server,
             TelegramApplication: application.telegram,
+            TelegramBot: application.telegram.bot,
         }
         if not application.running:
             for obj in chain(
@@ -154,48 +205,23 @@ class BaseDispatcher(AbstractDispatcher):
                 _default_kwargs[type(obj)] = obj
         return {k: v for k, v in _default_kwargs.items() if v is not None}
 
-    def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
-        """分发参数给 func"""
-        params = {}
-        if isinstance(func, type):
-            signature: Signature = inspect.signature(func.__init__)
-        else:
-            signature: Signature = inspect.signature(func)
-        parameters: Dict[str, Parameter] = dict(signature.parameters)
+    def dispatch_by_default(self, parameter: Parameter) -> Parameter:
+        annotation = parameter.annotation
+        # noinspection PyTypeChecker
+        if isinstance(annotation, type) and (value := self._get_kwargs().get(annotation, None)) is not None:
+            parameter._default = value
+        return parameter
 
-        for name, parameter in signature.parameters.items():
-            if any(
-                [
-                    name == "self" and isinstance(func, (type, MethodType)),
-                    parameter.kind in [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL],
-                ]
-            ):
-                del parameters[name]
-                continue
-            annotation = parameter.annotation
-            # noinspection PyTypeChecker
-            if isinstance(annotation, type) and (value := self._get_kwargs().get(annotation, None)) is not None:
-                params[name] = value
+    def dispatch_by_catch_funcs(self, parameter: Parameter) -> Parameter:
+        annotation = parameter.annotation
+        if annotation != Any and isinstance(annotation, GenericAlias):
+            return parameter
 
-        for name, parameter in list(parameters.items()):
-            annotation = parameter.annotation
-            if annotation != Any and isinstance(annotation, GenericAlias):
-                continue
-
-            catch_func = self.catch_func_map.get(annotation, None) or self.catch_func_map.get(name, None)
-            if catch_func is not None:
-                params[name] = catch_func()
-                del parameters[name]
-
-        for name, parameter in parameters.items():
-            if name in params:
-                continue
-            if parameter.default != Parameter.empty:
-                params[name] = parameter.default
-            else:
-                params[name] = None
-
-        return partial(func, **params)
+        catch_func = self.catch_func_map.get(annotation, None) or self.catch_func_map.get(parameter.name, None)
+        if catch_func is not None:
+            # noinspection PyUnresolvedReferences,PyProtectedMember
+            parameter._default = catch_func()
+        return parameter
 
     @catch(AbstractEventLoop)
     def catch_loop(self) -> AbstractEventLoop:
@@ -212,8 +238,9 @@ class HandlerDispatcher(BaseDispatcher):
         self._update = update
         self._context = context
 
-    def _get_kwargs(self) -> Dict[Type[T], T]:
-        return {}
+    def dispatch_by_default(self, parameter: Parameter) -> Parameter:
+        """HandlerDispatcher 默认不使用 dispatch_by_default"""
+        return parameter
 
     @catch(Update)
     def catch_update(self) -> Update:
@@ -237,7 +264,7 @@ class HandlerDispatcher(BaseDispatcher):
 
 
 class ErrorHandlerDispatcher(HandlerDispatcher):
-    @catch(Exception)
+    @catch(Exception, BaseException)
     def catch_error(self) -> Exception:
         return self._context.error
 
@@ -257,6 +284,10 @@ class JobDispatcher(BaseDispatcher):
     @catch(Job)
     def catch_job(self) -> Job:
         return self._context.job
+
+    @catch(CallbackContext)
+    def catch_context(self) -> CallbackContext:
+        return self._context
 
 
 def dispatched(dispatcher: Type[AbstractDispatcher] = BaseDispatcher):
