@@ -9,7 +9,7 @@ from telegram.error import BadRequest, Forbidden, TimedOut
 from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.builtins.contexts import TGContext, TGUpdate
+from core.builtins.contexts import CallbackContextCV, UpdateCV
 from core.plugin import Plugin
 from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
 from utils.const import WRAPPER_ASSIGNMENTS
@@ -29,8 +29,8 @@ SEND_MSG_ERROR_NOTICE = "发送 update_id[%s] 错误信息失败 错误信息为
 
 
 async def send_user_notification(content: str) -> Optional[Message]:
-    update = TGUpdate.get()
-    context = TGContext.get()
+    update = UpdateCV.get()
+    context = CallbackContextCV.get()
 
     if not isinstance(update, Update):
         logger.warning("错误的消息类型 %s", repr(update))
@@ -94,7 +94,7 @@ def error_callable(func: Callable) -> Callable:
 
     @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
     async def decorator(*args, **kwargs):
-        update = TGUpdate.get()
+        update = UpdateCV.get()
 
         notice = ""
         try:

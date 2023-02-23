@@ -8,31 +8,31 @@ if TYPE_CHECKING:
     from telegram import Update
 
 __all__ = [
-    "TGContext",
-    "TGUpdate",
+    "CallbackContextCV",
+    "UpdateCV",
     "handler_contexts",
     "job_contexts",
 ]
 
-TGContext: ContextVar["CallbackContext"] = ContextVar("TGContext")
-TGUpdate: ContextVar["Update"] = ContextVar("TGUpdate")
+CallbackContextCV: ContextVar["CallbackContext"] = ContextVar("TelegramContextCallback")
+UpdateCV: ContextVar["Update"] = ContextVar("TelegramUpdate")
 
 
 @contextmanager
 def handler_contexts(update: "Update", context: "CallbackContext") -> None:
-    context_token = TGContext.set(context)
-    update_token = TGUpdate.set(update)
+    context_token = CallbackContextCV.set(context)
+    update_token = UpdateCV.set(update)
     try:
         yield
     finally:
-        TGContext.reset(context_token)
-        TGUpdate.reset(update_token)
+        CallbackContextCV.reset(context_token)
+        UpdateCV.reset(update_token)
 
 
 @contextmanager
 def job_contexts(context: "CallbackContext") -> None:
-    token = TGContext.set(context)
+    token = CallbackContextCV.set(context)
     try:
         yield
     finally:
-        TGContext.reset(token)
+        CallbackContextCV.reset(token)

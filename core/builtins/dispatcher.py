@@ -30,7 +30,7 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.application import Application
-from core.builtins.contexts import TGContext, TGUpdate
+from core.builtins.contexts import CallbackContextCV, UpdateCV
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.typedefs import R, T
 
@@ -174,6 +174,10 @@ class AbstractDispatcher(ABC):
 
         return partial(func, **params)
 
+    @catch(Application)
+    def catch_application(self) -> Application:
+        return self.application
+
 
 class BaseDispatcher(AbstractDispatcher):
     """默认参数分发器"""
@@ -189,7 +193,6 @@ class BaseDispatcher(AbstractDispatcher):
     def _get_default_kwargs(self) -> Dict[Type[T], T]:
         application = self.application
         _default_kwargs = {
-            Application: application,
             FastAPI: application.web_app,
             Server: application.web_server,
             TelegramApplication: application.telegram,
@@ -232,8 +235,8 @@ class HandlerDispatcher(BaseDispatcher):
     """Handler 参数分发器"""
 
     def __init__(self, update: Optional[Update] = None, context: Optional[CallbackContext] = None, **kwargs) -> None:
-        update = update or TGUpdate.get()
-        context = context or TGContext.get()
+        update = update or UpdateCV.get()
+        context = context or CallbackContextCV.get()
         super().__init__(update=update, context=context, **kwargs)
         self._update = update
         self._context = context
@@ -273,7 +276,7 @@ class JobDispatcher(BaseDispatcher):
     """Job 参数分发器"""
 
     def __init__(self, context: Optional[CallbackContext] = None, **kwargs) -> None:
-        context = context or TGContext.get()
+        context = context or CallbackContextCV.get()
         super().__init__(context=context, **kwargs)
         self._context = context
 

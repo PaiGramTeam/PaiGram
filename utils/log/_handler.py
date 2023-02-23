@@ -3,11 +3,10 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Iterable, List, Literal, Optional, Union
+from typing import Any, Callable, Iterable, List, Literal, Optional, TYPE_CHECKING, Union
 
 from rich.console import Console
-from rich.logging import LogRender as DefaultLogRender
-from rich.logging import RichHandler as DefaultRichHandler
+from rich.logging import LogRender as DefaultLogRender, RichHandler as DefaultRichHandler
 from rich.table import Table
 from rich.text import Text, TextType
 from rich.theme import Theme
@@ -153,13 +152,16 @@ class Handler(DefaultRichHandler):
         time_format = None if self.formatter is None else self.formatter.datefmt
         log_time = datetime.fromtimestamp(record.created)
 
+        if not traceback:
+            traceback_content = [message_renderable]
+        elif message_renderable is not None:
+            traceback_content = [message_renderable, traceback]
+        else:
+            traceback_content = [traceback]
+
         log_renderable = self._log_render(
             self.console,
-            (
-                [message_renderable]
-                if not traceback
-                else ([message_renderable, traceback] if message_renderable is not None else [traceback])
-            ),
+            traceback_content,
             log_time=log_time,
             time_format=time_format,
             level=_level,
@@ -175,8 +177,12 @@ class Handler(DefaultRichHandler):
         message: Any,
     ) -> "ConsoleRenderable":
         use_markup = getattr(record, "markup", self.markup)
+        tag = getattr(record, "tag", None)
         if isinstance(message, str):
             message_text = Text.from_markup(message) if use_markup else Text(message)
+            message_text = (
+                (Text.from_markup("[purple][%s][/]" % tag) + message_text) if tag is not None else message_text
+            )
             highlighter = getattr(record, "highlighter", self.highlighter)
         else:
             from rich.highlighter import JSONHighlighter
@@ -184,6 +190,9 @@ class Handler(DefaultRichHandler):
 
             highlighter = JSONHighlighter()
             message_text = JSON.from_data(message, indent=4).text
+            message_text = (
+                (Text.from_markup("[purple][%s][/]" % tag) + message_text) if tag is not None else message_text
+            )
 
         if highlighter is not None:
             # noinspection PyCallingNonCallable

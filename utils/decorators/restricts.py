@@ -6,7 +6,7 @@ from typing import Callable, Optional, TYPE_CHECKING, TypeVar, Union
 from telegram.ext import filters
 from typing_extensions import ParamSpec
 
-from core.builtins.contexts import TGContext, TGUpdate
+from core.builtins.contexts import CallbackContextCV, UpdateCV
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 
@@ -50,8 +50,8 @@ def restricts(
     def decorator(func: Callable[P, R]) -> Callable[P, Union[R, T]]:
         @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
         async def restricts_func(*args: P.args, **kwargs: P.kwargs) -> Union[R, T]:
-            update: "Update" = TGUpdate.get()
-            context: "CallbackContext" = TGContext.get()
+            update: "Update" = UpdateCV.get()
+            context: "CallbackContext" = CallbackContextCV.get()
 
             message = update.effective_message
             user = update.effective_user

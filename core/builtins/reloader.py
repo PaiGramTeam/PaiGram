@@ -103,9 +103,9 @@ class Reloader:
                 self.reload_dirs.append(reload_dir)
 
         if not self.reload_dirs:
-            logger.warning(f"需要检测的目标文件夹列表为空")
+            logger.warning(f"需要检测的目标文件夹列表为空", extra={"tag": "Reloader"})
 
-        self.should_exit = threading.Event()
+        self._should_exit = threading.Event()
 
         frame = inspect.currentframe().f_back
 
@@ -113,14 +113,14 @@ class Reloader:
         self.watcher = watch(
             *self.reload_dirs,
             watch_filter=None,
-            stop_event=self.should_exit,
+            stop_event=self._should_exit,
             yield_on_timeout=True,
         )
 
     def get_changes(self) -> Optional[List[Path]]:
         if not self._process.is_alive():
-            logger.info("目标进程已经关闭")
-            self.should_exit.set()
+            logger.info("目标进程已经关闭", extra={"tag": "Reloader"})
+            self._should_exit.set()
         changes = next(self.watcher)
         if changes:
             unique_paths = {Path(c[1]) for c in changes}
@@ -140,14 +140,15 @@ class Reloader:
                 logger.warning(
                     "检测到文件 "
                     f"{[str(c.relative_to(PROJECT_ROOT)).replace(os.sep, '/') for c in changes]} "
-                    "发生改变, 正在重载..."
+                    "发生改变, 正在重载...",
+                    extra={"tag": "Reloader"},
                 )
                 self.restart()
 
         self.shutdown()
 
     # def pause(self) -> None:
-    #     if self.should_exit.wait(self.reload_delay):
+    #     if self._should_exit.wait(self.reload_delay):
     #         raise StopIteration()
 
     def signal_handler(self, *_) -> None:
@@ -156,23 +157,24 @@ class Reloader:
         if self._process.is_alive():
             self._process.terminate()
             self._process.join()
-        self.should_exit.set()
+        self._should_exit.set()
 
     def startup(self) -> None:
         """启动进程"""
-        logger.info("重载器正在启动")
+        logger.info("目标进程正在启动", extra={"tag": "Reloader"})
 
         for sig in HANDLED_SIGNALS:
             signal.signal(sig, self.signal_handler)
 
         self._process = spawn.Process(target=self._target)
         self._process.start()
-        logger.success("重载器启动成功")
+        logger.success("目标进程启动成功", extra={"tag": "Reloader"})
 
     def restart(self) -> None:
         """重启进程"""
+        logger.info("正在关闭目标进程", extra={"tag": "Reloader"})
         self._process.terminate()
-        self._process.join()
+        self._process.join(10)
 
         self._process = spawn.Process(target=self._target)
         self._process.start()
@@ -180,6 +182,6 @@ class Reloader:
     def shutdown(self) -> None:
         """关闭进程"""
         self._process.terminate()
-        self._process.join()
+        self._process.join(10)
 
-        logger.info("重载器已经关闭")
+        logger.info("重载器已经关闭", extra={"tag": "Reloader"})

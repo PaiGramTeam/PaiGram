@@ -59,10 +59,6 @@ class Application(Singleton):
         managers = Managers()
         telegram = (
             TelegramApplicationBuilder()
-            .read_timeout(application_config.read_timeout)
-            .write_timeout(application_config.write_timeout)
-            .connect_timeout(application_config.connect_timeout)
-            .pool_timeout(application_config.pool_timeout)
             .get_updates_read_timeout(application_config.update_read_timeout)
             .get_updates_write_timeout(application_config.update_write_timeout)
             .get_updates_connect_timeout(application_config.update_connect_timeout)
@@ -72,7 +68,7 @@ class Application(Singleton):
             .token(application_config.bot_token)
             .request(
                 HTTPXRequest(
-                    256,
+                    connection_pool_size=application_config.connection_pool_size,
                     proxy_url=application_config.proxy_url,
                     read_timeout=application_config.read_timeout,
                     write_timeout=application_config.write_timeout,
@@ -132,11 +128,8 @@ class Application(Singleton):
             """错误信息回调"""
             self.telegram.create_task(self.telegram.process_error(error=exc, update=None))
 
-        await self.initialize()
-        logger.success("BOT 初始化成功")
-        logger.debug("BOT 开始启动")
-
         await self.telegram.initialize()
+        logger.info("[blue]Telegram[/] 初始化成功", extra={"markup": True})
 
         if application_config.webserver.enable:  # 如果使用 web app
             server_config = self.web_server.config
@@ -155,6 +148,7 @@ class Application(Singleton):
             if self.web_server.should_exit:
                 logger.error("Web Server 启动失败，正在退出")
                 raise SystemExit from None
+            logger.success("Web Server 启动成功")
 
             self._web_server_task = asyncio.create_task(self.web_server.main_loop())
 
@@ -172,6 +166,10 @@ class Application(Singleton):
                 else:
                     logger.error("网络连接出现问题, 请检查您的网络状况.")
                 raise SystemExit from e
+
+        await self.initialize()
+        logger.success("BOT 初始化成功")
+        logger.debug("BOT 开始启动")
 
         await self._on_startup()
         await self.telegram.start()
@@ -206,15 +204,17 @@ class Application(Singleton):
             except asyncio.CancelledError:
                 break
 
-    async def stop(self):
+    async def stop(self) -> None:
         """关闭"""
         logger.info("BOT 正在关闭")
         self._running = False
 
+        await self._on_shutdown()
+
         if self.telegram.updater.running:
             await self.telegram.updater.stop()
 
-        await self._on_shutdown()
+        await self.shutdown()
 
         if self.telegram.running:
             await self.telegram.stop()
@@ -223,13 +223,13 @@ class Application(Singleton):
         if self.web_server is not None:
             try:
                 await self.web_server.shutdown()
+                logger.info("Web Server 已经关闭")
             except AttributeError:
                 pass
 
-        await self.shutdown()
         logger.success("BOT 关闭成功")
 
-    def launch(self):
+    def launch(self) -> None:
         """启动"""
         loop = asyncio.get_event_loop()
         try:
@@ -238,8 +238,6 @@ class Application(Singleton):
         except (SystemExit, KeyboardInterrupt) as exc:
             logger.debug("接收到了终止信号，BOT 即将关闭", exc_info=exc)  # 接收到了终止信号
         except NetworkError as e:
-            if application_config.debug:
-                logger.exception()
             if isinstance(e, SSLZeroReturnError):
                 logger.critical("代理服务出现异常, 请检查您的代理服务是否配置成功.")
             else:

@@ -8,7 +8,7 @@ from telegram import Chat, Message, ReplyKeyboardRemove, Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler, Job
 
-from core.builtins.contexts import TGContext, TGUpdate
+from core.builtins.contexts import CallbackContextCV, UpdateCV
 from core.dependence.redisdb import RedisDB
 from core.plugin._handler import conversation, handler
 from utils.const import CACHE_DIR, REQUEST_HEADERS
@@ -107,7 +107,7 @@ class PluginFuncs:
         context: Optional[CallbackContext] = None,
     ) -> Job:
         """延迟删除消息"""
-        update = TGUpdate.get()
+        update = UpdateCV.get()
         message = message or update.effective_message
 
         if isinstance(message, Message):
@@ -118,7 +118,7 @@ class PluginFuncs:
         chat = chat.id if isinstance(chat, Chat) else chat
 
         if context is None:
-            context = TGContext.get()
+            context = CallbackContextCV.get()
 
         return context.job_queue.run_once(
             callback=_delete_message,
@@ -162,7 +162,7 @@ class PluginFuncs:
 
     @staticmethod
     def get_args(context: Optional[CallbackContext] = None) -> List[str]:
-        context = context or TGContext.get()
+        context = context or CallbackContextCV.get()
 
         args = context.args
         match = context.match

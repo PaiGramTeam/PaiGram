@@ -128,6 +128,7 @@ class ApplicationConfig(Settings):
     """是否允许机器人被邀请到其它群组"""
 
     timeout: int = 10
+    connection_pool_size: int = 256
     read_timeout: Optional[float] = None
     write_timeout: Optional[float] = None
     connect_timeout: Optional[float] = None
