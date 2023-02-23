@@ -66,7 +66,7 @@ async def send_user_notification(content: str) -> Optional[Message]:
         if update.callback_query:
             await update.callback_query.answer(content, show_alert=True)
             return None
-        return await message.reply_text(text, reply_markup=buttons, allow_sending_without_reply=True)
+        return await message.reply_text(content, reply_markup=buttons, allow_sending_without_reply=True)
     except TimedOut:
         logger.error("发送 update_id[%s] 错误信息失败 连接超时", update.update_id)
     except BadRequest as exc:
@@ -154,7 +154,7 @@ def error_callable(func: Callable) -> Callable:
         except BadRequest as exc:
             if "Replied message not found" in exc.message:
                 telegram_warning(update, exc.message)
-                text = "气死我了！怎么有人喜欢发一个命令就秒删了！"
+                notice = "气死我了！怎么有人喜欢发一个命令就秒删了！"
             elif "Message is not modified" in exc.message:
                 telegram_warning(update, exc.message)
             elif "Not enough rights" in exc.message:
