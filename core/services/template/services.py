@@ -40,7 +40,7 @@ class TemplateService(BaseService):
             autoescape=True,
             auto_reload=application_config.debug,
         )
-        self.using_preview = application_config.debug and application_config.webserver.switch
+        self.using_preview = application_config.debug and application_config.webserver.enable
 
         if self.using_preview:
             self.previewer = TemplatePreviewer(self, preview_cache, app.web_app)
@@ -147,7 +147,7 @@ class TemplateService(BaseService):
         )
 
 
-class TemplatePreviewer(BaseService, load=application_config.webserver.switch and application_config.debug):
+class TemplatePreviewer(BaseService, load=application_config.webserver.enable and application_config.debug):
     def __init__(
         self,
         template_service: TemplateService,

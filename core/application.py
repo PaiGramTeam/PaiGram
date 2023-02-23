@@ -4,7 +4,7 @@ import signal
 from functools import wraps
 from signal import SIGABRT, SIGINT, SIGTERM, signal as signal_func
 from ssl import SSLZeroReturnError
-from typing import Callable, List, TYPE_CHECKING, TypeVar
+from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
 
 import pytz
 import uvicorn
@@ -19,7 +19,6 @@ from telegram.ext import (
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
-
 from core.config import config as application_config
 from core.manager import Managers
 from modules.override.telegram import HTTPXRequest
@@ -29,7 +28,7 @@ from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
     from core.manager import Managers
-    from asyncio import AbstractEventLoop, CancelledError
+    from asyncio import AbstractEventLoop, CancelledError, Task
     from types import FrameType
 
 __all__ = ("Application",)
@@ -41,6 +40,8 @@ P = ParamSpec("P")
 
 class Application(Singleton):
     """Application"""
+
+    _web_server_task: Optional["Task"] = None
 
     _startup_funcs: List[Callable] = []
     _shutdown_funcs: List[Callable] = []
@@ -130,15 +131,22 @@ class Application(Singleton):
 
         await self.telegram.initialize()
 
-        if application_config.webserver.switch:  # 如果使用 web app
+        if application_config.webserver.enable:  # 如果使用 web app
             server_config = self.web_server.config
             server_config.setup_event_loop()
             if not server_config.loaded:
                 server_config.load()
             self.web_server.lifespan = server_config.lifespan_class(server_config)
-            await self.web_server.startup()
+            try:
+                await self.web_server.startup()
+            except OSError as e:
+                if e.errno == 10048:
+                    logger.error(f"Web Server 端口被占用：{e}")
+                logger.error("Web Server 启动失败，正在退出")
+                raise SystemExit from None
+
             if self.web_server.should_exit:
-                logger.error("web server 启动失败，正在退出")
+                logger.error("Web Server 启动失败，正在退出")
                 raise SystemExit from None
 
             self._web_server_task = asyncio.create_task(self.web_server.main_loop())
@@ -223,6 +231,8 @@ class Application(Singleton):
         except (SystemExit, KeyboardInterrupt) as exc:
             logger.debug("接收到了终止信号，BOT 即将关闭", exc_info=exc)  # 接收到了终止信号
         except NetworkError as e:
+            if application_config.debug:
+                logger.exception()
             if isinstance(e, SSLZeroReturnError):
                 logger.critical("代理服务出现异常, 请检查您的代理服务是否配置成功.")
             else:

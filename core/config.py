@@ -64,8 +64,8 @@ class MTProtoConfig(Settings):
 
 
 class WebServerConfig(Settings):
-    switch: bool = False
-    """WebServer开关"""
+    enable: bool = False
+    """是否启用WebServer"""
 
     url: AnyUrl = "http://localhost:8080"
     host: str = "localhost"
@@ -111,7 +111,7 @@ class ApplicationConfig(Settings):
     auto_reload: bool = False
     """自动重载"""
 
-    proxy_url: Optional[AnyUrl]
+    proxy_url: Optional[AnyUrl] = None
     """代理链接"""
 
     bot_token: str = ""
