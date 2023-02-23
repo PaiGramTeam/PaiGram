@@ -97,9 +97,9 @@ class _Plugin(PluginFuncs):
 
                 for attr in dir(self):
                     if (
-                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                        and isinstance(func := getattr(self, attr), MethodType)
-                        and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
+                            not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                            and isinstance(func := getattr(self, attr), MethodType)
+                            and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
                     ):
                         for data in datas:
                             data: "HandlerData"
@@ -122,9 +122,9 @@ class _Plugin(PluginFuncs):
                 self._error_handlers = []
                 for attr in dir(self):
                     if (
-                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                        and isinstance(func := getattr(self, attr), MethodType)
-                        and (datas := getattr(func, _ERROR_HANDLER_ATTR_NAME, []))
+                            not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                            and isinstance(func := getattr(self, attr), MethodType)
+                            and (datas := getattr(func, _ERROR_HANDLER_ATTR_NAME, []))
                     ):
                         for data in datas:
                             data: "ErrorHandlerData"
@@ -143,15 +143,17 @@ class _Plugin(PluginFuncs):
         for attr in dir(self):
             # noinspection PyUnboundLocalVariable
             if (
-                not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                and isinstance(func := getattr(self, attr), MethodType)
-                and (datas := getattr(func, _JOB_ATTR_NAME, []))
+                    not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                    and isinstance(func := getattr(self, attr), MethodType)
+                    and (datas := getattr(func, _JOB_ATTR_NAME, []))
             ):
                 for data in datas:
                     data: "JobData"
+                    executor = JobExecutor(func, dispatcher=data.dispatcher)
+                    executor.set_application(self.application)
                     self._jobs.append(
                         getattr(self.application.telegram.job_queue, data.type)(
-                            callback=wraps(func)(JobExecutor(func, dispatcher=data.dispatcher)),
+                            callback=wraps(func)(executor),
                             **data.kwargs,
                             **{
                                 key: value
@@ -251,9 +253,9 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
                 fallbacks: List[HandlerType] = []
                 for attr in dir(self):
                     if (
-                        not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
-                        and (func := getattr(self, attr, None)) is not None
-                        and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
+                            not (attr.startswith("_") or attr in _EXCLUDE_ATTRS)
+                            and (func := getattr(self, attr, None)) is not None
+                            and (datas := getattr(func, _HANDLER_DATA_ATTR_NAME, []))
                     ):
                         conversation_data: "ConversationData"
 
@@ -289,7 +291,9 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
                 else:
                     temp_dict = {"entry_points": entry_points, "states": states, "fallbacks": fallbacks}
                     reason = map(lambda x: f"'{x[0]}'", filter(lambda x: not x[1], temp_dict.items()))
-                    logger.warning(f"'{self.__class__.__name__}' 因缺少 {', '.join(reason)} 而生成无法生成 ConversationHandler")
+                    logger.warning(
+                        f"'{self.__class__.__name__}' 因缺少 {', '.join(reason)} 而生成无法生成 ConversationHandler"
+                        )
         return self._handlers
 
 
