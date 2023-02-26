@@ -13,8 +13,9 @@ CCT = TypeVar("CCT", bound="CallbackContext[Any, Any, Any, Any]")
 class LimiterHandler(TypeHandler[UT, CCT]):
     _lock = asyncio.Lock()
 
-    def __init__(self, max_rate: float = 5, time_period: float = 10, amount: float = 1,
-                 limit_time: Optional[float] = None):
+    def __init__(
+        self, max_rate: float = 5, time_period: float = 10, amount: float = 1, limit_time: Optional[float] = None
+    ):
         """Limiter Handler 通过
         `Leaky bucket algorithm <https://en.wikipedia.org/wiki/Leaky_bucket>`_
         实现对用户的输入的精确控制
@@ -33,7 +34,6 @@ class LimiterHandler(TypeHandler[UT, CCT]):
         self._rate_per_sec = max_rate / time_period
         self.limit_time = limit_time
         super().__init__(Update, self.limiter_callback)
-
 
     async def limiter_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.inline_query is not None:

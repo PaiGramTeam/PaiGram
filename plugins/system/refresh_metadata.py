@@ -11,7 +11,6 @@ __all__ = ("MetadataPlugin",)
 
 
 class MetadataPlugin(Plugin):
-
     @handler.command("refresh_metadata", admin=True)
     async def refresh(self, user: User, message: Message) -> None:
         logger.info(f"用户 {user.full_name}[{user.id}] 刷新[bold]metadata[/]缓存命令", extra={"markup": True})

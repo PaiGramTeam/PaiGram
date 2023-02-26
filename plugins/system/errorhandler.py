@@ -5,10 +5,10 @@ from typing import Optional
 
 import aiofiles
 from aiohttp import ClientError, ClientConnectorError
-from httpx import Timeout as HttpxTimeout,HTTPError
+from httpx import Timeout as HttpxTimeout, HTTPError
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
-from telegram.error import BadRequest, Forbidden, TelegramError, TimedOut,NetworkError
+from telegram.error import BadRequest, Forbidden, TelegramError, TimedOut, NetworkError
 from telegram.ext import CallbackContext, ApplicationHandlerStop
 from genshin import DataNotPublic, GenshinException, InvalidCookies, TooManyRequests
 from telegram.helpers import create_deep_linked_url
@@ -61,8 +61,13 @@ class ErrorHandler(Plugin):
             )
         elif "通过验证" in content:
             buttons = InlineKeyboardMarkup(
-                [[InlineKeyboardButton("点我通过验证",
-                                       url=create_deep_linked_url(context.bot.username, "verify_verification"))]]
+                [
+                    [
+                        InlineKeyboardButton(
+                            "点我通过验证", url=create_deep_linked_url(context.bot.username, "verify_verification")
+                        )
+                    ]
+                ]
             )
         else:
             buttons = ReplyKeyboardRemove()
@@ -74,8 +79,7 @@ class ErrorHandler(Plugin):
         if chat.id == user.id:
             logger.info("尝试通知用户 %s[%s] 错误信息[%s]", user.full_name, user.id, content)
         else:
-            logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id,
-                        content)
+            logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id, content)
         try:
             if update.callback_query:
                 await update.callback_query.answer(content, show_alert=True)

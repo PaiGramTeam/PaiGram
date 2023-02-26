@@ -265,8 +265,6 @@ class HandlerDispatcher(BaseDispatcher):
         return self._update.effective_chat
 
 
-
-
 class JobDispatcher(BaseDispatcher):
     """Job 参数分发器"""
 

@@ -34,7 +34,6 @@ class Response(DefaultResponse):
 # noinspection PyProtectedMember
 class AsyncHTTPTransport(DefaultAsyncHTTPTransport):
     async def handle_async_request(self, request) -> Response:
-
         from httpx._transports.default import (
             map_httpcore_exceptions,
             AsyncResponseStream,

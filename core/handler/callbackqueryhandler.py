@@ -34,10 +34,10 @@ class OverlappingContext(AbstractAsyncContextManager):
             return None
 
     async def __aexit__(
-            self,
-            exc_type: Optional[Type[BaseException]],
-            exc: Optional[BaseException],
-            tb: Optional[TracebackType],
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[TracebackType],
     ) -> None:
         async with self._lock:
             del self.context.user_data["overlapping"]
@@ -46,11 +46,11 @@ class OverlappingContext(AbstractAsyncContextManager):
 
 class CallbackQueryHandler(BaseCallbackQueryHandler):
     async def handle_update(
-            self,
-            update: "UT",
-            application: "Application[Any, CCT, Any, Any, Any, Any]",
-            check_result: Any,
-            context: "CCT",
+        self,
+        update: "UT",
+        application: "Application[Any, CCT, Any, Any, Any, Any]",
+        check_result: Any,
+        context: "CCT",
     ) -> RT:
         self.collect_additional_context(context, update, application, check_result)
         try:

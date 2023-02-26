@@ -15,7 +15,8 @@ from telegram.ext import (
     AIORateLimiter,
     Application as TelegramApplication,
     ApplicationBuilder as TelegramApplicationBuilder,
-    Defaults, JobQueue
+    Defaults,
+    JobQueue,
 )
 from typing_extensions import ParamSpec
 from uvicorn import Server

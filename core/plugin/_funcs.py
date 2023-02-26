@@ -5,7 +5,7 @@ import aiofiles
 import httpx
 from httpx import UnsupportedProtocol
 from telegram import Chat, Message, ReplyKeyboardRemove, Update
-from telegram.error import BadRequest, Forbidden,NetworkError
+from telegram.error import BadRequest, Forbidden, NetworkError
 from telegram.ext import CallbackContext, ConversationHandler, Job
 
 from core.builtins.contexts import CallbackContextCV

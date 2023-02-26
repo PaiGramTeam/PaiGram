@@ -43,11 +43,11 @@ class AdminHandler(BaseHandler[Update, CCT]):
             return self.user_service
 
     async def handle_update(
-            self,
-            update: "UT",
-            application: "TelegramApplication[Any, CCT, Any, Any, Any, Any]",
-            check_result: Any,
-            context: "CCT",
+        self,
+        update: "UT",
+        application: "TelegramApplication[Any, CCT, Any, Any, Any, Any]",
+        check_result: Any,
+        context: "CCT",
     ) -> RT:
         user_service = await self._user_service()
         user = update.effective_user
