@@ -7,7 +7,6 @@ from core.services.game import GameStrategyService
 from core.services.search.models import StrategyEntry
 from core.services.search.services import SearchServices
 from metadata.shortname import roleToName, roleToTag
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 
@@ -24,7 +23,6 @@ class StrategyPlugin(Plugin):
         self.game_strategy_service = game_strategy_service
         self.search_service = search_service
 
-    @restricts()
     @handler.command(command="strategy", block=False)
     @handler.message(filters=filters.Regex("^角色攻略查询(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:

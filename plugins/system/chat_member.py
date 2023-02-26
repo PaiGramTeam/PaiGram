@@ -8,7 +8,6 @@ from core.services.players import PlayersService
 from core.services.users.services import UserAdminService
 
 from utils.chatmember import extract_status_change
-from utils.decorators.error import error_callable
 from utils.log import logger
 
 

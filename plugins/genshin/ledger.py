@@ -14,7 +14,6 @@ from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from core.services.users import UserService
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, UserNotFoundError
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("LedgerPlugin",)
@@ -71,7 +70,6 @@ class LedgerPlugin(Plugin):
         )
         return render_result
 
-    @restricts()
     @handler.command(command="ledger", block=False)
     @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), block=False)
     async def command_start(self, user: User, message: Message, bot: Bot) -> None:

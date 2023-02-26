@@ -21,7 +21,6 @@ from core.services.template import TemplateService
 from core.services.template.models import RenderGroupResult, RenderResult
 from metadata.genshin import game_id_to_role_id
 from plugins.tools.genshin import GenshinHelper
-from utils.decorators.restricts import restricts
 from utils.helpers import async_re_sub
 from utils.log import logger
 
@@ -92,7 +91,6 @@ class AbyssPlugin(Plugin):
 
     @handler.command("abyss", block=False)
     @handler.message(filters.Regex(msg_pattern), block=False)
-    @restricts()
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message

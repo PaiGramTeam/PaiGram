@@ -40,7 +40,6 @@ __all__ = (
     "BaseDispatcher",
     "HandlerDispatcher",
     "JobDispatcher",
-    "ErrorHandlerDispatcher",
     "dispatched",
 )
 
@@ -266,10 +265,6 @@ class HandlerDispatcher(BaseDispatcher):
         return self._update.effective_chat
 
 
-class ErrorHandlerDispatcher(HandlerDispatcher):
-    @catch(Exception, BaseException)
-    def catch_error(self) -> Exception:
-        return self._context.error
 
 
 class JobDispatcher(BaseDispatcher):

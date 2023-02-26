@@ -10,8 +10,6 @@ from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.template import TemplateService
 from modules.apihelper.client.components.calendar import Calendar
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 try:
@@ -45,8 +43,6 @@ class CalendarPlugin(Plugin):
 
     @handler.command("calendar", block=False)
     @handler(MessageHandler, filters=filters.Regex(r"^(活动)+(日历|日历列表)$"), block=False)
-    @restricts()
-    @error_callable
     async def command_start(self, update: Update, _: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message

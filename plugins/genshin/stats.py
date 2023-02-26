@@ -14,7 +14,6 @@ from core.services.players.error import PlayerNotFoundError
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from plugins.tools.genshin import GenshinHelper
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("PlayerStatsPlugins",)
@@ -33,7 +32,6 @@ class PlayerStatsPlugins(Plugin):
 
     @handler.command("stats", block=False)
     @handler.message(filters.Regex("^玩家统计查询(.*)"), block=False)
-    @restricts()
     async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
         message = update.effective_message

@@ -17,7 +17,6 @@ from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId, roleToName
 from modules.apihelper.client.components.calendar import Calendar
 from plugins.tools.genshin import GenshinHelper
-from utils.decorators.restricts import restricts
 from utils.genshin import fetch_hk4e_token_by_cookie, recognize_genshin_game_biz
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -57,7 +56,6 @@ class BirthdayPlugin(Plugin):
         )
         return (self.birthday_list.get(key, [])).copy()
 
-    @restricts()
     @handler.command(command="birthday", block=False)
     async def command_start(self, user: User, message: Message) -> None:
         key = (

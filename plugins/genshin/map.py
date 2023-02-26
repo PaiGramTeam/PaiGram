@@ -9,9 +9,6 @@ from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.plugin import handler, Plugin
 from modules.apihelper.client.components.map import MapHelper, MapException
-from utils.decorators.admins import bot_admins_rights_check
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 
@@ -119,8 +116,6 @@ class Map(Plugin):
     @handler(CommandHandler, command="map", block=False)
     @handler(MessageHandler, filters=filters.Regex("^(?P<name>.*)(在哪里|在哪|哪里有|哪儿有|哪有|在哪儿)$"), block=False)
     @handler(MessageHandler, filters=filters.Regex("^(哪里有|哪儿有|哪有)(?P<name>.*)$"), block=False)
-    @error_callable
-    @restricts(restricts_time=20)
     async def command_start(self, update: Update, context: CallbackContext):
         message = update.effective_message
         args = context.args
@@ -166,8 +161,6 @@ class Map(Plugin):
             self.temp_photo = reply_message.photo[-1].file_id
 
     @handler(CallbackQueryHandler, pattern=r"^get_map\|", block=False)
-    @restricts(restricts_time=3, without_overlapping=True)
-    @error_callable
     async def get_maps(self, update: Update, _: CallbackContext) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
@@ -191,8 +184,7 @@ class Map(Plugin):
         except MapException as e:
             await message.reply_text(e.message)
 
-    @handler.command("refresh_map")
-    @bot_admins_rights_check
+    @handler.command("refresh_map", admin=True)
     async def refresh_map(self, update: Update, _: CallbackContext):
         message = update.effective_message
         msg = await message.reply_text("正在刷新地图数据，请耐心等待...")

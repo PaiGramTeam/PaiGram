@@ -4,22 +4,24 @@ import signal
 from functools import wraps
 from signal import SIGABRT, SIGINT, SIGTERM, signal as signal_func
 from ssl import SSLZeroReturnError
-from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
+from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar, Any
 
 import pytz
 import uvicorn
 from fastapi import FastAPI
+from telegram import Bot
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import (
     AIORateLimiter,
     Application as TelegramApplication,
     ApplicationBuilder as TelegramApplicationBuilder,
-    Defaults,
+    Defaults, JobQueue
 )
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.config import config as application_config
+from core.handler.limiterhandler import LimiterHandler
 from core.manager import Managers
 from modules.override.telegram import HTTPXRequest
 from utils.const import WRAPPER_ASSIGNMENTS
@@ -63,7 +65,6 @@ class Application(Singleton):
             .get_updates_write_timeout(application_config.update_write_timeout)
             .get_updates_connect_timeout(application_config.update_connect_timeout)
             .get_updates_pool_timeout(application_config.update_pool_timeout)
-            .rate_limiter(AIORateLimiter())
             .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
             .token(application_config.bot_token)
             .request(
@@ -99,6 +100,14 @@ class Application(Singleton):
         """fastapi app"""
         return self.web_server.config.app
 
+    @property
+    def bot(self) -> Optional[Bot]:
+        return self.telegram.bot
+
+    @property
+    def job_queue(self) -> Optional[JobQueue]:
+        return self.telegram.job_queue
+
     async def _on_startup(self) -> None:
         for func in self._startup_funcs:
             await self.managers.executor(func, block=getattr(func, "block", False))
@@ -109,6 +118,7 @@ class Application(Singleton):
 
     async def initialize(self):
         """BOT 初始化"""
+        self.telegram.add_handler(LimiterHandler(limit_time=10), group=-1)  # 启用入口洪水限制
         await self.managers.start_dependency()  # 启动基础服务
         await self.managers.init_components()  # 实例化组件
         await self.managers.start_services()  # 启动其他服务

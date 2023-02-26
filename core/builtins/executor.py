@@ -111,10 +111,6 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
 
             dispatcher = HandlerDispatcher
         super().__init__("handler", dispatcher)
-        if handle_errors:
-            from utils.decorators.error import error_callable
-
-            self._callback = error_callable(func)
         self._callback = func
 
     # noinspection PyMethodOverriding

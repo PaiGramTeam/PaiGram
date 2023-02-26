@@ -5,10 +5,10 @@ import aiofiles
 import httpx
 from httpx import UnsupportedProtocol
 from telegram import Chat, Message, ReplyKeyboardRemove, Update
-from telegram.error import BadRequest, Forbidden
+from telegram.error import BadRequest, Forbidden,NetworkError
 from telegram.ext import CallbackContext, ConversationHandler, Job
 
-from core.builtins.contexts import CallbackContextCV, UpdateCV
+from core.builtins.contexts import CallbackContextCV
 from core.dependence.redisdb import RedisDB
 from core.plugin._handler import conversation, handler
 from utils.const import CACHE_DIR, REQUEST_HEADERS
@@ -53,17 +53,7 @@ async def _delete_message(context: CallbackContext) -> None:
         # noinspection PyTypeChecker
         await context.bot.delete_message(chat_id=job.chat_id, message_id=message_id)
     except BadRequest as exc:
-        if "not found" in exc.message:
-            logger.warning("删除消息 %s message_id[%s] 失败 消息不存在", chat_info, message_id)
-        elif "Message can't be deleted" in exc.message:
-            logger.warning("删除消息 %s message_id[%s] 失败 消息无法删除 可能是没有授权", chat_info, message_id)
-        else:
-            logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
-    except Forbidden as exc:
-        if "bot was kicked" in exc.message:
-            logger.warning("删除消息 %s message_id[%s] 失败 已经被踢出群", chat_info, message_id)
-        else:
-            logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
+        logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
 
 
 class PluginFuncs:
@@ -83,22 +73,22 @@ class PluginFuncs:
         redis_db: RedisDB = redis_db or self.application.managers.services_map.get(RedisDB, None)
 
         if not redis_db:
-            return await application.telegram.bot.get_chat(chat_id)
+            return await application.bot.get_chat(chat_id)
 
         qname = f"bot:chat:{chat_id}"
 
         data = await redis_db.client.get(qname)
         if data:
             json_data = json.loads(data)
-            return Chat.de_json(json_data, bot.telegram.bot)
+            return Chat.de_json(json_data, application.telegram.bot)
 
-        chat_info = await bot.telegram.bot.get_chat(chat_id)
+        chat_info = await application.telegram.bot.get_chat(chat_id)
         await redis_db.client.set(qname, chat_info.to_json())
         await redis_db.client.expire(qname, ttl)
         return chat_info
 
-    @staticmethod
     def add_delete_message_job(
+        self,
         message: Optional[Union[int, Message]] = None,
         *,
         delay: int = 60,
@@ -107,8 +97,6 @@ class PluginFuncs:
         context: Optional[CallbackContext] = None,
     ) -> Job:
         """延迟删除消息"""
-        update = UpdateCV.get()
-        message = message or update.effective_message
 
         if isinstance(message, Message):
             if chat is None:
@@ -117,10 +105,12 @@ class PluginFuncs:
 
         chat = chat.id if isinstance(chat, Chat) else chat
 
-        if context is None:
-            context = CallbackContextCV.get()
+        job_queue = self.application.job_queue or context.job_queue
 
-        return context.job_queue.run_once(
+        if job_queue is None:
+            raise RuntimeError
+
+        return job_queue.run_once(
             callback=_delete_message,
             when=delay,
             data=message,

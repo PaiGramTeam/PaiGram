@@ -12,8 +12,6 @@ from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.players.services import PlayersService
 from core.services.players.models import PlayersDataBase as Player, RegionEnum
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("BindAccountPlugin",)
@@ -52,8 +50,6 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.entry_point
     @handler.command(command="setuid", filters=filters.ChatType.PRIVATE, block=True)
-    @restricts()
-    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
@@ -74,7 +70,6 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_SERVER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
     async def check_server(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
@@ -94,7 +89,6 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_UID)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
@@ -158,7 +152,6 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=COMMAND_RESULT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message

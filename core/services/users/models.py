@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 from typing import Optional
 
-from sqlmodel import SQLModel, Field, DateTime, Column, Enum
+from sqlmodel import SQLModel, Field, DateTime, Column, Enum, BigInteger
 
 __all__ = (
     "User",
@@ -20,7 +20,7 @@ class PermissionsEnum(int, enum.Enum):
 class User(SQLModel):
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
     id: int = Field(primary_key=True)
-    user_id: int = Field(unique=True)
+    user_id: int = Field(unique=True, sa_column=Column(BigInteger()))
     permissions: Optional[PermissionsEnum] = Field(sa_column=Column(Enum(PermissionsEnum)))
     locale: Optional[str] = Field()
     ban_end_time: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True)))

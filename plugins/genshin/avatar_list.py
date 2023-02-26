@@ -22,7 +22,6 @@ from core.services.template.models import FileType
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, UserNotFoundError
-from utils.decorators.restricts import restricts
 from utils.enkanetwork import RedisCache
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
@@ -52,12 +51,12 @@ class AvatarData(Model):
 
 class AvatarListPlugin(Plugin):
     def __init__(
-        self,
-        cookies_service: CookiesService = None,
-        assets_service: AssetsService = None,
-        template_service: TemplateService = None,
-        redis: RedisDB = None,
-        helper: GenshinHelper = None,
+            self,
+            cookies_service: CookiesService = None,
+            assets_service: AssetsService = None,
+            template_service: TemplateService = None,
+            redis: RedisDB = None,
+            helper: GenshinHelper = None,
     ) -> None:
         self.cookies_service = cookies_service
         self.assets_service = assets_service
@@ -71,7 +70,8 @@ class AvatarListPlugin(Plugin):
         try:
             return await self.helper.get_genshin_client(user.id)
         except UserNotFoundError:  # 若未找到账号
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
+            buttons = [
+                [InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -79,9 +79,11 @@ class AvatarListPlugin(Plugin):
                 self.add_delete_message_job(reply_message, delay=30)
                 self.add_delete_message_job(message, delay=30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号",
+                                         reply_markup=InlineKeyboardMarkup(buttons))
         except CookiesNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
+            buttons = [
+                [InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙绑定账号",
@@ -112,7 +114,8 @@ class AvatarListPlugin(Plugin):
             else:
                 break
         else:
-            logger.warning("解析[bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.name, extra={"markup": True})
+            logger.warning("解析[bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.name,
+                           extra={"markup": True})
             return None
         if character.id == 10000005:  # 针对男草主
             talents = []
@@ -128,7 +131,7 @@ class AvatarListPlugin(Plugin):
         buffed_talents = []
         for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
             if result := list(
-                filter(lambda x: all([x.name in constellation.effect]), talents)  # pylint: disable=W0640
+                    filter(lambda x: all([x.name in constellation.effect]), talents)  # pylint: disable=W0640
             ):
                 buffed_talents.append(result[0].type)
         return AvatarData(
@@ -147,7 +150,7 @@ class AvatarListPlugin(Plugin):
         )
 
     async def get_avatars_data(
-        self, characters: Sequence[Character], client: Client, max_length: int = None
+            self, characters: Sequence[Character], client: Client, max_length: int = None
     ) -> List["AvatarData"]:
         async def _task(c):
             return await self.get_avatar_data(c, client)
@@ -217,7 +220,6 @@ class AvatarListPlugin(Plugin):
             avatar = (await self.assets_service.avatar(10000005).icon()).as_uri()
         return name_card, avatar, nickname, rarity
 
-    @restricts(30)
     @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"), block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
     async def avatar_list(self, update: Update, context: CallbackContext):
@@ -228,7 +230,8 @@ class AvatarListPlugin(Plugin):
 
         all_avatars = any(["all" in args, "全部" in args])  # 是否发送全部角色
 
-        logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
+        logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars,
+                    extra={"markup": True})
 
         client = await self.get_user_client(user, message, context)
         if not client:
@@ -245,8 +248,10 @@ class AvatarListPlugin(Plugin):
         except InvalidCookies as exc:
             await notice.delete()
             await client.get_genshin_user(client.uid)
-            logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
-            reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
+            logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode,
+                           exc.original)
+            reply_message = await message.reply_text(
+                "出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
             if filters.ChatType.GROUPS.filter(message):
                 self.add_delete_message_job(reply_message, delay=30)
                 self.add_delete_message_job(message, delay=30)

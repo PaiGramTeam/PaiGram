@@ -1,6 +1,7 @@
 """重写 telegram.request.HTTPXRequest 使其使用 ujson 库进行 json 序列化"""
 from typing import Any, AsyncIterable, Optional
 
+import httpcore
 from httpx import (
     AsyncByteStream,
     AsyncHTTPTransport as DefaultAsyncHTTPTransport,
@@ -33,7 +34,7 @@ class Response(DefaultResponse):
 # noinspection PyProtectedMember
 class AsyncHTTPTransport(DefaultAsyncHTTPTransport):
     async def handle_async_request(self, request) -> Response:
-        import httpcore
+
         from httpx._transports.default import (
             map_httpcore_exceptions,
             AsyncResponseStream,

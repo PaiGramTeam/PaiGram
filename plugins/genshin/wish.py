@@ -20,7 +20,6 @@ from modules.apihelper.models.genshin.gacha import GachaInfo
 from modules.gacha.banner import BannerType, GachaBanner
 from modules.gacha.player.info import PlayerGachaInfo
 from modules.gacha.system import BannerSystem
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 try:
@@ -201,7 +200,6 @@ class WishSimulatorPlugin(Plugin):
 
     @handler(CommandHandler, command="wish", block=False)
     @handler(MessageHandler, filters=filters.Regex("^抽卡模拟器(.*)"), block=False)
-    @restricts(restricts_time=3, restricts_time_of_groups=20)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
@@ -284,7 +282,6 @@ class WishSimulatorPlugin(Plugin):
 
     @handler(CommandHandler, command="set_wish", block=False)
     @handler(MessageHandler, filters=filters.Regex("^非首模拟器定轨(.*)"), block=False)
-    @restricts(restricts_time=3, restricts_time_of_groups=20)
     async def set_wish(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user

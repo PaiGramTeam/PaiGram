@@ -8,7 +8,6 @@ from telegram.ext import filters
 from core.plugin import Plugin, handler
 from core.services.quiz import QuizService
 from core.services.users import UserService
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("QuizPlugin",)
@@ -22,7 +21,6 @@ class QuizPlugin(Plugin):
         self.quiz_service = quiz_service
         self.time_out = 120
 
-    @restricts(restricts_time_of_groups=20)
     @handler.message(filters=filters.Regex("来一道题"))
     @handler.command(command="quiz", block=False)
     async def command_start(self, user: User, message: Message, chat: Chat) -> None:

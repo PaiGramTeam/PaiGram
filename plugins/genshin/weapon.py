@@ -11,8 +11,6 @@ from core.services.wiki.services import WikiService
 from metadata.genshin import honey_id_to_game_id
 from metadata.shortname import weaponToName, weapons as _weapons_data
 from modules.wiki.weapon import Weapon
-from utils.decorators.admins import bot_admins_rights_check
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 
@@ -33,7 +31,6 @@ class WeaponPlugin(Plugin):
         self.assets_service = assets_service
         self.search_service = search_service
 
-    @restricts()
     @handler(CommandHandler, command="weapon", block=False)
     @handler(MessageHandler, filters=filters.Regex("^武器查询(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:

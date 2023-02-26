@@ -9,8 +9,6 @@ from core.services.template import TemplateService
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClient
 from plugins.tools.genshin import GenshinHelper
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("AbyssTeamPlugin",)
@@ -32,8 +30,6 @@ class AbyssTeamPlugin(Plugin):
 
     @handler.command("abyss_team", block=False)
     @handler.message(filters.Regex("^深渊推荐配队(.*)"), block=False)
-    @restricts()
-    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
@@ -41,7 +37,7 @@ class AbyssTeamPlugin(Plugin):
 
         client = await self.helper.get_genshin_client(user.id)
         if client is None:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(bot.username, "set_cookie"))]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

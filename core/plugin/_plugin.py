@@ -33,6 +33,7 @@ from telegram.ext import BaseHandler, ConversationHandler, Job, TypeHandler
 # noinspection PyProtectedMember
 from typing_extensions import ParamSpec
 
+from core.handler.adminhandler import AdminHandler
 from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
 from utils.const import WRAPPER_ASSIGNMENTS
@@ -105,12 +106,23 @@ class _Plugin(PluginFuncs):
                             data: "HandlerData"
                             executor = HandlerExecutor(func, dispatcher=data.dispatcher)
                             executor.set_application(self.application)
-                            self._handlers.append(
-                                data.type(
-                                    callback=wraps(func)(executor),
-                                    **data.kwargs,
+                            if data.admin:
+                                self._handlers.append(
+                                    AdminHandler(
+                                        handler=data.type(
+                                            callback=wraps(func)(executor),
+                                            **data.kwargs,
+                                        ),
+                                        application=self.application,
+                                    )
                                 )
-                            )
+                            else:
+                                self._handlers.append(
+                                    data.type(
+                                        callback=wraps(func)(executor),
+                                        **data.kwargs,
+                                    )
+                                )
         return self._handlers
 
     @property
@@ -128,11 +140,9 @@ class _Plugin(PluginFuncs):
                     ):
                         for data in datas:
                             data: "ErrorHandlerData"
-                            executor = HandlerExecutor(func, dispatcher=data.dispatcher)
-                            executor.set_application(application=self.application)
-                            data.func = wraps(func)(executor)
-
+                            data.func = func
                             self._error_handlers.append(data)
+
         return self._error_handlers
 
     def _install_jobs(self) -> None:

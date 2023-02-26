@@ -5,7 +5,6 @@ from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, M
 from core.plugin import Plugin, handler
 from core.services.game import GameMaterialService
 from metadata.shortname import roleToName
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("MaterialPlugin",)
@@ -19,7 +18,6 @@ class MaterialPlugin(Plugin):
     def __init__(self, game_material_service: GameMaterialService = None):
         self.game_material_service = game_material_service
 
-    @restricts(return_data=ConversationHandler.END)
     @handler(CommandHandler, command="material", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色培养素材查询(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:

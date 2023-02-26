@@ -3,7 +3,6 @@ from telegram.constants import ChatAction
 
 from core.plugin import Plugin, handler
 from core.services.template import TemplateService
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("HelpPlugin",)
@@ -15,7 +14,6 @@ class HelpPlugin(Plugin):
             raise ModuleNotFoundError
         self.template_service = template_service
 
-    @restricts()
     @handler.command(command="help", block=False)
     async def start(self, user: User, message: Message, bot: Bot):
         logger.info("用户 %s[%s] 发出help命令", user.full_name, user.id)

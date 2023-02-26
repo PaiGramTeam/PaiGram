@@ -17,7 +17,6 @@ from core.services.players.models import PlayersDataBase as Player, RegionEnum
 from core.services.players.services import PlayersService
 from modules.apihelper.client.components.authclient import AuthClient
 from modules.apihelper.models.genshin.cookies import CookiesModel
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("AccountCookiesPlugin",)
@@ -70,7 +69,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
 
         return {k: v for k, v in cookies.items() if v is not None}
 
-    @restricts()
     @conversation.entry_point
     @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=True)
     @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=True)

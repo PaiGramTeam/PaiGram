@@ -6,7 +6,6 @@ from telegram.ext import filters
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("PlayersManagesPlugin",)
@@ -59,9 +58,9 @@ class PlayersManagesPlugin(Plugin):
             await callback_query.edit_message_text("从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons))
         else:
             await message.reply_text("从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons))
+        raise Exception("test")
 
     @handler.callback_query(r"^players_manager\|get\|", block=False)
-    @restricts(without_overlapping=True)
     async def get_player(self, update: Update) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
@@ -101,7 +100,6 @@ class PlayersManagesPlugin(Plugin):
         )
 
     @handler.callback_query(r"^players_manager\|main\|", block=False)
-    @restricts(without_overlapping=True)
     async def set_main(self, update: Update) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
@@ -139,7 +137,6 @@ class PlayersManagesPlugin(Plugin):
         )
 
     @handler.callback_query(r"^players_manager\|del\|", block=False)
-    @restricts(without_overlapping=True)
     async def delete(self, update: Update) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
