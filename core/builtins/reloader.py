@@ -147,7 +147,6 @@ class Reloader:
 
         self.shutdown()
 
-
     def signal_handler(self, *_) -> None:
         """当接收到结束信号量时"""
         self._process.join(3)
