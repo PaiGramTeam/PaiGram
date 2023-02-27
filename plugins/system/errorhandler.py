@@ -138,7 +138,7 @@ class ErrorHandler(Plugin):
         notice: Optional[str] = None
         if isinstance(context.error, TimedOut):
             notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
-        elif isinstance(context.error, TimedOut):
+        elif isinstance(context.error, BadRequest):
             if "Replied message not found" in context.error.message:
                 notice = "气死我了！怎么有人喜欢发一个命令就秒删了！"
             elif "Message is not modified" in context.error.message:
