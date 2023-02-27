@@ -8,7 +8,6 @@ from inspect import Parameter, Signature
 from itertools import chain
 from types import GenericAlias, MethodType
 
-# noinspection PyUnresolvedReferences,PyProtectedMember
 from typing import (
     Any,
     Callable,
@@ -16,9 +15,7 @@ from typing import (
     List,
     Optional,
     Sequence,
-    TYPE_CHECKING,
     Type,
-    TypeVar,
     Union,
 )
 
@@ -30,7 +27,6 @@ from typing_extensions import ParamSpec
 from uvicorn import Server
 
 from core.application import Application
-from core.builtins.contexts import CallbackContextCV, UpdateCV
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.typedefs import R, T
 
@@ -231,8 +227,6 @@ class HandlerDispatcher(BaseDispatcher):
     """Handler 参数分发器"""
 
     def __init__(self, update: Optional[Update] = None, context: Optional[CallbackContext] = None, **kwargs) -> None:
-        update = update or UpdateCV.get()
-        context = context or CallbackContextCV.get()
         super().__init__(update=update, context=context, **kwargs)
         self._update = update
         self._context = context
@@ -266,7 +260,6 @@ class JobDispatcher(BaseDispatcher):
     """Job 参数分发器"""
 
     def __init__(self, context: Optional[CallbackContext] = None, **kwargs) -> None:
-        context = context or CallbackContextCV.get()
         super().__init__(context=context, **kwargs)
         self._context = context
 

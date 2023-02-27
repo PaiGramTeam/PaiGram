@@ -9,16 +9,13 @@ from telegram.ext import CallbackContext
 from typing_extensions import ParamSpec, Self
 
 from core.builtins.contexts import handler_contexts, job_contexts
-from utils.decorator import do_nothing
-from utils.log import logger
-from utils.models.lock import HashLock
 
 if TYPE_CHECKING:
     from core.application import Application
     from core.builtins.dispatcher import AbstractDispatcher
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ("BaseExecutor", "HandlerExecutor", "JobExecutor")
+__all__ = ("BaseExecutor", "Executor", "HandlerExecutor", "JobExecutor")
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -35,7 +32,6 @@ class BaseExecutor:
 
     _lock: ClassVar["LockType"] = Lock()
     _instances: ClassVar[Dict[str, Self]] = {}
-
     _application: "Optional[Application]" = None
 
     def set_application(self, application: "Application") -> None:
@@ -64,36 +60,27 @@ class BaseExecutor:
         self._name = name
         self._dispatcher = dispatcher
 
+
+class Executor(BaseExecutor, Generic[P, R]):
     async def __call__(
         self,
         target: Callable[P, R],
-        block: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
-        lock_id: int = None,
-        raise_error: bool = True,
         **kwargs,
     ) -> R:
         dispatcher = self._dispatcher or dispatcher
-        if dispatcher is None:
-            from core.builtins.dispatcher import BaseDispatcher
+        dispatcher_instance = dispatcher(**kwargs)
+        dispatcher_instance.set_application(application=self.application)
+        dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
 
-            dispatcher = BaseDispatcher
-
-        with HashLock(lock_id or target) if block else do_nothing():
-            dispatcher_instance = dispatcher(**kwargs)
-            dispatcher_instance.set_application(application=self.application)
-            dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
-
-            # 执行
-            try:
-                if inspect.iscoroutinefunction(target):
-                    result = await dispatched_func()
-                else:
-                    result = dispatched_func()
-            except Exception as e:
-                if raise_error:
-                    raise e
-                logger.error("执行错误：%s", e, exc_info=e)
+        # 执行
+        try:
+            if inspect.iscoroutinefunction(target):
+                result = await dispatched_func()
+            else:
+                result = dispatched_func()
+        finally:
+            del dispatcher_instance
 
         return result
 
@@ -104,74 +91,27 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
     _callback: Callable[P, R]
 
     def __init__(self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None) -> None:
-        if dispatcher is None:
-            from core.builtins.dispatcher import HandlerDispatcher
-
-            dispatcher = HandlerDispatcher
         super().__init__("handler", dispatcher)
+        self.dispatcher_instance = dispatcher()
+        self.dispatcher_instance.set_application(self.application)
         self._callback = func
+        self.dispatched_func = self.dispatcher_instance.dispatch(self._callback)
 
-    # noinspection PyMethodOverriding
-    async def __call__(
-        self,
-        update: Update,
-        context: CallbackContext,
-        block: bool = False,
-        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
-        lock_id: int = None,
-        raise_error: bool = True,
-        **kwargs,
-    ) -> R:
+    async def __call__(self, update: Update, context: CallbackContext) -> R:
         with handler_contexts(update, context):
-            dispatcher = self._dispatcher or dispatcher
-            if dispatcher is None:
-                from core.builtins.dispatcher import BaseDispatcher
-
-                dispatcher = BaseDispatcher
-
-            with HashLock(lock_id or self._callback) if block else do_nothing():
-                dispatcher_instance = dispatcher(**kwargs)
-                dispatcher_instance.set_application(self.application)
-                dispatched_func = dispatcher_instance.dispatch(self._callback)  # 分发参数，组成新函数
-
-                # 执行
-                try:
-                    result = await dispatched_func()
-                except Exception as e:
-                    if raise_error:
-                        raise e
-                    logger.error("执行错误：%s", e, exc_info=e)
-
-            return result
+            return await self.dispatched_func()
 
 
 class JobExecutor(BaseExecutor):
     """Job 专用执行器"""
 
     def __init__(self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None) -> None:
-        if dispatcher is None:
-            from core.builtins.dispatcher import JobDispatcher
-
-            dispatcher = JobDispatcher
         super().__init__("job", dispatcher)
+        self.dispatcher_instance = dispatcher()
+        self.dispatcher_instance.set_application(self.application)
         self._callback = func
+        self.dispatched_func = self.dispatcher_instance.dispatch(self._callback)
 
-    async def __call__(
-        self,
-        context: CallbackContext,
-        block: bool = False,
-        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
-        lock_id: int = None,
-        raise_error: bool = True,
-        **kwargs,
-    ) -> R:
+    async def __call__(self, context: CallbackContext) -> R:
         with job_contexts(context):
-            return await super().__call__(
-                self._callback,
-                dispatcher=dispatcher,
-                block=block,
-                lock_id=lock_id,
-                context=context,
-                raise_error=raise_error,
-                **kwargs,
-            )
+            return await self.dispatched_func()

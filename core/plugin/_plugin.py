@@ -20,19 +20,10 @@ from typing import (
 )
 
 from pydantic import BaseModel
-
-# noinspection PyProtectedMember
-from telegram._utils.defaultvalue import DEFAULT_TRUE
-
-# noinspection PyProtectedMember
-from telegram._utils.types import DVInput
-
-# noinspection PyProtectedMember
 from telegram.ext import BaseHandler, ConversationHandler, Job, TypeHandler
-
-# noinspection PyProtectedMember
 from typing_extensions import ParamSpec
 
+from core.builtins.dispatcher import HandlerDispatcher, JobDispatcher
 from core.handler.adminhandler import AdminHandler
 from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
@@ -104,7 +95,8 @@ class _Plugin(PluginFuncs):
                     ):
                         for data in datas:
                             data: "HandlerData"
-                            executor = HandlerExecutor(func, dispatcher=data.dispatcher)
+                            dispatcher = data.dispatcher or HandlerDispatcher
+                            executor = HandlerExecutor(func, data.dispatcher )
                             executor.set_application(self.application)
                             if data.admin:
                                 self._handlers.append(
@@ -159,7 +151,8 @@ class _Plugin(PluginFuncs):
             ):
                 for data in datas:
                     data: "JobData"
-                    executor = JobExecutor(func, dispatcher=data.dispatcher)
+                    dispatcher = data.dispatcher or JobDispatcher
+                    executor = JobExecutor(func, dispatcher)
                     executor.set_application(application=self.application)
                     self._jobs.append(
                         getattr(self.application.telegram.job_queue, data.type)(
@@ -243,7 +236,7 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
         conversation_timeout: Optional[Union[float, timedelta]] = None
         name: Optional[str] = None
         map_to_parent: Optional[Dict[object, object]] = None
-        block: DVInput[bool] = DEFAULT_TRUE
+        block: bool = False
 
     def __init_subclass__(cls, **kwargs):
         cls._conversation_kwargs = kwargs

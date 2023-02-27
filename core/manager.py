@@ -16,7 +16,7 @@ from utils.log import logger
 if TYPE_CHECKING:
     from core.application import Application
     from core.plugin import PluginType
-    from core.builtins.executor import BaseExecutor
+    from core.builtins.executor import Executor
 
 __all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager", "Managers")
 
@@ -40,7 +40,7 @@ def _load_module(path: Path) -> None:
 class Manager(Generic[T]):
     """生命周期控制基类"""
 
-    _executor: Optional["BaseExecutor"] = None
+    _executor: Optional["Executor"] = None
     _lib: Dict[Type[T], T] = {}
     _application: "Optional[Application]" = None
 
@@ -54,16 +54,16 @@ class Manager(Generic[T]):
         return self._application
 
     @property
-    def executor(self) -> "BaseExecutor":
+    def executor(self) -> "Executor":
         """执行器"""
         if self._executor is None:
             raise RuntimeError(f"No executor was set for this {self.__class__.__name__}.")
         return self._executor
 
     def build_executor(self, name: str):
-        from core.builtins.executor import BaseExecutor
+        from core.builtins.executor import Executor
 
-        self._executor = BaseExecutor(name)
+        self._executor = Executor(name)
         self._executor.set_application(self.application)
 
 
