@@ -27,7 +27,6 @@ class BindAccountPluginData(TelegramObject):
     def reset(self):
         self.player = None
         self.region = RegionEnum.NULL
-        # self.player_id = 0
         self.account_id = 0
         self.record_card = None
 
@@ -77,7 +76,7 @@ class BindAccountPlugin(Plugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif message.text == "米游社":
+        if message.text == "米游社":
             bind_account_plugin_data.region = RegionEnum.HYPERION
         elif message.text == "HoYoLab":
             bind_account_plugin_data.region = RegionEnum.HOYOLAB
@@ -159,7 +158,7 @@ class BindAccountPlugin(Plugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif message.text == "确认":
+        if message.text == "确认":
             record_card = bind_account_plugin_data.record_card
             is_chosen = True
             player_info = await self.players_service.get_player(user.id)  # 寻找主账号
@@ -177,6 +176,5 @@ class BindAccountPlugin(Plugin.Conversation):
             logger.success("用户 %s[%s] 绑定UID账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        else:
-            await message.reply_text("回复错误，请重新输入")
-            return COMMAND_RESULT
+        await message.reply_text("回复错误，请重新输入")
+        return COMMAND_RESULT

@@ -96,8 +96,7 @@ class LedgerPlugin(Plugin):
 
             if month not in allow_month and isinstance(month, int):
                 raise IndexError
-            else:
-                month = now_time.month
+            month = now_time.month
         except IndexError:
             reply_message = await message.reply_text("仅可查询最新三月的数据，请重新输入")
             if filters.ChatType.GROUPS.filter(message):

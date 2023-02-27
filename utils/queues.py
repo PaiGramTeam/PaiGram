@@ -320,8 +320,7 @@ class _AsyncQueueProxy(AsyncQueue[T]):  # pylint: disable=W0212
     def full(self) -> bool:
         if self._parent._maxsize <= 0:
             return False
-        else:
-            return self.qsize() >= self._parent._maxsize
+        return self.qsize() >= self._parent._maxsize
 
     async def put(self, item: T) -> None:
         self._parent._check_closing()

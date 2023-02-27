@@ -54,7 +54,7 @@ class LimiterHandler(TypeHandler[UT, CCT]):
                 decrement = elapsed * self._rate_per_sec
                 task_level = max(task_level - decrement, 0)
                 context.user_data["task_level"] = task_level
-                if not (task_level + self.amount <= self.max_rate):
+                if not task_level + self.amount <= self.max_rate:
                     if self.limit_time:
                         limit_time = self.limit_time
                     else:

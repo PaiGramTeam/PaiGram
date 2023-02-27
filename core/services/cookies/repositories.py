@@ -3,10 +3,10 @@ from typing import Optional, List
 from sqlmodel import select
 
 from core.dependence.mysql import MySQL
-from utils.models.base import RegionEnum
+from core.base_service import BaseService
 from core.services.cookies.models import CookiesDataBase as Cookies
 from core.sqlmodel.session import AsyncSession
-from core.base_service import BaseService
+from utils.models.base import RegionEnum
 
 __all__ = ("CookiesRepository",)
 

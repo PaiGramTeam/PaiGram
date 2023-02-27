@@ -53,8 +53,7 @@ class AdminHandler(BaseHandler[Update, CCT]):
         user = update.effective_user
         if await user_service.is_admin(user.id):
             return await self.handler.handle_update(update, application, check_result, context)
-        else:
-            message = update.effective_message
-            logger.warning("用户 %s[%s] 触发尝试调用Admin命令但权限不足", user.full_name, user.id)
-            await message.reply_text("权限不足")
-            raise ApplicationHandlerStop
+        message = update.effective_message
+        logger.warning("用户 %s[%s] 触发尝试调用Admin命令但权限不足", user.full_name, user.id)
+        await message.reply_text("权限不足")
+        raise ApplicationHandlerStop

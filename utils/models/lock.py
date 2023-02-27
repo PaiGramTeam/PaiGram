@@ -20,7 +20,7 @@ async def delete_lock(target: int) -> None:
         del _clean_lock_task_map[target]
 
 
-class HashLock(object):
+class HashLock:
     """可以根据 hash 来获取锁的类"""
 
     target: int

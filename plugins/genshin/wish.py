@@ -1,6 +1,5 @@
 import asyncio
 import re
-from asyncio import CancelledError
 from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
 
@@ -121,8 +120,7 @@ class WishSimulatorHandle:
         else:  # pylint: disable=W0120
             if default and len(gacha_list_info) > 0:
                 return gacha_list_info[0]
-            else:
-                raise GachaNotFound(gacha_name)
+            raise GachaNotFound(gacha_name)
 
     @staticmethod
     def de_title(title: str) -> Union[Tuple[str, None], Tuple[str, Any]]:
@@ -255,10 +253,6 @@ class WishSimulatorPlugin(Plugin):
             "items": [],
             "wish_name": "",
         }
-        # logger.debug(f"{banner.banner_id}")
-        # logger.debug(f"{banner.banner_type}")
-        # logger.debug(f"{banner.rate_up_items5}")
-        # logger.debug(f"{banner.fallback_items5_pool1}")
         if player_gacha_banner_info.wish_item_id != 0:
             weapon = WEAPON_DATA.get(str(player_gacha_banner_info.wish_item_id))
             if weapon is not None:

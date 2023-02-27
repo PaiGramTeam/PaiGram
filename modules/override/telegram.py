@@ -39,7 +39,8 @@ class AsyncHTTPTransport(DefaultAsyncHTTPTransport):
             AsyncResponseStream,
         )
 
-        assert isinstance(request.stream, AsyncByteStream)
+        if not isinstance(request.stream, AsyncByteStream):
+            raise AssertionError
 
         req = httpcore.Request(
             method=request.method,
@@ -56,7 +57,8 @@ class AsyncHTTPTransport(DefaultAsyncHTTPTransport):
         with map_httpcore_exceptions():
             resp = await self._pool.handle_async_request(req)
 
-        assert isinstance(resp.stream, AsyncIterable)
+        if not isinstance(resp.stream, AsyncIterable):
+            raise AssertionError
 
         return Response(
             status_code=resp.status,

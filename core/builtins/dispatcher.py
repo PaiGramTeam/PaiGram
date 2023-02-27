@@ -67,8 +67,7 @@ def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, 
 def get_signature(func: Union[type, Callable]) -> Signature:
     if isinstance(func, type):
         return inspect.signature(func.__init__)
-    else:
-        return inspect.signature(func)
+    return inspect.signature(func)
 
 
 class AbstractDispatcher(ABC):
@@ -124,8 +123,6 @@ class AbstractDispatcher(ABC):
             catch_targets = getattr(catch_func, _CATCH_TARGET_ATTR)
             for catch_target in catch_targets:
                 result[catch_target] = catch_func
-                # if isinstance(catch_target, type):
-                #     result[catch_target.__name__] = catch_func
         return result
 
     @cached_property
@@ -219,7 +216,7 @@ class BaseDispatcher(AbstractDispatcher):
         if annotation != Any and isinstance(annotation, GenericAlias):
             return parameter
 
-        catch_func = self.catch_func_map.get(annotation, None) or self.catch_func_map.get(parameter.name, None)
+        catch_func = self.catch_func_map.get(annotation) or self.catch_func_map.get(parameter.name)
         if catch_func is not None:
             # noinspection PyUnresolvedReferences,PyProtectedMember
             parameter._default = catch_func()

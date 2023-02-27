@@ -42,7 +42,7 @@ class QuizPlugin(Plugin):
                 correct_option = answer.text
         if correct_option is None:
             question_id = question["question_id"]
-            logger.warning(f"Quiz模块 correct_option 异常 question_id[%s] " % question_id)
+            logger.warning("Quiz模块 correct_option 异常 question_id[%s] ", question_id)
             return None
         random.shuffle(_options)
         index = _options.index(correct_option)

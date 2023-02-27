@@ -10,8 +10,8 @@ from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKe
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden, TelegramError, TimedOut, NetworkError
 from telegram.ext import CallbackContext, ApplicationHandlerStop
-from genshin import DataNotPublic, GenshinException, InvalidCookies, TooManyRequests
 from telegram.helpers import create_deep_linked_url
+from genshin import DataNotPublic, GenshinException, InvalidCookies, TooManyRequests
 
 from core.config import config
 from core.plugin import Plugin, error_handler
@@ -21,7 +21,7 @@ from modules.errorpush import (
     SentryClient,
     SentryClientException,
 )
-from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
+from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
 

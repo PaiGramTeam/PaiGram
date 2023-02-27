@@ -90,7 +90,7 @@ class PlayersManagesPlugin(Plugin):
             [
                 InlineKeyboardButton(
                     "« 返回玩家列表",
-                    callback_data=f"players_manager|list",
+                    callback_data="players_manager|list",
                 )
             ],
         ]
@@ -157,7 +157,7 @@ class PlayersManagesPlugin(Plugin):
                 [
                     InlineKeyboardButton(
                         "« 返回玩家列表",
-                        callback_data=f"players_manager|list",
+                        callback_data="players_manager|list",
                     )
                 ],
             ]

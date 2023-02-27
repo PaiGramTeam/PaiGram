@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union
 
 import genshin
 
-from core.config import ApplicationConfig, config
+from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin

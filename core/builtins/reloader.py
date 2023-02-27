@@ -103,7 +103,7 @@ class Reloader:
                 self.reload_dirs.append(reload_dir)
 
         if not self.reload_dirs:
-            logger.warning(f"需要检测的目标文件夹列表为空", extra={"tag": "Reloader"})
+            logger.warning("需要检测的目标文件夹列表为空", extra={"tag": "Reloader"})
 
         self._should_exit = threading.Event()
 
@@ -147,9 +147,6 @@ class Reloader:
 
         self.shutdown()
 
-    # def pause(self) -> None:
-    #     if self._should_exit.wait(self.reload_delay):
-    #         raise StopIteration()
 
     def signal_handler(self, *_) -> None:
         """当接收到结束信号量时"""

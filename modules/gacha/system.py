@@ -57,13 +57,12 @@ class BannerSystem:
             return self.do_rare_pull(
                 pools.rate_up_items5, pools.fallback_items5_pool1, pools.fallback_items5_pool2, 5, banner, gacha_info
             )
-        elif leval_won == 4:
+        if leval_won == 4:
             gacha_info.pity4 = 0
             return self.do_rare_pull(
                 pools.rate_up_items4, pools.fallback_items4_pool1, pools.fallback_items4_pool2, 4, banner, gacha_info
             )
-        else:
-            return self.get_random(banner.fallback_items3)
+        return self.get_random(banner.fallback_items3)
 
     @staticmethod
     def draw_roulette(weights, cutoff: int) -> int:
@@ -125,8 +124,7 @@ class BannerSystem:
                 return self.get_random(
                     self.fallback_items5_pool2_default if rarity == 5 else self.fallback_items4_pool2_default
                 )
-            else:
-                return self.get_random(fallback2)
+            return self.get_random(fallback2)
         elif len(fallback2) < 1:
             return self.get_random(fallback1)
         else:

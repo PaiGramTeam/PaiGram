@@ -49,7 +49,7 @@ class BaseExecutor:
 
     def __new__(cls: Type[T], name: str, *args, **kwargs) -> T:
         with cls._lock:
-            if (instance := cls._instances.get(name, None)) is None:
+            if (instance := cls._instances.get(name)) is None:
                 instance = object.__new__(cls)
                 instance.__init__(name, *args, **kwargs)
                 cls._instances.update({name: instance})

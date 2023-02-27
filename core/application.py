@@ -12,7 +12,6 @@ from fastapi import FastAPI
 from telegram import Bot
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import (
-    AIORateLimiter,
     Application as TelegramApplication,
     ApplicationBuilder as TelegramApplicationBuilder,
     Defaults,
@@ -30,7 +29,6 @@ from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
-    from core.manager import Managers
     from asyncio import AbstractEventLoop, CancelledError, Task
     from types import FrameType
 

@@ -29,10 +29,9 @@ class PlayerGachaBannerInfo(BaseModel):
     def get_failed_featured_item_pulls(self, rarity: int) -> int:
         if rarity == 4:
             return self.failed_featured4_item_pulls
-        elif rarity == 5:
+        if rarity == 5:
             return self.failed_featured_item_pulls
-        else:
-            raise GachaIllegalArgument
+        raise GachaIllegalArgument
 
     def set_failed_featured_item_pulls(self, rarity: int, amount: int):
         if rarity == 4:
@@ -53,7 +52,7 @@ class PlayerGachaBannerInfo(BaseModel):
     def get_pity_pool(self, rarity: int, param: int) -> int:
         if rarity == 4:
             return self.pity4_pool1 if param == 1 else self.pity4_pool2
-        elif rarity == 5:
+        if rarity == 5:
             return self.pity5_pool1 if param == 1 else self.pity5_pool2
         raise GachaIllegalArgument
 

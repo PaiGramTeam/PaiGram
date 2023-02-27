@@ -271,15 +271,15 @@ class GachaLog:
     def check_avatar_up(name: str, gacha_time: datetime.datetime) -> bool:
         if name in {"莫娜", "七七", "迪卢克", "琴"}:
             return False
-        elif name == "刻晴":
+        if name == "刻晴":
             start_time = datetime.datetime.strptime("2021-02-17 18:00:00", "%Y-%m-%d %H:%M:%S")
             end_time = datetime.datetime.strptime("2021-03-02 15:59:59", "%Y-%m-%d %H:%M:%S")
-            if not (start_time < gacha_time < end_time):
+            if not start_time < gacha_time < end_time:
                 return False
         elif name == "提纳里":
             start_time = datetime.datetime.strptime("2022-08-24 06:00:00", "%Y-%m-%d %H:%M:%S")
             end_time = datetime.datetime.strptime("2022-09-09 17:59:59", "%Y-%m-%d %H:%M:%S")
-            if not (start_time < gacha_time < end_time):
+            if not start_time < gacha_time < end_time:
                 return False
         return True
 
@@ -475,14 +475,13 @@ class GachaLog:
                     num = j.get("num", 0)
                     if num == 0:
                         return pool_name
-                    elif num <= data[0]:
+                    if num <= data[0]:
                         return f"{pool_name} · 欧"
-                    elif num <= data[1]:
+                    if num <= data[1]:
                         return f"{pool_name} · 吉"
-                    elif num <= data[2]:
+                    if num <= data[2]:
                         return f"{pool_name} · 普通"
-                    else:
-                        return f"{pool_name} · 非"
+                    return f"{pool_name} · 非"
         return pool_name
 
     async def get_analysis(self, user_id: int, client: Client, pool: BannerType, assets: AssetsService):

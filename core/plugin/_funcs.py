@@ -5,7 +5,7 @@ import aiofiles
 import httpx
 from httpx import UnsupportedProtocol
 from telegram import Chat, Message, ReplyKeyboardRemove, Update
-from telegram.error import BadRequest, Forbidden, NetworkError
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler, Job
 
 from core.builtins.contexts import CallbackContextCV
@@ -166,9 +166,8 @@ class PluginFuncs:
                         temp.append(command_part)
                 return temp
             return []
-        else:
-            if len(args) >= 1:
-                return args
+        if len(args) >= 1:
+            return args
         return []
 
 

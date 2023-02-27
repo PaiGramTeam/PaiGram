@@ -5,11 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession as _AsyncSession
 from sqlalchemy.ext.asyncio.engine import AsyncConnection, AsyncEngine
 from sqlalchemy.sql.base import Executable as _Executable
 from sqlmodel.sql.base import Executable
-from typing_extensions import Literal
-
 from sqlmodel.engine.result import Result, ScalarResult
 from sqlmodel.orm.session import Session
 from sqlmodel.sql.expression import Select, SelectOfScalar
+from typing_extensions import Literal
 
 _TSelectParam = TypeVar("_TSelectParam")
 

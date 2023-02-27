@@ -206,8 +206,7 @@ class _AssetsService(ABC):
         """魔法"""
         if item in self.icon_types:
             return partial(self._get_img, item=item)
-        else:
-            object.__getattribute__(self, item)
+        object.__getattribute__(self, item)
 
     @abstractmethod
     @cached_property

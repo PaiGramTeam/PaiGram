@@ -107,11 +107,11 @@ class DependenceManager(Manager[DependenceType]):
             try:
                 async with timeout(5):
                     await d.shutdown()
-                    logger.debug('基础服务 "%s" 关闭成功' % d.__class__.__name__)
+                    logger.debug('基础服务 "%s" 关闭成功', d.__class__.__name__)
             except asyncio.TimeoutError:
-                logger.warning('基础服务 "%s" 关闭超时' % d.__class__.__name__)
+                logger.warning('基础服务 "%s" 关闭超时', d.__class__.__name__)
             except Exception as e:
-                logger.error('基础服务 "%s" 关闭错误' % d.__class__.__name__, exc_info=e)
+                logger.error('基础服务 "%s" 关闭错误', d.__class__.__name__, exc_info=e)
 
         tasks = []
         for dependence in self._dependency.values():
