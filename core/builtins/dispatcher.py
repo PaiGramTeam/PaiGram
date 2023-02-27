@@ -7,6 +7,7 @@ from functools import cached_property, lru_cache, partial, wraps
 from inspect import Parameter, Signature
 from itertools import chain
 from types import GenericAlias, MethodType
+
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from typing import (
     Any,

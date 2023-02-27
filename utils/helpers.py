@@ -24,7 +24,7 @@ P = ParamSpec("P")
 
 @lru_cache(64)
 def sha1(text: str) -> str:
-    _sha1 = hashlib.sha1()   # nosec B303
+    _sha1 = hashlib.sha1()  # nosec B303
     _sha1.update(text.encode())
     return _sha1.hexdigest()
 

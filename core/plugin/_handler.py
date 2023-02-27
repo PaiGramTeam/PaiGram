@@ -17,8 +17,10 @@ from typing import (
 )
 
 from pydantic import BaseModel
+
 # noinspection PyProtectedMember
 from telegram._utils.defaultvalue import DEFAULT_TRUE
+
 # noinspection PyProtectedMember
 from telegram._utils.types import DVInput
 from telegram.ext import BaseHandler

@@ -79,8 +79,7 @@ class ErrorHandler(Plugin):
         if chat.id == user.id:
             logger.info("尝试通知用户 %s[%s] 错误信息[%s]", user.full_name, user.id, content)
         else:
-            logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id,
-                        content)
+            logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id, content)
         try:
             if update.callback_query:
                 await update.callback_query.answer(content, show_alert=True)
@@ -126,7 +125,7 @@ class ErrorHandler(Plugin):
             else:
                 logger.error("GenshinException", exc_info=exc)
                 notice = (
-                        self.ERROR_MSG_PREFIX + f"获取账号信息发生错误 错误信息为 {exc.original if exc.original else exc.retcode} ~ 请稍后再试"
+                    self.ERROR_MSG_PREFIX + f"获取账号信息发生错误 错误信息为 {exc.original if exc.original else exc.retcode} ~ 请稍后再试"
                 )
         if notice:
             self.create_notice_task(update, context, notice)
