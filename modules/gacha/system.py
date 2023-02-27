@@ -125,15 +125,14 @@ class BannerSystem:
                     self.fallback_items5_pool2_default if rarity == 5 else self.fallback_items4_pool2_default
                 )
             return self.get_random(fallback2)
-        elif len(fallback2) < 1:
+        if len(fallback2) < 1:
             return self.get_random(fallback1)
+        pity_pool1 = banner.get_pool_balance_weight(rarity, gacha_info.get_pity_pool(rarity, 1))
+        pity_pool2 = banner.get_pool_balance_weight(rarity, gacha_info.get_pity_pool(rarity, 2))
+        if pity_pool1 >= pity_pool2:
+            chosen_pool = 1 + self.draw_roulette((pity_pool1, pity_pool2), 10000)
         else:
-            pity_pool1 = banner.get_pool_balance_weight(rarity, gacha_info.get_pity_pool(rarity, 1))
-            pity_pool2 = banner.get_pool_balance_weight(rarity, gacha_info.get_pity_pool(rarity, 2))
-            if pity_pool1 >= pity_pool2:
-                chosen_pool = 1 + self.draw_roulette((pity_pool1, pity_pool2), 10000)
-            else:
-                chosen_pool = 2 - self.draw_roulette((pity_pool2, pity_pool1), 10000)
+            chosen_pool = 2 - self.draw_roulette((pity_pool2, pity_pool1), 10000)
         if chosen_pool == 1:
             gacha_info.set_pity_pool(rarity, 1, 0)
             return self.get_random(fallback1)
