@@ -250,17 +250,19 @@ class ErrorHandler(Plugin):
             if effective_message is not None:
                 chat = effective_message.chat
                 logger.info(
-                    f"尝试通知用户 {effective_user.full_name}[{effective_user.id}] "
-                    f"在 {chat.full_name}[{chat.id}]"
-                    f"的 update_id[{update.update_id}] 错误信息"
+                    "尝试通知用户 %s[%s] 在 %s[%s] 的 update_id[%s] 错误信息",
+                    effective_user.full_name,
+                    effective_user.id,
+                    chat.full_name,
+                    chat.id,
+                    update.update_id,
                 )
                 text = "出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！"
                 await context.bot.send_message(
                     effective_message.chat_id, text, reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.HTML
                 )
-        except (BadRequest, Forbidden) as exc:
-            logger.error(f"发送 update_id[{update.update_id}] 错误信息失败 错误信息为")
-            logger.exception(exc)
+        except NetworkError as exc:
+            logger.error("发送 update_id[%s] 错误信息失败 错误信息为 %s", update.update_id, exc.message)
         if self.pb_client.enabled:
             logger.info("正在上传日记到 pb")
             try:

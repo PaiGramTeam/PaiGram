@@ -45,6 +45,6 @@ class HilichurlsPlugin(Plugin):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 查询丘丘语字典命令请求 || 参数 {msg}")
+        logger.info("用户 %s[%s] 查询今日角色生日列表  查询丘丘语字典命令请求 || 参数 %s", user.full_name, user.id, msg)
         result = self.hilichurls_dictionary[f"{search}"]
         await message.reply_markdown_v2(f"丘丘语: `{search}`\n\n`{result}`")

@@ -150,7 +150,7 @@ class Application(Singleton):
                 await self.web_server.startup()
             except OSError as e:
                 if e.errno == 10048:
-                    logger.error(f"Web Server 端口被占用：{e}")
+                    logger.error("Web Server 端口被占用：%s", e)
                 logger.error("Web Server 启动失败，正在退出")
                 raise SystemExit from None
 
@@ -188,7 +188,7 @@ class Application(Singleton):
     def stop_signal_handler(self, signum: int):
         """终止信号处理"""
         signals = {k: v for v, k in signal.__dict__.items() if v.startswith("SIG") and not v.startswith("SIG_")}
-        logger.debug(f"接收到了终止信号 {signals[signum]} 正在退出...")
+        logger.debug("接收到了终止信号 %s 正在退出...", signals[signum])
         if self._web_server_task:
             self._web_server_task.cancel()
 
@@ -251,7 +251,7 @@ class Application(Singleton):
             else:
                 logger.critical("网络连接出现问题, 请检查您的网络状况.")
         except Exception as e:
-            logger.critical(f"遇到了未知错误: {type(e)}", exc_info=e)
+            logger.critical("遇到了未知错误: %s", {type(e)}, exc_info=e)
         finally:
             loop.run_until_complete(self.stop())
 

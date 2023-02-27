@@ -33,7 +33,7 @@ class Log(Plugin):
     @handler.command(command="send_log", block=False, admin=True)
     async def send_log(self, update: Update, _: CallbackContext):
         user = update.effective_user
-        logger.info(f"用户 {user.full_name}[{user.id}] send_log 命令请求")
+        logger.info("用户 %s[%s] send_log 命令请求", user.full_name, user.id)
         message = update.effective_message
         if os.path.exists(error_log) and os.path.getsize(error_log) > 0:
             pb_url = await self.send_to_pb(error_log)

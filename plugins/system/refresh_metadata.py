@@ -13,7 +13,7 @@ __all__ = ("MetadataPlugin",)
 class MetadataPlugin(Plugin):
     @handler.command("refresh_metadata", admin=True)
     async def refresh(self, user: User, message: Message) -> None:
-        logger.info(f"用户 {user.full_name}[{user.id}] 刷新[bold]metadata[/]缓存命令", extra={"markup": True})
+        logger.info("用户 %s[%s] 刷新[bold]metadata[/]缓存命令", user.full_name, user.id, extra={"markup": True})
 
         msg = await message.reply_text("正在刷新元数据，请耐心等待...")
         logger.info("正在从 github 上获取元数据")

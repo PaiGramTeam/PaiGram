@@ -46,7 +46,7 @@ class UpdatePlugin(Plugin):
         user = update.effective_user
         message = update.effective_message
         args = self.get_args(context)
-        logger.info(f"用户 {user.full_name}[{user.id}] update命令请求")
+        logger.info("用户 %s[%s] update命令请求", user.full_name, user.id)
         if self.lock.locked():
             await message.reply_text("程序正在更新 请勿重复操作")
             return

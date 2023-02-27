@@ -67,7 +67,7 @@ class BirthdayPlugin(Plugin):
 
         if len(args) >= 1:
             msg = args[0]
-            logger.info(f"用户 {user.full_name}[{user.id}] 查询角色生日命令请求 || 参数 {msg}")
+            logger.info("用户 %s[%s] 查询角色生日命令请求 || 参数 %s", user.full_name, user.id, msg)
             if re.match(r"\d{1,2}.\d{1,2}", msg):
                 try:
                     month = rm_starting_str(re.findall(r"\d+", msg)[0], "0")
@@ -99,7 +99,7 @@ class BirthdayPlugin(Plugin):
                     reply_message = await message.reply_text("请输入正确的日期格式，如1-1，或输入正确的角色名称。")
 
         else:
-            logger.info(f"用户 {user.full_name}[{user.id}] 查询今日角色生日列表")
+            logger.info("用户 %s[%s] 查询今日角色生日列表", user.full_name, user.id)
             today_list = self.get_today_birthday()
             if key == "6_1":
                 text = f"今天是 派蒙、{'、'.join(today_list)} 的生日哦~"

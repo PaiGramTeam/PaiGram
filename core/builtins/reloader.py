@@ -141,9 +141,8 @@ class Reloader:
         for changes in self:
             if changes:
                 logger.warning(
-                    "检测到文件 "
-                    f"{[str(c.relative_to(PROJECT_ROOT)).replace(os.sep, '/') for c in changes]} "
-                    "发生改变, 正在重载...",
+                    "检测到文件 %s 发生改变, 正在重载...",
+                    [str(c.relative_to(PROJECT_ROOT)).replace(os.sep, "/") for c in changes],
                     extra={"tag": "Reloader"},
                 )
                 self.restart()

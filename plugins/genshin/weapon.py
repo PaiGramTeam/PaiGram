@@ -46,7 +46,7 @@ class WeaponPlugin(Plugin):
                 self.add_delete_message_job(reply_message)
             return
         weapon_name = weaponToName(weapon_name)
-        logger.info(f"用户 {user.full_name}[{user.id}] 查询武器命令请求 || 参数 weapon_name={weapon_name}")
+        logger.info("用户 %s[%s] 查询角色攻略命令请求 weapon_name[%s]", user.full_name, user.id, weapon_name)
         weapons_list = await self.wiki_service.get_weapons_list()
         for weapon in weapons_list:
             if weapon.name == weapon_name:

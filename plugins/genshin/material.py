@@ -44,7 +44,7 @@ class MaterialPlugin(Plugin):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 查询角色培养素材命令请求 || 参数 {character_name}")
+        logger.info("用户 %s[%s] 查询角色培养素材命令请求 || 参数 %s", user.full_name, user.id, character_name)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         file_path = await self.download_resource(url, return_path=True)
         caption = "From 米游社 " f"查看 [原图]({url})"
