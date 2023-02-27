@@ -96,7 +96,7 @@ class _Plugin(PluginFuncs):
                         for data in datas:
                             data: "HandlerData"
                             dispatcher = data.dispatcher or HandlerDispatcher
-                            executor = HandlerExecutor(func, data.dispatcher )
+                            executor = HandlerExecutor(func, data.dispatcher)
                             executor.set_application(self.application)
                             if data.admin:
                                 self._handlers.append(
