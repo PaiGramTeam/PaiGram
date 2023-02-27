@@ -126,11 +126,11 @@ class Logger(logging.Logger):
     def exception(
         self,
         msg: Any = NONE,
-        *args: Any,
         exc_info: Optional[ExceptionInfoType] = True,
         stack_info: bool = False,
         stacklevel: int = 1,
         extra: Optional[Mapping[str, Any]] = None,
+        *args: Any,
         **kwargs,
     ) -> None:  # pylint: disable=W1113
         super(Logger, self).exception(

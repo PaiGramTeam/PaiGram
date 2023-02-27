@@ -10,13 +10,13 @@ from typing import Awaitable, Callable, Iterator, Match, Pattern, Type, TypeVar,
 
 from typing_extensions import ParamSpec
 
-__all__ = [
+__all__ = (
     "sha1",
     "gen_pkg",
     "async_re_sub",
     "execute",
     "isabstract",
-]
+)
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -24,7 +24,7 @@ P = ParamSpec("P")
 
 @lru_cache(64)
 def sha1(text: str) -> str:
-    _sha1 = hashlib.sha1()
+    _sha1 = hashlib.sha1()   # nosec B303
     _sha1.update(text.encode())
     return _sha1.hexdigest()
 

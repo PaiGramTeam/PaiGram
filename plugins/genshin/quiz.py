@@ -27,7 +27,7 @@ class QuizPlugin(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
         question_id_list = await self.quiz_service.get_question_id_list()
         if filters.ChatType.GROUPS.filter(message):
-            logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 发送挑战问题命令请求")
+            logger.info("用户 %s[%s] 在群 %s[%s] 发送挑战问题命令请求", user.full_name, user.id, chat.title, chat.id)
             if len(question_id_list) == 0:
                 return None
         if len(question_id_list) == 0:
@@ -42,7 +42,7 @@ class QuizPlugin(Plugin):
                 correct_option = answer.text
         if correct_option is None:
             question_id = question["question_id"]
-            logger.warning("Quiz模块 correct_option 异常 question_id[%s] ", question_id)
+            logger.warning("Quiz模块 correct_option 异常 question_id[%s]", question_id)
             return None
         random.shuffle(_options)
         index = _options.index(correct_option)

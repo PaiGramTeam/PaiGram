@@ -4,7 +4,7 @@ import signal
 from functools import wraps
 from signal import SIGABRT, SIGINT, SIGTERM, signal as signal_func
 from ssl import SSLZeroReturnError
-from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar, Any
+from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
 
 import pytz
 import uvicorn
@@ -23,13 +23,13 @@ from uvicorn import Server
 from core.config import config as application_config
 from core.handler.limiterhandler import LimiterHandler
 from core.manager import Managers
-from modules.override.telegram import HTTPXRequest
+from core.override.telegram import HTTPXRequest
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
-    from asyncio import AbstractEventLoop, CancelledError, Task
+    from asyncio import CancelledError, Task
     from types import FrameType
 
 __all__ = ("Application",)
@@ -185,8 +185,7 @@ class Application(Singleton):
         self._running = True
         logger.success("BOT 启动成功")
 
-    # noinspection PyUnusedLocal
-    def stop_signal_handler(self, signum: int, frame: "FrameType"):
+    def stop_signal_handler(self, signum: int):
         """终止信号处理"""
         signals = {k: v for v, k in signal.__dict__.items() if v.startswith("SIG") and not v.startswith("SIG_")}
         logger.debug(f"接收到了终止信号 {signals[signum]} 正在退出...")
@@ -198,8 +197,8 @@ class Application(Singleton):
 
         task = None
 
-        def stop_handler(signum, frame) -> None:
-            self.stop_signal_handler(signum, frame)
+        def stop_handler(signum: int, _: "FrameType") -> None:
+            self.stop_signal_handler(signum)
             task.cancel()
 
         for s in (SIGINT, SIGTERM, SIGABRT):

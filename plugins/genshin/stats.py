@@ -8,8 +8,8 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.services.cookies.error import TooManyRequestPublicCookies
 from core.plugin import Plugin, handler
+from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.players.error import PlayerNotFoundError
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
@@ -42,7 +42,7 @@ class PlayerStatsPlugins(Plugin):
             if args is not None and len(args) >= 1:
                 uid = int(args[0])
         except ValueError as exc:
-            logger.warning("获取 uid 发生错误！ 错误信息为 ", str(exc))
+            logger.warning("获取 uid 发生错误！ 错误信息为 %s", str(exc))
             await message.reply_text("输入错误")
             return
         try:

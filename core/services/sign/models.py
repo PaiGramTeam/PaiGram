@@ -25,6 +25,10 @@ class Sign(SQLModel, table=True):
     id: int = Field(primary_key=True)
     user_id: int = Field(foreign_key="users.user_id")
     chat_id: Optional[int] = Field(default=None)
-    time_created: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True), server_default=func.now()))
-    time_updated: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True), onupdate=func.now()))
+    time_created: Optional[datetime] = Field(
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )  # pylint: disable=E1102
+    time_updated: Optional[datetime] = Field(
+        sa_column=Column(DateTime(timezone=True), onupdate=func.now())
+    )  # pylint: disable=E1102
     status: Optional[SignStatusEnum] = Field(sa_column=Column(Enum(SignStatusEnum)))

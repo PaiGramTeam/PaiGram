@@ -17,10 +17,8 @@ from typing import (
 )
 
 from pydantic import BaseModel
-
 # noinspection PyProtectedMember
 from telegram._utils.defaultvalue import DEFAULT_TRUE
-
 # noinspection PyProtectedMember
 from telegram._utils.types import DVInput
 from telegram.ext import BaseHandler
@@ -46,6 +44,7 @@ __all__ = (
 P = ParamSpec("P")
 T = TypeVar("T")
 R = TypeVar("R")
+UT = TypeVar("UT")
 
 HandlerType = TypeVar("HandlerType", bound=BaseHandler)
 HandlerCls = Type[HandlerType]
@@ -254,7 +253,7 @@ class _Type(_Handler):
     # noinspection PyShadowingBuiltins
     def __init__(
         self,
-        type: Type,
+        type: Type[UT],
         strict: bool = False,
         *,
         block: DVInput[bool] = DEFAULT_TRUE,

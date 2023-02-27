@@ -5,23 +5,23 @@ from typing import Optional
 
 import aiofiles
 from aiohttp import ClientError, ClientConnectorError
+from genshin import DataNotPublic, GenshinException, InvalidCookies, TooManyRequests
 from httpx import Timeout as HttpxTimeout, HTTPError
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden, TelegramError, TimedOut, NetworkError
 from telegram.ext import CallbackContext, ApplicationHandlerStop
 from telegram.helpers import create_deep_linked_url
-from genshin import DataNotPublic, GenshinException, InvalidCookies, TooManyRequests
 
 from core.config import config
 from core.plugin import Plugin, error_handler
+from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException
 from modules.errorpush import (
     PbClient,
     PbClientException,
     SentryClient,
     SentryClientException,
 )
-from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
 
@@ -79,7 +79,8 @@ class ErrorHandler(Plugin):
         if chat.id == user.id:
             logger.info("尝试通知用户 %s[%s] 错误信息[%s]", user.full_name, user.id, content)
         else:
-            logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id, content)
+            logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id,
+                        content)
         try:
             if update.callback_query:
                 await update.callback_query.answer(content, show_alert=True)
@@ -125,7 +126,7 @@ class ErrorHandler(Plugin):
             else:
                 logger.error("GenshinException", exc_info=exc)
                 notice = (
-                    self.ERROR_MSG_PREFIX + f"获取账号信息发生错误 错误信息为 {exc.original if exc.original else exc.retcode} ~ 请稍后再试"
+                        self.ERROR_MSG_PREFIX + f"获取账号信息发生错误 错误信息为 {exc.original if exc.original else exc.retcode} ~ 请稍后再试"
                 )
         if notice:
             self.create_notice_task(update, context, notice)
@@ -164,6 +165,8 @@ class ErrorHandler(Plugin):
         notice: Optional[str] = None
         if isinstance(exc, APIHelperTimedOut):
             notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
+        elif isinstance(exc, ReturnCodeError):
+            notice = self.ERROR_MSG_PREFIX + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
         elif isinstance(exc, ResponseException):
             notice = self.ERROR_MSG_PREFIX + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
         if notice:
@@ -178,20 +181,6 @@ class ErrorHandler(Plugin):
         notice: Optional[str] = None
         if isinstance(exc, HttpxTimeout):
             notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
-        if notice:
-            self.create_notice_task(update, context, notice)
-            raise ApplicationHandlerStop
-
-    @error_handler()
-    async def process_apihelper_exception(self, update: object, context: CallbackContext):
-        if not isinstance(context.error, APIHelperException) or not isinstance(update, Update):
-            return
-        exc = context.error
-        notice: Optional[str] = None
-        if isinstance(exc, APIHelperTimedOut):
-            notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
-        elif isinstance(exc, ResponseException):
-            notice = self.ERROR_MSG_PREFIX + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop

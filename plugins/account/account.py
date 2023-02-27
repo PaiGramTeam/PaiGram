@@ -10,8 +10,8 @@ from telegram.helpers import escape_markdown
 from core.plugin import Plugin, conversation, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.cookies.services import CookiesService, PublicCookiesService
-from core.services.players.services import PlayersService
 from core.services.players.models import PlayersDataBase as Player, RegionEnum
+from core.services.players.services import PlayersService
 from utils.log import logger
 
 __all__ = ("BindAccountPlugin",)
@@ -70,7 +70,6 @@ class BindAccountPlugin(Plugin.Conversation):
     @conversation.state(state=CHECK_SERVER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
     async def check_server(self, update: Update, context: CallbackContext) -> int:
-        user = update.effective_user
         message = update.effective_message
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         if message.text == "退出":

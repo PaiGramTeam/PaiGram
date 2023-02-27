@@ -7,7 +7,6 @@ from functools import cached_property, lru_cache, partial, wraps
 from inspect import Parameter, Signature
 from itertools import chain
 from types import GenericAlias, MethodType
-
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from typing import (
     Any,
@@ -92,7 +91,7 @@ class AbstractDispatcher(ABC):
         self._args = list(args)
         self._kwargs = dict(kwargs)
 
-        for key, value in kwargs.items():
+        for _, value in kwargs.items():
             type_arg = type(value)
             if type_arg != str:
                 self._kwargs[type_arg] = value

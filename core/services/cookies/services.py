@@ -11,7 +11,6 @@ from core.services.cookies.repositories import CookiesRepository
 from core.services.players.models import RegionEnum
 from utils.log import logger
 
-
 __all__ = ("CookiesService", "PublicCookiesService")
 
 
@@ -35,13 +34,6 @@ class CookiesService(BaseService):
 
     async def delete(self, cookies: Cookies) -> None:
         return await self._repository.delete(cookies)
-
-    async def add_or_update_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
-        try:
-            await self.get_cookies(user_id, region)
-            await self.update_cookies(user_id, cookies, region)
-        except CookiesNotFoundError:
-            await self.add_cookies(user_id, cookies, region)
 
 
 class PublicCookiesService(BaseService):

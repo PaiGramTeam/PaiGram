@@ -15,7 +15,7 @@ from utils.typedefs import StrOrPath
 if TYPE_CHECKING:
     from multiprocessing.process import BaseProcess
 
-__all__ = ["Reloader"]
+__all__ = ("Reloader",)
 
 multiprocessing.allow_connection_pickling()
 spawn = multiprocessing.get_context("spawn")
@@ -121,7 +121,10 @@ class Reloader:
         if not self._process.is_alive():
             logger.info("目标进程已经关闭", extra={"tag": "Reloader"})
             self._should_exit.set()
-        changes = next(self.watcher)
+        try:
+            changes = next(self.watcher)
+        except StopIteration:
+            return None
         if changes:
             unique_paths = {Path(c[1]) for c in changes}
             return [p for p in unique_paths if self.watch_filter(p)]

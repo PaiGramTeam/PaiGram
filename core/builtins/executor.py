@@ -104,7 +104,7 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
     _callback: Callable[P, R]
 
     def __init__(
-        self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None, handle_errors: bool = True
+        self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None
     ) -> None:
         if dispatcher is None:
             from core.builtins.dispatcher import HandlerDispatcher
