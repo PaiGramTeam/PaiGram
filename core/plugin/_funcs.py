@@ -30,32 +30,6 @@ __all__ = (
 )
 
 
-async def _delete_message(context: CallbackContext) -> None:
-    job = context.job
-    message_id = job.data
-    chat_info = f"chat_id[{job.chat_id}]"
-
-    try:
-        chat = await PluginFuncs.get_chat(job.chat_id)
-        full_name = chat.full_name
-        if full_name:
-            chat_info = f"{full_name}[{chat.id}]"
-        else:
-            chat_info = f"{chat.title}[{chat.id}]"
-    except (BadRequest, Forbidden) as exc:
-        logger.warning("获取 chat info 失败 %s", exc.message)
-    except Exception as exc:
-        logger.warning("获取 chat info 消息失败 %s", str(exc))
-
-    logger.debug("删除消息 %s message_id[%s]", chat_info, message_id)
-
-    try:
-        # noinspection PyTypeChecker
-        await context.bot.delete_message(chat_id=job.chat_id, message_id=message_id)
-    except BadRequest as exc:
-        logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
-
-
 class PluginFuncs:
     _application: "Optional[Application]" = None
 
@@ -67,6 +41,31 @@ class PluginFuncs:
         if self._application is None:
             raise RuntimeError("No application was set for this PluginManager.")
         return self._application
+
+    async def _delete_message(self, context: CallbackContext) -> None:
+        job = context.job
+        message_id = job.data
+        chat_info = f"chat_id[{job.chat_id}]"
+
+        try:
+            chat = await self.get_chat(job.chat_id)
+            full_name = chat.full_name
+            if full_name:
+                chat_info = f"{full_name}[{chat.id}]"
+            else:
+                chat_info = f"{chat.title}[{chat.id}]"
+        except (BadRequest, Forbidden) as exc:
+            logger.warning("获取 chat info 失败 %s", exc.message)
+        except Exception as exc:
+            logger.warning("获取 chat info 消息失败 %s", str(exc))
+
+        logger.debug("删除消息 %s message_id[%s]", chat_info, message_id)
+
+        try:
+            # noinspection PyTypeChecker
+            await context.bot.delete_message(chat_id=job.chat_id, message_id=message_id)
+        except BadRequest as exc:
+            logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
 
     async def get_chat(self, chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
         application = self.application
@@ -111,7 +110,7 @@ class PluginFuncs:
             raise RuntimeError
 
         return job_queue.run_once(
-            callback=_delete_message,
+            callback=self._delete_message,
             when=delay,
             data=message,
             name=f"{chat}|{message}|{name}|delete_message" if name else f"{chat}|{message}|delete_message",

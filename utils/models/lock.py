@@ -6,7 +6,7 @@ from typing import Any, Dict, TYPE_CHECKING
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["HashLock"]
+__all__ = ("HashLock",)
 
 _lock: "LockType" = Lock()
 _locks: Dict[int, "LockType"] = {}

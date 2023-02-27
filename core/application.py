@@ -29,7 +29,7 @@ from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
-    from asyncio import CancelledError, Task
+    from asyncio import Task
     from types import FrameType
 
 __all__ = ("Application",)

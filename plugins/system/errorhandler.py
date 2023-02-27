@@ -15,7 +15,7 @@ from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.plugin import Plugin, error_handler
-from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException
+from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
 from modules.errorpush import (
     PbClient,
     PbClientException,
