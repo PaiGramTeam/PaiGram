@@ -69,7 +69,7 @@ class AsyncHTTPTransport(DefaultAsyncHTTPTransport):
 
 
 class HTTPXRequest(DefaultHTTPXRequest):
-    def __init__(
+    def __init__(  # pylint: disable=W0231
         self,
         connection_pool_size: int = 1,
         proxy_url: str = None,

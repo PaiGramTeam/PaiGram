@@ -74,13 +74,10 @@ class Executor(BaseExecutor, Generic[P, R]):
         dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
 
         # 执行
-        try:
-            if inspect.iscoroutinefunction(target):
-                result = await dispatched_func()
-            else:
-                result = dispatched_func()
-        finally:
-            del dispatcher_instance
+        if inspect.iscoroutinefunction(target):
+            result = await dispatched_func()
+        else:
+            result = dispatched_func()
 
         return result
 

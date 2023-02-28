@@ -11,6 +11,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel
 
+from core.config import config as BotConfig
 from utils.const import CORE_DIR, PLUGIN_DIR, PROJECT_ROOT
 from utils.log import logger
 
@@ -54,14 +55,13 @@ target_metadata = SQLModel.metadata
 
 # here we allow ourselves to pass interpolation vars to alembic.ini
 # from the application config module
-from core.config import config as botConfig
 
 section = config.config_ini_section
-config.set_section_option(section, "DB_HOST", botConfig.mysql.host)
-config.set_section_option(section, "DB_PORT", str(botConfig.mysql.port))
-config.set_section_option(section, "DB_USERNAME", botConfig.mysql.username)
-config.set_section_option(section, "DB_PASSWORD", botConfig.mysql.password)
-config.set_section_option(section, "DB_DATABASE", botConfig.mysql.database)
+config.set_section_option(section, "DB_HOST", BotConfig.mysql.host)
+config.set_section_option(section, "DB_PORT", str(BotConfig.mysql.port))
+config.set_section_option(section, "DB_USERNAME", BotConfig.mysql.username)
+config.set_section_option(section, "DB_PASSWORD", BotConfig.mysql.password)
+config.set_section_option(section, "DB_DATABASE", BotConfig.mysql.database)
 
 
 def run_migrations_offline() -> None:
