@@ -39,6 +39,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           pip install --upgrade poetry
+          pip install git+https://github.com/pypa/installer.git
           poetry config virtualenvs.create false
           poetry install
           poetry install --extras test
