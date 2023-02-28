@@ -40,7 +40,15 @@ class Calendar:
 
     def __init__(self):
         self.client = AsyncClient()
-        self.birthday_list = self.gen_birthday_list()
+
+    @staticmethod
+    async def async_gen_birthday_list() -> Dict[str, List[str]]:
+        """生成生日列表并且合并云端生日列表"""
+        birthday_list = Calendar.gen_birthday_list()
+        remote_data = await Remote.get_remote_birthday()
+        if remote_data:
+            birthday_list.update(remote_data)
+        return birthday_list
 
     @staticmethod
     def gen_birthday_list() -> Dict[str, List[str]]:
@@ -264,13 +272,14 @@ class Calendar:
         self, date_list: List[Date], assets: AssetsService
     ) -> Tuple[int, Dict[str, Dict[str, List[BirthChar]]]]:
         """获取生日角色"""
+        birthday_list = await self.async_gen_birthday_list()
         birthday_char_line = 0
         birthday_chars = {}
         for date in date_list:
             birthday_chars[str(date.month)] = {}
             for d in date.date:
                 key = f"{date.month}_{d}"
-                if char := self.birthday_list.get(key):
+                if char := birthday_list.get(key):
                     birthday_char_line = max(len(char), birthday_char_line)
                     birthday_chars[str(date.month)][str(d)] = []
                     for c in char:

@@ -20,7 +20,6 @@ from core.user.error import UserNotFoundError
 from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId, roleToName
 from modules.apihelper.client.components.calendar import Calendar
-from modules.apihelper.client.components.remote import Remote
 from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -50,14 +49,15 @@ class BirthdayPlugin(Plugin, BasePlugin):
         cookie_service: CookiesService = None,
     ):
         """Load Data."""
-        self.birthday_list = Calendar.gen_birthday_list()
+        self.birthday_list = {}
         self.user_service = user_service
         self.cookie_service = cookie_service
 
+    async def __async_init__(self):
+        self.birthday_list = await Calendar.async_gen_birthday_list()
+        self.birthday_list.get("6_1", []).append("派蒙")
+
     async def get_today_birthday(self) -> List[str]:
-        remote_data = await Remote.get_remote_birthday()
-        if remote_data:
-            self.birthday_list.update(remote_data)
         key = (
             rm_starting_str(datetime.now().strftime("%m"), "0")
             + "_"
@@ -87,10 +87,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
                     key = f"{month}_{day}"
                     day_list = self.birthday_list.get(key, [])
                     date = f"{month}月{day}日"
-                    if key == "6_1":
-                        text = f"{date} 是 派蒙、{'、'.join(day_list)} 的生日哦~"
-                    else:
-                        text = f"{date} 是 {'、'.join(day_list)} 的生日哦~" if day_list else f"{date} 没有角色过生日哦~"
+                    text = f"{date} 是 {'、'.join(day_list)} 的生日哦~" if day_list else f"{date} 没有角色过生日哦~"
                 except IndexError:
                     text = "请输入正确的日期格式，如1-1，或输入正确的角色名称。"
                 reply_message = await message.reply_text(text)
