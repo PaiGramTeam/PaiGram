@@ -6,8 +6,8 @@ from httpx import AsyncClient
 
 from core.base.assets import AssetsService
 from metadata.genshin import AVATAR_DATA
-from metadata.scripts.metadatas import RESOURCE_DEFAULT_PATH
 from metadata.shortname import roleToId
+from modules.apihelper.client.components.remote import Remote
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
 from modules.wiki.character import Character
 
@@ -27,7 +27,6 @@ class Calendar:
         "uid": "100000000",
     }
     MIAO_API = "http://miaoapi.cn/api/calendar"
-    REMOTE_API = f"https://raw.fastgit.org/{RESOURCE_DEFAULT_PATH}calendar.json"
     IGNORE_IDS = [
         495,  # 有奖问卷调查开启！
         1263,  # 米游社《原神》专属工具一览
@@ -73,9 +72,8 @@ class Calendar:
         if req.status_code == 200:
             miao_data = req.json()
             time_map.update({key: ActTime(**value) for key, value in miao_data.get("data", {}).items()})
-        req = await self.client.get(self.REMOTE_API)
-        if req.status_code == 200:
-            remote_data = req.json()
+        remote_data = await Remote.get_remote_calendar()
+        if remote_data:
             time_map.update({key: ActTime(**value) for key, value in remote_data.get("data", {}).items()})
         return new_list_data, time_map
 
