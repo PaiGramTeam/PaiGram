@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from genshin import Client, GenshinException
 from genshin.client.routes import Route
@@ -139,7 +139,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
         await client.cookie_manager.request(url, method="POST", params=params, json=json)
 
     @staticmethod
-    def role_to_id(name: str) -> int | None:
+    def role_to_id(name: str) -> Optional[int]:
         if name == "派蒙":
             return -1
         return roleToId(name)
