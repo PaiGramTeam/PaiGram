@@ -206,7 +206,7 @@ class WikiModel(Model):
             response = await cls._client_get(page)
             # 从页面中获取对应的 chaos data (未处理的json格式字符串)
             chaos_data = re.findall(r"sortable_data\.push\((.*)\);\s*sortable_cur_page", response.text)[0]
-            json_data = json.loads(chaos_data)  # 转为 json
+            json_data = jsonlib.loads(chaos_data)  # 转为 json
             for data in json_data:  # 遍历 json
                 data_name = re.findall(r">(.*)<", data[1])[0]  # 获取 Model 的名称
                 if with_url:  # 如果需要返回对应的 url

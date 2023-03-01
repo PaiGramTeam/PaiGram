@@ -50,7 +50,7 @@ class Queue(Generic[T]):
         """
         self._maxsize = maxsize
 
-        self._init(maxsize)
+        self._init()
 
         self.unfinished_tasks = 0
 

@@ -123,7 +123,7 @@ class Logger(logging.Logger):  # skipcq: PY-A6006
             extra=extra,
         )
 
-    def exception(
+    def exception(  # pylint: disable=W1113
         self,
         msg: Any = NONE,
         *args: Any,
