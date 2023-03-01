@@ -30,7 +30,7 @@ _lock = Lock()
 NONE = object()
 
 
-class Logger(logging.Logger):
+class Logger(logging.Logger):  # skipcq: PY-A6006
     _instance: Optional["Logger"] = None
 
     def __new__(cls, *args, **kwargs) -> "Logger":

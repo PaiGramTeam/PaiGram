@@ -7,12 +7,17 @@ from ssl import SSLZeroReturnError
 from typing import AsyncIterator, ClassVar, List, Optional, Tuple, Union
 
 import anyio
-import ujson as json
 from bs4 import BeautifulSoup
 from httpx import URL, AsyncClient, HTTPError, Response
 from pydantic import BaseConfig as PydanticBaseConfig
 from pydantic import BaseModel as PydanticBaseModel
 from typing_extensions import Self
+
+try:
+    import ujson as jsonlib
+except ImportError:
+    import json as jsonlib
+
 
 __all__ = ["Model", "WikiModel", "HONEY_HOST"]
 
@@ -25,12 +30,12 @@ class Model(PydanticBaseModel):
     def __new__(cls, *args, **kwargs):
         # 让每次new的时候都解析
         cls.update_forward_refs()
-        return super(Model, cls).__new__(cls)
+        return super(Model, cls).__new__(cls)  # pylint: disable=E1120
 
     class Config(PydanticBaseConfig):
         # 使用 ujson 作为解析库
-        json_dumps = json.dumps
-        json_loads = json.loads
+        json_dumps = jsonlib.dumps
+        json_loads = jsonlib.loads
 
 
 class WikiModel(Model):

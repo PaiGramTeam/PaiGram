@@ -17,7 +17,7 @@ class LoggerConfig(BaseSettings):
         with cls._lock:
             if cls._instance is None:
                 cls.update_forward_refs()
-                result = super(LoggerConfig, cls).__new__(cls)
+                result = super(LoggerConfig, cls).__new__(cls)  # pylint: disable=E1120
                 result.__init__(*args, **kwargs)
                 cls._instance = result
         return cls._instance

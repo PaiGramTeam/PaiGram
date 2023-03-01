@@ -413,7 +413,7 @@ class _AsyncQueueProxy(AsyncQueue[T]):  # pylint: disable=W0212
 class PriorityQueue(Queue[T]):
     """优先级队列"""
 
-    def _init(self, maxsize: int) -> NoReturn:
+    def _init(self) -> NoReturn:
         self._heap_queue: List[T] = []
 
     def qsize(self) -> int:

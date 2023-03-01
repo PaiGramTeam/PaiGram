@@ -151,7 +151,7 @@ class ComponentManager(Manager[ComponentType]):
                     self._lib[component] = instance
                     self._components[component] = instance
                     components = components.remove(component)
-                except Exception as e:
+                except Exception as e:  # pylint: disable=W0703
                     logger.debug('组件 "%s" 初始化失败: [red]%s[/]', component.__name__, e, extra={"markup": True})
             end_len = len(list(components))
             if start_len == end_len:
@@ -274,7 +274,7 @@ class PluginManager(Manager["PluginType"]):
         for plugin in self._plugins.values():
             try:
                 await plugin.uninstall()
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 logger.error('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
 
 
