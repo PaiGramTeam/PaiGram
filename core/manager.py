@@ -16,7 +16,7 @@ from utils.log import logger
 if TYPE_CHECKING:
     from core.application import Application
     from core.plugin import PluginType
-    from core.builtins.executor import BaseExecutor
+    from core.builtins.executor import Executor
 
 __all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager", "Managers")
 
@@ -40,18 +40,31 @@ def _load_module(path: Path) -> None:
 class Manager(Generic[T]):
     """生命周期控制基类"""
 
-    _executor: Optional["BaseExecutor"] = None
+    _executor: Optional["Executor"] = None
     _lib: Dict[Type[T], T] = {}
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
 
     @property
-    def executor(self) -> "BaseExecutor":
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError(f"No application was set for this {self.__class__.__name__}.")
+        return self._application
+
+    @property
+    def executor(self) -> "Executor":
         """执行器"""
-        from core.builtins.executor import BaseExecutor
-
         if self._executor is None:
-            self._executor = BaseExecutor("Application")
-
+            raise RuntimeError(f"No executor was set for this {self.__class__.__name__}.")
         return self._executor
+
+    def build_executor(self, name: str):
+        from core.builtins.executor import Executor
+
+        self._executor = Executor(name)
+        self._executor.set_application(self.application)
 
 
 class DependenceManager(Manager[DependenceType]):
@@ -94,11 +107,11 @@ class DependenceManager(Manager[DependenceType]):
             try:
                 async with timeout(5):
                     await d.shutdown()
-                    logger.debug('基础服务 "%s" 关闭成功' % d.__class__.__name__)
+                    logger.debug('基础服务 "%s" 关闭成功', d.__class__.__name__)
             except asyncio.TimeoutError:
-                logger.warning('基础服务 "%s" 关闭超时' % d.__class__.__name__)
+                logger.warning('基础服务 "%s" 关闭超时', d.__class__.__name__)
             except Exception as e:
-                logger.error('基础服务 "%s" 关闭错误' % d.__class__.__name__, exc_info=e)
+                logger.error('基础服务 "%s" 关闭错误', d.__class__.__name__, exc_info=e)
 
         tasks = []
         for dependence in self._dependency.values():
@@ -138,9 +151,9 @@ class ComponentManager(Manager[ComponentType]):
                     self._lib[component] = instance
                     self._components[component] = instance
                     components = components.remove(component)
-                except Exception as e:
-                    logger.debug(f'组件 "{component.__name__}" 初始化失败: [red]{e}[/]', extra={"markup": True})
-            end_len = len(components)
+                except Exception as e:  # pylint: disable=W0703
+                    logger.debug('组件 "%s" 初始化失败: [red]%s[/]', component.__name__, e, extra={"markup": True})
+            end_len = len(list(components))
             if start_len == end_len:
                 retry_times += 1
 
@@ -176,7 +189,7 @@ class ServiceManager(Manager[BaseServiceType]):
 
             return instance
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0703
             logger.exception('服务 "%s" 初始化失败，BOT 将自动关闭', target.__name__)
             raise SystemExit from e
 
@@ -219,16 +232,6 @@ class PluginManager(Manager["PluginType"]):
     """插件管理"""
 
     _plugins: Dict[Type["PluginType"], "PluginType"] = {}
-    _application: "Optional[Application]" = None
-
-    def set_application(self, application: "Application") -> None:
-        self._application = application
-
-    @property
-    def application(self) -> "Application":
-        if self._application is None:
-            raise RuntimeError("No application was set for this PluginManager.")
-        return self._application
 
     @property
     def plugins(self) -> List["PluginType"]:
@@ -251,8 +254,8 @@ class PluginManager(Manager["PluginType"]):
 
             try:
                 instance: "PluginType" = await self.executor(plugin)
-            except Exception as e:
-                logger.exception('插件 "%s" 初始化失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+            except Exception as e:  # pylint: disable=W0703
+                logger.error('插件 "%s" 初始化失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
 
             self._plugins[plugin] = instance
@@ -263,16 +266,16 @@ class PluginManager(Manager["PluginType"]):
             try:
                 await instance.install()
                 logger.success('插件 "%s" 安装成功', f"{plugin.__module__}.{plugin.__name__}")
-            except Exception as e:
-                logger.exception('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+            except Exception as e:  # pylint: disable=W0703
+                logger.error('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
 
     async def uninstall_plugins(self) -> None:
         for plugin in self._plugins.values():
             try:
                 await plugin.uninstall()
-            except Exception as e:
-                logger.exception('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+            except Exception as e:  # pylint: disable=W0703
+                logger.error('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
 
 
 class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):

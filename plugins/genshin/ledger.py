@@ -2,7 +2,7 @@ import os
 import re
 from datetime import datetime, timedelta
 
-from genshin import DataNotPublic, InvalidCookies
+from genshin import DataNotPublic, InvalidCookies, GenshinException
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Message, User
 from telegram.constants import ChatAction
 from telegram.ext import filters
@@ -14,7 +14,6 @@ from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from core.services.users import UserService
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, UserNotFoundError
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("LedgerPlugin",)
@@ -71,7 +70,6 @@ class LedgerPlugin(Plugin):
         )
         return render_result
 
-    @restricts()
     @handler.command(command="ledger", block=False)
     @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), block=False)
     async def command_start(self, user: User, message: Message, bot: Bot) -> None:
@@ -98,8 +96,7 @@ class LedgerPlugin(Plugin):
 
             if month not in allow_month and isinstance(month, int):
                 raise IndexError
-            else:
-                month = now_time.month
+            month = now_time.month
         except IndexError:
             reply_message = await message.reply_text("仅可查询最新三月的数据，请重新输入")
             if filters.ChatType.GROUPS.filter(message):

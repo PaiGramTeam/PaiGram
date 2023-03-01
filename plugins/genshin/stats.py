@@ -8,13 +8,12 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.services.cookies.error import TooManyRequestPublicCookies
 from core.plugin import Plugin, handler
+from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.players.error import PlayerNotFoundError
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from plugins.tools.genshin import GenshinHelper
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("PlayerStatsPlugins",)
@@ -33,7 +32,6 @@ class PlayerStatsPlugins(Plugin):
 
     @handler.command("stats", block=False)
     @handler.message(filters.Regex("^玩家统计查询(.*)"), block=False)
-    @restricts()
     async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
         user = update.effective_user
         message = update.effective_message
@@ -44,7 +42,7 @@ class PlayerStatsPlugins(Plugin):
             if args is not None and len(args) >= 1:
                 uid = int(args[0])
         except ValueError as exc:
-            logger.warning("获取 uid 发生错误！ 错误信息为 ", str(exc))
+            logger.warning("获取 uid 发生错误！ 错误信息为 %s", str(exc))
             await message.reply_text("输入错误")
             return
         try:
@@ -68,10 +66,9 @@ class PlayerStatsPlugins(Plugin):
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         except GenshinException as exc:
-            if exc.retcode == 1034:
-                if uid:
-                    await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
-                    return
+            if exc.retcode == 1034 and uid:
+                await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
+                return
             raise exc
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多 请稍后重试")

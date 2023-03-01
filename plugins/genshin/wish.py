@@ -1,6 +1,5 @@
 import asyncio
 import re
-from asyncio import CancelledError
 from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
 
@@ -20,7 +19,6 @@ from modules.apihelper.models.genshin.gacha import GachaInfo
 from modules.gacha.banner import BannerType, GachaBanner
 from modules.gacha.player.info import PlayerGachaInfo
 from modules.gacha.system import BannerSystem
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 try:
@@ -122,8 +120,7 @@ class WishSimulatorHandle:
         else:  # pylint: disable=W0120
             if default and len(gacha_list_info) > 0:
                 return gacha_list_info[0]
-            else:
-                raise GachaNotFound(gacha_name)
+            raise GachaNotFound(gacha_name)
 
     @staticmethod
     def de_title(title: str) -> Union[Tuple[str, None], Tuple[str, Any]]:
@@ -201,7 +198,6 @@ class WishSimulatorPlugin(Plugin):
 
     @handler(CommandHandler, command="wish", block=False)
     @handler(MessageHandler, filters=filters.Regex("^抽卡模拟器(.*)"), block=False)
-    @restricts(restricts_time=3, restricts_time_of_groups=20)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
@@ -257,10 +253,6 @@ class WishSimulatorPlugin(Plugin):
             "items": [],
             "wish_name": "",
         }
-        # logger.debug(f"{banner.banner_id}")
-        # logger.debug(f"{banner.banner_type}")
-        # logger.debug(f"{banner.rate_up_items5}")
-        # logger.debug(f"{banner.fallback_items5_pool1}")
         if player_gacha_banner_info.wish_item_id != 0:
             weapon = WEAPON_DATA.get(str(player_gacha_banner_info.wish_item_id))
             if weapon is not None:
@@ -284,7 +276,6 @@ class WishSimulatorPlugin(Plugin):
 
     @handler(CommandHandler, command="set_wish", block=False)
     @handler(MessageHandler, filters=filters.Regex("^非首模拟器定轨(.*)"), block=False)
-    @restricts(restricts_time=3, restricts_time_of_groups=20)
     async def set_wish(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user

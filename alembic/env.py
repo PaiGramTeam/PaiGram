@@ -11,6 +11,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel
 
+from core.config import config as BotConfig
 from utils.const import CORE_DIR, PLUGIN_DIR, PROJECT_ROOT
 from utils.log import logger
 
@@ -21,7 +22,7 @@ config = context.config
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name)  # skipcq: PY-A6006
 
 
 def scan_models() -> Iterator[str]:
@@ -39,7 +40,7 @@ def import_models():
         try:
             import_module(pkg)  # 导入 models
         except Exception as e:  # pylint: disable=W0703
-            logger.error(f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True})
+            logger.error("在导入文件 %s 的过程中遇到了错误: \n[red bold]%s: %s[/]", pkg, type(e).__name__, e, extra={"markup": True})
 
 
 # register our models for alembic to auto-generate migrations
@@ -54,14 +55,13 @@ target_metadata = SQLModel.metadata
 
 # here we allow ourselves to pass interpolation vars to alembic.ini
 # from the application config module
-from core.config import config as botConfig
 
 section = config.config_ini_section
-config.set_section_option(section, "DB_HOST", botConfig.mysql.host)
-config.set_section_option(section, "DB_PORT", str(botConfig.mysql.port))
-config.set_section_option(section, "DB_USERNAME", botConfig.mysql.username)
-config.set_section_option(section, "DB_PASSWORD", botConfig.mysql.password)
-config.set_section_option(section, "DB_DATABASE", botConfig.mysql.database)
+config.set_section_option(section, "DB_HOST", BotConfig.mysql.host)
+config.set_section_option(section, "DB_PORT", str(BotConfig.mysql.port))
+config.set_section_option(section, "DB_USERNAME", BotConfig.mysql.username)
+config.set_section_option(section, "DB_PASSWORD", BotConfig.mysql.password)
+config.set_section_option(section, "DB_DATABASE", BotConfig.mysql.database)
 
 
 def run_migrations_offline() -> None:

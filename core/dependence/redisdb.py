@@ -1,4 +1,3 @@
-import asyncio
 from typing import Optional, Union
 
 import fakeredis.aioredis

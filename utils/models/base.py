@@ -1,12 +1,15 @@
 import imghdr
 import os
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional
 
-import ujson as json
+
 from pydantic import BaseSettings
 
-from utils.baseobject import BaseObject
+try:
+    import ujson as jsonlib
+except ImportError:
+    import json as jsonlib
 
 
 class Stat:
@@ -58,22 +61,6 @@ class RegionEnum(Enum):
     HOYOLAB = 2  # 米忽悠国际服 hoyolab
 
 
-class GameItem(BaseObject):
-    def __init__(
-        self,
-        item_id: int = 0,
-        name: str = "",
-        item_type: Union[Enum, str, int] = "",
-        value: Union[Enum, str, int, bool, float] = 0,
-    ):
-        self.item_id = item_id
-        self.name = name  # 名称
-        self.type = item_type  # 类型
-        self.value = value  # 数值
-
-    __slots__ = ("name", "type", "value", "item_id")
-
-
 class ModuleInfo:
     def __init__(
         self, file_name: Optional[str] = None, plugin_name: Optional[str] = None, relative_path: Optional[str] = None
@@ -104,9 +91,9 @@ class ModuleInfo:
 class Settings(BaseSettings):
     def __new__(cls, *args, **kwargs):
         cls.update_forward_refs()
-        return super(Settings, cls).__new__(cls)
+        return super(Settings, cls).__new__(cls)  # pylint: disable=E1120
 
     class Config(BaseSettings.Config):
         case_sensitive = False
-        json_loads = json.loads
-        json_dumps = json.dumps
+        json_loads = jsonlib.loads
+        json_dumps = jsonlib.dumps

@@ -68,7 +68,7 @@ async def update_metadata_from_github(overwrite: bool = True):
                     if line == "    {\n":
                         started = True
                         continue
-                    elif line in ["    },\n", "    }\n"]:
+                    if line in ["    },\n", "    }\n"]:
                         started = False
                         if any("MATERIAL_NAMECARD" in x for x in cell):
                             material_json_data.append(json.loads("{" + "".join(cell) + "}"))

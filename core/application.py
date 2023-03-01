@@ -9,26 +9,27 @@ from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
 import pytz
 import uvicorn
 from fastapi import FastAPI
+from telegram import Bot
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import (
-    AIORateLimiter,
     Application as TelegramApplication,
     ApplicationBuilder as TelegramApplicationBuilder,
     Defaults,
+    JobQueue,
 )
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
-from core.builtins.contexts import application_context
 from core.config import config as application_config
+from core.handler.limiterhandler import LimiterHandler
 from core.manager import Managers
-from modules.override.telegram import HTTPXRequest
+from core.override.telegram import HTTPXRequest
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 from utils.models.signal import Singleton
 
 if TYPE_CHECKING:
-    from asyncio import AbstractEventLoop, CancelledError
+    from asyncio import Task
     from types import FrameType
 
 __all__ = ("Application",)
@@ -38,17 +39,54 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
-class Application(Singleton, Managers):
+class Application(Singleton):
     """Application"""
 
-    _telegram: Optional[TelegramApplication] = None
-    _web_server: "Server" = None
-    _web_server_task: Optional[asyncio.Task] = None
+    _web_server_task: Optional["Task"] = None
 
     _startup_funcs: List[Callable] = []
     _shutdown_funcs: List[Callable] = []
 
-    _running: False
+    def __init__(self, managers: "Managers", telegram: "TelegramApplication", web_server: "Server") -> None:
+        self._running = False
+        self.managers = managers
+        self.telegram = telegram
+        self.web_server = web_server
+        self.managers.set_application(application=self)  # 给 managers 设置 application
+        self.managers.build_executor("Application")
+
+    @classmethod
+    def build(cls):
+        managers = Managers()
+        telegram = (
+            TelegramApplicationBuilder()
+            .get_updates_read_timeout(application_config.update_read_timeout)
+            .get_updates_write_timeout(application_config.update_write_timeout)
+            .get_updates_connect_timeout(application_config.update_connect_timeout)
+            .get_updates_pool_timeout(application_config.update_pool_timeout)
+            .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
+            .token(application_config.bot_token)
+            .request(
+                HTTPXRequest(
+                    connection_pool_size=application_config.connection_pool_size,
+                    proxy_url=application_config.proxy_url,
+                    read_timeout=application_config.read_timeout,
+                    write_timeout=application_config.write_timeout,
+                    connect_timeout=application_config.connect_timeout,
+                    pool_timeout=application_config.pool_timeout,
+                )
+            )
+            .build()
+        )
+        web_server = Server(
+            uvicorn.Config(
+                app=FastAPI(debug=application_config.debug),
+                port=application_config.webserver.port,
+                host=application_config.webserver.host,
+                log_config=None,
+            )
+        )
+        return cls(managers, telegram, web_server)
 
     @property
     def running(self) -> bool:
@@ -57,74 +95,39 @@ class Application(Singleton, Managers):
             return self._running
 
     @property
-    def telegram(self) -> TelegramApplication:
-        """telegram app"""
-        with self._lock:
-            if self._telegram is None:
-                self._telegram = (
-                    TelegramApplicationBuilder()
-                    # .application_class(TgApplication)
-                    .rate_limiter(AIORateLimiter())
-                    .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
-                    .token(application_config.bot_token)
-                    .request(
-                        HTTPXRequest(
-                            256,
-                            proxy_url=application_config.proxy_url,
-                            read_timeout=application_config.read_timeout,
-                            write_timeout=application_config.write_timeout,
-                            connect_timeout=application_config.connect_timeout,
-                            pool_timeout=application_config.pool_timeout,
-                        )
-                    )
-                    .build()
-                )
-        return self._telegram
-
-    @property
     def web_app(self) -> FastAPI:
         """fastapi app"""
         return self.web_server.config.app
 
     @property
-    def web_server(self) -> Server:
-        """uvicorn server"""
-        with self._lock:
-            if self._web_server is None:
-                self._web_server = Server(
-                    uvicorn.Config(
-                        app=FastAPI(debug=application_config.debug),
-                        port=application_config.webserver.port,
-                        host=application_config.webserver.host,
-                        log_config=None,
-                    )
-                )
-        return self._web_server
+    def bot(self) -> Optional[Bot]:
+        return self.telegram.bot
 
-    def __init__(self) -> None:
-        self._running = False
+    @property
+    def job_queue(self) -> Optional[JobQueue]:
+        return self.telegram.job_queue
 
     async def _on_startup(self) -> None:
         for func in self._startup_funcs:
-            await self.executor(func, block=getattr(func, "block", False))
+            await self.managers.executor(func, block=getattr(func, "block", False))
 
     async def _on_shutdown(self) -> None:
         for func in self._shutdown_funcs:
-            await self.executor(func, block=getattr(func, "block", False))
+            await self.managers.executor(func, block=getattr(func, "block", False))
 
     async def initialize(self):
         """BOT 初始化"""
-        self.set_application(application=self)  # 设置 application
-        await self.start_dependency()  # 启动基础服务
-        await self.init_components()  # 实例化组件
-        await self.start_services()  # 启动其他服务
-        await self.install_plugins()  # 安装插件
+        self.telegram.add_handler(LimiterHandler(limit_time=10), group=-1)  # 启用入口洪水限制
+        await self.managers.start_dependency()  # 启动基础服务
+        await self.managers.init_components()  # 实例化组件
+        await self.managers.start_services()  # 启动其他服务
+        await self.managers.install_plugins()  # 安装插件
 
     async def shutdown(self):
         """BOT 关闭"""
-        await self.uninstall_plugins()  # 卸载插件
-        await self.stop_services()  # 终止其他服务
-        await self.stop_dependency()  # 终止基础服务
+        await self.managers.uninstall_plugins()  # 卸载插件
+        await self.managers.stop_services()  # 终止其他服务
+        await self.managers.stop_dependency()  # 终止基础服务
 
     async def start(self) -> None:
         """启动 BOT"""
@@ -134,22 +137,27 @@ class Application(Singleton, Managers):
             """错误信息回调"""
             self.telegram.create_task(self.telegram.process_error(error=exc, update=None))
 
-        await self.initialize()
-        logger.success("BOT 初始化成功")
-        logger.debug("BOT 开始启动")
-
         await self.telegram.initialize()
+        logger.info("[blue]Telegram[/] 初始化成功", extra={"markup": True})
 
-        if application_config.webserver.switch:  # 如果使用 web app
+        if application_config.webserver.enable:  # 如果使用 web app
             server_config = self.web_server.config
             server_config.setup_event_loop()
             if not server_config.loaded:
                 server_config.load()
             self.web_server.lifespan = server_config.lifespan_class(server_config)
-            await self.web_server.startup()
-            if self.web_server.should_exit:
-                logger.error("web server 启动失败，正在退出")
+            try:
+                await self.web_server.startup()
+            except OSError as e:
+                if e.errno == 10048:
+                    logger.error("Web Server 端口被占用：%s", e)
+                logger.error("Web Server 启动失败，正在退出")
                 raise SystemExit from None
+
+            if self.web_server.should_exit:
+                logger.error("Web Server 启动失败，正在退出")
+                raise SystemExit from None
+            logger.success("Web Server 启动成功")
 
             self._web_server_task = asyncio.create_task(self.web_server.main_loop())
 
@@ -168,16 +176,19 @@ class Application(Singleton, Managers):
                     logger.error("网络连接出现问题, 请检查您的网络状况.")
                 raise SystemExit from e
 
+        await self.initialize()
+        logger.success("BOT 初始化成功")
+        logger.debug("BOT 开始启动")
+
         await self._on_startup()
         await self.telegram.start()
         self._running = True
         logger.success("BOT 启动成功")
 
-    # noinspection PyUnusedLocal
-    def stop_signal_handler(self, signum: int, frame: "FrameType"):
+    def stop_signal_handler(self, signum: int):
         """终止信号处理"""
         signals = {k: v for v, k in signal.__dict__.items() if v.startswith("SIG") and not v.startswith("SIG_")}
-        logger.debug(f"接收到了终止信号 {signals[signum]} 正在退出...")
+        logger.debug("接收到了终止信号 %s 正在退出...", signals[signum])
         if self._web_server_task:
             self._web_server_task.cancel()
 
@@ -186,8 +197,8 @@ class Application(Singleton, Managers):
 
         task = None
 
-        def stop_handler(signum, frame) -> None:
-            self.stop_signal_handler(signum, frame)
+        def stop_handler(signum: int, _: "FrameType") -> None:
+            self.stop_signal_handler(signum)
             task.cancel()
 
         for s in (SIGINT, SIGTERM, SIGABRT):
@@ -201,52 +212,51 @@ class Application(Singleton, Managers):
             except asyncio.CancelledError:
                 break
 
-    async def stop(self):
+    async def stop(self) -> None:
         """关闭"""
         logger.info("BOT 正在关闭")
         self._running = False
 
+        await self._on_shutdown()
+
         if self.telegram.updater.running:
             await self.telegram.updater.stop()
 
-        await self._on_shutdown()
+        await self.shutdown()
 
         if self.telegram.running:
             await self.telegram.stop()
 
         await self.telegram.shutdown()
-        if self._web_server is not None:
+        if self.web_server is not None:
             try:
-                await self._web_server.shutdown()
+                await self.web_server.shutdown()
+                logger.info("Web Server 已经关闭")
             except AttributeError:
                 pass
 
-        await self.shutdown()
         logger.success("BOT 关闭成功")
 
-    def launch(self):
+    def launch(self) -> None:
         """启动"""
         loop = asyncio.get_event_loop()
-        with application_context(self):  # 设置 bot context
-            try:
-                loop.run_until_complete(self.start())
-                loop.run_until_complete(self.idle())
-            except (SystemExit, KeyboardInterrupt):
-                logger.debug("接收到了终止信号，BOT 即将关闭")  # 接收到了终止信号
-            except NetworkError as e:
-                if isinstance(e, SSLZeroReturnError):
-                    logger.critical("代理服务出现异常, 请检查您的代理服务是否配置成功.")
-                else:
-                    logger.critical("网络连接出现问题, 请检查您的网络状况.")
-            except Exception as e:
-                logger.critical(f"遇到了未知错误: {type(e)}", exc_info=e)
-            finally:
-                loop.run_until_complete(self.stop())
+        try:
+            loop.run_until_complete(self.start())
+            loop.run_until_complete(self.idle())
+        except (SystemExit, KeyboardInterrupt) as exc:
+            logger.debug("接收到了终止信号，BOT 即将关闭", exc_info=exc)  # 接收到了终止信号
+        except NetworkError as e:
+            if isinstance(e, SSLZeroReturnError):
+                logger.critical("代理服务出现异常, 请检查您的代理服务是否配置成功.")
+            else:
+                logger.critical("网络连接出现问题, 请检查您的网络状况.")
+        except Exception as e:
+            logger.critical("遇到了未知错误: %s", {type(e)}, exc_info=e)
+        finally:
+            loop.run_until_complete(self.stop())
 
-                if application_config.reload:
-                    raise SystemExit from None
-
-    # decorators
+            if application_config.reload:
+                raise SystemExit from None
 
     def on_startup(self, func: Callable[P, R]) -> Callable[P, R]:
         """注册一个在 BOT 启动时执行的函数"""

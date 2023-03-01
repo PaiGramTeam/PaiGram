@@ -35,6 +35,7 @@ class PostInfo(BaseModel):
     subject: str
     image_urls: List[str]
     created_at: int
+    video_urls: List[str]
 
     def __init__(self, _data: dict, **data: Any):
         super().__init__(**data)

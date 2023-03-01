@@ -64,8 +64,8 @@ class MTProtoConfig(Settings):
 
 
 class WebServerConfig(Settings):
-    switch: bool = False
-    """WebServer开关"""
+    enable: bool = False
+    """是否启用WebServer"""
 
     url: AnyUrl = "http://localhost:8080"
     host: str = "localhost"
@@ -111,7 +111,7 @@ class ApplicationConfig(Settings):
     auto_reload: bool = False
     """自动重载"""
 
-    proxy_url: Optional[AnyUrl]
+    proxy_url: Optional[AnyUrl] = None
     """代理链接"""
 
     bot_token: str = ""
@@ -128,6 +128,7 @@ class ApplicationConfig(Settings):
     """是否允许机器人被邀请到其它群组"""
 
     timeout: int = 10
+    connection_pool_size: int = 256
     read_timeout: Optional[float] = None
     write_timeout: Optional[float] = None
     connect_timeout: Optional[float] = None

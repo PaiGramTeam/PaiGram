@@ -68,9 +68,8 @@ class AuthClient:
         for i in res_data:
             name = i.get("name")
             token = i.get("token")
-            if name and token:
-                if hasattr(self.cookies, name):
-                    setattr(self.cookies, name, token)
+            if name and token and hasattr(self.cookies, name):
+                setattr(self.cookies, name, token)
         if self.cookies.stoken:
             if self.cookies.stuid:
                 self.cookies.stuid = self.user_id

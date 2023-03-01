@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union
 
 import genshin
 
-from core.config import ApplicationConfig
+from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin
@@ -34,7 +34,6 @@ class GenshinHelper(Plugin):
         user: UserService,
         redis: RedisDB,
         player: PlayersService,
-        application_config: ApplicationConfig,
     ) -> None:
         self.cookies_service = cookies
         self.public_cookies_service = public_cookies
@@ -42,8 +41,8 @@ class GenshinHelper(Plugin):
         self.redis_db = redis
         self.players_service = player
 
-        if self.redis_db and application_config.genshin_ttl:
-            self.genshin_cache = genshin.RedisCache(self.redis_db.client, ttl=application_config.genshin_ttl)
+        if self.redis_db and config.genshin_ttl:
+            self.genshin_cache = genshin.RedisCache(self.redis_db.client, ttl=config.genshin_ttl)
         else:
             self.genshin_cache = None
 

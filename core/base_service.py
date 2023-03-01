@@ -18,7 +18,7 @@ class _BaseService:
     def __init_subclass__(cls, load: bool = True, **kwargs):
         cls.is_dependence = cls._is_dependence
         cls.is_component = cls._is_component
-        cls._load = load
+        cls.load = load
 
     async def __aenter__(self) -> Self:
         await self.initialize()
@@ -55,6 +55,6 @@ ComponentType = TypeVar("ComponentType", bound=_Component)
 # noinspection PyProtectedMember
 def get_all_services() -> Iterable[Type[_BaseService]]:
     return filter(
-        lambda x: x.__name__[0] != "_" and x._load and not isabstract(x),
+        lambda x: x.__name__[0] != "_" and x.load and not isabstract(x),
         chain(BaseService.__subclasses__(), _Dependence.__subclasses__(), _Component.__subclasses__()),
     )

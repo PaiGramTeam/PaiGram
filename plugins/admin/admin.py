@@ -2,7 +2,6 @@ from telegram import Update
 
 from core.plugin import Plugin, handler
 from core.services.users.services import UserAdminService
-from utils.decorators.admins import bot_admins_rights_check
 from utils.log import logger
 
 
@@ -12,8 +11,7 @@ class AdminPlugin(Plugin):
     def __init__(self, user_admin_service: UserAdminService = None):
         self.user_admin_service = user_admin_service
 
-    @bot_admins_rights_check
-    @handler.command("add_admin", block=False)
+    @handler.command("add_admin", block=False, admin=True)
     async def add_admin(self, update: Update):
         message = update.effective_message
         reply_to_message = message.reply_to_message
@@ -32,8 +30,7 @@ class AdminPlugin(Plugin):
         else:
             await message.reply_text("请回复对应消息")
 
-    @bot_admins_rights_check
-    @handler.command("del_admin", block=False)
+    @handler.command("del_admin", block=False, admin=True)
     async def del_admin(self, update: Update):
         message = update.effective_message
         reply_to_message = message.reply_to_message

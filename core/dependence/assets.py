@@ -129,7 +129,7 @@ class _AssetsService(ABC):
 
     async def _download(self, url: StrOrURL, path: Path, retry: int = 5) -> Path | None:
         """从 url 下载图标至 path"""
-        logger.debug(f"正在从 {url} 下载图标至 {path}")
+        logger.debug("正在从 %s 下载图标至 %s", url, path)
         headers = {"user-agent": "TGPaimonBot/3.0"} if URL(url).host == "enka.network" else None
         for time in range(retry):
             try:
@@ -206,8 +206,8 @@ class _AssetsService(ABC):
         """魔法"""
         if item in self.icon_types:
             return partial(self._get_img, item=item)
-        else:
-            object.__getattribute__(self, item)
+        object.__getattribute__(self, item)
+        return None
 
     @abstractmethod
     @cached_property

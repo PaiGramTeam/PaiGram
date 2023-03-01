@@ -17,12 +17,11 @@ from core.dependence.assets import AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
-from core.services.template import TemplateService
+from core.services.template.services import TemplateService
 from core.services.template.models import FileType
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, UserNotFoundError
-from utils.decorators.restricts import restricts
 from utils.enkanetwork import RedisCache
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
@@ -217,7 +216,6 @@ class AvatarListPlugin(Plugin):
             avatar = (await self.assets_service.avatar(10000005).icon()).as_uri()
         return name_card, avatar, nickname, rarity
 
-    @restricts(30)
     @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"), block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
     async def avatar_list(self, update: Update, context: CallbackContext):
@@ -255,13 +253,13 @@ class AvatarListPlugin(Plugin):
             await notice.delete()
             if e.retcode == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 20)
+                self.add_delete_message_job(reply_message, delay=20)
                 return
             raise e
 
         try:
             name_card, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=W0703
             logger.error("卡片信息请求失败 %s", str(exc))
             name_card, avatar, nickname, rarity = await self.get_default_final_data(characters, update)
 

@@ -20,20 +20,11 @@ from typing import (
 )
 
 from pydantic import BaseModel
-
-# noinspection PyProtectedMember
-from telegram._utils.defaultvalue import DEFAULT_TRUE
-
-# noinspection PyProtectedMember
-from telegram._utils.types import DVInput
-
-# noinspection PyProtectedMember
 from telegram.ext import BaseHandler, ConversationHandler, Job, TypeHandler
-
-# noinspection PyProtectedMember
 from typing_extensions import ParamSpec
 
-from core.builtins.contexts import ApplicationContext
+from core.builtins.dispatcher import HandlerDispatcher, JobDispatcher
+from core.handler.adminhandler import AdminHandler
 from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
 from utils.const import WRAPPER_ASSIGNMENTS
@@ -104,12 +95,26 @@ class _Plugin(PluginFuncs):
                     ):
                         for data in datas:
                             data: "HandlerData"
-                            self._handlers.append(
-                                data.type(
-                                    callback=wraps(func)(HandlerExecutor(func, dispatcher=data.dispatcher)),
-                                    **data.kwargs,
+                            dispatcher = data.dispatcher or HandlerDispatcher
+                            executor = HandlerExecutor(func, dispatcher)
+                            executor.set_application(self.application)
+                            if data.admin:
+                                self._handlers.append(
+                                    AdminHandler(
+                                        handler=data.type(
+                                            callback=wraps(func)(executor),
+                                            **data.kwargs,
+                                        ),
+                                        application=self.application,
+                                    )
                                 )
-                            )
+                            else:
+                                self._handlers.append(
+                                    data.type(
+                                        callback=wraps(func)(executor),
+                                        **data.kwargs,
+                                    )
+                                )
         return self._handlers
 
     @property
@@ -127,16 +132,13 @@ class _Plugin(PluginFuncs):
                     ):
                         for data in datas:
                             data: "ErrorHandlerData"
-
-                            data.func = wraps(func)(HandlerExecutor(func, dispatcher=data.dispatcher))
-
+                            data.func = func
                             self._error_handlers.append(data)
+
         return self._error_handlers
 
     def _install_jobs(self) -> None:
         from core.builtins.executor import JobExecutor
-
-        bot = ApplicationContext.get()
 
         if self._jobs is None:
             self._jobs = []
@@ -149,9 +151,12 @@ class _Plugin(PluginFuncs):
             ):
                 for data in datas:
                     data: "JobData"
+                    dispatcher = data.dispatcher or JobDispatcher
+                    executor = JobExecutor(func, dispatcher)
+                    executor.set_application(application=self.application)
                     self._jobs.append(
-                        getattr(bot.telegram.job_queue, data.type)(
-                            callback=wraps(func)(JobExecutor(func, dispatcher=data.dispatcher)),
+                        getattr(self.application.telegram.job_queue, data.type)(
+                            callback=wraps(func)(executor),
                             **data.kwargs,
                             **{
                                 key: value
@@ -177,7 +182,6 @@ class _Plugin(PluginFuncs):
 
     async def install(self) -> None:
         """安装"""
-        bot = ApplicationContext.get()
         group = id(self)
         with self._lock:
             if not self._installed:
@@ -185,33 +189,32 @@ class _Plugin(PluginFuncs):
 
                 for h in self.handlers:
                     if not isinstance(h, TypeHandler):
-                        bot.telegram.add_handler(h, group)
+                        self.application.telegram.add_handler(h, group)
                     else:
-                        bot.telegram.add_handler(h, -1)
+                        self.application.telegram.add_handler(h, -1)
 
                 for h in self.error_handlers:
-                    bot.telegram.add_error_handler(h.func, h.block)
+                    self.application.telegram.add_error_handler(h.func, h.block)
 
                 await self.initialize()
                 self._installed = True
 
     async def uninstall(self) -> None:
         """卸载"""
-        bot = ApplicationContext.get()
         group = id(self)
 
         with self._lock:
             if self._installed:
-                if group in bot.telegram.handlers:
-                    del bot.telegram.handlers[id(self)]
+                if group in self.application.telegram.handlers:
+                    del self.application.telegram.handlers[id(self)]
 
                 for h in self.handlers:
                     if isinstance(h, TypeHandler):
-                        bot.telegram.remove_handler(h, -1)
+                        self.application.telegram.remove_handler(h, -1)
                 for h in self.error_handlers:
-                    bot.telegram.remove_error_handler(h.func)
+                    self.application.telegram.remove_error_handler(h.func)
 
-                for j in bot.telegram.job_queue.jobs():
+                for j in self.application.telegram.job_queue.jobs():
                     j.schedule_removal()
                 await self.shutdown()
                 self._installed = False
@@ -233,7 +236,7 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
         conversation_timeout: Optional[Union[float, timedelta]] = None
         name: Optional[str] = None
         map_to_parent: Optional[Dict[object, object]] = None
-        block: DVInput[bool] = DEFAULT_TRUE
+        block: bool = False
 
     def __init_subclass__(cls, **kwargs):
         cls._conversation_kwargs = kwargs
@@ -261,9 +264,11 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
 
                         handlers: List[HandlerType] = []
                         for data in datas:
+                            executor = HandlerExecutor(func, dispatcher=data.dispatcher)
+                            executor.set_application(application=self.application)
                             handlers.append(
                                 data.type(
-                                    callback=wraps(func)(HandlerExecutor(func, dispatcher=data.dispatcher)),
+                                    callback=wraps(func)(executor),
                                     **data.kwargs,
                                 )
                             )
@@ -289,7 +294,9 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
                 else:
                     temp_dict = {"entry_points": entry_points, "states": states, "fallbacks": fallbacks}
                     reason = map(lambda x: f"'{x[0]}'", filter(lambda x: not x[1], temp_dict.items()))
-                    logger.warning(f"'{self.__class__.__name__}' 因缺少 {', '.join(reason)} 而生成无法生成 ConversationHandler")
+                    logger.warning(
+                        "'%s' 因缺少 '%s' 而生成无法生成 ConversationHandler", self.__class__.__name__, ", ".join(reason)
+                    )
         return self._handlers
 
 

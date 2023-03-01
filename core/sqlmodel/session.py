@@ -4,19 +4,18 @@ from sqlalchemy import util
 from sqlalchemy.ext.asyncio import AsyncSession as _AsyncSession
 from sqlalchemy.ext.asyncio.engine import AsyncConnection, AsyncEngine
 from sqlalchemy.sql.base import Executable as _Executable
-from sqlmodel.sql.base import Executable
-from typing_extensions import Literal
-
 from sqlmodel.engine.result import Result, ScalarResult
 from sqlmodel.orm.session import Session
+from sqlmodel.sql.base import Executable
 from sqlmodel.sql.expression import Select, SelectOfScalar
+from typing_extensions import Literal
 
 _TSelectParam = TypeVar("_TSelectParam")
 
 __all__ = ("AsyncSession",)
 
 
-class AsyncSession(_AsyncSession):
+class AsyncSession(_AsyncSession):  # pylint: disable=W0223
     sync_session_class = Session
     sync_session: Session
 
@@ -82,7 +81,7 @@ class AsyncSession(_AsyncSession):
             return (await results).scalars()  # type: ignore
         return await results  # type: ignore
 
-    async def execute(
+    async def execute(  # pylint: disable=W0221
         self,
         statement: _Executable,
         params: Optional[Union[Mapping[str, Any], Sequence[Mapping[str, Any]]]] = None,
@@ -98,7 +97,7 @@ class AsyncSession(_AsyncSession):
             **kw,
         )
 
-    async def get(
+    async def get(  # pylint: disable=W0221
         self,
         entity: Type[_TSelectParam],
         ident: Any,

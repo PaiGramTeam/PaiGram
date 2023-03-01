@@ -15,7 +15,7 @@ def run():
     from dotenv import load_dotenv
 
     load_dotenv()
-    Application().launch()
+    Application.build().launch()
 
 
 def main():

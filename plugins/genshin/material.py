@@ -1,11 +1,10 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, MessageHandler, filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
 from core.plugin import Plugin, handler
 from core.services.game import GameMaterialService
 from metadata.shortname import roleToName
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("MaterialPlugin",)
@@ -19,7 +18,6 @@ class MaterialPlugin(Plugin):
     def __init__(self, game_material_service: GameMaterialService = None):
         self.game_material_service = game_material_service
 
-    @restricts(return_data=ConversationHandler.END)
     @handler(CommandHandler, command="material", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色培养素材查询(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
@@ -46,7 +44,7 @@ class MaterialPlugin(Plugin):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 查询角色培养素材命令请求 || 参数 {character_name}")
+        logger.info("用户 %s[%s] 查询角色培养素材命令请求 || 参数 %s", user.full_name, user.id, character_name)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         file_path = await self.download_resource(url, return_path=True)
         caption = "From 米游社 " f"查看 [原图]({url})"

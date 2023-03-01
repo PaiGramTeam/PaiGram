@@ -4,12 +4,10 @@ from sys import executable
 
 from aiofiles import open as async_open
 from telegram import Message, Update
-from telegram.error import BadRequest, Forbidden
+from telegram.error import NetworkError
 from telegram.ext import CallbackContext
 
-from core.builtins.contexts import ApplicationContext
 from core.plugin import Plugin, handler
-from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import execute
 from utils.log import logger
 
@@ -33,21 +31,22 @@ class UpdatePlugin(Plugin):
             async with async_open(UPDATE_DATA) as file:
                 data = jsonlib.loads(await file.read())
             try:
-                reply_text = Message.de_json(data, ApplicationContext.get().telegram.bot)
+                reply_text = Message.de_json(data, self.application.telegram.bot)
                 await reply_text.edit_text("重启成功")
             except NetworkError as exc:
-                logger.error("UpdatePlugin 编辑消息出现错误 %s", exc.message)
+                logger.error("编辑消息出现错误 %s", exc.message)
+            except jsonlib.JSONDecodeError:
+                logger.error("JSONDecodeError")
             except KeyError as exc:
-                logger.error("UpdatePlugin 编辑消息出现错误", exc_info=exc)
+                logger.error("编辑消息出现错误", exc_info=exc)
             os.remove(UPDATE_DATA)
 
-    @bot_admins_rights_check
-    @handler.command("update", block=False)
+    @handler.command("update", block=False, admin=True)
     async def update(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
         args = self.get_args(context)
-        logger.info(f"用户 {user.full_name}[{user.id}] update命令请求")
+        logger.info("用户 %s[%s] update命令请求", user.full_name, user.id)
         if self.lock.locked():
             await message.reply_text("程序正在更新 请勿重复操作")
             return

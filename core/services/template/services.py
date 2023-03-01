@@ -1,4 +1,4 @@
-import time
+import asyncio
 from typing import Optional
 from urllib.parse import urlencode, urljoin, urlsplit
 from uuid import uuid4
@@ -19,13 +19,13 @@ from core.services.template.models import FileType, RenderResult
 from utils.const import PROJECT_ROOT
 from utils.log import logger
 
-__all__ = ["TemplateService", "TemplatePreviewer"]
+__all__ = ("TemplateService", "TemplatePreviewer")
 
 
 class TemplateService(BaseService):
     def __init__(
         self,
-        bot: Application,
+        app: Application,
         browser: AioBrowser,
         html_to_file_id_cache: HtmlToFileIdCache,
         preview_cache: TemplatePreviewCache,
@@ -40,10 +40,10 @@ class TemplateService(BaseService):
             autoescape=True,
             auto_reload=application_config.debug,
         )
-        self.using_preview = application_config.debug and application_config.webserver.switch
+        self.using_preview = application_config.debug and application_config.webserver.enable
 
         if self.using_preview:
-            self.previewer = TemplatePreviewer(self, preview_cache, bot.web_app)
+            self.previewer = TemplatePreviewer(self, preview_cache, app.web_app)
 
         self.html_to_file_id_cache = html_to_file_id_cache
 
@@ -55,10 +55,11 @@ class TemplateService(BaseService):
         :param template_name: 模板文件名
         :param template_data: 模板数据
         """
-        start_time = time.time()
+        loop = asyncio.get_event_loop()
+        start_time = loop.time()
         template = self.get_template(template_name)
         html = await template.render_async(**template_data)
-        logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
+        logger.debug("%s 模板渲染使用了 %s", template_name, str(loop.time() - start_time))
         return html
 
     async def render(
@@ -89,19 +90,20 @@ class TemplateService(BaseService):
         :param filename: 文件名字
         :return:
         """
-        start_time = time.time()
+        loop = asyncio.get_event_loop()
+        start_time = loop.time()
         template = self.get_template(template_name)
 
         if self.using_preview:
             preview_url = await self.previewer.get_preview_url(template_name, template_data)
-            logger.debug(f"调试模板 URL: \n{preview_url}")
+            logger.debug("调试模板 URL: \n%s", preview_url)
 
         html = await template.render_async(**template_data)
-        logger.debug(f"{template_name} 模板渲染使用了 {str(time.time() - start_time)}")
+        logger.debug("%s 模板渲染使用了 %s", template_name, str(loop.time() - start_time))
 
         file_id = await self.html_to_file_id_cache.get_data(html, file_type.name)
         if file_id and not application_config.debug:
-            logger.debug(f"{template_name} 命中缓存，返回 file_id {file_id}")
+            logger.debug("%s 命中缓存，返回 file_id[%s]", template_name, file_id)
             return RenderResult(
                 html=html,
                 photo=file_id,
@@ -114,7 +116,7 @@ class TemplateService(BaseService):
             )
 
         browser = await self._browser.get_browser()
-        start_time = time.time()
+        start_time = loop.time()
         page = await browser.new_page(viewport=viewport)
         uri = (PROJECT_ROOT / template.filename).as_uri()
         await page.goto(uri)
@@ -131,10 +133,10 @@ class TemplateService(BaseService):
                 if not clip:
                     raise QuerySelectorNotFound
             except QuerySelectorNotFound:
-                logger.warning(f"未找到 {query_selector} 元素")
+                logger.warning("未找到 %s 元素", query_selector)
         png_data = await page.screenshot(clip=clip, full_page=full_page)
         await page.close()
-        logger.debug(f"{template_name} 图片渲染使用了 {str(time.time() - start_time)}")
+        logger.debug("%s 图片渲染使用了 %s", template_name, str(loop.time() - start_time))
         return RenderResult(
             html=html,
             photo=png_data,
@@ -147,7 +149,7 @@ class TemplateService(BaseService):
         )
 
 
-class TemplatePreviewer(BaseService, load=application_config.webserver.switch and application_config.debug):
+class TemplatePreviewer(BaseService, load=application_config.webserver.enable and application_config.debug):
     def __init__(
         self,
         template_service: TemplateService,

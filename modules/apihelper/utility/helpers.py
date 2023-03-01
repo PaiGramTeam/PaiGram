@@ -78,8 +78,7 @@ def get_recognize_server(uid: int) -> str:
     server = RECOGNIZE_SERVER.get(str(uid)[0])
     if server:
         return server
-    else:
-        raise TypeError(f"UID {uid} isn't associated with any recognize server")
+    raise TypeError(f"UID {uid} isn't associated with any recognize server")
 
 
 def get_ua(device: str = "Paimon Build", version: str = "2.36.1"):

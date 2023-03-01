@@ -30,7 +30,7 @@ _lock = Lock()
 NONE = object()
 
 
-class Logger(logging.Logger):
+class Logger(logging.Logger):  # skipcq: PY-A6006
     _instance: Optional["Logger"] = None
 
     def __new__(cls, *args, **kwargs) -> "Logger":
@@ -123,7 +123,7 @@ class Logger(logging.Logger):
             extra=extra,
         )
 
-    def exception(
+    def exception(  # pylint: disable=W1113
         self,
         msg: Any = NONE,
         *args: Any,
@@ -132,7 +132,7 @@ class Logger(logging.Logger):
         stacklevel: int = 1,
         extra: Optional[Mapping[str, Any]] = None,
         **kwargs,
-    ) -> None:  # pylint: disable=W1113
+    ) -> None:
         super(Logger, self).exception(
             "" if msg is NONE else msg,
             *args,
@@ -180,7 +180,7 @@ class Logger(logging.Logger):
             handler.addFilter(log_filter)
 
 
-class LogFilter(logging.Filter):
+class LogFilter(logging.Filter):  # skipcq: PY-A6006
     _filter_list: List[Callable[["LogRecord"], bool]] = []
 
     def __init__(self, name: str = ""):

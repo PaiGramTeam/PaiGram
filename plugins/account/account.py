@@ -10,10 +10,8 @@ from telegram.helpers import escape_markdown
 from core.plugin import Plugin, conversation, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.cookies.services import CookiesService, PublicCookiesService
-from core.services.players.services import PlayersService
 from core.services.players.models import PlayersDataBase as Player, RegionEnum
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
+from core.services.players.services import PlayersService
 from utils.log import logger
 
 __all__ = ("BindAccountPlugin",)
@@ -29,7 +27,6 @@ class BindAccountPluginData(TelegramObject):
     def reset(self):
         self.player = None
         self.region = RegionEnum.NULL
-        # self.player_id = 0
         self.account_id = 0
         self.record_card = None
 
@@ -52,8 +49,6 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.entry_point
     @handler.command(command="setuid", filters=filters.ChatType.PRIVATE, block=True)
-    @restricts()
-    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
@@ -74,15 +69,13 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_SERVER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
     async def check_server(self, update: Update, context: CallbackContext) -> int:
-        user = update.effective_user
         message = update.effective_message
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif message.text == "米游社":
+        if message.text == "米游社":
             bind_account_plugin_data.region = RegionEnum.HYPERION
         elif message.text == "HoYoLab":
             bind_account_plugin_data.region = RegionEnum.HOYOLAB
@@ -94,7 +87,6 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_UID)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
@@ -158,7 +150,6 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=COMMAND_RESULT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
-    @error_callable
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
@@ -166,7 +157,7 @@ class BindAccountPlugin(Plugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif message.text == "确认":
+        if message.text == "确认":
             record_card = bind_account_plugin_data.record_card
             is_chosen = True
             player_info = await self.players_service.get_player(user.id)  # 寻找主账号
@@ -184,6 +175,5 @@ class BindAccountPlugin(Plugin.Conversation):
             logger.success("用户 %s[%s] 绑定UID账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        else:
-            await message.reply_text("回复错误，请重新输入")
-            return COMMAND_RESULT
+        await message.reply_text("回复错误，请重新输入")
+        return COMMAND_RESULT

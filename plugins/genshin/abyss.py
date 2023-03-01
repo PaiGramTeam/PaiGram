@@ -21,7 +21,6 @@ from core.services.template import TemplateService
 from core.services.template.models import RenderGroupResult, RenderResult
 from metadata.genshin import game_id_to_role_id
 from plugins.tools.genshin import GenshinHelper
-from utils.decorators.restricts import restricts
 from utils.helpers import async_re_sub
 from utils.log import logger
 
@@ -60,9 +59,8 @@ def get_args(text: str) -> Tuple[int, bool, bool]:
         except ValueError:
             floor = 0
         return floor, result[0] == "all", bool(result[1])
-    else:
-        result = re.match(msg_pattern, text).groups()
-        return int(result[2] or 0), result[0] == "总览", result[1] == "上期"
+    result = re.match(msg_pattern, text).groups()
+    return int(result[2] or 0), result[0] == "总览", result[1] == "上期"
 
 
 class AbyssUnlocked(Exception):
@@ -92,7 +90,6 @@ class AbyssPlugin(Plugin):
 
     @handler.command("abyss", block=False)
     @handler.message(filters.Regex(msg_pattern), block=False)
-    @restricts()
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
@@ -121,7 +118,7 @@ class AbyssPlugin(Plugin):
                 self.add_delete_message_job(reply_msg)
                 self.add_delete_message_job(message)
             return
-        elif 0 < floor < 9:
+        if 0 < floor < 9:
             previous = False
 
         logger.info(
@@ -176,10 +173,9 @@ class AbyssPlugin(Plugin):
         try:
             images = await self.get_rendered_pic(client, uid, floor, total, previous)
         except GenshinException as exc:
-            if exc.retcode == 1034:
-                if client.uid != uid:
-                    await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
-                    return
+            if exc.retcode == 1034 and client.uid != uid:
+                await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
+                return
             raise exc
         except AbyssUnlocked:  # 若深渊未解锁
             await reply_message_func("还未解锁深渊哦~")
@@ -318,39 +314,38 @@ class AbyssPlugin(Plugin):
 
             return await asyncio.gather(*render_group_inputs)
 
-        elif floor < 1:
+        if floor < 1:
             render_data["data"] = jsonlib.loads(result)
             return [
                 await self.template_service.render(
                     "genshin/abyss/overview.html", render_data, viewport={"width": 750, "height": 580}
                 )
             ]
+        num_dic = {
+            "0": "",
+            "1": "一",
+            "2": "二",
+            "3": "三",
+            "4": "四",
+            "5": "五",
+            "6": "六",
+            "7": "七",
+            "8": "八",
+            "9": "九",
+        }
+        if num := num_dic.get(str(floor)):
+            render_data["floor-num"] = num
         else:
-            num_dic = {
-                "0": "",
-                "1": "一",
-                "2": "二",
-                "3": "三",
-                "4": "四",
-                "5": "五",
-                "6": "六",
-                "7": "七",
-                "8": "八",
-                "9": "九",
-            }
-            if num := num_dic.get(str(floor)):
-                render_data["floor-num"] = num
-            else:
-                render_data["floor-num"] = f"十{num_dic.get(str(floor % 10))}"
-            floors = jsonlib.loads(result)["floors"]
-            if (floor_data := list(filter(lambda x: x["floor"] == floor, floors))) is None:
-                return None
-            avatars = await client.get_genshin_characters(uid, lang="zh-cn")
-            render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
-            render_data["floor"] = floor_data[0]
-            render_data["total_stars"] = f"{floor_data[0]['stars']}/{floor_data[0]['max_stars']}"
-            return [
-                await self.template_service.render(
-                    "genshin/abyss/floor.html", render_data, viewport={"width": 690, "height": 500}
-                )
-            ]
+            render_data["floor-num"] = f"十{num_dic.get(str(floor % 10))}"
+        floors = jsonlib.loads(result)["floors"]
+        if (floor_data := list(filter(lambda x: x["floor"] == floor, floors))) is None:
+            return None
+        avatars = await client.get_genshin_characters(uid, lang="zh-cn")
+        render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
+        render_data["floor"] = floor_data[0]
+        render_data["total_stars"] = f"{floor_data[0]['stars']}/{floor_data[0]['max_stars']}"
+        return [
+            await self.template_service.render(
+                "genshin/abyss/floor.html", render_data, viewport={"width": 690, "height": 500}
+            )
+        ]

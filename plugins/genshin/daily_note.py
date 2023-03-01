@@ -13,7 +13,6 @@ from core.plugin import Plugin, handler
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from plugins.tools.genshin import GenshinHelper
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 __all__ = ("DailyNotePlugin",)
@@ -91,8 +90,6 @@ class DailyNotePlugin(Plugin):
         )
         return render_result
 
-    # noinspection SpellCheckingInspection
-    @restricts(30)
     @handler.command("dailynote", block=False)
     @handler.message(filters.Regex("^当前状态(.*)"), block=False)
     async def command_start(self, user: User, message: Message, bot: Bot) -> Optional[int]:

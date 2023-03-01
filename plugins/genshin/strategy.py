@@ -1,13 +1,12 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.ext import CallbackContext, filters
 
 from core.plugin import Plugin, handler
 from core.services.game import GameStrategyService
 from core.services.search.models import StrategyEntry
 from core.services.search.services import SearchServices
 from metadata.shortname import roleToName, roleToTag
-from utils.decorators.restricts import restricts
 from utils.log import logger
 
 
@@ -24,7 +23,6 @@ class StrategyPlugin(Plugin):
         self.game_strategy_service = game_strategy_service
         self.search_service = search_service
 
-    @restricts()
     @handler.command(command="strategy", block=False)
     @handler.message(filters=filters.Regex("^角色攻略查询(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
@@ -49,7 +47,7 @@ class StrategyPlugin(Plugin):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 查询角色攻略命令请求 || 参数 {character_name}")
+        logger.info("用户 %s[%s] 查询角色攻略命令请求 || 参数 %s", user.full_name, user.id, character_name)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         file_path = await self.download_resource(url, return_path=True)
         caption = f"From 米游社 西风驿站 查看<a href='{url}'>原图</a>"
