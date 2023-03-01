@@ -121,7 +121,7 @@ class Queue(Generic[T]):
     def async_q(self) -> "_AsyncQueueProxy[T]":
         return self._async_queue
 
-    def _init(self, maxsize: int) -> NoReturn:
+    def _init(self) -> NoReturn:
         self._queue = deque()  # type: Deque[T]
 
     def qsize(self) -> int:

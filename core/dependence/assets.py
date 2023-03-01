@@ -207,6 +207,7 @@ class _AssetsService(ABC):
         if item in self.icon_types:
             return partial(self._get_img, item=item)
         object.__getattribute__(self, item)
+        return None
 
     @abstractmethod
     @cached_property

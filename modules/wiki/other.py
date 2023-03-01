@@ -102,6 +102,7 @@ class AttributeType(Enum):
         for k, v in _ATTR_TYPE_MAP.items():
             if string == k or string in v or string.upper() == k:
                 return cls[k]
+        return None
 
 
 _ASSOCIATION_MAP = {

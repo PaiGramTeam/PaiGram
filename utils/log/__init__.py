@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 __all__ = ("logger",)
 
-logger = Logger(
+logger = Logger(  # skipcq: PY-A6006
     LoggerConfig(
         name=config.logger.name,
         width=config.logger.width,

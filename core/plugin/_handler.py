@@ -255,7 +255,7 @@ class _Type(_Handler):
     # noinspection PyShadowingBuiltins
     def __init__(
         self,
-        type: Type[UT],
+        type: Type[UT],  # pylint: disable=W0622
         strict: bool = False,
         *,
         block: DVInput[bool] = DEFAULT_TRUE,
@@ -360,6 +360,8 @@ class ErrorHandlerData:
 
 # noinspection PyPep8Naming
 class error_handler:
+    _func: Callable[P, R]
+
     def __init__(
         self,
         *,

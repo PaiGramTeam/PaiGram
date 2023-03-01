@@ -204,7 +204,7 @@ class BaseDispatcher(AbstractDispatcher):
         annotation = parameter.annotation
         # noinspection PyTypeChecker
         if isinstance(annotation, type) and (value := self._get_kwargs().get(annotation, None)) is not None:
-            parameter._default = value
+            parameter._default = value  # pylint: disable=W0212
         return parameter
 
     def dispatch_by_catch_funcs(self, parameter: Parameter) -> Parameter:
@@ -215,7 +215,7 @@ class BaseDispatcher(AbstractDispatcher):
         catch_func = self.catch_func_map.get(annotation) or self.catch_func_map.get(parameter.name)
         if catch_func is not None:
             # noinspection PyUnresolvedReferences,PyProtectedMember
-            parameter._default = catch_func()
+            parameter._default = catch_func()  # pylint: disable=W0212
         return parameter
 
     @catch(AbstractEventLoop)

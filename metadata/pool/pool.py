@@ -10,3 +10,4 @@ def get_pool_by_id(pool_type):
         return POOL_301
     if pool_type == 302:
         return POOL_302
+    return None

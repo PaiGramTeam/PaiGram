@@ -59,7 +59,7 @@ class TemplateService(BaseService):
         start_time = loop.time()
         template = self.get_template(template_name)
         html = await template.render_async(**template_data)
-        logger.debug(f"{template_name} 模板渲染使用了 {str(loop.time() - start_time)}")
+        logger.debug("%s 模板渲染使用了 %s", template_name, str(loop.time() - start_time))
         return html
 
     async def render(

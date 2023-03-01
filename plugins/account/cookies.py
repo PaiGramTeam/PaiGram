@@ -41,7 +41,6 @@ class AccountCookiesPluginData(TelegramObject):
         self.region = RegionEnum.NULL
         self.cookies = {}
         self.account_id = 0
-        self.sign_in_client = None
         self.genshin_account = None
 
 

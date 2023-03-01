@@ -189,7 +189,7 @@ class ServiceManager(Manager[BaseServiceType]):
 
             return instance
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0703
             logger.exception('服务 "%s" 初始化失败，BOT 将自动关闭', target.__name__)
             raise SystemExit from e
 
@@ -254,8 +254,8 @@ class PluginManager(Manager["PluginType"]):
 
             try:
                 instance: "PluginType" = await self.executor(plugin)
-            except Exception as e:
-                logger.exception('插件 "%s" 初始化失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+            except Exception as e:  # pylint: disable=W0703
+                logger.error('插件 "%s" 初始化失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
 
             self._plugins[plugin] = instance
@@ -266,8 +266,8 @@ class PluginManager(Manager["PluginType"]):
             try:
                 await instance.install()
                 logger.success('插件 "%s" 安装成功', f"{plugin.__module__}.{plugin.__name__}")
-            except Exception as e:
-                logger.exception('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+            except Exception as e:  # pylint: disable=W0703
+                logger.error('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
 
     async def uninstall_plugins(self) -> None:
@@ -275,7 +275,7 @@ class PluginManager(Manager["PluginType"]):
             try:
                 await plugin.uninstall()
             except Exception as e:
-                logger.exception('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+                logger.error('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
 
 
 class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):

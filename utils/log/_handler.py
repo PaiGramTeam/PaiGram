@@ -181,7 +181,7 @@ class Handler(DefaultRichHandler):
         if isinstance(message, str):
             message_text = Text.from_markup(message) if use_markup else Text(message)
             message_text = (
-                (Text.from_markup("[purple][%s][/]" % tag) + message_text) if tag is not None else message_text
+                (Text.from_markup(f"[purple][{tag}][/]") + message_text) if tag is not None else message_text
             )
             highlighter = getattr(record, "highlighter", self.highlighter)
         else:
@@ -191,7 +191,7 @@ class Handler(DefaultRichHandler):
             highlighter = JSONHighlighter()
             message_text = JSON.from_data(message, indent=4).text
             message_text = (
-                (Text.from_markup("[purple][%s][/]" % tag) + message_text) if tag is not None else message_text
+                (Text.from_markup(f"[purple][{tag}][/]") + message_text) if tag is not None else message_text
             )
 
         if highlighter is not None:

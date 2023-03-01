@@ -126,13 +126,13 @@ class Logger(logging.Logger):
     def exception(
         self,
         msg: Any = NONE,
+        *args: Any,
         exc_info: Optional[ExceptionInfoType] = True,
         stack_info: bool = False,
         stacklevel: int = 1,
         extra: Optional[Mapping[str, Any]] = None,
-        *args: Any,
         **kwargs,
-    ) -> None:  # pylint: disable=W1113
+    ) -> None:
         super(Logger, self).exception(
             "" if msg is NONE else msg,
             *args,
@@ -180,7 +180,7 @@ class Logger(logging.Logger):
             handler.addFilter(log_filter)
 
 
-class LogFilter(logging.Filter):
+class LogFilter(logging.Filter):  # skipcq: PY-A6006
     _filter_list: List[Callable[["LogRecord"], bool]] = []
 
     def __init__(self, name: str = ""):

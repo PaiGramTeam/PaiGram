@@ -8,7 +8,7 @@ class Date(BaseModel):
     """日历日期"""
 
     month: int
-    date: List[int]
+    date: List[int]  # skipcq: PTC-W0052
     week: List[str]
     is_today: List[bool]
 

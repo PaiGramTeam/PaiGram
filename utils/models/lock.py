@@ -17,7 +17,7 @@ async def delete_lock(target: int) -> None:
     await asyncio.sleep(3)
     with _lock:
         del _locks[target]
-        del _clean_lock_task_map[target]
+        del _clean_lock_task_map[target]  # pylint: disable=E0602
 
 
 class HashLock:

@@ -21,7 +21,7 @@ class WikiService(BaseService):
 
     async def refresh_weapon(self) -> NoReturn:
         weapon_name_list = await Weapon.get_name_list()
-        logger.info(f"一共找到 {len(weapon_name_list)} 把武器信息")
+        logger.info("一共找到 %s 把武器信息", len(weapon_name_list))
 
         weapon_list = []
         num = 0

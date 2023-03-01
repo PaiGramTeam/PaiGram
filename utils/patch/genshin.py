@@ -37,7 +37,7 @@ class CalculatorClient:
         headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
         **kwargs: typing.Any,
     ) -> typing.Mapping[str, typing.Any]:
-        global UPDATE_CHARACTERS
+        global UPDATE_CHARACTERS  # pylint: disable=W0603
         params = dict(params or {})
         headers = dict(headers or {})
 
@@ -65,7 +65,7 @@ class CalculatorClient:
             try:
                 await update_task
                 UPDATE_CHARACTERS = True
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 warnings.warn(f"Failed to update characters: {e!r}")
 
         return data
