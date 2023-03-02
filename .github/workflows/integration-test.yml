@@ -10,8 +10,12 @@ on:
 
 jobs:
   ci:
-    name: Integration Test
-    runs-on: ubuntu-latest
+    name: pytest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        python-version: [3.11]
     services:
       mysql:
         image: mysql:5.7
@@ -25,7 +29,11 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup integration test environment
         run: cp tests/integration/.env.example .env && cp tests/integration/.env.example tests/integration/.env
-      - name: Create venv
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Create virtual environment
         run: |
           pip install --upgrade pip
           python3 -m venv venv
