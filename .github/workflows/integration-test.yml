@@ -6,10 +6,9 @@ on:
       - main
   pull_request:
     types: [ opened, synchronize ]
-  workflow_dispatch:
 
 jobs:
-  ci:
+  pytest:
     name: pytest
     runs-on: ubuntu-latest
     services:

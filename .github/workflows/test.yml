@@ -1,19 +1,17 @@
-name: test
+name: Test modules
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'tests/**'
+      - 'tests/unit/**'
   pull_request:
     types: [ opened, synchronize ]
     paths:
       - 'modules/apihelper/**'
       - 'modules/wiki/**'
-      - 'tests/**'
-  schedule:
-    - cron: '0 4 * * 3'
+      - 'tests/unit/**'
 
 jobs:
   pytest:
@@ -22,16 +20,15 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        python-version: [ '3.10' ]
         os: [ ubuntu-latest, windows-latest ]
-        experimental: [ false ]
       fail-fast: False
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.11
       - name: restore or create a python virtualenv
         id: cache
         uses: syphar/restore-virtualenv@v1.2
