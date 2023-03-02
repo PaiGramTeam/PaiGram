@@ -98,9 +98,8 @@ class SignSystem(Plugin):
         if callback:
             data = f"sign|{user_id}|{uid}"
             return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
-        else:
-            url = f"{config.pass_challenge_user_web}?username={bot_username}&command=sign&gt={gt}&challenge={challenge}&uid={uid}"
-            return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
+        url = f"{config.pass_challenge_user_web}?username={bot_username}&command=sign&gt={gt}&challenge={challenge}&uid={uid}"
+        return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
     async def recognize(self, gt: str, challenge: str, referer: str = None) -> Optional[str]:
         if not referer:
@@ -251,8 +250,7 @@ class SignSystem(Plugin):
                                         gt=gt,
                                         challenge=challenge,
                                     )
-                                else:
-                                    logger.success("UID[%s] 通过 recognize 签到成功", client.uid)
+                                logger.success("UID[%s] 通过 recognize 签到成功", client.uid)
                             else:
                                 request_daily_reward = await client.request_daily_reward(
                                     "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"

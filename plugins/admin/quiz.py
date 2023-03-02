@@ -73,29 +73,28 @@ class SetQuizPlugin(Plugin.Conversation):
         if update.message.text == "退出":
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif update.message.text == "查看问题":
+        if update.message.text == "查看问题":
             return await self.view_command(update, context)
-        elif update.message.text == "添加问题":
+        if update.message.text == "添加问题":
             return await self.add_question(update, context)
-        elif update.message.text == "删除问题":
+        if update.message.text == "删除问题":
             return await self.delete_question(update, context)
         # elif update.message.text == "修改问题":
         #    return await self.edit_question(update, context)
-        elif update.message.text == "重载问题":
+        if update.message.text == "重载问题":
             return await self.refresh_question(update, context)
-        else:
-            result = re.findall(r"问题ID (\d+)", update.message.text)
-            if len(result) == 1:
-                try:
-                    question_id = int(result[0])
-                except ValueError:
-                    await update.message.reply_text("获取问题ID失败")
-                    return ConversationHandler.END
-                quiz_command_data.question_id = question_id
-                await update.message.reply_text("获取问题ID成功")
-                return await self.check_question(update, context)
-            await update.message.reply_text("命令错误", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+        result = re.findall(r"问题ID (\d+)", update.message.text)
+        if len(result) == 1:
+            try:
+                question_id = int(result[0])
+            except ValueError:
+                await update.message.reply_text("获取问题ID失败")
+                return ConversationHandler.END
+            quiz_command_data.question_id = question_id
+            await update.message.reply_text("获取问题ID成功")
+            return await self.check_question(update, context)
+        await update.message.reply_text("命令错误", reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
 
     async def refresh_question(self, update: Update, _: CallbackContext) -> int:
         try:
@@ -172,7 +171,7 @@ class SetQuizPlugin(Plugin.Conversation):
         if update.message.text == "抛弃修改并退出":
             await update.message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif update.message.text == "保存并重载配置":
+        if update.message.text == "保存并重载配置":
             if quiz_command_data.status == 1:
                 answer = [
                     Answer(text=wrong_answer, is_correct=False) for wrong_answer in quiz_command_data.new_wrong_answer
@@ -190,9 +189,8 @@ class SetQuizPlugin(Plugin.Conversation):
                     return ConversationHandler.END
                 await update.message.reply_text("重载配置成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        else:
-            await update.message.reply_text("回复错误，请重新选择")
-            return SAVE_QUESTION
+        await update.message.reply_text("回复错误，请重新选择")
+        return SAVE_QUESTION
 
     async def edit_question(self, update: Update, context: CallbackContext) -> int:
         _ = self

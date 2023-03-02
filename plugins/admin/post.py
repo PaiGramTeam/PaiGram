@@ -214,13 +214,13 @@ class Post(Plugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif message.text == "推送频道":
+        if message.text == "推送频道":
             return await self.get_channel(update, context)
-        elif message.text == "添加TAG":
+        if message.text == "添加TAG":
             return await self.add_tags(update, context)
-        elif message.text == "编辑文字":
+        if message.text == "编辑文字":
             return await self.edit_text(update, context)
-        elif message.text == "删除图片":
+        if message.text == "删除图片":
             return await self.delete_photo(update, context)
         return ConversationHandler.END
 

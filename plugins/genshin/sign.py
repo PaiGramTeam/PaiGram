@@ -44,7 +44,7 @@ class Sign(Plugin):
             if method == "关闭":
                 await self.sign_service.remove(user)
                 return "关闭自动签到成功"
-            elif method == "开启":
+            if method == "开启":
                 if user.chat_id == chat_id:
                     return "自动签到已经开启过了"
                 user.chat_id = chat_id

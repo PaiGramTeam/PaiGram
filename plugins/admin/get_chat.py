@@ -21,7 +21,8 @@ class GetChat(Plugin):
         self.cookies_service = cookies_service
         self.players_service = players_service
 
-    async def parse_group_chat(self, chat: Chat, admins: Tuple[ChatMember]) -> str:
+    @staticmethod
+    async def parse_group_chat(chat: Chat, admins: Tuple[ChatMember]) -> str:
         text = f"群 ID：<code>{chat.id}</code>\n群名称：<code>{chat.title}</code>\n"
         if chat.username:
             text += f"群用户名：@{chat.username}\n"

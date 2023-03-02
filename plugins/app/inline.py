@@ -98,7 +98,7 @@ class Inline(Plugin):
                 )
             )
         else:
-            if "查看武器列表并查询" == args[0]:
+            if args[0] == "查看武器列表并查询":
                 for weapon in self.weapons_list:
                     name = weapon["name"]
                     icon = weapon["icon"]
@@ -113,7 +113,7 @@ class Inline(Plugin):
                             ),
                         )
                     )
-            elif "查看角色攻略列表并查询" == args[0]:
+            elif args[0] == "查看角色攻略列表并查询":
                 for character in self.characters_list:
                     name = character["name"]
                     icon = character["icon"]
@@ -128,7 +128,7 @@ class Inline(Plugin):
                             ),
                         )
                     )
-            elif "查看角色培养素材列表并查询" == args[0]:
+            elif args[0] == "查看角色培养素材列表并查询":
                 characters_list = await self.wiki_service.get_characters_name_list()
                 for role_name in characters_list:
                     results_list.append(

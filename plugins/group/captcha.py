@@ -85,13 +85,13 @@ class GroupCaptcha(Plugin):
 
     async def kick_member_job(self, context: CallbackContext):
         job = context.job
-        logger.info(f"踢出用户 user_id[%s] 在 chat_id[%s]", job.user_id, job.chat_id)
+        logger.info("踢出用户 user_id[%s] 在 chat_id[%s]", job.user_id, job.chat_id)
         try:
             await context.bot.ban_chat_member(
                 chat_id=job.chat_id, user_id=job.user_id, until_date=int(time.time()) + self.kick_time
             )
         except BadRequest as exc:
-            logger.error(f"GroupCaptcha插件在 chat_id[%s] user_id[%s] 执行kick失败", job.chat_id, job.user_id, exc_info=exc)
+            logger.error("GroupCaptcha插件在 chat_id[%s] user_id[%s] 执行kick失败", job.chat_id, job.user_id, exc_info=exc)
 
     @staticmethod
     async def clean_message_job(context: CallbackContext):
@@ -101,7 +101,7 @@ class GroupCaptcha(Plugin):
             await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
         except BadRequest as exc:
             if "not found" in exc.message:
-                logger.warning(f"GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败 消息不存在", job.chat_id, job.data)
+                logger.warning("GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败 消息不存在", job.chat_id, job.data)
             elif "Message can't be deleted" in exc.message:
                 logger.warning("GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败 消息无法删除 可能是没有授权", job.chat_id, job.data)
             else:
