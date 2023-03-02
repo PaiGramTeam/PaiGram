@@ -11,7 +11,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 from core.dependence.assets import AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.services.template import TemplateService
+from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, WEAPON_DATA, avatar_to_game_id, weapon_to_game_id
 from metadata.shortname import weaponToName
 from modules.apihelper.client.components.gacha import Gacha as GachaClient
@@ -137,7 +137,7 @@ class WishSimulatorHandle:
 class WishSimulatorPlugin(Plugin):
     """抽卡模拟器（非首模拟器/减寿模拟器）"""
 
-    def __init__(self, assets: AssetsService = None, template_service: TemplateService = None, redis: RedisDB = None):
+    def __init__(self, assets: AssetsService, template_service: TemplateService, redis: RedisDB):
         self.gacha_db = GachaRedis(redis)
         self.handle = WishSimulatorHandle()
         self.banner_system = BannerSystem()
