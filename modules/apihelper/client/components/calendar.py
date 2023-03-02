@@ -5,8 +5,8 @@ from typing import List, Tuple, Optional, Dict, Union, TYPE_CHECKING
 from httpx import AsyncClient
 
 from metadata.genshin import AVATAR_DATA
-from metadata.scripts.metadatas import RESOURCE_DEFAULT_PATH
 from metadata.shortname import roleToId
+from modules.apihelper.client.components.remote import Remote
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
 from modules.wiki.character import Character
 
@@ -30,7 +30,6 @@ class Calendar:
         "uid": "100000000",
     }
     MIAO_API = "http://miaoapi.cn/api/calendar"
-    REMOTE_API = f"https://raw.fastgit.org/{RESOURCE_DEFAULT_PATH}calendar.json"
     IGNORE_IDS = [
         495,  # 有奖问卷调查开启！
         1263,  # 米游社《原神》专属工具一览
@@ -44,7 +43,15 @@ class Calendar:
 
     def __init__(self):
         self.client = AsyncClient()
-        self.birthday_list = self.gen_birthday_list()
+
+    @staticmethod
+    async def async_gen_birthday_list() -> Dict[str, List[str]]:
+        """生成生日列表并且合并云端生日列表"""
+        birthday_list = Calendar.gen_birthday_list()
+        remote_data = await Remote.get_remote_birthday()
+        if remote_data:
+            birthday_list.update(remote_data)
+        return birthday_list
 
     @staticmethod
     def gen_birthday_list() -> Dict[str, List[str]]:
@@ -76,9 +83,8 @@ class Calendar:
         if req.status_code == 200:
             miao_data = req.json()
             time_map.update({key: ActTime(**value) for key, value in miao_data.get("data", {}).items()})
-        req = await self.client.get(self.REMOTE_API)
-        if req.status_code == 200:
-            remote_data = req.json()
+        remote_data = await Remote.get_remote_calendar()
+        if remote_data:
             time_map.update({key: ActTime(**value) for key, value in remote_data.get("data", {}).items()})
         return new_list_data, time_map
 
@@ -269,13 +275,14 @@ class Calendar:
         self, date_list: List[Date], assets: "AssetsService"
     ) -> Tuple[int, Dict[str, Dict[str, List[BirthChar]]]]:
         """获取生日角色"""
+        birthday_list = await self.async_gen_birthday_list()
         birthday_char_line = 0
         birthday_chars = {}
         for date in date_list:
             birthday_chars[str(date.month)] = {}
             for d in date.date:
                 key = f"{date.month}_{d}"
-                if char := self.birthday_list.get(key):
+                if char := birthday_list.get(key):
                     birthday_char_line = max(len(char), birthday_char_line)
                     birthday_chars[str(date.month)][str(d)] = []
                     for c in char:

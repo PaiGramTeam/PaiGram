@@ -10,49 +10,38 @@ from telegram.constants import ParseMode
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
+from core.baseplugin import BasePlugin
+from core.cookies.error import CookiesNotFoundError
+from core.cookies.services import CookiesService
 from core.plugin import Plugin, conversation, handler
-from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStatusEnum
-from core.services.cookies.services import CookiesService
-from core.services.players.models import PlayersDataBase as Player, RegionEnum
-from core.services.players.services import PlayersService
+from core.user.error import UserNotFoundError
+from core.user.models import User
+from core.user.services import UserService
 from modules.apihelper.client.components.authclient import AuthClient
 from modules.apihelper.models.genshin.cookies import CookiesModel
+from utils.decorators.error import error_callable
+from utils.decorators.restricts import restricts
 from utils.log import logger
-
-__all__ = ("AccountCookiesPlugin",)
-
-
-class AccountIdNotFound(Exception):
-    pass
+from utils.models.base import RegionEnum
 
 
-class AccountCookiesPluginData(TelegramObject):
-    player: Optional[Player] = None
-    cookies_data_base: Optional[Cookies] = None
+class AddUserCommandData(TelegramObject):
+    user: Optional[User] = None
     region: RegionEnum = RegionEnum.NULL
     cookies: dict = {}
-    account_id: int = 0
-    # player_id: int = 0
-    genshin_account: Optional[GenshinAccount] = None
-
-    def reset(self):
-        self.player = None
-        self.cookies_data_base = None
-        self.region = RegionEnum.NULL
-        self.cookies = {}
-        self.account_id = 0
-        self.genshin_account = None
+    game_uid: int = 0
+    phone: int = 0
 
 
 CHECK_SERVER, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10103)
 
 
-class AccountCookiesPlugin(Plugin.Conversation):
+class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
     """Cookie绑定"""
 
-    def __init__(self, players_service: PlayersService = None, cookies_service: CookiesService = None):
+    def __init__(self, user_service: UserService = None, cookies_service: CookiesService = None):
         self.cookies_service = cookies_service
-        self.players_service = players_service
+        self.user_service = user_service
 
     # noinspection SpellCheckingInspection
     @staticmethod
@@ -70,16 +59,14 @@ class AccountCookiesPlugin(Plugin.Conversation):
     @conversation.entry_point
     @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=True)
     @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=True)
+    @restricts()
+    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 绑定账号命令请求", user.full_name, user.id)
-        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
-        if account_cookies_plugin_data is None:
-            account_cookies_plugin_data = AccountCookiesPluginData()
-            context.chat_data["account_cookies_plugin_data"] = account_cookies_plugin_data
-        else:
-            account_cookies_plugin_data.reset()
+        cookies_command_data = AddUserCommandData()
+        context.chat_data["add_user_command_data"] = cookies_command_data
 
         text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！请选择要绑定的服务器！或回复退出取消操作")}'
         reply_keyboard = [["米游社", "HoYoLab"], ["退出"]]
@@ -87,38 +74,50 @@ class AccountCookiesPlugin(Plugin.Conversation):
         return CHECK_SERVER
 
     @conversation.entry_point
-    @handler.command("qlogin", filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command("qlogin", filters=filters.ChatType.PRIVATE, block=False)
+    @error_callable
     async def qrcode_login(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 绑定账号命令请求", user.full_name, user.id)
-        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
-        if account_cookies_plugin_data is None:
-            account_cookies_plugin_data = AccountCookiesPluginData()
-            context.chat_data["account_cookies_plugin_data"] = account_cookies_plugin_data
-        else:
-            account_cookies_plugin_data.reset()
-        account_cookies_plugin_data.region = RegionEnum.HYPERION
+        add_user_command_data = AddUserCommandData()
+        context.chat_data["add_user_command_data"] = add_user_command_data
+        add_user_command_data.region = RegionEnum.HYPERION
+        try:
+            user_info = await self.user_service.get_user_by_id(user.id)
+        except UserNotFoundError:
+            user_info = None
+        if user_info is not None:
+            try:
+                await self.cookies_service.get_cookies(user.id, RegionEnum.HYPERION)
+            except CookiesNotFoundError:
+                await message.reply_text("你已经绑定UID，如果继续操作会覆盖当前UID。")
+            else:
+                await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
+        add_user_command_data.user = user_info
         auth_client = AuthClient()
         url, ticket = await auth_client.create_qrcode_login()
         data = auth_client.generate_qrcode(url)
         text = f"你好 {user.mention_html()} ！该绑定方法仅支持国服，请在3分钟内使用米游社扫码并确认进行绑定。"
         await message.reply_photo(data, caption=text, parse_mode=ParseMode.HTML)
         if await auth_client.check_qrcode_login(ticket):
-            account_cookies_plugin_data.cookies = auth_client.cookies.to_dict()
+            add_user_command_data.cookies = auth_client.cookies.to_dict()
             return await self.check_cookies(update, context)
-        await message.reply_markdown_v2("可能是验证码已过期或者你没有同意授权，请重新发送命令进行绑定。")
-        return ConversationHandler.END
+        else:
+            await message.reply_markdown_v2("可能是验证码已过期或者你没有同意授权，请重新发送命令进行绑定。")
+            return ConversationHandler.END
 
     @conversation.state(state=CHECK_SERVER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
+    @error_callable
     async def check_server(self, update: Update, context: CallbackContext) -> int:
+        user = update.effective_user
         message = update.effective_message
-        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
+        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        if message.text == "米游社":
+        elif message.text == "米游社":
             region = RegionEnum.HYPERION
             bbs_url = "https://user.mihoyo.com/"
             bbs_name = "米游社"
@@ -129,7 +128,19 @@ class AccountCookiesPlugin(Plugin.Conversation):
         else:
             await message.reply_text("选择错误，请重新选择")
             return CHECK_SERVER
-        account_cookies_plugin_data.region = region
+        try:
+            user_info = await self.user_service.get_user_by_id(user.id)
+        except UserNotFoundError:
+            user_info = None
+        if user_info is not None:
+            try:
+                await self.cookies_service.get_cookies(user.id, region)
+            except CookiesNotFoundError:
+                await message.reply_text("你已经绑定UID，如果继续操作会覆盖当前UID。")
+            else:
+                await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
+        add_user_command_data.user = user_info
+        add_user_command_data.region = region
         await message.reply_text(f"请输入{bbs_name}的Cookies！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
         if bbs_name == "米游社":
             help_message = (
@@ -174,10 +185,11 @@ class AccountCookiesPlugin(Plugin.Conversation):
 
     @conversation.state(state=INPUT_COOKIES)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
+    @error_callable
     async def input_cookies(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
-        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
+        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -200,17 +212,18 @@ class AccountCookiesPlugin(Plugin.Conversation):
             logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
             await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        account_cookies_plugin_data.cookies = cookies
+        add_user_command_data.cookies = cookies
         return await self.check_cookies(update, context)
 
-    async def check_cookies(self, update: Update, context: CallbackContext) -> int:
+    @staticmethod
+    async def check_cookies(update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
-        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
-        cookies = CookiesModel(**account_cookies_plugin_data.cookies)
-        if account_cookies_plugin_data.region == RegionEnum.HYPERION:
+        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
+        cookies = CookiesModel(**add_user_command_data.cookies)
+        if add_user_command_data.region == RegionEnum.HYPERION:
             client = genshin.Client(cookies=cookies.to_dict(), region=types.Region.CHINESE)
-        elif account_cookies_plugin_data.region == RegionEnum.HOYOLAB:
+        elif add_user_command_data.region == RegionEnum.HOYOLAB:
             client = genshin.Client(cookies=cookies.to_dict(), region=types.Region.OVERSEAS)
         else:
             logger.error("用户 %s[%s] region 异常", user.full_name, user.id)
@@ -219,15 +232,16 @@ class AccountCookiesPlugin(Plugin.Conversation):
         if not cookies.check():
             await message.reply_text("检测到Cookie不完整，可能会出现问题。", reply_markup=ReplyKeyboardRemove())
         try:
-            if client.cookie_manager.user_id is None and cookies.is_v2:
-                logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
-                if client.region == types.Region.CHINESE:
-                    account_info = await client.get_hoyolab_user()
-                    account_id = account_info.hoyolab_id
-                    cookies.set_v2_uid(account_id)
-                    logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
-                else:
-                    logger.warning("用户 %s[%s] region[%s] 也许是不正确的", user.full_name, user.id, client.region.name)
+            if client.cookie_manager.user_id is None:
+                if cookies.is_v2:
+                    logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
+                    if client.region == types.Region.CHINESE:
+                        account_info = await client.get_hoyolab_user()
+                        account_id = account_info.hoyolab_id
+                        cookies.set_v2_uid(account_id)
+                        logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
+                    else:
+                        logger.warning("用户 %s[%s] region[%s] 也许是不正确的", user.full_name, user.id, client.region.name)
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
@@ -245,10 +259,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 f"获取账号信息发生错误，错误信息为 {exc.original}，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove()
             )
             return ConversationHandler.END
-        except AccountIdNotFound:
-            logger.info("用户 %s[%s] 无法获取账号ID", user.full_name, user.id)
-            await message.reply_text("无法获取账号ID，请检查Cookie是否正常", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
         except (AttributeError, ValueError) as exc:
             logger.warning("用户 %s[%s] Cookies错误", user.full_name, user.id)
             logger.debug("用户 %s[%s] Cookies错误", user.full_name, user.id, exc_info=exc)
@@ -264,93 +274,74 @@ class AccountCookiesPlugin(Plugin.Conversation):
                         if await auth_client.get_ltoken_by_stoken():
                             logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
                             auth_client.cookies.remove_v2()
-        genshin_account: Optional[GenshinAccount] = None
+        user_info: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定
-        for temp in genshin_accounts:
-            if temp.level >= level:  # 获取账号等级最高的
-                level = temp.level
-                genshin_account = temp
-        if genshin_account is None:
+        for genshin_account in genshin_accounts:
+            if genshin_account.level >= level:  # 获取账号等级最高的
+                level = genshin_account.level
+                user_info = genshin_account
+        if user_info is None:
             await message.reply_text("未找到原神账号，请确认账号信息无误。")
             return ConversationHandler.END
-        account_cookies_plugin_data.genshin_account = genshin_account
-        player_info = await self.players_service.get(user.id, genshin_account.uid, account_cookies_plugin_data.region)
-        account_cookies_plugin_data.player = player_info
-        if player_info:
-            cookies_database = await self.cookies_service.get(
-                user.id, player_info.account_id, account_cookies_plugin_data.region
-            )
-            if cookies_database:
-                account_cookies_plugin_data.cookies_data_base = cookies_database
-                await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
+        add_user_command_data.game_uid = user_info.uid
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        logger.info(
-            "用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, genshin_account.nickname, genshin_account.uid
-        )
+        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, user_info.nickname, user_info.uid)
         text = (
             f"*角色信息*\n"
-            f"角色名称：{escape_markdown(genshin_account.nickname, version=2)}\n"
-            f"角色等级：{genshin_account.level}\n"
-            f"UID：`{genshin_account.uid}`\n"
-            f"服务器名称：`{genshin_account.server_name}`\n"
+            f"角色名称：{escape_markdown(user_info.nickname, version=2)}\n"
+            f"角色等级：{user_info.level}\n"
+            f"UID：`{user_info.uid}`\n"
+            f"服务器名称：`{user_info.server_name}`\n"
         )
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-        account_cookies_plugin_data.cookies = auth_client.cookies.to_dict()
+        add_user_command_data.cookies = cookies.to_dict()
         return COMMAND_RESULT
 
     @conversation.state(state=COMMAND_RESULT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
+    @error_callable
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
-        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
+        add_user_command_data: AddUserCommandData = context.chat_data.get("add_user_command_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        if message.text == "确认":
-            player = account_cookies_plugin_data.player
-            genshin_account = account_cookies_plugin_data.genshin_account
-            if player:
-                if player.nickname != genshin_account.nickname:
-                    player.nickname = genshin_account.nickname
-                    await self.players_service.update(player)
-                cookies = account_cookies_plugin_data.cookies_data_base
-                if cookies:
-                    cookies.data = account_cookies_plugin_data.cookies
-                    cookies.status = CookiesStatusEnum.STATUS_SUCCESS
-                    await self.cookies_service.update(cookies)
-                else:
-                    cookies = Cookies(
+        elif message.text == "确认":
+            if add_user_command_data.user is None:
+                if add_user_command_data.region == RegionEnum.HYPERION:
+                    user_db = User(
                         user_id=user.id,
-                        account_id=account_cookies_plugin_data.account_id,
-                        data=account_cookies_plugin_data.cookies,
-                        region=account_cookies_plugin_data.region,
-                        is_share=True,  # todo 用户可以自行选择是否将Cookies加入公共池
+                        yuanshen_uid=add_user_command_data.game_uid,
+                        region=add_user_command_data.region,
                     )
-                    await self.cookies_service.add(cookies)
-                logger.success("用户 %s[%s] 更新Cookies", user.full_name, user.id)
+                elif add_user_command_data.region == RegionEnum.HOYOLAB:
+                    user_db = User(
+                        user_id=user.id, genshin_uid=add_user_command_data.game_uid, region=add_user_command_data.region
+                    )
+                else:
+                    await message.reply_text("数据错误")
+                    return ConversationHandler.END
+                await self.user_service.add_user(user_db)
             else:
-                player = Player(
-                    user_id=user.id,
-                    account_id=account_cookies_plugin_data.account_id,
-                    player_id=genshin_account.uid,
-                    nickname=genshin_account.nickname,
-                    region=account_cookies_plugin_data.region,
-                    is_chosen=True,  # todo 多账号
-                )
-                await self.players_service.add(player)
-                cookies = Cookies(
-                    user_id=user.id,
-                    account_id=account_cookies_plugin_data.account_id,
-                    data=account_cookies_plugin_data.cookies,
-                    region=account_cookies_plugin_data.region,
-                    is_share=True,  # todo 用户可以自行选择是否将Cookies加入公共池
-                )
-                await self.cookies_service.add(cookies)
-                logger.info("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
+                user_db = add_user_command_data.user
+                user_db.region = add_user_command_data.region
+                if add_user_command_data.region == RegionEnum.HYPERION:
+                    user_db.yuanshen_uid = add_user_command_data.game_uid
+                elif add_user_command_data.region == RegionEnum.HOYOLAB:
+                    user_db.genshin_uid = add_user_command_data.game_uid
+                else:
+                    await message.reply_text("数据错误")
+                    return ConversationHandler.END
+                await self.user_service.update_user(user_db)
+            await self.cookies_service.add_or_update_cookies(
+                user.id, add_user_command_data.cookies, add_user_command_data.region
+            )
+            logger.info("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        await message.reply_text("回复错误，请重新输入")
-        return COMMAND_RESULT
+        else:
+            await message.reply_text("回复错误，请重新输入")
+            return COMMAND_RESULT
