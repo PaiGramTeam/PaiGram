@@ -42,7 +42,9 @@ class ChallengeSystem(Plugin):
         await self.cache.set(f"{self.qname}{uid}", f"{gt}|{challenge}")
         await self.cache.expire(f"{self.qname}{uid}", 10 * 60)
 
-    async def create_challenge(self, user_id: int, need_verify: bool = True) -> Tuple[Optional[str], Optional[str]]:
+    async def create_challenge(
+        self, user_id: int, need_verify: bool = True
+    ) -> Tuple[Optional[int], Optional[str], Optional[str]]:
         client = await self.genshin_helper.get_genshin_client(user_id)
         if client is None:
             raise ChallengeSystemException("用户未找到")
@@ -64,7 +66,7 @@ class ChallengeSystem(Plugin):
             logger.warning("用户 %s 创建验证失效 API返回 [%s]%s", user_id, exc.code, exc.message)
             raise ChallengeSystemException(f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
         await self.set_challenge(client.uid, gt, challenge)
-        return gt, challenge
+        return client.uid, gt, challenge
 
     async def pass_challenge(self, user_id: int, validate: str, challenge: Optional[str] = None) -> bool:
         client = await self.genshin_helper.get_genshin_client(user_id)

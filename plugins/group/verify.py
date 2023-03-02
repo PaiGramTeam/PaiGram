@@ -9,7 +9,6 @@ from telegram.error import BadRequest
 from telegram.ext import CallbackContext, CallbackQueryHandler, ChatMemberHandler
 from telegram.helpers import escape_markdown
 
-
 from core.config import config
 from core.dependence.mtproto import MTProto
 from core.dependence.redisdb import RedisDB
@@ -86,14 +85,13 @@ class GroupVerify(Plugin):
 
     async def kick_member_job(self, context: CallbackContext):
         job = context.job
-        logger.info(f"踢出用户 user_id[{job.user_id}] 在 chat_id[{job.chat_id}]")
+        logger.info(f"踢出用户 user_id[%s] 在 chat_id[%s]", job.user_id, job.chat_id)
         try:
             await context.bot.ban_chat_member(
                 chat_id=job.chat_id, user_id=job.user_id, until_date=int(time.time()) + self.kick_time
             )
         except BadRequest as exc:
-            logger.error(f"Auth模块在 chat_id[{job.chat_id}] user_id[{job.user_id}] 执行kick失败")
-            logger.exception(exc)
+            logger.error(f"Auth模块在 chat_id[%s] user_id[%s] 执行kick失败", job.chat_id, job.user_id, exc_info=exc)
 
     @staticmethod
     async def clean_message_job(context: CallbackContext):
@@ -102,22 +100,20 @@ class GroupVerify(Plugin):
         try:
             await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
         except BadRequest as exc:
-            if "not found" in str(exc):
-                logger.warning(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息不存在")
-            elif "Message can't be deleted" in str(exc):
-                logger.warning(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败 消息无法删除 可能是没有授权")
+            if "not found" in exc.message:
+                logger.warning(f"Auth模块删除消息 chat_id[%s] message_id[%s]失败 消息不存在", job.chat_id, job.data)
+            elif "Message can't be deleted" in exc.message:
+                logger.warning("Auth模块删除消息 chat_id[%s] message_id[%s]失败 消息无法删除 可能是没有授权", job.chat_id, job.data)
             else:
-                logger.error(f"Auth模块删除消息 chat_id[{job.chat_id}] message_id[{job.data}]失败")
-                logger.exception(exc)
+                logger.error("Auth模块删除消息 chat_id[%s] message_id[%s]失败", job.chat_id, job.data, exc_info=exc)
 
     @staticmethod
     async def restore_member(context: CallbackContext, chat_id: int, user_id: int):
-        logger.debug(f"重置用户权限 user_id[{user_id}] 在 chat_id[{chat_id}]")
+        logger.debug("重置用户权限 user_id[%s] 在 chat_id[{chat_id}]", chat_id, user_id)
         try:
             await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=FullChatPermissions)
         except BadRequest as exc:
-            logger.error(f"Auth模块在 chat_id[{chat_id}] user_id[{user_id}] 执行restore失败")
-            logger.exception(exc)
+            logger.error("Auth模块在 chat_id[%s] user_id[%s] 执行restore失败", chat_id, user_id)
 
     async def get_new_chat_members_message(self, user: User, context: CallbackContext) -> Optional[Message]:
         qname = f"plugin:auth:new_chat_members_message:{user.id}"
@@ -144,17 +140,17 @@ class GroupVerify(Plugin):
         user = callback_query.from_user
         message = callback_query.message
         chat = message.chat
-        logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth管理员命令")
+        logger.info("用户 %s[%s] 在群 %s[%s] 点击Auth管理员命令", user.full_name, user.id, chat.title, chat.id)
         chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
         if not self.is_admin(chat_administrators, user.id):
-            logger.debug(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 非群管理")
+            logger.debug("用户 %s[%s] 在群 %s[%s] 非群管理", user.full_name, user.id, chat.title, chat.id)
             await callback_query.answer(text="你不是管理！\n" + config.notice.user_mismatch, show_alert=True)
             return
         result, user_id = await admin_callback(callback_query.data)
         try:
             member_info = await context.bot.get_chat_member(chat.id, user_id)
         except BadRequest as error:
-            logger.warning(f"获取用户 {user_id} 在群 {chat.title}[{chat.id}] 信息失败 \n", error)
+            logger.warning("获取用户 %s 在群 %s[%s] 信息失败 \n %s", user_id, chat.title, chat.id, error.message)
             user_info = f"{user_id}"
         else:
             user_info = member_info.user.mention_markdown_v2()
@@ -209,11 +205,13 @@ class GroupVerify(Plugin):
         message = callback_query.message
         chat = message.chat
         user_id, result, question, answer = await query_callback(callback_query.data)
-        logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 点击Auth认证命令 ")
+        logger.info("用户 %s[%s] 在群 %s[%s] 点击Auth认证命令", user.full_name, user.id, chat.title, chat.id)
         if user.id != user_id:
             await callback_query.answer(text="这不是你的验证！\n" + config.notice.user_mismatch, show_alert=True)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 认证结果为 {'通过' if result else '失败'}")
+        logger.info(
+            "用户 %s[%s] 在群 %s[%s] 认证结果为 %s", user.full_name, user.id, chat.title, chat.id, "通过" if result else "失败"
+        )
         if result:
             buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}")]]
             await callback_query.answer(text="验证成功", show_alert=False)
@@ -225,7 +223,7 @@ class GroupVerify(Plugin):
                 f"问题：{escape_markdown(question, version=2)} \n"
                 f"回答：{escape_markdown(answer, version=2)}"
             )
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 验证成功")
+            logger.info("用户 user_id[%s] 在群 %s[%s] 验证成功", user_id, chat.title, chat.id)
         else:
             buttons = [
                 [
@@ -243,11 +241,11 @@ class GroupVerify(Plugin):
                 f"问题：{escape_markdown(question, version=2)} \n"
                 f"回答：{escape_markdown(answer, version=2)}"
             )
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 验证失败")
+            logger.info("用户 user_id[%s] 在群 %s[%s] 验证失败", user_id, chat.title, chat.id)
         try:
             await message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)
         except BadRequest as exc:
-            if "are exactly the same as " in str(exc):
+            if "are exactly the same as " in exc.message:
                 logger.warning("编辑消息发生异常，可能为用户点按多次键盘导致")
             else:
                 raise exc

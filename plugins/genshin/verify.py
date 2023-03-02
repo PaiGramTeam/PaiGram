@@ -20,11 +20,14 @@ class VerificationPlugins(Plugin):
         message = update.effective_message
         logger.info("用户 %s[%s] 发出verify命令", user.full_name, user.id)
         try:
-            gt, challenge = await self.challenge_system.create_challenge(user.id, context.args is not None)
+            uid, gt, challenge = await self.challenge_system.create_challenge(user.id, context.args is not None)
         except ChallengeSystemException as exc:
             await message.reply_text(exc.message)
             return
-        url = f"{config.pass_challenge_user_web}/webapp?username={context.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={client.uid}"
+        url = (
+            f"{config.pass_challenge_user_web}/webapp?"
+            f"username={context.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={uid}"
+        )
         await message.reply_text(
             "请尽快在10秒内完成手动验证\n或发送 /web_cancel 取消操作",
             reply_markup=ReplyKeyboardMarkup.from_button(
