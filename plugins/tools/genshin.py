@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import Optional, Tuple, Union
 
 import genshin
@@ -10,7 +9,7 @@ from core.plugin import Plugin
 from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.players.models import RegionEnum
 from core.services.players.services import PlayersService
-from core.services.users import UserService
+from core.services.users.services import UserService
 from utils.const import REGION_MAP
 
 __all__ = ("GenshinHelper", "UserNotFoundError", "CookiesNotFoundError")
@@ -50,7 +49,6 @@ class GenshinHelper(Plugin):
             raise ServiceNotFoundError(*filter(lambda x: x is None, temp))
 
     @staticmethod
-    @lru_cache(64)
     def region_server(uid: Union[int, str]) -> RegionEnum:
         if isinstance(uid, (int, str)):
             region = REGION_MAP.get(str(uid)[0])

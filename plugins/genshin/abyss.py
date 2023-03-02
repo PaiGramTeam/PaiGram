@@ -17,8 +17,8 @@ from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.players.error import PlayerNotFoundError
-from core.services.template import TemplateService
 from core.services.template.models import RenderGroupResult, RenderResult
+from core.services.template.services import TemplateService
 from metadata.genshin import game_id_to_role_id
 from plugins.tools.genshin import GenshinHelper
 from utils.helpers import async_re_sub
