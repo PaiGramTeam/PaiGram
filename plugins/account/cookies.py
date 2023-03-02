@@ -103,9 +103,8 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         if await auth_client.check_qrcode_login(ticket):
             add_user_command_data.cookies = auth_client.cookies.to_dict()
             return await self.check_cookies(update, context)
-        else:
-            await message.reply_markdown_v2("可能是验证码已过期或者你没有同意授权，请重新发送命令进行绑定。")
-            return ConversationHandler.END
+        await message.reply_markdown_v2("可能是验证码已过期或者你没有同意授权，请重新发送命令进行绑定。")
+        return ConversationHandler.END
 
     @conversation.state(state=CHECK_SERVER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
@@ -117,7 +116,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif message.text == "米游社":
+        if message.text == "米游社":
             region = RegionEnum.HYPERION
             bbs_url = "https://user.mihoyo.com/"
             bbs_name = "米游社"
@@ -232,16 +231,15 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         if not cookies.check():
             await message.reply_text("检测到Cookie不完整，可能会出现问题。", reply_markup=ReplyKeyboardRemove())
         try:
-            if client.cookie_manager.user_id is None:
-                if cookies.is_v2:
-                    logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
-                    if client.region == types.Region.CHINESE:
-                        account_info = await client.get_hoyolab_user()
-                        account_id = account_info.hoyolab_id
-                        cookies.set_v2_uid(account_id)
-                        logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
-                    else:
-                        logger.warning("用户 %s[%s] region[%s] 也许是不正确的", user.full_name, user.id, client.region.name)
+            if client.cookie_manager.user_id is None and cookies.is_v2:
+                logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
+                if client.region == types.Region.CHINESE:
+                    account_info = await client.get_hoyolab_user()
+                    account_id = account_info.hoyolab_id
+                    cookies.set_v2_uid(account_id)
+                    logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
+                else:
+                    logger.warning("用户 %s[%s] region[%s] 也许是不正确的", user.full_name, user.id, client.region.name)
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
@@ -309,7 +307,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        elif message.text == "确认":
+        if message.text == "确认":
             if add_user_command_data.user is None:
                 if add_user_command_data.region == RegionEnum.HYPERION:
                     user_db = User(
@@ -342,6 +340,5 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             logger.info("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        else:
-            await message.reply_text("回复错误，请重新输入")
-            return COMMAND_RESULT
+        await message.reply_text("回复错误，请重新输入")
+        return COMMAND_RESULT

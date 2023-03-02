@@ -17,7 +17,8 @@ def service(mysql):
 
 
 class TestPlayersService:
-    async def test_add_player(self, players_service: "PlayersService"):
+    @staticmethod
+    async def test_add_player(players_service: "PlayersService"):
         data_base = PlayersDataBase(
             user_id=1,
             account_id=2,
@@ -32,7 +33,8 @@ class TestPlayersService:
         )
         await players_service.add(data_base)
 
-    async def test_get_player_by_user_id(self, players_service: "PlayersService"):
+    @staticmethod
+    async def test_get_player_by_user_id(players_service: "PlayersService"):
         result = await players_service.get(1)
         assert isinstance(result, PlayersDataBase)
         assert result.nickname == "nickname"
@@ -47,13 +49,15 @@ class TestPlayersService:
         assert not isinstance(result, PlayersDataBase)
         assert result is None
 
-    async def test_remove_all_by_user_id(self, players_service):
+    @staticmethod
+    async def test_remove_all_by_user_id(players_service):
         await players_service.remove_all_by_user_id(1)
         result = await players_service.get(1)
         assert not isinstance(result, PlayersDataBase)
         assert result is None
 
-    async def test_1(self, players_service: "PlayersService"):
+    @staticmethod
+    async def test_1(players_service: "PlayersService"):
         """测试 绑定时 账号不存在 账号添加 多账号添加"""
         results = await players_service.get_all_by_user_id(10)
         assert len(results) == 0  # 账号不存在

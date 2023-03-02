@@ -293,7 +293,7 @@ class GroupVerify(Plugin):
         if was_member and not is_member:
             logger.info("用户 %s[%s] 退出群聊 %s[%s]", user.full_name, user.id, chat.title, chat.id)
             return
-        elif not was_member and is_member:
+        if not was_member and is_member:
             logger.info("用户 %s[%s] 尝试加入群 %s[%s]", user.full_name, user.id, chat.title, chat.id)
             if user.is_bot:
                 return
@@ -315,8 +315,7 @@ class GroupVerify(Plugin):
                         parse_mode=ParseMode.HTML,
                     )
                     return
-                else:
-                    raise exc
+                raise exc
             new_chat_members_message = await self.get_new_chat_members_message(user, context)
             question_id = random.choice(question_id_list)  # nosec
             question = await self.quiz_service.get_question(question_id)
