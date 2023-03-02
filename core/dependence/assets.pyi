@@ -22,6 +22,8 @@ _GET_TYPE = partial | list[str] | int | str | ICON_TYPE | Path | AsyncClient | N
 class AssetsServiceError(Exception): ...
 
 class AssetsCouldNotFound(AssetsServiceError):
+    message: str
+    target: str
     def __init__(self, message: str, target: str): ...
 
 class _AssetsService(ABC):
