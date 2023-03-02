@@ -13,7 +13,7 @@ class SignAll(Plugin):
     @handler(CommandHandler, command="sign_all", block=False, admin=True)
     async def sign_all(self, update: Update, context: CallbackContext):
         user = update.effective_user
-        logger.info(f"用户 {user.full_name}[{user.id}] sign_all 命令请求")
+        logger.info("用户 %s[%s] sign_all 命令请求", user.full_name, user.id)
         message = update.effective_message
         reply = await message.reply_text("正在全部重新签到，请稍后...")
         await self.sign_system.do_sign_job(context, job_type=SignJobType.START)

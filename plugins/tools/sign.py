@@ -11,6 +11,7 @@ from genshin import Game, GenshinException, AlreadyClaimed, Client, InvalidCooki
 from genshin.utility import recognize_genshin_server
 from httpx import AsyncClient, TimeoutException
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest
 from telegram.ext import CallbackContext
 
@@ -98,7 +99,10 @@ class SignSystem(Plugin):
         if callback:
             data = f"sign|{user_id}|{uid}"
             return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
-        url = f"{config.pass_challenge_user_web}?username={bot_username}&command=sign&gt={gt}&challenge={challenge}&uid={uid}"
+        url = (
+            f"{config.pass_challenge_user_web}?"
+            f"username={bot_username}&command=sign&gt={gt}&challenge={challenge}&uid={uid}"
+        )
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
     async def recognize(self, gt: str, challenge: str, referer: str = None) -> Optional[str]:
@@ -343,8 +347,7 @@ class SignSystem(Plugin):
                 text = "签到失败，触发验证码风控，自动签到自动关闭"
                 sign_db.status = SignStatusEnum.NEED_CHALLENGE
             except Exception as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
-                logger.exception(exc)
+                logger.error("执行自动签到时发生错误 user_id[%s] Message[%s]", user_id, exc.message)
                 text = "签到失败了呜呜呜 ~ 执行自动签到时发生错误"
             else:
                 sign_db.status = SignStatusEnum.STATUS_SUCCESS
@@ -353,16 +356,13 @@ class SignSystem(Plugin):
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
             except BadRequest as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
-                logger.exception(exc)
+                logger.error("执行自动签到时发生错误 user_id[%s] Message[%s]", user_id, exc.message)
                 sign_db.status = SignStatusEnum.BAD_REQUEST
             except Forbidden as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
-                logger.exception(exc)
+                logger.error("执行自动签到时发生错误 user_id[%s] message[%s]", user_id, exc.message)
                 sign_db.status = SignStatusEnum.FORBIDDEN
             except Exception as exc:
-                logger.error(f"执行自动签到时发生错误 用户UID[{user_id}]")
-                logger.exception(exc)
+                logger.error("执行自动签到时发生错误 user_id[%s]", user_id, exc_info=exc)
                 continue
             else:
                 sign_db.status = SignStatusEnum.STATUS_SUCCESS

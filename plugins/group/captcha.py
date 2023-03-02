@@ -96,7 +96,7 @@ class GroupCaptcha(Plugin):
     @staticmethod
     async def clean_message_job(context: CallbackContext):
         job = context.job
-        logger.debug(f"删除消息 chat_id[{job.chat_id}] 的 message_id[{job.data}]")
+        logger.debug("删除消息 chat_id[%s] 的 message_id[%s]", job.chat_id, job.data)
         try:
             await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
         except BadRequest as exc:
@@ -133,7 +133,7 @@ class GroupCaptcha(Plugin):
             _data = callback_query_data.split("|")
             _result = _data[1]
             _user_id = int(_data[2])
-            logger.debug(f"admin_callback函数返回 result[{_result}] user_id[{_user_id}]")
+            logger.debug("admin_callback函数返回 result[%s] user_id[%s]", _result, _user_id)
             return _result, _user_id
 
         callback_query = update.callback_query
@@ -161,12 +161,12 @@ class GroupCaptcha(Plugin):
             if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
                 schedule.remove()
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 放行", parse_mode=ParseMode.MARKDOWN_V2)
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理放行")
+            logger.info("用户 %s[%s] 在群 %s[%s] 被管理放行", user.full_name, user.id, chat.title, chat.id)
         elif result == "kick":
             await callback_query.answer(text="驱离", show_alert=False)
             await context.bot.ban_chat_member(chat.id, user_id)
             await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 驱离", parse_mode=ParseMode.MARKDOWN_V2)
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理踢出")
+            logger.info("用户 %s[%s] 在群 %s[%s] 被管理踢出", user.full_name, user.id, chat.title, chat.id)
         elif result == "unban":
             await callback_query.answer(text="解除驱离", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
@@ -175,9 +175,9 @@ class GroupCaptcha(Plugin):
             await message.edit_text(
                 f"{user_info} 被 {user.mention_markdown_v2()} 解除驱离", parse_mode=ParseMode.MARKDOWN_V2
             )
-            logger.info(f"用户 user_id[{user_id}] 在群 {chat.title}[{chat.id}] 被管理解除封禁")
+            logger.info("用户 user_id[%s] 在群 %s[%s] 被管理解除封禁", user_id, chat.title, chat.id)
         else:
-            logger.warning(f"auth 模块 admin 函数 发现未知命令 result[{result}]")
+            logger.warning("auth 模块 admin 函数 发现未知命令 result[%s]", result)
             await context.bot.send_message(chat.id, "派蒙这边收到了错误的消息！请检查详细日记！")
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
             schedule.remove()
@@ -195,8 +195,11 @@ class GroupCaptcha(Plugin):
             _answer_encode = _answer.text
             _question_encode = _question.text
             logger.debug(
-                f"query_callback函数返回 user_id[{_user_id}] result[{_result}] \n"
-                f"question_encode[{_question_encode}] answer_encode[{_answer_encode}]"
+                "query_callback函数返回 user_id[%s] result[%s] \nquestion_encode[%s] answer_encode[%s]",
+                _user_id,
+                _result,
+                _question_encode,
+                _answer_encode,
             )
             return _user_id, _result, _question_encode, _answer_encode
 

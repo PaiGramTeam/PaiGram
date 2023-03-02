@@ -129,6 +129,7 @@ class PayLogPlugin(Plugin.Conversation):
         except UserNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+            return ConversationHandler.END
         _, status = await self.pay_log.load_history_info(str(user.id), str(client.uid), only_status=True)
         if not status:
             await message.reply_text("你还没有导入充值记录哦~")

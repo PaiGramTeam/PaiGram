@@ -82,13 +82,13 @@ class Sign(Plugin):
             else:
                 validate = args[0]
             if msg:
-                logger.info(f"用户 {user.full_name}[{user.id}] 自动签到命令请求 || 参数 {args[0]}")
+                logger.info("用户 %s[%s] 自动签到命令请求 || 参数 %s", user.full_name, user.id, args[0])
                 reply_message = await message.reply_text(msg)
                 if filters.ChatType.GROUPS.filter(message):
                     self.add_delete_message_job(reply_message, delay=30)
                     self.add_delete_message_job(message.chat_id, delay=30)
                 return
-        logger.info(f"用户 {user.full_name}[{user.id}] 每日签到命令请求")
+        logger.info("用户 %s[%s] 每日签到命令请求", user.full_name, user.id)
         if filters.ChatType.GROUPS.filter(message):
             self.add_delete_message_job(message)
         try:
@@ -144,7 +144,7 @@ class Sign(Plugin):
             _data = callback_query_data.split("|")
             _user_id = int(_data[1])
             _uid = int(_data[2])
-            logger.debug(f"get_sign_callback 函数返回 user_id[{_user_id}] uid[{_uid}]")
+            logger.debug("get_sign_callback 函数返回 user_id[%s] uid[%s]", _user_id, _uid)
             return _user_id, _uid
 
         user_id, uid = await get_sign_callback(callback_query.data)

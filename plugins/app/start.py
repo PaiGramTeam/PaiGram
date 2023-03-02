@@ -106,7 +106,7 @@ class StartPlugin(Plugin):
             return
         url = (
             f"{config.pass_challenge_user_web}/webapp?"
-            f"username={bot_username}&command=verify&gt={gt}&challenge={challenge}&uid={id}"
+            f"username={bot_username}&command=verify&gt={gt}&challenge={challenge}&uid={uid}"
         )
         await message.reply_text(
             "请尽快在10秒内完成手动验证\n或发送 /web_cancel 取消操作",

@@ -1,10 +1,8 @@
 from typing import Optional
 
-
 from pydantic import BaseModel
 from telegram import ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext, filters
-
 
 from core.plugin import Plugin, handler
 from plugins.tools.challenge import ChallengeSystem, ChallengeSystemException
@@ -39,7 +37,7 @@ class WebApp(Plugin):
             raise WebAppDataException(data) from exc
 
     @handler.message(filters=filters.StatusUpdate.WEB_APP_DATA, block=False)
-    async def app(self, update: Update, context: CallbackContext):
+    async def app(self, update: Update, _: CallbackContext):
         user = update.effective_user
         message = update.effective_message
         web_app_data = message.web_app_data

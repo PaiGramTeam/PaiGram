@@ -19,7 +19,7 @@ class SearchPlugin(Plugin):
     async def initialize(self):
         async def load_data():
             logger.info("Search 插件模块正在加载搜索条目")
-            async with self._lock:
+            async with self.lock:
                 await self.search.load_data()
             logger.success("Search 插件加载模块搜索条目成功")
 
@@ -48,8 +48,8 @@ class SearchPlugin(Plugin):
                 await self.search.save_entry()
                 await reply_text.edit_text("数据保存成功")
 
-    @handler.command("remove_all_entry", block=False)
-    async def remove_all_entry(self, update: Update, _: CallbackContext, admin=True):
+    @handler.command("remove_all_entry", block=False, admin=True)
+    async def remove_all_entry(self, update: Update, _: CallbackContext):
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 删除全部条目数据命令请求", user.full_name, user.id)
