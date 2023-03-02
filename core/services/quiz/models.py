@@ -3,7 +3,6 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlmodel import Column, Field, ForeignKey, Integer, SQLModel
 
-
 __all__ = ("Answer", "AnswerDB", "Question", "QuestionDB")
 
 
@@ -11,7 +10,7 @@ class AnswerDB(SQLModel, table=True):
     __tablename__ = "answer"
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
-    id: int = Field(primary_key=True)
+    id: Optional[int] = Field(primary_key=True, sa_column=Column(Integer, primary_key=True, autoincrement=True))
     question_id: Optional[int] = Field(
         sa_column=Column(Integer, ForeignKey("question.id", ondelete="RESTRICT", onupdate="RESTRICT"))
     )
@@ -23,7 +22,7 @@ class QuestionDB(SQLModel, table=True):
     __tablename__ = "question"
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
-    id: int = Field(primary_key=True)
+    id: Optional[int] = Field(primary_key=True, sa_column=Column(Integer, primary_key=True, autoincrement=True))
     text: Optional[str] = Field()
 
 
