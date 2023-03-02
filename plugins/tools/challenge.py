@@ -7,7 +7,7 @@ from core.plugin import Plugin
 from core.services.cookies import CookiesService
 from modules.apihelper.client.components.verify import Verify
 from modules.apihelper.error import ResponseException, APIHelperException
-from plugins.tools.genshin import GenshinHelper, UserNotFoundError
+from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError
 from utils.log import logger
 
 __all__ = ("ChallengeSystemException", "ChallengeSystem")
@@ -47,7 +47,7 @@ class ChallengeSystem(Plugin):
     ) -> Tuple[Optional[int], Optional[str], Optional[str]]:
         try:
             client = await self.genshin_helper.get_genshin_client(user_id)
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             raise ChallengeSystemException("用户未找到")
         if client.region != Region.CHINESE:
             raise ChallengeSystemException("非法用户")
@@ -80,7 +80,7 @@ class ChallengeSystem(Plugin):
     async def pass_challenge(self, user_id: int, validate: str, challenge: Optional[str] = None) -> bool:
         try:
             client = await self.genshin_helper.get_genshin_client(user_id)
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             raise ChallengeSystemException("用户未找到")
         if client.region != Region.CHINESE:
             raise ChallengeSystemException("非法用户")

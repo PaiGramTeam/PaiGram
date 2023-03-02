@@ -11,7 +11,7 @@ from core.services.template.services import TemplateService
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
-from plugins.tools.genshin import GenshinHelper, UserNotFoundError
+from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError
 from utils.genshin import get_authkey_by_stoken
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -54,7 +54,7 @@ class PayLogPlugin(Plugin.Conversation):
             return "更新数据失败，authkey 无效"
         except PayLogAuthkeyTimeout:
             return "更新数据失败，authkey 已经过期"
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
 
@@ -120,13 +120,13 @@ class PayLogPlugin(Plugin.Conversation):
     @conversation.entry_point
     @handler(CommandHandler, command="pay_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler(MessageHandler, filters=filters.Regex("^删除充值记录$") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_delete(self, update: Update, context: CallbackContext) -> int:
+    async def command_start_delete(self, update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 删除充值记录命令请求", user.full_name, user.id)
         try:
             client = await self.helper.get_genshin_client(user.id, need_cookie=False)
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return ConversationHandler.END
@@ -194,7 +194,7 @@ class PayLogPlugin(Plugin.Conversation):
             await message.reply_text("派蒙没有找到你的充值记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
         except PayLogAccountNotFound:
             await message.reply_text("导出失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
 
@@ -218,7 +218,7 @@ class PayLogPlugin(Plugin.Conversation):
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的充值记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):

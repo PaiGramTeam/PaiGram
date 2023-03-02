@@ -29,7 +29,7 @@ from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
-from plugins.tools.genshin import GenshinHelper
+from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
 from utils.log import logger
 
 INTERVAL = 1
@@ -155,8 +155,6 @@ class DailyMaterial(Plugin):
         try:
             logger.debug("尝试获取已绑定的原神账号")
             client = await self.helper.get_genshin_client(user.id)
-            if client is None:
-                return None, user_data
             logger.debug("获取账号数据成功: UID=%s", client.uid)
             characters = await client.get_genshin_characters(client.uid)
             for character in characters:
@@ -191,6 +189,8 @@ class DailyMaterial(Plugin):
                         c_path=(await self.assets_service.avatar(cid).side()).as_uri(),
                     )
                 )
+        except (PlayerNotFoundError, CookiesNotFoundError):
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
         except InvalidCookies:
             logger.info("用户 %s[%s] 所绑定的账号信息已失效", user.full_name, user.id)
         else:

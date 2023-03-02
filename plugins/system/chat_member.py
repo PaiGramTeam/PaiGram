@@ -6,7 +6,6 @@ from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.users.services import UserAdminService
-
 from utils.chatmember import extract_status_change
 from utils.log import logger
 

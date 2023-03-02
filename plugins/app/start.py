@@ -8,7 +8,7 @@ from telegram.helpers import escape_markdown
 from core.config import config
 from core.plugin import handler, Plugin
 from plugins.tools.challenge import ChallengeSystem, ChallengeSystemException
-from plugins.tools.genshin import UserNotFoundError, CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from plugins.tools.sign import SignSystem, NeedChallenge
 from utils.log import logger
 
@@ -85,7 +85,7 @@ class StartPlugin(Plugin):
                 return
             sign_text = await self.sign_system.start_sign(client, challenge=challenge, validate=validate)
             await message.reply_text(sign_text, allow_sending_without_reply=True)
-        except (UserNotFoundError, CookiesNotFoundError):
+        except (PlayerNotFoundError, CookiesNotFoundError):
             logger.warning("用户 %s[%s] 账号信息未找到", user.full_name, user.id)
         except NeedChallenge:
             await message.reply_text("回调错误，请重新签到", allow_sending_without_reply=True)
@@ -127,5 +127,5 @@ class StartPlugin(Plugin):
                 await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
                 return
             await message.reply_text("请尽快点击下方按钮进行验证。", allow_sending_without_reply=True, reply_markup=button)
-        except (UserNotFoundError, CookiesNotFoundError):
+        except (PlayerNotFoundError, CookiesNotFoundError):
             logger.warning("用户 %s[%s] 账号信息未找到", user.full_name, user.id)

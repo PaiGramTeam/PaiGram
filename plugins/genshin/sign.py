@@ -12,7 +12,7 @@ from core.plugin import Plugin, handler
 from core.services.sign.models import Sign as SignUser, SignStatusEnum
 from core.services.sign.services import SignServices
 from core.services.users.services import UserAdminService
-from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, UserNotFoundError
+from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
 from plugins.tools.sign import SignSystem, NeedChallenge
 from utils.log import logger
 
@@ -37,7 +37,7 @@ class Sign(Plugin):
     async def _process_auto_sign(self, user_id: int, chat_id: int, method: str) -> str:
         try:
             await self.genshin_helper.get_genshin_client(user_id)
-        except (UserNotFoundError, CookiesNotFoundError):
+        except (PlayerNotFoundError, CookiesNotFoundError):
             return "未查询到账号信息，请先私聊派蒙绑定账号"
         user: SignUser = await self.sign_service.get_by_user_id(user_id)
         if user:
@@ -109,7 +109,7 @@ class Sign(Plugin):
             reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self.add_delete_message_job(reply_message)
-        except (UserNotFoundError, CookiesNotFoundError):
+        except (PlayerNotFoundError, CookiesNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(

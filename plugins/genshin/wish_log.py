@@ -26,7 +26,7 @@ from modules.gacha_log.error import (
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
-from plugins.tools.genshin import UserNotFoundError, GenshinHelper
+from plugins.tools.genshin import PlayerNotFoundError, GenshinHelper
 from utils.genshin import get_authkey_by_stoken
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -94,7 +94,7 @@ class WishLogPlugin(Plugin.Conversation):
             return "更新数据失败，authkey 已经过期"
         except GachaLogMixedProvider:
             return "导入失败，你已经通过其他方式导入过抽卡记录了，本次无法导入"
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
 
@@ -219,7 +219,7 @@ class WishLogPlugin(Plugin.Conversation):
         try:
             client = await self.helper.get_genshin_client(user.id, need_cookie=False)
             context.chat_data["uid"] = client.uid
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return ConversationHandler.END
@@ -262,7 +262,7 @@ class WishLogPlugin(Plugin.Conversation):
             await message.reply_text("抽卡记录已强制删除" if status else "抽卡记录删除失败")
         except GachaLogNotFound:
             await message.reply_text("该用户还没有导入抽卡记录")
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             await message.reply_text("该用户暂未绑定账号")
         except (ValueError, IndexError):
             await message.reply_text("用户ID 不合法")
@@ -289,7 +289,7 @@ class WishLogPlugin(Plugin.Conversation):
             await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
         except GachaLogFileError:
             await message.reply_text("导入失败，数据格式错误")
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
 
@@ -326,7 +326,7 @@ class WishLogPlugin(Plugin.Conversation):
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
@@ -389,7 +389,7 @@ class WishLogPlugin(Plugin.Conversation):
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
-        except UserNotFoundError:
+        except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
