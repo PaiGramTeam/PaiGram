@@ -124,11 +124,11 @@ class PayLogPlugin(Plugin.Conversation):
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 删除充值记录命令请求", user.full_name, user.id)
-        client = await self.helper.get_genshin_client(user.id, need_cookie=False)
-        if client is None:
+        try:
+            client = await self.helper.get_genshin_client(user.id, need_cookie=False)
+        except UserNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
-            return ConversationHandler.END
         _, status = await self.pay_log.load_history_info(str(user.id), str(client.uid), only_status=True)
         if not status:
             await message.reply_text("你还没有导入充值记录哦~")
@@ -193,6 +193,9 @@ class PayLogPlugin(Plugin.Conversation):
             await message.reply_text("派蒙没有找到你的充值记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
         except PayLogAccountNotFound:
             await message.reply_text("导出失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
+        except UserNotFoundError:
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
+            await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
 
     @handler(CommandHandler, command="pay_log", block=False)
     @handler(MessageHandler, filters=filters.Regex("^充值记录$"), block=False)
