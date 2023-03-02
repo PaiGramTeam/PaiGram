@@ -19,7 +19,9 @@ class PermissionsEnum(int, enum.Enum):
 
 class User(SQLModel):
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
-    id: Optional[int] = Field(primary_key=True, sa_column=Column(Integer, primary_key=True, autoincrement=True))
+    id: Optional[int] = Field(
+        default=None, primary_key=True, sa_column=Column(Integer, primary_key=True, autoincrement=True)
+    )
     user_id: int = Field(unique=True, sa_column=Column(BigInteger()))
     permissions: Optional[PermissionsEnum] = Field(sa_column=Column(Enum(PermissionsEnum)))
     locale: Optional[str] = Field()
