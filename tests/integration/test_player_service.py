@@ -33,17 +33,17 @@ class TestPlayersService:
         await players_service.add(data_base)
 
     async def test_get_player_by_user_id(self, players_service: PlayersService):
-        result = await players_service.get_player_by_user_id(1, None)
+        result = await players_service.get(1)
         assert isinstance(result, PlayersDataBase)
         assert result.nickname == "nickname"
         assert result.signature == "signature"
         assert result.waifu_id == 6
-        result = await players_service.get_player_by_user_id(1, RegionEnum.HYPERION)
+        result = await players_service.get(1, region=RegionEnum.HYPERION)
         assert isinstance(result, PlayersDataBase)
         assert result.nickname == "nickname"
         assert result.signature == "signature"
         assert result.waifu_id == 6
-        result = await players_service.get_player_by_user_id(1, RegionEnum.HOYOLAB)
+        result = await players_service.get(1, region=RegionEnum.HOYOLAB)
         assert not isinstance(result, PlayersDataBase)
         assert result is None
 
@@ -70,7 +70,7 @@ class TestPlayersService:
             is_chosen=1,
         )
         await players_service.add(data_base)  # 添加
-        result = await players_service.get_player_by_user_id(10, None)
+        result = await players_service.get(10)
         assert result.user_id == 10
         data_base = PlayersDataBase(
             user_id=10,
