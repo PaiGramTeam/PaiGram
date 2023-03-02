@@ -10,12 +10,10 @@ from telegram.constants import ParseMode
 from telegram.ext import filters, MessageHandler, CommandHandler, CallbackContext
 from telegram.helpers import create_deep_linked_url
 
-from core.baseplugin import BasePlugin
-from core.cookies import CookiesService
-from core.cookies.error import CookiesNotFoundError
+
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
-from core.services.users import UserService
+from core.services.users.services import UserService
 from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId, roleToName
 from modules.apihelper.client.components.calendar import Calendar
@@ -103,7 +101,7 @@ class BirthdayPlugin(Plugin):
                     reply_message = await message.reply_text("请输入正确的日期格式，如1-1，或输入正确的角色名称。")
 
         else:
-            logger.info(f"用户 {user.full_name}[{user.id}] 查询今日角色生日列表")
+            logger.info("用户 %s[%s] 查询今日角色生日列表", user.full_name, user.id)
             today_list = await self.get_today_birthday()
             text = f"今天是 {'、'.join(today_list)} 的生日哦~" if today_list else "今天没有角色过生日哦~"
             reply_message = await message.reply_text(text)
@@ -147,28 +145,8 @@ class BirthdayPlugin(Plugin):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)
             return
-        try:
-            client = await get_genshin_client(user.id)
-            if client.region == RegionEnum.HOYOLAB:
-                text = "此功能当前只支持国服账号哦~"
-            else:
-                await fetch_hk4e_token_by_cookie(client)
-                for name in today_list.copy():
-                    if role_id := self.role_to_id(name):
-                        try:
-                            await self.get_card(client, role_id)
-                        except GenshinException as e:
-                            if e.retcode in {-512008, -512009}:  # 未过生日、已领取过
-                                today_list.remove(name)
-                if today_list:
-                    text = f"成功领取了 {'、'.join(today_list)} 的生日画片~"
-                else:
-                    text = "没有领取到生日画片哦 ~ 可能是已经领取过了"
-            reply_message = await message.reply_text(text)
-            if filters.ChatType.GROUPS.filter(reply_message):
-                self._add_delete_message_job(context, message.chat_id, message.message_id)
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
-        except (UserNotFoundError, CookiesNotFoundError):
+        client = await self.helper.get_genshin_client(user.id)
+        if client is None:
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_msg = await message.reply_text(
@@ -176,11 +154,31 @@ class BirthdayPlugin(Plugin):
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=ParseMode.HTML,
                 )
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_msg.chat_id, delay=30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定",
                     parse_mode=ParseMode.HTML,
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
+            return
+        if client.region == RegionEnum.HOYOLAB:
+            text = "此功能当前只支持国服账号哦~"
+        else:
+            await fetch_hk4e_token_by_cookie(client)
+            for name in today_list.copy():
+                if role_id := self.role_to_id(name):
+                    try:
+                        await self.get_card(client, role_id)
+                    except GenshinException as e:
+                        if e.retcode in {-512008, -512009}:  # 未过生日、已领取过
+                            today_list.remove(name)
+            if today_list:
+                text = f"成功领取了 {'、'.join(today_list)} 的生日画片~"
+            else:
+                text = "没有领取到生日画片哦 ~ 可能是已经领取过了"
+        reply_message = await message.reply_text(text)
+        if filters.ChatType.GROUPS.filter(reply_message):
+            self.add_delete_message_job(message.chat_id)
+            self.add_delete_message_job(reply_message.chat_id)
