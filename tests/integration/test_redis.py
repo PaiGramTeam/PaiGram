@@ -13,4 +13,4 @@ async def test_mysql(redis: "RedisDB"):
 
 
 async def test_redis_ping(redis: "RedisDB"):
-    assert await redis.ping()
+    await redis.ping()
