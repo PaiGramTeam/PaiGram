@@ -94,9 +94,8 @@ class GameMaterialService(BaseService):
             await self._cache.set_url_list(character_name, image_url_list)
         if len(image_url_list) == 0:
             return ""
-        elif len(image_url_list) == 1:
+        if len(image_url_list) == 1:
             return image_url_list[0]
-        elif character_name in self._special:
+        if character_name in self._special:
             return image_url_list[2]
-        else:
-            return image_url_list[1]
+        return image_url_list[1]

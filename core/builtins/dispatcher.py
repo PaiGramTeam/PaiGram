@@ -3,13 +3,11 @@ import asyncio
 import inspect
 from abc import ABC, abstractmethod
 from asyncio import AbstractEventLoop
-from functools import cached_property, partial, wraps
+from functools import cached_property, lru_cache, partial, wraps
 from inspect import Parameter, Signature
 from itertools import chain
-from multiprocessing import RLock as Lock
-from types import MethodType
+from types import GenericAlias, MethodType
 
-# noinspection PyUnresolvedReferences,PyProtectedMember
 from typing import (
     Any,
     Callable,
@@ -17,73 +15,35 @@ from typing import (
     List,
     Optional,
     Sequence,
-    TYPE_CHECKING,
     Type,
-    TypeVar,
     Union,
-    _GenericAlias as GenericAlias,
 )
 
 from arkowrapper import ArkoWrapper
 from fastapi import FastAPI
-from telegram import Bot as TGBot, Chat, Message, Update, User
-from telegram.ext import Application as TGApplication, CallbackContext, Job
+from telegram import Bot as TelegramBot, Chat, Message, Update, User
+from telegram.ext import Application as TelegramApplication, CallbackContext, Job
 from typing_extensions import ParamSpec
 from uvicorn import Server
 
-from core.bot import Bot
-from core.builtins.contexts import BotContext, TGContext, TGUpdate
-from core.config import BotConfig, config as bot_config
+from core.application import Application
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.typedefs import R, T
 
-if TYPE_CHECKING:
-    from multiprocessing.synchronize import RLock as LockType
-
-__all__ = [
+__all__ = (
     "catch",
     "AbstractDispatcher",
     "BaseDispatcher",
     "HandlerDispatcher",
     "JobDispatcher",
-    "ErrorHandlerDispatcher",
     "dispatched",
-]
+)
 
 P = ParamSpec("P")
 
 TargetType = Union[Type, str, Callable[[Any], bool]]
 
-bot: Optional[Bot] = None
-
-_lock: "LockType" = Lock()
-
-_default_kwargs: Dict[Type[T], T] = {}
-
 _CATCH_TARGET_ATTR = "_catch_targets"
-
-
-def _get_default_kwargs() -> Dict[Type[T], T]:
-    global _default_kwargs, bot
-    with _lock:
-        if not _default_kwargs:
-            try:
-                bot = BotContext.get()
-                _default_kwargs = {
-                    Bot: bot,
-                    TGBot: bot.tg_app.bot,
-                    type(bot.executor): bot.executor,
-                    FastAPI: bot.web_app,
-                    Server: bot.web_server,
-                    TGApplication: bot.tg_app,
-                    BotConfig: bot_config,
-                }
-            except LookupError:
-                pass
-        if bot is not None and not bot.running:
-            for obj in chain(bot.dependency, bot.components, bot.services, bot.plugins):
-                _default_kwargs[type(obj)] = obj
-    return _default_kwargs
 
 
 def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -99,6 +59,13 @@ def catch(*targets: Union[str, Type]) -> Callable[[Callable[P, R]], Callable[P, 
     return decorate
 
 
+@lru_cache(64)
+def get_signature(func: Union[type, Callable]) -> Signature:
+    if isinstance(func, type):
+        return inspect.signature(func.__init__)
+    return inspect.signature(func)
+
+
 class AbstractDispatcher(ABC):
     """参数分发器"""
 
@@ -106,12 +73,22 @@ class AbstractDispatcher(ABC):
 
     _args: List[Any] = []
     _kwargs: Dict[Union[str, Type], Any] = {}
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+
+    @property
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError(f"No application was set for this {self.__class__.__name__}.")
+        return self._application
 
     def __init__(self, *args, **kwargs) -> None:
         self._args = list(args)
         self._kwargs = dict(kwargs)
 
-        for key, value in kwargs.items():
+        for _, value in kwargs.items():
             type_arg = type(value)
             if type_arg != str:
                 self._kwargs[type_arg] = value
@@ -127,7 +104,9 @@ class AbstractDispatcher(ABC):
         return list(
             ArkoWrapper(dir(self))
             .filter(lambda x: not x.startswith("_"))
-            .filter(lambda x: x not in self.IGNORED_ATTRS + ["dispatch", "catch_funcs", "cache_func_map"])
+            .filter(
+                lambda x: x not in self.IGNORED_ATTRS + ["dispatch", "catch_funcs", "catch_func_map", "dispatch_funcs"]
+            )
             .map(lambda x: getattr(self, x))
             .filter(lambda x: isinstance(x, MethodType))
             .filter(lambda x: hasattr(x, "_catch_targets"))
@@ -140,36 +119,33 @@ class AbstractDispatcher(ABC):
             catch_targets = getattr(catch_func, _CATCH_TARGET_ATTR)
             for catch_target in catch_targets:
                 result[catch_target] = catch_func
-                # if isinstance(catch_target, type):
-                #     result[catch_target.__name__] = catch_func
         return result
+
+    @cached_property
+    def dispatch_funcs(self) -> List[MethodType]:
+        return list(
+            ArkoWrapper(dir(self))
+            .filter(lambda x: x.startswith("dispatch_by_"))
+            .map(lambda x: getattr(self, x))
+            .filter(lambda x: isinstance(x, MethodType))
+        )
 
     @abstractmethod
+    def dispatch_by_default(self, parameter: Parameter) -> Parameter:
+        """默认的 dispatch 方法"""
+
+    @abstractmethod
+    def dispatch_by_catch_funcs(self, parameter: Parameter) -> Parameter:
+        """使用 catch_func 获取并分配参数"""
+
     def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
         """将参数分配给函数，从而合成一个无需参数即可执行的函数"""
-
-
-class BaseDispatcher(AbstractDispatcher):
-    """默认参数分发器"""
-
-    _instances: Sequence[Any]
-
-    def _get_kwargs(self) -> Dict[Type[T], T]:
-        result = _get_default_kwargs()
-        result[AbstractDispatcher] = self
-        result.update(self._kwargs)
-        return result
-
-    def dispatch(self, func: Callable[P, R]) -> Callable[..., R]:
-        """分发参数给 func"""
         params = {}
-        if isinstance(func, type):
-            signature: Signature = inspect.signature(func.__init__)
-        else:
-            signature: Signature = inspect.signature(func)
+        signature = get_signature(func)
         parameters: Dict[str, Parameter] = dict(signature.parameters)
 
-        for name, parameter in signature.parameters.items():
+        for name, parameter in list(parameters.items()):
+            parameter: Parameter
             if any(
                 [
                     name == "self" and isinstance(func, (type, MethodType)),
@@ -178,24 +154,11 @@ class BaseDispatcher(AbstractDispatcher):
             ):
                 del parameters[name]
                 continue
-            annotation = parameter.annotation
-            # noinspection PyTypeChecker
-            if isinstance(annotation, type) and (value := self._get_kwargs().get(annotation, None)) is not None:
-                params[name] = value
 
-        for name, parameter in list(parameters.items()):
-            annotation = parameter.annotation
-            if annotation != Any and isinstance(annotation, GenericAlias):
-                continue
-
-            catch_func = self.catch_func_map.get(annotation, None) or self.catch_func_map.get(name, None)
-            if catch_func is not None:
-                params[name] = catch_func()
-                del parameters[name]
+            for dispatch_func in self.dispatch_funcs:
+                parameters[name] = dispatch_func(parameter)
 
         for name, parameter in parameters.items():
-            if name in params:
-                continue
             if parameter.default != Parameter.empty:
                 params[name] = parameter.default
             else:
@@ -203,9 +166,60 @@ class BaseDispatcher(AbstractDispatcher):
 
         return partial(func, **params)
 
+    @catch(Application)
+    def catch_application(self) -> Application:
+        return self.application
+
+
+class BaseDispatcher(AbstractDispatcher):
+    """默认参数分发器"""
+
+    _instances: Sequence[Any]
+
+    def _get_kwargs(self) -> Dict[Type[T], T]:
+        result = self._get_default_kwargs()
+        result[AbstractDispatcher] = self
+        result.update(self._kwargs)
+        return result
+
+    def _get_default_kwargs(self) -> Dict[Type[T], T]:
+        application = self.application
+        _default_kwargs = {
+            FastAPI: application.web_app,
+            Server: application.web_server,
+            TelegramApplication: application.telegram,
+            TelegramBot: application.telegram.bot,
+        }
+        if not application.running:
+            for obj in chain(
+                application.managers.dependency,
+                application.managers.components,
+                application.managers.services,
+                application.managers.plugins,
+            ):
+                _default_kwargs[type(obj)] = obj
+        return {k: v for k, v in _default_kwargs.items() if v is not None}
+
+    def dispatch_by_default(self, parameter: Parameter) -> Parameter:
+        annotation = parameter.annotation
+        # noinspection PyTypeChecker
+        if isinstance(annotation, type) and (value := self._get_kwargs().get(annotation, None)) is not None:
+            parameter._default = value  # pylint: disable=W0212
+        return parameter
+
+    def dispatch_by_catch_funcs(self, parameter: Parameter) -> Parameter:
+        annotation = parameter.annotation
+        if annotation != Any and isinstance(annotation, GenericAlias):
+            return parameter
+
+        catch_func = self.catch_func_map.get(annotation) or self.catch_func_map.get(parameter.name)
+        if catch_func is not None:
+            # noinspection PyUnresolvedReferences,PyProtectedMember
+            parameter._default = catch_func()  # pylint: disable=W0212
+        return parameter
+
     @catch(AbstractEventLoop)
     def catch_loop(self) -> AbstractEventLoop:
-
         return asyncio.get_event_loop()
 
 
@@ -213,11 +227,13 @@ class HandlerDispatcher(BaseDispatcher):
     """Handler 参数分发器"""
 
     def __init__(self, update: Optional[Update] = None, context: Optional[CallbackContext] = None, **kwargs) -> None:
-        update = update or TGUpdate.get()
-        context = context or TGContext.get()
         super().__init__(update=update, context=context, **kwargs)
         self._update = update
         self._context = context
+
+    def dispatch_by_default(self, parameter: Parameter) -> Parameter:
+        """HandlerDispatcher 默认不使用 dispatch_by_default"""
+        return parameter
 
     @catch(Update)
     def catch_update(self) -> Update:
@@ -240,17 +256,10 @@ class HandlerDispatcher(BaseDispatcher):
         return self._update.effective_chat
 
 
-class ErrorHandlerDispatcher(HandlerDispatcher):
-    @catch(Exception)
-    def catch_error(self) -> Exception:
-        return self._context.error
-
-
 class JobDispatcher(BaseDispatcher):
     """Job 参数分发器"""
 
     def __init__(self, context: Optional[CallbackContext] = None, **kwargs) -> None:
-        context = context or TGContext.get()
         super().__init__(context=context, **kwargs)
         self._context = context
 
@@ -261,6 +270,10 @@ class JobDispatcher(BaseDispatcher):
     @catch(Job)
     def catch_job(self) -> Job:
         return self._context.job
+
+    @catch(CallbackContext)
+    def catch_context(self) -> CallbackContext:
+        return self._context
 
 
 def dispatched(dispatcher: Type[AbstractDispatcher] = BaseDispatcher):

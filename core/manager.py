@@ -1,4 +1,4 @@
-from asyncio import CancelledError
+import asyncio
 from importlib import import_module
 from pathlib import Path
 from typing import Dict, Generic, List, Optional, TYPE_CHECKING, Type, TypeVar
@@ -14,10 +14,11 @@ from utils.helpers import gen_pkg
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from core.application import Application
     from core.plugin import PluginType
-    from core.builtins.executor import BaseExecutor
+    from core.builtins.executor import Executor
 
-__all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager")
+__all__ = ("DependenceManager", "PluginManager", "ComponentManager", "ServiceManager", "Managers")
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -31,11 +32,7 @@ def _load_module(path: Path) -> None:
             import_module(pkg)
         except Exception as e:
             logger.exception(
-                '在导入 "%s" 的过程中遇到了错误 [red bold]%s[/]',
-                pkg,
-                type(e).__name__,
-                exc_info=e,
-                extra={"markup": True}
+                '在导入 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
             )
             raise SystemExit from e
 
@@ -43,18 +40,31 @@ def _load_module(path: Path) -> None:
 class Manager(Generic[T]):
     """生命周期控制基类"""
 
-    _executor: Optional["BaseExecutor"] = None
+    _executor: Optional["Executor"] = None
     _lib: Dict[Type[T], T] = {}
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
 
     @property
-    def executor(self) -> "BaseExecutor":
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError(f"No application was set for this {self.__class__.__name__}.")
+        return self._application
+
+    @property
+    def executor(self) -> "Executor":
         """执行器"""
-        from core.builtins.executor import BaseExecutor
-
         if self._executor is None:
-            self._executor = BaseExecutor("Bot")
-
+            raise RuntimeError(f"No executor was set for this {self.__class__.__name__}.")
         return self._executor
+
+    def build_executor(self, name: str):
+        from core.builtins.executor import Executor
+
+        self._executor = Executor(name)
+        self._executor.set_application(self.application)
 
 
 class DependenceManager(Manager[DependenceType]):
@@ -93,8 +103,21 @@ class DependenceManager(Manager[DependenceType]):
                 raise SystemExit from e
 
     async def stop_dependency(self) -> None:
+        async def task(d):
+            try:
+                async with timeout(5):
+                    await d.shutdown()
+                    logger.debug('基础服务 "%s" 关闭成功', d.__class__.__name__)
+            except asyncio.TimeoutError:
+                logger.warning('基础服务 "%s" 关闭超时', d.__class__.__name__)
+            except Exception as e:
+                logger.error('基础服务 "%s" 关闭错误', d.__class__.__name__, exc_info=e)
+
+        tasks = []
         for dependence in self._dependency.values():
-            await dependence.shutdown()
+            tasks.append(asyncio.create_task(task(dependence)))
+
+        await asyncio.gather(*tasks)
 
 
 class ComponentManager(Manager[ComponentType]):
@@ -112,7 +135,7 @@ class ComponentManager(Manager[ComponentType]):
 
     async def init_components(self):
         for path in filter(
-                lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
+            lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
         ):
             _load_module(path)
         components = ArkoWrapper(get_all_services()).filter(lambda x: x.is_component)
@@ -128,9 +151,9 @@ class ComponentManager(Manager[ComponentType]):
                     self._lib[component] = instance
                     self._components[component] = instance
                     components = components.remove(component)
-                except Exception as e:
-                    logger.debug(f'组件 "{component.__name__}" 初始化失败: [red]{e}[/]', extra={"markup": True})
-            end_len = len(components)
+                except Exception as e:  # pylint: disable=W0703
+                    logger.debug('组件 "%s" 初始化失败: [red]%s[/]', component.__name__, e, extra={"markup": True})
+            end_len = len(list(components))
             if start_len == end_len:
                 retry_times += 1
 
@@ -166,13 +189,13 @@ class ServiceManager(Manager[BaseServiceType]):
 
             return instance
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0703
             logger.exception('服务 "%s" 初始化失败，BOT 将自动关闭', target.__name__)
             raise SystemExit from e
 
     async def start_services(self) -> None:
         for path in filter(
-                lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
+            lambda x: x.is_dir() and not x.name.startswith("_"), PROJECT_ROOT.joinpath("core/services").iterdir()
         ):
             _load_module(path)
 
@@ -186,16 +209,23 @@ class ServiceManager(Manager[BaseServiceType]):
         """关闭服务"""
         if not self._services:
             return
+
+        async def task(s):
+            try:
+                async with timeout(5):
+                    await s.shutdown()
+                    logger.success('服务 "%s" 关闭成功', s.__class__.__name__)
+            except asyncio.TimeoutError:
+                logger.warning('服务 "%s" 关闭超时', s.__class__.__name__)
+            except Exception as e:
+                logger.warning('服务 "%s" 关闭失败', s.__class__.__name__, exc_info=e)
+
         logger.info("正在关闭服务")
+        tasks = []
         for service in self._services.values():
-            async with timeout(5):
-                try:
-                    await service.shutdown()
-                    logger.success('服务 "%s" 关闭成功', service.__class__.__name__)
-                except CancelledError:
-                    logger.warning('服务 "%s" 关闭超时', service.__class__.__name__)
-                except Exception as e:  # pylint: disable=W0703
-                    logger.exception('服务 "%s" 关闭失败', service.__class__.__name__, exc_info=e)
+            tasks.append(asyncio.create_task(task(service)))
+
+        await asyncio.gather(*tasks)
 
 
 class PluginManager(Manager["PluginType"]):
@@ -224,22 +254,29 @@ class PluginManager(Manager["PluginType"]):
 
             try:
                 instance: "PluginType" = await self.executor(plugin)
-            except Exception as e:
-                logger.exception('插件 "%s" 初始化失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+            except Exception as e:  # pylint: disable=W0703
+                logger.error('插件 "%s" 初始化失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
 
             self._plugins[plugin] = instance
 
+            if self._application is not None:
+                instance.set_application(self._application)
+
             try:
                 await instance.install()
                 logger.success('插件 "%s" 安装成功', f"{plugin.__module__}.{plugin.__name__}")
-            except Exception as e:
-                logger.exception('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+            except Exception as e:  # pylint: disable=W0703
+                logger.error('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
                 continue
 
     async def uninstall_plugins(self) -> None:
         for plugin in self._plugins.values():
             try:
                 await plugin.uninstall()
-            except Exception as e:
-                logger.exception('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+            except Exception as e:  # pylint: disable=W0703
+                logger.error('插件 "%s" 卸载失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
+
+
+class Managers(DependenceManager, ComponentManager, ServiceManager, PluginManager):
+    """BOT 除自身外的生命周期管理类"""

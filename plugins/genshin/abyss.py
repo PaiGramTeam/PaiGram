@@ -5,7 +5,6 @@ from datetime import datetime
 from functools import lru_cache, partial
 from typing import Any, Coroutine, List, Match, Optional, Tuple, Union
 
-import ujson as json
 from arkowrapper import ArkoWrapper
 from genshin import Client, GenshinException
 from pytz import timezone
@@ -14,18 +13,24 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.baseplugin import BasePlugin
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
-from core.services.cookies import CookiesNotFoundError, CookiesService, TooManyRequestPublicCookies
+from core.services.cookies.error import TooManyRequestPublicCookies
+from core.services.players.error import PlayerNotFoundError
 from core.services.template import TemplateService
 from core.services.template.models import RenderGroupResult, RenderResult
-from core.services.user import UserNotFoundError, UserService
 from metadata.genshin import game_id_to_role_id
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
-from utils.helpers import async_re_sub, get_genshin_client, get_public_genshin_client
+from plugins.tools.genshin import GenshinHelper
+from utils.helpers import async_re_sub
 from utils.log import logger
+
+
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
+
 
 TZ = timezone("Asia/Shanghai")
 cmd_pattern = r"^/abyss\s*((?:\d+)|(?:all))?\s*(pre)?"
@@ -54,9 +59,8 @@ def get_args(text: str) -> Tuple[int, bool, bool]:
         except ValueError:
             floor = 0
         return floor, result[0] == "all", bool(result[1])
-    else:
-        result = re.match(msg_pattern, text).groups()
-        return int(result[2] or 0), result[0] == "总览", result[1] == "上期"
+    result = re.match(msg_pattern, text).groups()
+    return int(result[2] or 0), result[0] == "总览", result[1] == "上期"
 
 
 class AbyssUnlocked(Exception):
@@ -71,28 +75,25 @@ class AbyssNotFoundError(Exception):
     """如果查询别人，是无法找到队伍详细，只有数据统计"""
 
 
-class Abyss(Plugin, BasePlugin):
+class AbyssPlugin(Plugin):
     """深渊数据查询"""
 
     def __init__(
         self,
-        user_service: UserService = None,
-        cookies_service: CookiesService = None,
-        template_service: TemplateService = None,
-        assets_service: AssetsService = None,
+        template: TemplateService,
+        helper: GenshinHelper,
+        assets_service: AssetsService,
     ):
-        self.template_service = template_service
-        self.cookies_service = cookies_service
-        self.user_service = user_service
+        self.template_service = template
+        self.helper = helper
         self.assets_service = assets_service
 
     @handler.command("abyss", block=False)
     @handler.message(filters.Regex(msg_pattern), block=False)
-    @restricts()
-    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
+        uid: Optional[int] = None
 
         # 若查询帮助
         if (message.text.startswith("/") and "help" in message.text) or "帮助" in message.text:
@@ -105,7 +106,7 @@ class Abyss(Plugin, BasePlugin):
                 "<code>深渊数据查询</code>\n<code>深渊数据查询上期第12层</code>\n<code>深渊数据总览上期</code>",
                 parse_mode=ParseMode.HTML,
             )
-            logger.info(f"用户 {user.full_name}[{user.id}] 查询[bold]深渊挑战数据[/bold]帮助", extra={"markup": True})
+            logger.info("用户 %s[%s] 查询[bold]深渊挑战数据[/bold]帮助", user.full_name, user.id, extra={"markup": True})
             return
 
         # 解析参数
@@ -114,42 +115,46 @@ class Abyss(Plugin, BasePlugin):
         if floor > 12 or floor < 0:
             reply_msg = await message.reply_text("深渊层数输入错误，请重新输入。支持的参数为： 1-12 或 all")
             if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+                self.add_delete_message_job(reply_msg)
+                self.add_delete_message_job(message)
             return
-        elif 0 < floor < 9:
+        if 0 < floor < 9:
             previous = False
 
         logger.info(
-            f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]请求: "
-            f"floor={floor} total={total} previous={previous}",
+            "用户 %s[%s] [bold]深渊挑战数据[/bold]请求: floor=%s total=%s previous=%s",
+            user.full_name,
+            user.id,
+            floor,
+            total,
+            previous,
             extra={"markup": True},
         )
 
         try:
-            try:
-                client = await get_genshin_client(user.id)
-                await client.get_record_cards()
+            client = await self.helper.get_genshin_client(user.id)
+            if client is None:
+                client, uid = await self.helper.get_public_genshin_client(user.id)
+                if client is None:
+                    raise PlayerNotFoundError
+            else:
                 uid = client.uid
-            except CookiesNotFoundError:
-                client, uid = await get_public_genshin_client(user.id)
-        except UserNotFoundError:  # 若未找到账号
+        except PlayerNotFoundError:  # 若未找到账号
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
-
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_message.chat_id)
+                self.add_delete_message_job(message.chat_id)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         except TooManyRequestPublicCookies:
-            reply_msg = await message.reply_text("查询次数太多，请您稍后重试")
+            reply_message = await message.reply_text("查询次数太多，请您稍后重试")
             if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 10)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 10)
+                self.add_delete_message_job(reply_message.chat_id)
+                self.add_delete_message_job(message.chat_id)
             return
 
         async def reply_message_func(content: str) -> None:
@@ -168,10 +173,9 @@ class Abyss(Plugin, BasePlugin):
         try:
             images = await self.get_rendered_pic(client, uid, floor, total, previous)
         except GenshinException as exc:
-            if exc.retcode == 1034:
-                if client.uid != uid:
-                    await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
-                    return
+            if exc.retcode == 1034 and client.uid != uid:
+                await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
+                return
             raise exc
         except AbyssUnlocked:  # 若深渊未解锁
             await reply_message_func("还未解锁深渊哦~")
@@ -199,7 +203,7 @@ class Abyss(Plugin, BasePlugin):
         if reply_text is not None:
             await reply_text.delete()
 
-        logger.info(f"用户 {user.full_name}[{user.id}] [bold]深渊挑战数据[/bold]: 成功发送图片", extra={"markup": True})
+        logger.info("用户 %s[%s] [bold]深渊挑战数据[/bold]: 成功发送图片", user.full_name, user.id, extra={"markup": True})
 
     async def get_rendered_pic(
         self, client: Client, uid: int, floor: int, total: bool, previous: bool
@@ -273,7 +277,7 @@ class Abyss(Plugin, BasePlugin):
         if total:
             avatars = await client.get_genshin_characters(uid, lang="zh-cn")
             render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
-            data = json.loads(result)
+            data = jsonlib.loads(result)
             render_data["data"] = data
 
             render_inputs: List[Tuple[int, Coroutine[Any, Any, RenderResult]]] = []
@@ -310,39 +314,38 @@ class Abyss(Plugin, BasePlugin):
 
             return await asyncio.gather(*render_group_inputs)
 
-        elif floor < 1:
-            render_data["data"] = json.loads(result)
+        if floor < 1:
+            render_data["data"] = jsonlib.loads(result)
             return [
                 await self.template_service.render(
                     "genshin/abyss/overview.html", render_data, viewport={"width": 750, "height": 580}
                 )
             ]
+        num_dic = {
+            "0": "",
+            "1": "一",
+            "2": "二",
+            "3": "三",
+            "4": "四",
+            "5": "五",
+            "6": "六",
+            "7": "七",
+            "8": "八",
+            "9": "九",
+        }
+        if num := num_dic.get(str(floor)):
+            render_data["floor-num"] = num
         else:
-            num_dic = {
-                "0": "",
-                "1": "一",
-                "2": "二",
-                "3": "三",
-                "4": "四",
-                "5": "五",
-                "6": "六",
-                "7": "七",
-                "8": "八",
-                "9": "九",
-            }
-            if num := num_dic.get(str(floor)):
-                render_data["floor-num"] = num
-            else:
-                render_data["floor-num"] = f"十{num_dic.get(str(floor % 10))}"
-            floors = json.loads(result)["floors"]
-            if (floor_data := list(filter(lambda x: x["floor"] == floor, floors))) is None:
-                return None
-            avatars = await client.get_genshin_characters(uid, lang="zh-cn")
-            render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
-            render_data["floor"] = floor_data[0]
-            render_data["total_stars"] = f"{floor_data[0]['stars']}/{floor_data[0]['max_stars']}"
-            return [
-                await self.template_service.render(
-                    "genshin/abyss/floor.html", render_data, viewport={"width": 690, "height": 500}
-                )
-            ]
+            render_data["floor-num"] = f"十{num_dic.get(str(floor % 10))}"
+        floors = jsonlib.loads(result)["floors"]
+        if (floor_data := list(filter(lambda x: x["floor"] == floor, floors))) is None:
+            return None
+        avatars = await client.get_genshin_characters(uid, lang="zh-cn")
+        render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
+        render_data["floor"] = floor_data[0]
+        render_data["total_stars"] = f"{floor_data[0]['stars']}/{floor_data[0]['max_stars']}"
+        return [
+            await self.template_service.render(
+                "genshin/abyss/floor.html", render_data, viewport={"width": 690, "height": 500}
+            )
+        ]

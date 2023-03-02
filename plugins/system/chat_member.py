@@ -3,27 +3,26 @@ from telegram.ext import CallbackContext, ChatMemberHandler
 
 from core.config import JoinGroups, config
 from core.plugin import Plugin, handler
-from core.services.admin.services import BotAdminService
-from core.services.cookies import CookiesNotFoundError, CookiesService
-from core.services.user import UserNotFoundError, UserService
+from core.services.cookies import CookiesService
+from core.services.players import PlayersService
+from core.services.users.services import UserAdminService
+
 from utils.chatmember import extract_status_change
-from utils.decorators.error import error_callable
 from utils.log import logger
 
 
 class ChatMember(Plugin):
     def __init__(
         self,
-        bot_admin_service: BotAdminService = None,
-        user_service: UserService = None,
+        user_admin_service: UserAdminService = None,
+        players_service: PlayersService = None,
         cookies_service: CookiesService = None,
     ):
         self.cookies_service = cookies_service
-        self.user_service = user_service
-        self.bot_admin_service = bot_admin_service
+        self.players_service = players_service
+        self.user_admin_service = user_admin_service
 
     @handler.chat_member(chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER, block=False)
-    @error_callable
     async def track_chats(self, update: Update, context: CallbackContext) -> None:
         result = extract_status_change(update.my_chat_member)
         if result is None:
@@ -52,8 +51,7 @@ class ChatMember(Plugin):
         quit_status = True
         if config.join_groups == JoinGroups.NO_ALLOW:
             try:
-                admin_list = await self.bot_admin_service.get_admin_list()
-                if user.id in admin_list:
+                if await self.user_admin_service.is_admin(user.id):
                     quit_status = False
                 else:
                     logger.warning("不是管理员邀请！退出群聊")
@@ -61,14 +59,10 @@ class ChatMember(Plugin):
                 logger.error("获取信息出现错误", exc_info=exc)
         elif config.join_groups == JoinGroups.ALLOW_AUTH_USER:
             try:
-                user_info = await self.user_service.get_user_by_id(user.id)
-                await self.cookies_service.get_cookies(user.id, user_info.region)
-            except (UserNotFoundError, CookiesNotFoundError):
-                logger.warning("用户 %s[%s] 邀请请求被拒绝", user.full_name, user.id)
-            except Exception as exc:
+                if await self.cookies_service.get(user.id):
+                    quit_status = False
+            except Exception as exc:  # pylint: disable=W0703
                 logger.error("获取信息出现错误", exc_info=exc)
-            else:
-                quit_status = False
         elif config.join_groups == JoinGroups.ALLOW_ALL:
             quit_status = False
         else:

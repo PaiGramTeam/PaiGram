@@ -67,7 +67,7 @@
   const barData = {{ bar_data | tojson }};
   const myChart1 = echarts.init(document.querySelector('#chartContainer'), null, {renderer: 'svg'});
   const xData = barData.map(v => v.month)
-  const yData = barData.map(v => v.amount / 10)
+  const yData = barData.map(v => v.amount)
   const option = {
     animation: false,
     xAxis: {
@@ -78,14 +78,14 @@
       x:'left',
       y:'top',
       show: true,
-      data: [{ name: '金额' }]
+      data: [{ name: '结晶' }]
     },
     yAxis: {
       type: 'value'
     },
     series: [
       {
-        name:'金额',
+        name:'结晶',
         data: yData,
         type: 'bar',
         itemStyle: {

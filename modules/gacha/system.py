@@ -57,13 +57,12 @@ class BannerSystem:
             return self.do_rare_pull(
                 pools.rate_up_items5, pools.fallback_items5_pool1, pools.fallback_items5_pool2, 5, banner, gacha_info
             )
-        elif leval_won == 4:
+        if leval_won == 4:
             gacha_info.pity4 = 0
             return self.do_rare_pull(
                 pools.rate_up_items4, pools.fallback_items4_pool1, pools.fallback_items4_pool2, 4, banner, gacha_info
             )
-        else:
-            return self.get_random(banner.fallback_items3)
+        return self.get_random(banner.fallback_items3)
 
     @staticmethod
     def draw_roulette(weights, cutoff: int) -> int:
@@ -125,17 +124,15 @@ class BannerSystem:
                 return self.get_random(
                     self.fallback_items5_pool2_default if rarity == 5 else self.fallback_items4_pool2_default
                 )
-            else:
-                return self.get_random(fallback2)
-        elif len(fallback2) < 1:
+            return self.get_random(fallback2)
+        if len(fallback2) < 1:
             return self.get_random(fallback1)
+        pity_pool1 = banner.get_pool_balance_weight(rarity, gacha_info.get_pity_pool(rarity, 1))
+        pity_pool2 = banner.get_pool_balance_weight(rarity, gacha_info.get_pity_pool(rarity, 2))
+        if pity_pool1 >= pity_pool2:
+            chosen_pool = 1 + self.draw_roulette((pity_pool1, pity_pool2), 10000)
         else:
-            pity_pool1 = banner.get_pool_balance_weight(rarity, gacha_info.get_pity_pool(rarity, 1))
-            pity_pool2 = banner.get_pool_balance_weight(rarity, gacha_info.get_pity_pool(rarity, 2))
-            if pity_pool1 >= pity_pool2:
-                chosen_pool = 1 + self.draw_roulette((pity_pool1, pity_pool2), 10000)
-            else:
-                chosen_pool = 2 - self.draw_roulette((pity_pool2, pity_pool1), 10000)
+            chosen_pool = 2 - self.draw_roulette((pity_pool2, pity_pool1), 10000)
         if chosen_pool == 1:
             gacha_info.set_pity_pool(rarity, 1, 0)
             return self.get_random(fallback1)

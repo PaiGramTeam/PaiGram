@@ -25,6 +25,6 @@ class PlayerGachaInfo(BaseModel):
     def get_banner_info(self, banner: GachaBanner) -> PlayerGachaBannerInfo:
         if banner.banner_type == BannerType.EVENT:
             return self.event_character_banner
-        elif banner.banner_type == BannerType.WEAPON:
+        if banner.banner_type == BannerType.WEAPON:
             return self.event_weapon_banner
         return self.standard_banner

@@ -17,26 +17,26 @@ class BaseQueue(Protocol[T]):  # pylint: disable=W0049
         raise NotImplementedError
 
     def task_done(self) -> NoReturn:
-        pass
+        raise NotImplementedError()
 
     def qsize(self) -> int:
-        pass
+        raise NotImplementedError()
 
     @property
     def unfinished_tasks(self) -> int:
         raise NotImplementedError
 
     def empty(self) -> bool:
-        pass
+        raise NotImplementedError()
 
     def full(self) -> bool:
-        pass
+        raise NotImplementedError()
 
     def put_nowait(self, item: T) -> None:
-        pass
+        raise NotImplementedError()
 
     def get_nowait(self) -> T:
-        pass
+        raise NotImplementedError()
 
 
 # noinspection PyPropertyDefinition
@@ -50,35 +50,35 @@ class SyncQueue(BaseQueue[T], Protocol[T]):  # pylint: disable=W0049
         raise NotImplementedError
 
     def task_done(self) -> NoReturn:
-        pass
+        raise NotImplementedError()
 
     def qsize(self) -> int:
-        pass
+        raise NotImplementedError()
 
     @property
     def unfinished_tasks(self) -> int:
         raise NotImplementedError
 
     def empty(self) -> bool:
-        pass
+        raise NotImplementedError()
 
     def full(self) -> bool:
-        pass
+        raise NotImplementedError()
 
     def put_nowait(self, item: T) -> None:
-        pass
+        raise NotImplementedError()
 
     def get_nowait(self) -> T:
-        pass
+        raise NotImplementedError()
 
     def put(self, item: T, block: bool = True, timeout: Optional[float] = None) -> None:
-        pass
+        raise NotImplementedError()
 
     def get(self, block: bool = True, timeout: Optional[float] = None) -> T:
-        pass
+        raise NotImplementedError()
 
     def join(self) -> None:
-        pass
+        raise NotImplementedError()
 
 
 class AsyncQueue(BaseQueue[T], Protocol[T]):  # pylint: disable=W0049

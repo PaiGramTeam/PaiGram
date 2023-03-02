@@ -2,7 +2,19 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
 from importlib import import_module
-from typing import Any, Callable, ClassVar, Dict, Generic, List, Optional, Pattern, TYPE_CHECKING, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Pattern,
+    TYPE_CHECKING,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pydantic import BaseModel
 
@@ -15,12 +27,13 @@ from telegram.ext import BaseHandler
 from telegram.ext.filters import BaseFilter
 from typing_extensions import ParamSpec
 
+from core.handler.callbackqueryhandler import CallbackQueryHandler
 from utils.const import WRAPPER_ASSIGNMENTS as _WRAPPER_ASSIGNMENTS
 
 if TYPE_CHECKING:
     from core.builtins.dispatcher import AbstractDispatcher
 
-__all__ = [
+__all__ = (
     "handler",
     "conversation",
     "ConversationDataType",
@@ -28,11 +41,12 @@ __all__ = [
     "HandlerData",
     "ErrorHandlerData",
     "error_handler",
-]
+)
 
 P = ParamSpec("P")
 T = TypeVar("T")
 R = TypeVar("R")
+UT = TypeVar("UT")
 
 HandlerType = TypeVar("HandlerType", bound=BaseHandler)
 HandlerCls = Type[HandlerType]
@@ -47,16 +61,22 @@ ERROR_HANDLER_ATTR_NAME = "_error_handler_data"
 CONVERSATION_HANDLER_ATTR_NAME = "_conversation_handler_data"
 """用于储存生成 ConversationHandler 时所需要的参数（例如 block）的属性名"""
 
-WRAPPER_ASSIGNMENTS = _WRAPPER_ASSIGNMENTS + [
-    HANDLER_DATA_ATTR_NAME,
-    ERROR_HANDLER_ATTR_NAME,
-    CONVERSATION_HANDLER_ATTR_NAME,
-]
+WRAPPER_ASSIGNMENTS = list(
+    set(
+        _WRAPPER_ASSIGNMENTS
+        + [
+            HANDLER_DATA_ATTR_NAME,
+            ERROR_HANDLER_ATTR_NAME,
+            CONVERSATION_HANDLER_ATTR_NAME,
+        ]
+    )
+)
 
 
 @dataclass(init=True)
 class HandlerData:
     type: Type[HandlerType]
+    admin: bool
     kwargs: Dict[str, Any]
     dispatcher: Optional[Type["AbstractDispatcher"]] = None
 
@@ -69,17 +89,26 @@ class _Handler:
     def __init_subclass__(cls, **kwargs) -> None:
         """用于获取 python-telegram-bot 中对应的 handler class"""
 
-        cls._type = getattr(Module, f"{cls.__name__.strip('_')}Handler", None)
+        handler_name = f"{cls.__name__.strip('_')}Handler"
 
-    def __init__(self, dispatcher: Optional[Type["AbstractDispatcher"]] = None, **kwargs) -> None:
+        if handler_name == "CallbackQueryHandler":
+            cls._type = CallbackQueryHandler
+            return
+
+        cls._type = getattr(Module, handler_name, None)
+
+    def __init__(self, admin: bool = False, dispatcher: Optional[Type["AbstractDispatcher"]] = None, **kwargs) -> None:
         self.dispatcher = dispatcher
+        self.admin = admin
         self.kwargs = kwargs
 
     def __call__(self, func: Callable[P, R]) -> Callable[P, R]:
         """decorator实现，从 func 生成 Handler"""
 
         handler_datas = getattr(func, HANDLER_DATA_ATTR_NAME, [])
-        handler_datas.append(HandlerData(type=self._type, kwargs=self.kwargs, dispatcher=self.dispatcher))
+        handler_datas.append(
+            HandlerData(type=self._type, admin=self.admin, kwargs=self.kwargs, dispatcher=self.dispatcher)
+        )
         setattr(func, HANDLER_DATA_ATTR_NAME, handler_datas)
 
         return func
@@ -91,9 +120,10 @@ class _CallbackQuery(_Handler):
         pattern: Union[str, Pattern, type, Callable[[object], Optional[bool]]] = None,
         *,
         block: DVInput[bool] = DEFAULT_TRUE,
+        admin: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
     ):
-        super(_CallbackQuery, self).__init__(pattern=pattern, block=block, dispatcher=dispatcher)
+        super(_CallbackQuery, self).__init__(pattern=pattern, block=block, admin=admin, dispatcher=dispatcher)
 
 
 class _ChatJoinRequest(_Handler):
@@ -126,13 +156,16 @@ class _ChosenInlineResult(_Handler):
 class _Command(_Handler):
     def __init__(
         self,
-        command: str,
+        command: Union[str, List[str]],
         filters: "BaseFilter" = None,
         *,
         block: DVInput[bool] = DEFAULT_TRUE,
+        admin: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
     ):
-        super(_Command, self).__init__(command=command, filters=filters, block=block, dispatcher=dispatcher)
+        super(_Command, self).__init__(
+            command=command, filters=filters, block=block, admin=admin, dispatcher=dispatcher
+        )
 
 
 class _InlineQuery(_Handler):
@@ -153,9 +186,10 @@ class _Message(_Handler):
         filters: BaseFilter,
         *,
         block: DVInput[bool] = DEFAULT_TRUE,
+        admin: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
     ) -> None:
-        super(_Message, self).__init__(filters=filters, block=block, dispatcher=dispatcher)
+        super(_Message, self).__init__(filters=filters, block=block, admin=admin, dispatcher=dispatcher)
 
 
 class _PollAnswer(_Handler):
@@ -198,10 +232,11 @@ class _StringCommand(_Handler):
         self,
         command: str,
         *,
+        admin: bool = False,
         block: DVInput[bool] = DEFAULT_TRUE,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
     ):
-        super(_StringCommand, self).__init__(command=command, block=block, dispatcher=dispatcher)
+        super(_StringCommand, self).__init__(command=command, block=block, admin=admin, dispatcher=dispatcher)
 
 
 class _StringRegex(_Handler):
@@ -210,16 +245,17 @@ class _StringRegex(_Handler):
         pattern: Union[str, Pattern],
         *,
         block: DVInput[bool] = DEFAULT_TRUE,
+        admin: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
     ):
-        super(_StringRegex, self).__init__(pattern=pattern, block=block, dispatcher=dispatcher)
+        super(_StringRegex, self).__init__(pattern=pattern, block=block, admin=admin, dispatcher=dispatcher)
 
 
 class _Type(_Handler):
     # noinspection PyShadowingBuiltins
     def __init__(
         self,
-        type: Type,
+        type: Type[UT],  # pylint: disable=W0622
         strict: bool = False,
         *,
         block: DVInput[bool] = DEFAULT_TRUE,
@@ -250,11 +286,12 @@ class handler(_Handler):
         self,
         handler_type: Union[Callable[P, "HandlerType"], Type["HandlerType"]],
         *,
+        admin: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
         **kwargs: P.kwargs,
     ) -> None:
         self._type = handler_type
-        super().__init__(dispatcher=dispatcher, **kwargs)
+        super().__init__(admin=admin, dispatcher=dispatcher, **kwargs)
 
 
 class ConversationDataType(Enum):
@@ -279,15 +316,14 @@ class _ConversationType:
         cls._type = ConversationDataType(cls.__name__.lstrip("_").lower())
 
 
-class _Entry(_ConversationType, Generic[P, R]):
-    __wrapped__: Callable[P, R]
+def _entry(func: Callable[P, R]) -> Callable[P, R]:
+    setattr(func, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=ConversationDataType.Entry))
 
-    def __init__(self, func: Callable[P, R]) -> None:
-        wraps(func)(self)
-        setattr(self, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
+    @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        return func(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs) -> R:
-        return self.__wrapped__(*args, **kwargs)
+    return wrapped
 
 
 class _State(_ConversationType):
@@ -299,53 +335,46 @@ class _State(_ConversationType):
         return func
 
 
-class _Fallback(_ConversationType, Generic[P, R]):
-    __wrapped__: Callable[P, R]
+def _fallback(func: Callable[P, R]) -> Callable[P, R]:
+    setattr(func, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=ConversationDataType.Fallback))
 
-    def __init__(self, func: Callable[P, R]) -> None:
-        wraps(func)(self)
-        setattr(self, CONVERSATION_HANDLER_ATTR_NAME, ConversationData(type=self._type))
+    @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        return func(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs) -> R:
-        return self.__wrapped__(*args, **kwargs)
+    return wrapped
 
 
 # noinspection PyPep8Naming
 class conversation(_Handler):
-    entry_point = _Entry
+    entry_point = _entry
     state = _State
-    fallback = _Fallback
+    fallback = _fallback
 
 
 @dataclass(init=True)
 class ErrorHandlerData:
     block: bool
     func: Optional[Callable] = None
-    dispatcher: Optional[Type["AbstractDispatcher"]] = None
 
 
 # noinspection PyPep8Naming
 class error_handler:
+    _func: Callable[P, R]
+
     def __init__(
         self,
         *,
         block: bool = DEFAULT_TRUE,
-        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
     ):
         self._block = block
-        if dispatcher is None:
-            from core.builtins.dispatcher import ErrorHandlerDispatcher
-
-            dispatcher = ErrorHandlerDispatcher
-
-        self._dispatcher = dispatcher
 
     def __call__(self, func: Callable[P, T]) -> Callable[P, T]:
         self._func = func
-        wraps(func)(self)
+        wraps(func, assigned=WRAPPER_ASSIGNMENTS)(self)
 
         handler_datas = getattr(func, ERROR_HANDLER_ATTR_NAME, [])
-        handler_datas.append(ErrorHandlerData(block=self._block, dispatcher=self._dispatcher))
+        handler_datas.append(ErrorHandlerData(block=self._block))
         setattr(self._func, ERROR_HANDLER_ATTR_NAME, handler_datas)
 
         return self._func

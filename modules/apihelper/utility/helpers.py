@@ -54,13 +54,13 @@ def get_ds(ds_type: str = None, new_ds: bool = False, data: Any = None, params: 
         c = hex_digest(f"salt={salt}&t={t}&r={r}")
         return f"{t},{r},{c}"
 
-    app_version = "2.42.1"
+    app_version = "2.44.1"
     client_type = "5"
-    salt = "9gaxOdeeY2W9dw5x62pywhik8cxy5TIJ"
+    salt = "IEIZiKYaput2OCKQprNuGsog1NZc1FkS"
     ds = old()
     if ds_type in {"android", "2"}:
         client_type = "2"
-        salt = "jrU9ULHGZdM9Os3uGHOpjyRELYxby5cg"
+        salt = "dZAwGk4e9aC0MXXItkwnHamjA1x30IYw"
         ds = old()
     elif ds_type == "android_new":
         client_type = "2"
@@ -78,8 +78,7 @@ def get_recognize_server(uid: int) -> str:
     server = RECOGNIZE_SERVER.get(str(uid)[0])
     if server:
         return server
-    else:
-        raise TypeError(f"UID {uid} isn't associated with any recognize server")
+    raise TypeError(f"UID {uid} isn't associated with any recognize server")
 
 
 def get_ua(device: str = "Paimon Build", version: str = "2.36.1"):

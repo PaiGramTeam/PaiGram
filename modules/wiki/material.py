@@ -48,6 +48,7 @@ class Material(WikiModel):
             for row in table_rows:
                 if target in row.find("td").text:
                     return row.find_all("td")[-1]
+            return None
 
         def get_table_text(row_num: int) -> str:
             """一个便捷函数，用于返回表格对应行的最后一个单元格中的文本"""

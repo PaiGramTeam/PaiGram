@@ -18,10 +18,9 @@ class FileType(Enum):
         """对应的 Telegram media 类型"""
         if file_type == FileType.PHOTO:
             return InputMediaPhoto
-        elif file_type == FileType.DOCUMENT:
+        if file_type == FileType.DOCUMENT:
             return InputMediaDocument
-        else:
-            raise ErrorFileType
+        raise ErrorFileType
 
 
 class RenderResult:

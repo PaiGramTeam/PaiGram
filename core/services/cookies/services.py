@@ -8,8 +8,8 @@ from core.services.cookies.cache import PublicCookiesCache
 from core.services.cookies.error import CookieServiceError, TooManyRequestPublicCookies
 from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStatusEnum
 from core.services.cookies.repositories import CookiesRepository
+from core.services.players.models import RegionEnum
 from utils.log import logger
-from utils.models.base import RegionEnum
 
 __all__ = ("CookiesService", "PublicCookiesService")
 
@@ -24,11 +24,16 @@ class CookiesService(BaseService):
     async def add(self, cookies: Cookies):
         await self._repository.add(cookies)
 
-    async def get(self, user_id: int, region: RegionEnum) -> Optional[Cookies]:
-        return await self._repository.get_by_user_id(user_id, region)
+    async def get(
+        self,
+        user_id: int,
+        account_id: Optional[int] = None,
+        region: Optional[RegionEnum] = None,
+    ) -> Optional[Cookies]:
+        return await self._repository.get(user_id, account_id, region)
 
-    async def remove(self, cookies: Cookies) -> None:
-        return await self._repository.remove(cookies)
+    async def delete(self, cookies: Cookies) -> None:
+        return await self._repository.delete(cookies)
 
 
 class PublicCookiesService(BaseService):
@@ -37,6 +42,11 @@ class PublicCookiesService(BaseService):
         self._repository: CookiesRepository = cookies_repository
         self.count: int = 0
         self.user_times_limiter = 3 * 3
+
+    async def initialize(self) -> None:
+        logger.info("正在初始化公共Cookies池")
+        await self.refresh()
+        logger.success("刷新公共Cookies池成功")
 
     async def refresh(self):
         """刷新公共Cookies 定时任务
@@ -67,11 +77,11 @@ class PublicCookiesService(BaseService):
         """
         user_times = await self._cache.incr_by_user_times(user_id)
         if int(user_times) > self.user_times_limiter:
-            logger.warning(f"用户 [{user_id}] 使用公共Cookie次数已经到达上限")
+            logger.warning("用户 %s 使用公共Cookie次数已经到达上限", user_id)
             raise TooManyRequestPublicCookies(user_id)
         while True:
             public_id, count = await self._cache.get_public_cookies(region)
-            cookies = await self._repository.get_by_user_id(public_id, region)
+            cookies = await self._repository.get(public_id, region=region)
             if cookies is None:
                 await self._cache.delete_public_cookies(public_id, region)
                 continue
@@ -84,7 +94,7 @@ class PublicCookiesService(BaseService):
             else:
                 raise CookieServiceError
             try:
-                record_card = await client.get_record_card()
+                record_card = (await client.get_record_cards())[0]
                 if record_card.game == Game.GENSHIN and region == RegionEnum.HYPERION:
                     await client.get_partial_genshin_user(record_card.uid)
             except InvalidCookies as exc:

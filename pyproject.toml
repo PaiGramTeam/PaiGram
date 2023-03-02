@@ -9,39 +9,39 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 httpx= "^0.23.3"
-ujson = "^5.6.0"
+ujson = "^5.7.0"
 genshin = { git = "https://github.com/thesadru/genshin.py" }
 Jinja2 = "^3.1.2"
-python-telegram-bot = { version = "^20.0", extras = ["ext", "rate-limiter"] }
-Pillow = "^9.4.0"
+python-telegram-bot = { version = "^20.1", extras = ["ext", "rate-limiter"] }
 sqlmodel = "^0.0.8"
 colorlog = "^6.7.0"
-playwright = "^1.26.0"
-fakeredis = "^2.2.0"
-beautifulsoup4 = "^4.11.1"
-asyncmy = "^0.2.5"
+playwright = "^1.27.1"
+fakeredis = "^2.9.0"
+beautifulsoup4 = "^4.11.2"
+asyncmy = "^0.2.7"
 pyppeteer = "^1.0.2"
-aiofiles = "^22.1.0"
-python-dotenv = "^0.21.0"
-alembic = "^1.9.0"
-black = "^22.12.0"
-rich = "^13.0.0"
+aiofiles = "^23.1.0"
+python-dotenv = "^0.21.1"
+alembic = "^1.9.3"
+black = "^23.1.0"
+rich = "^13.3.1"
 enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
 TgCrypto = { version = "^1.2.5", optional = true }
-Pyrogram = { version = "^2.0.70", optional = true }
-pytest = { version = "^7.2.0", optional = true }
+Pyrogram = { version = "^2.0.99", optional = true }
+pytest = { version = "^7.2.1", optional = true }
 pytest-asyncio = { version = "^0.20.3", optional = true }
 flaky = { version = "^3.7.0", optional = true }
 lxml = "^4.9.2"
-arko-wrapper = "^0.2.5"
-fastapi = "^0.88.0"
+arko-wrapper = "^0.2.7"
+fastapi = "^0.91.0"
 uvicorn = {extras = ["standard"], version = "^0.19.0"}
-sentry-sdk = "^1.12.1"
+sentry-sdk = "^1.15.0"
 GitPython = "^3.1.30"
-openpyxl = "^3.0.10"
+openpyxl = "^3.1.1"
 async-lru = "^1.0.3"
 thefuzz = "^0.19.0"
-qrcode = "^7.3.1"
+qrcode = "^7.4.2"
+cryptography = "^39.0.1"
 
 [tool.poetry.extras]
 pyro = ["Pyrogram", "TgCrypto"]

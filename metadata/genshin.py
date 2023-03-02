@@ -11,7 +11,7 @@ from utils.const import PROJECT_ROOT
 from utils.log import logger
 from utils.typedefs import StrOrInt
 
-__all__ = [
+__all__ = (
     "HONEY_DATA",
     "AVATAR_DATA",
     "WEAPON_DATA",
@@ -23,7 +23,7 @@ __all__ = [
     "Data",
     "weapon_to_game_id",
     "avatar_to_game_id",
-]
+)
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -46,7 +46,8 @@ class Data(dict, Generic[K, V]):
             path = data_dir.joinpath(self._file_name).with_suffix(".json")
             if not path.exists():
                 logger.error(
-                    f'暂未找到名为 "{self._file_name}.json" 的 metadata , ' "请先使用 [yellow bold]/refresh_metadata[/] 命令下载",
+                    '暂未找到名为 "%s" 的 metadata , ' "请先使用 [yellow bold]/refresh_metadata[/] 命令下载",
+                    self._file_name,
                     extra={"markup": True},
                 )
                 self._dict = {}

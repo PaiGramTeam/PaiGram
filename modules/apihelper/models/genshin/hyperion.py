@@ -1,23 +1,31 @@
 import imghdr
-from typing import Any, List
+from typing import Any, List, Union
 
 from pydantic import BaseModel, PrivateAttr
 
 __all__ = ("ArtworkImage", "PostInfo")
+
+from telegram import InputMediaPhoto, InputMediaVideo, InputMediaDocument
 
 
 class ArtworkImage(BaseModel):
     art_id: int
     page: int = 0
     data: bytes = b""
+    ext: str = "jpg"
     is_error: bool = False
 
     @property
     def format(self) -> str:
-        if self.is_error:
-            return ""
-        else:
-            imghdr.what(None, self.data)
+        return "" if self.is_error else (imghdr.what(None, self.data) or self.ext)
+
+    def input_media(self, *args, **kwargs) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
+        file_type = self.format
+        if file_type in {"jpg", "jpeg", "png", "webp"}:
+            return InputMediaPhoto(self.data, *args, **kwargs)
+        if file_type in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
+            return InputMediaVideo(self.data, *args, **kwargs)
+        return InputMediaDocument(self.data, *args, **kwargs)
 
 
 class PostInfo(BaseModel):
@@ -27,6 +35,7 @@ class PostInfo(BaseModel):
     subject: str
     image_urls: List[str]
     created_at: int
+    video_urls: List[str]
 
     def __init__(self, _data: dict, **data: Any):
         super().__init__(**data)
@@ -34,14 +43,14 @@ class PostInfo(BaseModel):
 
     @classmethod
     def paste_data(cls, data: dict) -> "PostInfo":
-        image_urls = []
         _data_post = data["post"]
         post = _data_post["post"]
         post_id = post["post_id"]
         subject = post["subject"]
         image_list = _data_post["image_list"]
-        for image in image_list:
-            image_urls.append(image["url"])
+        image_urls = [image["url"] for image in image_list]
+        vod_list = _data_post["vod_list"]
+        video_urls = [vod["resolutions"][-1]["url"] for vod in vod_list]
         created_at = post["created_at"]
         user = _data_post["user"]  # 用户数据
         user_uid = user["uid"]  # 用户ID
@@ -51,6 +60,7 @@ class PostInfo(BaseModel):
             user_uid=user_uid,
             subject=subject,
             image_urls=image_urls,
+            video_urls=video_urls,
             created_at=created_at,
         )
 

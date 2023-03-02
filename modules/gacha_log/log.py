@@ -1,6 +1,8 @@
+import asyncio
 import contextlib
 import datetime
 import json
+from concurrent.futures import ThreadPoolExecutor
 from os import PathLike
 from pathlib import Path
 from typing import Dict, IO, List, Optional, Tuple, Union
@@ -160,6 +162,17 @@ class GachaLog:
         except Exception as exc:  # pylint: disable=W0703
             raise GachaLogFileError from exc
 
+    @staticmethod
+    def import_data_backend(all_items: List[GachaItem], gacha_log: GachaLogInfo, temp_id_data: Dict) -> int:
+        new_num = 0
+        for item_info in all_items:
+            pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
+            if item_info.id not in temp_id_data[pool_name]:
+                gacha_log.item_list[pool_name].append(item_info)
+                temp_id_data[pool_name].append(item_info.id)
+                new_num += 1
+        return new_num
+
     async def import_gacha_log_data(self, user_id: int, client: Client, data: dict, verify_uid: bool = True) -> int:
         new_num = 0
         try:
@@ -185,12 +198,13 @@ class GachaLog:
             temp_id_data = {
                 pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()
             }
-            for item_info in all_items:
-                pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
-                if item_info.id not in temp_id_data[pool_name]:
-                    gacha_log.item_list[pool_name].append(item_info)
-                    temp_id_data[pool_name].append(item_info.id)
-                    new_num += 1
+            # 使用新线程进行遍历，避免堵塞主线程
+            loop = asyncio.get_event_loop()
+            # 可以使用with语句来确保线程执行完成后及时被清理
+            with ThreadPoolExecutor() as executor:
+                new_num = await loop.run_in_executor(
+                    executor, self.import_data_backend, all_items, gacha_log, temp_id_data
+                )
             for i in gacha_log.item_list.values():
                 # 检查导入后的数据是否合法
                 await self.verify_data(i)
@@ -257,15 +271,15 @@ class GachaLog:
     def check_avatar_up(name: str, gacha_time: datetime.datetime) -> bool:
         if name in {"莫娜", "七七", "迪卢克", "琴"}:
             return False
-        elif name == "刻晴":
+        if name == "刻晴":
             start_time = datetime.datetime.strptime("2021-02-17 18:00:00", "%Y-%m-%d %H:%M:%S")
             end_time = datetime.datetime.strptime("2021-03-02 15:59:59", "%Y-%m-%d %H:%M:%S")
-            if not (start_time < gacha_time < end_time):
+            if not start_time < gacha_time < end_time:
                 return False
         elif name == "提纳里":
             start_time = datetime.datetime.strptime("2022-08-24 06:00:00", "%Y-%m-%d %H:%M:%S")
             end_time = datetime.datetime.strptime("2022-09-09 17:59:59", "%Y-%m-%d %H:%M:%S")
-            if not (start_time < gacha_time < end_time):
+            if not start_time < gacha_time < end_time:
                 return False
         return True
 
@@ -461,14 +475,13 @@ class GachaLog:
                     num = j.get("num", 0)
                     if num == 0:
                         return pool_name
-                    elif num <= data[0]:
+                    if num <= data[0]:
                         return f"{pool_name} · 欧"
-                    elif num <= data[1]:
+                    if num <= data[1]:
                         return f"{pool_name} · 吉"
-                    elif num <= data[2]:
+                    if num <= data[2]:
                         return f"{pool_name} · 普通"
-                    else:
-                        return f"{pool_name} · 非"
+                    return f"{pool_name} · 非"
         return pool_name
 
     async def get_analysis(self, user_id: int, client: Client, pool: BannerType, assets: AssetsService):

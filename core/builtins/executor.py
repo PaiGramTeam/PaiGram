@@ -9,15 +9,13 @@ from telegram.ext import CallbackContext
 from typing_extensions import ParamSpec, Self
 
 from core.builtins.contexts import handler_contexts, job_contexts
-from utils.decorator import do_nothing
-from utils.log import logger
-from utils.models.lock import HashLock
 
 if TYPE_CHECKING:
+    from core.application import Application
     from core.builtins.dispatcher import AbstractDispatcher
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["BaseExecutor", "HandlerExecutor", "JobExecutor"]
+__all__ = ("BaseExecutor", "Executor", "HandlerExecutor", "JobExecutor")
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -34,10 +32,20 @@ class BaseExecutor:
 
     _lock: ClassVar["LockType"] = Lock()
     _instances: ClassVar[Dict[str, Self]] = {}
+    _application: "Optional[Application]" = None
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+
+    @property
+    def application(self) -> "Application":
+        if self._application is None:
+            raise RuntimeError(f"No application was set for this {self.__class__.__name__}.")
+        return self._application
 
     def __new__(cls: Type[T], name: str, *args, **kwargs) -> T:
         with cls._lock:
-            if (instance := cls._instances.get(name, None)) is None:
+            if (instance := cls._instances.get(name)) is None:
                 instance = object.__new__(cls)
                 instance.__init__(name, *args, **kwargs)
                 cls._instances.update({name: instance})
@@ -52,32 +60,24 @@ class BaseExecutor:
         self._name = name
         self._dispatcher = dispatcher
 
+
+class Executor(BaseExecutor, Generic[P, R]):
     async def __call__(
         self,
         target: Callable[P, R],
-        block: bool = False,
         dispatcher: Optional[Type["AbstractDispatcher"]] = None,
-        lock_id: int = None,
-        raise_error: bool = True,
         **kwargs,
     ) -> R:
-        from core.builtins.dispatcher import BaseDispatcher
+        dispatcher = self._dispatcher or dispatcher
+        dispatcher_instance = dispatcher(**kwargs)
+        dispatcher_instance.set_application(application=self.application)
+        dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
 
-        dispatcher = self._dispatcher or dispatcher or BaseDispatcher
-        with (HashLock(lock_id or target) if block else do_nothing()):
-            dispatcher_instance = dispatcher(**kwargs)
-            dispatched_func = dispatcher_instance.dispatch(target)  # 分发参数，组成新函数
-
-            # 执行
-            try:
-                if inspect.iscoroutinefunction(target):
-                    result = await dispatched_func()
-                else:
-                    result = dispatched_func()
-            except Exception as e:
-                if raise_error:
-                    raise e
-                logger.error("执行错误：%s", e, exc_info=e)
+        # 执行
+        if inspect.iscoroutinefunction(target):
+            result = await dispatched_func()
+        else:
+            result = dispatched_func()
 
         return result
 
@@ -87,70 +87,28 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
 
     _callback: Callable[P, R]
 
-    def __init__(
-        self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None, handle_errors: bool = True
-    ) -> None:
-        if dispatcher is None:
-            from core.builtins.dispatcher import HandlerDispatcher
-
-            dispatcher = HandlerDispatcher
+    def __init__(self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None) -> None:
         super().__init__("handler", dispatcher)
-        if handle_errors:
-            from utils.decorators.error import error_callable
-
-            self._callback = error_callable(func)
+        self.dispatcher_instance = dispatcher()
+        self.dispatcher_instance.set_application(self.application)
         self._callback = func
+        self.dispatched_func = self.dispatcher_instance.dispatch(self._callback)
 
-    # noinspection PyMethodOverriding
-    async def __call__(
-        self,
-        update: Update,
-        context: CallbackContext,
-        block: bool = False,
-        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
-        lock_id: int = None,
-        **kwargs,
-    ) -> R:
+    async def __call__(self, update: Update, context: CallbackContext) -> R:
         with handler_contexts(update, context):
-            return await super().__call__(
-                self._callback,
-                dispatcher=dispatcher,
-                block=block,
-                lock_id=lock_id,
-                update=update,
-                context=context,
-                raise_error=True,
-                **kwargs,
-            )
+            return await self.dispatched_func()
 
 
 class JobExecutor(BaseExecutor):
     """Job 专用执行器"""
 
     def __init__(self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None) -> None:
-        if dispatcher is None:
-            from core.builtins.dispatcher import JobDispatcher
-
-            dispatcher = JobDispatcher
         super().__init__("job", dispatcher)
+        self.dispatcher_instance = dispatcher()
+        self.dispatcher_instance.set_application(self.application)
         self._callback = func
+        self.dispatched_func = self.dispatcher_instance.dispatch(self._callback)
 
-    async def __call__(
-        self,
-        context: CallbackContext,
-        block: bool = False,
-        dispatcher: Optional[Type["AbstractDispatcher"]] = None,
-        lock_id: int = None,
-        raise_error: bool = True,
-        **kwargs,
-    ) -> R:
+    async def __call__(self, context: CallbackContext) -> R:
         with job_contexts(context):
-            return await super().__call__(
-                self._callback,
-                dispatcher=dispatcher,
-                block=block,
-                lock_id=lock_id,
-                context=context,
-                raise_error=raise_error,
-                **kwargs,
-            )
+            return await self.dispatched_func()

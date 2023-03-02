@@ -3,10 +3,10 @@ from typing import Optional, List
 from sqlmodel import select
 
 from core.dependence.mysql import MySQL
-from utils.models.base import RegionEnum
+from core.base_service import BaseService
 from core.services.cookies.models import CookiesDataBase as Cookies
 from core.sqlmodel.session import AsyncSession
-from core.base_service import BaseService
+from utils.models.base import RegionEnum
 
 __all__ = ("CookiesRepository",)
 
@@ -15,12 +15,18 @@ class CookiesRepository(BaseService.Component):
     def __init__(self, mysql: MySQL):
         self.engine = mysql.engine
 
-    async def get_by_user_id(self, user_id: int, region: Optional[RegionEnum]) -> Optional[Cookies]:
+    async def get(
+        self,
+        user_id: int,
+        account_id: Optional[int] = None,
+        region: Optional[RegionEnum] = None,
+    ) -> Optional[Cookies]:
         async with AsyncSession(self.engine) as session:
-            if region:
-                statement = select(Cookies).where(Cookies.user_id == user_id).where(Cookies.region == region)
-            else:
-                statement = select(Cookies).where(Cookies.user_id == user_id)
+            statement = select(Cookies).where(Cookies.user_id == user_id)
+            if account_id is not None:
+                statement = statement.where(Cookies.account_id == account_id)
+            if region is not None:
+                statement = statement.where(Cookies.region == region)
             results = await session.exec(statement)
             return results.first()
 
@@ -36,7 +42,7 @@ class CookiesRepository(BaseService.Component):
             await session.refresh(cookies)
             return cookies
 
-    async def remove(self, cookies: Cookies) -> None:
+    async def delete(self, cookies: Cookies) -> None:
         async with AsyncSession(self.engine) as session:
             await session.delete(cookies)
             await session.commit()

@@ -1,19 +1,16 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction, ParseMode
-from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, MessageHandler, filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
 from core.services.game import GameMaterialService
 from metadata.shortname import roleToName
-from utils.bot import get_args
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
-from utils.helpers import url_to_file
 from utils.log import logger
 
+__all__ = ("MaterialPlugin",)
 
-class Material(Plugin, BasePlugin):
+
+class MaterialPlugin(Plugin):
     """角色培养素材查询"""
 
     KEYBOARD = [[InlineKeyboardButton(text="查看角色培养素材列表并查询", switch_inline_query_current_chat="查看角色培养素材列表并查询")]]
@@ -23,12 +20,10 @@ class Material(Plugin, BasePlugin):
 
     @handler(CommandHandler, command="material", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色培养素材查询(.*)"), block=False)
-    @restricts(return_data=ConversationHandler.END)
-    @error_callable
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        args = get_args(context)
+        args = self.get_args(context)
         if len(args) >= 1:
             character_name = args[0]
         else:
@@ -36,8 +31,8 @@ class Material(Plugin, BasePlugin):
                 "请回复你要查询的培养素材的角色名", reply_markup=InlineKeyboardMarkup(self.KEYBOARD)
             )
             if filters.ChatType.GROUPS.filter(reply_message):
-                self._add_delete_message_job(context, message.chat_id, message.message_id)
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+                self.add_delete_message_job(message)
+                self.add_delete_message_job(reply_message)
             return
         character_name = roleToName(character_name)
         url = await self.game_material_service.get_material(character_name)
@@ -46,12 +41,12 @@ class Material(Plugin, BasePlugin):
                 f"没有找到 {character_name} 的培养素材", reply_markup=InlineKeyboardMarkup(self.KEYBOARD)
             )
             if filters.ChatType.GROUPS.filter(reply_message):
-                self._add_delete_message_job(context, message.chat_id, message.message_id)
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+                self.add_delete_message_job(message)
+                self.add_delete_message_job(reply_message)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 查询角色培养素材命令请求 || 参数 {character_name}")
+        logger.info("用户 %s[%s] 查询角色培养素材命令请求 || 参数 %s", user.full_name, user.id, character_name)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        file_path = await url_to_file(url, return_path=True)
+        file_path = await self.download_resource(url, return_path=True)
         caption = "From 米游社 " f"查看 [原图]({url})"
         await message.reply_photo(
             photo=open(file_path, "rb"),

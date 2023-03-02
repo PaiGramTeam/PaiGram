@@ -4,8 +4,9 @@ from core.base_service import BaseService
 
 from core.dependence.redisdb import RedisDB
 from core.services.cookies.error import CookiesCachePoolExhausted
+from core.services.players.models import RegionEnum
 from utils.error import RegionNotFoundError
-from utils.models.base import RegionEnum
+
 
 __all__ = ("PublicCookiesCache",)
 
@@ -23,10 +24,9 @@ class PublicCookiesCache(BaseService.Component):
     def get_public_cookies_queue_name(self, region: RegionEnum):
         if region == RegionEnum.HYPERION:
             return f"{self.score_qname}:yuanshen"
-        elif region == RegionEnum.HOYOLAB:
+        if region == RegionEnum.HOYOLAB:
             return f"{self.score_qname}:genshin"
-        else:
-            raise RegionNotFoundError(region.name)
+        raise RegionNotFoundError(region.name)
 
     async def putback_public_cookies(self, uid: int, region: RegionEnum):
         """重新添加单个到缓存列表

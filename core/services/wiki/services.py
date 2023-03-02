@@ -21,7 +21,7 @@ class WikiService(BaseService):
 
     async def refresh_weapon(self) -> NoReturn:
         weapon_name_list = await Weapon.get_name_list()
-        logger.info(f"一共找到 {len(weapon_name_list)} 把武器信息")
+        logger.info("一共找到 %s 把武器信息", len(weapon_name_list))
 
         weapon_list = []
         num = 0
@@ -29,7 +29,7 @@ class WikiService(BaseService):
             weapon_list.append(weapon)
             num += 1
             if num % 10 == 0:
-                logger.info(f"现在已经获取到 {num} 把武器信息")
+                logger.info("现在已经获取到 %s 把武器信息", num)
 
         logger.info("写入武器信息到Redis")
         self._weapon_list = weapon_list
@@ -38,7 +38,7 @@ class WikiService(BaseService):
 
     async def refresh_characters(self) -> NoReturn:
         character_name_list = await Character.get_name_list()
-        logger.info(f"一共找到 {len(character_name_list)} 个角色信息")
+        logger.info("一共找到 %s 个角色信息", len(character_name_list))
 
         character_list = []
         num = 0
@@ -46,7 +46,7 @@ class WikiService(BaseService):
             character_list.append(character)
             num += 1
             if num % 10 == 0:
-                logger.info(f"现在已经获取到 {num} 个角色信息")
+                logger.info("现在已经获取到 %s 个角色信息", num)
 
         logger.info("写入角色信息到Redis")
         self._character_list = character_list

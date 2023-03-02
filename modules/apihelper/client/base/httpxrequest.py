@@ -22,7 +22,6 @@ class HTTPXRequest(AbstractAsyncContextManager):
     async def __aexit__(
         self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
     ) -> None:
-
         await self.initialize()
 
     async def initialize(self):

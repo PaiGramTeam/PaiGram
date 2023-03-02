@@ -33,8 +33,7 @@ class HyperionRequest(HTTPXRequest):
         if return_code != 0:
             if message is None:
                 raise ResponseException(message=f"response error in return code: {return_code}")
-            else:
-                raise ResponseException(response=json_data)
+            raise ResponseException(response=json_data)
         if not re_json_data and data is not None:
             return data
         return json_data
@@ -61,8 +60,7 @@ class HyperionRequest(HTTPXRequest):
         if return_code != 0:
             if message is None:
                 raise ResponseException(message=f"response error in return code: {return_code}")
-            else:
-                raise ResponseException(response=json_data)
+            raise ResponseException(response=json_data)
         if not re_json_data and data is not None:
             return data
         return json_data

@@ -6,7 +6,7 @@ from typing import Any, Dict, TYPE_CHECKING
 if TYPE_CHECKING:
     from multiprocessing.synchronize import RLock as LockType
 
-__all__ = ["HashLock"]
+__all__ = ("HashLock",)
 
 _lock: "LockType" = Lock()
 _locks: Dict[int, "LockType"] = {}
@@ -17,10 +17,10 @@ async def delete_lock(target: int) -> None:
     await asyncio.sleep(3)
     with _lock:
         del _locks[target]
-        del _clean_lock_task_map[target]
+        del _clean_lock_task_map[target]  # pylint: disable=E0602
 
 
-class HashLock(object):
+class HashLock:
     """可以根据 hash 来获取锁的类"""
 
     target: int

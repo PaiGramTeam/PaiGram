@@ -3,13 +3,13 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import dotenv
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import AnyUrl, Field
 
 from utils.const import PROJECT_ROOT
 from utils.models.base import Settings
 from utils.typedefs import NaturalNumber
 
-__all__ = ["BotConfig", "config", "JoinGroups"]
+__all__ = ["ApplicationConfig", "config", "JoinGroups"]
 
 dotenv.load_dotenv()
 
@@ -17,17 +17,8 @@ dotenv.load_dotenv()
 class JoinGroups(str, Enum):
     NO_ALLOW = "NO_ALLOW"
     ALLOW_AUTH_USER = "ALLOW_AUTH_USER"
+    ALLOW_USER = "ALLOW_USER"
     ALLOW_ALL = "ALLOW_ALL"
-
-
-class ConfigChannel(BaseModel):
-    name: str
-    chat_id: int
-
-
-class ConfigUser(BaseModel):
-    username: Optional[str]
-    user_id: int
 
 
 class MySqlConfig(Settings):
@@ -53,7 +44,7 @@ class RedisConfig(Settings):
 
 class LoggerConfig(Settings):
     name: str = "TGPaimon"
-    width: int = 180
+    width: Optional[int] = None
     time_format: str = "[%Y-%m-%d %X]"
     traceback_max_frames: int = 20
     path: Path = PROJECT_ROOT / "logs"
@@ -73,7 +64,9 @@ class MTProtoConfig(Settings):
 
 
 class WebServerConfig(Settings):
-    close: bool = False
+    enable: bool = False
+    """是否启用WebServer"""
+
     url: AnyUrl = "http://localhost:8080"
     host: str = "localhost"
     port: int = 8080
@@ -110,7 +103,7 @@ class NoticeConfig(Settings):
         env_prefix = "notice_"
 
 
-class BotConfig(Settings):
+class ApplicationConfig(Settings):
     debug: bool = False
     """debug 开关"""
     retry: int = 5
@@ -118,27 +111,32 @@ class BotConfig(Settings):
     auto_reload: bool = False
     """自动重载"""
 
-    proxy_url: Optional[AnyUrl]
+    proxy_url: Optional[AnyUrl] = None
     """代理链接"""
 
     bot_token: str = ""
     """BOT的token"""
 
-    channels: List["ConfigChannel"] = []
+    owner: Optional[int] = None
+
+    channels: List[int] = []
     """文章推送群组"""
 
-    admins: List["ConfigUser"] = []
-    """BOT 管理员"""
     verify_groups: List[Union[int, str]] = []
     """启用群验证功能的群组"""
     join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
     """是否允许机器人被邀请到其它群组"""
 
     timeout: int = 10
-    read_timeout: float = 2
+    connection_pool_size: int = 256
+    read_timeout: Optional[float] = None
     write_timeout: Optional[float] = None
     connect_timeout: Optional[float] = None
     pool_timeout: Optional[float] = None
+    update_read_timeout: Optional[float] = None
+    update_write_timeout: Optional[float] = None
+    update_connect_timeout: Optional[float] = None
+    update_pool_timeout: Optional[float] = None
 
     genshin_ttl: Optional[int] = None
 
@@ -157,5 +155,5 @@ class BotConfig(Settings):
     notice: NoticeConfig = NoticeConfig()
 
 
-BotConfig.update_forward_refs()
-config = BotConfig()
+ApplicationConfig.update_forward_refs()
+config = ApplicationConfig()

@@ -1,38 +1,33 @@
 import random
 
-from telegram import Poll, Update
+from telegram import Chat, Message, Poll, User
 from telegram.constants import ChatAction
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, CommandHandler, filters
+from telegram.ext import filters
 
-from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
-from core.services.admin import BotAdminService
 from core.services.quiz import QuizService
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
+from core.services.users import UserService
 from utils.log import logger
 
+__all__ = ("QuizPlugin",)
 
-class QuizPlugin(Plugin, BasePlugin):
+
+class QuizPlugin(Plugin):
     """派蒙的十万个为什么"""
 
-    def __init__(self, quiz_service: QuizService = None, bot_admin_service: BotAdminService = None):
-        self.bot_admin_service = bot_admin_service
+    def __init__(self, quiz_service: QuizService = None, user_service: UserService = None):
+        self.user_service = user_service
         self.quiz_service = quiz_service
         self.time_out = 120
 
-    @handler(CommandHandler, command="quiz", block=False)
-    @restricts(restricts_time_of_groups=20)
-    @error_callable
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
-        user = update.effective_user
-        message = update.effective_message
-        chat = message.chat
+    @handler.message(filters=filters.Regex("来一道题"))
+    @handler.command(command="quiz", block=False)
+    async def command_start(self, user: User, message: Message, chat: Chat) -> None:
         await message.reply_chat_action(ChatAction.TYPING)
         question_id_list = await self.quiz_service.get_question_id_list()
         if filters.ChatType.GROUPS.filter(message):
-            logger.info(f"用户 {user.full_name}[{user.id}] 在群 {chat.title}[{chat.id}] 发送挑战问题命令请求")
+            logger.info("用户 %s[%s] 在群 %s[%s] 发送挑战问题命令请求", user.full_name, user.id, chat.title, chat.id)
             if len(question_id_list) == 0:
                 return None
         if len(question_id_list) == 0:
@@ -47,7 +42,7 @@ class QuizPlugin(Plugin, BasePlugin):
                 correct_option = answer.text
         if correct_option is None:
             question_id = question["question_id"]
-            logger.warning(f"Quiz模块 correct_option 异常 question_id[{question_id}] ")
+            logger.warning("Quiz模块 correct_option 异常 question_id[%s]", question_id)
             return None
         random.shuffle(_options)
         index = _options.index(correct_option)
@@ -66,5 +61,5 @@ class QuizPlugin(Plugin, BasePlugin):
             else:
                 raise exc
         if filters.ChatType.GROUPS.filter(message):
-            self._add_delete_message_job(context, message.chat_id, message.message_id, 300)
-            self._add_delete_message_job(context, poll_message.chat_id, poll_message.message_id, 300)
+            self.add_delete_message_job(message, delay=300)
+            self.add_delete_message_job(poll_message, delay=300)

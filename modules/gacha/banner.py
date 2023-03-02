@@ -53,10 +53,9 @@ class GachaBanner(BaseModel):
     def get_weight(self, rarity: int, pity: int) -> int:
         if rarity == 4:
             return lerp(pity, self.weight4)
-        elif rarity == 5:
+        if rarity == 5:
             return lerp(pity, self.weight5)
-        else:
-            raise GachaIllegalArgument
+        raise GachaIllegalArgument
 
     def has_epitomized(self):
         return self.banner_type == BannerType.WEAPON
@@ -64,17 +63,15 @@ class GachaBanner(BaseModel):
     def get_event_chance(self, rarity: int) -> int:
         if rarity == 4:
             return self.event_chance4
-        elif rarity == 5:
+        if rarity == 5:
             return self.event_chance5
-        elif self.event_chance >= -1:
+        if self.event_chance >= -1:
             return self.event_chance
-        else:
-            raise GachaIllegalArgument
+        raise GachaIllegalArgument
 
     def get_pool_balance_weight(self, rarity: int, pity: int) -> int:
         if rarity == 4:
             return lerp(pity, self.pool_balance_weights4)
-        elif rarity == 5:
+        if rarity == 5:
             return lerp(pity, self.pool_balance_weights5)
-        else:
-            raise GachaIllegalArgument
+        raise GachaIllegalArgument

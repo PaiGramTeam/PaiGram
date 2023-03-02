@@ -1,10 +1,10 @@
 """练度统计"""
 import asyncio
-from typing import Iterable, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from aiohttp import ClientConnectorError
 from arkowrapper import ArkoWrapper
-from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, HTTPException, UIDNotFounded, VaildateUIDError
+from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, VaildateUIDError, HTTPException, EnkaPlayerNotFound
 from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
@@ -12,21 +12,17 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.baseplugin import BasePlugin
 from core.config import config
 from core.dependence.assets import AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.services.cookies import CookiesNotFoundError, CookiesService
-from core.services.template import TemplateService
+from core.services.cookies import CookiesService
+from core.services.template.services import TemplateService
 from core.services.template.models import FileType
-from core.services.user import UserNotFoundError
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
+from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, UserNotFoundError
 from utils.enkanetwork import RedisCache
-from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
 
@@ -48,50 +44,51 @@ class AvatarData(Model):
 
     def sum_of_skills(self) -> int:
         total_level = 0
-        for skilldata in self.skills:
-            total_level += skilldata.skill.level
+        for skill_data in self.skills:
+            total_level += skill_data.skill.level
         return total_level
 
 
-class AvatarListPlugin(Plugin, BasePlugin):
+class AvatarListPlugin(Plugin):
     def __init__(
         self,
         cookies_service: CookiesService = None,
         assets_service: AssetsService = None,
         template_service: TemplateService = None,
         redis: RedisDB = None,
+        helper: GenshinHelper = None,
     ) -> None:
         self.cookies_service = cookies_service
         self.assets_service = assets_service
         self.template_service = template_service
-        self.enka_client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
+        self.enka_client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent)
         self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60 * 3))
         self.enka_assets = EnkaAssets(lang="chs")
+        self.helper = helper
 
     async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
         try:
-            return await get_genshin_client(user.id)
+            return await self.helper.get_genshin_client(user.id)
         except UserNotFoundError:  # 若未找到账号
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
-
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_message, delay=30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
         except CookiesNotFoundError:
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
-                reply_msg = await message.reply_text(
+                reply_message = await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙绑定账号",
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=ParseMode.HTML,
                 )
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_message, delay=30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定",
@@ -174,7 +171,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
     async def get_final_data(self, client: Client, characters: Sequence[Character], update: Update):
         try:
-            response = await self.enka_client.fetch_user(client.uid)
+            response = await self.enka_client.fetch_user(client.uid, info=True)
             name_card = (await self.assets_service.namecard(response.player.namecard.id).navbar()).as_uri()
             avatar = (await self.assets_service.avatar(response.player.avatar.id).icon()).as_uri()
             nickname = response.player.nickname
@@ -183,7 +180,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             else:
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(response.player.avatar.id)]
             return name_card, avatar, nickname, rarity
-        except (VaildateUIDError, UIDNotFounded, HTTPException) as exc:
+        except (VaildateUIDError, EnkaPlayerNotFound, HTTPException) as exc:
             logger.warning("EnkaNetwork 请求失败: %s", str(exc))
         except (AioHttpTimeoutException, ClientConnectorError) as exc:
             logger.warning("EnkaNetwork 请求超时: %s", str(exc))
@@ -196,8 +193,9 @@ class AvatarListPlugin(Plugin, BasePlugin):
             ArkoWrapper(choices)
             .map(lambda x: next(filter(lambda y: y["name"].split("·")[0] == x.name, NAMECARD_DATA.values()), None))
             .filter(lambda x: x)
-            .map(lambda x: x["id"])
+            .map(lambda x: int(x["id"]))
         )
+        # noinspection PyTypeChecker
         name_card = (await self.assets_service.namecard(name_card_choices[0]).navbar()).as_uri()
         avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
         nickname = update.effective_user.full_name
@@ -220,8 +218,6 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
     @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"), block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
-    @restricts(30)
-    @error_callable
     async def avatar_list(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
@@ -250,20 +246,20 @@ class AvatarListPlugin(Plugin, BasePlugin):
             logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
             reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
             if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_message, delay=30)
+                self.add_delete_message_job(message, delay=30)
             return
         except GenshinException as e:
             await notice.delete()
             if e.retcode == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 20)
+                self.add_delete_message_job(reply_message, delay=20)
                 return
             raise e
 
         try:
             name_card, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=W0703
             logger.error("卡片信息请求失败 %s", str(exc))
             name_card, avatar, nickname, rarity = await self.get_default_final_data(characters, update)
 
@@ -290,7 +286,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             file_type=FileType.DOCUMENT if as_document else FileType.PHOTO,
             ttl=30 * 24 * 60 * 60,
         )
-        self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
+        self.add_delete_message_job(notice, delay=5)
         if as_document:
             await image.reply_document(message, filename="练度统计.png")
         else:
