@@ -10,10 +10,9 @@ from telegram.helpers import create_deep_linked_url
 
 from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
-from core.services.players.error import PlayerNotFoundError
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import GenshinHelper
+from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
 from utils.log import logger
 
 __all__ = ("PlayerStatsPlugins",)
@@ -46,16 +45,13 @@ class PlayerStatsPlugins(Plugin):
             await message.reply_text("输入错误")
             return
         try:
-            client = await self.helper.get_genshin_client(user.id)
-            if client is None:
+            try:
+                client = await self.helper.get_genshin_client(user.id)
+            except CookiesNotFoundError:
                 client, uid = await self.helper.get_public_genshin_client(user.id)
-                if client is None:
-                    raise PlayerNotFoundError
-            else:
-                uid = client.uid
             render_result = await self.render(client, uid)
         except PlayerNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

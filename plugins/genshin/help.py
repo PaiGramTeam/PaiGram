@@ -1,8 +1,8 @@
-from telegram import Bot, Message, User
+from telegram import Message, User
 from telegram.constants import ChatAction
 
 from core.plugin import Plugin, handler
-from core.services.template import TemplateService
+from core.services.template.services import TemplateService
 from utils.log import logger
 
 __all__ = ("HelpPlugin",)
@@ -15,12 +15,12 @@ class HelpPlugin(Plugin):
         self.template_service = template_service
 
     @handler.command(command="help", block=False)
-    async def start(self, user: User, message: Message, bot: Bot):
+    async def start(self, user: User, message: Message):
         logger.info("用户 %s[%s] 发出help命令", user.full_name, user.id)
         await message.reply_chat_action(ChatAction.TYPING)
         render_result = await self.template_service.render(
             "bot/help/help.html",
-            {"bot_username": bot.username},
+            {"bot_username": self.application.bot.username},
             {"width": 1280, "height": 900},
             ttl=30 * 24 * 60 * 60,
         )

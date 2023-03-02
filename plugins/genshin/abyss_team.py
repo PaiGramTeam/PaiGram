@@ -5,10 +5,10 @@ from telegram.helpers import create_deep_linked_url
 
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
-from core.services.template import TemplateService
+from core.services.template.services import TemplateService
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClient
-from plugins.tools.genshin import GenshinHelper
+from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
 from utils.log import logger
 
 __all__ = ("AbyssTeamPlugin",)
@@ -35,8 +35,9 @@ class AbyssTeamPlugin(Plugin):
         message = update.effective_message
         logger.info("用户 %s[%s] 查深渊推荐配队命令请求", user.full_name, user.id)
 
-        client = await self.helper.get_genshin_client(user.id)
-        if client is None:
+        try:
+            client = await self.helper.get_genshin_client(user.id)
+        except (CookiesNotFoundError, PlayerNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(

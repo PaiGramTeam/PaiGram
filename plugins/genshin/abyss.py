@@ -16,14 +16,12 @@ from telegram.helpers import create_deep_linked_url
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
-from core.services.players.error import PlayerNotFoundError
-from core.services.template import TemplateService
 from core.services.template.models import RenderGroupResult, RenderResult
+from core.services.template.services import TemplateService
 from metadata.genshin import game_id_to_role_id
-from plugins.tools.genshin import GenshinHelper
+from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
 from utils.helpers import async_re_sub
 from utils.log import logger
-
 
 try:
     import ujson as jsonlib
@@ -132,13 +130,12 @@ class AbyssPlugin(Plugin):
         )
 
         try:
-            client = await self.helper.get_genshin_client(user.id)
-            if client is None:
-                client, uid = await self.helper.get_public_genshin_client(user.id)
-                if client is None:
-                    raise PlayerNotFoundError
-            else:
+            try:
+                client = await self.helper.get_genshin_client(user.id)
+                await client.get_record_cards()
                 uid = client.uid
+            except CookiesNotFoundError:
+                client, uid = await self.helper.get_public_genshin_client(user.id)
         except PlayerNotFoundError:  # 若未找到账号
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):

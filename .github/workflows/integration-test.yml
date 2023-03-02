@@ -4,8 +4,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'tests/integration/**'
   pull_request:
     types: [ opened, synchronize ]
+    paths:
+      - 'core/services/**'
+      - 'core/dependence/**'
+      - 'tests/integration/**'
 
 jobs:
   pytest:

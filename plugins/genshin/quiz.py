@@ -6,8 +6,8 @@ from telegram.error import BadRequest
 from telegram.ext import filters
 
 from core.plugin import Plugin, handler
-from core.services.quiz import QuizService
-from core.services.users import UserService
+from core.services.quiz.services import QuizService
+from core.services.users.services import UserService
 from utils.log import logger
 
 __all__ = ("QuizPlugin",)

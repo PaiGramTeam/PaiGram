@@ -3,7 +3,7 @@ import re
 from datetime import datetime, timedelta
 
 from genshin import DataNotPublic, InvalidCookies, GenshinException
-from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Message, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, User
 from telegram.constants import ChatAction
 from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
@@ -12,8 +12,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from core.services.users import UserService
-from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, UserNotFoundError
+from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
 from utils.log import logger
 
 __all__ = ("LedgerPlugin",)
@@ -25,13 +24,11 @@ class LedgerPlugin(Plugin):
     def __init__(
         self,
         helper: GenshinHelper,
-        user_service: UserService,
         cookies_service: CookiesService,
         template_service: TemplateService,
     ):
         self.template_service = template_service
         self.cookies_service = cookies_service
-        self.user_service = user_service
         self.current_dir = os.getcwd()
         self.helper = helper
 
@@ -72,7 +69,7 @@ class LedgerPlugin(Plugin):
 
     @handler.command(command="ledger", block=False)
     @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), block=False)
-    async def command_start(self, user: User, message: Message, bot: Bot) -> None:
+    async def command_start(self, user: User, message: Message) -> None:
         now = datetime.now()
         now_time = (now - timedelta(days=1)) if now.day == 1 and now.hour <= 4 else now
         month = now_time.month
@@ -119,8 +116,14 @@ class LedgerPlugin(Plugin):
                     self.add_delete_message_job(reply_message, delay=30)
                     self.add_delete_message_job(message, delay=30)
                 return
-        except (UserNotFoundError, CookiesNotFoundError):
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(bot.username, "set_cookie"))]]
+        except (PlayerNotFoundError, CookiesNotFoundError):
+            buttons = [
+                [
+                    InlineKeyboardButton(
+                        "点我绑定账号", url=create_deep_linked_url(self.application.bot.username, "set_cookie")
+                    )
+                ]
+            ]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

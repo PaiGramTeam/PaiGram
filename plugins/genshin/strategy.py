@@ -3,7 +3,7 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
 from core.plugin import Plugin, handler
-from core.services.game import GameStrategyService
+from core.services.game.services import GameStrategyService
 from core.services.search.models import StrategyEntry
 from core.services.search.services import SearchServices
 from metadata.shortname import roleToName, roleToTag

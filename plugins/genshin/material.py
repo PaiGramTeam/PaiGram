@@ -3,7 +3,7 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
 from core.plugin import Plugin, handler
-from core.services.game import GameMaterialService
+from core.services.game.services import GameMaterialService
 from metadata.shortname import roleToName
 from utils.log import logger
 

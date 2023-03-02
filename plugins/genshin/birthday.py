@@ -10,7 +10,6 @@ from telegram.constants import ParseMode
 from telegram.ext import filters, MessageHandler, CommandHandler, CallbackContext
 from telegram.helpers import create_deep_linked_url
 
-
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.users.services import UserService

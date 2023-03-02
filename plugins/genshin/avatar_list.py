@@ -17,11 +17,11 @@ from core.dependence.assets import AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
-from core.services.template.services import TemplateService
 from core.services.template.models import FileType
+from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
-from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, UserNotFoundError
+from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
 from utils.enkanetwork import RedisCache
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
@@ -69,7 +69,7 @@ class AvatarListPlugin(Plugin):
     async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
         try:
             return await self.helper.get_genshin_client(user.id)
-        except UserNotFoundError:  # 若未找到账号
+        except PlayerNotFoundError:  # 若未找到账号
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(

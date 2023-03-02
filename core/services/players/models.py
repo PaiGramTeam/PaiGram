@@ -1,7 +1,7 @@
 import enum
 from typing import Optional
 
-from sqlmodel import Boolean, Column, Enum, Field, SQLModel
+from sqlmodel import Boolean, Column, Enum, Field, SQLModel, Integer
 
 __all__ = ("RegionEnum", "Player", "PlayersDataBase")
 
@@ -16,7 +16,9 @@ class RegionEnum(int, enum.Enum):
 
 class Player(SQLModel):
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
-    id: int = Field(primary_key=True)
+    id: Optional[int] = Field(
+        default=None, primary_key=True, sa_column=Column(Integer, primary_key=True, autoincrement=True)
+    )
     user_id: int = Field()
     account_id: int = Field()
     player_id: int = Field()
