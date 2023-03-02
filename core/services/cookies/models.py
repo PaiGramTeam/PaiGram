@@ -20,7 +20,7 @@ class Cookies(SQLModel):
     user_id: int = Field()
     account_id: int = Field()
     data: Optional[Dict[str, str]] = Field(sa_column=Column(JSON))
-    status: CookiesStatusEnum = Field(sa_column=Column(Enum(CookiesStatusEnum)))
+    status: Optional[CookiesStatusEnum] = Field(sa_column=Column(Enum(CookiesStatusEnum)))
     region: RegionEnum = Field(sa_column=Column(Enum(RegionEnum)))
     is_share: Optional[bool] = Field(sa_column=Column(Boolean))
 

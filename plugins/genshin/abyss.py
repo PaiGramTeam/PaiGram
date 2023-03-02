@@ -16,7 +16,6 @@ from telegram.helpers import create_deep_linked_url
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
-from core.services.players.error import PlayerNotFoundError
 from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
 from metadata.genshin import game_id_to_role_id
