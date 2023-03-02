@@ -62,8 +62,9 @@ class Manager(Generic[T]):
 
     def build_executor(self, name: str):
         from core.builtins.executor import Executor
+        from core.builtins.dispatcher import BaseDispatcher
 
-        self._executor = Executor(name)
+        self._executor = Executor(name, dispatcher=BaseDispatcher)
         self._executor.set_application(self.application)
 
 

@@ -6,7 +6,7 @@ from typing import Tuple, Union, Dict, Optional
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember, Message, User
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, CallbackQueryHandler, ChatMemberHandler
+from telegram.ext import CallbackContext, CallbackQueryHandler, ChatMemberHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.config import config
@@ -255,7 +255,7 @@ class GroupCaptcha(Plugin):
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
             schedule.remove()
 
-    @handler.message.new_chat_members(priority=1)
+    @handler.message(filters=filters.StatusUpdate.NEW_CHAT_MEMBERS, block=False)
     async def new_mem(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         chat = message.chat

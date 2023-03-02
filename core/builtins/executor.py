@@ -88,27 +88,37 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
     _callback: Callable[P, R]
 
     def __init__(self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None) -> None:
+        if dispatcher is None:
+            from core.builtins.dispatcher import HandlerDispatcher
+
+            dispatcher = HandlerDispatcher
         super().__init__("handler", dispatcher)
-        self.dispatcher_instance = dispatcher()
-        self.dispatcher_instance.set_application(self.application)
         self._callback = func
-        self.dispatched_func = self.dispatcher_instance.dispatch(self._callback)
 
     async def __call__(self, update: Update, context: CallbackContext) -> R:
         with handler_contexts(update, context):
-            return await self.dispatched_func()
+            dispatcher = self._dispatcher
+            dispatcher_instance = dispatcher(update=update, context=context)
+            dispatcher_instance.set_application(application=self.application)
+            dispatched_func = dispatcher_instance.dispatch(self._callback)
+            return await dispatched_func()
 
 
 class JobExecutor(BaseExecutor):
     """Job 专用执行器"""
 
     def __init__(self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None) -> None:
+        if dispatcher is None:
+            from core.builtins.dispatcher import JobDispatcher
+
+            dispatcher = JobDispatcher
         super().__init__("job", dispatcher)
-        self.dispatcher_instance = dispatcher()
-        self.dispatcher_instance.set_application(self.application)
         self._callback = func
-        self.dispatched_func = self.dispatcher_instance.dispatch(self._callback)
 
     async def __call__(self, context: CallbackContext) -> R:
         with job_contexts(context):
-            return await self.dispatched_func()
+            dispatcher = self._dispatcher
+            dispatcher_instance = dispatcher(context=context)
+            dispatcher_instance.set_application(application=self.application)
+            dispatched_func = dispatcher_instance.dispatch(self._callback)
+            return await dispatched_func()

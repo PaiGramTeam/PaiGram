@@ -4,7 +4,7 @@ from typing import Optional
 
 import genshin
 from genshin import DataNotPublic
-from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Message, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, User
 from telegram.constants import ChatAction
 from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
@@ -92,7 +92,7 @@ class DailyNotePlugin(Plugin):
 
     @handler.command("dailynote", block=False)
     @handler.message(filters.Regex("^当前状态(.*)"), block=False)
-    async def command_start(self, user: User, message: Message, bot: Bot) -> Optional[int]:
+    async def command_start(self, user: User, message: Message) -> Optional[int]:
         logger.info("用户 %s[%s] 每日便签命令请求", user.full_name, user.id)
 
         try:
@@ -101,7 +101,13 @@ class DailyNotePlugin(Plugin):
             # 渲染
             render_result = await self._get_daily_note(client)
         except (CookiesNotFoundError, PlayerNotFoundError):
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(bot.username, "set_cookie"))]]
+            buttons = [
+                [
+                    InlineKeyboardButton(
+                        "点我绑定账号", url=create_deep_linked_url(self.application.bot.username, "set_cookie")
+                    )
+                ]
+            ]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

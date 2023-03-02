@@ -6,7 +6,7 @@ from core.dependence.assets import AssetsCouldNotFound, AssetsService
 from core.plugin import Plugin, handler
 from core.services.search.models import WeaponEntry
 from core.services.search.services import SearchServices
-from core.services.template import TemplateService
+from core.services.template.services import TemplateService
 from core.services.wiki.services import WikiService
 from metadata.genshin import honey_id_to_game_id
 from metadata.shortname import weaponToName, weapons as _weapons_data

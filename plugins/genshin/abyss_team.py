@@ -5,7 +5,7 @@ from telegram.helpers import create_deep_linked_url
 
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
-from core.services.template import TemplateService
+from core.services.template.services import TemplateService
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClient
 from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
