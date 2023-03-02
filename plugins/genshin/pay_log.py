@@ -11,7 +11,7 @@ from core.services.template.services import TemplateService
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
-from plugins.tools.genshin import GenshinHelper
+from plugins.tools.genshin import GenshinHelper, UserNotFoundError
 from utils.genshin import get_authkey_by_stoken
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -44,9 +44,6 @@ class PayLogPlugin(Plugin.Conversation):
         try:
             logger.debug("尝试获取已绑定的原神账号")
             client = await self.helper.get_genshin_client(user.id, need_cookie=False)
-            if client is None:
-                logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
-                return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
             new_num = await self.pay_log.get_log_data(user.id, client, authkey)
             return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条充值记录"
         except PayLogNotFound:
@@ -57,6 +54,9 @@ class PayLogPlugin(Plugin.Conversation):
             return "更新数据失败，authkey 无效"
         except PayLogAuthkeyTimeout:
             return "更新数据失败，authkey 已经过期"
+        except UserNotFoundError:
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
+            return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
 
     @conversation.entry_point
     @handler(CommandHandler, command="pay_log_import", filters=filters.ChatType.PRIVATE, block=False)
@@ -182,9 +182,6 @@ class PayLogPlugin(Plugin.Conversation):
         logger.info("用户 %s[%s] 导出充值记录命令请求", user.full_name, user.id)
         try:
             client = await self.helper.get_genshin_client(user.id, need_cookie=False)
-            if client is None:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
-                return
             await message.reply_chat_action(ChatAction.TYPING)
             path = self.pay_log.get_file_path(str(user.id), str(client.uid))
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
@@ -205,19 +202,6 @@ class PayLogPlugin(Plugin.Conversation):
         logger.info("用户 %s[%s] 充值记录统计命令请求", user.full_name, user.id)
         try:
             client = await self.helper.get_genshin_client(user.id, need_cookie=False)
-            if client is None:
-                logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
-                buttons = [
-                    [InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]
-                ]
-                if filters.ChatType.GROUPS.filter(message):
-                    reply_message = await message.reply_text(
-                        "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
-                    )
-                    self.add_delete_message_job(reply_message, delay=30)
-                    self.add_delete_message_job(message, delay=30)
-                else:
-                    await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             await message.reply_chat_action(ChatAction.TYPING)
             data = await self.pay_log.get_analysis(user.id, client)
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
@@ -230,3 +214,15 @@ class PayLogPlugin(Plugin.Conversation):
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的充值记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+        except UserNotFoundError:
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
+            if filters.ChatType.GROUPS.filter(message):
+                reply_message = await message.reply_text(
+                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
+                )
+                self.add_delete_message_job(reply_message, delay=30)
+
+                self.add_delete_message_job(message, delay=30)
+            else:
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))

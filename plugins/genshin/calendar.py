@@ -8,7 +8,7 @@ from telegram.ext import CallbackContext, MessageHandler, filters
 from core.dependence.assets import AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.services.template import TemplateService
+from core.services.template.services import TemplateService
 from modules.apihelper.client.components.calendar import Calendar
 from utils.log import logger
 
