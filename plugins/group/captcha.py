@@ -1,7 +1,7 @@
 import asyncio
 import random
 import time
-from typing import Tuple, Union, Dict, List, Optional
+from typing import Tuple, Union, Dict, Optional
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember, Message, User
 from telegram.constants import ParseMode
@@ -44,7 +44,7 @@ FullChatPermissions = ChatPermissions(
 )
 
 
-class GroupVerify(Plugin):
+class GroupCaptcha(Plugin):
     """群验证模块"""
 
     def __init__(self, quiz_service: QuizService = None, mtp: MTProto = None, redis: RedisDB = None):
@@ -91,7 +91,7 @@ class GroupVerify(Plugin):
                 chat_id=job.chat_id, user_id=job.user_id, until_date=int(time.time()) + self.kick_time
             )
         except BadRequest as exc:
-            logger.error(f"Auth模块在 chat_id[%s] user_id[%s] 执行kick失败", job.chat_id, job.user_id, exc_info=exc)
+            logger.error(f"GroupCaptcha插件在 chat_id[%s] user_id[%s] 执行kick失败", job.chat_id, job.user_id, exc_info=exc)
 
     @staticmethod
     async def clean_message_job(context: CallbackContext):
@@ -101,19 +101,19 @@ class GroupVerify(Plugin):
             await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
         except BadRequest as exc:
             if "not found" in exc.message:
-                logger.warning(f"Auth模块删除消息 chat_id[%s] message_id[%s]失败 消息不存在", job.chat_id, job.data)
+                logger.warning(f"GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败 消息不存在", job.chat_id, job.data)
             elif "Message can't be deleted" in exc.message:
-                logger.warning("Auth模块删除消息 chat_id[%s] message_id[%s]失败 消息无法删除 可能是没有授权", job.chat_id, job.data)
+                logger.warning("GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败 消息无法删除 可能是没有授权", job.chat_id, job.data)
             else:
-                logger.error("Auth模块删除消息 chat_id[%s] message_id[%s]失败", job.chat_id, job.data, exc_info=exc)
+                logger.error("GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败", job.chat_id, job.data, exc_info=exc)
 
     @staticmethod
     async def restore_member(context: CallbackContext, chat_id: int, user_id: int):
-        logger.debug("重置用户权限 user_id[%s] 在 chat_id[{chat_id}]", chat_id, user_id)
+        logger.debug("重置用户权限 user_id[%s] 在 chat_id[%s]", chat_id, user_id)
         try:
             await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=FullChatPermissions)
         except BadRequest as exc:
-            logger.error("Auth模块在 chat_id[%s] user_id[%s] 执行restore失败", chat_id, user_id)
+            logger.error("GroupCaptcha插件在 chat_id[%s] user_id[%s] 执行restore失败", chat_id, user_id, exc_info=exc)
 
     async def get_new_chat_members_message(self, user: User, context: CallbackContext) -> Optional[Message]:
         qname = f"plugin:auth:new_chat_members_message:{user.id}"
