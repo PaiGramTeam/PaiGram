@@ -10,7 +10,7 @@ on:
 
 jobs:
   ci:
-    name: Integration Test
+    name: pytest
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -22,7 +22,12 @@ jobs:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v2
+        with:
+            python-version: 3.11
       - name: Setup integration test environment
         run: cp tests/integration/.env.example .env && cp tests/integration/.env.example tests/integration/.env
       - name: Create venv
