@@ -6,7 +6,7 @@ from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin
 from core.services.cookies import CookiesService
 from modules.apihelper.client.components.verify import Verify
-from modules.apihelper.error import ResponseException
+from modules.apihelper.error import ResponseException, APIHelperException
 from plugins.tools.genshin import GenshinHelper, UserNotFoundError
 from utils.log import logger
 
@@ -43,7 +43,7 @@ class ChallengeSystem(Plugin):
         await self.cache.expire(f"{self.qname}{uid}", 10 * 60)
 
     async def create_challenge(
-        self, user_id: int, need_verify: bool = True
+        self, user_id: int, need_verify: bool = True, ajax: bool = False
     ) -> Tuple[Optional[int], Optional[str], Optional[str]]:
         try:
             client = await self.genshin_helper.get_genshin_client(user_id)
@@ -66,6 +66,14 @@ class ChallengeSystem(Plugin):
         except ResponseException as exc:
             logger.warning("用户 %s 创建验证失效 API返回 [%s]%s", user_id, exc.code, exc.message)
             raise ChallengeSystemException(f"创建验证失败 错误信息为 [{exc.code}]{exc.message} 请稍后重试")
+        if ajax:
+            try:
+                validate = await verify.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
+                if validate:
+                    await verify.verify(challenge, validate)
+                    return client.uid, "ajax", "ajax"
+            except APIHelperException as exc:
+                logger.warning("用户 %s ajax 验证失效 错误信息为 %s", user_id, str(exc))
         await self.set_challenge(client.uid, gt, challenge)
         return client.uid, gt, challenge
 
