@@ -161,7 +161,7 @@ def upgrade() -> None:
                     with op.get_context().autocommit_block():
                         connection.execute(insert)
             except Exception as exc:  # pylint: disable=W0703
-                logger.error("Process user->player Exception", old_cookies_database_name, exc_info=exc)
+                logger.error("Process user->player Exception", exc_info=exc)
     else:
         logger.error("Old User Database is None")
 
