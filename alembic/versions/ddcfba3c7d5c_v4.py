@@ -59,7 +59,7 @@ def upgrade() -> None:
     )
     for old_cookies_database_name in (old_cookies_database_name1, old_cookies_database_name2):
         try:
-            statement = "SELECT * FROM %s;" % old_cookies_database_name  # skipcq: BAN-B608
+            statement = f"SELECT * FROM {old_cookies_database_name};"  # skipcq: BAN-B608
             old_cookies_table_data = connection.execute(text(statement))
         except NoSuchTableError:
             logger.warning("Table '%s' doesn't exist", old_cookies_database_name)
