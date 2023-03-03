@@ -205,7 +205,7 @@ def upgrade() -> None:
     op.drop_table(old_cookies_database_name1)
     op.drop_table(old_cookies_database_name2)
     op.drop_table("admin")
-    op.drop_constraint('sign_ibfk_1', 'sign', type_='foreignkey')
+    op.drop_constraint("sign_ibfk_1", "sign", type_="foreignkey")
     op.drop_index("user_id", table_name="sign")
     op.drop_table("user")
     # ### end Alembic commands ###
