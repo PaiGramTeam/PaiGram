@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import func
+from sqlalchemy import func, BigInteger
 from sqlmodel import Column, DateTime, Enum, Field, SQLModel, Integer
 
 __all__ = ("SignStatusEnum", "Sign")
@@ -23,9 +23,9 @@ class Sign(SQLModel, table=True):
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
     id: Optional[int] = Field(
-        default=None, primary_key=True, sa_column=Column(Integer, primary_key=True, autoincrement=True)
+        default=None, primary_key=True, sa_column=Column(Integer(), primary_key=True, autoincrement=True)
     )
-    user_id: int = Field(foreign_key="users.user_id")
+    user_id: int = Field(unique=True, sa_column=Column(BigInteger()))
     chat_id: Optional[int] = Field(default=None)
     time_created: Optional[datetime] = Field(
         sa_column=Column(DateTime, server_default=func.now())  # pylint: disable=E1102

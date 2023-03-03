@@ -17,7 +17,7 @@ class RegionEnum(int, enum.Enum):
 class Player(SQLModel):
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
     id: Optional[int] = Field(
-        default=None, primary_key=True, sa_column=Column(Integer, primary_key=True, autoincrement=True)
+        default=None, primary_key=True, sa_column=Column(Integer(), primary_key=True, autoincrement=True)
     )
     user_id: int = Field()
     account_id: int = Field()

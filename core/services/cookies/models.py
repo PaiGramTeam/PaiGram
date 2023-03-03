@@ -1,7 +1,7 @@
 import enum
 from typing import Optional, Dict
 
-from sqlmodel import SQLModel, Field, Boolean, Column, Enum, JSON, Integer
+from sqlmodel import SQLModel, Field, Boolean, Column, Enum, JSON, Integer, BigInteger
 
 from core.services.players.models import RegionEnum
 
@@ -19,8 +19,8 @@ class Cookies(SQLModel):
     id: Optional[int] = Field(
         default=None, primary_key=True, sa_column=Column(Integer, primary_key=True, autoincrement=True)
     )
-    user_id: int = Field()
-    account_id: int = Field()
+    user_id: int = Field(unique=True, sa_column=Column(BigInteger()))
+    account_id: int = Field(unique=True, sa_column=Column(BigInteger()))
     data: Optional[Dict[str, str]] = Field(sa_column=Column(JSON))
     status: Optional[CookiesStatusEnum] = Field(sa_column=Column(Enum(CookiesStatusEnum)))
     region: RegionEnum = Field(sa_column=Column(Enum(RegionEnum)))

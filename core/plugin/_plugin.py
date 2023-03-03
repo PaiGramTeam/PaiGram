@@ -32,6 +32,7 @@ from utils.helpers import isabstract
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from core.builtins.executor import HandlerExecutor
     from core.application import Application
     from core.plugin._handler import ConversationData, HandlerData, ErrorHandlerData
     from core.plugin._job import JobData
@@ -121,8 +122,6 @@ class _Plugin(PluginFuncs):
     def error_handlers(self) -> List["ErrorHandlerData"]:
         with self._lock:
             if self._error_handlers is None:
-                from core.builtins.executor import HandlerExecutor
-
                 self._error_handlers = []
                 for attr in dir(self):
                     if (
