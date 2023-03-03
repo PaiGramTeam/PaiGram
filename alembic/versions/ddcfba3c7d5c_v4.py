@@ -93,7 +93,7 @@ def upgrade() -> None:
                 )
                 with op.get_context().autocommit_block():
                     connection.execute(insert)
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=W0703
                 logger.error(
                     "Process %s->cookies Exception", old_cookies_database_name, exc_info=exc
                 )  # pylint: disable=W0703
