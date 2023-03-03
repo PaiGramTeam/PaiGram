@@ -13,7 +13,6 @@ import sqlalchemy as sa
 import sqlmodel
 from alembic import op
 from sqlalchemy import text
-from sqlalchemy.dialects import mysql
 from sqlalchemy.exc import NoSuchTableError
 
 # revision identifiers, used by Alembic.
