@@ -38,7 +38,7 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("yuanshen_uid", sa.Integer(), nullable=True),
         sa.Column("genshin_uid", sa.Integer(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
@@ -49,7 +49,7 @@ def upgrade() -> None:
     op.create_table(
         "admin",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.user_id"],
