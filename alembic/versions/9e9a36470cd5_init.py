@@ -22,7 +22,7 @@ def upgrade() -> None:
     op.create_table(
         "question",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("text", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column("text", sqlmodel.AutoString(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         mysql_charset="utf8mb4",
         mysql_collate="utf8mb4_general_ci",
@@ -60,7 +60,7 @@ def upgrade() -> None:
         sa.Column("question_id", sa.Integer(), nullable=True),
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("is_correct", sa.Boolean(), nullable=True),
-        sa.Column("text", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column("text", sqlmodel.AutoString(), nullable=True),
         sa.ForeignKeyConstraint(
             ["question_id"],
             ["question.id"],
@@ -85,7 +85,7 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=True),
+        sa.Column("user_id", sa.BigInteger(), nullable=True),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.user_id"],
@@ -108,7 +108,7 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=True),
+        sa.Column("user_id", sa.BigInteger(), nullable=True),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.user_id"],
@@ -141,8 +141,8 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("chat_id", sa.Integer(), nullable=True),
+        sa.Column("user_id", sa.BigInteger(), nullable=False),
+        sa.Column("chat_id", sa.BigInteger(), nullable=True),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.user_id"],
