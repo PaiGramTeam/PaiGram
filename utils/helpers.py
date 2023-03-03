@@ -79,17 +79,17 @@ async def url_to_file(url: str, return_path: bool = False) -> str:
             try:
                 data = await client.get(url)
             except UnsupportedProtocol:
-                logger.error(f"连接不支持 url[{url}]")
+                logger.error("连接不支持 url[%s]", url)
                 return ""
         if data.is_error:
-            logger.error(f"请求出现错误 url[{url}] status_code[{data.status_code}]")
+            logger.error("请求出现错误 url[%s] status_code[%s]", url, data.status_code)
             raise UrlResourcesNotFoundError(url)
         if data.status_code != 200:
-            logger.error(f"url_to_file 获取url[{url}] 错误 status_code[f{data.status_code}]")
+            logger.error("url_to_file 获取url[%s] 错误 status_code[%s]", url, data.status_code)
             raise UrlResourcesNotFoundError(url)
         async with aiofiles.open(file_dir, mode="wb") as f:
             await f.write(data.content)
-    logger.debug(f"url_to_file 获取url[{url}] 并下载到 file_dir[{file_dir}]")
+    logger.debug("url_to_file 获取url[%s] 并下载到 file_dir[%s]", url, file_dir)
 
     return file_dir if return_path else Path(file_dir).as_uri()
 
@@ -174,11 +174,11 @@ async def execute(command, pass_error=True):
 
 
 async def async_re_sub(
-        pattern: str | Pattern,
-        repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
-        string: str,
-        count: int = 0,
-        flags: int = 0,
+    pattern: str | Pattern,
+    repl: str | Callable[[Match], str] | Callable[[Match], Awaitable[str]],
+    string: str,
+    count: int = 0,
+    flags: int = 0,
 ) -> str:
     """
     一个支持 repl 参数为 async 函数的 re.sub
@@ -205,7 +205,7 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1]:]
+            temp = temp[match.span(1)[1] :]
     else:
         while match := re.search(pattern, temp, flags=flags):
             replaced = None
@@ -216,5 +216,5 @@ async def async_re_sub(
                 # noinspection PyCallingNonCallable
                 replaced = repl(match)
             result += temp[: match.span(1)[0]] + (replaced or repl)
-            temp = temp[match.span(1)[1]:]
+            temp = temp[match.span(1)[1] :]
     return result + temp

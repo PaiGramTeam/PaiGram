@@ -1,6 +1,6 @@
 from typing import List
 
-from pymysql import IntegrityError
+from asyncmy.errors import IntegrityError
 from telegram import Bot
 
 from core.admin.cache import BotAdminCache, GroupAdminCache
@@ -26,8 +26,8 @@ class BotAdminService:
     async def add_admin(self, user_id: int) -> bool:
         try:
             await self._repository.add_by_user_id(user_id)
-        except IntegrityError as error:
-            logger.warning(f"{user_id} 已经存在数据库 \n", error)
+        except IntegrityError:
+            logger.warning("用户 %s 已经存在 Admin 数据库", user_id)
         admin_list = await self._repository.get_all_user_id()
         for config_admin in config.admins:
             admin_list.append(config_admin.user_id)

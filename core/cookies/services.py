@@ -1,7 +1,7 @@
 from typing import List
 
 import genshin
-from genshin import GenshinException, InvalidCookies, TooManyRequests, types
+from genshin import GenshinException, InvalidCookies, TooManyRequests, types, Game
 
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -24,6 +24,16 @@ class CookiesService:
     async def get_cookies(self, user_id: int, region: RegionEnum):
         return await self._repository.get_cookies(user_id, region)
 
+    async def del_cookies(self, user_id: int, region: RegionEnum):
+        return await self._repository.del_cookies(user_id, region)
+
+    async def add_or_update_cookies(self, user_id: int, cookies: dict, region: RegionEnum):
+        try:
+            await self.get_cookies(user_id, region)
+            await self.update_cookies(user_id, cookies, region)
+        except CookiesNotFoundError:
+            await self.add_cookies(user_id, cookies, region)
+
 
 class PublicCookiesService:
     def __init__(self, cookies_repository: CookiesRepository, public_cookies_cache: PublicCookiesCache):
@@ -39,17 +49,19 @@ class PublicCookiesService:
         user_list: List[int] = []
         cookies_list = await self._repository.get_all_cookies(RegionEnum.HYPERION)  # 从数据库获取2
         for cookies in cookies_list:
-            if cookies.status is not None and cookies.status != CookiesStatusEnum.STATUS_SUCCESS:
-                continue
-            user_list.append(cookies.user_id)
-        add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HYPERION)
-        logger.info(f"国服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
+            if cookies.status is None or cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
+                user_list.append(cookies.user_id)
+        if len(user_list) > 0:
+            add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HYPERION)
+            logger.info(f"国服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
         user_list.clear()
         cookies_list = await self._repository.get_all_cookies(RegionEnum.HOYOLAB)
         for cookies in cookies_list:
-            user_list.append(cookies.user_id)
-        add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HOYOLAB)
-        logger.info(f"国际服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
+            if cookies.status is None or cookies.status == CookiesStatusEnum.STATUS_SUCCESS:
+                user_list.append(cookies.user_id)
+        if len(user_list) > 0:
+            add, count = await self._cache.add_public_cookies(user_list, RegionEnum.HOYOLAB)
+            logger.info(f"国际服公共Cookies池已经添加[{add}]个 当前成员数为[{count}]")
 
     async def get_cookies(self, user_id: int, region: RegionEnum = RegionEnum.NULL):
         """获取公共Cookies
@@ -77,28 +89,37 @@ class PublicCookiesService:
             else:
                 raise CookieServiceError
             try:
-                await client.get_record_card()
+                record_card = (await client.get_record_cards())[0]
+                if record_card.game == Game.GENSHIN and region == RegionEnum.HYPERION:
+                    await client.get_partial_genshin_user(record_card.uid)
             except InvalidCookies as exc:
-                if "[10001]" in str(exc) or "[-100]" in str(exc):
-                    logger.warning(f"用户 [{public_id}] Cookies无效")
-                elif "[10103]" in str(exc):
-                    logger.warning(f"用户 [{public_id}] Cookie有效，但没有绑定到游戏帐户")
+                if exc.retcode in (10001, -100):
+                    logger.warning("用户 [%s] Cookies无效", public_id)
+                elif exc.retcode == 10103:
+                    logger.warning("用户 [%s] Cookie有效，但没有绑定到游戏帐户", public_id)
                 else:
-                    logger.warning("Cookies无效，具体原因未知")
+                    logger.warning("Cookies无效 ")
                     logger.exception(exc)
                 cookies.status = CookiesStatusEnum.INVALID_COOKIES
                 await self._repository.update_cookies_ex(cookies, region)
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
             except TooManyRequests:
-                logger.warning(f"用户 [{public_id}] 查询次数太多或操作频繁")
+                logger.warning("用户 [%s] 查询次数太多或操作频繁", public_id)
                 cookies.status = CookiesStatusEnum.TOO_MANY_REQUESTS
                 await self._repository.update_cookies_ex(cookies, region)
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
             except GenshinException as exc:
-                logger.warning(f"用户 [{public_id}] 获取账号信息发生错误，错误信息为")
-                logger.exception(exc)
+                if exc.retcode == 1034:
+                    logger.warning("用户 [%s] 触发验证", public_id)
+                else:
+                    logger.warning("用户 [%s] 获取账号信息发生错误，错误信息为", public_id)
+                    logger.exception(exc)
+                await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
-            logger.info(f"用户 user_id[{user_id}] 请求" f"用户 user_id[{public_id}] 的公共Cookies 该Cookie使用次数为[{count}]次 ")
+            except Exception as exc:
+                await self._cache.delete_public_cookies(cookies.user_id, region)
+                raise exc
+            logger.info("用户 user_id[%s] 请求用户 user_id[%s] 的公共Cookies 该Cookie使用次数为%s次 ", user_id, public_id, count)
             return cookies

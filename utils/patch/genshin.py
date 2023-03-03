@@ -1,12 +1,75 @@
+import asyncio
 import typing
+import warnings
 
+import aiohttp.typedefs
 import genshin  # pylint: disable=W0406
+import yarl
+from genshin import constants, types, utility
+from genshin.client import routes
+from genshin.utility import generate_dynamic_secret, ds
 
+from modules.apihelper.utility.helpers import get_ds, get_ua, get_device_id, hex_digest
 from utils.patch.methods import patch, patchable
+
+DEVICE_ID = get_device_id()
+UPDATE_CHARACTERS = False
+
+
+def get_account_mid_v2(cookies: typing.Dict[str, str]) -> typing.Optional[str]:
+    return next(
+        (value for name, value in cookies.items() if name == "account_mid_v2"),
+        None,
+    )
 
 
 @patch(genshin.client.components.calculator.CalculatorClient)  # noqa
 class CalculatorClient:
+    @patchable
+    async def request_calculator(
+        self,
+        endpoint: str,
+        *,
+        method: str = "POST",
+        lang: typing.Optional[str] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        data: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
+        **kwargs: typing.Any,
+    ) -> typing.Mapping[str, typing.Any]:
+        global UPDATE_CHARACTERS
+        params = dict(params or {})
+        headers = dict(headers or {})
+
+        base_url = routes.CALCULATOR_URL.get_url(self.region)
+        url = base_url / endpoint
+
+        if method == "GET":
+            params["lang"] = lang or self.lang
+            data = None
+        else:
+            data = dict(data or {})
+            data["lang"] = lang or self.lang
+
+        if self.region == types.Region.CHINESE:
+            headers["referer"] = str(routes.CALCULATOR_REFERER_URL.get_url())
+
+        update_task = (
+            None
+            if UPDATE_CHARACTERS
+            else asyncio.create_task(utility.update_characters_any(lang or self.lang, lenient=True))
+        )
+        data = await self.request(url, method=method, params=params, data=data, headers=headers, **kwargs)
+
+        if update_task:
+            try:
+                await update_task
+                UPDATE_CHARACTERS = True
+            except Exception as e:
+                warnings.warn(f"Failed to update characters: {e!r}")
+
+        return data
+
     @patchable
     async def get_character_details(
         self,
@@ -39,3 +102,256 @@ class CalculatorClient:
             }
             data["weapon"] = weapon
         return genshin.models.genshin.CalculatorCharacterDetails(**data)
+
+
+@patch(genshin.client.components.base.BaseClient)  # noqa
+class BaseClient:
+    @patchable
+    async def request_hoyolab(
+        self,
+        url: aiohttp.typedefs.StrOrURL,
+        *,
+        lang: typing.Optional[str] = None,
+        region: typing.Optional[types.Region] = None,
+        method: typing.Optional[str] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        data: typing.Any = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
+        **kwargs: typing.Any,
+    ) -> typing.Mapping[str, typing.Any]:
+        """Make a request any hoyolab endpoint."""
+        if lang is not None and lang not in constants.LANGS:
+            raise ValueError(f"{lang} is not a valid language, must be one of: " + ", ".join(constants.LANGS))
+
+        lang = lang or self.lang
+        region = region or self.region
+
+        url = routes.TAKUMI_URL.get_url(region).join(yarl.URL(url))
+
+        if region == types.Region.OVERSEAS:
+            headers = {
+                "x-rpc-app_version": "1.5.0",
+                "x-rpc-client_type": "5",
+                "x-rpc-language": lang,
+                "ds": generate_dynamic_secret(),
+            }
+        elif region == types.Region.CHINESE:
+            account_id = self.cookie_manager.user_id
+            if account_id:
+                device_id = hex_digest(str(account_id))
+            else:
+                account_mid_v2 = get_account_mid_v2(self.cookie_manager.cookies)
+                if account_mid_v2:
+                    device_id = hex_digest(account_mid_v2)
+                else:
+                    device_id = DEVICE_ID
+            app_version, client_type, ds_sign = get_ds(new_ds=True, data=data, params=params)
+            ua = get_ua(device="Paimon Build " + device_id[0:5], version=app_version)
+            headers = {
+                "User-Agent": ua,
+                "X_Requested_With": "com.mihoyo.hoyolab",
+                "Referer": "https://webstatic.mihoyo.com",
+                "x-rpc-device_id": get_device_id(device_id),
+                "x-rpc-app_version": app_version,
+                "x-rpc-client_type": client_type,
+                "ds": ds_sign,
+            }
+        else:
+            raise TypeError(f"{region!r} is not a valid region.")
+
+        data = await self.request(url, method=method, params=params, data=data, headers=headers, **kwargs)
+        return data
+
+    @patchable
+    async def request(
+        self,
+        url: aiohttp.typedefs.StrOrURL,
+        *,
+        method: typing.Optional[str] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        data: typing.Any = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
+        cache: typing.Any = None,
+        static_cache: typing.Any = None,
+        **kwargs: typing.Any,
+    ) -> typing.Mapping[str, typing.Any]:
+        """Make a request and return a parsed json response."""
+        if cache is not None:
+            value = await self.cache.get(cache)
+            if value is not None:
+                return value
+        elif static_cache is not None:
+            value = await self.cache.get_static(static_cache)
+            if value is not None:
+                return value
+
+        # actual request
+
+        headers = dict(headers or {})
+        headers.setdefault("User-Agent", self.USER_AGENT)
+
+        if method is None:
+            method = "POST" if data else "GET"
+
+        if "json" in kwargs:
+            raise TypeError("Use data instead of json in request.")
+
+        await self._request_hook(method, url, params=params, data=data, headers=headers, **kwargs)
+
+        response = await self.cookie_manager.request(
+            url,
+            method=method,
+            params=params,
+            json=data,
+            headers=headers,
+            **kwargs,
+        )
+
+        # cache
+
+        if cache is not None:
+            await self.cache.set(cache, response)
+        elif static_cache is not None:
+            await self.cache.set_static(static_cache, response)
+
+        return response
+
+    @patchable
+    async def request_bbs(
+        self,
+        url: aiohttp.typedefs.StrOrURL,
+        *,
+        lang: typing.Optional[str] = None,
+        region: typing.Optional[types.Region] = None,
+        method: typing.Optional[str] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        data: typing.Any = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
+        **kwargs: typing.Any,
+    ) -> typing.Mapping[str, typing.Any]:
+        """Make a request any bbs endpoint."""
+        if lang is not None and lang not in constants.LANGS:
+            raise ValueError(f"{lang} is not a valid language, must be one of: " + ", ".join(constants.LANGS))
+
+        lang = lang or self.lang
+        region = region or self.region
+
+        url = routes.BBS_URL.get_url(region).join(yarl.URL(url))
+        headers = dict(headers or {})
+
+        if self.region == types.Region.CHINESE:
+            if self.region == types.Region.CHINESE:
+                account_id = self.cookie_manager.user_id
+                if account_id:
+                    device_id = hex_digest(str(account_id))
+                else:
+                    account_mid_v2 = get_account_mid_v2(self.cookie_manager.cookies)
+                    if account_mid_v2:
+                        device_id = hex_digest(account_mid_v2)
+                    else:
+                        device_id = DEVICE_ID
+
+                app_version, _, ds_sign = get_ds()
+                ua = get_ua(device="Paimon Build " + device_id[0:5], version=app_version)
+                add_headers = {
+                    "User-Agent": ua,
+                    "Referer": "https://www.miyoushe.com/ys/",
+                    "x-rpc-device_id": get_device_id(device_id),
+                    "x-rpc-app_version": app_version,
+                    "x-rpc-client_type": "4",
+                    "ds": ds_sign,
+                }
+                headers.update(add_headers)
+        elif self.region == types.Region.OVERSEAS:
+            headers.update(ds.get_ds_headers(data=data, params=params, region=region, lang=lang or self.lang))
+            headers["Referer"] = str(routes.BBS_REFERER_URL.get_url(self.region))
+        else:
+            raise TypeError(f"{region!r} is not a valid region.")
+
+        data = await self.request(url, method=method, params=params, data=data, headers=headers, **kwargs)
+        return data
+
+
+@patch(genshin.client.components.daily.DailyRewardClient)  # noqa
+class DailyRewardClient:
+    @patchable
+    async def request_daily_reward(
+        self,
+        endpoint: str,
+        *,
+        game: typing.Optional[types.Game] = None,
+        method: str = "GET",
+        lang: typing.Optional[str] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
+        **kwargs: typing.Any,
+    ) -> typing.Mapping[str, typing.Any]:
+        """Make a request towards the daily reward endpoint."""
+        params = dict(params or {})
+        headers = dict(headers or {})
+
+        if game is None:
+            if self.default_game is None:
+                raise RuntimeError("No default game set.")
+
+            game = self.default_game
+
+        base_url = routes.REWARD_URL.get_url(self.region, game)
+        url = (base_url / endpoint).update_query(**base_url.query)
+
+        if self.region == types.Region.OVERSEAS:
+            params["lang"] = lang or self.lang
+
+        elif self.region == types.Region.CHINESE:
+            # TODO: Support cn honkai
+            player_id = await self._get_uid(types.Game.GENSHIN)
+
+            params["uid"] = player_id
+            params["region"] = utility.recognize_genshin_server(player_id)
+
+            account_id = self.cookie_manager.user_id
+            if account_id:
+                device_id = hex_digest(str(account_id))
+            else:
+                account_mid_v2 = get_account_mid_v2(self.cookie_manager.cookies)
+                if account_mid_v2:
+                    device_id = hex_digest(account_mid_v2)
+                else:
+                    device_id = DEVICE_ID
+            if endpoint == "sign":
+                app_version, client_type, ds_sign = get_ds()
+            else:
+                app_version, client_type, ds_sign = get_ds(new_ds=True, params=params)
+            device = "Paimon Build " + device_id[0:5]
+            ua = get_ua(device=device)
+            headers["User-Agent"] = ua
+            headers["X_Requested_With"] = "com.mihoyo.hoyolab"
+            headers["Referer"] = (
+                "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?"
+                "bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
+            )
+            headers["x-rpc-device_name"] = device
+            headers["x-rpc-device_id"] = get_device_id(device_id)
+            headers["x-rpc-app_version"] = app_version
+            headers["x-rpc-client_type"] = client_type
+            headers["x-rpc-sys_version"] = "12"
+            headers["x-rpc-platform"] = "android"
+            headers["x-rpc-channel"] = "miyousheluodi"
+            headers["x-rpc-device_model"] = device
+            headers["ds"] = ds_sign
+
+            validate = kwargs.get("validate")
+            challenge = kwargs.get("challenge")
+
+            if validate and challenge:
+                headers["x-rpc-challenge"] = challenge
+                headers["x-rpc-validate"] = validate
+                headers["x-rpc-seccode"] = f"{validate}|jordan"
+
+        else:
+            raise TypeError(f"{self.region!r} is not a valid region.")
+
+        kwargs.pop("challenge", None)
+        kwargs.pop("validate", None)
+
+        return await self.request(url, method=method, params=params, headers=headers, **kwargs)

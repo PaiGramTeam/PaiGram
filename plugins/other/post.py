@@ -1,11 +1,10 @@
 from typing import Optional, List, Tuple
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
-    InputMediaPhoto,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
@@ -19,9 +18,9 @@ from core.baseplugin import BasePlugin
 from core.bot import bot
 from core.config import config
 from core.plugin import Plugin, conversation, handler
-from modules.apihelper.base import ArtworkImage
+from modules.apihelper.client.components.hyperion import Hyperion
 from modules.apihelper.error import APIHelperException
-from modules.apihelper.hyperion import Hyperion
+from modules.apihelper.models.genshin.hyperion import ArtworkImage
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -51,7 +50,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
         self.last_post_id_list: List[int] = []
         if config.channels and len(config.channels) > 0:
             logger.success("文章定时推送处理已经开启")
-            bot.app.job_queue.run_repeating(self.task, 60 * 3)
+            bot.app.job_queue.run_repeating(self.task, 60)
 
     async def task(self, context: CallbackContext):
         temp_post_id_list: List[int] = []
@@ -60,7 +59,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
         try:
             official_recommended_posts = await self.bbs.get_official_recommended_posts(2)
         except APIHelperException as exc:
-            logger.error(f"获取首页推荐信息失败 {repr(exc)}")
+            logger.error("获取首页推荐信息失败 %s", str(exc))
             return
 
         for data_list in official_recommended_posts["list"]:
@@ -84,13 +83,13 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             try:
                 post_info = await self.bbs.get_post_info(2, post_id)
             except APIHelperException as exc:
-                logger.error(f"获取文章信息失败 {repr(exc)}")
-                text = f"获取 post_id[{post_id}] 文章信息失败 {repr(exc)}"
+                logger.error("获取文章信息失败 %s", str(exc))
+                text = f"获取 post_id[{post_id}] 文章信息失败 {str(exc)}"
                 for user in config.admins:
                     try:
                         await context.bot.send_message(user.user_id, text)
                     except BadRequest as _exc:
-                        logger.error(f"发送消息失败 {repr(_exc)}")
+                        logger.error("发送消息失败 %s", str(_exc))
                 return
             buttons = [
                 [
@@ -98,7 +97,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                     InlineKeyboardButton("取消", callback_data=f"post_admin|cancel|{post_info.post_id}"),
                 ]
             ]
-            url = f"https://bbs.mihoyo.com/ys/article/{post_info.post_id}"
+            url = f"https://www.miyoushe.com/ys/article/{post_info.post_id}"
             text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理"
             for user in config.admins:
                 try:
@@ -106,7 +105,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                         user.user_id, text, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(buttons)
                     )
                 except BadRequest as exc:
-                    logger.error(f"发送消息失败 {repr(exc)}")
+                    logger.error("发送消息失败 %s", exc.message)
 
     @conversation.entry_point
     @handler.callback_query(pattern=r"^post_admin\|", block=False)
@@ -120,13 +119,13 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
         callback_query = update.callback_query
         user = callback_query.from_user
         message = callback_query.message
-        logger.info(f"用户 {user.full_name}[{user.id}] POST命令请求")
+        logger.info("用户 %s[%s] POST命令请求", user.full_name, user.id)
 
         async def get_post_admin_callback(callback_query_data: str) -> Tuple[str, int]:
             _data = callback_query_data.split("|")
             _result = _data[1]
             _post_id = int(_data[2])
-            logger.debug(f"callback_query_data函数返回 result[{_result}] post_id[{_post_id}]")
+            logger.debug("callback_query_data函数返回 result[%s] post_id[%s]", _result, _post_id)
             return _result, _post_id
 
         result, post_id = await get_post_admin_callback(callback_query.data)
@@ -151,7 +150,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
-        logger.info(f"用户 {user.full_name}[{user.id}] POST命令请求")
+        logger.info("用户 %s[%s] POST命令请求", user.full_name, user.id)
         post_handler_data = context.chat_data.get("post_handler_data")
         if post_handler_data is None:
             post_handler_data = PostHandlerData()
@@ -177,25 +176,41 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
             return ConversationHandler.END
         return await self.send_post_info(post_handler_data, message, post_id)
 
+    @staticmethod
+    def parse_post_text(soup: BeautifulSoup, post_subject: str) -> str:
+        def parse_tag(_tag: Tag) -> str:
+            if _tag.name == "a" and _tag.get("href"):
+                return f"[{escape_markdown(_tag.get_text(), version=2)}]({_tag.get('href')})"
+            return escape_markdown(_tag.get_text(), version=2)
+
+        post_p = soup.find_all("p")
+        post_text = f"*{escape_markdown(post_subject, version=2)}*\n\n"
+        start = True
+        for p in post_p:
+            t = p.get_text()
+            if not t and start:
+                continue
+            start = False
+            for tag in p.contents:
+                post_text += parse_tag(tag)
+            post_text += "\n"
+        return post_text
+
     async def send_post_info(self, post_handler_data: PostHandlerData, message: Message, post_id: int) -> int:
         post_info = await self.bbs.get_post_info(2, post_id)
         post_images = await self.bbs.get_images_by_post_id(2, post_id)
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
-        post_p = post_soup.find_all("p")
-        post_text = f"*{escape_markdown(post_subject, version=2)}*\n" f"\n"
-        for p in post_p:
-            post_text += f"{escape_markdown(p.get_text(), version=2)}\n"
-        post_text += f"[source](https://bbs.mihoyo.com/ys/article/{post_id})"
+        post_text = self.parse_post_text(post_soup, post_subject)
+        post_text += f"[source](https://www.miyoushe.com/ys/article/{post_id})"
         if len(post_text) >= MessageLimit.CAPTION_LENGTH:
-            await message.reply_markdown_v2(post_text)
             post_text = post_text[: MessageLimit.CAPTION_LENGTH]
-            await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割并发送原文本")
+            await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割")
         try:
             if len(post_images) > 1:
-                media = [InputMediaPhoto(img_info.data) for img_info in post_images]
-                media[0] = InputMediaPhoto(post_images[0].data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
+                media = [img_info.input_media() for img_info in post_images if img_info.format]
+                media[0] = post_images[0].input_media(caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
                 if len(media) > 10:
                     media = media[:10]
                     await message.reply_text("获取到的图片已经超过10张，为了保证发送成功，已经删除一部分图片")
@@ -204,7 +219,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                 image = post_images[0]
                 await message.reply_photo(image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
             else:
-                await message.reply_text("图片获取错误", reply_markup=ReplyKeyboardRemove())  # excuse?
+                await message.reply_text(post_text, reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
         except (BadRequest, TypeError) as exc:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
@@ -276,7 +291,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                 name = channel_info.name
                 reply_keyboard.append([f"{name}"])
         except KeyError as error:
-            logger.error("从配置文件获取频道信息发生错误，退出任务", error)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("请选择你要推送的频道", reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
@@ -294,7 +309,7 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
                 if message.text == channel_info.name:
                     channel_id = channel_info.chat_id
         except KeyError as exc:
-            logger.error("从配置文件获取频道信息发生错误，退出任务", exc)
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=exc)
             logger.exception(exc)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -367,13 +382,13 @@ class Post(Plugin.Conversation, BasePlugin.Conversation):
         for index, _ in enumerate(post_handler_data.post_images):
             if index + 1 not in post_handler_data.delete_photo:
                 post_images.append(post_handler_data.post_images[index])
-        post_text += f" @{channel_name}"
+        post_text += f" @{escape_markdown(channel_name, version=2)}"
         for tag in post_handler_data.tags:
             post_text += f" \\#{tag}"
         try:
             if len(post_images) > 1:
-                media = [InputMediaPhoto(img_info.data) for img_info in post_images]
-                media[0] = InputMediaPhoto(post_images[0].data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
+                media = [img_info.input_media() for img_info in post_images if img_info.format]
+                media[0] = post_images[0].input_media(caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
                 await context.bot.send_media_group(channel_id, media=media)
             elif len(post_images) == 1:
                 image = post_images[0]

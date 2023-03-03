@@ -1,4 +1,3 @@
-import json
 from os import sep
 
 from telegram import Update
@@ -7,10 +6,16 @@ from telegram.ext import filters
 
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.log import logger
+
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
 
 
 class HilichurlsPlugin(Plugin, BasePlugin):
@@ -19,7 +24,7 @@ class HilichurlsPlugin(Plugin, BasePlugin):
     def __init__(self):
         """加载数据文件.数据整理自 https://wiki.biligame.com/ys By @zhxycn."""
         with open(f"resources{sep}json{sep}hilichurls_dictionary.json", "r", encoding="utf8") as f:
-            self.hilichurls_dictionary = json.load(f)
+            self.hilichurls_dictionary = jsonlib.load(f)
 
     @handler(CommandHandler, command="hilichurls", block=False)
     @restricts()
@@ -27,7 +32,7 @@ class HilichurlsPlugin(Plugin, BasePlugin):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        args = get_all_args(context)
+        args = get_args(context)
         if len(args) >= 1:
             msg = args[0]
         else:

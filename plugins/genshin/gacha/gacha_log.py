@@ -1,4 +1,4 @@
-import json
+import contextlib
 from io import BytesIO
 
 import genshin
@@ -7,9 +7,11 @@ from genshin.models import BannerType
 from telegram import Update, User, Message, Document, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
+from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
+from core.config import config
 from core.cookies import CookiesService
 from core.cookies.error import CookiesNotFoundError
 from core.plugin import Plugin, handler, conversation
@@ -18,7 +20,6 @@ from core.template.models import FileType
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.scripts.paimon_moe import update_paimon_moe_zh, GACHA_LOG_PAIMON_MOE_PATH
-from modules.apihelper.hyperion import SignIn
 from modules.gacha_log.error import (
     GachaLogInvalidAuthkey,
     PaimonMoeGachaLogFileError,
@@ -26,16 +27,24 @@ from modules.gacha_log.error import (
     GachaLogNotFound,
     GachaLogAccountNotFound,
     GachaLogMixedProvider,
+    GachaLogAuthkeyTimeout,
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
+from utils.genshin import get_authkey_by_stoken
 from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.models.base import RegionEnum
+
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
 
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
@@ -60,7 +69,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def __async_init__(self):
         await update_paimon_moe_zh(False)
         async with async_open(GACHA_LOG_PAIMON_MOE_PATH, "r", encoding="utf-8") as load_f:
-            self.zh_dict = json.loads(await load_f.read())
+            self.zh_dict = jsonlib.loads(await load_f.read())
 
     async def _refresh_user_data(
         self, user: User, data: dict = None, authkey: str = None, verify_uid: bool = True
@@ -88,10 +97,12 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             return "导入失败，数据格式错误"
         except GachaLogInvalidAuthkey:
             return "更新数据失败，authkey 无效"
+        except GachaLogAuthkeyTimeout:
+            return "更新数据失败，authkey 已经过期"
         except GachaLogMixedProvider:
             return "导入失败，你已经通过其他方式导入过抽卡记录了，本次无法导入"
         except UserNotFoundError:
-            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
 
     async def import_from_file(self, user: User, message: Message, document: Document = None) -> None:
@@ -105,21 +116,23 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         else:
             await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
             return
-        if document.file_size > 2 * 1024 * 1024:
-            await message.reply_text("文件过大，请发送小于 2 MB 的文件")
+        if document.file_size > config.plugin.download_file_max_size * 1024 * 1024:
+            await message.reply_text(f"文件过大，请发送小于 {config.plugin.download_file_max_size} MB 的文件")
             return
         try:
-            data = BytesIO()
-            await (await document.get_file()).download(out=data)
+            out = BytesIO()
+            await (await document.get_file()).download_to_memory(out=out)
             if file_type == "json":
                 # bytesio to json
-                data = data.getvalue().decode("utf-8")
-                data = json.loads(data)
+                data = jsonlib.loads(out.getvalue().decode("utf-8"))
             elif file_type == "xlsx":
-                data = self.gacha_log.convert_xlsx_to_uigf(data, self.zh_dict)
+                data = self.gacha_log.convert_xlsx_to_uigf(out, self.zh_dict)
+            else:
+                await message.reply_text("文件解析失败，请检查文件")
+                return
         except PaimonMoeGachaLogFileError as exc:
             await message.reply_text(
-                "导入失败，PaimonMoe的抽卡记录当前版本不支持\n" f"支持抽卡记录的版本为 {exc.support_version}，你的抽卡记录版本为 {exc.file_version}"
+                f"导入失败，PaimonMoe的抽卡记录当前版本不支持\n支持抽卡记录的版本为 {exc.support_version}，你的抽卡记录版本为 {exc.file_version}"
             )
             return
         except GachaLogFileError:
@@ -129,7 +142,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_text("文件解析失败，请检查文件编码是否正确或符合 UIGF 标准")
             return
         except Exception as exc:
-            logger.error(f"文件解析失败：{repr(exc)}")
+            logger.error("文件解析失败 %s", repr(exc))
             await message.reply_text("文件解析失败，请检查文件是否符合 UIGF 标准")
             return
         await message.reply_chat_action(ChatAction.TYPING)
@@ -138,7 +151,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         try:
             text = await self._refresh_user_data(user, data=data, verify_uid=file_type == "json")
         except Exception as exc:  # pylint: disable=W0703
-            logger.error(f"文件解析失败：{repr(exc)}")
+            logger.error("文件解析失败 %s", repr(exc))
             text = "文件解析失败，请检查文件是否符合 UIGF 标准"
         await reply.edit_text(text)
 
@@ -150,8 +163,8 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
-        args = get_all_args(context)
-        logger.info(f"用户 {user.full_name}[{user.id}] 导入抽卡记录命令请求")
+        args = get_args(context)
+        logger.info("用户 %s[%s] 导入抽卡记录命令请求", user.full_name, user.id)
         authkey = from_url_get_authkey(args[0] if args else "")
         if not args:
             if message.document:
@@ -181,7 +194,8 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                             lang="zh-cn",
                             uid=user_info.yuanshen_uid,
                         )
-                        authkey = await SignIn.get_authkey_by_stoken(client)
+                        with contextlib.suppress(Exception):
+                            authkey = await get_authkey_by_stoken(client)
         if not authkey:
             await message.reply_text(
                 "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
@@ -193,7 +207,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 parse_mode="html",
             )
             return INPUT_URL
-        text = "小派蒙正在从米哈游服务器获取数据，请稍后"
+        text = "小派蒙正在从服务器获取数据，请稍后"
         if not args:
             text += "\n\n> 由于你绑定的 Cookie 中存在 stoken ，本次通过 stoken 自动刷新数据"
         reply = await message.reply_text(text)
@@ -212,8 +226,11 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         if message.document:
             await self.import_from_file(user, message)
             return ConversationHandler.END
+        elif not message.text:
+            await message.reply_text("请发送正确的抽卡记录链接")
+            return INPUT_URL
         authkey = from_url_get_authkey(message.text)
-        reply = await message.reply_text("小派蒙正在从米哈游服务器获取数据，请稍后")
+        reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后")
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(text)
@@ -227,13 +244,13 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def command_start_delete(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
-        logger.info(f"用户 {user.full_name}[{user.id}] 删除抽卡记录命令请求")
+        logger.info("用户 %s[%s] 删除抽卡记录命令请求", user.full_name, user.id)
         try:
             client = await get_genshin_client(user.id, need_cookie=False)
             context.chat_data["uid"] = client.uid
         except UserNotFoundError:
-            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -269,7 +286,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     @bot_admins_rights_check
     async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         if not args:
             await message.reply_text("请指定用户ID")
             return
@@ -298,7 +315,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
     async def command_start_export(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        logger.info(f"用户 {user.full_name}[{user.id}] 导出抽卡记录命令请求")
+        logger.info("用户 %s[%s] 导出抽卡记录命令请求", user.full_name, user.id)
         try:
             client = await get_genshin_client(user.id, need_cookie=False)
             await message.reply_chat_action(ChatAction.TYPING)
@@ -306,8 +323,9 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.2")
         except GachaLogNotFound:
+            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
-                [InlineKeyboardButton("点我导入", url=f"https://t.me/{context.bot.username}?start=gacha_log_import")]
+                [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
         except GachaLogAccountNotFound:
@@ -315,8 +333,8 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         except GachaLogFileError:
             await message.reply_text("导入失败，数据格式错误")
         except UserNotFoundError:
-            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -328,19 +346,19 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CommandHandler, command="gacha_log", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^抽卡记录(.*)"), block=False)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
     @restricts()
     @error_callable
     async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
-        if args := get_all_args(context):
+        if args := get_args(context):
             if "武器" in args:
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
-        logger.info(f"用户 {user.full_name}[{user.id}] 抽卡记录命令请求 || 参数 {pool_type.name}")
+        logger.info("用户 %s[%s] 抽卡记录命令请求 || 参数 %s", user.full_name, user.id, pool_type.name)
         try:
             client = await get_genshin_client(user.id, need_cookie=False)
             await message.reply_chat_action(ChatAction.TYPING)
@@ -357,13 +375,14 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 )
                 await png_data.reply_photo(message)
         except GachaLogNotFound:
+            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
-                [InlineKeyboardButton("点我导入", url=f"https://t.me/{context.bot.username}?start=gacha_log_import")]
+                [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
         except UserNotFoundError:
-            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -375,7 +394,7 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CommandHandler, command="gacha_count", block=True)
-    @handler(MessageHandler, filters=filters.Regex("^抽卡统计(.*)"), block=True)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=True)
     @restricts()
     @error_callable
     async def command_start_count(self, update: Update, context: CallbackContext) -> None:
@@ -383,14 +402,14 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
         all_five = False
-        if args := get_all_args(context):
+        if args := get_args(context):
             if "武器" in args:
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
             elif "仅五星" in args:
                 all_five = True
-        logger.info(f"用户 {user.full_name}[{user.id}] 抽卡统计命令请求 || 参数 {pool_type.name} || 仅五星 {all_five}")
+        logger.info("用户 %s[%s] 抽卡统计命令请求 || 参数 %s || 仅五星 %s", user.full_name, user.id, pool_type.name, all_five)
         try:
             client = await get_genshin_client(user.id, need_cookie=False)
             group = filters.ChatType.GROUPS.filter(message)
@@ -422,13 +441,14 @@ class GachaLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
                 else:
                     await png_data.reply_photo(message)
         except GachaLogNotFound:
+            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
-                [InlineKeyboardButton("点我导入", url=f"https://t.me/{context.bot.username}?start=gacha_log_import")]
+                [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
-        except (UserNotFoundError):
-            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+        except UserNotFoundError:
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

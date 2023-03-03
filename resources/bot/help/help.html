@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8" />
     <title>Title</title>
@@ -45,12 +45,6 @@
                     <div class="command-name">/material</div>
                     <div class="command-description">角色培养素材查询</div>
                 </div>
-                <div class="command">
-                    <div class="command-name">
-                        /artifact_rate
-                    </div>
-                    <div class="command-description">圣遗物评分</div>
-                </div>
                 <!-- UID 查询类 -->
                 <div class="command">
                     <div class="command-name">
@@ -72,28 +66,28 @@
                         /dailynote
                         <i class="fa fa-id-card-o ml-2"></i>
                     </div>
-                    <div class="command-description">查询角色当前状态</div>
+                    <div class="command-description">查询实时便笺</div>
                 </div>
                 <div class="command">
                     <div class="command-name">
                         /ledger
                         <i class="fa fa-id-card-o ml-2"></i>
                     </div>
-                    <div class="command-description">查询当月旅行扎记</div>
+                    <div class="command-description">查询当月旅行札记</div>
                 </div>
                 <div class="command">
                     <div class="command-name">
                         /abyss
                         <i class="fa fa-id-card-o ml-2"></i>
                     </div>
-                    <div class="command-description">查询当期深渊螺旋战绩</div>
+                    <div class="command-description">查询当期深渊战绩</div>
                 </div>
                 <div class="command">
                     <div class="command-name">
                         /abyss_team
                         <i class="fa fa-id-card-o ml-2"></i>
                     </div>
-                    <div class="command-description">深渊推荐配队</div>
+                    <div class="command-description">查询深渊推荐配队</div>
                 </div>
                 <div class="command">
                     <div class="command-name">
@@ -101,6 +95,13 @@
                         <i class="fa fa-id-card-o ml-2"></i>
                     </div>
                     <div class="command-description">查询角色练度</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">
+                        /reg_time
+                        <i class="fa fa-id-card-o ml-2"></i>
+                    </div>
+                    <div class="command-description">原神账号注册时间</div>
                 </div>
                 <!--! gacha_log 相关 -->
                 <div class="command">
@@ -119,6 +120,13 @@
                 </div>
                 <div class="command">
                     <div class="command-name">
+                        /pay_log
+                        <i class="fa fa-user-circle-o ml-2"></i>
+                    </div>
+                    <div class="command-description">充值记录</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">
                         /sign
                         <i class="fa fa-id-card-o ml-2"></i>
                     </div>
@@ -133,6 +141,21 @@
                     <div class="command-name">/hilichurls</div>
                     <div class="command-description">丘丘语字典</div>
                 </div>
+                <div class="command">
+                    <div class="command-name">/birthday</div>
+                    <div class="command-description">角色生日</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">
+                        /birthday_card
+                        <i class="fa fa-id-card-o ml-2"></i>
+                    </div>
+                    <div class="command-description">领取角色生日画片</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/calendar</div>
+                    <div class="command-description">活动日历</div>
+                </div>
              </div>
         </div>
 
@@ -145,7 +168,7 @@
             </div>
             <div class="grid grid-cols-4 py-4 px-2">
                 <div class="command">
-                    <div class="command-name">/gacha</div>
+                    <div class="command-name">/wish</div>
                     <div class="command-description">抽卡模拟器（非洲人模拟器）</div>
                 </div>
                 <div class="command">
@@ -171,6 +194,19 @@
                     <div class="command-name">/gacha_log_delete</div>
                     <div class="command-description">删除抽卡记录</div>
                 </div>
+                <!--! pay_log 相关 -->
+                <div class="command">
+                    <div class="command-name">/pay_log_import</div>
+                    <div class="command-description">导入充值记录</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/pay_log_export</div>
+                    <div class="command-description">导出充值记录</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/pay_log_delete</div>
+                    <div class="command-description">删除充值记录</div>
+                </div>
                 <!--! user 相关 -->
                 <div class="command">
                     <div class="command-name">/setuid</div>
@@ -179,6 +215,10 @@
                 <div class="command">
                     <div class="command-name">/setcookie</div>
                     <div class="command-description">添加/重设Cookie（请私聊BOT）</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">/deluser</div>
+                    <div class="command-description">删除/解绑账号（请私聊BOT）</div>
                 </div>
                 <!--! 取消操作 -->
                 <div class="command rounded-xl flex-1">
@@ -196,8 +236,12 @@
             </div>
             <div class="grid grid-cols-2 py-4 px-2">
                 <div class="command">
-                    <div class="command-name">角色名</div>
+                    <div class="command-name">@{{bot_username}} 角色名</div>
                     <div class="command-description">查询角色攻略</div>
+                </div>
+                <div class="command">
+                    <div class="command-name">@{{bot_username}} 武器名</div>
+                    <div class="command-description">查询武器信息</div>
                 </div>
             </div>
         </div>

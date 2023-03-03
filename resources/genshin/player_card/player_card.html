@@ -32,6 +32,23 @@
       .star-5 {
         background-position-y: -4rem;
       }
+      @font-face {
+        font-family: shicon;
+        src: url(fonts/shicon.woff) format("woff");
+        font-weight: 400;
+        font-style: normal;
+        font-display: block;
+      }
+
+      .enka-log {
+        line-height: 0;
+        margin-right: 0.3rem;
+      }
+      .enka-log:before {
+        content: "\e93a";
+        font-family: shicon;
+        font-size: 1.25em;
+      }
     </style>
   </head>
   <body class="text-xl text-neutral-200">
@@ -54,18 +71,20 @@
                 {{ character.name }}
               </div>
               <div
-                class="flex flex-row justify-end text-2xl text-shadow space-x-2"
+                class="flex flex-row justify-end text-2xl text-shadow space-x-6"
               >
-                <div class="characters-level pr-4">UID {{ uid }}</div>
-                <div class="characters-level">Lv.{{ character.level }}</div>
-                <div class="characters-level bg-red-600 rounded-lg px-2">
+                <div>UID {{ uid }}</div>
+                <div>Lv.{{ character.level }}</div>
+                <div
+                  class="rounded-lg pl-1 pr-3 {% if character.friendship_level >= 10 %} bg-red-600 {% else %} bg-gray-600 {% endif %}"
+                >
                   ❤ {{ character.friendship_level }}
                 </div>
               </div>
             </div>
 
-            {% include 'genshin/player_card/skills.html' %}
-            {% include 'genshin/player_card/stats.html' %}
+            {% include 'genshin/player_card/skills.html' %} {% include
+            'genshin/player_card/stats.html' %}
           </div>
         </div>
       </div>
@@ -74,11 +93,19 @@
       <div class="px-5 relative">
         <div class="grid grid-cols-3 gap-4">
           <div class="flex flex-col space-y-2">
-            {% include 'genshin/player_card/weapon.html' %}
-            {% include 'genshin/player_card/score.html' %}
+            {% include 'genshin/player_card/weapon.html' %} {% include
+            'genshin/player_card/score.html' %}
           </div>
 
           {% include 'genshin/player_card/artifacts.html' %}
+        </div>
+      </div>
+
+      <!-- Logo -->
+      <div class="mt-4 relative">
+        <div class="text-gray-300 text-center opacity-70 text-lg">
+          Data from <span class="enka-log"></span>Enka.Network × Inspired by
+          Miao-Plugin
         </div>
       </div>
     </div>

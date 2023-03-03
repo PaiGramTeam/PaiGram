@@ -7,11 +7,12 @@ from typing import Any, Coroutine, List, Match, Optional, Tuple, Union
 
 import ujson as json
 from arkowrapper import ArkoWrapper
-from genshin import Client
+from genshin import Client, GenshinException
 from pytz import timezone
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
@@ -128,11 +129,14 @@ class Abyss(Plugin, BasePlugin):
         )
 
         try:
-            client = await get_genshin_client(user.id)
-            await client.get_record_cards()
-            uid = client.uid
+            try:
+                client = await get_genshin_client(user.id)
+                await client.get_record_cards()
+                uid = client.uid
+            except CookiesNotFoundError:
+                client, uid = await get_public_genshin_client(user.id)
         except UserNotFoundError:  # 若未找到账号
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -143,8 +147,6 @@ class Abyss(Plugin, BasePlugin):
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
-        except CookiesNotFoundError:  # 若未找到cookie
-            client, uid = await get_public_genshin_client(user.id)
         except TooManyRequestPublicCookies:
             reply_msg = await message.reply_text("查询次数太多，请您稍后重试")
             if filters.ChatType.GROUPS.filter(message):
@@ -167,6 +169,12 @@ class Abyss(Plugin, BasePlugin):
 
         try:
             images = await self.get_rendered_pic(client, uid, floor, total, previous)
+        except GenshinException as exc:
+            if exc.retcode == 1034:
+                if client.uid != uid:
+                    await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
+                    return
+            raise exc
         except AbyssUnlocked:  # 若深渊未解锁
             await reply_message_func("还未解锁深渊哦~")
             return

@@ -15,7 +15,8 @@ import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from genshin import Client, InvalidCookies, GenshinException
+from genshin import Client, GenshinException, InvalidCookies
+from genshin.models import Character
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
 from telegram import Message, Update, User
@@ -31,7 +32,7 @@ from core.template import TemplateService
 from core.template.models import FileType, RenderGroupResult
 from core.user.error import UserNotFoundError
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.admins import bot_admins_rights_check
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
@@ -121,18 +122,18 @@ class DailyMaterial(Plugin, BasePlugin):
         if (not DATA_FILE_PATH.exists()) or (  # 若缓存不存在
             (datetime.today() - datetime.fromtimestamp(os.stat(DATA_FILE_PATH).st_mtime)).days > 3  # 若缓存过期，超过了3天
         ):
-            self.refresh_task = asyncio.create_task(task_daily())  # 创建后台任务
+            asyncio.create_task(task_daily())  # 创建后台任务
         if not data and DATA_FILE_PATH.exists():  # 若存在，则读取至内存中
             async with async_open(DATA_FILE_PATH) as file:
                 data = json.loads(await file.read())
         self.data = data
 
     @staticmethod
-    async def _get_skills_data(client: Client, character_id: int) -> Optional[List[int]]:
+    async def _get_skills_data(client: Client, character: Character) -> Optional[List[int]]:
         """获取角色技能的数据"""
         for _ in range(5):
             try:
-                detail = await client.get_character_details(character_id)
+                detail = await client.get_character_details(character)
             except Exception as e:  # pylint: disable=W0703
                 if isinstance(e, GenshinException):
                     # 如果是 Too Many Requests 异常，则等待一段时间后重试
@@ -146,7 +147,7 @@ class DailyMaterial(Plugin, BasePlugin):
         else:
             # 如果重试了5次都失败了，则直接返回 None
             logger.warning(
-                f"daily_material 解析角色 id 为 [bold]{character_id}[/]的数据时遇到了 Too Many Requests 错误", extra={"markup": True}
+                "daily_material 解析角色 id 为 [bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.id, extra={"markup": True}
             )
             return None
         # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
@@ -160,7 +161,7 @@ class DailyMaterial(Plugin, BasePlugin):
         try:
             logger.debug("尝试获取已绑定的原神账号")
             client = await get_genshin_client(user.id)
-            logger.debug(f"获取账号数据成功: UID={client.uid}")
+            logger.debug("获取账号数据成功: UID=%s", client.uid)
             characters = await client.get_genshin_characters(client.uid)
             for character in characters:
                 if character.name == "旅行者":  # 跳过主角
@@ -176,6 +177,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         constellation=character.constellation,
                         gid=character.id,
                         icon=(await self.assets_service.avatar(cid).icon()).as_uri(),
+                        origin=character,
                     )
                 )
                 user_data["weapon"].append(
@@ -194,9 +196,9 @@ class DailyMaterial(Plugin, BasePlugin):
                     )
                 )
         except (UserNotFoundError, CookiesNotFoundError):
-            logger.info(f"未查询到用户({user.full_name} {user.id}) 所绑定的账号信息")
+            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
         except InvalidCookies:
-            logger.info(f"用户({user.full_name} {user.id}) 所绑定的账号信息已失效")
+            logger.info("用户 %s[%s] 所绑定的账号信息已失效", user.full_name, user.id)
         else:
             # 没有异常返回数据
             return client, user_data
@@ -209,7 +211,7 @@ class DailyMaterial(Plugin, BasePlugin):
     async def daily_material(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         now = datetime.now()
 
         try:
@@ -223,7 +225,7 @@ class DailyMaterial(Plugin, BasePlugin):
             time = f"星期{WEEK_MAP[weekday]}"
         full = bool(args and args[-1] == "full")  # 判定最后一个参数是不是 full
 
-        logger.info(f'用户 {user.full_name}[{user.id}] 每日素材命令请求 || 参数 weekday="{WEEK_MAP[weekday]}" full={full}')
+        logger.info("用户 %s[%s}] 每日素材命令请求 || 参数 weekday=%s full=%s", user.full_name, user.id, WEEK_MAP[weekday], full)
 
         if weekday == 6:
             await message.reply_text(
@@ -260,59 +262,71 @@ class DailyMaterial(Plugin, BasePlugin):
         await message.reply_chat_action(ChatAction.TYPING)
         render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
 
-        # 如果 client 为 None 就没必要进技能处理 因为已经触发 InvalidCookies 等异常
-        if client:
-            for type_ in ["avatar", "weapon"]:
-                areas = []
-                for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
-                    items = []
-                    for id_ in area_data["items"]:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
-                        added = False
-                        for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
-                            if id_ == str(i.id):
-                                if i.rarity > 3:  # 跳过 3 星及以下的武器
-                                    if type_ == "avatar":  # 给角色添加天赋信息
-                                        skills = await self._get_skills_data(client, i.gid)
+        calculator_sync: bool = True  # 默认养成计算器同步为开启
+        for type_ in ["avatar", "weapon"]:
+            areas = []
+            for area_data in local_data[type_]:  # 遍历每个区域的信息：蒙德、璃月、稻妻、须弥
+                items = []
+                for id_ in area_data["items"]:  # 遍历所有该区域下，当天（weekday）可以培养的角色、武器
+                    added = False
+                    for i in user_data[type_]:  # 从已经获取的角色数据中查找对应角色、武器
+                        if id_ == str(i.id):
+                            if i.rarity > 3:  # 跳过 3 星及以下的武器
+                                if type_ == "avatar" and client and calculator_sync:  # client 不为 None 时给角色添加天赋信息
+                                    try:
+                                        skills = await self._get_skills_data(client, i.origin)
                                         i.skills = skills
-                                    items.append(i)
-                                added = True
-                        if added:
-                            continue
-                        try:
-                            item = HONEY_DATA[type_][id_]
-                        except KeyError:  # 跳过不存在或者已忽略的角色、武器
-                            logger.warning(f"未在 honey 数据中找到 {type_} {id_} 的信息")
-                            continue
-                        if item[2] < 4:  # 跳过 3 星及以下的武器
-                            continue
-                        items.append(
-                            ItemData(  # 添加角色数据中未找到的
-                                id=id_,
-                                name=item[1],
-                                rarity=item[2],
-                                icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri(),
-                            )
-                        )
-                    materials = []
-                    for mid in area_data["materials"]:  # 添加这个区域当天（weekday）的培养素材
-                        try:
-                            path = (await self.assets_service.material(mid).icon()).as_uri()
-                            material = HONEY_DATA["material"][mid]
-                            materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
-                        except AssetsCouldNotFound as exc:
-                            logger.error(f"出错了呜呜呜 ~ {repr(exc)}")
-                            await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
-                            return
-                    areas.append(
-                        AreaData(
-                            name=area_data["name"],
-                            materials=materials,
-                            # template previewer pickle cannot serialize generator
-                            items=list(sort_item(items)),
-                            material_name=get_material_serial_name(map(lambda x: x.name, materials)),
+                                    except InvalidCookies:
+                                        calculator_sync = False
+                                    except GenshinException as e:
+                                        if e.retcode == -502002:
+                                            calculator_sync = False  # 发现角色养成计算器没启用 设置状态为 False 并防止下次继续获取
+                                            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
+                                            await notice.edit_text(
+                                                "获取角色天赋信息失败，如果想要显示角色天赋信息，请先在米游社/HoYoLab中使用一次<b>养成计算器</b>后再使用此功能~",
+                                                parse_mode=ParseMode.HTML,
+                                            )
+                                        else:
+                                            raise e
+                                items.append(i)
+                            added = True
+                    if added:
+                        continue
+                    try:
+                        item = HONEY_DATA[type_][id_]
+                    except KeyError:  # 跳过不存在或者已忽略的角色、武器
+                        logger.warning("未在 honey 数据中找到 %s[%s] 的信息", type_, id_)
+                        continue
+                    if item[2] < 4:  # 跳过 3 星及以下的武器
+                        continue
+                    items.append(
+                        ItemData(  # 添加角色数据中未找到的
+                            id=id_,
+                            name=item[1],
+                            rarity=item[2],
+                            icon=(await getattr(self.assets_service, type_)(id_).icon()).as_uri(),
                         )
                     )
-                setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
+                materials = []
+                for mid in area_data["materials"]:  # 添加这个区域当天（weekday）的培养素材
+                    try:
+                        path = (await self.assets_service.material(mid).icon()).as_uri()
+                        material = HONEY_DATA["material"][mid]
+                        materials.append(ItemData(id=mid, icon=path, name=material[1], rarity=material[2]))
+                    except AssetsCouldNotFound as exc:
+                        logger.warning("AssetsCouldNotFound message[%s] target[%s]", exc.message, exc.target)
+                        await notice.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
+                        return
+                areas.append(
+                    AreaData(
+                        name=area_data["name"],
+                        materials=materials,
+                        # template previewer pickle cannot serialize generator
+                        items=list(sort_item(items)),
+                        material_name=get_material_serial_name(map(lambda x: x.name, materials)),
+                    )
+                )
+            setattr(render_data, {"avatar": "character"}.get(type_, type_), areas)
 
         await message.reply_chat_action(ChatAction.TYPING)
 
@@ -352,7 +366,7 @@ class DailyMaterial(Plugin, BasePlugin):
         user = update.effective_user
         message = update.effective_message
 
-        logger.info(f"用户 {user.full_name}[{user.id}] 刷新[bold]每日素材[/]缓存命令", extra={"markup": True})
+        logger.info("用户 {%s}[%s] 刷新[bold]每日素材[/]缓存命令", user.full_name, user.id, extra={"markup": True})
         if self.locks[0].locked():
             notice = await message.reply_text("派蒙还在抄每日素材表呢，我有在好好工作哦~")
             self._add_delete_message_job(context, notice.chat_id, notice.message_id, 10)
@@ -451,7 +465,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         the_time.value = time_()
 
         async def task(item_id, name, item_type):
-            logger.debug(f'正在开始下载 "{name}" 的图标素材')
+            logger.debug("正在开始下载 %s 的图标素材", name)
             await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。")
             asset: AssetsServiceType = getattr(self.assets_service, item_type)(item_id)  # 获取素材对象
             asset_list.append(asset.honey_id)
@@ -459,7 +473,7 @@ class DailyMaterial(Plugin, BasePlugin):
             # 并根据图标类型找到下载对应图标的函数
             for icon_type in asset.icon_types:
                 await getattr(asset, icon_type)(True)  # 执行下载函数
-            logger.debug(f'"{name}" 的图标素材下载成功')
+            logger.debug("%s 的图标素材下载成功", name)
             await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。<b>成功！</b>")
 
         for TYPE, ITEMS in HONEY_DATA.items():  # 遍历每个对象
@@ -486,6 +500,7 @@ class ItemData(BaseModel):
     gid: Optional[int] = None  # 角色在 genshin.py 里的 ID
     refinement: Optional[int] = None  # 精炼度
     c_path: Optional[str] = None  # 武器使用者图标
+    origin: Optional[Character] = None  # 原始数据
 
 
 class AreaData(BaseModel):

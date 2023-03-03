@@ -1,12 +1,14 @@
+import asyncio
 import contextlib
 import datetime
 import json
-from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor
+from os import PathLike
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import Dict, IO, List, Optional, Tuple, Union
 
 import aiofiles
-from genshin import Client, InvalidAuthkey
+from genshin import Client, InvalidAuthkey, AuthkeyTimeout
 from genshin.models import BannerType
 from openpyxl import load_workbook
 
@@ -16,25 +18,26 @@ from metadata.shortname import roleToId, weaponToId
 from modules.gacha_log.const import GACHA_TYPE_LIST, PAIMONMOE_VERSION
 from modules.gacha_log.error import (
     GachaLogAccountNotFound,
-    GachaLogInvalidAuthkey,
     GachaLogException,
     GachaLogFileError,
+    GachaLogInvalidAuthkey,
+    GachaLogMixedProvider,
     GachaLogNotFound,
     PaimonMoeGachaLogFileError,
-    GachaLogMixedProvider,
+    GachaLogAuthkeyTimeout,
 )
 from modules.gacha_log.models import (
-    GachaItem,
     FiveStarItem,
     FourStarItem,
-    Pool,
+    GachaItem,
     GachaLogInfo,
-    UIGFGachaType,
-    ItemType,
     ImportType,
-    UIGFModel,
+    ItemType,
+    Pool,
+    UIGFGachaType,
     UIGFInfo,
     UIGFItem,
+    UIGFModel,
 )
 from utils.const import PROJECT_ROOT
 
@@ -159,6 +162,17 @@ class GachaLog:
         except Exception as exc:  # pylint: disable=W0703
             raise GachaLogFileError from exc
 
+    @staticmethod
+    def import_data_backend(all_items: List[GachaItem], gacha_log: GachaLogInfo, temp_id_data: Dict) -> int:
+        new_num = 0
+        for item_info in all_items:
+            pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
+            if item_info.id not in temp_id_data[pool_name]:
+                gacha_log.item_list[pool_name].append(item_info)
+                temp_id_data[pool_name].append(item_info.id)
+                new_num += 1
+        return new_num
+
     async def import_gacha_log_data(self, user_id: int, client: Client, data: dict, verify_uid: bool = True) -> int:
         new_num = 0
         try:
@@ -184,12 +198,13 @@ class GachaLog:
             temp_id_data = {
                 pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()
             }
-            for item_info in all_items:
-                pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
-                if item_info.id not in temp_id_data[pool_name]:
-                    gacha_log.item_list[pool_name].append(item_info)
-                    temp_id_data[pool_name].append(item_info.id)
-                    new_num += 1
+            # 使用新线程进行遍历，避免堵塞主线程
+            loop = asyncio.get_event_loop()
+            # 可以使用with语句来确保线程执行完成后及时被清理
+            with ThreadPoolExecutor() as executor:
+                new_num = await loop.run_in_executor(
+                    executor, self.import_data_backend, all_items, gacha_log, temp_id_data
+                )
             for i in gacha_log.item_list.values():
                 # 检查导入后的数据是否合法
                 await self.verify_data(i)
@@ -241,6 +256,8 @@ class GachaLog:
                         gacha_log.item_list[pool_name].append(item)
                         temp_id_data[pool_name].append(item.id)
                         new_num += 1
+        except AuthkeyTimeout as exc:
+            raise GachaLogAuthkeyTimeout from exc
         except InvalidAuthkey as exc:
             raise GachaLogInvalidAuthkey from exc
         for i in gacha_log.item_list.values():
@@ -600,10 +617,10 @@ class GachaLog:
         }
 
     @staticmethod
-    def convert_xlsx_to_uigf(data: BytesIO, zh_dict: dict) -> dict:
+    def convert_xlsx_to_uigf(file: Union[str, PathLike, IO[bytes]], zh_dict: Dict) -> Dict:
         """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
+        :param file: 导出的 xlsx 文件
         :param zh_dict:
-        :param data: paimon.moe 导出的 xlsx 数据
         :return: UIGF 格式数据
         """
 
@@ -654,7 +671,7 @@ class GachaLog:
                 uigf_gacha_type=uigf_gacha_type,
             )
 
-        wb = load_workbook(data)
+        wb = load_workbook(file)
         wb_len = len(wb.worksheets)
 
         if wb_len == 6:

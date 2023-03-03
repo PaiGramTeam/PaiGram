@@ -1,5 +1,8 @@
 import contextlib
-from typing import List
+import html
+import os.path
+from datetime import datetime
+from typing import Tuple
 
 from telegram import Update, Chat, ChatMember, ChatMemberOwner, ChatMemberAdministrator
 from telegram.error import BadRequest, Forbidden
@@ -11,8 +14,11 @@ from core.plugin import Plugin, handler
 from core.sign import SignServices
 from core.user import UserService
 from core.user.error import UserNotFoundError
+from core.user.models import User
 from modules.gacha_log.log import GachaLog
-from utils.bot import get_all_args
+from modules.pay_log.log import PayLog
+from modules.playercards.file import PlayerCardsFile
+from utils.bot import get_args, get_chat as get_chat_with_cache
 from utils.decorators.admins import bot_admins_rights_check
 from utils.helpers import get_genshin_client
 from utils.log import logger
@@ -30,24 +36,27 @@ class GetChat(Plugin):
         self.user_service = user_service
         self.sign_service = sign_service
         self.gacha_log = GachaLog()
+        self.pay_log = PayLog()
+        self.player_cards_file = PlayerCardsFile()
 
-    async def parse_group_chat(self, chat: Chat, admins: List[ChatMember]) -> str:
-        text = f"群 ID：<code>{chat.id}</code>\n" f"群名称：<code>{chat.title}</code>\n"
+    async def parse_group_chat(self, chat: Chat, admins: Tuple[ChatMember]) -> str:
+        text = f"群 ID：<code>{chat.id}</code>\n群名称：<code>{chat.title}</code>\n"
         if chat.username:
             text += f"群用户名：@{chat.username}\n"
         sign_info = await self.sign_service.get_by_chat_id(chat.id)
         if sign_info:
             text += f"自动签到推送人数：<code>{len(sign_info)}</code>\n"
         if chat.description:
-            text += f"群简介：<code>{chat.description}</code>\n"
+            text += f"群简介：<code>{html.escape(chat.description)}</code>\n"
         if admins:
             for admin in admins:
-                text += f'<a href="tg://user?id={admin.user.id}">{admin.user.full_name}</a> '
+                text += f'<a href="tg://user?id={admin.user.id}">{html.escape(admin.user.full_name)}</a> '
                 if isinstance(admin, ChatMemberAdministrator):
                     text += "C" if admin.can_change_info else "_"
                     text += "D" if admin.can_delete_messages else "_"
                     text += "R" if admin.can_restrict_members else "_"
                     text += "I" if admin.can_invite_users else "_"
+                    text += "T" if admin.can_manage_topics else "_"
                     text += "P" if admin.can_pin_messages else "_"
                     text += "V" if admin.can_manage_video_chats else "_"
                     text += "N" if admin.can_promote_members else "_"
@@ -55,6 +64,71 @@ class GetChat(Plugin):
                 elif isinstance(admin, ChatMemberOwner):
                     text += "创建者"
                 text += "\n"
+        return text
+
+    @staticmethod
+    async def parse_private_bind(user_info: User, chat_id: int) -> Tuple[str, int]:
+        if user_info.region == RegionEnum.HYPERION:
+            text = "米游社绑定："
+            uid = user_info.yuanshen_uid
+        else:
+            text = "原神绑定："
+            uid = user_info.genshin_uid
+        temp = "Cookie 绑定"
+        try:
+            await get_genshin_client(chat_id)
+        except CookiesNotFoundError:
+            temp = "UID 绑定"
+        return f"{text}<code>{temp}</code>\n游戏 ID：<code>{uid}</code>", uid
+
+    async def parse_private_sign(self, chat_id: int) -> str:
+        sign_info = await self.sign_service.get_by_user_id(chat_id)
+        if sign_info is not None:
+            text = (
+                f"\n自动签到：已开启"
+                f"\n推送会话：<code>{sign_info.chat_id}</code>"
+                f"\n开启时间：<code>{sign_info.time_created}</code>"
+                f"\n更新时间：<code>{sign_info.time_updated}</code>"
+                f"\n签到状态：<code>{sign_info.status.name}</code>"
+            )
+        else:
+            text = "\n自动签到：未开启"
+        return text
+
+    async def parse_private_gacha_log(self, chat_id: int, uid: int) -> str:
+        gacha_log, status = await self.gacha_log.load_history_info(str(chat_id), str(uid))
+        if status:
+            text = "\n抽卡记录："
+            for key, value in gacha_log.item_list.items():
+                text += f"\n   - {key}：{len(value)} 条"
+            text += f"\n   - 最后更新：{gacha_log.update_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        else:
+            text = "\n抽卡记录：<code>未导入</code>"
+        return text
+
+    async def parse_private_pay_log(self, chat_id: int, uid: int) -> str:
+        pay_log, status = await self.pay_log.load_history_info(str(chat_id), str(uid))
+        return (
+            f"\n充值记录：\n   - 已导入 {len(pay_log.list)} 条\n   - 最后更新：{pay_log.info.export_time}"
+            if status
+            else "\n充值记录：<code>未导入</code>"
+        )
+
+    @staticmethod
+    def get_file_modify_time(path: str) -> datetime:
+        return datetime.fromtimestamp(os.path.getmtime(path))
+
+    async def parse_private_player_cards_file(self, uid: int) -> str:
+        player_cards = await self.player_cards_file.load_history_info(uid)
+        if player_cards is None:
+            text = "\n角色卡片：<code>未缓存</code>"
+        else:
+            time = self.get_file_modify_time(self.player_cards_file.get_file_path(uid))
+            text = (
+                f"\n角色卡片："
+                f"\n   - 已缓存 {len(player_cards.get('avatarInfoList', []))} 个角色"
+                f"\n   - 最后更新：{time.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
         return text
 
     async def parse_private_chat(self, chat: Chat) -> str:
@@ -70,47 +144,24 @@ class GetChat(Plugin):
         except UserNotFoundError:
             user_info = None
         if user_info is not None:
-            if user_info.region == RegionEnum.HYPERION:
-                text += "米游社绑定："
-                uid = user_info.yuanshen_uid
-            else:
-                text += "原神绑定："
-                uid = user_info.genshin_uid
-            temp = "Cookie 绑定"
-            try:
-                await get_genshin_client(chat.id)
-            except CookiesNotFoundError:
-                temp = "UID 绑定"
-            text += f"<code>{temp}</code>\n" f"游戏 ID：<code>{uid}</code>"
-            sign_info = await self.sign_service.get_by_user_id(chat.id)
-            if sign_info is not None:
-                text += (
-                    f"\n自动签到：已开启"
-                    f"\n推送会话：<code>{sign_info.chat_id}</code>"
-                    f"\n开启时间：<code>{sign_info.time_created}</code>"
-                    f"\n更新时间：<code>{sign_info.time_updated}</code>"
-                    f"\n签到状态：<code>{sign_info.status.name}</code>"
-                )
-            else:
-                text += f"\n自动签到：未开启"
+            temp, uid = await self.parse_private_bind(user_info, chat.id)
+            text += temp
+            text += await self.parse_private_sign(chat.id)
             with contextlib.suppress(Exception):
-                gacha_log, status = await self.gacha_log.load_history_info(str(chat.id), str(uid))
-                if status:
-                    text += f"\n抽卡记录："
-                    for key, value in gacha_log.item_list.items():
-                        text += f"\n   - {key}：{len(value)} 条"
-                    text += f"\n   - 最后更新：{gacha_log.update_time.strftime('%Y-%m-%d %H:%M:%S')}"
-                else:
-                    text += f"\n抽卡记录：<code>未导入</code>"
+                text += await self.parse_private_gacha_log(chat.id, uid)
+            with contextlib.suppress(Exception):
+                text += await self.parse_private_pay_log(chat.id, uid)
+            with contextlib.suppress(Exception):
+                text += await self.parse_private_player_cards_file(uid)
         return text
 
     @handler(CommandHandler, command="get_chat", block=False)
     @bot_admins_rights_check
     async def get_chat(self, update: Update, context: CallbackContext):
         user = update.effective_user
-        logger.info(f"用户 {user.full_name}[{user.id}] get_chat 命令请求")
+        logger.info("用户 %s[%s] get_chat 命令请求", user.full_name, user.id)
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         if not args:
             await message.reply_text("参数错误，请指定群 id ！")
             return
@@ -120,7 +171,7 @@ class GetChat(Plugin):
             await message.reply_text("参数错误，请指定群 id ！")
             return
         try:
-            chat = await message.get_bot().get_chat(args[0])
+            chat = await get_chat_with_cache(args[0])
             if chat_id < 0:
                 admins = await chat.get_administrators() if chat_id < 0 else None
                 text = await self.parse_group_chat(chat, admins)
@@ -128,5 +179,4 @@ class GetChat(Plugin):
                 text = await self.parse_private_chat(chat)
             await message.reply_text(text, parse_mode="HTML")
         except (BadRequest, Forbidden) as exc:
-            await message.reply_text(f"通过 id 获取会话信息失败，API 返回：{exc}")
-            return
+            await message.reply_text(f"通过 id 获取会话信息失败，API 返回：{exc.message}")

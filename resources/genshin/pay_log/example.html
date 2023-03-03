@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+  <link rel="shortcut icon" href="#" />
+  <link rel="stylesheet" type="text/css" href="pay_log.css" />
+  <link rel="preload" href="../../fonts/tttgbnumber.ttf" as="font">
+  <link rel="preload" href="../gacha_log/img/提纳里.png" as="image">
+  <style>
+        .head_box {
+          background: #fff url(../gacha_log/img/提纳里.png) no-repeat right center;
+          background-size: cover;
+        }
+  </style>
+  <title></title>
+</head>
+
+<body>
+  <div class="container" id="container">
+    <div class="head_box">
+      <div class="id_text">ID: 114514</div>
+      <h2 class="day_text">充值统计</h2>
+      <img class="genshin_logo" src="./../../bot/help/background/genshin.png" alt=""/>
+    </div>
+    <div class="data_box">
+      <div class="tab_lable">数据总览</div>
+      <div class="data_line">
+        <div class="data_line_item">
+          <div class="num">114</div>
+          <div class="lable">总消费</div>
+        </div>
+        <div class="data_line_item">
+          <div class="num">514</div>
+          <div class="lable">总结晶</div>
+        </div>
+        <div class="data_line_item">
+          <div class="num">11月</div>
+          <div class="lable">消费最多</div>
+        </div>
+        <div class="data_line_item">
+          <div class="num">520</div>
+          <div class="lable">11月消费</div>
+        </div>
+      </div>
+      <div class="data_line">
+        <div class="data_line_item">
+          <div class="num">*</div>
+          <div class="lable">大月卡</div>
+        </div>
+        <div class="data_line_item">
+          <div class="num">5</div>
+          <div class="lable">小月卡</div>
+        </div>
+        <div class="data_line_item">
+          <div class="num">3</div>
+          <div class="lable">648</div>
+        </div>
+        <div class="data_line_item">
+          <div class="num">2</div>
+          <div class="lable">328</div>
+        </div>
+      </div>
+      <div class="data_line">
+        <div class="data_line_item">
+          <div class="num">1</div>
+          <div class="lable">198</div>
+        </div>
+        <div class="data_line_item">
+          <div class="num">2</div>
+          <div class="lable">98</div>
+        </div>
+        <div class="data_line_item">
+          <div class="num">3</div>
+          <div class="lable">30</div>
+        </div>
+        <div class="data_line_item">
+          <div class="num">4</div>
+          <div class="lable">6</div>
+        </div>
+      </div>
+    </div>
+    <div class="data_box">
+      <div class="tab_lable">月份统计</div>
+      <div id="chartContainer"></div>
+    </div>
+    <div class="data_box">
+      <div class="tab_lable">详细统计</div>
+      <div id="chartContainer2"></div>
+    </div>
+    <div class="logo"> Template By Yunzai-Bot & seven-plugin</div>
+  </div>
+</body>
+
+<script src="echarts.min.js"></script>
+
+<script>
+  const barData = JSON.parse(`[{"month": "1月", "amount": 1000}]`);
+  const myChart1 = echarts.init(document.querySelector('#chartContainer'), null, { renderer: 'svg' });
+  const xData = barData.map(v => v.month)
+  const yData = barData.map(v => v.amount)
+  // 指定图表的配置项和数据
+  const option = {
+    animation: false,
+    xAxis: {
+      type: 'category',
+      data: xData
+    },
+    legend: {
+      x:'left',
+      y:'top',
+      show: true,
+      data: [{ name: '结晶' }]
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        name:'结晶',
+        data: yData,
+        type: 'bar',
+        itemStyle: {
+          normal: {
+            label: {
+              position: 'top',
+              show: true,
+              textStyle: {
+                color: '#1e1f20',
+                fontSize: 14,
+                fontFamily: "tttgbnumber",
+              }
+            },
+            color: new echarts.graphic.LinearGradient(0, 1, 0, 0, [{
+              offset: 0,
+              color: "#1268f3"
+            }, {
+              offset: 0.6,
+              color: "#08a4fa"
+            }, {
+              offset: 1,
+              color: "#01ccfe"
+            }], false)
+          },
+
+        },
+      }
+    ]
+  };
+  myChart1.setOption(option);
+
+  const pieData = JSON.parse(`[{"value": 1, "name": "大月卡"}, {"value": 50, "name": "小月卡"}]`);
+  const myChart2 = echarts.init(document.querySelector('#chartContainer2'), null, { renderer: 'svg' });
+  const option2 = {
+    animation: false,
+    title: {
+      text: '￥114',
+      subtext: '总充值',
+      left: 'right'
+    },
+    legend: {
+      orient: 'horizontal',
+      bottom: 'left'
+    },
+    series: [
+      {
+        name: 'Access From',
+        type: 'pie',
+        radius: '50%',
+        itemStyle: {
+          normal: {
+            label: {
+              show: true,
+              fontFamily: "tttgbnumber",
+              formatter: '{b}:￥{c} ({d}%)'
+            },
+            labelLine: { show: true }
+          }
+        },
+        data: pieData,
+      }
+    ]
+  };
+  myChart2.setOption(option2);
+</script>
+
+</html>

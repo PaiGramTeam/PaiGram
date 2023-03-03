@@ -8,8 +8,8 @@ import pytest_asyncio
 from bs4 import BeautifulSoup
 from flaky import flaky
 
-from modules.apihelper.base import PostInfo
-from modules.apihelper.hyperion import Hyperion
+from modules.apihelper.client.components.hyperion import Hyperion
+from modules.apihelper.models.genshin.hyperion import PostInfo
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,6 +35,20 @@ async def test_get_post_info(hyperion):
     assert len(post_info["post"]["post"]["images"]) == 1
     post_soup = BeautifulSoup(post_info["post"]["post"]["content"], features="html.parser")
     assert post_soup.find_all("p")
+
+
+# noinspection PyShadowingNames
+@pytest.mark.asyncio
+@flaky(3, 1)
+async def test_get_video_post_info(hyperion):
+    post_info = await hyperion.get_post_info(2, 33846648)
+    assert post_info
+    assert isinstance(post_info, PostInfo)
+    assert post_info["post"]["post"]["post_id"] == "33846648"
+    assert post_info.post_id == 33846648
+    assert post_info["post"]["post"]["subject"] == "当然是原神了"
+    assert post_info.subject == "当然是原神了"
+    assert len(post_info.video_urls) == 1
 
 
 # noinspection PyShadowingNames

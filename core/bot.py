@@ -10,6 +10,8 @@ from typing import Any, Callable, ClassVar, Dict, Iterator, List, NoReturn, Opti
 import genshin
 import pytz
 from async_timeout import timeout
+from telegram import Update
+from telegram import __version__ as tg_version
 from telegram.error import NetworkError, TimedOut
 from telegram.ext import (
     AIORateLimiter,
@@ -19,24 +21,37 @@ from telegram.ext import (
     JobQueue,
     MessageHandler,
     filters,
+    TypeHandler,
 )
 from telegram.ext.filters import StatusUpdate
 
 from core.config import BotConfig, config  # pylint: disable=W0611
 from core.error import ServiceNotFoundError
+
 # noinspection PyProtectedMember
 from core.plugin import Plugin, _Plugin
 from core.service import Service
+from metadata.scripts.metadatas import make_github_fast
 from utils.const import PLUGIN_DIR, PROJECT_ROOT
 from utils.log import logger
 
-if TYPE_CHECKING:
-    from telegram import Update
 
 __all__ = ["bot"]
 
 T = TypeVar("T")
 PluginType = TypeVar("PluginType", bound=_Plugin)
+
+try:
+    from telegram import __version_info__ as tg_version_info
+except ImportError:
+    tg_version_info = (0, 0, 0, 0, 0)  # type: ignore[assignment]
+
+if tg_version_info < (20, 0, 0, "alpha", 6):
+    logger.warning(
+        "Bot与当前PTB版本 [cyan bold]%s[/] [red bold]不兼容[/]，请更新到最新版本后使用 [blue bold]poetry install[/] 重新安装依赖",
+        tg_version,
+        extra={"markup": True},
+    )
 
 
 class Bot:
@@ -90,7 +105,7 @@ class Bot:
                 import_module(pkg)  # 导入插件
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(
-                    f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True}
+                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
                 )
                 continue  # 如有错误则继续
         callback_dict: Dict[int, List[Callable]] = {}
@@ -101,9 +116,13 @@ class Bot:
                 if hasattr(plugin, "__async_init__"):
                     await self.async_inject(plugin.__async_init__)
                 handlers = plugin.handlers
+                for index, handler in enumerate(handlers):
+                    if isinstance(handler, TypeHandler):  # 对 TypeHandler 进行特殊处理，优先级必须设置 -1，否则无用
+                        handlers.pop(index)
+                        self.app.add_handler(handler, group=-1)
                 self.app.add_handlers(handlers)
                 if handlers:
-                    logger.debug(f'插件 "{path}" 添加了 {len(handlers)} 个 handler ')
+                    logger.debug('插件 "%s" 添加了 %s 个 handler ', path, len(handlers))
 
                 # noinspection PyProtectedMember
                 for priority, callback in plugin._new_chat_members_handler_funcs():  # pylint: disable=W0212
@@ -115,14 +134,14 @@ class Bot:
                 for callback, block in error_handlers.items():
                     self.app.add_error_handler(callback, block)
                 if error_handlers:
-                    logger.debug(f'插件 "{path}" 添加了 {len(error_handlers)} 个 error handler')
+                    logger.debug('插件 "%s" 添加了 %s 个 error handler ', path, len(error_handlers))
 
                 if jobs := plugin.jobs:
-                    logger.debug(f'插件 "{path}" 添加了 {len(jobs)} 个任务')
-                logger.success(f'插件 "{path}" 载入成功')
+                    logger.debug('插件 "%s" 添加了 %s 个 jobs ', path, len(jobs))
+                logger.success('插件 "%s" 载入成功', path)
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(
-                    f'在安装插件 "{path}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True}
+                    '在安装插件 "%s" 的过程中遇到了错误 [red bold]%s[/]', path, type(e).__name__, exc_info=e, extra={"markup": True}
                 )
         if callback_dict:
             num = sum(len(callback_dict[i]) for i in callback_dict)
@@ -137,7 +156,9 @@ class Bot:
                 MessageHandler(callback=_new_chat_member_callback, filters=StatusUpdate.NEW_CHAT_MEMBERS, block=False)
             )
             logger.success(
-                f"成功添加了 {num} 个针对 [blue]{StatusUpdate.NEW_CHAT_MEMBERS}[/] 的 [blue]MessageHandler[/]",
+                "成功添加了 %s 个针对 [blue]%s[/] 的 [blue]MessageHandler[/]",
+                num,
+                StatusUpdate.NEW_CHAT_MEMBERS,
                 extra={"markup": True},
             )
         # special handler
@@ -155,9 +176,9 @@ class Bot:
                 import_module(pkg)
             except Exception as e:  # pylint: disable=W0703
                 logger.exception(
-                    f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True}
+                    '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]', pkg, type(e).__name__, exc_info=e, extra={"markup": True}
                 )
-                continue
+                raise SystemExit from e
         for base_service_cls in Service.__subclasses__():
             try:
                 if hasattr(base_service_cls, "from_config"):
@@ -165,11 +186,11 @@ class Bot:
                 else:
                     instance = self.init_inject(base_service_cls)
                 await instance.start()
-                logger.success(f'服务 "{base_service_cls.__name__}" 初始化成功')
+                logger.success('服务 "%s" 初始化成功', base_service_cls.__name__)
                 self._services.update({base_service_cls: instance})
-            except Exception as e:  # pylint: disable=W0703
-                logger.exception(f'服务 "{base_service_cls.__name__}" 初始化失败: {e}')
-                continue
+            except Exception as e:
+                logger.error('服务 "%s" 初始化失败', base_service_cls.__name__)
+                raise SystemExit from e
 
     async def start_services(self):
         """启动服务"""
@@ -181,7 +202,11 @@ class Bot:
                     import_module(pkg)
                 except Exception as e:  # pylint: disable=W0703
                     logger.exception(
-                        f'在导入文件 "{pkg}" 的过程中遇到了错误: \n[red bold]{type(e).__name__}: {e}[/]', extra={"markup": True}
+                        '在导入文件 "%s" 的过程中遇到了错误 [red bold]%s[/]',
+                        pkg,
+                        type(e).__name__,
+                        exc_info=e,
+                        extra={"markup": True},
                     )
                     continue
 
@@ -198,11 +223,11 @@ class Bot:
                             await service.stop()
                         else:
                             service.stop()
-                        logger.success(f'服务 "{service.__class__.__name__}" 关闭成功')
+                        logger.success('服务 "%s" 关闭成功', service.__class__.__name__)
                 except CancelledError:
-                    logger.warning(f'服务 "{service.__class__.__name__}" 关闭超时')
+                    logger.warning('服务 "%s" 关闭超时', service.__class__.__name__)
                 except Exception as e:  # pylint: disable=W0703
-                    logger.exception(f'服务 "{service.__class__.__name__}" 关闭失败: \n{type(e).__name__}: {e}')
+                    logger.exception('服务 "%s" 关闭失败', service.__class__.__name__, exc_info=e)
 
     async def _post_init(self, context: CallbackContext) -> NoReturn:
         logger.info("开始初始化 genshin.py 相关资源")
@@ -213,7 +238,7 @@ class Bot:
                     setattr(
                         genshin.utility.extdb,
                         i,
-                        getattr(genshin.utility.extdb, i).replace("githubusercontent.com", "fastgit.org"),
+                        make_github_fast(getattr(genshin.utility.extdb, i)),
                     )
             await genshin.utility.update_characters_enka()
         except Exception as exc:  # pylint: disable=W0703
@@ -234,6 +259,14 @@ class Bot:
         logger.info("正在初始化BOT")
         self.app = (
             TgApplication.builder()
+            .read_timeout(self.config.read_timeout)
+            .write_timeout(self.config.write_timeout)
+            .connect_timeout(self.config.connect_timeout)
+            .pool_timeout(self.config.pool_timeout)
+            .get_updates_read_timeout(self.config.update_read_timeout)
+            .get_updates_write_timeout(self.config.update_write_timeout)
+            .get_updates_connect_timeout(self.config.update_connect_timeout)
+            .get_updates_pool_timeout(self.config.update_pool_timeout)
             .rate_limiter(AIORateLimiter())
             .defaults(Defaults(tzinfo=pytz.timezone("Asia/Shanghai")))
             .token(self._config.bot_token)
@@ -246,17 +279,13 @@ class Bot:
                     self.app.run_polling(
                         close_loop=False,
                         timeout=self.config.timeout,
-                        read_timeout=self.config.read_timeout,
-                        write_timeout=self.config.write_timeout,
-                        connect_timeout=self.config.connect_timeout,
-                        pool_timeout=self.config.pool_timeout,
+                        allowed_updates=Update.ALL_TYPES,
                     )
                     break
                 except TimedOut:
                     logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试", extra={"markup": True})
                     continue
                 except NetworkError as e:
-                    logger.exception()
                     if "SSLZeroReturnError" in str(e):
                         logger.error("代理服务出现异常, 请检查您的代理服务是否配置成功.")
                     else:
@@ -265,7 +294,7 @@ class Bot:
         except (SystemExit, KeyboardInterrupt):
             pass
         except Exception as e:  # pylint: disable=W0703
-            logger.exception(f"BOT 执行过程中出现错误: {e}")
+            logger.exception("BOT 执行过程中出现错误", exc_info=e)
         finally:
             loop = asyncio.get_event_loop()
             loop.run_until_complete(self.stop_services())
@@ -275,7 +304,7 @@ class Bot:
 
     def find_service(self, target: Type[T]) -> T:
         """查找服务。若没找到则抛出 ServiceNotFoundError"""
-        if result := self._services.get(target) is None:
+        if (result := self._services.get(target)) is None:
             raise ServiceNotFoundError(target)
         return result
 

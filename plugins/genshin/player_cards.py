@@ -1,5 +1,7 @@
+import math
 from typing import Any, List, Tuple, Union, Optional
 
+import ujson
 from enkanetwork import (
     CharacterInfo,
     DigitType,
@@ -9,19 +11,23 @@ from enkanetwork import (
     Equipments,
     EquipmentsStats,
     EquipmentsType,
-    Forbidden,
     HTTPException,
     Stats,
     StatsPercentage,
-    UIDNotFounded,
     VaildateUIDError,
+    EnkaServerMaintanance,
+    EnkaServerUnknown,
+    EnkaServerRateLimit,
+    EnkaPlayerNotFound,
 )
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import DEFAULT_EnkaAssets
+from core.base.redisdb import RedisDB
 from core.baseplugin import BasePlugin
 from core.config import config
 from core.plugin import Plugin, handler
@@ -29,10 +35,12 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.shortname import roleToName
-from modules.playercards.helpers import ArtifactStatsTheory, fix_skills_level_data
-from utils.bot import get_all_args
+from modules.playercards.file import PlayerCardsFile
+from modules.playercards.helpers import ArtifactStatsTheory
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
+from utils.enkanetwork import RedisCache
 from utils.helpers import url_to_file
 from utils.log import logger
 from utils.models.base import RegionEnum
@@ -40,25 +48,48 @@ from utils.patch.aiohttp import AioHttpTimeoutException
 
 
 class PlayerCards(Plugin, BasePlugin):
-    def __init__(self, user_service: UserService = None, template_service: TemplateService = None):
+    def __init__(
+        self, user_service: UserService = None, template_service: TemplateService = None, redis: RedisDB = None
+    ):
         self.user_service = user_service
-        self.client = EnkaNetworkAPI(lang="chs", agent=config.enka_network_api_agent)
+        self.client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent, cache=False)
+        self.cache = RedisCache(redis.client, key="plugin:player_cards:enka_network")
+        self.player_cards_file = PlayerCardsFile()
         self.template_service = template_service
         self.temp_photo: Optional[str] = None
 
     async def _fetch_user(self, uid) -> Union[EnkaNetworkResponse, str]:
         try:
-            return await self.client.fetch_user(uid)
-        except EnkaServerError:
-            return "Enka.Network 服务请求错误，请稍后重试"
-        except Forbidden:
-            return "Enka.Network 服务请求被拒绝，请稍后重试"
+            data = await self.cache.get(uid)
+            if data is not None:
+                return EnkaNetworkResponse.parse_obj(data)
+            user = await self.client.http.fetch_user_by_uid(uid)
+            data = user["content"].decode("utf-8", "surrogatepass")  # type: ignore
+            data = ujson.loads(data)
+            data = await self.player_cards_file.merge_info(uid, data)
+            await self.cache.set(uid, data)
+            return EnkaNetworkResponse.parse_obj(data)
         except AioHttpTimeoutException:
-            return "Enka.Network 服务请求超时，请稍后重试"
+            error = "Enka.Network 服务请求超时，请稍后重试"
+        except EnkaServerRateLimit:
+            error = "Enka.Network 已对此API进行速率限制，请稍后重试"
+        except EnkaServerMaintanance:
+            error = "Enka.Network 正在维护，请等待5-8小时或1天"
+        except EnkaServerError:
+            error = "Enka.Network 服务请求错误，请稍后重试"
+        except EnkaServerUnknown:
+            error = "Enka.Network 服务瞬间爆炸，请稍后重试"
+        except EnkaPlayerNotFound:
+            error = "UID 未找到，可能为服务器抽风，请稍后重试"
+        except VaildateUIDError:
+            error = "未找到玩家，请检查您的UID/用户名"
         except HTTPException:
-            return "Enka.Network HTTP 服务请求错误，请稍后重试"
-        except (UIDNotFounded, VaildateUIDError):
-            return "UID 未找到，可能为服务器抽风，请稍后重试"
+            error = "Enka.Network HTTP 服务请求错误，请稍后重试"
+        old_data = await self.player_cards_file.load_history_info(uid)
+        if old_data is not None:
+            logger.warning("UID %s | 角色卡片使用历史数据 | %s", uid, error)
+            return EnkaNetworkResponse.parse_obj(old_data)
+        return error
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
@@ -67,7 +98,7 @@ class PlayerCards(Plugin, BasePlugin):
     async def player_cards(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        args = get_all_args(context)
+        args = get_args(context)
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             user_info = await self.user_service.get_user_by_id(user.id)
@@ -76,7 +107,7 @@ class PlayerCards(Plugin, BasePlugin):
             else:
                 uid = user_info.genshin_uid
         except UserNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_uid")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -92,27 +123,14 @@ class PlayerCards(Plugin, BasePlugin):
             await message.reply_text(data)
             return
         if data.characters is None:
-            await message.reply_text("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
+            await message.reply_text("请在游戏中的角色展柜中添加角色再开启显示角色详情再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
             return
         if len(args) == 1:
             character_name = roleToName(args[0])
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
         else:
             logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求")
-            buttons = []
-            temp = []
-            for index, value in enumerate(data.characters):
-                temp.append(
-                    InlineKeyboardButton(
-                        value.name,
-                        callback_data=f"get_player_card|{user.id}|{uid}|{value.name}",
-                    )
-                )
-                if index == 3:
-                    buttons.append(temp)
-                    temp = []
-            if len(temp) > 0:
-                buttons.append(temp)
+            buttons = self.gen_button(data, user.id, uid)
             if isinstance(self.temp_photo, str):
                 photo = self.temp_photo
             else:
@@ -134,7 +152,7 @@ class PlayerCards(Plugin, BasePlugin):
         await render_result.reply_photo(message, filename=f"player_card_{uid}_{character_name}.png")
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
-    @restricts(restricts_time_of_groups=20, without_overlapping=True)
+    @restricts(restricts_time=3, without_overlapping=True)
     @error_callable
     async def get_player_cards(self, update: Update, _: CallbackContext) -> None:
         callback_query = update.callback_query
@@ -151,27 +169,89 @@ class PlayerCards(Plugin, BasePlugin):
 
         result, user_id, uid = await get_player_card_callback(callback_query.data)
         if user.id != user_id:
-            await callback_query.answer(text="这不是你的按钮！\n" "再乱点再按我叫西风骑士团、千岩军、天领奉和教令院了！", show_alert=True)
+            await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{result}] uid[{uid}]")
+        if result == "empty_data":
+            await callback_query.answer(text="此按钮不可用", show_alert=True)
+            return
+        page = 0
+        if result.isdigit():
+            page = int(result)
+            logger.info("用户 %s[%s] 角色卡片查询命令请求 || page[%s] uid[%s]", user.full_name, user.id, page, uid)
+        else:
+            logger.info("用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]", user.full_name, user.id, result, uid)
         data = await self._fetch_user(uid)
         if isinstance(data, str):
             await message.reply_text(data)
             return
         if data.characters is None:
-            await message.edit_text("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
+            await message.delete()
+            await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
+            return
+        if page:
+            buttons = self.gen_button(data, user.id, uid, page)
+            await message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
+            await callback_query.answer(f"已切换到第 {page} 页", show_alert=False)
             return
         for characters in data.characters:
             if characters.name == result:
                 break
         else:
-            await message.edit_text(f"角色展柜中未找到 {result} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试")
+            await message.delete()
+            await callback_query.answer(f"角色展柜中未找到 {result} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试", show_alert=True)
             return
         await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         render_result = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
         render_result.filename = f"player_card_{uid}_{result}.png"
         await render_result.edit_media(message)
+
+    @staticmethod
+    def gen_button(
+        data: EnkaNetworkResponse,
+        user_id: Union[str, int],
+        uid: int,
+        page: int = 1,
+    ) -> List[List[InlineKeyboardButton]]:
+        """生成按钮"""
+        buttons = [
+            InlineKeyboardButton(
+                value.name,
+                callback_data=f"get_player_card|{user_id}|{uid}|{value.name}",
+            )
+            for value in data.characters
+            if value.name
+        ]
+        all_buttons = [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
+        send_buttons = all_buttons[(page - 1) * 3 : page * 3]
+        last_page = page - 1 if page > 1 else 0
+        all_page = math.ceil(len(all_buttons) / 3)
+        next_page = page + 1 if page < all_page and all_page > 1 else 0
+        last_button = []
+        if last_page:
+            last_button.append(
+                InlineKeyboardButton(
+                    "<< 上一页",
+                    callback_data=f"get_player_card|{user_id}|{uid}|{last_page}",
+                )
+            )
+        if last_page or next_page:
+            last_button.append(
+                InlineKeyboardButton(
+                    f"{page}/{all_page}",
+                    callback_data=f"get_player_card|{user_id}|{uid}|empty_data",
+                )
+            )
+        if next_page:
+            last_button.append(
+                InlineKeyboardButton(
+                    "下一页 >>",
+                    callback_data=f"get_player_card|{user_id}|{uid}|{next_page}",
+                )
+            )
+        if last_button:
+            send_buttons.append(last_button)
+        return send_buttons
 
 
 class Artifact(BaseModel):
@@ -254,8 +334,6 @@ class RenderTemplate:
         ):
             if artifact_total_score / 5 >= r[1]:
                 artifact_total_score_label = r[0]
-
-        self.fix_skills_level()
 
         data = {
             "uid": self.uid,
@@ -380,16 +458,3 @@ class RenderTemplate:
             for e in self.character.equipments
             if e.type == EquipmentsType.ARTIFACT
         ]
-
-    def fix_skills_level(self) -> None:
-        """修复因命座加成导致的技能等级错误"""
-        data = fix_skills_level_data.get(self.character.name)
-        if not data:
-            return
-        unlocked_constellations = len([i for i in self.character.constellations if i.unlocked])
-        for i in range(2):
-            if unlocked_constellations >= 3 + i * 2:
-                if data[i] == "E" and len(self.character.skills) >= 2:
-                    self.character.skills[1].level += 3
-                elif data[i] == "Q" and len(self.character.skills) >= 3:
-                    self.character.skills[2].level += 3

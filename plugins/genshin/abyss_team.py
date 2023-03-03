@@ -1,6 +1,7 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.base.assets import AssetsService
 from core.baseplugin import BasePlugin
@@ -10,7 +11,7 @@ from core.template import TemplateService
 from core.user import UserService
 from core.user.error import UserNotFoundError
 from metadata.shortname import roleToId
-from modules.apihelper.abyss_team import AbyssTeamData
+from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClient
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -26,7 +27,7 @@ class AbyssTeam(Plugin, BasePlugin):
         self.template_service = template_service
         self.user_service = user_service
         self.assets_service = assets
-        self.team_data = AbyssTeamData()
+        self.team_data = AbyssTeamClient()
 
     @handler(CommandHandler, command="abyss_team", block=False)
     @handler(MessageHandler, filters=filters.Regex("^深渊推荐配队(.*)"), block=False)
@@ -40,7 +41,7 @@ class AbyssTeam(Plugin, BasePlugin):
         try:
             client = await get_genshin_client(user.id)
         except (CookiesNotFoundError, UserNotFoundError):
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)

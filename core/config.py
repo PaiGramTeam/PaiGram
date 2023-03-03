@@ -21,6 +21,7 @@ dotenv.load_dotenv()
 class JoinGroups(str, Enum):
     NO_ALLOW = "NO_ALLOW"
     ALLOW_AUTH_USER = "ALLOW_AUTH_USER"
+    ALLOW_USER = "ALLOW_USER"
     ALLOW_ALL = "ALLOW_ALL"
 
 
@@ -37,9 +38,9 @@ class ConfigUser(BaseModel):
 class MySqlConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 3306
-    username: str
-    password: str
-    database: str
+    username: str = None
+    password: str = None
+    database: str = None
 
     class Config(Settings.Config):
         env_prefix = "db_"
@@ -48,7 +49,8 @@ class MySqlConfig(Settings):
 class RedisConfig(Settings):
     host: str = "127.0.0.1"
     port: int = 6379
-    database: int = Field(env="redis_db")
+    database: int = Field(default=0, env="redis_db")
+    password: Optional[str] = None
 
     class Config(Settings.Config):
         env_prefix = "redis_"
@@ -95,6 +97,20 @@ class ErrorConfig(Settings):
         env_prefix = "error_"
 
 
+class NoticeConfig(Settings):
+    user_mismatch: str = "再乱点我叫西风骑士团、千岩军、天领奉行、三十人团和风纪官了！"
+
+    class Config(Settings.Config):
+        env_prefix = "notice_"
+
+
+class PluginConfig(Settings):
+    download_file_max_size: int = 5
+
+    class Config(Settings.Config):
+        env_prefix = "plugin_"
+
+
 class BotConfig(Settings):
     debug: bool = False
 
@@ -106,16 +122,21 @@ class BotConfig(Settings):
     join_groups: Optional[JoinGroups] = JoinGroups.NO_ALLOW
 
     timeout: int = 10
-    read_timeout: float = 2
+    read_timeout: Optional[float] = None
     write_timeout: Optional[float] = None
     connect_timeout: Optional[float] = None
     pool_timeout: Optional[float] = None
+    update_read_timeout: Optional[float] = None
+    update_write_timeout: Optional[float] = None
+    update_connect_timeout: Optional[float] = None
+    update_pool_timeout: Optional[float] = None
 
     genshin_ttl: Optional[int] = None
 
     enka_network_api_agent: str = ""
     pass_challenge_api: str = ""
     pass_challenge_app_key: str = ""
+    pass_challenge_user_web: str = ""
 
     mysql: MySqlConfig = MySqlConfig()
     logger: LoggerConfig = LoggerConfig()
@@ -123,6 +144,8 @@ class BotConfig(Settings):
     redis: RedisConfig = RedisConfig()
     mtproto: MTProtoConfig = MTProtoConfig()
     error: ErrorConfig = ErrorConfig()
+    notice: NoticeConfig = NoticeConfig()
+    plugin: PluginConfig = PluginConfig()
 
 
 BotConfig.update_forward_refs()

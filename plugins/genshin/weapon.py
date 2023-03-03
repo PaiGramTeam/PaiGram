@@ -2,15 +2,17 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.base.assets import AssetsService
+from core.base.assets import AssetsService, AssetsCouldNotFound
 from core.baseplugin import BasePlugin
 from core.plugin import Plugin, handler
+from core.search.models import WeaponEntry
+from core.search.services import SearchServices
 from core.template import TemplateService
 from core.wiki.services import WikiService
 from metadata.genshin import honey_id_to_game_id
-from metadata.shortname import weaponToName
+from metadata.shortname import weaponToName, weapons as _weapons_data
 from modules.wiki.weapon import Weapon
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import url_to_file
@@ -27,10 +29,12 @@ class WeaponPlugin(Plugin, BasePlugin):
         template_service: TemplateService = None,
         wiki_service: WikiService = None,
         assets_service: AssetsService = None,
+        search_service: SearchServices = None,
     ):
         self.wiki_service = wiki_service
         self.template_service = template_service
         self.assets_service = assets_service
+        self.search_service = search_service
 
     @handler(CommandHandler, command="weapon", block=False)
     @handler(MessageHandler, filters=filters.Regex("^武器查询(.*)"), block=False)
@@ -39,7 +43,7 @@ class WeaponPlugin(Plugin, BasePlugin):
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        args = get_all_args(context)
+        args = get_args(context)
         if len(args) >= 1:
             weapon_name = args[0]
         else:
@@ -109,13 +113,34 @@ class WeaponPlugin(Plugin, BasePlugin):
                 }
             return _template_data
 
-        template_data = await input_template_data(weapon_data)
+        try:
+            template_data = await input_template_data(weapon_data)
+        except AssetsCouldNotFound as exc:
+            logger.warning("%s weapon_name[%s]", exc.message, weapon_name)
+            reply_message = await message.reply_text(f"数据库中没有找到 {weapon_name}")
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self._add_delete_message_job(context, message.chat_id, message.message_id)
+                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
+            return
         png_data = await self.template_service.render(
             "genshin/weapon/weapon.html", template_data, {"width": 540, "height": 540}, ttl=31 * 24 * 60 * 60
         )
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await png_data.reply_photo(
+        reply_photo = await png_data.reply_photo(
             message,
             filename=f"{template_data['weapon_name']}.png",
             allow_sending_without_reply=True,
         )
+        if reply_photo.photo:
+            description = weapon_data.story
+            if description:
+                photo_file_id = reply_photo.photo[0].file_id
+                tags = _weapons_data.get(weapon_name)
+                entry = WeaponEntry(
+                    key=f"plugin:weapon:{weapon_name}",
+                    title=weapon_name,
+                    description=description,
+                    tags=tags,
+                    photo_file_id=photo_file_id,
+                )
+                await self.search_service.add_entry(entry)

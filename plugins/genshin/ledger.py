@@ -2,10 +2,11 @@ import os
 import re
 from datetime import datetime, timedelta
 
-from genshin import GenshinException, DataNotPublic
+from genshin import GenshinException, DataNotPublic, InvalidCookies
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.baseplugin import BasePlugin
 from core.cookies.error import CookiesNotFoundError
@@ -14,7 +15,7 @@ from core.plugin import Plugin, handler
 from core.template.services import RenderResult, TemplateService
 from core.user.error import UserNotFoundError
 from core.user.services import UserService
-from utils.bot import get_all_args
+from utils.bot import get_args
 from utils.decorators.error import error_callable
 from utils.decorators.restricts import restricts
 from utils.helpers import get_genshin_client
@@ -29,7 +30,7 @@ def get_now() -> datetime:
 def check_ledger_month(context: CallbackContext) -> int:
     now_time = get_now()
     month = now_time.month
-    args = get_all_args(context)
+    args = get_args(context)
     if len(args) >= 1:
         month = args[0].replace("月", "")
     if re_data := re.findall(r"\d+", str(month)):
@@ -118,13 +119,24 @@ class Ledger(Plugin, BasePlugin):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
-        logger.info(f"用户 {user.full_name}[{user.id}] 查询旅行札记")
+        logger.info("用户 %s[%s] 查询旅行札记", user.full_name, user.id)
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             client = await get_genshin_client(user.id)
-            render_result = await self._start_get_ledger(client, month)
+            try:
+                render_result = await self._start_get_ledger(client, month)
+            except InvalidCookies as exc:  # 如果抛出InvalidCookies 判断是否真的玄学过期（或权限不足？）
+                await client.get_genshin_user(client.uid)
+                logger.warning(
+                    "用户 %s[%s] 无法请求旅行札记数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original
+                )
+                reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
+                if filters.ChatType.GROUPS.filter(message):
+                    self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                    self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                return
         except (UserNotFoundError, CookiesNotFoundError):
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=f"https://t.me/{context.bot.username}?start=set_cookie")]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -141,5 +153,10 @@ class Ledger(Plugin, BasePlugin):
                 self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
                 self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
             return
+        except GenshinException as exc:
+            if exc.retcode == -120:
+                await message.reply_text("当前角色冒险等阶不足，暂时无法获取信息")
+                return
+            raise exc
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await render_result.reply_photo(message, filename=f"{client.uid}.png", allow_sending_without_reply=True)

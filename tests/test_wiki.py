@@ -112,13 +112,13 @@ class TestMaterial:
     async def test_get_by_name():
         material = await Material.get_by_name("地脉的新芽")
         assert material.id == "i_73"
-        assert material.type == "角色培养素材"
+        assert material.type == "角色与武器培养素材"
         assert "60级以上深渊法师掉落" in material.source
         assert "勃发" in material.description
 
         material = await Material.get_by_name("「黄金」的教导")
         assert material.id == "i_431"
-        assert material.type == "天赋培养素材"
+        assert material.type == "角色天赋素材"
         assert 2 in material.weekdays
         assert "土的象" in material.description
 

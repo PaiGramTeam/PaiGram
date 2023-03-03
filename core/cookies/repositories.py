@@ -1,6 +1,7 @@
 from typing import cast, List
 
 from sqlalchemy import select
+from sqlalchemy.exc import NoResultFound
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.base.mysql import MySQL
@@ -89,3 +90,20 @@ class CookiesRepository:
                 return [cookies[0] for cookies in db_cookies]
             else:
                 raise RegionNotFoundError(region.name)
+
+    async def del_cookies(self, user_id, region: RegionEnum):
+        async with self.mysql.Session() as session:
+            session = cast(AsyncSession, session)
+            if region == RegionEnum.HYPERION:
+                statement = select(HyperionCookie).where(HyperionCookie.user_id == user_id)
+            elif region == RegionEnum.HOYOLAB:
+                statement = select(HoyolabCookie).where(HoyolabCookie.user_id == user_id)
+            else:
+                raise RegionNotFoundError(region.name)
+            results = await session.execute(statement)
+            try:
+                db_cookies = results.unique().scalar_one()
+            except NoResultFound as exc:
+                raise CookiesNotFoundError(user_id) from exc
+            await session.delete(db_cookies)
+            await session.commit()
