@@ -12,7 +12,7 @@ from core.builtins.contexts import handler_contexts, job_contexts
 
 if TYPE_CHECKING:
     from core.application import Application
-    from core.builtins.dispatcher import AbstractDispatcher
+    from core.builtins.dispatcher import AbstractDispatcher, HandlerDispatcher
     from multiprocessing.synchronize import RLock as LockType
 
 __all__ = ("BaseExecutor", "Executor", "HandlerExecutor", "JobExecutor")
@@ -86,21 +86,20 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
     """Handler专用执行器"""
 
     _callback: Callable[P, R]
+    _dispatcher: "HandlerDispatcher"
 
-    def __init__(self, func: Callable[P, R], dispatcher: Optional[Type["AbstractDispatcher"]] = None) -> None:
+    def __init__(self, func: Callable[P, R], dispatcher: Optional[Type["HandlerDispatcher"]] = None) -> None:
         if dispatcher is None:
             from core.builtins.dispatcher import HandlerDispatcher
 
             dispatcher = HandlerDispatcher
         super().__init__("handler", dispatcher)
         self._callback = func
+        self._dispatcher = dispatcher()
 
     async def __call__(self, update: Update, context: CallbackContext) -> R:
         with handler_contexts(update, context):
-            dispatcher = self._dispatcher
-            dispatcher_instance = dispatcher(update=update, context=context)
-            dispatcher_instance.set_application(application=self.application)
-            dispatched_func = dispatcher_instance.dispatch(self._callback)
+            dispatched_func = self._dispatcher.dispatch(self._callback, update=update, context=context)
             return await dispatched_func()
 
 

@@ -7,7 +7,6 @@ from functools import cached_property, lru_cache, partial, wraps
 from inspect import Parameter, Signature
 from itertools import chain
 from types import GenericAlias, MethodType
-
 from typing import (
     Any,
     Callable,
@@ -230,6 +229,21 @@ class HandlerDispatcher(BaseDispatcher):
         super().__init__(update=update, context=context, **kwargs)
         self._update = update
         self._context = context
+
+    def dispatch(
+        self, func: Callable[P, R], *, update: Optional[Update] = None, context: Optional[CallbackContext] = None
+    ) -> Callable[..., R]:
+        self._update = update or self._update
+        self._context = context or self._context
+        if self._update is None:
+            from core.builtins.contexts import UpdateCV
+
+            self._update = UpdateCV.get()
+        if self._context is None:
+            from core.builtins.contexts import CallbackContextCV
+
+            self._context = CallbackContextCV.get()
+        return super().dispatch(func)
 
     def dispatch_by_default(self, parameter: Parameter) -> Parameter:
         """HandlerDispatcher 默认不使用 dispatch_by_default"""
