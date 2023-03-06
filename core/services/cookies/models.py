@@ -20,8 +20,15 @@ class Cookies(SQLModel):
         dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci"),
     )
     id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
-    user_id: int = Field(sa_column=Column(BigInteger()), )
-    account_id: int = Field(default=None, sa_column=Column(BigInteger(), ), )
+    user_id: int = Field(
+        sa_column=Column(BigInteger()),
+    )
+    account_id: int = Field(
+        default=None,
+        sa_column=Column(
+            BigInteger(),
+        ),
+    )
     data: Optional[Dict[str, str]] = Field(sa_column=Column(JSON))
     status: Optional[CookiesStatusEnum] = Field(sa_column=Column(Enum(CookiesStatusEnum)))
     region: RegionEnum = Field(sa_column=Column(Enum(RegionEnum)))
