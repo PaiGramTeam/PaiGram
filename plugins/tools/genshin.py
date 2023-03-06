@@ -1,8 +1,17 @@
-from typing import Optional, Tuple, Union
+import asyncio
+import random
+import re
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import genshin
+from genshin.models import BaseCharacter
+from genshin.models import CalculatorCharacterDetails
+from pydantic import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
+from sqlmodel import SQLModel, Field, String, Column, Integer, BigInteger, select
 
 from core.config import config
+from core.dependence.mysql import MySQL
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin
@@ -10,7 +19,13 @@ from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.players.models import RegionEnum
 from core.services.players.services import PlayersService
 from core.services.users.services import UserService
+from core.sqlmodel.session import AsyncSession
 from utils.const import REGION_MAP
+from utils.log import logger
+
+if TYPE_CHECKING:
+    from sqlalchemy import Table
+    from genshin import Client as GenshinClient, GenshinException
 
 __all__ = ("GenshinHelper", "PlayerNotFoundError", "CookiesNotFoundError")
 
@@ -23,6 +38,153 @@ class PlayerNotFoundError(Exception):
 class CookiesNotFoundError(Exception):
     def __init__(self, user_id):
         super().__init__(f"{user_id} cookies not found")
+
+
+class CharacterDetailsSQLModel(SQLModel, table=True):
+    __tablename__ = "character_details"
+    __table_args__ = (dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci"),)
+    id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
+    player_id: int = Field(sa_column=Column(BigInteger(), primary_key=True))
+    character_id: int = Field(sa_column=Column(BigInteger(), primary_key=True))
+    data: Optional[str] = Field(sa_column=Column(String(length=4096)))
+
+
+class CharacterDetails(Plugin):
+    def __init__(
+        self,
+        mysql: MySQL,
+        redis: RedisDB,
+    ) -> None:
+        self.mysql = mysql
+        self.redis = redis.client
+        self.ttl = 60 * 60 * 3
+
+    async def initialize(self) -> None:
+        def fetch_and_update_objects(connection):
+            if not self.mysql.engine.dialect.has_table(connection, table_name="character_details"):
+                logger.info("正在创建角色详细信息表")
+                table: "Table" = SQLModel.metadata.tables["character_details"]
+                table.create(connection)
+                logger.success("创建角色详细信息表成功")
+
+        async with self.mysql.engine.begin() as conn:
+            await conn.run_sync(fetch_and_update_objects)
+        asyncio.create_task(self.save_character_details_task(max_ttl=None))
+
+    async def save_character_details_task(self, max_ttl: Optional[int] = 60 * 60):
+        logger.info("正在从Redis中保存角色详细信息")
+        try:
+            await self.save_character_details(max_ttl)
+        except SQLAlchemyError as exc:
+            logger.error("写入到数据库失败 code[%s]", exc.code)
+            logger.debug("写入到数据库失败", exc_info=exc)
+        except Exception as exc:
+            logger.error("save_character_details 执行失败", exc_info=exc)
+        else:
+            logger.success("从Redis中保存角色详细信息成功")
+
+    async def save_character_details(self, max_ttl: Optional[int] = 60 * 60):
+        keys = await self.redis.keys("plugins:character_details:*")
+        for key in keys:
+            key = str(key, encoding="utf-8")
+            ttl = await self.redis.ttl(key)
+            if max_ttl is None or (0 <= ttl <= max_ttl):
+                try:
+                    uid, character_id = re.findall(r"\d+", key)
+                except ValueError:
+                    logger.warning("非法Key %s", key)
+                    continue
+                data = await self.redis.get(key)
+                str_data = str(data, encoding="utf-8")
+                data = CharacterDetailsSQLModel(player_id=uid, character_id=character_id, data=str_data)
+                async with AsyncSession(self.mysql.engine) as session:
+                    await session.merge(data)
+                    await session.commit()
+
+    @staticmethod
+    def get_qname(uid: int, character: int):
+        return f"plugins:character_details:{uid}:{character}"
+
+    async def get_character_details_for_redis(
+        self,
+        uid: int,
+        character_id: int,
+    ) -> Optional["CalculatorCharacterDetails"]:
+        name = self.get_qname(uid, character_id)
+        data = await self.redis.get(name)
+        if data is None:
+            return None
+        json_data = str(data, encoding="utf-8")
+        return CalculatorCharacterDetails.parse_raw(json_data)
+
+    async def set_character_details_for_redis(self, uid: int, character_id: int, detail: "CalculatorCharacterDetails"):
+        randint = random.randint(60 * 60, 60 * 60)  # nosec
+        await self.redis.set(self.get_qname(uid, character_id), detail.json(), ex=self.ttl + randint)
+
+    async def set_character_details_for_mysql(self, uid: int, character_id: int, detail: "CalculatorCharacterDetails"):
+        data = CharacterDetailsSQLModel(player_id=uid, character_id=character_id, data=detail.json())
+        async with AsyncSession(self.mysql.engine) as session:
+            await session.merge(data)
+            await session.commit()
+
+    async def get_character_details_for_mysql(
+        self,
+        uid: int,
+        character_id: int,
+    ) -> Optional["CalculatorCharacterDetails"]:
+        async with AsyncSession(self.mysql.engine) as session:
+            statement = (
+                select(CharacterDetailsSQLModel)
+                .where(CharacterDetailsSQLModel.player_id == uid)
+                .where(CharacterDetailsSQLModel.character_id == character_id)
+            )
+            results = await session.exec(statement)
+            data = results.first()
+            if data is not None:
+                try:
+                    return CalculatorCharacterDetails.parse_raw(data.data)
+                except ValidationError as exc:
+                    logger.error("解析数据出现异常 ValidationError", exc_info=exc)
+                    await session.delete(data)
+                    await session.commit()
+                except ValueError as exc:
+                    logger.error("解析数据出现异常 ValueError", exc_info=exc)
+                    await session.delete(data)
+                    await session.commit()
+        return None
+
+    async def get_character_details(
+        self, client: "GenshinClient", character: "Union[int,BaseCharacter]"
+    ) -> Optional["CalculatorCharacterDetails"]:
+        """缓存 character_details 并定时对其进行数据存储 当遇到 Too Many Requests 可以获取以前的数据
+        :param client: genshin.py
+        :param character:
+        :return:
+        """
+        uid = client.uid
+        if uid is not None:
+            if isinstance(character, BaseCharacter):
+                character_id = character.id
+            else:
+                character_id = character
+            detail = await self.get_character_details_for_redis(uid, character_id)
+            if detail is not None:
+                return detail
+            try:
+                detail = await client.get_character_details(character)
+            except GenshinException as exc:
+                if "Too Many Requests" in exc.msg:
+                    return await self.get_character_details_for_mysql(uid, character_id)
+            await self.set_character_details_for_redis(uid, character_id, detail)
+            return detail
+        try:
+            return await client.get_character_details(character)
+        except GenshinException as exc:
+            if "Too Many Requests" in exc.msg:
+                logger.warning("Too Many Requests")
+            else:
+                raise exc
+        return None
 
 
 class GenshinHelper(Plugin):

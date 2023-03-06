@@ -7,7 +7,7 @@ from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, VaildateUIDError, HTTPException, EnkaPlayerNotFound
 from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
@@ -21,7 +21,7 @@ from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
-from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
+from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, PlayerNotFoundError, CharacterDetails
 from utils.enkanetwork import RedisCache
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
@@ -57,6 +57,7 @@ class AvatarListPlugin(Plugin):
         template_service: TemplateService = None,
         redis: RedisDB = None,
         helper: GenshinHelper = None,
+        character_details: CharacterDetails = None,
     ) -> None:
         self.cookies_service = cookies_service
         self.assets_service = assets_service
@@ -65,8 +66,11 @@ class AvatarListPlugin(Plugin):
         self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60 * 3))
         self.enka_assets = EnkaAssets(lang="chs")
         self.helper = helper
+        self.character_details = character_details
 
-    async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
+    async def get_user_client(self, update: Update, context: CallbackContext) -> Optional[Client]:
+        message = update.effective_message
+        user = update.effective_user
         try:
             return await self.helper.get_genshin_client(user.id)
         except PlayerNotFoundError:  # 若未找到账号
@@ -97,21 +101,8 @@ class AvatarListPlugin(Plugin):
                 )
 
     async def get_avatar_data(self, character: Character, client: Client) -> Optional["AvatarData"]:
-        for _ in range(5):
-            try:
-                detail = await client.get_character_details(character)
-            except Exception as exc:  # pylint: disable=W0703
-                if isinstance(exc, GenshinException) and "Too Many Requests" in exc.msg:
-                    await asyncio.sleep(0.2)
-                    continue
-                if character.name == "旅行者":
-                    logger.debug("解析旅行者数据时遇到了错误：%s", str(exc))
-                    return None
-                raise exc
-            else:
-                break
-        else:
-            logger.warning("解析[bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.name, extra={"markup": True})
+        detail = await self.character_details.get_character_details(client,character)
+        if detail is None:
             return None
         if character.id == 10000005:  # 针对男草主
             talents = []

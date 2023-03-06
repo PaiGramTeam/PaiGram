@@ -5,7 +5,7 @@ from typing import List, Optional
 from genshin import Client, GenshinException
 from genshin.client.routes import Route
 from genshin.utility import recognize_genshin_server
-from telegram import Message, User, Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
 from telegram.ext import filters, MessageHandler, CommandHandler, CallbackContext
 from telegram.helpers import create_deep_linked_url
@@ -61,7 +61,9 @@ class BirthdayPlugin(Plugin):
         return (self.birthday_list.get(key, [])).copy()
 
     @handler.command(command="birthday", block=False)
-    async def command_start(self, user: User, message: Message) -> None:
+    async def command_start(self, update: Update, _: CallbackContext) -> None:
+        message = update.effective_message
+        user = update.effective_user
         key = (
             rm_starting_str(datetime.now().strftime("%m"), "0")
             + "_"

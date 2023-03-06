@@ -4,9 +4,9 @@ from typing import Optional
 
 import genshin
 from genshin import DataNotPublic
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import ConversationHandler, filters
+from telegram.ext import ConversationHandler, filters, CallbackContext
 from telegram.helpers import create_deep_linked_url
 
 from core.plugin import Plugin, handler
@@ -92,7 +92,9 @@ class DailyNotePlugin(Plugin):
 
     @handler.command("dailynote", block=False)
     @handler.message(filters.Regex("^当前状态(.*)"), block=False)
-    async def command_start(self, user: User, message: Message) -> Optional[int]:
+    async def command_start(self, update: Update, _: CallbackContext) -> Optional[int]:
+        message = update.effective_message
+        user = update.effective_user
         logger.info("用户 %s[%s] 每日便签命令请求", user.full_name, user.id)
 
         try:

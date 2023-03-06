@@ -3,9 +3,9 @@ import re
 from datetime import datetime, timedelta
 
 from genshin import DataNotPublic, InvalidCookies, GenshinException
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import filters
+from telegram.ext import filters, CallbackContext
 from telegram.helpers import create_deep_linked_url
 
 from core.plugin import Plugin, handler
@@ -69,7 +69,7 @@ class LedgerPlugin(Plugin):
 
     @handler.command(command="ledger", block=False)
     @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), block=False)
-    async def command_start(self, user: User, message: Message) -> None:
+    async def command_start(self, update: Update, context: CallbackContext) -> None:
         now = datetime.now()
         now_time = (now - timedelta(days=1)) if now.day == 1 and now.hour <= 4 else now
         month = now_time.month

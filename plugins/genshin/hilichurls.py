@@ -1,7 +1,7 @@
 from typing import Dict
 
 from aiofiles import open as async_open
-from telegram import Message, User
+from telegram import Update
 from telegram.ext import CallbackContext, filters
 
 from core.plugin import Plugin, handler
@@ -28,7 +28,9 @@ class HilichurlsPlugin(Plugin):
             self.hilichurls_dictionary = jsonlib.loads(await file.read())
 
     @handler.command(command="hilichurls", block=False)
-    async def command_start(self, user: User, message: Message, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: CallbackContext) -> None:
+        message = update.effective_message
+        user = update.effective_user
         args = self.get_args(context)
         if len(args) >= 1:
             msg = args[0]

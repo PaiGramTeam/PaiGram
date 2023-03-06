@@ -1,5 +1,6 @@
-from telegram import Message, User
+from telegram import Update
 from telegram.constants import ChatAction
+from telegram.ext import CallbackContext
 
 from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
@@ -15,7 +16,9 @@ class HelpPlugin(Plugin):
         self.template_service = template_service
 
     @handler.command(command="help", block=False)
-    async def start(self, user: User, message: Message):
+    async def start(self, update: Update, _: CallbackContext):
+        message = update.effective_message
+        user = update.effective_user
         logger.info("用户 %s[%s] 发出help命令", user.full_name, user.id)
         await message.reply_chat_action(ChatAction.TYPING)
         render_result = await self.template_service.render(

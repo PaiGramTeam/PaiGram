@@ -14,7 +14,7 @@ class LimiterHandler(TypeHandler[UT, CCT]):
     _lock = asyncio.Lock()
 
     def __init__(
-        self, max_rate: float = 5, time_period: float = 10, amount: float = 1, limit_time: Optional[float] = None
+            self, max_rate: float = 5, time_period: float = 10, amount: float = 1, limit_time: Optional[float] = None
     ):
         """Limiter Handler 通过
         `Leaky bucket algorithm <https://en.wikipedia.org/wiki/Leaky_bucket>`_
@@ -41,28 +41,31 @@ class LimiterHandler(TypeHandler[UT, CCT]):
         loop = asyncio.get_running_loop()
         async with self._lock:
             time = loop.time()
-            user_limit_time = context.user_data.get("limit_time")
+            user_data = context.user_data
+            if user_data is None:
+                return
+            user_limit_time = user_data.get("limit_time")
             if user_limit_time is not None:
                 if time >= user_limit_time:
-                    del context.user_data["limit_time"]
+                    del user_data["limit_time"]
                 else:
                     raise ApplicationHandlerStop
-            last_task_time = context.user_data.get("last_task_time", 0)
+            last_task_time = user_data.get("last_task_time", 0)
             if last_task_time:
-                task_level = context.user_data.get("task_level", 0)
+                task_level = user_data.get("task_level", 0)
                 elapsed = time - last_task_time
                 decrement = elapsed * self._rate_per_sec
                 task_level = max(task_level - decrement, 0)
-                context.user_data["task_level"] = task_level
+                user_data["task_level"] = task_level
                 if not task_level + self.amount <= self.max_rate:
                     if self.limit_time:
                         limit_time = self.limit_time
                     else:
                         limit_time = 1 / self._rate_per_sec * self.amount
-                    context.user_data["limit_time"] = time + limit_time
+                    user_data["limit_time"] = time + limit_time
                     user = update.effective_user
                     logger.warning("用户 %s[%s] 触发洪水限制 已被限制 %s 秒", user.full_name, user.id, limit_time)
                     raise ApplicationHandlerStop
-            context.user_data["last_task_time"] = time
-            task_level = context.user_data.get("task_level", 0)
-            context.user_data["task_level"] = task_level + self.amount
+            user_data["last_task_time"] = time
+            task_level = user_data.get("task_level", 0)
+            user_data["task_level"] = task_level + self.amount

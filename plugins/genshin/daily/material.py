@@ -29,7 +29,7 @@ from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
-from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
+from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError, CharacterDetails
 from utils.log import logger
 
 INTERVAL = 1
@@ -98,10 +98,17 @@ class DailyMaterial(Plugin):
     data: DATA_TYPE
     locks: Tuple[Lock] = (Lock(), Lock())
 
-    def __init__(self, assets: AssetsService, template_service: TemplateService, helper: GenshinHelper):
+    def __init__(
+        self,
+        assets: AssetsService,
+        template_service: TemplateService,
+        helper: GenshinHelper,
+        character_details: CharacterDetails,
+    ):
         self.assets_service = assets
         self.template_service = template_service
         self.helper = helper
+        self.character_details = character_details
         self.client = AsyncClient()
 
     async def initialize(self):
@@ -122,30 +129,10 @@ class DailyMaterial(Plugin):
                 data = json.loads(await file.read())
         self.data = data
 
-    @staticmethod
-    async def _get_skills_data(client: Client, character: Character) -> Optional[List[int]]:
-        """获取角色技能的数据"""
-        for _ in range(5):
-            try:
-                detail = await client.get_character_details(character)
-            except Exception as e:  # pylint: disable=W0703
-                if isinstance(e, GenshinException):
-                    # 如果是 Too Many Requests 异常，则等待一段时间后重试
-                    if "Too Many Requests" in e.msg:
-                        await asyncio.sleep(0.2)
-                        continue
-                # 如果是其他异常，则直接抛出
-                raise e
-            else:
-                break
-        else:
-            # 如果重试了5次都失败了，则直接返回 None
-            logger.warning(
-                "daily_material 解析角色 id 为 [bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.id, extra={"markup": True}
-            )
+    async def _get_skills_data(self, client: Client, character: Character) -> Optional[List[int]]:
+        detail = await self.character_details.get_character_details(client, character)
+        if detail is None:
             return None
-        # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
-        # 不用计算命座加成，因为这个是展示天赋升级情况，10 级为最高。计算命座会引起混淆。
         talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
         return [t.level for t in talents]
 
