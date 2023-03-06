@@ -69,7 +69,10 @@ class LedgerPlugin(Plugin):
 
     @handler.command(command="ledger", block=False)
     @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, _: CallbackContext) -> None:
+        user = update.effective_user
+        message = update.effective_message
+
         now = datetime.now()
         now_time = (now - timedelta(days=1)) if now.day == 1 and now.hour <= 4 else now
         month = now_time.month

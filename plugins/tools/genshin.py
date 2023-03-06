@@ -4,6 +4,7 @@ import re
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import genshin
+from genshin.errors import GenshinException
 from genshin.models import BaseCharacter
 from genshin.models import CalculatorCharacterDetails
 from pydantic import ValidationError
@@ -25,7 +26,7 @@ from utils.log import logger
 
 if TYPE_CHECKING:
     from sqlalchemy import Table
-    from genshin import Client as GenshinClient, GenshinException
+    from genshin import Client as GenshinClient
 
 __all__ = ("GenshinHelper", "PlayerNotFoundError", "CookiesNotFoundError")
 

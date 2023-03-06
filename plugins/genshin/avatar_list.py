@@ -219,7 +219,7 @@ class AvatarListPlugin(Plugin):
 
         logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
 
-        client = await self.get_user_client(user, message, context)
+        client = await self.get_user_client(update, context)
         if not client:
             return
 
