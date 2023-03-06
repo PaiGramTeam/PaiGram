@@ -101,7 +101,7 @@ class AvatarListPlugin(Plugin):
                 )
 
     async def get_avatar_data(self, character: Character, client: Client) -> Optional["AvatarData"]:
-        detail = await self.character_details.get_character_details(client,character)
+        detail = await self.character_details.get_character_details(client, character)
         if detail is None:
             return None
         if character.id == 10000005:  # 针对男草主

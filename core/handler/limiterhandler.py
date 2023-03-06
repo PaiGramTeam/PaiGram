@@ -14,7 +14,7 @@ class LimiterHandler(TypeHandler[UT, CCT]):
     _lock = asyncio.Lock()
 
     def __init__(
-            self, max_rate: float = 5, time_period: float = 10, amount: float = 1, limit_time: Optional[float] = None
+        self, max_rate: float = 5, time_period: float = 10, amount: float = 1, limit_time: Optional[float] = None
     ):
         """Limiter Handler 通过
         `Leaky bucket algorithm <https://en.wikipedia.org/wiki/Leaky_bucket>`_

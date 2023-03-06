@@ -277,9 +277,7 @@ class JobDispatcher(BaseDispatcher):
         super().__init__(context=context, **kwargs)
         self._context = context
 
-    def dispatch(
-        self, func: Callable[P, R], *, context: Optional[CallbackContext] = None
-    ) -> Callable[..., R]:
+    def dispatch(self, func: Callable[P, R], *, context: Optional[CallbackContext] = None) -> Callable[..., R]:
         self._context = context or self._context
         if self._context is None:
             from core.builtins.contexts import CallbackContextCV
