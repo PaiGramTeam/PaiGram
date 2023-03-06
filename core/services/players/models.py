@@ -1,7 +1,7 @@
 import enum
 from typing import Optional
 
-from sqlmodel import Boolean, Column, Enum, Field, SQLModel, Integer
+from sqlmodel import Boolean, Column, Enum, Field, SQLModel, Integer, Index, BigInteger
 
 __all__ = ("RegionEnum", "Player", "PlayersDataBase")
 
@@ -15,13 +15,16 @@ class RegionEnum(int, enum.Enum):
 
 
 class Player(SQLModel):
-    __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
+    __table_args__ = (
+        Index("index_user_account_player", "user_id", "account_id", "player_id", unique=True),
+        dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci"),
+    )
     id: Optional[int] = Field(
         default=None, primary_key=True, sa_column=Column(Integer(), primary_key=True, autoincrement=True)
     )
-    user_id: int = Field()
-    account_id: int = Field()
-    player_id: int = Field()
+    user_id: int = Field(primary_key=True, sa_column=Column(BigInteger()))
+    account_id: int = Field(primary_key=True, sa_column=Column(BigInteger()))
+    player_id: int = Field(primary_key=True, sa_column=Column(BigInteger()))
     nickname: Optional[str] = Field()
     signature: Optional[str] = Field()
     hand_image: Optional[int] = Field()

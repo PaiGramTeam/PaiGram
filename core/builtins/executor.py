@@ -97,6 +97,11 @@ class HandlerExecutor(BaseExecutor, Generic[P, R]):
         self._callback = func
         self._dispatcher = dispatcher()
 
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+        if self._dispatcher is not None:
+            self._dispatcher.set_application(application)
+
     async def __call__(self, update: Update, context: CallbackContext) -> R:
         with handler_contexts(update, context):
             dispatched_func = self._dispatcher.dispatch(self._callback, update=update, context=context)
@@ -113,11 +118,14 @@ class JobExecutor(BaseExecutor):
             dispatcher = JobDispatcher
         super().__init__("job", dispatcher)
         self._callback = func
+        self._dispatcher = dispatcher()
+
+    def set_application(self, application: "Application") -> None:
+        self._application = application
+        if self._dispatcher is not None:
+            self._dispatcher.set_application(application)
 
     async def __call__(self, context: CallbackContext) -> R:
         with job_contexts(context):
-            dispatcher = self._dispatcher
-            dispatcher_instance = dispatcher(context=context)
-            dispatcher_instance.set_application(application=self.application)
-            dispatched_func = dispatcher_instance.dispatch(self._callback)
+            dispatched_func = self._dispatcher.dispatch(self._callback, context=context)
             return await dispatched_func()

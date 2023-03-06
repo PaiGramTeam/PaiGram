@@ -1,9 +1,9 @@
 import random
 
-from telegram import Chat, Message, Poll, User
+from telegram import Poll, Update
 from telegram.constants import ChatAction
 from telegram.error import BadRequest
-from telegram.ext import filters
+from telegram.ext import filters, CallbackContext
 
 from core.plugin import Plugin, handler
 from core.services.quiz.services import QuizService
@@ -23,7 +23,10 @@ class QuizPlugin(Plugin):
 
     @handler.message(filters=filters.Regex("来一道题"))
     @handler.command(command="quiz", block=False)
-    async def command_start(self, user: User, message: Message, chat: Chat) -> None:
+    async def command_start(self, update: Update, _: CallbackContext) -> None:
+        message = update.effective_message
+        user = update.effective_user
+        chat = update.effective_chat
         await message.reply_chat_action(ChatAction.TYPING)
         question_id_list = await self.quiz_service.get_question_id_list()
         if filters.ChatType.GROUPS.filter(message):

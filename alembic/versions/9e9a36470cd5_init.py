@@ -122,6 +122,9 @@ def upgrade() -> None:
     )
     op.create_table(
         "sign",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.BigInteger(), nullable=False),
+        sa.Column("chat_id", sa.BigInteger(), nullable=True),
         sa.Column(
             "time_created",
             sa.DateTime(timezone=True),
@@ -143,14 +146,11 @@ def upgrade() -> None:
             ),
             nullable=True,
         ),
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.BigInteger(), nullable=False),
-        sa.Column("chat_id", sa.BigInteger(), nullable=True),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.user_id"],
         ),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint("id", "user_id"),
         mysql_charset="utf8mb4",
         mysql_collate="utf8mb4_general_ci",
     )
