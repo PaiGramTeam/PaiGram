@@ -218,6 +218,8 @@ class PayLogPlugin(Plugin.Conversation, BasePlugin.Conversation):
             client = await get_genshin_client(user.id, need_cookie=False)
             await message.reply_chat_action(ChatAction.TYPING)
             path = self.pay_log.get_file_path(str(user.id), str(client.uid))
+            if not path.exists():
+                raise PayLogNotFound
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption="充值记录导出文件")
         except PayLogNotFound:
