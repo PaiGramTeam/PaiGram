@@ -1,4 +1,5 @@
 from telegram import Update
+from telegram.ext import ContextTypes
 
 from core.plugin import Plugin, handler
 from core.services.users.services import UserAdminService
@@ -12,7 +13,7 @@ class AdminPlugin(Plugin):
         self.user_admin_service = user_admin_service
 
     @handler.command("add_admin", block=False, admin=True)
-    async def add_admin(self, update: Update):
+    async def add_admin(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
         message = update.effective_message
         reply_to_message = message.reply_to_message
         user = update.effective_user
@@ -31,7 +32,7 @@ class AdminPlugin(Plugin):
             await message.reply_text("请回复对应消息")
 
     @handler.command("del_admin", block=False, admin=True)
-    async def del_admin(self, update: Update):
+    async def del_admin(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
         message = update.effective_message
         reply_to_message = message.reply_to_message
         user = update.effective_user

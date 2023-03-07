@@ -8,18 +8,22 @@ from inspect import isabstract as inspect_isabstract, iscoroutinefunction
 from pathlib import Path
 from typing import Awaitable, Callable, Iterator, Match, Pattern, Type, TypeVar, Union
 
+import aiofiles
+import httpx
+from httpx import UnsupportedProtocol
 from typing_extensions import ParamSpec
 
-__all__ = (
-    "sha1",
-    "gen_pkg",
-    "async_re_sub",
-    "execute",
-    "isabstract",
-)
+from utils.const import REQUEST_HEADERS
+
+__all__ = ("sha1", "gen_pkg", "async_re_sub", "execute", "isabstract", "download_resource")
+
 
 T = TypeVar("T")
 P = ParamSpec("P")
+
+cache_dir = os.path.join(os.getcwd(), "cache")
+if not os.path.exists(cache_dir):
+    os.mkdir(cache_dir)
 
 
 @lru_cache(64)
@@ -115,3 +119,25 @@ def gen_pkg(path: Path) -> Iterator[str]:
 
 def isabstract(target: Type) -> bool:
     return any([inspect_isabstract(target), isinstance(target, type) and ABC in target.__bases__])
+
+
+async def download_resource(url: str, return_path: bool = False, timeout: float = 20) -> str:
+    url_sha1 = sha1(url)
+    url_file_name = os.path.basename(url)
+    _, extension = os.path.splitext(url_file_name)
+    temp_file_name = url_sha1 + extension
+    file_dir = os.path.join(cache_dir, temp_file_name)
+    if not os.path.exists(file_dir):
+        async with httpx.AsyncClient(headers=REQUEST_HEADERS, timeout=timeout) as client:
+            try:
+                data = await client.get(url)
+            except UnsupportedProtocol as exc:
+                raise RuntimeError("Unsupported Protocol") from exc
+        if data.is_error and data.status_code == 200:
+            raise RuntimeError("Request Error")
+        if data.status_code != 200:
+            raise RuntimeError("Request Error, Status Code", data.status_code)
+        async with aiofiles.open(file_dir, mode="wb") as f:
+            await f.write(data.content)
+
+    return file_dir if return_path else Path(file_dir).as_uri()
