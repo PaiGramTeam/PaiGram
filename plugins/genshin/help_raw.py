@@ -1,39 +1,33 @@
-import typing import Optional
 import os
+from typing import Optional
 
 import aiofiles
 from bs4 import BeautifulSoup
 from telegram import Update
-from telegram.constants import ChatAction
 from telegram.ext import CallbackContext
 
-
 from core.plugin import Plugin, handler
-from core.services.template.services import TemplateService
 from utils.log import logger
-
 
 __all__ = ("HelpRawPlugin",)
 
 
 class HelpRawPlugin(Plugin):
-	def __init__(self):
+    def __init__(self):
         self.help_raw: Optional[str] = None
 
-
-    async def initialize (self):
-        file_path = os.path.join(0s.getcmd(), "resources", "bot", "help", "help.html") # resources/bot/help/help.html
+    async def initialize(self):
+        file_path = os.path.join(os.getcwd(), "resources", "bot", "help", "help.html")  # resources/bot/help/help.html
         async with aiofiles.open(file_path, mode="r") as f:
             html_content = await f.read()
         soup = BeautifulSoup(html_content, "lxml")
-        commnad_div = soup.find_all("div", _class="commnad")
-        for div in commnad_div:
-            commnad_name_div = div.find("div", _class="commnad_name")
-            if commnad_name_div:
+        command_div = soup.find_all("div", _class="command")
+        for div in command_div:
+            command_name_div = div.find("div", _class="command_name")
+            if command_name_div:
                 command_description_div = div.find("div", _class="command-description")
                 if command_description_div:
-                    self.help_raw += f"/{commnad_name_div.text} - {command_description_div}"
-
+                    self.help_raw += f"/{command_name_div.text} - {command_description_div}"
 
     @handler.command(command="help_raw", block=False)
     async def start(self, update: Update, _: CallbackContext):

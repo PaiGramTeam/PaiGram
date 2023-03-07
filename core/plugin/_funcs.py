@@ -8,7 +8,6 @@ from telegram import Chat, Message, ReplyKeyboardRemove, Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, ConversationHandler, Job
 
-from core.builtins.contexts import CallbackContextCV
 from core.dependence.redisdb import RedisDB
 from core.plugin._handler import conversation, handler
 from utils.const import CACHE_DIR, REQUEST_HEADERS
@@ -151,8 +150,6 @@ class PluginFuncs:
 
     @staticmethod
     def get_args(context: Optional[CallbackContext] = None) -> List[str]:
-        context = context or CallbackContextCV.get()
-
         args = context.args
         match = context.match
 
