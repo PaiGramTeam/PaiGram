@@ -232,7 +232,7 @@ class PlayersManagesPlugin(Plugin):
         )
 
     @handler.callback_query(r"^players_manager\|del\|", block=False)
-    async def delete(self, update: Update) -> None:
+    async def delete(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
