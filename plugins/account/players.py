@@ -146,6 +146,7 @@ class PlayersManagesPlugin(Plugin):
                 for genshin_account in genshin_accounts:
                     if genshin_account.uid == player.player_id:
                         player.nickname = genshin_account.nickname
+                        break
                 else:
                     await callback_query.edit_message_text("奇怪的错误")
                     return

@@ -159,7 +159,7 @@ class PlayerCards(Plugin):
             _user_id = int(_data[1])
             _uid = int(_data[2])
             _result = _data[3]
-            logger.debug(f"callback_query_data函数返回 result[{_result}] user_id[{_user_id}] uid[{_uid}]")
+            logger.debug("callback_query_data函数返回 result[%s] user_id[%s] uid[%s]", _result, _user_id, _uid)
             return _result, _user_id, _uid
 
         result, user_id, uid = await get_player_card_callback(callback_query.data)
@@ -430,11 +430,12 @@ class RenderTemplate:
         for item in c.equipments:
             item.detail.icon.url = await download_resource(item.detail.icon.url)
 
-    def find_weapon(self) -> Union[Equipments, None]:
+    def find_weapon(self) -> Optional[Equipments]:
         """在 equipments 数组中找到武器，equipments 数组包含圣遗物和武器"""
         for item in self.character.equipments:
             if item.type == EquipmentsType.WEAPON:
                 return item
+        return None
 
     def find_artifacts(self) -> List[Artifact]:
         """在 equipments 数组中找到圣遗物，并转换成带有分数的 model。equipments 数组包含圣遗物和武器"""
