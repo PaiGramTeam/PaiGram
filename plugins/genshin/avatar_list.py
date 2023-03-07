@@ -267,7 +267,7 @@ class AvatarListPlugin(Plugin):
             name_card, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
         except Exception as exc:  # pylint: disable=W0703
             logger.error("卡片信息请求失败 %s", str(exc))
-            name_card, avatar, nickname, rarity = await self.get_default_final_data(client.uid, update)
+            name_card, avatar, nickname, rarity = await self.get_default_final_data(client.uid, characters, user)
 
         render_data = {
             "uid": client.uid,  # 玩家uid
