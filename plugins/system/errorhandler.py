@@ -157,6 +157,12 @@ class ErrorHandler(Plugin):
             raise ApplicationHandlerStop
 
     @error_handler()
+    async def process_telegram_update_exception(self, update: object, context: CallbackContext):
+        if update is None and isinstance(context.error, NetworkError):
+            logger.error("python-telegram-bot NetworkError : %s", context.error.message)
+            raise ApplicationHandlerStop
+
+    @error_handler()
     async def process_apihelper_exception(self, update: object, context: CallbackContext):
         if not isinstance(context.error, APIHelperException) or not isinstance(update, Update):
             return
@@ -199,8 +205,10 @@ class ErrorHandler(Plugin):
             raise ApplicationHandlerStop
 
     @error_handler(block=False)
-    async def process_error(self, update: object, context: CallbackContext) -> None:
-        """记录错误并发送消息通知开发人员。 logger the error and send a telegram message to notify the developer."""
+    async def process_z_error(self, update: object, context: CallbackContext) -> None:
+        # 必须 `process_` 加上 `z` 保证该函数最后一个注册
+        """记录错误并发送消息通知开发人员。
+        logger the error and send a telegram message to notify the developer."""
 
         logger.error("处理函数时发生异常")
         logger.exception(context.error, exc_info=(type(context.error), context.error, context.error.__traceback__))

@@ -7,7 +7,7 @@ from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, VaildateUIDError, HTTPException, EnkaPlayerNotFound
 from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
@@ -17,6 +17,7 @@ from core.dependence.assets import AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
+from core.services.players import PlayersService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
@@ -52,6 +53,7 @@ class AvatarData(Model):
 class AvatarListPlugin(Plugin):
     def __init__(
         self,
+        player_service: PlayersService = None,
         cookies_service: CookiesService = None,
         assets_service: AssetsService = None,
         template_service: TemplateService = None,
@@ -67,6 +69,7 @@ class AvatarListPlugin(Plugin):
         self.enka_assets = EnkaAssets(lang="chs")
         self.helper = helper
         self.character_details = character_details
+        self.player_service = player_service
 
     async def get_user_client(self, update: Update, context: CallbackContext) -> Optional[Client]:
         message = update.effective_message
@@ -196,15 +199,27 @@ class AvatarListPlugin(Plugin):
             rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
         return name_card, avatar, nickname, rarity
 
-    async def get_default_final_data(self, characters: Sequence[Character], update: Update):
-        nickname = update.effective_user.full_name
-        rarity = 5
-        # 须弥·正明
-        name_card = (await self.assets_service.namecard(210132).navbar()).as_uri()
-        if traveller := next(filter(lambda x: x.id in [10000005, 10000007], characters), None):
-            avatar = (await self.assets_service.avatar(traveller.id).icon()).as_uri()
-        else:
-            avatar = (await self.assets_service.avatar(10000005).icon()).as_uri()
+    async def get_default_final_data(self, player_id: int, characters: Sequence[Character], user: User):
+        player_info = await self.player_service.get(user.id, player_id)
+        nickname = user.full_name
+        name_card: Optional[str] = None
+        avatar: Optional[str] = None
+        rarity: int = 5
+        if player_info is not None:
+            if player_info.nickname is not None:
+                nickname = player_info.nickname
+            if player_info.name_card_id is not None:
+                name_card = (await self.assets_service.namecard(player_info.name_card_id).navbar()).as_uri()
+            if player_info.hand_image is not None:
+                avatar = (await self.assets_service.avatar(player_info.hand_image).icon()).as_uri()
+                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(player_info.hand_image)]
+        if name_card is not None:  # 须弥·正明
+            name_card = (await self.assets_service.namecard(210132).navbar()).as_uri()
+        if avatar is not None:
+            if traveller := next(filter(lambda x: x.id in [10000005, 10000007], characters), None):
+                avatar = (await self.assets_service.avatar(traveller.id).icon()).as_uri()
+            else:
+                avatar = (await self.assets_service.avatar(10000005).icon()).as_uri()
         return name_card, avatar, nickname, rarity
 
     @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"), block=False)
@@ -252,7 +267,7 @@ class AvatarListPlugin(Plugin):
             name_card, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
         except Exception as exc:  # pylint: disable=W0703
             logger.error("卡片信息请求失败 %s", str(exc))
-            name_card, avatar, nickname, rarity = await self.get_default_final_data(characters, update)
+            name_card, avatar, nickname, rarity = await self.get_default_final_data(client.uid, characters, user)
 
         render_data = {
             "uid": client.uid,  # 玩家uid

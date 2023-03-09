@@ -9,7 +9,7 @@ from utils.const import PROJECT_ROOT
 from utils.models.base import Settings
 from utils.typedefs import NaturalNumber
 
-__all__ = ["ApplicationConfig", "config", "JoinGroups"]
+__all__ = ("ApplicationConfig", "config", "JoinGroups")
 
 dotenv.load_dotenv()
 
