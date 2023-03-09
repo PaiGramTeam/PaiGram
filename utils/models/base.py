@@ -1,9 +1,8 @@
-import imghdr
 import os
 from enum import Enum
 from typing import Optional
 
-
+from PIL import Image, UnidentifiedImageError
 from pydantic import BaseSettings
 
 try:
@@ -42,9 +41,15 @@ class ArtworkImage:
         self.art_id = art_id
         self.data = data
         self.is_error = is_error
-        if not is_error:
-            self.format: str = imghdr.what(None, self.data)
         self.page = page
+
+    @property
+    def format(self):
+        try:
+            with Image.open(self.data) as im:
+                return im.format
+        except UnidentifiedImageError:
+            return None
 
 
 class RegionEnum(Enum):
