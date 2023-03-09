@@ -94,7 +94,7 @@ class PlayersManagesPlugin(Plugin):
                     callback_data=f"players_manager|del|{user.id}|{player.player_id}",
                 ),
                 InlineKeyboardButton(
-                    "更新在数据库数据",
+                    "更新账号信息",
                     callback_data=f"players_manager|update|{user.id}|{player.player_id}",
                 ),
             ],
