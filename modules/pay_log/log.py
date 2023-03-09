@@ -39,7 +39,7 @@ class PayLog:
         user_id: str,
         uid: str,
         bak: bool = False,
-    ):
+    ) -> Path:
         """获取文件路径
         :param user_id: 用户 ID
         :param uid: UID

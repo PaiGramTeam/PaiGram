@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from genshin import Client, GenshinException
 from genshin.client.routes import Route
@@ -49,11 +49,15 @@ class BirthdayPlugin(Plugin, BasePlugin):
         cookie_service: CookiesService = None,
     ):
         """Load Data."""
-        self.birthday_list = Calendar.gen_birthday_list()
+        self.birthday_list = {}
         self.user_service = user_service
         self.cookie_service = cookie_service
 
-    def get_today_birthday(self) -> List[str]:
+    async def __async_init__(self):
+        self.birthday_list = await Calendar.async_gen_birthday_list()
+        self.birthday_list.get("6_1", []).append("派蒙")
+
+    async def get_today_birthday(self) -> List[str]:
         key = (
             rm_starting_str(datetime.now().strftime("%m"), "0")
             + "_"
@@ -83,10 +87,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
                     key = f"{month}_{day}"
                     day_list = self.birthday_list.get(key, [])
                     date = f"{month}月{day}日"
-                    if key == "6_1":
-                        text = f"{date} 是 派蒙、{'、'.join(day_list)} 的生日哦~"
-                    else:
-                        text = f"{date} 是 {'、'.join(day_list)} 的生日哦~" if day_list else f"{date} 没有角色过生日哦~"
+                    text = f"{date} 是 {'、'.join(day_list)} 的生日哦~" if day_list else f"{date} 没有角色过生日哦~"
                 except IndexError:
                     text = "请输入正确的日期格式，如1-1，或输入正确的角色名称。"
                 reply_message = await message.reply_text(text)
@@ -114,11 +115,8 @@ class BirthdayPlugin(Plugin, BasePlugin):
                         self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id)
         else:
             logger.info(f"用户 {user.full_name}[{user.id}] 查询今日角色生日列表")
-            today_list = self.get_today_birthday()
-            if key == "6_1":
-                text = f"今天是 派蒙、{'、'.join(today_list)} 的生日哦~"
-            else:
-                text = f"今天是 {'、'.join(today_list)} 的生日哦~" if today_list else "今天没有角色过生日哦~"
+            today_list = await self.get_today_birthday()
+            text = f"今天是 {'、'.join(today_list)} 的生日哦~" if today_list else "今天没有角色过生日哦~"
             reply_message = await message.reply_text(text)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self._add_delete_message_job(context, message.chat_id, message.message_id)
@@ -140,6 +138,12 @@ class BirthdayPlugin(Plugin, BasePlugin):
         }
         await client.cookie_manager.request(url, method="POST", params=params, json=json)
 
+    @staticmethod
+    def role_to_id(name: str) -> Optional[int]:
+        if name == "派蒙":
+            return -1
+        return roleToId(name)
+
     @handler(CommandHandler, command="birthday_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^领取角色生日画片$"), block=False)
     @restricts()
@@ -148,7 +152,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 领取生日画片命令请求", user.full_name, user.id)
-        today_list = self.get_today_birthday()
+        today_list = await self.get_today_birthday()
         if not today_list:
             reply_message = await message.reply_text("今天没有角色过生日哦~")
             if filters.ChatType.GROUPS.filter(reply_message):
@@ -162,7 +166,7 @@ class BirthdayPlugin(Plugin, BasePlugin):
             else:
                 await fetch_hk4e_token_by_cookie(client)
                 for name in today_list.copy():
-                    if role_id := roleToId(name):
+                    if role_id := self.role_to_id(name):
                         try:
                             await self.get_card(client, role_id)
                         except GenshinException as e:

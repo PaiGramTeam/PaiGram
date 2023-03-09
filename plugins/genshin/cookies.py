@@ -296,7 +296,7 @@ class SetUserCookies(Plugin.Conversation, BasePlugin.Conversation):
             f"服务器名称：`{user_info.server_name}`\n"
         )
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-        add_user_command_data.cookies = auth_client.cookies.to_dict()
+        add_user_command_data.cookies = cookies.to_dict()
         return COMMAND_RESULT
 
     @conversation.state(state=COMMAND_RESULT)
