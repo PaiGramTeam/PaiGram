@@ -241,7 +241,6 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
     def handlers(self) -> List[HandlerType]:
         with self._lock:
             if self._handlers is None:
-
                 self._handlers = []
 
                 entry_points: List[HandlerType] = []
