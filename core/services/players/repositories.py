@@ -3,8 +3,9 @@ from typing import List, Optional
 from sqlmodel import select
 
 from core.base_service import BaseService
+from core.basemodel import RegionEnum
 from core.dependence.mysql import MySQL
-from core.services.players.models import PlayersDataBase as Player, RegionEnum
+from core.services.players.models import PlayersDataBase as Player
 from core.sqlmodel.session import AsyncSession
 
 __all__ = ("PlayersRepository",)

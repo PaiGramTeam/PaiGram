@@ -5,11 +5,11 @@ from telegram import Chat, ChatMember, ChatMemberAdministrator, ChatMemberOwner,
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import CallbackContext, CommandHandler
 
+from core.basemodel import RegionEnum
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from utils.log import logger
-from utils.models.base import RegionEnum
 
 
 class GetChat(Plugin):

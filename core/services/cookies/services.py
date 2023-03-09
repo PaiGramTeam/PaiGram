@@ -4,11 +4,11 @@ import genshin
 from genshin import Game, GenshinException, InvalidCookies, TooManyRequests, types
 
 from core.base_service import BaseService
+from core.basemodel import RegionEnum
 from core.services.cookies.cache import PublicCookiesCache
 from core.services.cookies.error import CookieServiceError, TooManyRequestPublicCookies
 from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStatusEnum
 from core.services.cookies.repositories import CookiesRepository
-from core.services.players.models import RegionEnum
 from utils.log import logger
 
 __all__ = ("CookiesService", "PublicCookiesService")

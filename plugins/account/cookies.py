@@ -10,10 +10,11 @@ from telegram.constants import ParseMode
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
+from core.basemodel import RegionEnum
 from core.plugin import Plugin, conversation, handler
 from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStatusEnum
 from core.services.cookies.services import CookiesService
-from core.services.players.models import PlayersDataBase as Player, RegionEnum
+from core.services.players.models import PlayersDataBase as Player
 from core.services.players.services import PlayersService
 from modules.apihelper.client.components.authclient import AuthClient
 from modules.apihelper.models.genshin.cookies import CookiesModel

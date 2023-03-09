@@ -5,8 +5,8 @@ from typing import List, Optional, Union
 import dotenv
 from pydantic import AnyUrl, Field
 
+from core.basemodel import Settings
 from utils.const import PROJECT_ROOT
-from utils.models.base import Settings
 from utils.typedefs import NaturalNumber
 
 __all__ = ("ApplicationConfig", "config", "JoinGroups")

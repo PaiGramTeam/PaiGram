@@ -11,13 +11,13 @@ from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import SQLModel, Field, String, Column, Integer, BigInteger, select
 
+from core.basemodel import RegionEnum
 from core.config import config
 from core.dependence.mysql import MySQL
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin
 from core.services.cookies.services import CookiesService, PublicCookiesService
-from core.services.players.models import RegionEnum
 from core.services.players.services import PlayersService
 from core.services.users.services import UserService
 from core.sqlmodel.session import AsyncSession

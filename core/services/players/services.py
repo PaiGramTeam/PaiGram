@@ -1,7 +1,8 @@
 from typing import List, Optional
 
 from core.base_service import BaseService
-from core.services.players.models import PlayersDataBase as Player, RegionEnum
+from core.basemodel import RegionEnum
+from core.services.players.models import PlayersDataBase as Player
 from core.services.players.repositories import PlayersRepository
 
 __all__ = ("PlayersService",)

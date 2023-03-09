@@ -10,6 +10,7 @@ from telegram.constants import ParseMode
 from telegram.ext import filters, MessageHandler, CommandHandler, CallbackContext
 from telegram.helpers import create_deep_linked_url
 
+from core.basemodel import RegionEnum
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.users.services import UserService
@@ -19,7 +20,6 @@ from modules.apihelper.client.components.calendar import Calendar
 from plugins.tools.genshin import GenshinHelper
 from utils.genshin import fetch_hk4e_token_by_cookie, recognize_genshin_game_biz
 from utils.log import logger
-from utils.models.base import RegionEnum
 
 BIRTHDAY_URL = Route(
     "https://hk4e-api.mihoyo.com/event/birthdaystar/account/post_my_draw",

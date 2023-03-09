@@ -8,12 +8,12 @@ from genshin import GenshinException
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import filters, ContextTypes
 
+from core.basemodel import RegionEnum
 from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
-from core.services.players.models import RegionEnum
 from utils.enkanetwork import RedisCache
 from utils.log import logger
 

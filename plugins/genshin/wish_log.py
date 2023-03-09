@@ -8,6 +8,7 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, MessageHandler, filters
 from telegram.helpers import create_deep_linked_url
 
+from core.basemodel import RegionEnum
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, conversation, handler
 from core.services.cookies import CookiesService
@@ -29,7 +30,6 @@ from modules.gacha_log.log import GachaLog
 from plugins.tools.genshin import PlayerNotFoundError, GenshinHelper
 from utils.genshin import get_authkey_by_stoken
 from utils.log import logger
-from utils.models.base import RegionEnum
 
 try:
     import ujson as jsonlib

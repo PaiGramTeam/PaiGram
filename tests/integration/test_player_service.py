@@ -2,8 +2,9 @@ import logging
 
 import pytest_asyncio
 
+from core.basemodel import RegionEnum
 from core.services.players import PlayersService
-from core.services.players.models import PlayersDataBase, RegionEnum
+from core.services.players.models import PlayersDataBase
 from core.services.players.repositories import PlayersRepository
 
 logger = logging.getLogger("TestPlayersService")

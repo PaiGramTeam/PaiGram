@@ -7,10 +7,11 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, U
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
+from core.basemodel import RegionEnum
 from core.plugin import Plugin, conversation, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.cookies.services import CookiesService, PublicCookiesService
-from core.services.players.models import PlayersDataBase as Player, RegionEnum
+from core.services.players.models import PlayersDataBase as Player
 from core.services.players.services import PlayersService
 from utils.log import logger
 

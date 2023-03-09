@@ -1,17 +1,10 @@
-import enum
 from typing import Optional
 
 from sqlmodel import Boolean, Column, Enum, Field, SQLModel, Integer, Index, BigInteger
 
-__all__ = ("RegionEnum", "Player", "PlayersDataBase")
+__all__ = ("Player", "PlayersDataBase")
 
-
-class RegionEnum(int, enum.Enum):
-    """账号数据所在服务器"""
-
-    NULL = 0
-    HYPERION = 1  # 米忽悠国服 hyperion
-    HOYOLAB = 2  # 米忽悠国际服 hoyolab
+from core.basemodel import RegionEnum
 
 
 class Player(SQLModel):

@@ -2,10 +2,10 @@
 from functools import WRAPPER_ASSIGNMENTS as _WRAPPER_ASSIGNMENTS
 from typing import List
 
+from core.basemodel import RegionEnum
 from utils.const._path import *
 from utils.const._single import *
 from utils.const._url import *
-from utils.models.base import RegionEnum
 
 NOT_SET = object()
 # noinspection PyTypeChecker

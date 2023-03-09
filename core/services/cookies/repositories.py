@@ -2,11 +2,11 @@ from typing import Optional, List
 
 from sqlmodel import select
 
-from core.dependence.mysql import MySQL
 from core.base_service import BaseService
+from core.basemodel import RegionEnum
+from core.dependence.mysql import MySQL
 from core.services.cookies.models import CookiesDataBase as Cookies
 from core.sqlmodel.session import AsyncSession
-from utils.models.base import RegionEnum
 
 __all__ = ("CookiesRepository",)
 

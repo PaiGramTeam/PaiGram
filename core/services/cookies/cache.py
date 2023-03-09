@@ -1,12 +1,10 @@
 from typing import List, Union
 
 from core.base_service import BaseService
-
+from core.basemodel import RegionEnum
 from core.dependence.redisdb import RedisDB
 from core.services.cookies.error import CookiesCachePoolExhausted
-from core.services.players.models import RegionEnum
 from utils.error import RegionNotFoundError
-
 
 __all__ = ("PublicCookiesCache",)
 

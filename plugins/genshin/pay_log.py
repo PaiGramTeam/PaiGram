@@ -4,6 +4,7 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
 from telegram.helpers import create_deep_linked_url
 
+from core.basemodel import RegionEnum
 from core.plugin import Plugin, handler, conversation
 from core.services.cookies import CookiesService
 from core.services.players.services import PlayersService
@@ -14,7 +15,6 @@ from modules.pay_log.log import PayLog
 from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError
 from utils.genshin import get_authkey_by_stoken
 from utils.log import logger
-from utils.models.base import RegionEnum
 
 INPUT_URL, CONFIRM_DELETE = range(10100, 10102)
 

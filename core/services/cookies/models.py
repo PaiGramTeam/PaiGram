@@ -3,7 +3,7 @@ from typing import Optional, Dict
 
 from sqlmodel import SQLModel, Field, Boolean, Column, Enum, JSON, Integer, BigInteger, Index
 
-from core.services.players.models import RegionEnum
+from core.basemodel import RegionEnum
 
 __all__ = ("Cookies", "CookiesDataBase", "CookiesStatusEnum")
 
