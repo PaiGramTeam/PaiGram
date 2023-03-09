@@ -222,5 +222,5 @@ class AuthClient:
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
         bio = BytesIO()
-        img.save(bio, format="PNG")
+        img.save(bio)
         return bio.getvalue()
