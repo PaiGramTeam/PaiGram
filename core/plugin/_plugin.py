@@ -1,4 +1,5 @@
 """插件"""
+import asyncio
 from abc import ABC
 from dataclasses import asdict
 from datetime import timedelta
@@ -23,7 +24,6 @@ from pydantic import BaseModel
 from telegram.ext import BaseHandler, ConversationHandler, Job, TypeHandler
 from typing_extensions import ParamSpec
 
-from core.builtins.dispatcher import JobDispatcher
 from core.handler.adminhandler import AdminHandler
 from core.plugin._funcs import ConversationFuncs, PluginFuncs
 from core.plugin._handler import ConversationDataType
@@ -63,6 +63,7 @@ class _Plugin(PluginFuncs):
     """插件"""
 
     _lock: ClassVar["LockType"] = Lock()
+    _asyncio_lock: ClassVar["LockType"] = asyncio.Lock()
     _installed: bool = False
 
     _handlers: Optional[List[HandlerType]] = None
@@ -132,8 +133,6 @@ class _Plugin(PluginFuncs):
         return self._error_handlers
 
     def _install_jobs(self) -> None:
-        from core.builtins.executor import JobExecutor
-
         if self._jobs is None:
             self._jobs = []
         for attr in dir(self):
@@ -145,12 +144,9 @@ class _Plugin(PluginFuncs):
             ):
                 for data in datas:
                     data: "JobData"
-                    dispatcher = data.dispatcher or JobDispatcher
-                    executor = JobExecutor(func, dispatcher)
-                    executor.set_application(application=self.application)
                     self._jobs.append(
                         getattr(self.application.telegram.job_queue, data.type)(
-                            callback=wraps(func)(executor),
+                            callback=func,
                             **data.kwargs,
                             **{
                                 key: value
@@ -177,8 +173,10 @@ class _Plugin(PluginFuncs):
     async def install(self) -> None:
         """安装"""
         group = id(self)
-        with self._lock:
-            if not self._installed:
+        if not self._installed:
+            await self.initialize()
+            # initialize 必须先执行 如果出现异常不会执行 add_handler 以免出现问题
+            async with self._asyncio_lock:
                 self._install_jobs()
 
                 for h in self.handlers:
@@ -189,8 +187,6 @@ class _Plugin(PluginFuncs):
 
                 for h in self.error_handlers:
                     self.application.telegram.add_error_handler(h.func, h.block)
-
-                await self.initialize()
                 self._installed = True
 
     async def uninstall(self) -> None:

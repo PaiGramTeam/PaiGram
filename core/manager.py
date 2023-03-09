@@ -264,12 +264,15 @@ class PluginManager(Manager["PluginType"]):
             if self._application is not None:
                 instance.set_application(self._application)
 
-            try:
-                await instance.install()
-                logger.success('插件 "%s" 安装成功', f"{plugin.__module__}.{plugin.__name__}")
-            except Exception as e:  # pylint: disable=W0703
-                logger.error('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
-                continue
+            await asyncio.create_task(self.plugin_install_task(plugin, instance))
+
+    @staticmethod
+    async def plugin_install_task(plugin: Type["PluginType"], instance: "PluginType"):
+        try:
+            await instance.install()
+            logger.success('插件 "%s" 安装成功', f"{plugin.__module__}.{plugin.__name__}")
+        except Exception as e:  # pylint: disable=W0703
+            logger.error('插件 "%s" 安装失败', f"{plugin.__module__}.{plugin.__name__}", exc_info=e)
 
     async def uninstall_plugins(self) -> None:
         for plugin in self._plugins.values():
