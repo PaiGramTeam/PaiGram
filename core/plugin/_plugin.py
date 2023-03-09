@@ -32,7 +32,6 @@ from utils.helpers import isabstract
 from utils.log import logger
 
 if TYPE_CHECKING:
-    # from core.builtins.executor import HandlerExecutor
     from core.application import Application
     from core.plugin._handler import ConversationData, HandlerData, ErrorHandlerData
     from core.plugin._job import JobData
@@ -86,7 +85,6 @@ class _Plugin(PluginFuncs):
         with self._lock:
             if self._handlers is None:
                 self._handlers = []
-                # from core.builtins.executor import HandlerExecutor
 
                 for attr in dir(self):
                     if (
@@ -96,9 +94,6 @@ class _Plugin(PluginFuncs):
                     ):
                         for data in datas:
                             data: "HandlerData"
-                            # dispatcher = data.dispatcher or HandlerDispatcher
-                            # executor = HandlerExecutor(func, dispatcher)
-                            # executor.set_application(self.application)
                             if data.admin:
                                 self._handlers.append(
                                     AdminHandler(
@@ -246,7 +241,6 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
     def handlers(self) -> List[HandlerType]:
         with self._lock:
             if self._handlers is None:
-                # from core.builtins.executor import HandlerExecutor
 
                 self._handlers = []
 
@@ -263,8 +257,6 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
 
                         handlers: List[HandlerType] = []
                         for data in datas:
-                            # executor = HandlerExecutor(func, dispatcher=data.dispatcher)
-                            # executor.set_application(application=self.application)
                             handlers.append(
                                 data.type(
                                     callback=func,

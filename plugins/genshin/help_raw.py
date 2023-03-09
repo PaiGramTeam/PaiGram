@@ -18,7 +18,7 @@ class HelpRawPlugin(Plugin):
 
     async def initialize(self):
         file_path = os.path.join(os.getcwd(), "resources", "bot", "help", "help.html")  # resources/bot/help/help.html
-        async with aiofiles.open(file_path, mode="r") as f:
+        async with aiofiles.open(file_path, mode="r", encoding='utf-8') as f:
             html_content = await f.read()
         soup = BeautifulSoup(html_content, "lxml")
         command_div = soup.find_all("div", _class="command")
