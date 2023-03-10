@@ -33,9 +33,9 @@ class MTProto(BaseService.Dependence):
         return os.path.exists(self.session_path)
 
     def __init__(self):
-        self.name = "PaimonBot"
+        self.name = "paigram"
         current_dir = os.getcwd()
-        self.session_path = os.path.join(current_dir, "paimon.session")
+        self.session_path = os.path.join(current_dir, "paigram.session")
         self.client: Optional[Client] = None
         self.proxy: Optional[dict] = None
         http_proxy = os.environ.get("HTTP_PROXY")
