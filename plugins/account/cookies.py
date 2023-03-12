@@ -1,4 +1,5 @@
 import contextlib
+from datetime import datetime
 from typing import Dict, Optional
 
 import genshin
@@ -14,8 +15,8 @@ from core.basemodel import RegionEnum
 from core.plugin import Plugin, conversation, handler
 from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStatusEnum
 from core.services.cookies.services import CookiesService
-from core.services.players.models import PlayersDataBase as Player
-from core.services.players.services import PlayersService
+from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
+from core.services.players.services import PlayersService, PlayerInfoService
 from modules.apihelper.client.components.authclient import AuthClient
 from modules.apihelper.models.genshin.cookies import CookiesModel
 from utils.log import logger
@@ -51,9 +52,15 @@ CHECK_SERVER, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10103)
 class AccountCookiesPlugin(Plugin.Conversation):
     """Cookie绑定"""
 
-    def __init__(self, players_service: PlayersService = None, cookies_service: CookiesService = None):
+    def __init__(
+        self,
+        players_service: PlayersService = None,
+        cookies_service: CookiesService = None,
+        player_info_service: PlayerInfoService = None,
+    ):
         self.cookies_service = cookies_service
         self.players_service = players_service
+        self.player_info_service = player_info_service
 
     # noinspection SpellCheckingInspection
     @staticmethod
@@ -314,9 +321,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             player = account_cookies_plugin_data.player
             genshin_account = account_cookies_plugin_data.genshin_account
             if player:
-                if player.nickname != genshin_account.nickname:
-                    player.nickname = genshin_account.nickname
-                    await self.players_service.update(player)
+                await self.players_service.update(player)
                 cookies = account_cookies_plugin_data.cookies_data_base
                 if cookies:
                     cookies.data = account_cookies_plugin_data.cookies
@@ -337,10 +342,19 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     user_id=user.id,
                     account_id=account_cookies_plugin_data.account_id,
                     player_id=genshin_account.uid,
-                    nickname=genshin_account.nickname,
                     region=account_cookies_plugin_data.region,
                     is_chosen=True,  # todo 多账号
                 )
+                player_info = await self.player_info_service.get(player)
+                if player_info is None:
+                    player_info = PlayerInfoSQLModel(
+                        user_id=player.user_id,
+                        player_id=player.player_id,
+                        nickname=genshin_account.nickname,
+                        create_time=datetime.now(),
+                        is_update=True,
+                    )  # 不添加更新时间
+                    await self.player_info_service.add(player_info)
                 await self.players_service.add(player)
                 cookies = Cookies(
                     user_id=user.id,

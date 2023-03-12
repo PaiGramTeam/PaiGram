@@ -1,6 +1,7 @@
 import asyncio
 import random
 import re
+from datetime import datetime, timedelta, time
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import genshin
@@ -9,7 +10,8 @@ from genshin.models import BaseCharacter
 from genshin.models import CalculatorCharacterDetails
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
-from sqlmodel import SQLModel, Field, String, Column, Integer, BigInteger, select
+from sqlmodel import SQLModel, Field, String, Column, Integer, BigInteger, select, DateTime, func, delete
+from telegram.ext import ContextTypes
 
 from core.basemodel import RegionEnum
 from core.config import config
@@ -48,6 +50,7 @@ class CharacterDetailsSQLModel(SQLModel, table=True):
     player_id: int = Field(sa_column=Column(BigInteger(), primary_key=True))
     character_id: int = Field(sa_column=Column(BigInteger(), primary_key=True))
     data: Optional[str] = Field(sa_column=Column(String(length=4096)))
+    time_updated: Optional[datetime] = Field(sa_column=Column(DateTime, onupdate=func.now()))  # pylint: disable=E1102
 
 
 class CharacterDetails(Plugin):
@@ -71,6 +74,20 @@ class CharacterDetails(Plugin):
         async with self.mysql.engine.begin() as conn:
             await conn.run_sync(fetch_and_update_objects)
         asyncio.create_task(self.save_character_details_task(max_ttl=None))
+        self.application.job_queue.run_daily(self.del_old_data_job, time(hour=3, minute=0))
+        self.application.job_queue.run_repeating(self.save_character_details_job, timedelta(hours=1))
+
+    async def save_character_details_job(self, _: ContextTypes.DEFAULT_TYPE):
+        await self.save_character_details()
+
+    async def del_old_data_job(self, _: ContextTypes.DEFAULT_TYPE):
+        await self.del_old_data(timedelta(days=7))
+
+    async def del_old_data(self, expiration_time: timedelta):
+        expire_time = datetime.now() - expiration_time
+        statement = delete(CharacterDetailsSQLModel).where(CharacterDetailsSQLModel.time_updated <= expire_time)
+        async with AsyncSession(self.mysql.engine) as session:
+            await session.execute(statement)
 
     async def save_character_details_task(self, max_ttl: Optional[int] = 60 * 60):
         logger.info("正在从Redis中保存角色详细信息")
@@ -97,9 +114,11 @@ class CharacterDetails(Plugin):
                     continue
                 data = await self.redis.get(key)
                 str_data = str(data, encoding="utf-8")
-                data = CharacterDetailsSQLModel(player_id=uid, character_id=character_id, data=str_data)
+                sql_data = CharacterDetailsSQLModel(
+                    player_id=uid, character_id=character_id, data=str_data, time_updated=datetime.now()
+                )
                 async with AsyncSession(self.mysql.engine) as session:
-                    await session.merge(data)
+                    await session.merge(sql_data)
                     await session.commit()
 
     @staticmethod
@@ -119,8 +138,10 @@ class CharacterDetails(Plugin):
         return CalculatorCharacterDetails.parse_raw(json_data)
 
     async def set_character_details_for_redis(self, uid: int, character_id: int, detail: "CalculatorCharacterDetails"):
-        randint = random.randint(60 * 60, 60 * 60)  # nosec
-        await self.redis.set(self.get_qname(uid, character_id), detail.json(), ex=self.ttl + randint)
+        randint = random.randint(1, 30)  # nosec
+        await self.redis.set(
+            self.get_qname(uid, character_id), detail.json(), ex=self.ttl + randint * 60  # 使用随机数防止缓存雪崩
+        )
 
     async def set_character_details_for_mysql(self, uid: int, character_id: int, detail: "CalculatorCharacterDetails"):
         data = CharacterDetailsSQLModel(player_id=uid, character_id=character_id, data=detail.json())

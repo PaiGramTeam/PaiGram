@@ -24,13 +24,8 @@ class TestPlayersService:
             user_id=1,
             account_id=2,
             player_id=3,
-            nickname="nickname",
-            signature="signature",
-            hand_image=4,
-            name_card_id=5,
-            waifu_id=6,
             region=RegionEnum.HYPERION,
-            is_chosen=1,
+            is_chosen=True,
         )
         await players_service.add(data_base)
 
@@ -38,14 +33,8 @@ class TestPlayersService:
     async def test_get_player_by_user_id(players_service: "PlayersService"):
         result = await players_service.get(1)
         assert isinstance(result, PlayersDataBase)
-        assert result.nickname == "nickname"
-        assert result.signature == "signature"
-        assert result.waifu_id == 6
         result = await players_service.get(1, region=RegionEnum.HYPERION)
         assert isinstance(result, PlayersDataBase)
-        assert result.nickname == "nickname"
-        assert result.signature == "signature"
-        assert result.waifu_id == 6
         result = await players_service.get(1, region=RegionEnum.HOYOLAB)
         assert not isinstance(result, PlayersDataBase)
         assert result is None
@@ -66,11 +55,6 @@ class TestPlayersService:
             user_id=10,
             account_id=2,
             player_id=3,
-            nickname="nickname",
-            signature="signature",
-            hand_image=4,
-            name_card_id=5,
-            waifu_id=6,
             region=RegionEnum.HYPERION,
             is_chosen=1,
         )
@@ -81,13 +65,8 @@ class TestPlayersService:
             user_id=10,
             account_id=3,
             player_id=3,
-            nickname="nickname",
-            signature="signature",
-            hand_image=4,
-            name_card_id=5,
-            waifu_id=6,
             region=RegionEnum.HYPERION,
-            is_chosen=1,
+            is_chosen=True,
         )
         results = await players_service.get_all_by_user_id(10)  # 添加多账号，新的账号设置为主账号
         assert len(results) == 1  # 账号存在只有一个
