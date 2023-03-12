@@ -102,11 +102,6 @@ def upgrade() -> None:
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("account_id", sa.BigInteger(), nullable=True),
         sa.Column("player_id", sa.BigInteger(), nullable=False),
-        sa.Column("nickname", sqlmodel.AutoString(), nullable=True),
-        sa.Column("signature", sqlmodel.AutoString(), nullable=True),
-        sa.Column("hand_image", sa.Integer(), nullable=True),
-        sa.Column("name_card_id", sa.Integer(), nullable=True),
-        sa.Column("waifu_id", sa.Integer(), nullable=True),
         sa.Column(
             "region",
             sa.Enum("NULL", "HYPERION", "HOYOLAB", name="regionenum"),
@@ -202,6 +197,30 @@ def upgrade() -> None:
                 logger.error("Process admin->users Exception", exc_info=exc)
     else:
         logger.warning("Old User Database is None")
+
+    op.create_table(
+        "players_info",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.BigInteger(), nullable=False),
+        sa.Column("player_id", sa.BigInteger(), nullable=False),
+        sa.Column("nickname", sqlmodel.AutoString(length=128), nullable=True),
+        sa.Column("signature", sqlmodel.AutoString(length=255), nullable=True),
+        sa.Column("hand_image", sa.Integer(), nullable=True),
+        sa.Column("name_card", sa.Integer(), nullable=True),
+        sa.Column("extra_data", sa.VARCHAR(length=512), nullable=True),
+        sa.Column(
+            "create_time",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=True,
+        ),
+        sa.Column("is_share", sa.Boolean(), nullable=True),
+        sa.Column("is_update", sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+        sa.Index("index_user_player", "user_id", "player_id", unique=True),
+        mysql_charset="utf8mb4",
+        mysql_collate="utf8mb4_general_ci",
+    )
 
     op.drop_table(old_cookies_database_name1)
     op.drop_table(old_cookies_database_name2)

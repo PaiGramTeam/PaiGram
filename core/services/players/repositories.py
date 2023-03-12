@@ -1,14 +1,15 @@
 from typing import List, Optional
 
-from sqlmodel import select
+from sqlmodel import select, delete
 
 from core.base_service import BaseService
 from core.basemodel import RegionEnum
 from core.dependence.mysql import MySQL
+from core.services.players.models import PlayerInfoSQLModel
 from core.services.players.models import PlayersDataBase as Player
 from core.sqlmodel.session import AsyncSession
 
-__all__ = ("PlayersRepository",)
+__all__ = ("PlayersRepository", "PlayerInfoRepository")
 
 
 class PlayersRepository(BaseService.Component):
@@ -58,3 +59,51 @@ class PlayersRepository(BaseService.Component):
             results = await session.exec(statement)
             players = results.all()
             return players
+
+
+class PlayerInfoRepository(BaseService.Component):
+    def __init__(self, mysql: MySQL):
+        self.engine = mysql.engine
+
+    async def get(
+        self,
+        user_id: int,
+        player_id: int,
+    ) -> Optional[PlayerInfoSQLModel]:
+        async with AsyncSession(self.engine) as session:
+            statement = (
+                select(PlayerInfoSQLModel)
+                .where(PlayerInfoSQLModel.player_id == player_id)
+                .where(PlayerInfoSQLModel.user_id == user_id)
+            )
+            results = await session.exec(statement)
+            return results.first()
+
+    async def add(self, player: PlayerInfoSQLModel) -> None:
+        async with AsyncSession(self.engine) as session:
+            session.add(player)
+            await session.commit()
+
+    async def delete(self, player: PlayerInfoSQLModel) -> None:
+        async with AsyncSession(self.engine) as session:
+            await session.delete(player)
+            await session.commit()
+
+    async def delete_by_id(
+        self,
+        user_id: int,
+        player_id: int,
+    ) -> None:
+        async with AsyncSession(self.engine) as session:
+            statement = (
+                delete(PlayerInfoSQLModel)
+                .where(PlayerInfoSQLModel.player_id == player_id)
+                .where(PlayerInfoSQLModel.user_id == user_id)
+            )
+            await session.execute(statement)
+
+    async def update(self, player: PlayerInfoSQLModel) -> None:
+        async with AsyncSession(self.engine) as session:
+            session.add(player)
+            await session.commit()
+            await session.refresh(player)

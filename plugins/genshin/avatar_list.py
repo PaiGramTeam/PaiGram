@@ -18,6 +18,7 @@ from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
+from core.services.players.services import PlayerInfoService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
@@ -60,6 +61,7 @@ class AvatarListPlugin(Plugin):
         redis: RedisDB = None,
         helper: GenshinHelper = None,
         character_details: CharacterDetails = None,
+        player_info_service: PlayerInfoService = None,
     ) -> None:
         self.cookies_service = cookies_service
         self.assets_service = assets_service
@@ -70,6 +72,7 @@ class AvatarListPlugin(Plugin):
         self.helper = helper
         self.character_details = character_details
         self.player_service = player_service
+        self.player_info_service = player_info_service
 
     async def get_user_client(self, update: Update, context: CallbackContext) -> Optional[Client]:
         message = update.effective_message
@@ -200,7 +203,8 @@ class AvatarListPlugin(Plugin):
         return name_card, avatar, nickname, rarity
 
     async def get_default_final_data(self, player_id: int, characters: Sequence[Character], user: User):
-        player_info = await self.player_service.get(user.id, player_id)
+        player = await self.player_service.get(user.id, player_id)
+        player_info = await self.player_info_service.get(player)
         nickname = user.full_name
         name_card: Optional[str] = None
         avatar: Optional[str] = None
@@ -208,8 +212,8 @@ class AvatarListPlugin(Plugin):
         if player_info is not None:
             if player_info.nickname is not None:
                 nickname = player_info.nickname
-            if player_info.name_card_id is not None:
-                name_card = (await self.assets_service.namecard(player_info.name_card_id).navbar()).as_uri()
+            if player_info.name_card is not None:
+                name_card = (await self.assets_service.namecard(player_info.name_card).navbar()).as_uri()
             if player_info.hand_image is not None:
                 avatar = (await self.assets_service.avatar(player_info.hand_image).icon()).as_uri()
                 rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(player_info.hand_image)]
