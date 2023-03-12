@@ -177,8 +177,8 @@ class PlayerInfoService(BaseService):
     async def delete_form_player(self, player: Player):
         await self._players_info_repository.delete_by_id(user_id=player.user_id, player_id=player.player_id)
 
-    async def add(self, player_info: PlayerInfoSQLModel):
-        await self._players_info_repository.add(player_info)
+    async def add(self, player_info: PlayerInfo):
+        await self._players_info_repository.add(PlayerInfoSQLModel.from_orm(player_info))
 
-    async def delete(self, player_info: PlayerInfoSQLModel):
-        await self._players_info_repository.delete(player_info)
+    async def delete(self, player_info: PlayerInfo):
+        await self._players_info_repository.delete(PlayerInfoSQLModel.from_orm(player_info))

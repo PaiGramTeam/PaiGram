@@ -218,17 +218,12 @@ class PlayersManagesPlugin(Plugin):
             cookies = await self.cookies_service.get(player.user_id, player.account_id, player.region)
             if cookies:
                 await self.cookies_service.delete(cookies)
+            await self.player_info_service.delete(player_info)
             await callback_query.edit_message_text(
                 f"成功删除 {player.player_id} ", reply_markup=InlineKeyboardMarkup(buttons)
             )
         elif _handle == "del":
             buttons = [
-                [
-                    InlineKeyboardButton(
-                        "不要",
-                        callback_data=f"players_manager|get|{user.id}|{player.player_id}",
-                    )
-                ],
                 [
                     InlineKeyboardButton(
                         "是的我非常确定",
@@ -242,9 +237,7 @@ class PlayersManagesPlugin(Plugin):
                     )
                 ],
             ]
-            await callback_query.edit_message_text(
-                f"成功设置 {player.player_id} {player_info.nickname} 为主账号", reply_markup=InlineKeyboardMarkup(buttons)
-            )
+            await callback_query.edit_message_text(f"请问你真的要从Bot中删除改账号吗？", reply_markup=InlineKeyboardMarkup(buttons))
         else:
             if callback_query.message:
                 await callback_query.message.delete()

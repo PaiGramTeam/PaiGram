@@ -42,8 +42,10 @@ class ExtraPlayerInfo(BaseModel):
     waifu_id: Optional[int] = None
 
 
-class ExtraPlayerType(TypeDecorator):
+class ExtraPlayerType(TypeDecorator):  # pylint: disable=W0223
     impl = VARCHAR(length=521)
+
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         """
