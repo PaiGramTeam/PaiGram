@@ -237,7 +237,7 @@ class PlayersManagesPlugin(Plugin):
                     )
                 ],
             ]
-            await callback_query.edit_message_text(f"请问你真的要从Bot中删除改账号吗？", reply_markup=InlineKeyboardMarkup(buttons))
+            await callback_query.edit_message_text("请问你真的要从Bot中删除改账号吗？", reply_markup=InlineKeyboardMarkup(buttons))
         else:
             if callback_query.message:
                 await callback_query.message.delete()
