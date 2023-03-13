@@ -1,4 +1,7 @@
+import contextlib
+
 from telegram import Update, Chat, User
+from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ChatMemberHandler
 
 from core.admin.services import BotAdminService
@@ -85,7 +88,8 @@ class ChatMember(Plugin):
         else:
             quit_status = True
         if quit_status:
-            await context.bot.send_message(chat.id, "派蒙不想进去！不是旅行者的邀请！")
+            with contextlib.suppress(BadRequest):
+                await context.bot.send_message(chat.id, "派蒙不想进去！不是旅行者的邀请！")
             await context.bot.leave_chat(chat.id)
         else:
             await context.bot.send_message(chat.id, "感谢邀请小派蒙到本群！请使用 /help 查看咱已经学会的功能。")
