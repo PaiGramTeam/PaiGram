@@ -5,8 +5,9 @@ import qrcode
 
 from io import BytesIO
 from string import ascii_letters, digits
-from typing import Dict, Union, Optional, Tuple, Any
+from typing import Dict, Union, Optional
 from httpx import AsyncClient
+from qrcode.image.pure import PyPNGImage
 
 from ...logger import logger
 from ...models.genshin.cookies import CookiesModel
@@ -220,7 +221,7 @@ class AuthClient:
         qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
         qr.add_data(url)
         qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
+        img = qr.make_image(image_factory=PyPNGImage, fill_color="black", back_color="white")
         bio = BytesIO()
         img.save(bio)
         return bio.getvalue()

@@ -230,6 +230,8 @@ def upgrade() -> None:
     op.drop_table(old_cookies_database_name1)
     op.drop_table(old_cookies_database_name2)
     op.drop_table("admin")
+    op.drop_constraint("sign_ibfk_1", "sign", type_="foreignkey")
+    op.drop_index("user_id", table_name="sign")
     op.drop_table("user")
     # ### end Alembic commands ###
 
@@ -290,8 +292,10 @@ def downgrade() -> None:
         mysql_default_charset="utf8mb4",
         mysql_engine="InnoDB",
     )
+    op.create_foreign_key("sign_ibfk_1", "sign", "user", ["user_id"], ["user_id"])
     op.create_index("user_id", "sign", ["user_id"], unique=False)
     op.drop_table("users")
     op.drop_table("players")
     op.drop_table("cookies")
+    op.drop_table("players_info")
     # ### end Alembic commands ###

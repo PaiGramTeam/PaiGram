@@ -283,7 +283,9 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await message.reply_text("未找到原神账号，请确认账号信息无误。")
             return ConversationHandler.END
         account_cookies_plugin_data.genshin_account = genshin_account
-        player_info = await self.players_service.get(user.id, genshin_account.uid, account_cookies_plugin_data.region)
+        player_info = await self.players_service.get(
+            user.id, account_id=genshin_account.uid, region=account_cookies_plugin_data.region
+        )
         account_cookies_plugin_data.player = player_info
         if player_info:
             cookies_database = await self.cookies_service.get(
