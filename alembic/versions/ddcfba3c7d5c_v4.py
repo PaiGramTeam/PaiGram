@@ -88,7 +88,12 @@ def upgrade() -> None:
                     logger.warning("Can not get user account_id, user_id :%s", user_id)
                     continue
                 insert = cookies_table.insert().values(
-                    user_id=int(user_id), account_id=int(account_id), status=status, data=cookies_data, region=region
+                    user_id=int(user_id),
+                    account_id=int(account_id),
+                    status=status,
+                    data=cookies_data,
+                    region=region,
+                    is_share=True,
                 )
                 with op.get_context().autocommit_block():
                     connection.execute(insert)
@@ -214,8 +219,8 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=True,
         ),
-        sa.Column("is_share", sa.Boolean(), nullable=True),
-        sa.Column("is_update", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("last_save_time", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("is_update", sa.Boolean(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.Index("index_user_player", "user_id", "player_id", unique=True),
         mysql_charset="utf8mb4",
@@ -225,8 +230,6 @@ def upgrade() -> None:
     op.drop_table(old_cookies_database_name1)
     op.drop_table(old_cookies_database_name2)
     op.drop_table("admin")
-    op.drop_constraint("sign_ibfk_1", "sign", type_="foreignkey")
-    op.drop_index("user_id", table_name="sign")
     op.drop_table("user")
     # ### end Alembic commands ###
 
@@ -287,7 +290,6 @@ def downgrade() -> None:
         mysql_default_charset="utf8mb4",
         mysql_engine="InnoDB",
     )
-    op.create_foreign_key("sign_ibfk_1", "sign", "user", ["user_id"], ["user_id"])
     op.create_index("user_id", "sign", ["user_id"], unique=False)
     op.drop_table("users")
     op.drop_table("players")
