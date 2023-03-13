@@ -97,13 +97,14 @@ class BirthdayPlugin(Plugin, BasePlugin):
             else:
                 try:
                     if msg == "派蒙":
-                        name = "派蒙"
-                        birthday = [6, 1]
+                        text = "派蒙的生日是6月1日哦~"
+                    elif roleToName(msg) == "旅行者":
+                        text = "喂，旅行者！你该不会忘掉自己的生日了吧？"
                     else:
                         name = roleToName(msg)
                         aid = str(roleToId(msg))
                         birthday = AVATAR_DATA[aid]["birthday"]
-                    text = f"{name} 的生日是 {birthday[0]}月{birthday[1]}日 哦~"
+                        text = f"{name} 的生日是 {birthday[0]}月{birthday[1]}日 哦~"
                     reply_message = await message.reply_text(text)
                     if filters.ChatType.GROUPS.filter(reply_message):
                         self._add_delete_message_job(context, message.chat_id, message.message_id)
