@@ -307,7 +307,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             f"服务器名称：`{genshin_account.server_name}`\n"
         )
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-        account_cookies_plugin_data.cookies = auth_client.cookies.to_dict()
+        account_cookies_plugin_data.cookies = cookies.to_dict()
         return COMMAND_RESULT
 
     @conversation.state(state=COMMAND_RESULT)

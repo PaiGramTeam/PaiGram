@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 import genshin
@@ -11,7 +12,7 @@ from core.basemodel import RegionEnum
 from core.plugin import Plugin, conversation, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.cookies.services import CookiesService, PublicCookiesService
-from core.services.players.models import PlayersDataBase as Player
+from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
 from core.services.players.services import PlayersService
 from utils.log import logger
 
@@ -168,11 +169,20 @@ class BindAccountPlugin(Plugin.Conversation):
                 user_id=user.id,
                 account_id=bind_account_plugin_data.account_id,
                 player_id=record_card.uid,
-                nickname=record_card.nickname,
                 region=bind_account_plugin_data.region,
                 is_chosen=is_chosen,  # todo 多账号
             )
             await self.players_service.add(player)
+            player_info = await self.player_info_service.get(player)
+            if player_info is None:
+                player_info = PlayerInfoSQLModel(
+                    user_id=player.user_id,
+                    player_id=player.player_id,
+                    nickname=record_card.nickname,
+                    create_time=datetime.now(),
+                    is_update=True,
+                )  # 不添加更新时间
+                await self.player_info_service.add(player_info)
             logger.success("用户 %s[%s] 绑定UID账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
