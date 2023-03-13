@@ -44,6 +44,8 @@ class Post(Plugin.Conversation):
     def __init__(self):
         self.bbs = Hyperion()
         self.last_post_id_list: List[int] = []
+
+    async def initialize(self):
         if config.channels and len(config.channels) > 0:
             logger.success("文章定时推送处理已经开启")
             self.application.job_queue.run_repeating(self.task, 60)
@@ -253,14 +255,13 @@ class Post(Plugin.Conversation):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
 
-    @staticmethod
-    async def get_channel(update: Update, _: CallbackContext) -> int:
+    async def get_channel(self, update: Update, _: CallbackContext) -> int:
         message = update.effective_message
         reply_keyboard = []
         try:
-            for channel_info in config.channels:
-                name = channel_info.name
-                reply_keyboard.append([f"{name}"])
+            for channel_id in config.channels:
+                chat = await self.get_chat(chat_id=channel_id)
+                reply_keyboard.append([f"{chat.username}"])
         except KeyError as error:
             logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
@@ -275,9 +276,10 @@ class Post(Plugin.Conversation):
         message = update.effective_message
         channel_id = -1
         try:
-            for channel_info in config.channels:
-                if message.text == channel_info.name:
-                    channel_id = channel_info.chat_id
+            for channel_chat_id in config.channels:
+                chat = await self.get_chat(chat_id=channel_id)
+                if message.text == chat.username:
+                    channel_id = channel_chat_id
         except KeyError as exc:
             logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=exc)
             logger.exception(exc)
@@ -338,7 +340,8 @@ class Post(Plugin.Conversation):
         try:
             for channel_info in config.channels:
                 if post_handler_data.channel_id == channel_info.chat_id:
-                    channel_name = channel_info.name
+                    chat = await self.get_chat(chat_id=channel_id)
+                    channel_name = chat.username
         except KeyError as exc:
             logger.error("从配置文件获取频道信息发生错误，退出任务")
             logger.exception(exc)
