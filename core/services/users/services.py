@@ -38,6 +38,7 @@ class UserAdminService(BaseService):
         owner = config.owner
         if owner:
             user = await self.user_repository.get_by_user_id(owner)
+            await self._cache.set(user.user_id)
             if user:
                 if user.permissions != PermissionsEnum.OWNER:
                     user.permissions = PermissionsEnum.OWNER
@@ -45,7 +46,6 @@ class UserAdminService(BaseService):
             else:
                 user = User(user_id=owner, permissions=PermissionsEnum.OWNER)
                 await self.user_repository.add(user)
-            await self._cache.set(user.user_id)
         else:
             logger.warning("检测到未配置Bot所有者 会导无法正常使用管理员权限")
 
