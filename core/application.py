@@ -9,7 +9,7 @@ from typing import Callable, List, Optional, TYPE_CHECKING, TypeVar
 import pytz
 import uvicorn
 from fastapi import FastAPI
-from telegram import Bot
+from telegram import Bot, Update
 from telegram.error import NetworkError, TelegramError, TimedOut
 from telegram.ext import (
     Application as TelegramApplication,
@@ -163,7 +163,9 @@ class Application(Singleton):
 
         for _ in range(5):  # 连接至 telegram 服务器
             try:
-                await self.telegram.updater.start_polling(error_callback=error_callback)
+                await self.telegram.updater.start_polling(
+                    error_callback=error_callback, allowed_updates=Update.ALL_TYPES
+                )
                 break
             except TimedOut:
                 logger.warning("连接至 [blue]telegram[/] 服务器失败，正在重试", extra={"markup": True})
