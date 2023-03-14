@@ -58,6 +58,5 @@ plugins/private
 .pytest_cache
 
 ### mtp ###
-paimon.session
-PaimonBot.session
-PaimonBot.session-journal
+paigram.session
+paigram.session-journal
