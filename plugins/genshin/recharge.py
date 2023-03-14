@@ -61,7 +61,7 @@ class RechargePlugin(Plugin):
             )
             for value in data.goods_list
         ]
-        all_buttons = [buttons[i: i + 3] for i in range(0, len(buttons), 3)]
+        all_buttons = [buttons[i : i + 3] for i in range(0, len(buttons), 3)]
         return InlineKeyboardMarkup(all_buttons)
 
     @handler.command("recharge", block=False)
@@ -79,7 +79,9 @@ class RechargePlugin(Plugin):
                 photo = self.temp_photo
             else:
                 photo = open("resources/img/kitsune.png", "rb")
-            await message.reply_photo(photo, caption=f"请选择充值商品，{WARNING_TEXT}", reply_markup=await self.gen_button(user.id))
+            await message.reply_photo(
+                photo, caption=f"请选择充值商品，{WARNING_TEXT}", reply_markup=await self.gen_button(user.id)
+            )
         except (PlayerNotFoundError, CookiesNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             reply_msg = await message.reply_text(

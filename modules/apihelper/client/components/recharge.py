@@ -14,14 +14,14 @@ class RechargeClient:
     CREATE_ORDER_URL = f"https://{AuthClient.HK4E_SDK_HOST}/hk4e_cn/mdk/atropos/api/createOrder"
     CHECK_ORDER_URL = f"https://{AuthClient.HK4E_SDK_HOST}/hk4e_cn/mdk/atropos/api/checkOrder"
     HEADER = _HEADER = {
-        'x-rpc-app_version': "2.11.1",
-        'User-Agent': (
-            'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) '
-            'AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.11.1'
+        "x-rpc-app_version": "2.11.1",
+        "User-Agent": (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.11.1"
         ),
-        'x-rpc-client_type': '4',
-        'Referer': 'https://webstatic.mihoyo.com/',
-        'Origin': 'https://webstatic.mihoyo.com',
+        "x-rpc-client_type": "4",
+        "Referer": "https://webstatic.mihoyo.com/",
+        "Origin": "https://webstatic.mihoyo.com",
     }
 
     def __init__(self):
@@ -83,7 +83,7 @@ class RechargeClient:
             await asyncio.sleep(5)
             order = await client.cookie_manager.request(
                 self.CHECK_ORDER_URL,
-                method='GET',
+                method="GET",
                 headers=self.HEADER.copy(),
                 params=data,
             )
