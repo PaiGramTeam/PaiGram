@@ -13,7 +13,7 @@ from core.plugin import Plugin, conversation, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
-from core.services.players.services import PlayersService
+from core.services.players.services import PlayersService, PlayerInfoService
 from utils.log import logger
 
 __all__ = ("BindAccountPlugin",)
@@ -43,11 +43,13 @@ class BindAccountPlugin(Plugin.Conversation):
         self,
         players_service: PlayersService = None,
         cookies_service: CookiesService = None,
+        player_info_service: PlayerInfoService = None,
         public_cookies_service: PublicCookiesService = None,
     ):
         self.public_cookies_service = public_cookies_service
         self.cookies_service = cookies_service
         self.players_service = players_service
+        self.player_info_service = player_info_service
 
     @conversation.entry_point
     @handler.command(command="setuid", filters=filters.ChatType.PRIVATE, block=True)
