@@ -277,7 +277,7 @@ class Post(Plugin.Conversation):
         channel_id = -1
         try:
             for channel_chat_id in config.channels:
-                chat = await self.get_chat(chat_id=channel_id)
+                chat = await self.get_chat(chat_id=channel_chat_id)
                 if message.text == chat.username:
                     channel_id = channel_chat_id
         except KeyError as exc:
@@ -339,7 +339,7 @@ class Post(Plugin.Conversation):
         channel_name = None
         try:
             for channel_info in config.channels:
-                if post_handler_data.channel_id == channel_info.chat_id:
+                if post_handler_data.channel_id == channel_info:
                     chat = await self.get_chat(chat_id=channel_id)
                     channel_name = chat.username
         except KeyError as exc:
