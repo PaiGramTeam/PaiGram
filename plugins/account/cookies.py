@@ -1,4 +1,3 @@
-import contextlib
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -265,16 +264,22 @@ class AccountCookiesPlugin(Plugin.Conversation):
             logger.debug("用户 %s[%s] Cookies错误", user.full_name, user.id, exc_info=exc)
             await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        with contextlib.suppress(Exception):
-            if cookies.login_ticket is not None:
-                auth_client = AuthClient(cookies=cookies)
-                if await auth_client.get_stoken_by_login_ticket():
-                    logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
-                    if await auth_client.get_cookie_token_by_stoken():
-                        logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
-                        if await auth_client.get_ltoken_by_stoken():
-                            logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
-                            auth_client.cookies.remove_v2()
+        if cookies.login_ticket is not None:
+            try:
+                if cookies.login_ticket is not None:
+                    auth_client = AuthClient(cookies=cookies)
+                    if await auth_client.get_stoken_by_login_ticket():
+                        logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
+                        if await auth_client.get_cookie_token_by_stoken():
+                            logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
+                            if await auth_client.get_ltoken_by_stoken():
+                                logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
+                                auth_client.cookies.remove_v2()
+            except Exception as exc:  # pylint: disable=W0703
+                logger.error("绑定时获取新Cookie失败 [%s]", (str(exc)))
+            finally:
+                cookies.login_ticket = None
+                cookies.login_uid = None
         genshin_account: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定
