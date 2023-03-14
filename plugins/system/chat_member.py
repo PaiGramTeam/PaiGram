@@ -1,7 +1,5 @@
-import contextlib
-
 from telegram import Chat, Update, User
-from telegram.error import BadRequest
+from telegram.error import NetworkError
 from telegram.ext import CallbackContext, ChatMemberHandler
 
 from core.config import JoinGroups, config
@@ -76,8 +74,12 @@ class ChatMember(Plugin):
         else:
             quit_status = True
         if quit_status:
-            with contextlib.suppress(BadRequest):
+            try:
                 await context.bot.send_message(chat.id, "派蒙不想进去！不是旅行者的邀请！")
+            except NetworkError as exc:
+                logger.info("发送消息失败 %s", exc.message)
+            except Exception as exc:
+                logger.info("发送消息失败", exc_info=exc)
             await context.bot.leave_chat(chat.id)
         else:
             await context.bot.send_message(chat.id, "感谢邀请小派蒙到本群！请使用 /help 查看咱已经学会的功能。")
