@@ -354,7 +354,7 @@ class WishLogPlugin(Plugin.Conversation):
                 all_five = True
         logger.info("用户 %s[%s] 抽卡统计命令请求 || 参数 %s || 仅五星 %s", user.full_name, user.id, pool_type.name, all_five)
         try:
-            client = await self.get_genshin_client(user.id, need_cookie=False)
+            client = await self.helper.get_genshin_client(user.id, need_cookie=False)
             group = filters.ChatType.GROUPS.filter(message)
             await message.reply_chat_action(ChatAction.TYPING)
             if all_five:
