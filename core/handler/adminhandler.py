@@ -25,7 +25,7 @@ class AdminHandler(BaseHandler[Update, CCT]):
         self.handler = handler
         self.application = application
         self.user_service: Optional["UserAdminService"] = None
-        super().__init__(self.handler.callback)
+        super().__init__(self.handler.callback, self.handler.block)
 
     def check_update(self, update: object) -> bool:
         if not isinstance(update, Update):
