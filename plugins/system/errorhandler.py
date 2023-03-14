@@ -6,7 +6,7 @@ from typing import Optional
 import aiofiles
 from aiohttp import ClientError, ClientConnectorError
 from genshin import DataNotPublic, GenshinException, InvalidCookies, TooManyRequests
-from httpx import Timeout as HttpxTimeout, HTTPError
+from httpx import HTTPError, TimeoutException
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden, TelegramError, TimedOut, NetworkError
@@ -184,8 +184,9 @@ class ErrorHandler(Plugin):
             return
         exc = context.error
         notice: Optional[str] = None
-        if isinstance(exc, HttpxTimeout):
+        if isinstance(exc, TimeoutException):
             notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
+            logger.warning("Httpx exception[%s]", str(exc))
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop
