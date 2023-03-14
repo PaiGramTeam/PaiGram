@@ -57,6 +57,7 @@ class ChallengeSystem(Plugin):
             except GenshinException as exc:
                 if exc.retcode != 1034:
                     raise exc
+            else:
                 raise ChallengeSystemException("账户正常，无需认证")
         verify = Verify(cookies=client.cookie_manager.cookies)
         try:
