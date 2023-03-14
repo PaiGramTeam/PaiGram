@@ -197,6 +197,7 @@ class CharacterDetails(Plugin):
             except GenshinException as exc:
                 if "Too Many Requests" in exc.msg:
                     return await self.get_character_details_for_mysql(uid, character_id)
+                raise exc
             await self.set_character_details_for_redis(uid, character_id, detail)
             return detail
         try:
