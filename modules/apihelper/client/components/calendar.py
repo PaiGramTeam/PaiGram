@@ -1,15 +1,18 @@
 import re
 from datetime import datetime, timedelta
-from typing import List, Tuple, Optional, Dict, Union
+from typing import List, Tuple, Optional, Dict, Union, TYPE_CHECKING
 
 from httpx import AsyncClient
 
-from core.base.assets import AssetsService
 from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.remote import Remote
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
 from modules.wiki.character import Character
+
+
+if TYPE_CHECKING:
+    from core.dependence.assets import AssetsService
 
 
 class Calendar:
@@ -189,7 +192,7 @@ class Calendar:
         act.label = label
 
     @staticmethod
-    async def parse_type(act: FinalAct, assets: AssetsService) -> None:
+    async def parse_type(act: FinalAct, assets: "AssetsService") -> None:
         """解析活动类型"""
         if "神铸赋形" in act.title:
             act.type = ActEnum.weapon
@@ -216,7 +219,7 @@ class Calendar:
         total_range: timedelta,
         time_map: Dict[str, ActTime],
         is_act: bool,
-        assets: AssetsService,
+        assets: "AssetsService",
     ) -> Optional[FinalAct]:
         """获取活动列表"""
         act = FinalAct(
@@ -269,7 +272,7 @@ class Calendar:
         return ret
 
     async def get_birthday_char(
-        self, date_list: List[Date], assets: AssetsService
+        self, date_list: List[Date], assets: "AssetsService"
     ) -> Tuple[int, Dict[str, Dict[str, List[BirthChar]]]]:
         """获取生日角色"""
         birthday_list = await self.async_gen_birthday_list()
@@ -322,7 +325,7 @@ class Calendar:
                 ret.append([li])
         return ret, char_count, char_old
 
-    async def get_photo_data(self, assets: AssetsService) -> Dict:
+    async def get_photo_data(self, assets: "AssetsService") -> Dict:
         """获取数据"""
         now = self.get_now_hour()
         list_data, time_map = await self.req_cal_data()

@@ -1,33 +1,30 @@
 """练度统计"""
 import asyncio
-from typing import Iterable, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from aiohttp import ClientConnectorError
 from arkowrapper import ArkoWrapper
 from enkanetwork import Assets as EnkaAssets, EnkaNetworkAPI, VaildateUIDError, HTTPException, EnkaPlayerNotFound
 from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.base.assets import AssetsService
-from core.base.redisdb import RedisDB
-from core.baseplugin import BasePlugin
 from core.config import config
-from core.cookies.error import CookiesNotFoundError
-from core.cookies.services import CookiesService
+from core.dependence.assets import AssetsService
+from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.template import TemplateService
-from core.template.models import FileType
-from core.user.error import UserNotFoundError
+from core.services.cookies import CookiesService
+from core.services.players import PlayersService
+from core.services.players.services import PlayerInfoService
+from core.services.template.models import FileType
+from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, NAMECARD_DATA
 from modules.wiki.base import Model
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
+from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, PlayerNotFoundError, CharacterDetails
 from utils.enkanetwork import RedisCache
-from utils.helpers import get_genshin_client
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
 
@@ -49,18 +46,22 @@ class AvatarData(Model):
 
     def sum_of_skills(self) -> int:
         total_level = 0
-        for skilldata in self.skills:
-            total_level += skilldata.skill.level
+        for skill_data in self.skills:
+            total_level += skill_data.skill.level
         return total_level
 
 
-class AvatarListPlugin(Plugin, BasePlugin):
+class AvatarListPlugin(Plugin):
     def __init__(
         self,
+        player_service: PlayersService = None,
         cookies_service: CookiesService = None,
         assets_service: AssetsService = None,
         template_service: TemplateService = None,
         redis: RedisDB = None,
+        helper: GenshinHelper = None,
+        character_details: CharacterDetails = None,
+        player_info_service: PlayerInfoService = None,
     ) -> None:
         self.cookies_service = cookies_service
         self.assets_service = assets_service
@@ -68,31 +69,36 @@ class AvatarListPlugin(Plugin, BasePlugin):
         self.enka_client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent)
         self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60 * 3))
         self.enka_assets = EnkaAssets(lang="chs")
+        self.helper = helper
+        self.character_details = character_details
+        self.player_service = player_service
+        self.player_info_service = player_info_service
 
-    async def get_user_client(self, user: User, message: Message, context: CallbackContext) -> Optional[Client]:
+    async def get_user_client(self, update: Update, context: CallbackContext) -> Optional[Client]:
+        message = update.effective_message
+        user = update.effective_user
         try:
-            return await get_genshin_client(user.id)
-        except UserNotFoundError:  # 若未找到账号
+            return await self.helper.get_genshin_client(user.id)
+        except PlayerNotFoundError:  # 若未找到账号
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
-
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_message, delay=30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
         except CookiesNotFoundError:
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
-                reply_msg = await message.reply_text(
+                reply_message = await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙绑定账号",
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=ParseMode.HTML,
                 )
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_message, delay=30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定",
@@ -101,21 +107,8 @@ class AvatarListPlugin(Plugin, BasePlugin):
                 )
 
     async def get_avatar_data(self, character: Character, client: Client) -> Optional["AvatarData"]:
-        for _ in range(5):
-            try:
-                detail = await client.get_character_details(character)
-            except Exception as exc:  # pylint: disable=W0703
-                if isinstance(exc, GenshinException) and "Too Many Requests" in exc.msg:
-                    await asyncio.sleep(0.2)
-                    continue
-                if character.name == "旅行者":
-                    logger.debug("解析旅行者数据时遇到了错误：%s", str(exc))
-                    return None
-                raise exc
-            else:
-                break
-        else:
-            logger.warning("解析[bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.name, extra={"markup": True})
+        detail = await self.character_details.get_character_details(client, character)
+        if detail is None:
             return None
         if character.id == 10000005:  # 针对男草主
             talents = []
@@ -197,8 +190,9 @@ class AvatarListPlugin(Plugin, BasePlugin):
             ArkoWrapper(choices)
             .map(lambda x: next(filter(lambda y: y["name"].split("·")[0] == x.name, NAMECARD_DATA.values()), None))
             .filter(lambda x: x)
-            .map(lambda x: x["id"])
+            .map(lambda x: int(x["id"]))
         )
+        # noinspection PyTypeChecker
         name_card = (await self.assets_service.namecard(name_card_choices[0]).navbar()).as_uri()
         avatar = (await self.assets_service.avatar(cid := choices[0].id).icon()).as_uri()
         nickname = update.effective_user.full_name
@@ -208,21 +202,32 @@ class AvatarListPlugin(Plugin, BasePlugin):
             rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(cid)]
         return name_card, avatar, nickname, rarity
 
-    async def get_default_final_data(self, characters: Sequence[Character], update: Update):
-        nickname = update.effective_user.full_name
-        rarity = 5
-        # 须弥·正明
-        name_card = (await self.assets_service.namecard(210132).navbar()).as_uri()
-        if traveller := next(filter(lambda x: x.id in [10000005, 10000007], characters), None):
-            avatar = (await self.assets_service.avatar(traveller.id).icon()).as_uri()
-        else:
-            avatar = (await self.assets_service.avatar(10000005).icon()).as_uri()
+    async def get_default_final_data(self, player_id: int, characters: Sequence[Character], user: User):
+        player = await self.player_service.get(user.id, player_id)
+        player_info = await self.player_info_service.get(player)
+        nickname = user.full_name
+        name_card: Optional[str] = None
+        avatar: Optional[str] = None
+        rarity: int = 5
+        if player_info is not None:
+            if player_info.nickname is not None:
+                nickname = player_info.nickname
+            if player_info.name_card is not None:
+                name_card = (await self.assets_service.namecard(player_info.name_card).navbar()).as_uri()
+            if player_info.hand_image is not None:
+                avatar = (await self.assets_service.avatar(player_info.hand_image).icon()).as_uri()
+                rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(player_info.hand_image)]
+        if name_card is not None:  # 须弥·正明
+            name_card = (await self.assets_service.namecard(210132).navbar()).as_uri()
+        if avatar is not None:
+            if traveller := next(filter(lambda x: x.id in [10000005, 10000007], characters), None):
+                avatar = (await self.assets_service.avatar(traveller.id).icon()).as_uri()
+            else:
+                avatar = (await self.assets_service.avatar(10000005).icon()).as_uri()
         return name_card, avatar, nickname, rarity
 
     @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"), block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
-    @restricts(30)
-    @error_callable
     async def avatar_list(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
@@ -233,7 +238,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
 
         logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
 
-        client = await self.get_user_client(user, message, context)
+        client = await self.get_user_client(update, context)
         if not client:
             return
 
@@ -251,22 +256,22 @@ class AvatarListPlugin(Plugin, BasePlugin):
             logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
             reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
             if filters.ChatType.GROUPS.filter(message):
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_message, delay=30)
+                self.add_delete_message_job(message, delay=30)
             return
         except GenshinException as e:
             await notice.delete()
             if e.retcode == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 20)
+                self.add_delete_message_job(reply_message, delay=20)
                 return
             raise e
 
         try:
             name_card, avatar, nickname, rarity = await self.get_final_data(client, characters, update)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=W0703
             logger.error("卡片信息请求失败 %s", str(exc))
-            name_card, avatar, nickname, rarity = await self.get_default_final_data(characters, update)
+            name_card, avatar, nickname, rarity = await self.get_default_final_data(client.uid, characters, user)
 
         render_data = {
             "uid": client.uid,  # 玩家uid
@@ -291,7 +296,7 @@ class AvatarListPlugin(Plugin, BasePlugin):
             file_type=FileType.DOCUMENT if as_document else FileType.PHOTO,
             ttl=30 * 24 * 60 * 60,
         )
-        self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
+        self.add_delete_message_job(notice, delay=5)
         if as_document:
             await image.reply_document(message, filename="练度统计.png")
         else:

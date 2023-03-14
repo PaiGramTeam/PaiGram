@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Union
 from bs4 import BeautifulSoup
 from httpx import URL
 
-from modules.wiki.base import Model, HONEY_HOST, WikiModel
+from modules.wiki.base import HONEY_HOST, Model, WikiModel
 from modules.wiki.other import AttributeType, WeaponType
 
 __all__ = ["Weapon", "WeaponAffix", "WeaponAttribute"]
@@ -135,8 +135,7 @@ class Weapon(WikiModel):
         name_list = [i async for i in cls._name_list_generator(with_url=with_url)]
         if with_url:
             return [(i[0], list(i[1])[0][1]) for i in itertools.groupby(name_list, lambda x: x[0])]
-        else:
-            return [i[0] for i in itertools.groupby(name_list, lambda x: x)]
+        return [i[0] for i in itertools.groupby(name_list, lambda x: x)]
 
     @property
     def icon(self) -> WeaponIcon:

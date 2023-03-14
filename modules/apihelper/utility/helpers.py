@@ -4,7 +4,7 @@ import random
 import string
 import time
 import uuid
-from typing import Mapping, Any, Optional
+from typing import Any, Mapping, Optional
 
 __all__ = ("get_device_id", "hex_digest", "get_ds", "get_recognize_server", "get_ua")
 
@@ -78,8 +78,7 @@ def get_recognize_server(uid: int) -> str:
     server = RECOGNIZE_SERVER.get(str(uid)[0])
     if server:
         return server
-    else:
-        raise TypeError(f"UID {uid} isn't associated with any recognize server")
+    raise TypeError(f"UID {uid} isn't associated with any recognize server")
 
 
 def get_ua(device: str = "Paimon Build", version: str = "2.36.1"):

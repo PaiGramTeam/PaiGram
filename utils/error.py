@@ -1,4 +1,4 @@
-"""此模块包含BOT的错误的基类"""
+"""此模块包含BOT Utils的错误的基类"""
 
 
 class NotFoundError(Exception):

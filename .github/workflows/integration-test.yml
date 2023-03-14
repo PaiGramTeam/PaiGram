@@ -1,0 +1,54 @@
+name: Integration Test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tests/integration/**'
+  pull_request:
+    types: [ opened, synchronize ]
+    paths:
+      - 'core/services/**'
+      - 'core/dependence/**'
+      - 'tests/integration/**'
+
+jobs:
+  pytest:
+    name: pytest
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_DATABASE: integration_test
+          MYSQL_ROOT_PASSWORD: 123456test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v2
+        with:
+            python-version: 3.11
+      - name: Setup integration test environment
+        run: cp tests/integration/.env.example .env && cp tests/integration/.env.example tests/integration/.env
+      - name: Create venv
+        run: |
+          pip install --upgrade pip
+          python3 -m venv venv
+      - name: Install requirements
+        run: |
+          source venv/bin/activate
+          python3 -m pip install --upgrade poetry
+          python3 -m poetry install --extras all
+      - name: Run test
+        run: |
+          source venv/bin/activate
+          python3 -m pytest tests/integration

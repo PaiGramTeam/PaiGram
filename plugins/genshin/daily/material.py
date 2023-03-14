@@ -24,19 +24,12 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import CallbackContext
 
-from core.base.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
-from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError
+from core.dependence.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
 from core.plugin import Plugin, handler
-from core.template import TemplateService
-from core.template.models import FileType, RenderGroupResult
-from core.user.error import UserNotFoundError
+from core.services.template.models import FileType, RenderGroupResult
+from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
-from utils.bot import get_args
-from utils.decorators.admins import bot_admins_rights_check
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
-from utils.helpers import get_genshin_client
+from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError, CharacterDetails
 from utils.log import logger
 
 INTERVAL = 1
@@ -99,18 +92,26 @@ def get_material_serial_name(names: Iterable[str]) -> str:
     return result
 
 
-class DailyMaterial(Plugin, BasePlugin):
+class DailyMaterial(Plugin):
     """每日素材表"""
 
     data: DATA_TYPE
     locks: Tuple[Lock] = (Lock(), Lock())
 
-    def __init__(self, assets: AssetsService, template_service: TemplateService):
+    def __init__(
+        self,
+        assets: AssetsService,
+        template_service: TemplateService,
+        helper: GenshinHelper,
+        character_details: CharacterDetails,
+    ):
         self.assets_service = assets
         self.template_service = template_service
+        self.helper = helper
+        self.character_details = character_details
         self.client = AsyncClient()
 
-    async def __async_init__(self):
+    async def initialize(self):
         """插件在初始化时，会检查一下本地是否缓存了每日素材的数据"""
         data = None
 
@@ -128,30 +129,10 @@ class DailyMaterial(Plugin, BasePlugin):
                 data = json.loads(await file.read())
         self.data = data
 
-    @staticmethod
-    async def _get_skills_data(client: Client, character: Character) -> Optional[List[int]]:
-        """获取角色技能的数据"""
-        for _ in range(5):
-            try:
-                detail = await client.get_character_details(character)
-            except Exception as e:  # pylint: disable=W0703
-                if isinstance(e, GenshinException):
-                    # 如果是 Too Many Requests 异常，则等待一段时间后重试
-                    if "Too Many Requests" in e.msg:
-                        await asyncio.sleep(0.2)
-                        continue
-                # 如果是其他异常，则直接抛出
-                raise e
-            else:
-                break
-        else:
-            # 如果重试了5次都失败了，则直接返回 None
-            logger.warning(
-                "daily_material 解析角色 id 为 [bold]%s[/]的数据时遇到了 Too Many Requests 错误", character.id, extra={"markup": True}
-            )
+    async def _get_skills_data(self, client: Client, character: Character) -> Optional[List[int]]:
+        detail = await self.character_details.get_character_details(client, character)
+        if detail is None:
             return None
-        # 不用针对旅行者、草主进行特殊处理，因为输入数据不会有旅行者。
-        # 不用计算命座加成，因为这个是展示天赋升级情况，10 级为最高。计算命座会引起混淆。
         talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
         return [t.level for t in talents]
 
@@ -160,7 +141,7 @@ class DailyMaterial(Plugin, BasePlugin):
         user_data = {"avatar": [], "weapon": []}
         try:
             logger.debug("尝试获取已绑定的原神账号")
-            client = await get_genshin_client(user.id)
+            client = await self.helper.get_genshin_client(user.id)
             logger.debug("获取账号数据成功: UID=%s", client.uid)
             characters = await client.get_genshin_characters(client.uid)
             for character in characters:
@@ -195,7 +176,7 @@ class DailyMaterial(Plugin, BasePlugin):
                         c_path=(await self.assets_service.avatar(cid).side()).as_uri(),
                     )
                 )
-        except (UserNotFoundError, CookiesNotFoundError):
+        except (PlayerNotFoundError, CookiesNotFoundError):
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
         except InvalidCookies:
             logger.info("用户 %s[%s] 所绑定的账号信息已失效", user.full_name, user.id)
@@ -206,12 +187,10 @@ class DailyMaterial(Plugin, BasePlugin):
         return None, user_data
 
     @handler.command("daily_material", block=False)
-    @restricts(restricts_time_of_groups=20, without_overlapping=True)
-    @error_callable
     async def daily_material(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
-        args = get_args(context)
+        args = self.get_args(context)
         now = datetime.now()
 
         try:
@@ -235,7 +214,7 @@ class DailyMaterial(Plugin, BasePlugin):
 
         if self.locks[0].locked():  # 若检测到了第一个锁：正在下载每日素材表的数据
             notice = await message.reply_text("派蒙正在摘抄每日素材表，以后再来探索吧~")
-            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
+            self.add_delete_message_job(notice, delay=5)
             return
 
         if self.locks[1].locked():  # 若检测到了第二个锁：正在下载角色、武器、材料的图标
@@ -281,7 +260,7 @@ class DailyMaterial(Plugin, BasePlugin):
                                     except GenshinException as e:
                                         if e.retcode == -502002:
                                             calculator_sync = False  # 发现角色养成计算器没启用 设置状态为 False 并防止下次继续获取
-                                            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
+                                            self.add_delete_message_job(notice, delay=5)
                                             await notice.edit_text(
                                                 "获取角色天赋信息失败，如果想要显示角色天赋信息，请先在米游社/HoYoLab中使用一次<b>养成计算器</b>后再使用此功能~",
                                                 parse_mode=ParseMode.HTML,
@@ -350,7 +329,7 @@ class DailyMaterial(Plugin, BasePlugin):
             ),
         )
 
-        self._add_delete_message_job(context, notice.chat_id, notice.message_id, 5)
+        self.add_delete_message_job(notice, delay=5)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
 
         character_img_data.filename = f"{title}可培养角色.png"
@@ -361,7 +340,6 @@ class DailyMaterial(Plugin, BasePlugin):
         logger.debug("角色、武器培养素材图发送成功")
 
     @handler.command("refresh_daily_material", block=False)
-    @bot_admins_rights_check
     async def refresh(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
@@ -369,11 +347,11 @@ class DailyMaterial(Plugin, BasePlugin):
         logger.info("用户 {%s}[%s] 刷新[bold]每日素材[/]缓存命令", user.full_name, user.id, extra={"markup": True})
         if self.locks[0].locked():
             notice = await message.reply_text("派蒙还在抄每日素材表呢，我有在好好工作哦~")
-            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 10)
+            self.add_delete_message_job(notice, delay=10)
             return
         if self.locks[1].locked():
             notice = await message.reply_text("派蒙正在搬运每日素材图标，在努力工作呢！")
-            self._add_delete_message_job(context, notice.chat_id, notice.message_id, 10)
+            self.add_delete_message_job(notice, delay=10)
             return
         async with self.locks[1]:  # 锁住第二把锁
             notice = await message.reply_text("派蒙正在重新摘抄每日素材表，请稍等~", parse_mode=ParseMode.HTML)

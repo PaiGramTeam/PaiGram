@@ -1,54 +1,26 @@
 import os
 import traceback as traceback_
-from types import (
-    ModuleType,
-    TracebackType,
-)
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    TYPE_CHECKING,
-    Tuple,
-    Type,
-    Union,
-)
+from types import ModuleType, TracebackType
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 from rich import pretty
 from rich.columns import Columns
-from rich.console import (
-    RenderResult,
-    group,
-)
+from rich.console import RenderResult, group
 from rich.highlighter import ReprHighlighter
 from rich.panel import Panel
 from rich.pretty import Pretty
-from rich.syntax import (
-    PygmentsSyntaxTheme,
-    Syntax,
-)
+from rich.syntax import PygmentsSyntaxTheme, Syntax
 from rich.table import Table
-from rich.text import (
-    Text,
-    TextType,
-)
-from rich.traceback import (
-    Frame,
-    PathHighlighter,
-    Stack,
-    Trace,
-    Traceback as BaseTraceback,
-)
+from rich.text import Text, TextType
+from rich.traceback import Frame, PathHighlighter, Stack, Trace, LOCALS_MAX_LENGTH, LOCALS_MAX_STRING
+from rich.traceback import Traceback as BaseTraceback
 
 from utils.log._style import MonokaiProStyle
 
 if TYPE_CHECKING:
     from rich.console import ConsoleRenderable  # pylint: disable=W0611
 
-__all__ = ["render_scope", "Traceback"]
+__all__ = ("render_scope", "Traceback")
 
 
 def render_scope(
@@ -124,15 +96,18 @@ class Traceback(BaseTraceback):
         exc_type: Type[BaseException],
         exc_value: BaseException,
         traceback: Optional[TracebackType],
+        *,
         width: Optional[int] = 100,
         extra_lines: int = 3,
         theme: Optional[str] = None,
         word_wrap: bool = False,
-        show_locals: bool = True,
-        indent_guides: bool = True,
-        locals_max_length: int = 10,
-        locals_max_string: int = 80,
+        show_locals: bool = False,
+        locals_max_length: int = LOCALS_MAX_LENGTH,
+        locals_max_string: int = LOCALS_MAX_STRING,
         locals_max_depth: Optional[int] = None,
+        locals_hide_dunder: bool = True,
+        locals_hide_sunder: bool = False,
+        indent_guides: bool = True,
         suppress: Iterable[Union[str, ModuleType]] = (),
         max_frames: int = 100,
     ) -> "Traceback":
@@ -166,10 +141,13 @@ class Traceback(BaseTraceback):
         exc_type: Type[BaseException],
         exc_value: BaseException,
         traceback: Optional[TracebackType],
+        *,
         show_locals: bool = False,
-        locals_max_length: int = 10,
-        locals_max_string: int = 80,
+        locals_max_length: int = LOCALS_MAX_LENGTH,
+        locals_max_string: int = LOCALS_MAX_STRING,
         locals_max_depth: Optional[int] = None,
+        locals_hide_dunder: bool = True,
+        locals_hide_sunder: bool = False,
     ) -> Trace:
         # noinspection PyProtectedMember
         from rich import _IMPORT_CWD

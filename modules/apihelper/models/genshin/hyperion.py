@@ -1,6 +1,6 @@
-import imghdr
-from typing import List, Any, Union
+from typing import Any, List, Union, Optional
 
+from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, PrivateAttr
 
 __all__ = ("ArtworkImage", "PostInfo")
@@ -16,8 +16,14 @@ class ArtworkImage(BaseModel):
     is_error: bool = False
 
     @property
-    def format(self) -> str:
-        return "" if self.is_error else (imghdr.what(None, self.data) or self.ext)
+    def format(self) -> Optional[str]:
+        if not self.is_error:
+            try:
+                with Image.open(self.data) as im:
+                    return im.format
+            except UnidentifiedImageError:
+                pass
+        return None
 
     def input_media(self, *args, **kwargs) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
         file_type = self.format
@@ -34,8 +40,8 @@ class PostInfo(BaseModel):
     user_uid: int
     subject: str
     image_urls: List[str]
-    video_urls: List[str]
     created_at: int
+    video_urls: List[str]
 
     def __init__(self, _data: dict, **data: Any):
         super().__init__(**data)

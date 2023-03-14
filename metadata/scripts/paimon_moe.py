@@ -1,6 +1,7 @@
-from utils.const import PROJECT_ROOT
 from aiofiles import open as async_open
-from httpx import AsyncClient, URL
+from httpx import URL, AsyncClient
+
+from utils.const import PROJECT_ROOT
 
 GACHA_LOG_PAIMON_MOE_PATH = PROJECT_ROOT.joinpath("metadata/data/paimon_moe_zh.json")
 

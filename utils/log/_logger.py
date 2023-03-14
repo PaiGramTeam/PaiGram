@@ -6,31 +6,19 @@ import traceback as traceback_
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from types import TracebackType
-from typing import (
-    Any,
-    Callable,
-    List,
-    Mapping,
-    Optional,
-    TYPE_CHECKING,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Callable, List, Mapping, Optional, Tuple, Type, Union
 
 from typing_extensions import Self
 
-from utils.log._handler import (
-    FileHandler,
-    Handler,
-)
+from utils.log._handler import FileHandler, Handler
 from utils.typedefs import LogFilterType
 
 if TYPE_CHECKING:
-    from utils.log._config import LoggerConfig  # pylint: disable=unused-import
     from logging import LogRecord  # pylint: disable=unused-import
 
-__all__ = ["Logger", "LogFilter"]
+    from utils.log._config import LoggerConfig  # pylint: disable=unused-import
+
+__all__ = ("Logger", "LogFilter")
 
 SysExcInfoType = Union[
     Tuple[Type[BaseException], BaseException, Optional[TracebackType]],
@@ -42,7 +30,7 @@ _lock = Lock()
 NONE = object()
 
 
-class Logger(logging.Logger):
+class Logger(logging.Logger):  # skipcq: PY-A6006
     _instance: Optional["Logger"] = None
 
     def __new__(cls, *args, **kwargs) -> "Logger":
@@ -68,6 +56,7 @@ class Logger(logging.Logger):
             # 控制台 log 配置
             Handler(
                 width=self.config.width,
+                keywords=self.config.keywords,
                 locals_max_length=self.config.traceback_locals_max_length,
                 locals_max_string=self.config.traceback_locals_max_string,
                 locals_max_depth=self.config.traceback_locals_max_depth,
@@ -77,6 +66,7 @@ class Logger(logging.Logger):
             # debug.log 配置
             FileHandler(
                 width=self.config.width,
+                keywords=self.config.keywords,
                 level=10,
                 path=log_path.joinpath("debug/debug.log"),
                 locals_max_depth=1,
@@ -88,6 +78,7 @@ class Logger(logging.Logger):
             # error.log 配置
             FileHandler(
                 width=self.config.width,
+                keywords=self.config.keywords,
                 level=40,
                 path=log_path.joinpath("error/error.log"),
                 locals_max_length=self.config.traceback_locals_max_length,
@@ -103,7 +94,7 @@ class Logger(logging.Logger):
             datefmt=self.config.time_format,
             handlers=[handler, debug_handler, error_handler],
         )
-        if config.capture_warnings:
+        if self.config.capture_warnings:
             logging.captureWarnings(True)
             warnings_logger = logging.getLogger("py.warnings")
             warnings_logger.addHandler(handler)
@@ -132,7 +123,7 @@ class Logger(logging.Logger):
             extra=extra,
         )
 
-    def exception(
+    def exception(  # pylint: disable=W1113
         self,
         msg: Any = NONE,
         *args: Any,
@@ -141,7 +132,7 @@ class Logger(logging.Logger):
         stacklevel: int = 1,
         extra: Optional[Mapping[str, Any]] = None,
         **kwargs,
-    ) -> None:  # pylint: disable=W1113
+    ) -> None:
         super(Logger, self).exception(
             "" if msg is NONE else msg,
             *args,
@@ -189,7 +180,7 @@ class Logger(logging.Logger):
             handler.addFilter(log_filter)
 
 
-class LogFilter(logging.Filter):
+class LogFilter(logging.Filter):  # skipcq: PY-A6006
     _filter_list: List[Callable[["LogRecord"], bool]] = []
 
     def __init__(self, name: str = ""):

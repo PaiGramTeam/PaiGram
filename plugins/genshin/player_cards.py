@@ -1,7 +1,6 @@
 import math
 from typing import Any, List, Tuple, Union, Optional
 
-import ujson
 from enkanetwork import (
     CharacterInfo,
     DigitType,
@@ -26,32 +25,29 @@ from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.base.assets import DEFAULT_EnkaAssets
-from core.base.redisdb import RedisDB
-from core.baseplugin import BasePlugin
 from core.config import config
+from core.dependence.assets import DEFAULT_EnkaAssets
+from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.template import TemplateService
-from core.user import UserService
-from core.user.error import UserNotFoundError
+from core.services.players import PlayersService
+from core.services.template.services import TemplateService
 from metadata.shortname import roleToName
 from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
-from utils.bot import get_args
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
 from utils.enkanetwork import RedisCache
-from utils.helpers import url_to_file
+from utils.helpers import download_resource
 from utils.log import logger
-from utils.models.base import RegionEnum
 from utils.patch.aiohttp import AioHttpTimeoutException
 
+try:
+    import ujson as jsonlib
+except ImportError:
+    import json as jsonlib
 
-class PlayerCards(Plugin, BasePlugin):
-    def __init__(
-        self, user_service: UserService = None, template_service: TemplateService = None, redis: RedisDB = None
-    ):
-        self.user_service = user_service
+
+class PlayerCards(Plugin):
+    def __init__(self, player_service: PlayersService, template_service: TemplateService, redis: RedisDB):
+        self.player_service = player_service
         self.client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent, cache=False)
         self.cache = RedisCache(redis.client, key="plugin:player_cards:enka_network")
         self.player_cards_file = PlayerCardsFile()
@@ -65,7 +61,7 @@ class PlayerCards(Plugin, BasePlugin):
                 return EnkaNetworkResponse.parse_obj(data)
             user = await self.client.http.fetch_user_by_uid(uid)
             data = user["content"].decode("utf-8", "surrogatepass")  # type: ignore
-            data = ujson.loads(data)
+            data = jsonlib.loads(data)
             data = await self.player_cards_file.merge_info(uid, data)
             await self.cache.set(uid, data)
             return EnkaNetworkResponse.parse_obj(data)
@@ -93,32 +89,25 @@ class PlayerCards(Plugin, BasePlugin):
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
-    @restricts(restricts_time_of_groups=20, without_overlapping=True)
-    @error_callable
     async def player_cards(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        args = get_args(context)
+        args = self.get_args(context)
         await message.reply_chat_action(ChatAction.TYPING)
-        try:
-            user_info = await self.user_service.get_user_by_id(user.id)
-            if user_info.region == RegionEnum.HYPERION:
-                uid = user_info.yuanshen_uid
-            else:
-                uid = user_info.genshin_uid
-        except UserNotFoundError:
+        player_info = await self.player_service.get_player(user.id)
+        if player_info is None:
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
+                self.add_delete_message_job(reply_message, delay=30)
 
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
-        data = await self._fetch_user(uid)
+        data = await self._fetch_user(player_info.player_id)
         if isinstance(data, str):
             await message.reply_text(data)
             return
@@ -127,10 +116,16 @@ class PlayerCards(Plugin, BasePlugin):
             return
         if len(args) == 1:
             character_name = roleToName(args[0])
-            logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求 || character_name[{character_name}] uid[{uid}]")
+            logger.info(
+                "用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]",
+                user.full_name,
+                user.id,
+                character_name,
+                player_info.player_id,
+            )
         else:
-            logger.info(f"用户 {user.full_name}[{user.id}] 角色卡片查询命令请求")
-            buttons = self.gen_button(data, user.id, uid)
+            logger.info("用户 %s[%s] 角色卡片查询命令请求", user.full_name, user.id)
+            buttons = self.gen_button(data, user.id, player_info.player_id)
             if isinstance(self.temp_photo, str):
                 photo = self.temp_photo
             else:
@@ -148,12 +143,12 @@ class PlayerCards(Plugin, BasePlugin):
             await message.reply_text(f"角色展柜中未找到 {character_name} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        render_result = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
-        await render_result.reply_photo(message, filename=f"player_card_{uid}_{character_name}.png")
+        render_result = await RenderTemplate(
+            player_info.player_id, characters, self.template_service
+        ).render()  # pylint: disable=W0631
+        await render_result.reply_photo(message, filename=f"player_card_{player_info.player_id}_{character_name}.png")
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
-    @restricts(restricts_time=3, without_overlapping=True)
-    @error_callable
     async def get_player_cards(self, update: Update, _: CallbackContext) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
@@ -164,7 +159,7 @@ class PlayerCards(Plugin, BasePlugin):
             _user_id = int(_data[1])
             _uid = int(_data[2])
             _result = _data[3]
-            logger.debug(f"callback_query_data函数返回 result[{_result}] user_id[{_user_id}] uid[{_uid}]")
+            logger.debug("callback_query_data函数返回 result[%s] user_id[%s] uid[%s]", _result, _user_id, _uid)
             return _result, _user_id, _uid
 
         result, user_id, uid = await get_player_card_callback(callback_query.data)
@@ -421,25 +416,26 @@ class RenderTemplate:
         # TODO: 并发下载所有资源
         c = self.character
         # 角色
-        c.image.banner.url = await url_to_file(c.image.banner.url)
+        c.image.banner.url = await download_resource(c.image.banner.url)
 
         # 技能
         for item in c.skills:
-            item.icon.url = await url_to_file(item.icon.url)
+            item.icon.url = await download_resource(item.icon.url)
 
         # 命座
         for item in c.constellations:
-            item.icon.url = await url_to_file(item.icon.url)
+            item.icon.url = await download_resource(item.icon.url)
 
         # 装备，包括圣遗物和武器
         for item in c.equipments:
-            item.detail.icon.url = await url_to_file(item.detail.icon.url)
+            item.detail.icon.url = await download_resource(item.detail.icon.url)
 
-    def find_weapon(self) -> Union[Equipments, None]:
+    def find_weapon(self) -> Optional[Equipments]:
         """在 equipments 数组中找到武器，equipments 数组包含圣遗物和武器"""
         for item in self.character.equipments:
             if item.type == EquipmentsType.WEAPON:
                 return item
+        return None
 
     def find_artifacts(self) -> List[Artifact]:
         """在 equipments 数组中找到圣遗物，并转换成带有分数的 model。equipments 数组包含圣遗物和武器"""

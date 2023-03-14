@@ -1,26 +1,20 @@
 from datetime import datetime
 
-
 from genshin import Client, GenshinException, InvalidCookies
 from genshin.client.routes import InternationalRoute  # noqa F401
 from genshin.utility import recognize_genshin_server, get_ds_headers
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
-from telegram.ext import CommandHandler, CallbackContext, MessageHandler
+from telegram.ext import CallbackContext
 from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
 
-from core.base.redisdb import RedisDB
-from core.baseplugin import BasePlugin
-from core.cookies import CookiesService
-from core.cookies.error import CookiesNotFoundError
+from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
-from core.user import UserService
-from core.user.error import UserNotFoundError
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
+from core.services.cookies import CookiesService
+from core.services.users.services import UserService
+from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
 from utils.genshin import fetch_hk4e_token_by_cookie, recognize_genshin_game_biz
-from utils.helpers import get_genshin_client
 from utils.log import logger
 
 try:
@@ -35,19 +29,21 @@ REG_TIME_URL = InternationalRoute(
 )
 
 
-class RegTimePlugin(Plugin, BasePlugin):
+class RegTimePlugin(Plugin):
     """查询原神注册时间"""
 
     def __init__(
         self,
         user_service: UserService = None,
         cookie_service: CookiesService = None,
+        helper: GenshinHelper = None,
         redis: RedisDB = None,
     ):
         self.cache = redis.client
         self.cache_key = "plugin:reg_time:"
         self.user_service = user_service
         self.cookie_service = cookie_service
+        self.helper = helper
 
     @staticmethod
     async def get_reg_time(client: Client) -> str:
@@ -78,16 +74,14 @@ class RegTimePlugin(Plugin, BasePlugin):
         await self.cache.set(f"{self.cache_key}{client.uid}", reg_time)
         return reg_time
 
-    @handler(CommandHandler, command="reg_time", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^原神账号注册时间$"), block=False)
-    @restricts()
-    @error_callable
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    @handler.command("reg_time", block=False)
+    @handler.message(filters.Regex(r"^原神账号注册时间$"), block=False)
+    async def reg_time(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 原神注册时间命令请求", user.full_name, user.id)
         try:
-            client = await get_genshin_client(user.id)
+            client = await self.helper.get_genshin_client(user.id)
             game_uid = client.uid
             try:
                 reg_time = await self.get_reg_time_from_cache(client)
@@ -96,11 +90,11 @@ class RegTimePlugin(Plugin, BasePlugin):
                 logger.warning("用户 %s[%s] 无法请求注册时间 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
                 reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，")
                 if filters.ChatType.GROUPS.filter(message):
-                    self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
-                    self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                    self.add_delete_message_job(reply_message, delay=30)
+                    self.add_delete_message_job(message, delay=30)
                 return
             await message.reply_text(f"你的原神账号 [{game_uid}] 注册时间为：{reg_time}")
-        except (UserNotFoundError, CookiesNotFoundError):
+        except (PlayerNotFoundError, CookiesNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_msg = await message.reply_text(
@@ -108,8 +102,8 @@ class RegTimePlugin(Plugin, BasePlugin):
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=ParseMode.HTML,
                 )
-                self._add_delete_message_job(context, reply_msg.chat_id, reply_msg.message_id, 30)
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_msg, delay=30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text(
                     "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定",

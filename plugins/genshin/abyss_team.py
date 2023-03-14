@@ -1,54 +1,50 @@
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.ext import CallbackContext, filters
 from telegram.helpers import create_deep_linked_url
 
-from core.base.assets import AssetsService
-from core.baseplugin import BasePlugin
-from core.cookies.error import CookiesNotFoundError
+from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
-from core.template import TemplateService
-from core.user import UserService
-from core.user.error import UserNotFoundError
+from core.services.template.services import TemplateService
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClient
-from utils.decorators.error import error_callable
-from utils.decorators.restricts import restricts
-from utils.helpers import get_genshin_client
+from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
 from utils.log import logger
 
+__all__ = ("AbyssTeamPlugin",)
 
-class AbyssTeam(Plugin, BasePlugin):
+
+class AbyssTeamPlugin(Plugin):
     """深境螺旋推荐配队查询"""
 
     def __init__(
-        self, user_service: UserService = None, template_service: TemplateService = None, assets: AssetsService = None
+        self,
+        template: TemplateService,
+        helper: GenshinHelper,
+        assets_service: AssetsService,
     ):
-        self.template_service = template_service
-        self.user_service = user_service
-        self.assets_service = assets
+        self.template_service = template
+        self.helper = helper
         self.team_data = AbyssTeamClient()
+        self.assets_service = assets_service
 
-    @handler(CommandHandler, command="abyss_team", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^深渊推荐配队(.*)"), block=False)
-    @restricts()
-    @error_callable
+    @handler.command("abyss_team", block=False)
+    @handler.message(filters.Regex("^深渊推荐配队(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
-        logger.info(f"用户 {user.full_name}[{user.id}] 查深渊推荐配队命令请求")
+        logger.info("用户 %s[%s] 查深渊推荐配队命令请求", user.full_name, user.id)
 
         try:
-            client = await get_genshin_client(user.id)
-        except (CookiesNotFoundError, UserNotFoundError):
+            client = await self.helper.get_genshin_client(user.id)
+        except (CookiesNotFoundError, PlayerNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self._add_delete_message_job(context, reply_message.chat_id, reply_message.message_id, 30)
-
-                self._add_delete_message_job(context, message.chat_id, message.message_id, 30)
+                self.add_delete_message_job(reply_message, delay=30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return

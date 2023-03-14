@@ -1,22 +1,10 @@
 from typing import Dict
 
 from pygments.style import Style as PyStyle
-from pygments.token import (
-    Comment,
-    Error,
-    Generic,
-    Keyword,
-    Literal,
-    Name,
-    Number,
-    Operator,
-    Punctuation,
-    String,
-    Text,
-)
+from pygments.token import Comment, Error, Generic, Keyword, Literal, Name, Number, Operator, Punctuation, String, Text
 from rich.style import Style
 
-__all__ = [
+__all__ = (
     "MonokaiProStyle",
     "DEFAULT_STYLE",
     "BACKGROUND",
@@ -34,7 +22,7 @@ __all__ = [
     "BLUE",
     "CYAN",
     "WHITE",
-]
+)
 
 BACKGROUND = "#272822"
 FOREGROUND = "#f8f8f2"
