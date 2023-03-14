@@ -48,7 +48,7 @@ class BirthdayPlugin(Plugin):
         self.cookie_service = cookie_service
         self.helper = helper
 
-    async def __async_init__(self):
+    async def initialize(self):
         self.birthday_list = await Calendar.async_gen_birthday_list()
         self.birthday_list.get("6_1", []).append("派蒙")
 
