@@ -37,7 +37,7 @@ fastapi = "^0.93.0"
 uvicorn = {extras = ["standard"], version = "^0.21.0"}
 sentry-sdk = "^1.15.0"
 GitPython = "^3.1.30"
-openpyxl = "^3.1.1"
+openpyxl = "^3.1.2"
 async-lru = "^2.0.2"
 thefuzz = "^0.19.0"
 qrcode = "^7.4.2"
