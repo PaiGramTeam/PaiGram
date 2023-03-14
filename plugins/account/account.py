@@ -163,7 +163,7 @@ class BindAccountPlugin(Plugin.Conversation):
             record_card = bind_account_plugin_data.record_card
             is_chosen = True
             player_info = await self.players_service.get_player(user.id)  # 寻找主账号
-            if player_info.is_chosen:
+            if player_info is not None and player_info.is_chosen:
                 is_chosen = False
             player = Player(
                 user_id=user.id,
