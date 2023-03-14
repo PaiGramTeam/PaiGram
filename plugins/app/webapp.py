@@ -58,7 +58,8 @@ class WebApp(Plugin):
                             return
                         if status:
                             await message.reply_text("验证通过", reply_markup=ReplyKeyboardRemove())
-                        await message.reply_text("非法请求", reply_markup=ReplyKeyboardRemove())
+                        else:
+                            await message.reply_text("非法请求", reply_markup=ReplyKeyboardRemove())
                         return
             else:
                 logger.warning(
