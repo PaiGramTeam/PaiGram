@@ -319,7 +319,7 @@ class SignSystem(Plugin):
         ]
         if job_type == SignJobType.START:
             title = "自动签到"
-        elif job_type == SignJobType.START:
+        elif job_type == SignJobType.REDO:
             title = "自动重新签到"
         else:
             raise ValueError
