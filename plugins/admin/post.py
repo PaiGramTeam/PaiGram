@@ -97,13 +97,12 @@ class Post(Plugin.Conversation):
             ]
             url = f"https://www.miyoushe.com/ys/article/{post_info.post_id}"
             text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理"
-            for user in config.admins:
-                try:
-                    await context.bot.send_message(
-                        user.user_id, text, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(buttons)
-                    )
-                except BadRequest as exc:
-                    logger.error("发送消息失败 %s", exc.message)
+            try:
+                await context.bot.send_message(
+                    config.owner, text, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(buttons)
+                )
+            except BadRequest as exc:
+                logger.error("发送消息失败 %s", exc.message)
 
     @conversation.entry_point
     @handler.callback_query(pattern=r"^post_admin\|", block=False)
