@@ -287,7 +287,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             return ConversationHandler.END
         account_cookies_plugin_data.genshin_account = genshin_account
         player_info = await self.players_service.get(
-            user.id, account_id=genshin_account.uid, region=account_cookies_plugin_data.region
+            user.id, player_id=genshin_account.uid, region=account_cookies_plugin_data.region
         )
         account_cookies_plugin_data.player = player_info
         if player_info:
