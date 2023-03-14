@@ -232,10 +232,13 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 if client.region == types.Region.CHINESE:
                     account_info = await client.get_hoyolab_user()
                     account_id = account_info.hoyolab_id
+                    account_cookies_plugin_data.account_id = account_id
                     cookies.set_v2_uid(account_id)
                     logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
                 else:
                     logger.warning("用户 %s[%s] region[%s] 也许是不正确的", user.full_name, user.id, client.region.name)
+            else:
+                account_cookies_plugin_data.account_id = client.cookie_manager.user_id
             genshin_accounts = await client.genshin_accounts()
         except DataNotPublic:
             logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
