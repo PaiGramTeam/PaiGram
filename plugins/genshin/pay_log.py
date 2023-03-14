@@ -108,8 +108,11 @@ class PayLogPlugin(Plugin.Conversation):
         message = update.effective_message
         user = update.effective_user
         if message.document:
-            await self.import_from_file(user, message)
-            return ConversationHandler.END
+            await message.reply_text("呜呜呜~本次导入不支持文件导入，请尝试获取连接")
+            return INPUT_URL
+        if not message.text:
+            await message.reply_text("呜呜呜~输入错误，请尝试重新获取连接")
+            return INPUT_URL
         authkey = from_url_get_authkey(message.text)
         reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后")
         await message.reply_chat_action(ChatAction.TYPING)
@@ -228,7 +231,6 @@ class PayLogPlugin(Plugin.Conversation):
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
                 self.add_delete_message_job(reply_message, delay=30)
-
                 self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
