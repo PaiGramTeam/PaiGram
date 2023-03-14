@@ -61,7 +61,7 @@ class BirthdayPlugin(Plugin):
         return (self.birthday_list.get(key, [])).copy()
 
     @handler.command(command="birthday", block=False)
-    async def command_start(self, update: Update, _: CallbackContext) -> None:
+    async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
         key = (
@@ -69,7 +69,7 @@ class BirthdayPlugin(Plugin):
             + "_"
             + rm_starting_str(datetime.now().strftime("%d"), "0")
         )
-        args = self.get_args()
+        args = self.get_args(context)
 
         if len(args) >= 1:
             msg = args[0]

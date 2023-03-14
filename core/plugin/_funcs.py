@@ -149,7 +149,7 @@ class PluginFuncs:
         return file_path if return_path else Path(file_path).as_uri()
 
     @staticmethod
-    def get_args(context: Optional[CallbackContext] = None) -> List[str]:
+    def get_args(context: CallbackContext) -> List[str]:
         args = context.args
         match = context.match
 
