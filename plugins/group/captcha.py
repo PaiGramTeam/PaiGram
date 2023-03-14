@@ -324,7 +324,7 @@ class GroupCaptcha(Plugin):
                 [
                     InlineKeyboardButton(
                         answer.text,
-                        callback_data=f"auth_challenge|{user.id}|{question['question_id']}|{answer['answer_id']}",
+                        callback_data=f"auth_challenge|{user.id}|{question.question_id}|{answer.answer_id}",
                     )
                 ]
                 for answer in question.answers
