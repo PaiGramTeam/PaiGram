@@ -126,7 +126,7 @@ class PluginFuncs:
         file_path = CACHE_DIR.joinpath(file_name)
 
         if not file_path.exists():  # 若文件不存在，则下载
-            async with httpx.AsyncClient(headers=REQUEST_HEADERS) as client:
+            async with httpx.AsyncClient(headers=REQUEST_HEADERS, timeout=10) as client:
                 try:
                     response = await client.get(url)
                 except UnsupportedProtocol:
