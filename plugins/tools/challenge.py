@@ -7,7 +7,7 @@ from core.plugin import Plugin
 from core.services.cookies import CookiesService
 from modules.apihelper.client.components.verify import Verify
 from modules.apihelper.error import ResponseException, APIHelperException
-from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError
+from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
 from utils.log import logger
 
 __all__ = ("ChallengeSystemException", "ChallengeSystem")
@@ -49,6 +49,8 @@ class ChallengeSystem(Plugin):
             client = await self.genshin_helper.get_genshin_client(user_id)
         except PlayerNotFoundError:
             raise ChallengeSystemException("用户未找到")
+        except CookiesNotFoundError:
+            raise ChallengeSystemException("无需验证")
         if client.region != Region.CHINESE:
             raise ChallengeSystemException("非法用户")
         if need_verify:
@@ -58,7 +60,7 @@ class ChallengeSystem(Plugin):
                 if exc.retcode != 1034:
                     raise exc
             else:
-                raise ChallengeSystemException("账户正常，无需认证")
+                raise ChallengeSystemException("账户正常，无需验证")
         verify = Verify(cookies=client.cookie_manager.cookies)
         try:
             data = await verify.create()

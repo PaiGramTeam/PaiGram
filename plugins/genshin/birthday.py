@@ -17,7 +17,7 @@ from core.services.users.services import UserService
 from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId, roleToName
 from modules.apihelper.client.components.calendar import Calendar
-from plugins.tools.genshin import GenshinHelper
+from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
 from utils.genshin import fetch_hk4e_token_by_cookie, recognize_genshin_game_biz
 from utils.log import logger
 
@@ -147,8 +147,9 @@ class BirthdayPlugin(Plugin):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)
             return
-        client = await self.helper.get_genshin_client(user.id)
-        if client is None:
+        try:
+            client = await self.helper.get_genshin_client(user.id)
+        except (CookiesNotFoundError, PlayerNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_msg = await message.reply_text(
