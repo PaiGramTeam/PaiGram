@@ -37,6 +37,7 @@
             <div class="characters">
                 {% for avatar in data.ranks.most_played %}
                     <div class="character">
+                        <div class="element" style="background-image: url('../../img/element/{{ avatar.element }}.png')"></div>
                         <div
                                 class="icon"
                                 style="background-image: url('../../background/rarity/half/{{ avatar.rarity }}.png')"
