@@ -10,7 +10,7 @@ from genshin.models import BaseCharacter
 from genshin.models import CalculatorCharacterDetails
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
-from sqlmodel import SQLModel, Field, String, Column, Integer, BigInteger, select, DateTime, func, delete
+from sqlmodel import SQLModel, Field, String, Column, Integer, BigInteger, select, DateTime, func, delete, Index
 from telegram.ext import ContextTypes
 
 from core.basemodel import RegionEnum
@@ -45,10 +45,13 @@ class CookiesNotFoundError(Exception):
 
 class CharacterDetailsSQLModel(SQLModel, table=True):
     __tablename__ = "character_details"
-    __table_args__ = (dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci"),)
+    __table_args__ = (
+        Index("index_player_character", "player_id", "character_id", unique=True),
+        dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci"),
+    )
     id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
-    player_id: int = Field(sa_column=Column(BigInteger(), primary_key=True))
-    character_id: int = Field(sa_column=Column(BigInteger(), primary_key=True))
+    player_id: int = Field(sa_column=Column(BigInteger()))
+    character_id: int = Field(sa_column=Column(BigInteger()))
     data: Optional[str] = Field(sa_column=Column(String(length=4096)))
     time_updated: Optional[datetime] = Field(sa_column=Column(DateTime, onupdate=func.now()))  # pylint: disable=E1102
 
@@ -61,7 +64,7 @@ class CharacterDetails(Plugin):
     ) -> None:
         self.mysql = mysql
         self.redis = redis.client
-        self.ttl = 60 * 60 * 3
+        self.ttl = 60 * 60 * 6
 
     async def initialize(self) -> None:
         def fetch_and_update_objects(connection):
@@ -108,18 +111,34 @@ class CharacterDetails(Plugin):
             ttl = await self.redis.ttl(key)
             if max_ttl is None or (0 <= ttl <= max_ttl):
                 try:
-                    uid, character_id = re.findall(r"\d+", key)
+                    player_id, character_id = re.findall(r"\d+", key)
                 except ValueError:
                     logger.warning("非法Key %s", key)
                     continue
                 data = await self.redis.get(key)
                 str_data = str(data, encoding="utf-8")
-                sql_data = CharacterDetailsSQLModel(
-                    player_id=uid, character_id=character_id, data=str_data, time_updated=datetime.now()
-                )
                 async with AsyncSession(self.mysql.engine) as session:
-                    await session.merge(sql_data)
-                    await session.commit()
+                    statement = (
+                        select(CharacterDetailsSQLModel)
+                        .where(CharacterDetailsSQLModel.player_id == player_id)
+                        .where(CharacterDetailsSQLModel.character_id == character_id)
+                    )
+                    results = await session.exec(statement)
+                    sql_data = results.first()
+                if sql_data is None:
+                    sql_data = CharacterDetailsSQLModel(
+                        player_id=player_id, character_id=character_id, data=str_data, time_updated=datetime.now()
+                    )
+                    async with AsyncSession(self.mysql.engine) as session:
+                        session.add(sql_data)
+                        await session.commit()
+                else:
+                    if sql_data.time_updated <= datetime.now() - timedelta(hours=2):
+                        sql_data.data = str_data
+                        sql_data.time_updated = datetime.now()
+                        async with AsyncSession(self.mysql.engine) as session:
+                            session.add(sql_data)
+                            await session.commit()
 
     @staticmethod
     def get_qname(uid: int, character: int):
@@ -142,12 +161,6 @@ class CharacterDetails(Plugin):
         await self.redis.set(
             self.get_qname(uid, character_id), detail.json(), ex=self.ttl + randint * 60  # 使用随机数防止缓存雪崩
         )
-
-    async def set_character_details_for_mysql(self, uid: int, character_id: int, detail: "CalculatorCharacterDetails"):
-        data = CharacterDetailsSQLModel(player_id=uid, character_id=character_id, data=detail.json())
-        async with AsyncSession(self.mysql.engine) as session:
-            await session.merge(data)
-            await session.commit()
 
     async def get_character_details_for_mysql(
         self,
