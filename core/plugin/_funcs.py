@@ -169,7 +169,7 @@ class PluginFuncs:
 
 class ConversationFuncs:
     @conversation.fallback
-    @handler.command(command="cancel", block=True)
+    @handler.command(command="cancel", block=False)
     async def cancel(self, update: Update, _) -> int:
         await update.effective_message.reply_text("退出命令", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END

@@ -338,8 +338,8 @@ class WishLogPlugin(Plugin.Conversation):
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
-    @handler(CommandHandler, command="gacha_count", block=True)
-    @handler(MessageHandler, filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=True)
+    @handler(CommandHandler, command="gacha_count", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=False)
     async def command_start_count(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
