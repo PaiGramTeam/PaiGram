@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List, Optional, Union
 
 from telegram import InputMediaDocument, InputMediaPhoto, Message
+from telegram.error import BadRequest
 
 from core.services.template.cache import HtmlToFileIdCache
 from core.services.template.error import ErrorFileType, FileIdNotFound
@@ -55,7 +56,13 @@ class RenderResult:
         if self.file_type != FileType.PHOTO:
             raise ErrorFileType
 
-        reply = await message.reply_photo(photo=self.photo, *args, **kwargs)
+        try:
+            reply = await message.reply_photo(photo=self.photo, *args, **kwargs)
+        except BadRequest as exc:
+            if "Wrong file identifier" in exc.message and isinstance(self.photo, str):
+                await self._cache.delete_data(self.html, self.file_type.name)
+                raise BadRequest(message="Wrong file identifier specified")
+            raise exc
 
         await self.cache_file_id(reply)
 
@@ -66,7 +73,13 @@ class RenderResult:
         if self.file_type != FileType.DOCUMENT:
             raise ErrorFileType
 
-        reply = await message.reply_document(document=self.photo, *args, **kwargs)
+        try:
+            reply = await message.reply_document(document=self.photo, *args, **kwargs)
+        except BadRequest as exc:
+            if "Wrong file identifier" in exc.message and isinstance(self.photo, str):
+                await self._cache.delete_data(self.html, self.file_type.name)
+                raise BadRequest(message="Wrong file identifier specified")
+            raise exc
 
         await self.cache_file_id(reply)
 
@@ -81,7 +94,13 @@ class RenderResult:
             media=self.photo, caption=self.caption, parse_mode=self.parse_mode, filename=self.filename
         )
 
-        edit_media = await message.edit_media(media, *args, **kwargs)
+        try:
+            edit_media = await message.edit_media(media, *args, **kwargs)
+        except BadRequest as exc:
+            if "Wrong file identifier" in exc.message and isinstance(self.photo, str):
+                await self._cache.delete_data(self.html, self.file_type.name)
+                raise BadRequest(message="Wrong file identifier specified")
+            raise exc
 
         await self.cache_file_id(edit_media)
 

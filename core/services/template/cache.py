@@ -4,7 +4,6 @@ from hashlib import sha256
 from typing import Any, Optional
 
 from core.base_service import BaseService
-
 from core.dependence.redisdb import RedisDB
 
 __all__ = ["TemplatePreviewCache", "HtmlToFileIdCache"]
@@ -50,6 +49,9 @@ class HtmlToFileIdCache(BaseService.Component):
         await self.client.set(ck, file_id)
         if ttl != -1:
             await self.client.expire(ck, ttl)
+
+    async def delete_data(self, html: str, file_type: str) -> bool:
+        return await self.client.delete(self.cache_key(html, file_type))
 
     def cache_key(self, html: str, file_type: str) -> str:
         key = sha256(html.encode()).hexdigest()

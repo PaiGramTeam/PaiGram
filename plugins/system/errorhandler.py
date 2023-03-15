@@ -148,6 +148,8 @@ class ErrorHandler(Plugin):
                 raise ApplicationHandlerStop
             elif "Not enough rights" in context.error.message:
                 notice = self.ERROR_MSG_PREFIX + "权限不足，请检查对应权限是否开启"
+            elif "Wrong file identifier specified" in context.error.message:
+                notice = self.ERROR_MSG_PREFIX + "文件标识符未找到 ~ 请稍后再试"
             else:
                 logger.error("python-telegram-bot 请求错误", exc_info=context.error)
                 notice = self.ERROR_MSG_PREFIX + "telegram-bot-api请求错误 ~ 请稍后再试"
