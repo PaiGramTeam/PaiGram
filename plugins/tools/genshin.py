@@ -265,6 +265,8 @@ class GenshinHelper(Plugin):
             raise PlayerNotFoundError(user_id)
         cookies = None
         if need_cookie:
+            if player.account_id is None:
+                raise CookiesNotFoundError(user_id)
             cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
             if cookie_model is None:
                 raise CookiesNotFoundError(user_id)
