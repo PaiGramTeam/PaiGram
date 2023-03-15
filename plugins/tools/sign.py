@@ -23,7 +23,7 @@ from core.services.sign.models import SignStatusEnum
 from core.services.sign.services import SignServices
 from core.services.users.services import UserService
 from modules.apihelper.client.components.verify import Verify
-from plugins.tools.genshin import GenshinHelper
+from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
 from utils.log import logger
 
 
@@ -346,8 +346,16 @@ class SignSystem(Plugin):
             except NeedChallenge:
                 text = "签到失败，触发验证码风控，自动签到自动关闭"
                 sign_db.status = SignStatusEnum.NEED_CHALLENGE
+            except PlayerNotFoundError:
+                logger.info("用户 user_id[%s] 玩家不存在 关闭并移除自动签到", user_id)
+                await self.sign_service.remove(sign_db)
+                continue
+            except CookiesNotFoundError:
+                logger.info("用户 user_id[%s] cookie 不存在 关闭并移除自动签到", user_id)
+                await self.sign_service.remove(sign_db)
+                continue
             except Exception as exc:
-                logger.error("执行自动签到时发生错误 user_id[%s] Message[%s]", user_id, exc.message)
+                logger.error("执行自动签到时发生错误 user_id[%s]", user_id, exc_info=exc)
                 text = "签到失败了呜呜呜 ~ 执行自动签到时发生错误"
             else:
                 sign_db.status = SignStatusEnum.STATUS_SUCCESS
