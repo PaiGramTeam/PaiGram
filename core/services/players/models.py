@@ -24,7 +24,7 @@ class Player(SQLModel):
         default=None, primary_key=True, sa_column=Column(Integer(), primary_key=True, autoincrement=True)
     )
     user_id: int = Field(primary_key=True, sa_column=Column(BigInteger()))
-    account_id: int = Field(primary_key=True, sa_column=Column(BigInteger()))
+    account_id: int = Field(default=None, primary_key=True, sa_column=Column(BigInteger()))
     player_id: int = Field(primary_key=True, sa_column=Column(BigInteger()))
     region: RegionEnum = Field(sa_column=Column(Enum(RegionEnum)))
     is_chosen: Optional[bool] = Field(sa_column=Column(Boolean))
