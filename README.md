@@ -1,15 +1,15 @@
-<h1 align="center">PaiGram</h1>
+<h1 style="text-align:center">PaiGram</h1>
 
-<div align="center">·<img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="">
+<div style="text-align:center"><img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="">
 <img src="https://img.shields.io/badge/works%20on-my%20machine-brightgreen" alt="">
 <img src="https://img.shields.io/badge/status-%E5%92%95%E5%92%95%E5%92%95-blue" alt="">
 <a href="https://black.readthedocs.io/en/stable/index.html"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="code_style" /></a>
-<a href="https://www.codacy.com/gh/PaiGramTeam/PaiGram/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PaiGramTeam/PaiGram&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/ac5844e2b0d14a3e8aa16b9b1b099ce0"/></a>
+<a href="https://www.codacy.com/gh/PaiGramTeam/PaiGram/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PaiGramTeam/PaiGram&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/ac5844e2b0d14a3e8aa16b9b1b099ce0" alt=""/></a>
 </div>
 
 <p>
-<img src="https://user-images.githubusercontent.com/70872201/190447002-119a8819-b111-4a96-a0b3-701c5e256137.png" align="right" width="100px" alt="">
-<h2 align="left">简介</h2>
+<img src="https://user-images.githubusercontent.com/70872201/190447002-119a8819-b111-4a96-a0b3-701c5e256137.png" style="float:right" width="100px" alt="">
+<h2 style="text-align:left">简介</h2>
 
 基于 [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) 的 PaiGram
 
