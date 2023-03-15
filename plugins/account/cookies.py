@@ -141,7 +141,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 "<b>关于如何获取Cookies</b>\n"
                 "<b>现在因为网站HttpOnly策略无法通过脚本获取，因此操作只能在PC上运行。</b>\n\n"
                 "PC：\n"
-                "1、打开<a href='https://user.mihoyo.com/'>通行证</a>或<a href='https://www.miyoushe.com/ys/'>社区</a>并登录</a>\n"
+                "1、打开<a href='https://user.mihoyo.com/'>通行证</a>或<a href='https://www.miyoushe.com/ys/'>社区</a>并登录\n"
                 "2、进入通行证按F12打开开发者工具\n"
                 "3、将开发者工具切换至网络(Network)并点击过滤栏中的文档(Document)并刷新页面\n"
                 "4、在请求列表中选择第一个并点击\n"
