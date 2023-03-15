@@ -132,13 +132,15 @@ def upgrade() -> None:
                 y_uid = row["yuanshen_uid"]
                 g_uid = row["genshin_uid"]
                 region = row["region"]
-                account_id = None
-                cookies_row = connection.execute(
-                    cookies_table.select().where(cookies_table.c.user_id == user_id)
-                ).first()
-                if cookies_row is not None:
-                    account_id = cookies_row["account_id"]
                 if y_uid:
+                    account_id = None
+                    cookies_row = connection.execute(
+                        cookies_table.select()
+                        .where(cookies_table.c.user_id == user_id)
+                        .where(cookies_table.c.region == "HYPERION")
+                    ).first()
+                    if cookies_row is not None:
+                        account_id = cookies_row["account_id"]
                     insert = players_table.insert().values(
                         user_id=int(user_id),
                         player_id=int(y_uid),
@@ -149,6 +151,14 @@ def upgrade() -> None:
                     with op.get_context().autocommit_block():
                         connection.execute(insert)
                 if g_uid:
+                    account_id = None
+                    cookies_row = connection.execute(
+                        cookies_table.select()
+                        .where(cookies_table.c.user_id == user_id)
+                        .where(cookies_table.c.region == "HOYOLAB")
+                    ).first()
+                    if cookies_row is not None:
+                        account_id = cookies_row["account_id"]
                     insert = players_table.insert().values(
                         user_id=int(user_id),
                         player_id=int(g_uid),
