@@ -41,6 +41,7 @@ class PlayersRepository(BaseService.Component):
         async with AsyncSession(self.engine) as session:
             session.add(player)
             await session.commit()
+            await session.refresh(player)
 
     async def delete(self, player: Player) -> None:
         async with AsyncSession(self.engine) as session:
