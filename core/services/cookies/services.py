@@ -131,8 +131,7 @@ class PublicCookiesService(BaseService):
                     await self._repository.update(cookies)
                     await self._cache.delete_public_cookies(cookies.user_id, region)
                     continue
-                else:
-                    raise exc
+                raise exc
             except Exception as exc:
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 raise exc
