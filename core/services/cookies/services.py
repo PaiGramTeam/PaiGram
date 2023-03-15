@@ -94,6 +94,8 @@ class PublicCookiesService(BaseService):
             else:
                 raise CookieServiceError
             try:
+                if client.cookie_manager.user_id is None:
+                    raise RuntimeError("account_id not found")
                 record_card = (await client.get_record_cards())[0]
                 if record_card.game == Game.GENSHIN and region == RegionEnum.HYPERION:
                     await client.get_partial_genshin_user(record_card.uid)
@@ -123,6 +125,14 @@ class PublicCookiesService(BaseService):
                     logger.exception(exc)
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
+            except RuntimeError as exc:
+                if "account_id not found" in str(exc):
+                    cookies.status = CookiesStatusEnum.INVALID_COOKIES
+                    await self._repository.update(cookies)
+                    await self._cache.delete_public_cookies(cookies.user_id, region)
+                    continue
+                else:
+                    raise exc
             except Exception as exc:
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 raise exc
