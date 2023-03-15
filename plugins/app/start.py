@@ -45,7 +45,7 @@ class StartPlugin(Plugin):
                 await self.process_validate(message, user, bot_username=context.bot.username)
             elif args[0] == "sign":
                 logger.info("用户 %s[%s] 通过start命令 获取签到信息", user.full_name, user.id)
-                await self.get_sign_button(message, user)
+                await self.get_sign_button(message, user, bot_username=context.bot.username)
             elif args[0].startswith("challenge_"):
                 _data = args[0].split("_")
                 _command = _data[1]
@@ -118,11 +118,11 @@ class StartPlugin(Plugin):
             ),
         )
 
-    async def get_sign_button(self, message: Message, user: User):
+    async def get_sign_button(self, message: Message, user: User, bot_username: str):
         try:
             client = await self.genshin_helper.get_genshin_client(user.id)
             await message.reply_chat_action(ChatAction.TYPING)
-            button = await self.sign_system.get_challenge_button(client.uid, user.id, callback=False)
+            button = await self.sign_system.get_challenge_button(bot_username, client.uid, user.id, callback=False)
             if not button:
                 await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
                 return
