@@ -75,8 +75,8 @@ class AccountCookiesPlugin(Plugin.Conversation):
         return {k: v for k, v in cookies.items() if v is not None}
 
     @conversation.entry_point
-    @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=True)
-    @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=False)
+    @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
@@ -94,7 +94,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
         return CHECK_SERVER
 
     @conversation.entry_point
-    @handler.command("qlogin", filters=filters.ChatType.PRIVATE, block=True)
+    @handler.command("qlogin", filters=filters.ChatType.PRIVATE, block=False)
     async def qrcode_login(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
@@ -118,7 +118,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
         return ConversationHandler.END
 
     @conversation.state(state=CHECK_SERVER)
-    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
     async def check_server(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
@@ -127,10 +127,8 @@ class AccountCookiesPlugin(Plugin.Conversation):
             return ConversationHandler.END
         if message.text == "米游社":
             region = RegionEnum.HYPERION
-            bbs_url = "https://user.mihoyo.com/"
             bbs_name = "米游社"
         elif message.text == "HoYoLab":
-            bbs_url = "https://www.hoyolab.com/home"
             bbs_name = "HoYoLab"
             region = RegionEnum.HOYOLAB
         else:
@@ -143,7 +141,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 "<b>关于如何获取Cookies</b>\n"
                 "<b>现在因为网站HttpOnly策略无法通过脚本获取，因此操作只能在PC上运行。</b>\n\n"
                 "PC：\n"
-                "1、<a href='https://user.mihoyo.com/'>打开通行证并登录</a>\n"
+                "1、打开<a href='https://user.mihoyo.com/'>通行证</a>或<a href='https://www.miyoushe.com/ys/'>社区</a>并登录</a>\n"
                 "2、进入通行证按F12打开开发者工具\n"
                 "3、将开发者工具切换至网络(Network)并点击过滤栏中的文档(Document)并刷新页面\n"
                 "4、在请求列表中选择第一个并点击\n"
@@ -160,18 +158,18 @@ class AccountCookiesPlugin(Plugin.Conversation):
             help_message = (
                 f"<b>关于如何获取Cookies</b>\n\n"
                 f"PC：\n"
-                f"1、<a href='{bbs_url}'>打开 {bbs_name} 并登录</a>\n"
+                f"1、<a href='https://www.hoyolab.com/home'>打开社区并登录</a>\n"
                 "2、按F12打开开发者工具\n"
                 "3、将开发者工具切换至控制台(Console)\n"
                 "4、复制下方的代码，并将其粘贴在控制台中，按下回车\n"
                 f"<pre><code class='javascript'>{javascript}</code></pre>\n"
                 "Android：\n"
-                f"1、<a href='{bbs_url}'>通过 Via 打开 {bbs_name} 并登录</a>\n"
+                f"1、<a href='https://www.hoyolab.com/home'>通过 Via 打开 {bbs_name} 并登录</a>\n"
                 "2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n"
                 f"<code>{javascript_android}</code>\n"
                 "iOS：\n"
                 "1、在App Store上安装Web Inspector，并在iOS设置- Safari浏览器-扩展-允许这些扩展下找到Web Inspector-打开，允许所有网站\n"
-                f"2、<a href='{bbs_url}'>通过 Safari 打开 {bbs_name} 并登录</a>\n"
+                f"2、<a href='https://www.hoyolab.com/home'>通过 Safari 打开 {bbs_name} 并登录</a>\n"
                 "3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - Console - 点击下方文本框复制下方代码粘贴：\n"
                 f"<pre><code class='javascript'>{javascript}</code></pre>\n"
                 "4、点击Console下的Execute"
@@ -180,7 +178,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
         return INPUT_COOKIES
 
     @conversation.state(state=INPUT_COOKIES)
-    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
     async def input_cookies(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
@@ -319,7 +317,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
         return COMMAND_RESULT
 
     @conversation.state(state=COMMAND_RESULT)
-    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=True)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
     async def command_result(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message
@@ -332,11 +330,11 @@ class AccountCookiesPlugin(Plugin.Conversation):
             genshin_account = account_cookies_plugin_data.genshin_account
             if player:
                 await self.players_service.update(player)
-                cookies = account_cookies_plugin_data.cookies_data_base
-                if cookies:
-                    cookies.data = account_cookies_plugin_data.cookies
-                    cookies.status = CookiesStatusEnum.STATUS_SUCCESS
-                    await self.cookies_service.update(cookies)
+                cookies_data_base = account_cookies_plugin_data.cookies_data_base
+                if cookies_data_base:
+                    cookies_data_base.data = account_cookies_plugin_data.cookies
+                    cookies_data_base.status = CookiesStatusEnum.STATUS_SUCCESS
+                    await self.cookies_service.update(cookies_data_base)
                 else:
                     cookies = Cookies(
                         user_id=user.id,
