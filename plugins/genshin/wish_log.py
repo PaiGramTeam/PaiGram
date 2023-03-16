@@ -317,9 +317,16 @@ class WishLogPlugin(Plugin.Conversation):
             else:
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                 png_data = await self.template_service.render(
-                    "genshin/gacha_log/gacha_log.html", data, full_page=True, query_selector=".body_box"
+                    "genshin/gacha_log/gacha_log.html",
+                    data,
+                    full_page=True,
+                    file_type=FileType.DOCUMENT if len(data.get('fiveLog')) > 36 else FileType.PHOTO,
+                    query_selector=".body_box"
                 )
-                await png_data.reply_photo(message)
+                if png_data.file_type == FileType.DOCUMENT:
+                    await png_data.reply_document(message, filename='抽卡记录.png')
+                else:
+                    await png_data.reply_photo(message)
         except GachaLogNotFound:
             logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
