@@ -276,8 +276,13 @@ class AccountCookiesPlugin(Plugin.Conversation):
             except Exception as exc:  # pylint: disable=W0703
                 logger.error("绑定时获取新Cookie失败 [%s]", (str(exc)))
             finally:
+                if cookies.user_id is not None:
+                    account_cookies_plugin_data.account_id = cookies.user_id
                 cookies.login_ticket = None
                 cookies.login_uid = None
+        if account_cookies_plugin_data.account_id is None:
+            await message.reply_text("无法获取账号ID，请检查Cookie是否正确或请稍后重试")
+            return ConversationHandler.END
         genshin_account: Optional[GenshinAccount] = None
         level: int = 0
         # todo : 多账号绑定
