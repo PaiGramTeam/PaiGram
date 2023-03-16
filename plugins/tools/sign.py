@@ -316,7 +316,7 @@ class SignSystem(Plugin):
             SignStatusEnum.STATUS_SUCCESS,
             SignStatusEnum.TIMEOUT_ERROR,
             SignStatusEnum.NEED_CHALLENGE,
-            SignStatusEnum.ALREADY_CLAIMED
+            SignStatusEnum.ALREADY_CLAIMED,
         ]
         if job_type == SignJobType.START:
             title = "自动签到"
