@@ -200,7 +200,7 @@ class PlayersManagesPlugin(Plugin):
             await callback_query.edit_message_text(f"账号 {player_id} 未找到")
             return
 
-        player_info = await self.player_info_service.get(player)
+        player_info = await self.player_info_service.get_form_sql(player)
         if player_info is None:
             await callback_query.edit_message_text(f"账号 {player_id} 信息未找到")
             return
