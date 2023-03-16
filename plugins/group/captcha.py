@@ -1,12 +1,12 @@
 import asyncio
 import random
 import time
-from typing import Tuple, Union, Dict, Optional
+from typing import Tuple, Union, Optional, TYPE_CHECKING, List
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember, Message, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember, Message, User
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, CallbackQueryHandler, ChatMemberHandler, filters
+from telegram.ext import CallbackQueryHandler, ChatMemberHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.config import config
@@ -16,6 +16,10 @@ from core.plugin import Plugin, handler
 from core.services.quiz.services import QuizService
 from utils.chatmember import extract_status_change
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram.ext import ContextTypes
+    from telegram import Update
 
 try:
     from pyrogram.errors import BadRequest as MTPBadRequest, FloodWait as MTPFloodWait
@@ -51,39 +55,42 @@ class GroupCaptcha(Plugin):
         self.quiz_service = quiz_service
         self.time_out = 120
         self.kick_time = 120
-        self.lock = asyncio.Lock()
-        self.chat_administrators_cache: Dict[Union[str, int], Tuple[float, Tuple[ChatMember]]] = {}
-        self.is_refresh_quiz = False
         self.mtp = mtp.client
-        self.redis = redis.client
+        self.cache = redis.client
+        self.ttl = 60 * 60
 
     async def initialize(self):
         logger.info("群验证模块正在刷新问题列表")
-        await self.refresh_quiz()
+        await self.quiz_service.refresh_quiz()
         logger.success("群验证模块刷新问题列表成功")
 
-    async def refresh_quiz(self):
-        async with self.lock:
-            if not self.is_refresh_quiz:
-                await self.quiz_service.refresh_quiz()
-                self.is_refresh_quiz = True
+    @staticmethod
+    def mention_markdown(user_id: Union[int, str], version: int = 1) -> str:
+        tg_link = f"tg://user?id={user_id}"
+        if version == 1:
+            return f"[{user_id}]({tg_link})"
+        return f"[{escape_markdown(user_id, version=version)}]({tg_link})"
 
-    async def get_chat_administrators(self, context: CallbackContext, chat_id: Union[str, int]) -> Tuple[ChatMember]:
-        async with self.lock:
-            cache_data = self.chat_administrators_cache.get(f"{chat_id}")
-            if cache_data is not None:
-                cache_time, chat_administrators = cache_data
-                if time.time() >= cache_time + 360:
-                    return chat_administrators
-            chat_administrators = await context.bot.get_chat_administrators(chat_id)
-            self.chat_administrators_cache[f"{chat_id}"] = (time.time(), chat_administrators)
-            return chat_administrators
+    async def get_chat_administrators(
+        self, context: "ContextTypes.DEFAULT_TYPE", chat_id: Union[str, int]
+    ) -> Tuple[ChatMember]:
+        qname = f"plugin:group_captcha:chat_administrators:{chat_id}"
+        result: "List[bytes]" = await self.cache.lrange(qname, 0, -1)
+        if len(result) > 0:
+            return ChatMember.de_list([jsonlib.loads(str(_data, encoding="utf-8")) for _data in result], context.bot)
+        chat_administrators = await context.bot.get_chat_administrators(chat_id)
+        async with self.cache.pipeline(transaction=True) as pipe:
+            for chat_administrator in chat_administrators:
+                await pipe.lpush(qname, chat_administrator.to_json())
+            await pipe.expire(qname, self.ttl)
+            await pipe.execute()
+        return chat_administrators
 
     @staticmethod
     def is_admin(chat_administrators: Tuple[ChatMember], user_id: int) -> bool:
         return any(admin.user.id == user_id for admin in chat_administrators)
 
-    async def kick_member_job(self, context: CallbackContext):
+    async def kick_member_job(self, context: "ContextTypes.DEFAULT_TYPE"):
         job = context.job
         logger.info("踢出用户 user_id[%s] 在 chat_id[%s]", job.user_id, job.chat_id)
         try:
@@ -94,7 +101,7 @@ class GroupCaptcha(Plugin):
             logger.error("GroupCaptcha插件在 chat_id[%s] user_id[%s] 执行kick失败", job.chat_id, job.user_id, exc_info=exc)
 
     @staticmethod
-    async def clean_message_job(context: CallbackContext):
+    async def clean_message_job(context: "ContextTypes.DEFAULT_TYPE"):
         job = context.job
         logger.debug("删除消息 chat_id[%s] 的 message_id[%s]", job.chat_id, job.data)
         try:
@@ -108,27 +115,27 @@ class GroupCaptcha(Plugin):
                 logger.error("GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败", job.chat_id, job.data, exc_info=exc)
 
     @staticmethod
-    async def restore_member(context: CallbackContext, chat_id: int, user_id: int):
+    async def restore_member(context: "ContextTypes.DEFAULT_TYPE", chat_id: int, user_id: int):
         logger.debug("重置用户权限 user_id[%s] 在 chat_id[%s]", chat_id, user_id)
         try:
             await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=FullChatPermissions)
         except BadRequest as exc:
             logger.error("GroupCaptcha插件在 chat_id[%s] user_id[%s] 执行restore失败", chat_id, user_id, exc_info=exc)
 
-    async def get_new_chat_members_message(self, user: User, context: CallbackContext) -> Optional[Message]:
-        qname = f"plugin:auth:new_chat_members_message:{user.id}"
-        result = await self.redis.get(qname)
+    async def get_new_chat_members_message(self, user: User, context: "ContextTypes.DEFAULT_TYPE") -> Optional[Message]:
+        qname = f"plugin:group_captcha:new_chat_members_message:{user.id}"
+        result = await self.cache.get(qname)
         if result:
             data = jsonlib.loads(str(result, encoding="utf-8"))
             return Message.de_json(data, context.bot)
         return None
 
     async def set_new_chat_members_message(self, user: User, message: Message):
-        qname = f"plugin:auth:new_chat_members_message:{user.id}"
-        await self.redis.set(qname, message.to_json(), ex=60)
+        qname = f"plugin:group_captcha:new_chat_members_message:{user.id}"
+        await self.cache.set(qname, message.to_json(), ex=60)
 
     @handler(CallbackQueryHandler, pattern=r"^auth_admin\|", block=False)
-    async def admin(self, update: Update, context: CallbackContext) -> None:
+    async def admin(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         async def admin_callback(callback_query_data: str) -> Tuple[str, int]:
             _data = callback_query_data.split("|")
             _result = _data[1]
@@ -151,31 +158,72 @@ class GroupCaptcha(Plugin):
             member_info = await context.bot.get_chat_member(chat.id, user_id)
         except BadRequest as error:
             logger.warning("获取用户 %s 在群 %s[%s] 信息失败 \n %s", user_id, chat.title, chat.id, error.message)
-            user_info = f"{user_id}"
-        else:
-            user_info = member_info.user.mention_markdown_v2()
+            member_info = f"{user_id}"
 
         if result == "pass":
             await callback_query.answer(text="放行", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
             if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
                 schedule.remove()
-            await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 放行", parse_mode=ParseMode.MARKDOWN_V2)
-            logger.info("用户 %s[%s] 在群 %s[%s] 被管理放行", user.full_name, user.id, chat.title, chat.id)
+            if isinstance(member_info, ChatMember):
+                await message.edit_text(
+                    f"{member_info.user.mention_markdown_v2()} 被本群管理员放行", parse_mode=ParseMode.MARKDOWN_V2
+                )
+                logger.info(
+                    "用户 %s[%s] 在群 %s[%s] 被 %s[%s] 放行",
+                    member_info.user.full_name,
+                    member_info.user.id,
+                    chat.title,
+                    chat.id,
+                    user.full_name,
+                    user.id,
+                )
+                logger.info("用户 %s[%s] 在群 %s[%s] 被管理放行", user.full_name, user.id, chat.title, chat.id)
+            else:
+                await message.edit_text(f"{member_info} 被本群管理员放行", parse_mode=ParseMode.MARKDOWN_V2)
+                logger.info("用户 %s 在群 %s[%s] 被 %s[%s] 管理放行", member_info, chat.title, chat.id, user.full_name, user.id)
         elif result == "kick":
             await callback_query.answer(text="驱离", show_alert=False)
             await context.bot.ban_chat_member(chat.id, user_id)
-            await message.edit_text(f"{user_info} 被 {user.mention_markdown_v2()} 驱离", parse_mode=ParseMode.MARKDOWN_V2)
-            logger.info("用户 %s[%s] 在群 %s[%s] 被管理踢出", user.full_name, user.id, chat.title, chat.id)
+            if isinstance(member_info, ChatMember):
+                await message.edit_text(
+                    f"{self.mention_markdown(member_info.user.id)} 被本群管理员驱离", parse_mode=ParseMode.MARKDOWN_V2
+                )
+                logger.info(
+                    "用户 %s[%s] 在群 %s[%s] 被 %s[%s] 放行",
+                    member_info.user.full_name,
+                    member_info.user.id,
+                    chat.title,
+                    chat.id,
+                    user.full_name,
+                    user.id,
+                )
+                logger.info("用户 %s[%s] 在群 %s[%s] 被管理驱离", user.full_name, user.id, chat.title, chat.id)
+            else:
+                await message.edit_text(f"{member_info} 被本群管理员驱离", parse_mode=ParseMode.MARKDOWN_V2)
+                logger.info("用户 %s 在群 %s[%s] 被 %s[%s] 管理驱离", member_info, chat.title, chat.id, user.full_name, user.id)
         elif result == "unban":
             await callback_query.answer(text="解除驱离", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
             if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
                 schedule.remove()
-            await message.edit_text(
-                f"{user_info} 被 {user.mention_markdown_v2()} 解除驱离", parse_mode=ParseMode.MARKDOWN_V2
-            )
-            logger.info("用户 user_id[%s] 在群 %s[%s] 被管理解除封禁", user_id, chat.title, chat.id)
+            if isinstance(member_info, ChatMember):
+                await message.edit_text(
+                    f"{member_info.user.mention_markdown_v2()} 被本群管理员解除封禁", parse_mode=ParseMode.MARKDOWN_V2
+                )
+                logger.info(
+                    "用户 %s[%s] 在群 %s[%s] 被 %s[%s] 解除封禁",
+                    member_info.user.full_name,
+                    member_info.user.id,
+                    chat.title,
+                    chat.id,
+                    user.full_name,
+                    user.id,
+                )
+                logger.info("用户 %s[%s] 在群 %s[%s] 被管理解除封禁", user.full_name, user.id, chat.title, chat.id)
+            else:
+                await message.edit_text(f"{member_info} 被本群管理员解除封禁", parse_mode=ParseMode.MARKDOWN_V2)
+                logger.info("用户 %s 在群 %s[%s] 被 %s[%s] 管理驱离", member_info, chat.title, chat.id, user.full_name, user.id)
         else:
             logger.warning("auth 模块 admin 函数 发现未知命令 result[%s]", result)
             await context.bot.send_message(chat.id, "派蒙这边收到了错误的消息！请检查详细日记！")
@@ -183,7 +231,7 @@ class GroupCaptcha(Plugin):
             schedule.remove()
 
     @handler(CallbackQueryHandler, pattern=r"^auth_challenge\|", block=False)
-    async def query(self, update: Update, context: CallbackContext) -> None:
+    async def query(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         async def query_callback(callback_query_data: str) -> Tuple[int, bool, str, str]:
             _data = callback_query_data.split("|")
             _user_id = int(_data[1])
@@ -256,7 +304,7 @@ class GroupCaptcha(Plugin):
             schedule.remove()
 
     @handler.message(filters=filters.StatusUpdate.NEW_CHAT_MEMBERS, block=False)
-    async def new_mem(self, update: Update, context: CallbackContext) -> None:
+    async def new_mem(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         chat = message.chat
         if len(config.verify_groups) >= 1:
@@ -274,7 +322,7 @@ class GroupCaptcha(Plugin):
             await self.set_new_chat_members_message(user, message)
 
     @handler.chat_member(chat_member_types=ChatMemberHandler.CHAT_MEMBER, block=False)
-    async def track_users(self, update: Update, context: CallbackContext) -> None:
+    async def track_users(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         chat = update.effective_chat
         if len(config.verify_groups) >= 1:
             for verify_group in config.verify_groups:
