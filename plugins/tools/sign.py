@@ -4,7 +4,7 @@ import random
 import time
 from enum import Enum
 from json import JSONDecodeError
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, TYPE_CHECKING
 
 from aiohttp import ClientConnectorError
 from genshin import Game, GenshinException, AlreadyClaimed, Client, InvalidCookies
@@ -13,7 +13,6 @@ from httpx import AsyncClient, TimeoutException
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest
-from telegram.ext import CallbackContext
 
 from core.config import config
 from core.dependence.redisdb import RedisDB
@@ -25,6 +24,9 @@ from core.services.users.services import UserService
 from modules.apihelper.client.components.verify import Verify
 from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram.ext import ContextTypes
 
 
 class SignJobType(Enum):
@@ -311,7 +313,7 @@ class SignSystem(Plugin):
         )
         return message
 
-    async def do_sign_job(self, context: CallbackContext, job_type: SignJobType):
+    async def do_sign_job(self, context: "ContextTypes.DEFAULT_TYPE", job_type: SignJobType):
         include_status: List[SignStatusEnum] = [
             SignStatusEnum.STATUS_SUCCESS,
             SignStatusEnum.TIMEOUT_ERROR,
@@ -321,6 +323,7 @@ class SignSystem(Plugin):
             title = "自动签到"
         elif job_type == SignJobType.REDO:
             title = "自动重新签到"
+            include_status.remove(SignStatusEnum.STATUS_SUCCESS)
         else:
             raise ValueError
         sign_list = await self.sign_service.get_all()
@@ -344,7 +347,7 @@ class SignSystem(Plugin):
                 text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
             except NeedChallenge:
-                text = "签到失败，触发验证码风控，自动签到自动关闭"
+                text = "签到失败，触发验证码风控"
                 sign_db.status = SignStatusEnum.NEED_CHALLENGE
             except PlayerNotFoundError:
                 logger.info("用户 user_id[%s] 玩家不存在 关闭并移除自动签到", user_id)
