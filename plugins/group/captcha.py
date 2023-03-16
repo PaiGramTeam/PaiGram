@@ -167,7 +167,7 @@ class GroupCaptcha(Plugin):
                 schedule.remove()
             if isinstance(member_info, ChatMember):
                 await message.edit_text(
-                    f"{self.mention_markdown(member_info.user.id)} 被本群管理员放行", parse_mode=ParseMode.MARKDOWN_V2
+                    f"{member_info.user.mention_markdown_v2()} 被本群管理员放行", parse_mode=ParseMode.MARKDOWN_V2
                 )
                 logger.info(
                     "用户 %s[%s] 在群 %s[%s] 被 %s[%s] 放行",
@@ -209,7 +209,7 @@ class GroupCaptcha(Plugin):
                 schedule.remove()
             if isinstance(member_info, ChatMember):
                 await message.edit_text(
-                    f"{self.mention_markdown(member_info.user.id)} 被本群管理员解除封禁", parse_mode=ParseMode.MARKDOWN_V2
+                    f"{member_info.user.mention_markdown_v2()} 被本群管理员解除封禁", parse_mode=ParseMode.MARKDOWN_V2
                 )
                 logger.info(
                     "用户 %s[%s] 在群 %s[%s] 被 %s[%s] 解除封禁",
