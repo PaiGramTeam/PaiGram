@@ -139,7 +139,8 @@ class ErrorHandler(Plugin):
             return
         notice: Optional[str] = None
         if isinstance(context.error, TimedOut):
-            notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
+            # notice = self.ERROR_MSG_PREFIX + " 连接 telegram 服务器超时"
+            logger.error("连接 telegram 服务器超时 [%s]", repr(context.error))
         elif isinstance(context.error, BadRequest):
             if "Replied message not found" in context.error.message:
                 notice = "气死我了！怎么有人喜欢发一个命令就秒删了！"
@@ -173,7 +174,7 @@ class ErrorHandler(Plugin):
         exc = context.error
         notice: Optional[str] = None
         if isinstance(exc, APIHelperTimedOut):
-            notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
+            notice = self.ERROR_MSG_PREFIX + " 服务器熟啦 ~ 请稍后再试"
         elif isinstance(exc, ReturnCodeError):
             notice = self.ERROR_MSG_PREFIX + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
         elif isinstance(exc, ResponseException):
@@ -189,7 +190,7 @@ class ErrorHandler(Plugin):
         exc = context.error
         notice: Optional[str] = None
         if isinstance(exc, TimeoutException):
-            notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
+            notice = self.ERROR_MSG_PREFIX + " 服务器熟啦 ~ 请稍后再试"
             logger.warning("Httpx exception[%s]", str(exc))
         if notice:
             self.create_notice_task(update, context, notice)
@@ -202,9 +203,9 @@ class ErrorHandler(Plugin):
         exc = context.error
         notice: Optional[str] = None
         if isinstance(exc, AioHttpTimeoutException):
-            notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
+            notice = self.ERROR_MSG_PREFIX + " 服务器熟啦 ~ 请稍后再试"
         elif isinstance(exc, ClientConnectorError):
-            notice = self.ERROR_MSG_PREFIX + " 连接连接服务器异常"
+            notice = self.ERROR_MSG_PREFIX + " 连接服务器异常"
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop
