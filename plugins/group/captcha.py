@@ -55,22 +55,14 @@ class GroupCaptcha(Plugin):
         self.quiz_service = quiz_service
         self.time_out = 120
         self.kick_time = 120
-        self.lock = asyncio.Lock()
-        self.is_refresh_quiz = False
         self.mtp = mtp.client
         self.cache = redis.client
         self.ttl = 60 * 60
 
     async def initialize(self):
         logger.info("群验证模块正在刷新问题列表")
-        await self.refresh_quiz()
+        await self.quiz_service.refresh_quiz()
         logger.success("群验证模块刷新问题列表成功")
-
-    async def refresh_quiz(self):
-        async with self.lock:
-            if not self.is_refresh_quiz:
-                await self.quiz_service.refresh_quiz()
-                self.is_refresh_quiz = True
 
     @staticmethod
     def mention_markdown(user_id: Union[int, str], version: int = 1) -> str:
