@@ -3,11 +3,12 @@ from typing import Optional, Tuple
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
+from telegram.ext import CommandHandler, CallbackContext
 from telegram.ext import MessageHandler, filters
 from telegram.helpers import create_deep_linked_url
 
 from core.config import config
+from core.handler.callbackqueryhandler import CallbackQueryHandler
 from core.plugin import Plugin, handler
 from core.services.sign.models import Sign as SignUser, SignStatusEnum
 from core.services.sign.services import SignServices

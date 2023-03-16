@@ -22,12 +22,13 @@ from enkanetwork import (
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.dependence.assets import DEFAULT_EnkaAssets
 from core.dependence.redisdb import RedisDB
+from core.handler.callbackqueryhandler import CallbackQueryHandler
 from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from core.services.template.services import TemplateService

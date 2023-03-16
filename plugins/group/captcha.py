@@ -6,12 +6,13 @@ from typing import Tuple, Union, Optional, TYPE_CHECKING, List
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember, Message, User
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackQueryHandler, ChatMemberHandler, filters
+from telegram.ext import ChatMemberHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.config import config
 from core.dependence.mtproto import MTProto
 from core.dependence.redisdb import RedisDB
+from core.handler.callbackqueryhandler import CallbackQueryHandler
 from core.plugin import Plugin, handler
 from core.services.quiz.services import QuizService
 from utils.chatmember import extract_status_change

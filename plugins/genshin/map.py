@@ -3,10 +3,11 @@ from typing import Union, Optional, List, Tuple
 
 from telegram import Update, Message, InputMediaDocument, InputMediaPhoto, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
+from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
 
 from core.config import config
 from core.dependence.redisdb import RedisDB
+from core.handler.callbackqueryhandler import CallbackQueryHandler
 from core.plugin import handler, Plugin
 from modules.apihelper.client.components.map import MapHelper, MapException
 from utils.log import logger
