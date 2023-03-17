@@ -200,6 +200,9 @@ class PlayerCards(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
         await callback_query.answer(text="正在从 EnkaNetwork 获取角色列表 请不要重复点击按钮")
         data = await self._update_enka_data(uid)
+        if isinstance(data, str):
+            await callback_query.answer(text=data, show_alert=True)
+            return
         buttons = self.gen_button(data, user.id, uid, update_button=False)
         render_data = await self.parse_holder_data(data)
         holder = await self.template_service.render(
