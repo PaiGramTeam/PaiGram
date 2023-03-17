@@ -135,7 +135,10 @@ class PlayerCards(Plugin):
             buttons = self.gen_button(data, user.id, player_info.player_id)
             render_data = await self.parse_holder_data(data)
             holder = await self.template_service.render(
-                "genshin/player_card/holder.html", render_data, viewport={"width": 750, "height": 580}
+                "genshin/player_card/holder.html",
+                render_data,
+                viewport={"width": 750, "height": 580},
+                ttl=60 * 10,
             )
             await holder.reply_photo(
                 message, caption="请选择你要查询的角色，部分角色数据存在缓存，更新可能不及时", reply_markup=InlineKeyboardMarkup(buttons)
