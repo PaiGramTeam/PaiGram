@@ -1,7 +1,12 @@
-import json
 from typing import Dict, Any, Optional, TYPE_CHECKING
 
 from enkanetwork import Cache
+
+try:
+    import ujson as jsonlib
+except ImportError:
+    import json as jsonlib
+
 
 if TYPE_CHECKING:
     from redis import asyncio as aioredis
@@ -23,12 +28,12 @@ class RedisCache(Cache):
         data = await self.redis.get(qname)
         if data:
             json_data = str(data, encoding="utf-8")
-            return json.loads(json_data)
+            return jsonlib.loads(json_data)
         return None
 
     async def set(self, key, value) -> None:
         qname = self.get_qname(key)
-        data = json.dumps(value)
+        data = jsonlib.dumps(value)
         await self.redis.set(qname, data, ex=self.ex)
 
     async def exists(self, key) -> int:

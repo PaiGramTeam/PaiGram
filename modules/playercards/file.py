@@ -3,9 +3,14 @@ from pathlib import Path
 from typing import Optional, Dict, Union
 
 import aiofiles
-import ujson as jsonlib
 
 from utils.const import PROJECT_ROOT
+
+try:
+    import ujson as jsonlib
+except ImportError:
+    import json as jsonlib
+
 
 PLAYER_CARDS_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "player_cards")
 PLAYER_CARDS_PATH.mkdir(parents=True, exist_ok=True)
