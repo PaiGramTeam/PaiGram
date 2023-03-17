@@ -22,7 +22,7 @@ from enkanetwork import (
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.ext import CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.helpers import create_deep_linked_url
 
 from core.config import config
@@ -99,7 +99,7 @@ class PlayerCards(Plugin):
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
-    async def player_cards(self, update: Update, context: CallbackContext) -> None:
+    async def player_cards(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
         message = update.effective_message
         args = self.get_args(context)
@@ -174,7 +174,7 @@ class PlayerCards(Plugin):
         await render_result.reply_photo(message, filename=f"player_card_{player_info.player_id}_{character_name}.png")
 
     @handler(CallbackQueryHandler, pattern=r"^update_player_card\|", block=False)
-    async def update_player_card(self, update: Update, _: CallbackContext) -> None:
+    async def update_player_card(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
         message = update.effective_message
         callback_query = update.callback_query
@@ -215,7 +215,7 @@ class PlayerCards(Plugin):
         await holder.edit_media(message, reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
-    async def get_player_cards(self, update: Update, _: CallbackContext) -> None:
+    async def get_player_cards(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
         message = callback_query.message
