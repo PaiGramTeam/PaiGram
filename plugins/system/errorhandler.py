@@ -83,10 +83,11 @@ class ErrorHandler(Plugin):
         try:
             if update.callback_query:
                 await update.callback_query.answer(content, show_alert=True)
-            reply_text = await message.reply_text(content, reply_markup=buttons, allow_sending_without_reply=True)
-            if filters.ChatType.GROUPS.filter(reply_text):
-                self.add_delete_message_job(reply_text, context=context)
-                self.add_delete_message_job(message, context=context)
+            else:
+                reply_text = await message.reply_text(content, reply_markup=buttons, allow_sending_without_reply=True)
+                if filters.ChatType.GROUPS.filter(reply_text):
+                    self.add_delete_message_job(reply_text, context=context)
+                    self.add_delete_message_job(message, context=context)
         except TelegramError as exc:
             logger.error(self.SEND_MSG_ERROR_NOTICE, update.update_id, exc.message)
         except Exception as exc:
