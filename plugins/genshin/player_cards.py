@@ -47,11 +47,13 @@ except ImportError:
 
 
 class PlayerCards(Plugin):
-    def __init__(self,
-                 player_service: PlayersService,
-                 template_service: TemplateService,
-                 assets_service: AssetsService,
-                 redis: RedisDB):
+    def __init__(
+        self,
+        player_service: PlayersService,
+        template_service: TemplateService,
+        assets_service: AssetsService,
+        redis: RedisDB,
+    ):
         self.player_service = player_service
         self.client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent, cache=False)
         self.cache = RedisCache(redis.client, key="plugin:player_cards:enka_network")
@@ -101,8 +103,7 @@ class PlayerCards(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
         player_info = await self.player_service.get_player(user.id)
         if player_info is None:
-            buttons = [
-                [InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
+            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -111,16 +112,14 @@ class PlayerCards(Plugin):
 
                 self.add_delete_message_job(message, delay=30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号",
-                                         reply_markup=InlineKeyboardMarkup(buttons))
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         data = await self._fetch_user(player_info.player_id)
         if isinstance(data, str):
             await message.reply_text(data)
             return
         if data.characters is None:
-            await message.reply_text(
-                "请在游戏中的角色展柜中添加角色再开启显示角色详情再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
+            await message.reply_text("请在游戏中的角色展柜中添加角色再开启显示角色详情再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
             return
         if len(args) == 1:
             character_name = roleToName(args[0])
@@ -139,17 +138,14 @@ class PlayerCards(Plugin):
                 "genshin/player_card/holder.html", render_data, viewport={"width": 750, "height": 580}
             )
             await holder.reply_photo(
-                message,
-                caption="请选择你要查询的角色，部分角色数据存在缓存，更新可能不及时",
-                reply_markup=InlineKeyboardMarkup(buttons)
+                message, caption="请选择你要查询的角色，部分角色数据存在缓存，更新可能不及时", reply_markup=InlineKeyboardMarkup(buttons)
             )
             return
         for characters in data.characters:
             if characters.name == character_name:
                 break
         else:
-            await message.reply_text(
-                f"角色展柜中未找到 {character_name} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试")
+            await message.reply_text(f"角色展柜中未找到 {character_name} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         render_result = await RenderTemplate(
@@ -183,17 +179,14 @@ class PlayerCards(Plugin):
             page = int(result)
             logger.info("用户 %s[%s] 角色卡片查询命令请求 || page[%s] uid[%s]", user.full_name, user.id, page, uid)
         else:
-            logger.info("用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]", user.full_name, user.id,
-                        result, uid)
+            logger.info("用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]", user.full_name, user.id, result, uid)
         data = await self._fetch_user(uid)
         if isinstance(data, str):
             await message.reply_text(data)
             return
         if data.characters is None:
             await message.delete()
-            await callback_query.answer(
-                "请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试",
-                show_alert=True)
+            await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
             return
         if page:
             buttons = self.gen_button(data, user.id, uid, page)
@@ -205,9 +198,7 @@ class PlayerCards(Plugin):
                 break
         else:
             await message.delete()
-            await callback_query.answer(
-                f"角色展柜中未找到 {result} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试",
-                show_alert=True)
+            await callback_query.answer(f"角色展柜中未找到 {result} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试", show_alert=True)
             return
         await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
@@ -217,10 +208,10 @@ class PlayerCards(Plugin):
 
     @staticmethod
     def gen_button(
-            data: EnkaNetworkResponse,
-            user_id: Union[str, int],
-            uid: int,
-            page: int = 1,
+        data: EnkaNetworkResponse,
+        user_id: Union[str, int],
+        uid: int,
+        page: int = 1,
     ) -> List[List[InlineKeyboardButton]]:
         """生成按钮"""
         buttons = [
@@ -231,8 +222,8 @@ class PlayerCards(Plugin):
             for value in data.characters
             if value.name
         ]
-        all_buttons = [buttons[i: i + 4] for i in range(0, len(buttons), 4)]
-        send_buttons = all_buttons[(page - 1) * 3: page * 3]
+        all_buttons = [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
+        send_buttons = all_buttons[(page - 1) * 3 : page * 3]
         last_page = page - 1 if page > 1 else 0
         all_page = math.ceil(len(all_buttons) / 3)
         next_page = page + 1 if page < all_page and all_page > 1 else 0
@@ -268,13 +259,15 @@ class PlayerCards(Plugin):
         """
         characters_data = []
         for idx, character in enumerate(data.characters):
-            characters_data.append({
-                "level": character.level,
-                "element": character.element.name,
-                "constellation": character.constellations_unlocked,
-                "rarity": character.rarity,
-                "icon": (await self.assets_service.avatar(character.id).icon()).as_uri(),
-            })
+            characters_data.append(
+                {
+                    "level": character.level,
+                    "element": character.element.name,
+                    "constellation": character.constellations_unlocked,
+                    "rarity": character.rarity,
+                    "icon": (await self.assets_service.avatar(character.id).icon()).as_uri(),
+                }
+            )
             if idx > 6:
                 break
         return {
@@ -305,15 +298,15 @@ class Artifact(BaseModel):
         self.score = round(self.score, 1)
 
         for r in (
-                ("D", 10),
-                ("C", 16.5),
-                ("B", 23.1),
-                ("A", 29.7),
-                ("S", 36.3),
-                ("SS", 42.9),
-                ("SSS", 49.5),
-                ("ACE", 56.1),
-                ("ACE²", 66),
+            ("D", 10),
+            ("C", 16.5),
+            ("B", 23.1),
+            ("A", 29.7),
+            ("S", 36.3),
+            ("SS", 42.9),
+            ("SSS", 49.5),
+            ("ACE", 56.1),
+            ("ACE²", 66),
         ):
             if self.score >= r[1]:
                 self.score_label = r[0]
@@ -353,15 +346,15 @@ class RenderTemplate:
 
         artifact_total_score_label: str = "E"
         for r in (
-                ("D", 10),
-                ("C", 16.5),
-                ("B", 23.1),
-                ("A", 29.7),
-                ("S", 36.3),
-                ("SS", 42.9),
-                ("SSS", 49.5),
-                ("ACE", 56.1),
-                ("ACE²", 66),
+            ("D", 10),
+            ("C", 16.5),
+            ("B", 23.1),
+            ("A", 29.7),
+            ("S", 36.3),
+            ("SS", 42.9),
+            ("SSS", 49.5),
+            ("ACE", 56.1),
+            ("ACE²", 66),
         ):
             if artifact_total_score / 5 >= r[1]:
                 artifact_total_score_label = r[0]
