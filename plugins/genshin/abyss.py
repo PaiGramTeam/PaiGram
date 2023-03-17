@@ -31,7 +31,7 @@ except ImportError:
 
 
 TZ = timezone("Asia/Shanghai")
-cmd_pattern = r"^/abyss\s*((?:\d+)|(?:all))?\s*(pre)?"
+cmd_pattern = r"(?i)^/abyss\s*((?:\d+)|(?:all))?\s*(pre)?"
 msg_pattern = r"^深渊数据((?:查询)|(?:总览))(上期)?\D?(\d*)?.*?$"
 
 regex_01 = r"['\"]icon['\"]:\s*['\"](.*?)['\"]"
