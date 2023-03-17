@@ -67,7 +67,7 @@ class AvatarListPlugin(Plugin):
         self.assets_service = assets_service
         self.template_service = template_service
         self.enka_client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent)
-        self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ttl=60 * 60 * 3))
+        self.enka_client.set_cache(RedisCache(redis.client, key="plugin:avatar_list:enka_network", ex=60 * 60 * 3))
         self.enka_assets = EnkaAssets(lang="chs")
         self.helper = helper
         self.character_details = character_details

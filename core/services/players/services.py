@@ -63,7 +63,7 @@ class PlayerInfoService(BaseService):
         self.cache = redis.client
         self._players_info_repository = players_info_repository
         self.enka_client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent)
-        self.enka_client.set_cache(RedisCache(redis.client, key="players_info:enka_network", ttl=60))
+        self.enka_client.set_cache(RedisCache(redis.client, key="players_info:enka_network", ex=60))
         self.qname = "players_info"
 
     async def get_form_cache(self, player: Player):
@@ -101,7 +101,7 @@ class PlayerInfoService(BaseService):
             player_info_enka = await self.get_player_info_from_enka(player.player_id)
             if player_info_enka is None:
                 return None
-            player_info = PlayerInfo(
+            player_info = PlayerInfoSQLModel(
                 user_id=player.user_id,
                 player_id=player.player_id,
                 nickname=player_info_enka.nickname,
@@ -112,7 +112,7 @@ class PlayerInfoService(BaseService):
                 last_save_time=datetime.now(),
                 is_update=True,
             )
-            await self._players_info_repository.add(PlayerInfoSQLModel.from_orm(player_info))
+            await self._players_info_repository.add(player_info)
             await self.set_form_cache(player_info)
             return player_info
         if player_info.is_update:

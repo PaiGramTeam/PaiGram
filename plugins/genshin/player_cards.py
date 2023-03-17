@@ -56,12 +56,13 @@ class PlayerCards(Plugin):
     ):
         self.player_service = player_service
         self.client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent, cache=False)
-        self.cache = RedisCache(redis.client, key="plugin:player_cards:enka_network")
+        self.cache = RedisCache(redis.client, key="plugin:player_cards:enka_network", ex=60)
         self.player_cards_file = PlayerCardsFile()
         self.assets_service = assets_service
         self.template_service = template_service
+        self.kitsune: Optional[str] = None
 
-    async def _fetch_user(self, uid) -> Union[EnkaNetworkResponse, str]:
+    async def _update_enka_data(self, uid) -> Union[EnkaNetworkResponse, str]:
         try:
             data = await self.cache.get(uid)
             if data is not None:
@@ -88,11 +89,13 @@ class PlayerCards(Plugin):
             error = "未找到玩家，请检查您的UID/用户名"
         except HTTPException:
             error = "Enka.Network HTTP 服务请求错误，请稍后重试"
-        old_data = await self.player_cards_file.load_history_info(uid)
-        if old_data is not None:
-            logger.warning("UID %s | 角色卡片使用历史数据 | %s", uid, error)
-            return EnkaNetworkResponse.parse_obj(old_data)
         return error
+
+    async def _load_history(self, uid) -> Optional[EnkaNetworkResponse]:
+        data = await self.player_cards_file.load_history_info(uid)
+        if data is None:
+            return None
+        return EnkaNetworkResponse.parse_obj(data)
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
@@ -114,12 +117,25 @@ class PlayerCards(Plugin):
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
-        data = await self._fetch_user(player_info.player_id)
-        if isinstance(data, str):
-            await message.reply_text(data)
-            return
-        if data.characters is None:
-            await message.reply_text("请在游戏中的角色展柜中添加角色再开启显示角色详情再使用此功能，如果已经添加了角色，请等待角色数据更新后重试")
+        data = await self._load_history(player_info.player_id)
+        if data is None:
+            if isinstance(self.kitsune, str):
+                photo = self.kitsune
+            else:
+                photo = open("resources/img/kitsune.png", "rb")
+            buttons = [
+                [
+                    InlineKeyboardButton(
+                        "更新面板",
+                        callback_data=f"update_player_card|{user.id}|{player_info.player_id}",
+                    )
+                ]
+            ]
+            reply_message = await message.reply_photo(
+                photo=photo, caption="角色列表未找到，请尝试点击下方从 EnkaNetwork 更新角色列表", reply_markup=InlineKeyboardMarkup(buttons)
+            )
+            if reply_message.photo:
+                self.kitsune = reply_message.photo[-1].file_id
             return
         if len(args) == 1:
             character_name = roleToName(args[0])
@@ -132,17 +148,18 @@ class PlayerCards(Plugin):
             )
         else:
             logger.info("用户 %s[%s] 角色卡片查询命令请求", user.full_name, user.id)
-            buttons = self.gen_button(data, user.id, player_info.player_id)
-            render_data = await self.parse_holder_data(data)
-            holder = await self.template_service.render(
-                "genshin/player_card/holder.html",
-                render_data,
-                viewport={"width": 750, "height": 580},
-                ttl=60 * 10,
+            ttl = await self.cache.ttl(player_info.player_id)
+
+            buttons = self.gen_button(data, user.id, player_info.player_id, update_button=ttl < 0)
+            if isinstance(self.kitsune, str):
+                photo = self.kitsune
+            else:
+                photo = open("resources/img/kitsune.png", "rb")
+            reply_message = await message.reply_photo(
+                photo=photo, caption="请选择你要查询的角色", reply_markup=InlineKeyboardMarkup(buttons)
             )
-            await holder.reply_photo(
-                message, caption="请选择你要查询的角色，部分角色数据存在缓存，更新可能不及时", reply_markup=InlineKeyboardMarkup(buttons)
-            )
+            if reply_message.photo:
+                self.kitsune = reply_message.photo[-1].file_id
             return
         for characters in data.characters:
             if characters.name == character_name:
@@ -155,6 +172,44 @@ class PlayerCards(Plugin):
             player_info.player_id, characters, self.template_service
         ).render()  # pylint: disable=W0631
         await render_result.reply_photo(message, filename=f"player_card_{player_info.player_id}_{character_name}.png")
+
+    @handler(CallbackQueryHandler, pattern=r"^update_player_card\|", block=False)
+    async def update_player_card(self, update: Update, _: CallbackContext) -> None:
+        user = update.effective_user
+        message = update.effective_message
+        callback_query = update.callback_query
+
+        async def get_player_card_callback(callback_query_data: str) -> Tuple[int, int]:
+            _data = callback_query_data.split("|")
+            _user_id = int(_data[1])
+            _uid = int(_data[2])
+            logger.debug("callback_query_data函数返回 user_id[%s] uid[%s]", _user_id, _uid)
+            return _user_id, _uid
+
+        user_id, uid = await get_player_card_callback(callback_query.data)
+        if user.id != user_id:
+            await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
+            return
+
+        ttl = await self.cache.ttl(uid)
+
+        if ttl > 0:
+            await callback_query.answer(text=f"请等待 {ttl} 秒后再更新", show_alert=True)
+            return
+
+        await message.reply_chat_action(ChatAction.TYPING)
+        await callback_query.answer(text="正在从 EnkaNetwork 获取角色列表 请不要重复点击按钮")
+        data = await self._update_enka_data(uid)
+        buttons = self.gen_button(data, user.id, uid, update_button=False)
+        render_data = await self.parse_holder_data(data)
+        holder = await self.template_service.render(
+            "genshin/player_card/holder.html",
+            render_data,
+            viewport={"width": 750, "height": 580},
+            ttl=60 * 10,
+            caption="更新角色列表成功，请选择你要查询的角色",
+        )
+        await holder.edit_media(message, reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
     async def get_player_cards(self, update: Update, _: CallbackContext) -> None:
@@ -183,7 +238,7 @@ class PlayerCards(Plugin):
             logger.info("用户 %s[%s] 角色卡片查询命令请求 || page[%s] uid[%s]", user.full_name, user.id, page, uid)
         else:
             logger.info("用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]", user.full_name, user.id, result, uid)
-        data = await self._fetch_user(uid)
+        data = await self._load_history(uid)
         if isinstance(data, str):
             await message.reply_text(data)
             return
@@ -215,6 +270,7 @@ class PlayerCards(Plugin):
         user_id: Union[str, int],
         uid: int,
         page: int = 1,
+        update_button: bool = True,
     ) -> List[List[InlineKeyboardButton]]:
         """生成按钮"""
         buttons = [
@@ -243,6 +299,13 @@ class PlayerCards(Plugin):
                 InlineKeyboardButton(
                     f"{page}/{all_page}",
                     callback_data=f"get_player_card|{user_id}|{uid}|empty_data",
+                )
+            )
+        if update_button:
+            last_button.append(
+                InlineKeyboardButton(
+                    "更新面板",
+                    callback_data=f"update_player_card|{user_id}|{uid}",
                 )
             )
         if next_page:
