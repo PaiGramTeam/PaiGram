@@ -281,7 +281,14 @@ class GenshinHelper(Plugin):
         else:
             raise TypeError("Region is not None")
 
-        client = genshin.Client(cookies, lang="zh-cn", game=genshin.types.Game.GENSHIN, region=game_region, uid=uid)
+        client = genshin.Client(
+            cookies,
+            lang="zh-cn",
+            game=genshin.types.Game.GENSHIN,
+            region=game_region,
+            uid=uid,
+            hoyolab_id=player.account_id,
+        )
 
         if self.genshin_cache is not None:
             client.cache = self.genshin_cache
