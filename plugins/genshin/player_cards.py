@@ -1,14 +1,12 @@
 import math
-from typing import Any, List, Tuple, Union, Optional
+from typing import Any, List, Tuple, Union, Optional, TYPE_CHECKING
 
 from enkanetwork import (
-    CharacterInfo,
     DigitType,
     EnkaNetworkAPI,
     EnkaNetworkResponse,
     EnkaServerError,
     Equipments,
-    EquipmentsStats,
     EquipmentsType,
     HTTPException,
     Stats,
@@ -22,7 +20,7 @@ from enkanetwork import (
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import CommandHandler, MessageHandler, filters
 from telegram.helpers import create_deep_linked_url
 
 from core.config import config
@@ -39,6 +37,11 @@ from utils.enkanetwork import RedisCache
 from utils.helpers import download_resource
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
+
+if TYPE_CHECKING:
+    from enkanetwork import CharacterInfo, EquipmentsStats
+    from telegram.ext import ContextTypes
+    from telegram import Update
 
 try:
     import ujson as jsonlib
@@ -99,7 +102,7 @@ class PlayerCards(Plugin):
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
-    async def player_cards(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def player_cards(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user = update.effective_user
         message = update.effective_message
         args = self.get_args(context)
@@ -189,7 +192,7 @@ class PlayerCards(Plugin):
         )
 
     @handler(CallbackQueryHandler, pattern=r"^update_player_card\|", block=False)
-    async def update_player_card(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def update_player_card(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         user = update.effective_user
         message = update.effective_message
         callback_query = update.callback_query
@@ -230,7 +233,7 @@ class PlayerCards(Plugin):
         await holder.edit_media(message, reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
-    async def get_player_cards(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def get_player_cards(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
         message = callback_query.message
@@ -435,7 +438,7 @@ class RenderTemplate:
     def __init__(
         self,
         uid: Union[int, str],
-        character: CharacterInfo,
+        character: "CharacterInfo",
         template_service: TemplateService = None,
     ):
         self.uid = uid
@@ -579,7 +582,7 @@ class RenderTemplate:
 
         stats = ArtifactStatsTheory(self.character.name)
 
-        def substat_score(s: EquipmentsStats) -> float:
+        def substat_score(s: "EquipmentsStats") -> float:
             return stats.theory(s)
 
         return [
