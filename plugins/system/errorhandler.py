@@ -141,6 +141,7 @@ class ErrorHandler(Plugin):
         if isinstance(context.error, TimedOut):
             # notice = self.ERROR_MSG_PREFIX + " 连接 telegram 服务器超时"
             logger.error("连接 telegram 服务器超时 [%s]", repr(context.error))
+            raise ApplicationHandlerStop
         elif isinstance(context.error, BadRequest):
             if "Replied message not found" in context.error.message:
                 notice = "气死我了！怎么有人喜欢发一个命令就秒删了！"
