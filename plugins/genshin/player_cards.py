@@ -18,7 +18,7 @@ from enkanetwork import (
     EnkaPlayerNotFound,
 )
 from pydantic import BaseModel
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CommandHandler, MessageHandler, filters
 from telegram.helpers import create_deep_linked_url
