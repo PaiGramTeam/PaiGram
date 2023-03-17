@@ -132,7 +132,7 @@ class PlayerCards(Plugin):
                 ]
             ]
             reply_message = await message.reply_photo(
-                photo=photo, caption="角色列表未找到，请尝试点击下方从 EnkaNetwork 更新角色列表", reply_markup=InlineKeyboardMarkup(buttons)
+                photo=photo, caption="角色列表未找到，请尝试点击下方按钮从 EnkaNetwork 更新角色列表", reply_markup=InlineKeyboardMarkup(buttons)
             )
             if reply_message.photo:
                 self.kitsune = reply_message.photo[-1].file_id
