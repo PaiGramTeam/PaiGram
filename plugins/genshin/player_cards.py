@@ -55,12 +55,8 @@ class PlayerCards(Plugin):
         redis: RedisDB,
     ):
         self.player_service = player_service
-        self.client = EnkaNetworkAPI(
-            lang="chs", user_agent=config.enka_network_api_agent, cache=False
-        )
-        self.cache = RedisCache(
-            redis.client, key="plugin:player_cards:enka_network", ex=60
-        )
+        self.client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent, cache=False)
+        self.cache = RedisCache(redis.client, key="plugin:player_cards:enka_network", ex=60)
         self.player_cards_file = PlayerCardsFile()
         self.assets_service = assets_service
         self.template_service = template_service
@@ -103,9 +99,7 @@ class PlayerCards(Plugin):
 
     @handler(CommandHandler, command="player_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
-    async def player_cards(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def player_cards(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
         message = update.effective_message
         args = self.get_args(context)
@@ -129,9 +123,7 @@ class PlayerCards(Plugin):
 
                 self.add_delete_message_job(message, delay=30)
             else:
-                await message.reply_text(
-                    "未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
-                )
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         data = await self._load_history(player_info.player_id)
         if data is None:
@@ -168,9 +160,7 @@ class PlayerCards(Plugin):
             logger.info("用户 %s[%s] 角色卡片查询命令请求", user.full_name, user.id)
             ttl = await self.cache.ttl(player_info.player_id)
 
-            buttons = self.gen_button(
-                data, user.id, player_info.player_id, update_button=ttl < 0
-            )
+            buttons = self.gen_button(data, user.id, player_info.player_id, update_button=ttl < 0)
             if isinstance(self.kitsune, str):
                 photo = self.kitsune
             else:
@@ -187,9 +177,7 @@ class PlayerCards(Plugin):
             if characters.name == character_name:
                 break
         else:
-            await message.reply_text(
-                f"角色展柜中未找到 {character_name} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试"
-            )
+            await message.reply_text(f"角色展柜中未找到 {character_name} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         render_result = await RenderTemplate(
@@ -201,9 +189,7 @@ class PlayerCards(Plugin):
         )
 
     @handler(CallbackQueryHandler, pattern=r"^update_player_card\|", block=False)
-    async def update_player_card(
-        self, update: Update, _: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def update_player_card(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
         message = update.effective_message
         callback_query = update.callback_query
@@ -217,9 +203,7 @@ class PlayerCards(Plugin):
 
         user_id, uid = await get_player_card_callback(callback_query.data)
         if user.id != user_id:
-            await callback_query.answer(
-                text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True
-            )
+            await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
 
         ttl = await self.cache.ttl(uid)
@@ -246,9 +230,7 @@ class PlayerCards(Plugin):
         await holder.edit_media(message, reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
-    async def get_player_cards(
-        self, update: Update, _: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def get_player_cards(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
         message = callback_query.message
@@ -270,9 +252,7 @@ class PlayerCards(Plugin):
 
         result, user_id, uid = await get_player_card_callback(callback_query.data)
         if user.id != user_id:
-            await callback_query.answer(
-                text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True
-            )
+            await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
         if result == "empty_data":
             await callback_query.answer(text="此按钮不可用", show_alert=True)
@@ -301,14 +281,10 @@ class PlayerCards(Plugin):
             return
         if data.characters is None:
             await message.delete()
-            await callback_query.answer(
-                "请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True
-            )
+            await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
             return
         if page:
-            buttons = self.gen_button(
-                data, user.id, uid, page, not (await self.cache.ttl(uid) > 0)
-            )
+            buttons = self.gen_button(data, user.id, uid, page, not (await self.cache.ttl(uid) > 0))
             await message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
             await callback_query.answer(f"已切换到第 {page} 页", show_alert=False)
             return
@@ -317,15 +293,11 @@ class PlayerCards(Plugin):
                 break
         else:
             await message.delete()
-            await callback_query.answer(
-                f"角色展柜中未找到 {result} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试", show_alert=True
-            )
+            await callback_query.answer(f"角色展柜中未找到 {result} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试", show_alert=True)
             return
         await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        render_result = await RenderTemplate(
-            uid, characters, self.template_service
-        ).render()  # pylint: disable=W0631
+        render_result = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
         render_result.filename = f"player_card_{uid}_{result}.png"
         await render_result.edit_media(message)
 
@@ -396,9 +368,7 @@ class PlayerCards(Plugin):
                     "element": character.element.name,
                     "constellation": character.constellations_unlocked,
                     "rarity": character.rarity,
-                    "icon": (
-                        await self.assets_service.avatar(character.id).icon()
-                    ).as_uri(),
+                    "icon": (await self.assets_service.avatar(character.id).icon()).as_uri(),
                 }
             )
             if idx > 6:
@@ -507,9 +477,7 @@ class RenderTemplate:
             # 圣遗物评级
             "artifact_total_score_label": artifact_total_score_label,
             # 圣遗物评级颜色
-            "artifact_total_score_class": Artifact.get_score_class(
-                artifact_total_score_label
-            ),
+            "artifact_total_score_class": Artifact.get_score_class(artifact_total_score_label),
             "artifacts": artifacts,
             # 需要在模板中使用的 enum 类型
             "DigitType": DigitType,
@@ -565,11 +533,7 @@ class RenderTemplate:
                 pass
             elif stat[1].id != 26:  # 治疗加成
                 continue
-            value = (
-                stat[1].to_rounded()
-                if isinstance(stat[1], Stats)
-                else stat[1].to_percentage_symbol()
-            )
+            value = stat[1].to_rounded() if isinstance(stat[1], Stats) else stat[1].to_percentage_symbol()
             if value in ("0%", 0):
                 continue
             name = DEFAULT_EnkaAssets.get_hash_map(stat[0])
