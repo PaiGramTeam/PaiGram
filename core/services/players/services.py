@@ -180,5 +180,5 @@ class PlayerInfoService(BaseService):
     async def add(self, player_info: PlayerInfo):
         await self._players_info_repository.add(PlayerInfoSQLModel.from_orm(player_info))
 
-    async def delete(self, player_info: PlayerInfo):
-        await self._players_info_repository.delete(PlayerInfoSQLModel.from_orm(player_info))
+    async def delete(self, player_info: PlayerInfoSQLModel):
+        await self._players_info_repository.delete(player_info)
