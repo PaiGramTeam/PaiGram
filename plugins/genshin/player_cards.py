@@ -284,7 +284,7 @@ class PlayerCards(Plugin):
             await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
             return
         if page:
-            buttons = self.gen_button(data, user.id, uid, page, not (await self.cache.ttl(uid) > 0))
+            buttons = self.gen_button(data, user.id, uid, page, not await self.cache.ttl(uid) > 0)
             await message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
             await callback_query.answer(f"已切换到第 {page} 页", show_alert=False)
             return
