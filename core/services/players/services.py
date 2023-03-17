@@ -63,7 +63,7 @@ class PlayerInfoService(BaseService):
         self.cache = redis.client
         self._players_info_repository = players_info_repository
         self.enka_client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent)
-        self.enka_client.set_cache(RedisCache(redis.client, key="players_info:enka_network", ttl=60))
+        self.enka_client.set_cache(RedisCache(redis.client, key="players_info:enka_network", ex=60))
         self.qname = "players_info"
 
     async def get_form_cache(self, player: Player):

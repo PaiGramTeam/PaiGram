@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-ch">
+<head>
+    <meta charset="UTF-8">
+    <title>holder</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="overview">
+        <div class="title">角色展柜</div>
+        <div class="summarize">
+            <div>
+                <div>UID: {{ uid }}</div>
+                <div>冒险等阶： {{ level }} 级</div>
+            </div>
+            <div>
+                <div>签名: {{ signature }}</div>
+            </div>
+        </div>
+        <div class="characters">
+            {% for character in characters %}
+            <div class="character">
+                {% if character.constellation > 0 %}
+                    {% set bg = ['blue','blue', 'green','green', 'red', 'red'][character.constellation - 1] %}
+                    <div style="background-color: var(--{{ bg }})">{{ character.constellation }} 命</div>
+                {% endif %}
+                <div class="element" style="background-image: url('../../img/element/{{ character.element }}.png')"></div>
+                <div class="icon" style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
+                    <img src="{{ character.icon }}" alt=""/>
+                </div>
+                <div class="caption">Lv.{{ character.level }}</div>
+            </div>
+            {% endfor %}
+
+    </div>
+    </div>
+</body>
+</html>
