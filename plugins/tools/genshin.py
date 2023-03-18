@@ -116,6 +116,9 @@ class CharacterDetails(Plugin):
                     logger.warning("非法Key %s", key)
                     continue
                 data = await self.redis.get(key)
+                if data is None:
+                    logger.warning("Redis key[%s] 数据未找到", key)  # 如果未找到可能因为处理过程中已经过期，导致该数据未回写到 MySQL
+                    continue
                 str_data = str(data, encoding="utf-8")
                 async with AsyncSession(self.mysql.engine) as session:
                     statement = (
