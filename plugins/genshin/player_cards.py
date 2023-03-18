@@ -221,6 +221,10 @@ class PlayerCards(Plugin):
         if isinstance(data, str):
             await callback_query.answer(text=data, show_alert=True)
             return
+        if data.characters is None:
+            await message.delete()
+            await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
+            return
         buttons = self.gen_button(data, user.id, uid, update_button=False)
         render_data = await self.parse_holder_data(data)
         holder = await self.template_service.render(
@@ -313,14 +317,16 @@ class PlayerCards(Plugin):
         update_button: bool = True,
     ) -> List[List[InlineKeyboardButton]]:
         """生成按钮"""
-        buttons = [
-            InlineKeyboardButton(
-                value.name,
-                callback_data=f"get_player_card|{user_id}|{uid}|{value.name}",
-            )
-            for value in data.characters
-            if value.name
-        ]
+        buttons = []
+        if data.characters:
+            buttons = [
+                InlineKeyboardButton(
+                    value.name,
+                    callback_data=f"get_player_card|{user_id}|{uid}|{value.name}",
+                )
+                for value in data.characters
+                if value.name
+            ]
         all_buttons = [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
         send_buttons = all_buttons[(page - 1) * 3 : page * 3]
         last_page = page - 1 if page > 1 else 0
