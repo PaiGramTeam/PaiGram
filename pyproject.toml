@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-httpx= "^0.23.3"
+httpx = "^0.23.3"
 ujson = "^5.7.0"
 genshin = { git = "https://github.com/thesadru/genshin.py" }
 Jinja2 = "^3.1.2"
@@ -33,7 +33,7 @@ flaky = { version = "^3.7.0", optional = true }
 lxml = "^4.9.2"
 arko-wrapper = "^0.2.8"
 fastapi = "^0.94.0"
-uvicorn = {extras = ["standard"], version = "^0.21.1"}
+uvicorn = { extras = ["standard"], version = "^0.21.1" }
 sentry-sdk = "^1.17.0"
 GitPython = "^3.1.30"
 openpyxl = "^3.1.1"
@@ -65,4 +65,4 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 [tool.black]
 include = '\.pyi?$'
 line-length = 120
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py311']
