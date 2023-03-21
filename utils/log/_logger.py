@@ -14,9 +14,9 @@ from utils.log._handler import FileHandler, Handler
 from utils.typedefs import LogFilterType
 
 if TYPE_CHECKING:
-    from logging import LogRecord  # pylint: disable=unused-import
+    from logging import LogRecord
 
-    from utils.log._config import LoggerConfig  # pylint: disable=unused-import
+    from utils.log._config import LoggerConfig
 
 __all__ = ("Logger", "LogFilter")
 

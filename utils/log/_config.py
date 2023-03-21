@@ -22,7 +22,7 @@ class LoggerConfig(BaseSettings):
                 cls._instance = result
         return cls._instance
 
-    name: str = "paimon-logger"
+    name: str = "PaiGram-logger"
     """logger 名称"""
     level: Optional[Union[str, int]] = None
     """logger 的 level"""

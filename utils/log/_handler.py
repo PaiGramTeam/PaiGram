@@ -31,11 +31,11 @@ except ImportError:
     from json import JSONDecodeError
 
 if TYPE_CHECKING:
-    from rich.console import (  # pylint: disable=unused-import
+    from rich.console import (
         ConsoleRenderable,
         RenderableType,
     )
-    from logging import LogRecord  # pylint: disable=unused-import
+    from logging import LogRecord
 
 __all__ = ["LogRender", "Handler", "FileHandler"]
 

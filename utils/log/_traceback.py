@@ -25,7 +25,7 @@ from rich.traceback import (
 from utils.log._style import MonokaiProStyle
 
 if TYPE_CHECKING:
-    from rich.console import ConsoleRenderable  # pylint: disable=W0611
+    from rich.console import ConsoleRenderable
 
 __all__ = ("render_scope", "Traceback")
 
