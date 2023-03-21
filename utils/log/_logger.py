@@ -6,7 +6,7 @@ import traceback as traceback_
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Callable, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Callable, List, Mapping, Optional, TYPE_CHECKING, Tuple, Type, Union
 
 from typing_extensions import Self
 
@@ -52,40 +52,25 @@ class Logger(logging.Logger):  # skipcq: PY-A6006
         )
 
         log_path = Path(self.config.project_root).joinpath(self.config.log_path)
+        handler_config = {
+            "width": self.config.width,
+            "keywords": self.config.keywords,
+            "locals_max_length": self.config.traceback_locals_max_length,
+            "locals_max_string": self.config.traceback_locals_max_string,
+            "project_root": self.config.project_root,
+            "log_time_format": self.config.time_format,
+        }
         handler, debug_handler, error_handler = (
             # 控制台 log 配置
-            Handler(
-                width=self.config.width,
-                keywords=self.config.keywords,
-                locals_max_length=self.config.traceback_locals_max_length,
-                locals_max_string=self.config.traceback_locals_max_string,
-                locals_max_depth=self.config.traceback_locals_max_depth,
-                project_root=self.config.project_root,
-                log_time_format=self.config.time_format,
-            ),
+            Handler(color_system=self.config.color_system, **handler_config),
             # debug.log 配置
-            FileHandler(
-                width=self.config.width,
-                keywords=self.config.keywords,
-                level=10,
-                path=log_path.joinpath("debug/debug.log"),
-                locals_max_depth=1,
-                locals_max_length=self.config.traceback_locals_max_length,
-                locals_max_string=self.config.traceback_locals_max_string,
-                project_root=self.config.project_root,
-                log_time_format=self.config.time_format,
-            ),
+            FileHandler(level=10, path=log_path.joinpath("debug/debug.log"), locals_max_depth=1, **handler_config),
             # error.log 配置
             FileHandler(
-                width=self.config.width,
-                keywords=self.config.keywords,
                 level=40,
                 path=log_path.joinpath("error/error.log"),
-                locals_max_length=self.config.traceback_locals_max_length,
-                locals_max_string=self.config.traceback_locals_max_string,
                 locals_max_depth=self.config.traceback_locals_max_depth,
-                project_root=self.config.project_root,
-                log_time_format=self.config.time_format,
+                **handler_config,
             ),
         )
         logging.basicConfig(

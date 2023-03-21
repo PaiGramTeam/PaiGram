@@ -1,9 +1,17 @@
 import logging
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Literal, Optional, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 
 from rich.console import Console
 from rich.logging import LogRender as DefaultLogRender, RichHandler as DefaultRichHandler
@@ -15,22 +23,26 @@ from utils.log._file import FileIO
 from utils.log._style import DEFAULT_STYLE
 from utils.log._traceback import Traceback
 
+try:
+    import ujson as json
+    from ujson import JSONDecodeError
+except ImportError:
+    import json
+    from json import JSONDecodeError
+
 if TYPE_CHECKING:
+    from rich.console import (  # pylint: disable=unused-import
+        ConsoleRenderable,
+        RenderableType,
+    )
     from logging import LogRecord  # pylint: disable=unused-import
 
-    from rich.console import ConsoleRenderable, RenderableType  # pylint: disable=unused-import
-
-__all__ = ("LogRender", "Handler", "FileHandler")
+__all__ = ["LogRender", "Handler", "FileHandler"]
 
 FormatTimeCallable = Callable[[datetime], Text]
 
 logging.addLevelName(5, "TRACE")
 logging.addLevelName(25, "SUCCESS")
-color_system: Literal["windows", "truecolor"]
-if sys.platform == "win32":
-    color_system = "windows"
-else:
-    color_system = "truecolor"
 
 
 class LogRender(DefaultLogRender):
@@ -108,7 +120,9 @@ class Handler(DefaultRichHandler):
         tracebacks_max_frames: int = 100,
         keywords: Optional[List[str]] = None,
         log_time_format: Union[str, FormatTimeCallable] = "[%x %X]",
-        project_root: Union[str, Path] = "./logs",
+        color_system: Literal["auto", "standard", "256", "truecolor", "windows"] = "auto",
+        project_root: Union[str, Path] = os.getcwd(),
+        auto_load_json: bool = False,
         **kwargs,
     ) -> None:
         super(Handler, self).__init__(*args, rich_tracebacks=rich_tracebacks, **kwargs)
@@ -116,9 +130,10 @@ class Handler(DefaultRichHandler):
         self.console = Console(color_system=color_system, theme=Theme(DEFAULT_STYLE), width=width)
         self.tracebacks_show_locals = True
         self.tracebacks_max_frames = tracebacks_max_frames
-        self.keywords = self.KEYWORDS + (keywords or [])
+        self.render_keywords = self.KEYWORDS + (keywords or [])
         self.locals_max_depth = locals_max_depth
         self.project_root = project_root
+        self.auto_load_json = auto_load_json
 
     def render(
         self,
@@ -153,15 +168,13 @@ class Handler(DefaultRichHandler):
         log_time = datetime.fromtimestamp(record.created)
 
         if not traceback:
-            traceback_content = [message_renderable]
-        elif message_renderable is not None:
-            traceback_content = [message_renderable, traceback]
+            renderables = [message_renderable]
         else:
-            traceback_content = [traceback]
+            renderables = [message_renderable, traceback] if message_renderable is not None else [traceback]
 
         log_renderable = self._log_render(
             self.console,
-            traceback_content,
+            renderables,
             log_time=log_time,
             time_format=time_format,
             level=_level,
@@ -177,10 +190,8 @@ class Handler(DefaultRichHandler):
         message: Any,
     ) -> "ConsoleRenderable":
         use_markup = getattr(record, "markup", self.markup)
-        tag = getattr(record, "tag", None)
         if isinstance(message, str):
             message_text = Text.from_markup(message) if use_markup else Text(message)
-            message_text = (Text.from_markup(f"[purple][{tag}][/]") + message_text) if tag is not None else message_text
             highlighter = getattr(record, "highlighter", self.highlighter)
         else:
             from rich.highlighter import JSONHighlighter
@@ -188,17 +199,16 @@ class Handler(DefaultRichHandler):
 
             highlighter = JSONHighlighter()
             message_text = JSON.from_data(message, indent=4).text
-            message_text = (Text.from_markup(f"[purple][{tag}][/]") + message_text) if tag is not None else message_text
 
         if highlighter is not None:
             # noinspection PyCallingNonCallable
             message_text = highlighter(message_text)
 
-        if self.keywords is None:
-            self.keywords = self.KEYWORDS
+        if self.render_keywords is None:
+            self.render_keywords = self.KEYWORDS
 
-        if self.keywords:
-            message_text.highlight_words(self.keywords, "logging.keyword")
+        if self.render_keywords:
+            message_text.highlight_words(self.render_keywords, "logging.keyword")
 
         return message_text
 
@@ -209,22 +219,27 @@ class Handler(DefaultRichHandler):
             exc_type, exc_value, exc_traceback = record.exc_info
             if exc_type is None or exc_value is None:
                 raise ValueError(record)
-            _traceback = Traceback.from_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                width=self.tracebacks_width,
-                extra_lines=self.tracebacks_extra_lines,
-                word_wrap=self.tracebacks_word_wrap,
-                show_locals=(getattr(record, "show_locals", None) or self.tracebacks_show_locals),
-                locals_max_length=(getattr(record, "locals_max_length", None) or self.locals_max_length),
-                locals_max_string=(getattr(record, "locals_max_string", None) or self.locals_max_string),
-                locals_max_depth=(
-                    record.locals_max_depth if hasattr(record, "locals_max_depth") else self.locals_max_depth
-                ),
-                suppress=self.tracebacks_suppress,
-                max_frames=self.tracebacks_max_frames,
-            )
+            try:
+                _traceback = Traceback.from_exception(
+                    exc_type,
+                    exc_value,
+                    exc_traceback,
+                    width=self.tracebacks_width,
+                    extra_lines=self.tracebacks_extra_lines,
+                    word_wrap=self.tracebacks_word_wrap,
+                    show_locals=(getattr(record, "show_locals", None) or self.tracebacks_show_locals),
+                    locals_max_length=(getattr(record, "locals_max_length", None) or self.locals_max_length),
+                    locals_max_string=(getattr(record, "locals_max_string", None) or self.locals_max_string),
+                    locals_max_depth=(
+                        getattr(record, "locals_max_depth")
+                        if hasattr(record, "locals_max_depth")
+                        else self.locals_max_depth
+                    ),
+                    suppress=self.tracebacks_suppress,
+                    max_frames=self.tracebacks_max_frames,
+                )
+            except ImportError:
+                return
             message = record.getMessage()
             if self.formatter:
                 record.message = record.getMessage()
@@ -235,10 +250,15 @@ class Handler(DefaultRichHandler):
             if message == str(exc_value):
                 message = None
 
+        message_renderable = None
         if message is not None:
-            message_renderable = self.render_message(record, message)
-        else:
-            message_renderable = None
+            try:
+                if self.auto_load_json:
+                    message_renderable = self.render_message(record, json.loads(message))
+            except JSONDecodeError:
+                pass
+            finally:
+                message_renderable = message_renderable or self.render_message(record, message)
         log_renderable = self.render(record=record, traceback=_traceback, message_renderable=message_renderable)
         # noinspection PyBroadException
         try:
