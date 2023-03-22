@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 from bs4 import BeautifulSoup
+from httpx import Timeout
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -47,7 +48,14 @@ class Post(Plugin.Conversation):
     MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]], True, True)
 
     def __init__(self):
-        self.bbs = Hyperion()
+        self.bbs = Hyperion(
+            timeout=Timeout(
+                connect=config.connect_timeout,
+                read=config.read_timeout,
+                write=config.write_timeout,
+                pool=config.pool_timeout,
+            )
+        )
         self.last_post_id_list: List[int] = []
 
     async def initialize(self):

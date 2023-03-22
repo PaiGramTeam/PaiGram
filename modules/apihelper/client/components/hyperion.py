@@ -25,8 +25,8 @@ class Hyperion:
         "Chrome/90.0.4430.72 Safari/537.36"
     )
 
-    def __init__(self):
-        self.client = HyperionRequest(headers=self.get_headers())
+    def __init__(self, *args, **kwargs):
+        self.client = HyperionRequest(headers=self.get_headers(), *args, **kwargs)
 
     @staticmethod
     def extract_post_id(text: str) -> int:
