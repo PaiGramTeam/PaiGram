@@ -18,9 +18,8 @@ class ArtworkImage(BaseModel):
     def format(self) -> Optional[str]:
         if not self.is_error:
             try:
-                with BytesIO(self.data) as stream:
-                    with Image.open(stream) as im:
-                        return im.format
+                with BytesIO(self.data) as stream, Image.open(stream) as im:
+                    return im.format
             except UnidentifiedImageError:
                 pass
         return None
