@@ -1,11 +1,9 @@
-from typing import Any, List, Union, Optional
+from typing import Any, List, Optional
 
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, PrivateAttr
 
 __all__ = ("ArtworkImage", "PostInfo")
-
-from telegram import InputMediaPhoto, InputMediaVideo, InputMediaDocument
 
 
 class ArtworkImage(BaseModel):
@@ -24,14 +22,6 @@ class ArtworkImage(BaseModel):
             except UnidentifiedImageError:
                 pass
         return None
-
-    def input_media(self, *args, **kwargs) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
-        file_type = self.format
-        if file_type in {"jpg", "jpeg", "png", "webp"}:
-            return InputMediaPhoto(self.data, *args, **kwargs)
-        if file_type in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
-            return InputMediaVideo(self.data, *args, **kwargs)
-        return InputMediaDocument(self.data, *args, **kwargs)
 
 
 class PostInfo(BaseModel):
