@@ -134,10 +134,11 @@ class Post(Plugin.Conversation):
         media: "ArtworkImage", *args, **kwargs
     ) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
         file_type = media.format
-        if file_type in {"jpg", "jpeg", "png", "webp"}:
-            return InputMediaPhoto(media.data, *args, **kwargs)
-        if file_type in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
-            return InputMediaVideo(media.data, *args, **kwargs)
+        if file_type is not None:
+            if file_type.lower() in {"jpg", "jpeg", "png", "webp"}:
+                return InputMediaPhoto(media.data, *args, **kwargs)
+            if file_type.lower() in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
+                return InputMediaVideo(media.data, *args, **kwargs)
         return InputMediaDocument(media.data, *args, **kwargs)
 
     @conversation.entry_point
@@ -221,7 +222,7 @@ class Post(Plugin.Conversation):
                 if len(media) > 10:
                     media = media[:10]
                     await message.reply_text("获取到的图片已经超过10张，为了保证发送成功，已经删除一部分图片")
-                await message.reply_media_group(media)
+                await message.reply_media_group(media, write_timeout=len(media) * 5)
             elif len(post_images) == 1:
                 image = post_images[0]
                 await message.reply_photo(image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
@@ -395,7 +396,7 @@ class Post(Plugin.Conversation):
             if len(post_images) > 1:
                 media = [self.input_media(img_info) for img_info in post_images if img_info.format]
                 media[0] = self.input_media(media=post_images[0], caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
-                await context.bot.send_media_group(channel_id, media=media)
+                await context.bot.send_media_group(channel_id, media=media, write_timeout=len(media) * 5)
             elif len(post_images) == 1:
                 image = post_images[0]
                 await context.bot.send_photo(

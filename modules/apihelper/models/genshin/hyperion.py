@@ -1,3 +1,4 @@
+from io import BytesIO
 from typing import Any, List, Optional
 
 from PIL import Image, UnidentifiedImageError
@@ -17,8 +18,9 @@ class ArtworkImage(BaseModel):
     def format(self) -> Optional[str]:
         if not self.is_error:
             try:
-                with Image.open(self.data) as im:
-                    return im.format
+                with BytesIO(self.data) as stream:
+                    with Image.open(stream) as im:
+                        return im.format
             except UnidentifiedImageError:
                 pass
         return None
