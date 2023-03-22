@@ -1,32 +1,37 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 from bs4 import BeautifulSoup
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     InputMediaPhoto,
-    Message,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
-    Update,
+    InputMediaDocument,
+    InputMediaVideo,
 )
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.ext import ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.config import config
 from core.plugin import Plugin, conversation, handler
 from modules.apihelper.client.components.hyperion import Hyperion
 from modules.apihelper.error import APIHelperException
-from modules.apihelper.models.genshin.hyperion import ArtworkImage
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from bs4 import Tag
+    from telegram import Update, Message
+    from telegram.ext import ContextTypes
+    from modules.apihelper.models.genshin.hyperion import ArtworkImage
 
 
 class PostHandlerData:
     def __init__(self):
         self.post_text: str = ""
-        self.post_images: Optional[List[ArtworkImage]] = None
+        self.post_images: Optional[List["ArtworkImage"]] = None
         self.delete_photo: Optional[List[int]] = []
         self.channel_id: int = -1
         self.tags: Optional[List[str]] = []
@@ -50,7 +55,7 @@ class Post(Plugin.Conversation):
             logger.success("文章定时推送处理已经开启")
             self.application.job_queue.run_repeating(self.task, 60)
 
-    async def task(self, context: CallbackContext):
+    async def task(self, context: "ContextTypes.DEFAULT_TYPE"):
         temp_post_id_list: List[int] = []
 
         # 请求推荐POST列表并处理
@@ -87,7 +92,7 @@ class Post(Plugin.Conversation):
                     try:
                         await context.bot.send_message(user.user_id, text)
                     except BadRequest as _exc:
-                        logger.error("发送消息失败 %s", str(_exc))
+                        logger.error("发送消息失败 %s", _exc.message)
                 return
             buttons = [
                 [
@@ -104,9 +109,41 @@ class Post(Plugin.Conversation):
             except BadRequest as exc:
                 logger.error("发送消息失败 %s", exc.message)
 
+    @staticmethod
+    def parse_post_text(soup: BeautifulSoup, post_subject: str) -> str:
+        def parse_tag(_tag: "Tag") -> str:
+            if _tag.name == "a" and _tag.get("href"):
+                return f"[{escape_markdown(_tag.get_text(), version=2)}]({_tag.get('href')})"
+            return escape_markdown(_tag.get_text(), version=2)
+
+        post_p = soup.find_all("p")
+        post_text = f"*{escape_markdown(post_subject, version=2)}*\n\n"
+        start = True
+        for p in post_p:
+            t = p.get_text()
+            if not t and start:
+                continue
+            start = False
+            for tag in p.contents:
+                post_text += parse_tag(tag)
+            post_text += "\n"
+        return post_text
+
+    @staticmethod
+    def input_media(
+        media: "ArtworkImage", *args, **kwargs
+    ) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
+        file_type = media.format
+        if file_type is not None:
+            if file_type.lower() in {"jpg", "jpeg", "png", "webp"}:
+                return InputMediaPhoto(media.data, *args, **kwargs)
+            if file_type.lower() in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
+                return InputMediaVideo(media.data, *args, **kwargs)
+        return InputMediaDocument(media.data, *args, **kwargs)
+
     @conversation.entry_point
     @handler.callback_query(pattern=r"^post_admin\|", block=False)
-    async def callback_query_start(self, update: Update, context: CallbackContext) -> int:
+    async def callback_query_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         post_handler_data = context.chat_data.get("post_handler_data")
         if post_handler_data is None:
             post_handler_data = PostHandlerData()
@@ -139,7 +176,7 @@ class Post(Plugin.Conversation):
 
     @conversation.entry_point
     @handler.command(command="post", filters=filters.ChatType.PRIVATE, block=False, admin=True)
-    async def command_start(self, update: Update, context: CallbackContext) -> int:
+    async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] POST命令请求", user.full_name, user.id)
@@ -154,7 +191,7 @@ class Post(Plugin.Conversation):
 
     @conversation.state(state=CHECK_POST)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def check_post(self, update: Update, context: CallbackContext) -> int:
+    async def check_post(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.effective_message
         if message.text == "退出":
@@ -167,38 +204,39 @@ class Post(Plugin.Conversation):
             return ConversationHandler.END
         return await self.send_post_info(post_handler_data, message, post_id)
 
-    async def send_post_info(self, post_handler_data: PostHandlerData, message: Message, post_id: int) -> int:
+    async def send_post_info(self, post_handler_data: PostHandlerData, message: "Message", post_id: int) -> int:
         post_info = await self.bbs.get_post_info(2, post_id)
         post_images = await self.bbs.get_images_by_post_id(2, post_id)
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
-        post_p = post_soup.find_all("p")
-        post_text = f"*{escape_markdown(post_subject, version=2)}*\n" f"\n"
-        for p in post_p:
-            post_text += f"{escape_markdown(p.get_text(), version=2)}\n"
+        post_text = self.parse_post_text(post_soup, post_subject)
         post_text += f"[source](https://www.miyoushe.com/ys/article/{post_id})"
         if len(post_text) >= MessageLimit.CAPTION_LENGTH:
             post_text = post_text[: MessageLimit.CAPTION_LENGTH]
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割")
         try:
             if len(post_images) > 1:
-                media = [InputMediaPhoto(img_info.data) for img_info in post_images]
-                media[0] = InputMediaPhoto(post_images[0].data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
+                media = [self.input_media(img_info) for img_info in post_images if img_info.format]
+                media[0] = self.input_media(media=post_images[0], caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
                 if len(media) > 10:
                     media = media[:10]
                     await message.reply_text("获取到的图片已经超过10张，为了保证发送成功，已经删除一部分图片")
-                await message.reply_media_group(media)
+                await message.reply_media_group(media, write_timeout=len(media) * 5)
             elif len(post_images) == 1:
                 image = post_images[0]
                 await message.reply_photo(image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
             else:
                 await message.reply_text(post_text, reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
-        except (BadRequest, TypeError) as exc:
+        except BadRequest as exc:
+            await message.reply_text(f"发送图片时发生错误 {exc.message}", reply_markup=ReplyKeyboardRemove())
+            logger.error("Post模块发送图片时发生错误", exc_info=exc)
+            return ConversationHandler.END
+        except TypeError as exc:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
-            logger.error("Post模块发送图片时发生错误")
-            logger.exception(exc)
+            logger.error("Post模块发送图片时发生错误", exc_info=exc)
+
             return ConversationHandler.END
         post_handler_data.post_text = post_text
         post_handler_data.post_images = post_images
@@ -210,7 +248,7 @@ class Post(Plugin.Conversation):
 
     @conversation.state(state=CHECK_COMMAND)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def check_command(self, update: Update, context: CallbackContext) -> int:
+    async def check_command(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
@@ -226,7 +264,7 @@ class Post(Plugin.Conversation):
         return ConversationHandler.END
 
     @staticmethod
-    async def delete_photo(update: Update, context: CallbackContext) -> int:
+    async def delete_photo(update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         photo_len = len(post_handler_data.post_images)
         message = update.effective_message
@@ -235,7 +273,7 @@ class Post(Plugin.Conversation):
 
     @conversation.state(state=GTE_DELETE_PHOTO)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def get_delete_photo(self, update: Update, context: CallbackContext) -> int:
+    async def get_delete_photo(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         photo_len = len(post_handler_data.post_images)
         message = update.effective_message
@@ -254,7 +292,7 @@ class Post(Plugin.Conversation):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
 
-    async def get_channel(self, update: Update, _: CallbackContext) -> int:
+    async def get_channel(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         reply_keyboard = []
         try:
@@ -270,7 +308,7 @@ class Post(Plugin.Conversation):
 
     @conversation.state(state=GET_POST_CHANNEL)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def get_post_channel(self, update: Update, context: CallbackContext) -> int:
+    async def get_post_channel(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.effective_message
         channel_id = -1
@@ -293,14 +331,14 @@ class Post(Plugin.Conversation):
         return SEND_POST
 
     @staticmethod
-    async def add_tags(update: Update, _: CallbackContext) -> int:
+    async def add_tags(update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符，不用添加 # 作为开头，推送时程序会自动添加")
         return GET_TAGS
 
     @conversation.state(state=GET_TAGS)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def get_tags(self, update: Update, context: CallbackContext) -> int:
+    async def get_tags(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.effective_message
         args = message.text.split(" ")
@@ -310,14 +348,14 @@ class Post(Plugin.Conversation):
         return CHECK_COMMAND
 
     @staticmethod
-    async def edit_text(update: Update, _: CallbackContext) -> int:
+    async def edit_text(update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         await message.reply_text("请回复替换的文本")
         return GET_TEXT
 
     @conversation.state(state=GET_TEXT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def get_edit_text(self, update: Update, context: CallbackContext) -> int:
+    async def get_edit_text(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.effective_message
         post_handler_data.post_text = message.text_markdown_v2
@@ -327,7 +365,7 @@ class Post(Plugin.Conversation):
 
     @conversation.state(state=SEND_POST)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def send_post(self, update: Update, context: CallbackContext) -> int:
+    async def send_post(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         message = update.effective_message
         if message.text == "退出":
@@ -351,14 +389,14 @@ class Post(Plugin.Conversation):
         for index, _ in enumerate(post_handler_data.post_images):
             if index + 1 not in post_handler_data.delete_photo:
                 post_images.append(post_handler_data.post_images[index])
-        post_text += f" @{channel_name}"
+        post_text += f" @{escape_markdown(channel_name, version=2)}"
         for tag in post_handler_data.tags:
             post_text += f" \\#{tag}"
         try:
             if len(post_images) > 1:
-                media = [InputMediaPhoto(img_info.data) for img_info in post_images]
-                media[0] = InputMediaPhoto(post_images[0].data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
-                await context.bot.send_media_group(channel_id, media=media)
+                media = [self.input_media(img_info) for img_info in post_images if img_info.format]
+                media[0] = self.input_media(media=post_images[0], caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
+                await context.bot.send_media_group(channel_id, media=media, write_timeout=len(media) * 5)
             elif len(post_images) == 1:
                 image = post_images[0]
                 await context.bot.send_photo(
@@ -369,10 +407,12 @@ class Post(Plugin.Conversation):
             else:
                 await message.reply_text("图片获取错误", reply_markup=ReplyKeyboardRemove())  # excuse?
                 return ConversationHandler.END
-        except (BadRequest, TypeError) as exc:
-            await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
-            logger.error("Post模块发送图片时发生错误")
-            logger.exception(exc)
+        except BadRequest as exc:
+            await message.reply_text(f"发送图片时发生错误 {exc.message}", reply_markup=ReplyKeyboardRemove())
+            logger.error("Post模块发送图片时发生错误", exc_info=exc)
             return ConversationHandler.END
+        except TypeError as exc:
+            await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
+            logger.error("Post模块发送图片时发生错误", exc_info=exc)
         await message.reply_text("推送成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
