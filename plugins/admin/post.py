@@ -239,7 +239,7 @@ class Post(Plugin.Conversation):
                 return ConversationHandler.END
         except BadRequest as exc:
             await message.reply_text(f"发送图片时发生错误 {exc.message}", reply_markup=ReplyKeyboardRemove())
-            logger.error("Post模块发送图片时发生错误", exc_info=exc)
+            logger.error("Post模块发送图片时发生错误 %s", exc.message)
             return ConversationHandler.END
         except TypeError as exc:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
@@ -417,7 +417,7 @@ class Post(Plugin.Conversation):
                 return ConversationHandler.END
         except BadRequest as exc:
             await message.reply_text(f"发送图片时发生错误 {exc.message}", reply_markup=ReplyKeyboardRemove())
-            logger.error("Post模块发送图片时发生错误", exc_info=exc)
+            logger.error("Post模块发送图片时发生错误 %s", exc.message)
             return ConversationHandler.END
         except TypeError as exc:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())

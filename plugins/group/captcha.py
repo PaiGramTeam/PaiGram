@@ -179,7 +179,6 @@ class GroupCaptcha(Plugin):
                     user.full_name,
                     user.id,
                 )
-                logger.info("用户 %s[%s] 在群 %s[%s] 被管理放行", user.full_name, user.id, chat.title, chat.id)
             else:
                 await message.edit_text(f"{member_info} 被本群管理员放行", parse_mode=ParseMode.MARKDOWN_V2)
                 logger.info("用户 %s 在群 %s[%s] 被 %s[%s] 管理放行", member_info, chat.title, chat.id, user.full_name, user.id)
@@ -191,7 +190,7 @@ class GroupCaptcha(Plugin):
                     f"{self.mention_markdown(member_info.user.id)} 被本群管理员驱离", parse_mode=ParseMode.MARKDOWN_V2
                 )
                 logger.info(
-                    "用户 %s[%s] 在群 %s[%s] 被 %s[%s] 放行",
+                    "用户 %s[%s] 在群 %s[%s] 被 %s[%s] 被管理驱离",
                     member_info.user.full_name,
                     member_info.user.id,
                     chat.title,
@@ -199,7 +198,6 @@ class GroupCaptcha(Plugin):
                     user.full_name,
                     user.id,
                 )
-                logger.info("用户 %s[%s] 在群 %s[%s] 被管理驱离", user.full_name, user.id, chat.title, chat.id)
             else:
                 await message.edit_text(f"{member_info} 被本群管理员驱离", parse_mode=ParseMode.MARKDOWN_V2)
                 logger.info("用户 %s 在群 %s[%s] 被 %s[%s] 管理驱离", member_info, chat.title, chat.id, user.full_name, user.id)
@@ -221,7 +219,6 @@ class GroupCaptcha(Plugin):
                     user.full_name,
                     user.id,
                 )
-                logger.info("用户 %s[%s] 在群 %s[%s] 被管理解除封禁", user.full_name, user.id, chat.title, chat.id)
             else:
                 await message.edit_text(f"{member_info} 被本群管理员解除封禁", parse_mode=ParseMode.MARKDOWN_V2)
                 logger.info("用户 %s 在群 %s[%s] 被 %s[%s] 管理驱离", member_info, chat.title, chat.id, user.full_name, user.id)
