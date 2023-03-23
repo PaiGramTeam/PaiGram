@@ -128,7 +128,6 @@ def upgrade() -> None:
         sa.Column(
             "time_created",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
             nullable=True,
         ),
         sa.Column("time_updated", sa.DateTime(timezone=True), nullable=True),
