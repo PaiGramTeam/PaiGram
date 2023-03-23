@@ -63,8 +63,8 @@ class PlayersRepository(BaseService.Component):
 
 
 class PlayerInfoRepository(BaseService.Component):
-    def __init__(self, mysql: Database):
-        self.engine = mysql.engine
+    def __init__(self, database: Database):
+        self.engine = database.engine
 
     async def get(
         self,
