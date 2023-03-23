@@ -44,7 +44,7 @@ class RedisConfig(Settings):
 
 
 class LoggerConfig(Settings):
-    name: str = "TGPaimon"
+    name: str = "PaiGram"
     width: Optional[int] = None
     time_format: str = "[%Y-%m-%d %X]"
     traceback_max_frames: int = 20

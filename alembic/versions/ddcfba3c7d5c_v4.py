@@ -6,6 +6,7 @@ Create Date: 2023-02-11 17:07:18.170175
 
 """
 import json
+import time
 import logging
 from base64 import b64decode
 
@@ -241,13 +242,12 @@ def upgrade() -> None:
     op.drop_table("admin")
     context = op.get_context()
     if context.dialect.name == "sqlite":
-        logger.warning(
-            "The SQLite dialect does not support ALTER constraint operations, "
-            "so you need to manually remove the constraint condition of `sign_ibfk_1` and delete the user table."
-        )
+        with op.batch_alter_table("sign") as batch_op:
+            batch_op.drop_constraint("sign_1", type_="foreignkey")
+        op.drop_table("user")
         return
-    op.drop_constraint("sign_ibfk_1", "sign", type_="foreignkey")
-    op.drop_index("user_id", table_name="sign")
+    op.drop_constraint("sign_1", "sign", type_="foreignkey")
+    op.drop_index("sign_1", table_name="sign")
     op.drop_table("user")
     # ### end Alembic commands ###
 
@@ -308,8 +308,13 @@ def downgrade() -> None:
         mysql_default_charset="utf8mb4",
         mysql_engine="InnoDB",
     )
-    op.create_foreign_key("sign_ibfk_1", "sign", "user", ["user_id"], ["user_id"])
-    op.create_index("user_id", "sign", ["user_id"], unique=False)
+    context = op.get_context()
+    if context.dialect.name == "sqlite":
+        with op.batch_alter_table("sign") as batch_op:
+            batch_op.create_foreign_key("sign_1", type_="foreignkey")
+    else:
+        op.create_foreign_key("sign_1", "sign", "user", ["user_id"], ["user_id"])
+        op.create_index("sign_1", "sign", ["user_id"], unique=False)
     op.drop_table("users")
     op.drop_table("players")
     op.drop_table("cookies")

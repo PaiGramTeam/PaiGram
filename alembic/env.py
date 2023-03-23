@@ -64,7 +64,7 @@ target_metadata = SQLModel.metadata
 
 sqlalchemy_url = alembic_cfg.get_main_option("sqlalchemy.url")
 if sqlalchemy_url is None:
-    sqlalchemy_url = URL.create(
+    url = URL.create(
         application_config.database.driver_name,
         username=application_config.database.username,
         password=application_config.database.password,
@@ -72,7 +72,7 @@ if sqlalchemy_url is None:
         port=application_config.database.port,
         database=application_config.database.database,
     )
-    alembic_cfg.set_main_option("sqlalchemy.url", sqlalchemy_url)
+    alembic_cfg.set_main_option("sqlalchemy.url", str(url))
 
 
 def run_migrations_offline() -> None:

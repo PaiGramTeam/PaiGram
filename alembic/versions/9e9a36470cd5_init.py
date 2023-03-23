@@ -145,10 +145,7 @@ def upgrade() -> None:
             ),
             nullable=True,
         ),
-        sa.ForeignKeyConstraint(
-            ["user_id"],
-            ["user.user_id"],
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["user.user_id"], "sign_1"),
         sa.PrimaryKeyConstraint("id", "user_id"),
         mysql_charset="utf8mb4",
         mysql_collate="utf8mb4_general_ci",
