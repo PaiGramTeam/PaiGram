@@ -121,7 +121,7 @@ class PlayerInfoService(BaseService):
                 player_info_enka = await self.get_player_info_from_enka(player.player_id)
                 if player_info_enka is None:
                     player_info.last_save_time = datetime.now()
-                    await self._players_info_repository.update(PlayerInfoSQLModel.from_orm(player_info))
+                    await self._players_info_repository.update(player_info)
                     await self.set_form_cache(player_info)
                     return player_info
                 player_info.nickname = player_info_enka.nickname
@@ -130,7 +130,7 @@ class PlayerInfoService(BaseService):
                 player_info.hand_image = player_info_enka.avatar.id
                 player_info.nickname = player_info_enka.nickname
                 player_info.last_save_time = datetime.now()
-                await self._players_info_repository.update(PlayerInfoSQLModel.from_orm(player_info))
+                await self._players_info_repository.update(player_info)
         await self.set_form_cache(player_info)
         return player_info
 
