@@ -21,7 +21,7 @@ class JoinGroups(str, Enum):
     ALLOW_ALL = "ALLOW_ALL"
 
 
-class MySqlConfig(Settings):
+class DatabaseConfig(Settings):
     driver_name: str = "mysql+asyncmy"
     host: Optional[str] = None
     port: Optional[int] = None
@@ -147,7 +147,7 @@ class ApplicationConfig(Settings):
     pass_challenge_user_web: str = ""
 
     reload: ReloadConfig = ReloadConfig()
-    mysql: MySqlConfig = MySqlConfig()
+    database: DatabaseConfig = DatabaseConfig()
     logger: LoggerConfig = LoggerConfig()
     webserver: WebServerConfig = WebServerConfig()
     redis: RedisConfig = RedisConfig()

@@ -3,7 +3,7 @@ from typing import List
 from sqlmodel import select
 
 from core.base_service import BaseService
-from core.dependence.mysql import MySQL
+from core.dependence.database import Database
 from core.services.quiz.models import AnswerDB, QuestionDB
 from core.sqlmodel.session import AsyncSession
 
@@ -11,8 +11,8 @@ __all__ = ("QuizRepository",)
 
 
 class QuizRepository(BaseService.Component):
-    def __init__(self, mysql: MySQL):
-        self.engine = mysql.engine
+    def __init__(self, database: Database):
+        self.engine = database.engine
 
     async def get_question_list(self) -> List[QuestionDB]:
         async with AsyncSession(self.engine) as session:

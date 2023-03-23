@@ -4,7 +4,7 @@ from sqlmodel import select, delete
 
 from core.base_service import BaseService
 from core.basemodel import RegionEnum
-from core.dependence.mysql import MySQL
+from core.dependence.database import Database
 from core.services.players.models import PlayerInfoSQLModel
 from core.services.players.models import PlayersDataBase as Player
 from core.sqlmodel.session import AsyncSession
@@ -13,8 +13,8 @@ __all__ = ("PlayersRepository", "PlayerInfoRepository")
 
 
 class PlayersRepository(BaseService.Component):
-    def __init__(self, mysql: MySQL):
-        self.engine = mysql.engine
+    def __init__(self, database: Database):
+        self.engine = database.engine
 
     async def get(
         self,
@@ -63,7 +63,7 @@ class PlayersRepository(BaseService.Component):
 
 
 class PlayerInfoRepository(BaseService.Component):
-    def __init__(self, mysql: MySQL):
+    def __init__(self, mysql: Database):
         self.engine = mysql.engine
 
     async def get(

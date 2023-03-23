@@ -10,16 +10,17 @@ from core.base_service import BaseService
 from core.config import ApplicationConfig
 from core.sqlmodel.session import AsyncSession
 
-__all__ = ("MySQL",)
+__all__ = ("Database",)
 
 
-class MySQL(BaseService.Dependence):
+class Database(BaseService.Dependence):
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> Self:
-        return cls(**config.mysql.dict())
+        return cls(**config.database.dict())
 
     def __init__(
         self,
+        driver_name: str,
         host: Optional[str] = None,
         port: Optional[int] = None,
         username: Optional[str] = None,
@@ -32,7 +33,7 @@ class MySQL(BaseService.Dependence):
         self.port = port
         self.host = host
         self.url = URL.create(
-            "mysql+asyncmy",
+            driver_name,
             username=self.username,
             password=self.password,
             host=self.host,

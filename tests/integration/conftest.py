@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 
 from core.config import config
-from core.dependence.mysql import MySQL
+from core.dependence.database import Database
 from core.dependence.redisdb import RedisDB
 
 
@@ -18,8 +18,8 @@ def event_loop():
 
 
 @pytest.fixture(scope="session")
-def mysql():
-    return MySQL.from_config(config=config)
+def database():
+    return Database.from_config(config=config)
 
 
 @pytest.fixture(scope="session")

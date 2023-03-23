@@ -65,12 +65,12 @@ target_metadata = SQLModel.metadata
 sqlalchemy_url = alembic_cfg.get_main_option("sqlalchemy.url")
 if sqlalchemy_url is None:
     sqlalchemy_url = URL.create(
-        application_config.mysql.driver_name,
-        username=application_config.mysql.username,
-        password=application_config.mysql.password,
-        host=application_config.mysql.host,
-        port=application_config.mysql.port,
-        database=application_config.mysql.database,
+        application_config.database.driver_name,
+        username=application_config.database.username,
+        password=application_config.database.password,
+        host=application_config.database.host,
+        port=application_config.database.port,
+        database=application_config.database.database,
     )
     alembic_cfg.set_main_option("sqlalchemy.url", sqlalchemy_url)
 
