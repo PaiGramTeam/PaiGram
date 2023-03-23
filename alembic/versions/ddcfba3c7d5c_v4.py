@@ -226,7 +226,6 @@ def upgrade() -> None:
         sa.Column(
             "create_time",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
             nullable=True,
         ),
         sa.Column("last_save_time", sa.DateTime(timezone=True), nullable=True),
@@ -240,6 +239,13 @@ def upgrade() -> None:
     op.drop_table(old_cookies_database_name1)
     op.drop_table(old_cookies_database_name2)
     op.drop_table("admin")
+    context = op.get_context()
+    if context.dialect.name == "sqlite":
+        logger.warning(
+            "The SQLite dialect does not support ALTER constraint operations, "
+            "so you need to manually remove the constraint condition of `sign_ibfk_1` and delete the user table."
+        )
+        return
     op.drop_constraint("sign_ibfk_1", "sign", type_="foreignkey")
     op.drop_index("user_id", table_name="sign")
     op.drop_table("user")
