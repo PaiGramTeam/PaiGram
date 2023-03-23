@@ -7,22 +7,22 @@ from typing import Iterator
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
-from sqlalchemy.engine import Connection
+from sqlalchemy.engine import Connection, URL
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel
 
-from core.config import config as BotConfig
+from core.config import config as application_config
 from utils.const import CORE_DIR, PLUGIN_DIR, PROJECT_ROOT
 from utils.log import logger
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-config = context.config
+alembic_cfg = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)  # skipcq: PY-A6006
+if alembic_cfg.config_file_name is not None:
+    fileConfig(alembic_cfg.config_file_name)  # skipcq: PY-A6006
 
 
 def scan_models() -> Iterator[str]:
@@ -40,7 +40,13 @@ def import_models():
         try:
             import_module(pkg)  # 导入 models
         except Exception as e:  # pylint: disable=W0703
-            logger.error("在导入文件 %s 的过程中遇到了错误: \n[red bold]%s: %s[/]", pkg, type(e).__name__, e, extra={"markup": True})
+            logger.error(
+                "在导入文件 %s 的过程中遇到了错误: \n[red bold]%s: %s[/]",
+                pkg,
+                type(e).__name__,
+                e,
+                extra={"markup": True},
+            )
 
 
 # register our models for alembic to auto-generate migrations
@@ -56,12 +62,17 @@ target_metadata = SQLModel.metadata
 # here we allow ourselves to pass interpolation vars to alembic.ini
 # from the application config module
 
-section = config.config_ini_section
-config.set_section_option(section, "DB_HOST", BotConfig.mysql.host)
-config.set_section_option(section, "DB_PORT", str(BotConfig.mysql.port))
-config.set_section_option(section, "DB_USERNAME", BotConfig.mysql.username)
-config.set_section_option(section, "DB_PASSWORD", BotConfig.mysql.password)
-config.set_section_option(section, "DB_DATABASE", BotConfig.mysql.database)
+sqlalchemy_url = alembic_cfg.get_main_option("sqlalchemy.url")
+if sqlalchemy_url is None:
+    sqlalchemy_url = URL.create(
+        application_config.mysql.driver_name,
+        username=application_config.mysql.username,
+        password=application_config.mysql.password,
+        host=application_config.mysql.host,
+        port=application_config.mysql.port,
+        database=application_config.mysql.database,
+    )
+    alembic_cfg.set_main_option("sqlalchemy.url", sqlalchemy_url)
 
 
 def run_migrations_offline() -> None:
@@ -76,7 +87,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = alembic_cfg.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -104,7 +115,7 @@ async def run_migrations_online() -> None:
     """
     connectable = AsyncEngine(
         engine_from_config(
-            config.get_section(config.config_ini_section),
+            alembic_cfg.get_section(alembic_cfg.config_ini_section),
             prefix="sqlalchemy.",
             poolclass=pool.NullPool,
             future=True,

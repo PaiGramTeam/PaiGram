@@ -22,8 +22,9 @@ class JoinGroups(str, Enum):
 
 
 class MySqlConfig(Settings):
-    host: str = "127.0.0.1"
-    port: int = 3306
+    driver_name: str = "mysql+asyncmy"
+    host: Optional[str] = None
+    port: Optional[int] = None
     username: Optional[str] = None
     password: Optional[str] = None
     database: Optional[str] = None
