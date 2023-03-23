@@ -27,7 +27,7 @@ class Database(BaseService.Dependence):
         password: Optional[str] = None,
         database: Optional[str] = None,
     ):
-        self.database = database
+        self.database = database  # skipcq: PTC-W0052
         self.password = password
         self.username = username
         self.port = port
