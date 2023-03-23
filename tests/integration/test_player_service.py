@@ -11,8 +11,8 @@ logger = logging.getLogger("TestPlayersService")
 
 
 @pytest_asyncio.fixture(scope="class", name="players_service")
-def service(mysql):
-    repository = PlayersRepository(mysql)
+def service(database):
+    repository = PlayersRepository(database)
     _players_service = PlayersService(repository)
     return _players_service
 
