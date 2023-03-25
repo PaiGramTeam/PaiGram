@@ -19,7 +19,7 @@
 ## 环境需求
 
 - Python 3.11+
-- MySQL
+- MySQL or SQLite
 - Redis
 
 ## 使用方法

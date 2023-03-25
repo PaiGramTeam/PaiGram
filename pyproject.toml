@@ -43,11 +43,13 @@ qrcode = "^7.4.2"
 cryptography = "^39.0.1"
 pillow = "^9.4.0"
 playwright = "^1.27.1"
+aiosqlite = { extras = ["sqlite"], version = "^0.18.0" }
 
 [tool.poetry.extras]
 pyro = ["Pyrogram", "TgCrypto"]
 test = ["pytest", "pytest-asyncio", "flaky"]
-all = ["pytest", "pytest-asyncio", "flaky", "Pyrogram", "TgCrypto"]
+sqlite = ["aiosqlite"]
+all = ["pytest", "pytest-asyncio", "flaky", "Pyrogram", "TgCrypto", "aiosqlite"]
 
 [build-system]
 requires = ["poetry-core"]

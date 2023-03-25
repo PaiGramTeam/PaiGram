@@ -226,7 +226,6 @@ def upgrade() -> None:
         sa.Column(
             "create_time",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
             nullable=True,
         ),
         sa.Column("last_save_time", sa.DateTime(timezone=True), nullable=True),
@@ -240,8 +239,14 @@ def upgrade() -> None:
     op.drop_table(old_cookies_database_name1)
     op.drop_table(old_cookies_database_name2)
     op.drop_table("admin")
-    op.drop_constraint("sign_ibfk_1", "sign", type_="foreignkey")
-    op.drop_index("user_id", table_name="sign")
+    context = op.get_context()
+    if context.dialect.name == "sqlite":
+        with op.batch_alter_table("sign") as batch_op:
+            batch_op.drop_constraint("sign_1", type_="foreignkey")
+        op.drop_table("user")
+        return
+    op.drop_constraint("sign_1", "sign", type_="foreignkey")
+    op.drop_index("sign_1", table_name="sign")
     op.drop_table("user")
     # ### end Alembic commands ###
 
@@ -302,8 +307,13 @@ def downgrade() -> None:
         mysql_default_charset="utf8mb4",
         mysql_engine="InnoDB",
     )
-    op.create_foreign_key("sign_ibfk_1", "sign", "user", ["user_id"], ["user_id"])
-    op.create_index("user_id", "sign", ["user_id"], unique=False)
+    context = op.get_context()
+    if context.dialect.name == "sqlite":
+        with op.batch_alter_table("sign") as batch_op:
+            batch_op.create_foreign_key("sign_1", type_="foreignkey")
+    else:
+        op.create_foreign_key("sign_1", "sign", "user", ["user_id"], ["user_id"])
+        op.create_index("sign_1", "sign", ["user_id"], unique=False)
     op.drop_table("users")
     op.drop_table("players")
     op.drop_table("cookies")

@@ -15,7 +15,7 @@ from telegram.ext import ContextTypes
 
 from core.basemodel import RegionEnum
 from core.config import config
-from core.dependence.mysql import MySQL
+from core.dependence.database import Database
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin
@@ -59,22 +59,22 @@ class CharacterDetailsSQLModel(SQLModel, table=True):
 class CharacterDetails(Plugin):
     def __init__(
         self,
-        mysql: MySQL,
+        database: Database,
         redis: RedisDB,
     ) -> None:
-        self.mysql = mysql
+        self.database = database
         self.redis = redis.client
         self.ttl = 60 * 60 * 6
 
     async def initialize(self) -> None:
         def fetch_and_update_objects(connection):
-            if not self.mysql.engine.dialect.has_table(connection, table_name="character_details"):
+            if not self.database.engine.dialect.has_table(connection, table_name="character_details"):
                 logger.info("正在创建角色详细信息表")
                 table: "Table" = SQLModel.metadata.tables["character_details"]
                 table.create(connection)
                 logger.success("创建角色详细信息表成功")
 
-        async with self.mysql.engine.begin() as conn:
+        async with self.database.engine.begin() as conn:
             await conn.run_sync(fetch_and_update_objects)
         asyncio.create_task(self.save_character_details_task(max_ttl=None))
         self.application.job_queue.run_daily(self.del_old_data_job, time(hour=3, minute=0))
@@ -89,7 +89,7 @@ class CharacterDetails(Plugin):
     async def del_old_data(self, expiration_time: timedelta):
         expire_time = datetime.now() - expiration_time
         statement = delete(CharacterDetailsSQLModel).where(CharacterDetailsSQLModel.time_updated <= expire_time)
-        async with AsyncSession(self.mysql.engine) as session:
+        async with AsyncSession(self.database.engine) as session:
             await session.execute(statement)
 
     async def save_character_details_task(self, max_ttl: Optional[int] = 60 * 60):
@@ -120,7 +120,7 @@ class CharacterDetails(Plugin):
                     logger.warning("Redis key[%s] 数据未找到", key)  # 如果未找到可能因为处理过程中已经过期，导致该数据未回写到 MySQL
                     continue
                 str_data = str(data, encoding="utf-8")
-                async with AsyncSession(self.mysql.engine) as session:
+                async with AsyncSession(self.database.engine) as session:
                     statement = (
                         select(CharacterDetailsSQLModel)
                         .where(CharacterDetailsSQLModel.player_id == player_id)
@@ -132,14 +132,14 @@ class CharacterDetails(Plugin):
                     sql_data = CharacterDetailsSQLModel(
                         player_id=player_id, character_id=character_id, data=str_data, time_updated=datetime.now()
                     )
-                    async with AsyncSession(self.mysql.engine) as session:
+                    async with AsyncSession(self.database.engine) as session:
                         session.add(sql_data)
                         await session.commit()
                 else:
                     if sql_data.time_updated <= datetime.now() - timedelta(hours=2):
                         sql_data.data = str_data
                         sql_data.time_updated = datetime.now()
-                        async with AsyncSession(self.mysql.engine) as session:
+                        async with AsyncSession(self.database.engine) as session:
                             session.add(sql_data)
                             await session.commit()
 
@@ -170,7 +170,7 @@ class CharacterDetails(Plugin):
         uid: int,
         character_id: int,
     ) -> Optional["CalculatorCharacterDetails"]:
-        async with AsyncSession(self.mysql.engine) as session:
+        async with AsyncSession(self.database.engine) as session:
             statement = (
                 select(CharacterDetailsSQLModel)
                 .where(CharacterDetailsSQLModel.player_id == uid)
