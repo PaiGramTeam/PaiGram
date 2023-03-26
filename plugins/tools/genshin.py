@@ -64,7 +64,7 @@ class CharacterDetails(Plugin):
     ) -> None:
         self.database = database
         self.redis = redis.client
-        self.ttl = 60 * 60 * 6
+        self.expire = 60 * 60
 
     async def initialize(self) -> None:
         def fetch_and_update_objects(connection):
@@ -76,12 +76,7 @@ class CharacterDetails(Plugin):
 
         async with self.database.engine.begin() as conn:
             await conn.run_sync(fetch_and_update_objects)
-        asyncio.create_task(self.save_character_details_task(max_ttl=None))
-        self.application.job_queue.run_daily(self.del_old_data_job, time(hour=3, minute=0))
-        self.application.job_queue.run_repeating(self.save_character_details_job, timedelta(hours=1))
-
-    async def save_character_details_job(self, _: ContextTypes.DEFAULT_TYPE):
-        await self.save_character_details()
+        self.application.job_queue.run_daily(self.del_old_data_job, time(hour=12, minute=0))
 
     async def del_old_data_job(self, _: ContextTypes.DEFAULT_TYPE):
         await self.del_old_data(timedelta(days=7))
@@ -91,57 +86,6 @@ class CharacterDetails(Plugin):
         statement = delete(CharacterDetailsSQLModel).where(CharacterDetailsSQLModel.time_updated <= expire_time)
         async with AsyncSession(self.database.engine) as session:
             await session.execute(statement)
-
-    async def save_character_details_task(self, max_ttl: Optional[int] = 60 * 60):
-        logger.info("正在从Redis中保存角色详细信息")
-        try:
-            await self.save_character_details(max_ttl)
-        except SQLAlchemyError as exc:
-            logger.error("写入到数据库失败 code[%s]", exc.code)
-            logger.debug("写入到数据库失败", exc_info=exc)
-        except Exception as exc:
-            logger.error("save_character_details 执行失败", exc_info=exc)
-        else:
-            logger.success("从Redis中保存角色详细信息成功")
-
-    async def save_character_details(self, max_ttl: Optional[int] = 60 * 60):
-        keys = await self.redis.keys("plugins:character_details:*")
-        for key in keys:
-            key = str(key, encoding="utf-8")
-            ttl = await self.redis.ttl(key)
-            if max_ttl is None or (0 <= ttl <= max_ttl):
-                try:
-                    player_id, character_id = re.findall(r"\d+", key)
-                except ValueError:
-                    logger.warning("非法Key %s", key)
-                    continue
-                data = await self.redis.get(key)
-                if data is None:
-                    logger.warning("Redis key[%s] 数据未找到", key)  # 如果未找到可能因为处理过程中已经过期，导致该数据未回写到 MySQL
-                    continue
-                str_data = str(data, encoding="utf-8")
-                async with AsyncSession(self.database.engine) as session:
-                    statement = (
-                        select(CharacterDetailsSQLModel)
-                        .where(CharacterDetailsSQLModel.player_id == player_id)
-                        .where(CharacterDetailsSQLModel.character_id == character_id)
-                    )
-                    results = await session.exec(statement)
-                    sql_data = results.first()
-                if sql_data is None:
-                    sql_data = CharacterDetailsSQLModel(
-                        player_id=player_id, character_id=character_id, data=str_data, time_updated=datetime.now()
-                    )
-                    async with AsyncSession(self.database.engine) as session:
-                        session.add(sql_data)
-                        await session.commit()
-                else:
-                    if sql_data.time_updated <= datetime.now() - timedelta(hours=2):
-                        sql_data.data = str_data
-                        sql_data.time_updated = datetime.now()
-                        async with AsyncSession(self.database.engine) as session:
-                            session.add(sql_data)
-                            await session.commit()
 
     @staticmethod
     def get_qname(uid: int, character: int):
@@ -159,11 +103,41 @@ class CharacterDetails(Plugin):
         json_data = str(data, encoding="utf-8")
         return CalculatorCharacterDetails.parse_raw(json_data)
 
-    async def set_character_details_for_redis(self, uid: int, character_id: int, detail: "CalculatorCharacterDetails"):
+    async def set_character_details(self, player_id: int, character_id: int, data: str):
         randint = random.randint(1, 30)  # nosec
         await self.redis.set(
-            self.get_qname(uid, character_id), detail.json(), ex=self.ttl + randint * 60  # 使用随机数防止缓存雪崩
-        )
+            self.get_qname(player_id, character_id), data, ex=self.expire + randint * 60
+        )  # 使用随机数防止缓存雪崩
+        async with AsyncSession(self.database.engine) as session:
+            statement = (
+                select(CharacterDetailsSQLModel)
+                .where(CharacterDetailsSQLModel.player_id == player_id)
+                .where(CharacterDetailsSQLModel.character_id == character_id)
+            )
+            results = await session.exec(statement)
+            sql_data = results.first()
+        if sql_data is None:
+            sql_data = CharacterDetailsSQLModel(
+                player_id=player_id, character_id=character_id, data=data, time_updated=datetime.now()
+            )
+            async with AsyncSession(self.database.engine) as session:
+                session.add(sql_data)
+                await session.commit()
+        else:
+            sql_data.data = data
+            sql_data.time_updated = datetime.now()
+            async with AsyncSession(self.database.engine) as session:
+                session.add(sql_data)
+                await session.commit()
+
+    async def set_character_details_task(self, player_id: int, character_id: int, data: str):
+        try:
+            await self.set_character_details(player_id, character_id, data)
+        except SQLAlchemyError as exc:
+            logger.error("写入到数据库失败 code[%s]", exc.code)
+            logger.debug("写入到数据库失败", exc_info=exc)
+        except Exception as exc:
+            logger.error("set_character_details 执行失败", exc_info=exc)
 
     async def get_character_details_for_mysql(
         self,
@@ -214,7 +188,7 @@ class CharacterDetails(Plugin):
                 if "Too Many Requests" in exc.msg:
                     return await self.get_character_details_for_mysql(uid, character_id)
                 raise exc
-            await self.set_character_details_for_redis(uid, character_id, detail)
+            asyncio.create_task(self.set_character_details(uid, character_id, detail.json()))
             return detail
         try:
             return await client.get_character_details(character)
