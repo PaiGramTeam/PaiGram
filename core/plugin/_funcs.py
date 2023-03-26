@@ -66,9 +66,9 @@ class PluginFuncs:
         except BadRequest as exc:
             logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
 
-    async def get_chat(self, chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, ttl: int = 86400) -> Chat:
+    async def get_chat(self, chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, expire: int = 86400) -> Chat:
         application = self.application
-        redis_db: RedisDB = redis_db or self.application.managers.services_map.get(RedisDB, None)
+        redis_db: RedisDB = redis_db or self.application.managers.dependency_map.get(RedisDB, None)
 
         if not redis_db:
             return await application.bot.get_chat(chat_id)
@@ -81,8 +81,7 @@ class PluginFuncs:
             return Chat.de_json(json_data, application.telegram.bot)
 
         chat_info = await application.telegram.bot.get_chat(chat_id)
-        await redis_db.client.set(qname, chat_info.to_json())
-        await redis_db.client.expire(qname, ttl)
+        await redis_db.client.set(qname, chat_info.to_json(), ex=expire)
         return chat_info
 
     def add_delete_message_job(
