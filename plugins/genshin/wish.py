@@ -241,7 +241,7 @@ class WishSimulatorPlugin(Plugin):
             reply_message = await message.reply_text("出错了呜呜呜 ~ 卡池部分数据未找到！")
             if filters.ChatType.GROUPS.filter(message):
                 self.add_delete_message_job(reply_message, name="wish_simulator")
-                self.add_delete_message_job(message.chat_id, name="wish_simulator")
+                self.add_delete_message_job(message, name="wish_simulator")
             return
         player_gacha_banner_info = player_gacha_info.get_banner_info(banner)
         template_data = {

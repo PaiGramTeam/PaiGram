@@ -104,7 +104,7 @@ class PluginFuncs:
 
         job_queue = self.application.job_queue or context.job_queue
 
-        if job_queue is None:
+        if job_queue is None or chat is None:
             raise RuntimeError
 
         return job_queue.run_once(

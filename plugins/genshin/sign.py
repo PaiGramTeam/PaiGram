@@ -87,7 +87,7 @@ class Sign(Plugin):
                 reply_message = await message.reply_text(msg)
                 if filters.ChatType.GROUPS.filter(message):
                     self.add_delete_message_job(reply_message, delay=30)
-                    self.add_delete_message_job(message.chat_id, delay=30)
+                    self.add_delete_message_job(message, delay=30)
                 return
         logger.info("用户 %s[%s] 每日签到命令请求", user.full_name, user.id)
         if filters.ChatType.GROUPS.filter(message):
@@ -118,7 +118,7 @@ class Sign(Plugin):
                 )
                 self.add_delete_message_job(reply_message, delay=30)
 
-                self.add_delete_message_job(message.chat_id, delay=30)
+                self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
         except NeedChallenge as exc:
