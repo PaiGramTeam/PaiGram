@@ -1,6 +1,5 @@
 import asyncio
 import random
-import re
 from datetime import datetime, timedelta, time
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 

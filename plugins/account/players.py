@@ -1,9 +1,9 @@
 import html
 from http.cookies import SimpleCookie
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import filters, ContextTypes
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import filters
 
 from core.basemodel import RegionEnum
 from core.plugin import Plugin, handler
@@ -13,6 +13,11 @@ from core.services.players.services import PlayerInfoService
 from modules.apihelper.client.components.authclient import AuthClient
 from modules.apihelper.models.genshin.cookies import CookiesModel
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import ContextTypes
+
 
 __all__ = ("PlayersManagesPlugin",)
 
@@ -35,7 +40,7 @@ class PlayersManagesPlugin(Plugin):
     @handler.command(command="player", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="players", filters=filters.ChatType.PRIVATE, block=False)
     @handler.callback_query(r"^players_manager\|list", block=False)
-    async def command_start(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = update.effective_user
         message = update.effective_message
@@ -64,7 +69,7 @@ class PlayersManagesPlugin(Plugin):
             await message.reply_text("从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler.callback_query(r"^players_manager\|get\|", block=False)
-    async def get_player(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def get_player(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
@@ -131,7 +136,7 @@ class PlayersManagesPlugin(Plugin):
         )
 
     @handler.callback_query(r"^players_manager\|update\|", block=False)
-    async def update_user(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def update_user(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
@@ -167,7 +172,7 @@ class PlayersManagesPlugin(Plugin):
             )
 
     @handler.callback_query(r"^players_manager\|refresh_cookies\|", block=False)
-    async def refresh_cookies(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def refresh_cookies(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
@@ -230,7 +235,7 @@ class PlayersManagesPlugin(Plugin):
             )
 
     @handler.callback_query(r"^players_manager\|export_cookies\|", block=False)
-    async def export_cookies(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def export_cookies(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         message = update.effective_message
         user = callback_query.from_user
@@ -281,7 +286,7 @@ class PlayersManagesPlugin(Plugin):
         await message.delete()
 
     @handler.callback_query(r"^players_manager\|main\|", block=False)
-    async def set_main(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def set_main(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
@@ -323,7 +328,7 @@ class PlayersManagesPlugin(Plugin):
         )
 
     @handler.callback_query(r"^players_manager\|del\|", block=False)
-    async def delete(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def delete(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 

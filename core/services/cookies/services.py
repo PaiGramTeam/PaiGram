@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 import genshin
-from genshin import Game, GenshinException, InvalidCookies, TooManyRequests, types
+from genshin import GenshinException, InvalidCookies, TooManyRequests, types
 
 from core.base_service import BaseService
 from core.basemodel import RegionEnum
