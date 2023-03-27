@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import genshin
 from genshin import DataNotPublic, GenshinException, types
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject
+from telegram.ext import ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
 from core.basemodel import RegionEnum
@@ -14,6 +14,11 @@ from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
 from core.services.players.services import PlayersService, PlayerInfoService
 from utils.log import logger
+
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import ContextTypes
 
 __all__ = ("BindAccountPlugin",)
 
@@ -51,7 +56,7 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.entry_point
     @handler.command(command="setuid", filters=filters.ChatType.PRIVATE, block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> int:
+    async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 绑定账号命令请求", user.full_name, user.id)
@@ -71,7 +76,7 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_SERVER)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def check_server(self, update: Update, context: CallbackContext) -> int:
+    async def check_server(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         if message.text == "退出":
@@ -92,7 +97,7 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_METHOD)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def check_method(self, update: Update, _: CallbackContext) -> int:
+    async def check_method(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
@@ -108,7 +113,7 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_ACCOUNT_ID)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def check_account(self, update: Update, context: CallbackContext) -> int:
+    async def check_account(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         user = update.effective_user
         message = update.effective_message
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
@@ -172,7 +177,7 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_PLAYER_ID)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def check_player(self, update: Update, context: CallbackContext) -> int:
+    async def check_player(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         user = update.effective_user
         message = update.effective_message
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
@@ -212,6 +217,9 @@ class BindAccountPlugin(Plugin.Conversation):
             logger.error("获取账号信息发生错误")
             logger.exception(exc)
             return ConversationHandler.END
+        except ValueError:
+            await message.reply_text("ID 格式有误，请检查", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
         player_info = await self.players_service.get(
             user.id, player_id=player_id, region=bind_account_plugin_data.region
         )
@@ -234,7 +242,7 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=COMMAND_RESULT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def command_result(self, update: Update, context: CallbackContext) -> int:
+    async def command_result(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         user = update.effective_user
         message = update.effective_message
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
