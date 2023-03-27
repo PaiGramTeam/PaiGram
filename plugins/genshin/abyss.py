@@ -132,7 +132,6 @@ class AbyssPlugin(Plugin):
         try:
             try:
                 client = await self.helper.get_genshin_client(user.id)
-                await client.get_record_cards()
                 uid = client.uid
             except CookiesNotFoundError:
                 client, uid = await self.helper.get_public_genshin_client(user.id)
