@@ -77,7 +77,9 @@ class HTTPXRequest(DefaultHTTPXRequest):
         write_timeout: Optional[float] = 5.0,
         connect_timeout: Optional[float] = 5.0,
         pool_timeout: Optional[float] = 1.0,
+        http_version: str = "1.1",
     ):
+        self._http_version = http_version
         timeout = Timeout(
             connect=connect_timeout,
             read=read_timeout,
@@ -88,19 +90,28 @@ class HTTPXRequest(DefaultHTTPXRequest):
             max_connections=connection_pool_size,
             max_keepalive_connections=connection_pool_size,
         )
+        if http_version not in ("1.1", "2"):
+            raise ValueError("`http_version` must be either '1.1' or '2'.")
+        http1 = http_version == "1.1"
         self._client_kwargs = dict(
             timeout=timeout,
             proxies=proxy_url,
             limits=limits,
             transport=AsyncHTTPTransport(limits=limits),
+            http1=http1,
+            http2=not http1,
         )
 
         try:
             self._client = self._build_client()
         except ImportError as exc:
-            if "httpx[socks]" not in str(exc):
+            if "httpx[http2]" not in str(exc) and "httpx[socks]" not in str(exc):
                 raise exc
 
+            if "httpx[socks]" in str(exc):
+                raise RuntimeError(
+                    "To use Socks5 proxies, PTB must be installed via `pip install " "python-telegram-bot[socks]`."
+                ) from exc
             raise RuntimeError(
-                "To use Socks5 proxies, PTB must be installed via `pip install python-telegram-bot[socks]`."
+                "To use HTTP/2, PTB must be installed via `pip install " "python-telegram-bot[http2]`."
             ) from exc

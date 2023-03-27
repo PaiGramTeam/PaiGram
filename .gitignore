@@ -44,6 +44,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+cache/
 nosetests.xml
 coverage.xml
 *.cover
@@ -145,3 +146,10 @@ plugins/private
 ### mtp ###
 paigram.session
 paigram.session-journal
+
+### ide ###
+.idea/
+.vscode/
+
+### Docker ###
+docker-compose.yml
