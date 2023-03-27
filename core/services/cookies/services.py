@@ -96,9 +96,7 @@ class PublicCookiesService(BaseService):
             try:
                 if client.cookie_manager.user_id is None:
                     raise RuntimeError("account_id not found")
-                record_card = (await client.get_record_cards())[0]
-                if record_card.game == Game.GENSHIN and region == RegionEnum.HYPERION:
-                    await client.get_partial_genshin_user(record_card.uid)
+                await client.genshin_accounts()
             except InvalidCookies as exc:
                 if exc.retcode in (10001, -100):
                     logger.warning("用户 [%s] Cookies无效", public_id)
