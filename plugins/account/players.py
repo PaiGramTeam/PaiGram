@@ -224,7 +224,7 @@ class PlayersManagesPlugin(Plugin):
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
                 return
-            cookies_data.data = cookies.json()
+            cookies_data.data = cookies.to_dict()
             await self.cookies_service.update(cookies_data)
             await callback_query.edit_message_text(
                 f"玩家 {player.player_id} {player_info.nickname} cookies 刷新成功", reply_markup=InlineKeyboardMarkup(buttons)
