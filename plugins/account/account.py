@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
 import genshin
-from genshin import DataNotPublic, GenshinException, types
+from genshin import DataNotPublic, GenshinException, types, AccountNotFound
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject
 from telegram.ext import ConversationHandler, filters
 from telegram.helpers import escape_markdown
@@ -205,6 +205,10 @@ class BindAccountPlugin(Plugin.Conversation):
             return ConversationHandler.END
         try:
             player_stats = await client.get_genshin_user(player_id)
+        except AccountNotFound:
+            await message.reply_text("找不到用户，uid可能无效", reply_markup=ReplyKeyboardRemove())
+            logger.warning("获取账号信息发生错误 %s 找不到用户 uid可能无效", player_id)
+            return ConversationHandler.END
         except DataNotPublic:
             await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())
             logger.warning("获取账号信息发生错误 %s 账户信息未公开", player_id)
