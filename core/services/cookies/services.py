@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 import genshin
-from genshin import GenshinException, InvalidCookies, TooManyRequests, types
+from genshin import GenshinException, InvalidCookies, TooManyRequests, types, Game
 
 from core.base_service import BaseService
 from core.basemodel import RegionEnum
@@ -96,7 +96,9 @@ class PublicCookiesService(BaseService):
             try:
                 if client.cookie_manager.user_id is None:
                     raise RuntimeError("account_id not found")
-                await client.genshin_accounts()
+                record_card = (await client.get_record_cards())[0]
+                if record_card.game == Game.GENSHIN and region == RegionEnum.HYPERION:
+                    await client.get_partial_genshin_user(record_card.uid)
             except InvalidCookies as exc:
                 if exc.retcode in (10001, -100):
                     logger.warning("用户 [%s] Cookies无效", public_id)
@@ -116,6 +118,8 @@ class PublicCookiesService(BaseService):
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
             except GenshinException as exc:
+                if "invalid content type" in exc.msg:
+                    raise exc
                 if exc.retcode == 1034:
                     logger.warning("用户 [%s] 触发验证", public_id)
                 else:
