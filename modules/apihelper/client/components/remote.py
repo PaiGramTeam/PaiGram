@@ -8,7 +8,7 @@ from metadata.scripts.metadatas import RESOURCE_DEFAULT_PATH
 class Remote:
     """拉取云控资源"""
 
-    BASE_URL = f"https://raw.fastgit.org/{RESOURCE_DEFAULT_PATH}"
+    BASE_URL = f"https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}"
     CALENDAR = f"{BASE_URL}calendar.json"
     BIRTHDAY = f"{BASE_URL}birthday.json"
 

@@ -183,5 +183,5 @@ class BirthdayPlugin(Plugin):
                 text = "没有领取到生日画片哦 ~ 可能是已经领取过了"
         reply_message = await message.reply_text(text)
         if filters.ChatType.GROUPS.filter(reply_message):
-            self.add_delete_message_job(message.chat_id)
-            self.add_delete_message_job(reply_message.chat_id)
+            self.add_delete_message_job(message)
+            self.add_delete_message_job(reply_message)

@@ -21,9 +21,10 @@ class JoinGroups(str, Enum):
     ALLOW_ALL = "ALLOW_ALL"
 
 
-class MySqlConfig(Settings):
-    host: str = "127.0.0.1"
-    port: int = 3306
+class DatabaseConfig(Settings):
+    driver_name: str = "mysql+asyncmy"
+    host: Optional[str] = None
+    port: Optional[int] = None
     username: Optional[str] = None
     password: Optional[str] = None
     database: Optional[str] = None
@@ -43,7 +44,7 @@ class RedisConfig(Settings):
 
 
 class LoggerConfig(Settings):
-    name: str = "TGPaimon"
+    name: str = "PaiGram"
     width: Optional[int] = None
     time_format: str = "[%Y-%m-%d %X]"
     traceback_max_frames: int = 20
@@ -146,7 +147,7 @@ class ApplicationConfig(Settings):
     pass_challenge_user_web: str = ""
 
     reload: ReloadConfig = ReloadConfig()
-    mysql: MySqlConfig = MySqlConfig()
+    database: DatabaseConfig = DatabaseConfig()
     logger: LoggerConfig = LoggerConfig()
     webserver: WebServerConfig = WebServerConfig()
     redis: RedisConfig = RedisConfig()

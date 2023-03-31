@@ -22,7 +22,6 @@ class RedisDB(BaseService.Dependence):
     ):
         self.client = aioredis.Redis(host=host, port=port, db=database, password=password)
         self.ttl = 600
-        self.key_prefix = "paimon_bot"
 
     async def ping(self):
         # noinspection PyUnresolvedReferences

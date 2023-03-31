@@ -132,7 +132,6 @@ class AbyssPlugin(Plugin):
         try:
             try:
                 client = await self.helper.get_genshin_client(user.id)
-                await client.get_record_cards()
                 uid = client.uid
             except CookiesNotFoundError:
                 client, uid = await self.helper.get_public_genshin_client(user.id)
@@ -142,16 +141,16 @@ class AbyssPlugin(Plugin):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
                 )
-                self.add_delete_message_job(reply_message.chat_id)
-                self.add_delete_message_job(message.chat_id)
+                self.add_delete_message_job(reply_message)
+                self.add_delete_message_job(message)
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         except TooManyRequestPublicCookies:
             reply_message = await message.reply_text("查询次数太多，请您稍后重试")
             if filters.ChatType.GROUPS.filter(message):
-                self.add_delete_message_job(reply_message.chat_id)
-                self.add_delete_message_job(message.chat_id)
+                self.add_delete_message_job(reply_message)
+                self.add_delete_message_job(message)
             return
 
         async def reply_message_func(content: str) -> None:

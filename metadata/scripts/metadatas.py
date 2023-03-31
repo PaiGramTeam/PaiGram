@@ -131,9 +131,8 @@ async def update_metadata_from_github(overwrite: bool = True):
 
 
 def make_github_fast(url: str) -> str:
-    url = url.replace("raw.githubusercontent.com", "raw.fastgit.org")
     url = url.replace("Dimbreath/GenshinData/master/", RESOURCE_DEFAULT_PATH)
     return url.replace(
         GENSHIN_PY_DATA_REPO,
-        f"https://raw.fastgit.org/{RESOURCE_DEFAULT_PATH}",
+        f"https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}",
     )

@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 import genshin
-from genshin import Game, GenshinException, InvalidCookies, TooManyRequests, types
+from genshin import GenshinException, InvalidCookies, TooManyRequests, types, Game
 
 from core.base_service import BaseService
 from core.basemodel import RegionEnum
@@ -118,6 +118,8 @@ class PublicCookiesService(BaseService):
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 continue
             except GenshinException as exc:
+                if "invalid content type" in exc.msg:
+                    raise exc
                 if exc.retcode == 1034:
                     logger.warning("用户 [%s] 触发验证", public_id)
                 else:

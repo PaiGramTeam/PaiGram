@@ -18,6 +18,7 @@ from httpx import AsyncClient, HTTPError, HTTPStatusError, TransportError, URL
 from typing_extensions import Self
 
 from core.base_service import BaseService
+from core.config import config
 from metadata.genshin import AVATAR_DATA, HONEY_DATA, MATERIAL_DATA, NAMECARD_DATA, WEAPON_DATA
 from metadata.scripts.honey import update_honey_metadata
 from metadata.scripts.metadatas import update_metadata_from_ambr, update_metadata_from_github
@@ -130,7 +131,9 @@ class _AssetsService(ABC):
     async def _download(self, url: StrOrURL, path: Path, retry: int = 5) -> Path | None:
         """从 url 下载图标至 path"""
         logger.debug("正在从 %s 下载图标至 %s", url, path)
-        headers = {"user-agent": "TGPaimonBot/3.0"} if URL(url).host == "enka.network" else None
+        headers = None
+        if config.enka_network_api_agent is not None and URL(url).host == "enka.network":
+            headers = {"user-agent": config.enka_network_api_agent}
         for time in range(retry):
             try:
                 response = await self.client.get(url, follow_redirects=False, headers=headers)

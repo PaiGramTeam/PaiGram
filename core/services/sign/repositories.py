@@ -3,7 +3,7 @@ from typing import List, Optional
 from sqlmodel import select
 
 from core.base_service import BaseService
-from core.dependence.mysql import MySQL
+from core.dependence.database import Database
 from core.services.sign.models import Sign
 from core.sqlmodel.session import AsyncSession
 
@@ -11,8 +11,8 @@ __all__ = ("SignRepository",)
 
 
 class SignRepository(BaseService.Component):
-    def __init__(self, mysql: MySQL):
-        self.engine = mysql.engine
+    def __init__(self, database: Database):
+        self.engine = database.engine
 
     async def add(self, sign: Sign):
         async with AsyncSession(self.engine) as session:

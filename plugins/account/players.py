@@ -1,13 +1,23 @@
-from typing import Tuple
+import html
+from http.cookies import SimpleCookie
+from typing import Tuple, TYPE_CHECKING
 
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import filters, ContextTypes
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import filters
 
+from core.basemodel import RegionEnum
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.players.services import PlayerInfoService
+from modules.apihelper.client.components.authclient import AuthClient
+from modules.apihelper.models.genshin.cookies import CookiesModel
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import ContextTypes
+
 
 __all__ = ("PlayersManagesPlugin",)
 
@@ -30,7 +40,7 @@ class PlayersManagesPlugin(Plugin):
     @handler.command(command="player", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="players", filters=filters.ChatType.PRIVATE, block=False)
     @handler.callback_query(r"^players_manager\|list", block=False)
-    async def command_start(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = update.effective_user
         message = update.effective_message
@@ -59,7 +69,7 @@ class PlayersManagesPlugin(Plugin):
             await message.reply_text("从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler.callback_query(r"^players_manager\|get\|", block=False)
-    async def get_player(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def get_player(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
@@ -102,12 +112,31 @@ class PlayersManagesPlugin(Plugin):
             ],
         ]
 
+        if player.account_id is not None:
+            cookies = await self.cookies_service.get(player.user_id, player.account_id, player.region)
+            if cookies is not None:
+                temp_buttons = [
+                    InlineKeyboardButton(
+                        "导出 Cookies",
+                        callback_data=f"players_manager|export_cookies|{user.id}|{player.player_id}",
+                    )
+                ]
+                if player.region == RegionEnum.HYPERION:
+                    temp_buttons.append(
+                        InlineKeyboardButton(
+                            "刷新 Cookies",
+                            callback_data=f"players_manager|refresh_cookies|{user.id}|{player.player_id}",
+                        )
+                    )
+
+                buttons.insert(-1, temp_buttons)
+
         await callback_query.edit_message_text(
             f"这里是 {player.player_id} {player_info.nickname}\n你想用这个账号做什么？", reply_markup=InlineKeyboardMarkup(buttons)
         )
 
     @handler.callback_query(r"^players_manager\|update\|", block=False)
-    async def update_user(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def update_user(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
@@ -142,8 +171,122 @@ class PlayersManagesPlugin(Plugin):
                 f"更新玩家信息 {player.player_id} 更新失败 请稍后重试", reply_markup=InlineKeyboardMarkup(buttons)
             )
 
+    @handler.callback_query(r"^players_manager\|refresh_cookies\|", block=False)
+    async def refresh_cookies(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        callback_query = update.callback_query
+        user = callback_query.from_user
+
+        _, user_id, player_id = self.players_manager_callback(callback_query.data)
+        if user.id != user_id:
+            if callback_query.message:
+                await callback_query.message.delete()
+            return
+
+        player = await self.players_service.get(user.id, player_id=player_id)
+        if player is None:
+            await callback_query.edit_message_text(f"账号 {player_id} 未找到")
+            return
+
+        player_info = await self.player_info_service.get(player)
+        if player_info is None:
+            await callback_query.edit_message_text(f"账号 {player_id} 信息未找到")
+            return
+
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    "« 返回",
+                    callback_data=f"players_manager|get|{user.id}|{player.player_id}",
+                )
+            ],
+        ]
+
+        cookies_data = await self.cookies_service.get(player.user_id, player.account_id, player.region)
+        if cookies_data is None:
+            await callback_query.edit_message_text(
+                f"玩家 {player.player_id} {player_info.nickname} cookies 未找到", reply_markup=InlineKeyboardMarkup(buttons)
+            )
+
+        cookies = CookiesModel(**cookies_data.data)
+
+        if cookies.stoken is not None:
+            try:
+                auth_client = AuthClient(cookies=cookies)
+                if await auth_client.get_cookie_token_by_stoken():
+                    logger.success("用户 %s[%s] 刷新 cookie_token 成功", user.full_name, user.id)
+                    if await auth_client.get_ltoken_by_stoken():
+                        logger.success("用户 %s[%s] 刷新 ltoken 成功", user.full_name, user.id)
+                        auth_client.cookies.remove_v2()
+            except Exception as exc:  # pylint: disable=W0703
+                logger.error("刷新 cookie_token 失败 [%s]", (str(exc)))
+                await callback_query.edit_message_text(
+                    f"玩家 {player.player_id} {player_info.nickname} cookies 刷新失败 可能 stoken 已经过期",
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                )
+                return
+            cookies_data.data = cookies.to_dict()
+            await self.cookies_service.update(cookies_data)
+            await callback_query.edit_message_text(
+                f"玩家 {player.player_id} {player_info.nickname} cookies 刷新成功", reply_markup=InlineKeyboardMarkup(buttons)
+            )
+        else:
+            await callback_query.edit_message_text(
+                f"玩家 {player.player_id} {player_info.nickname} stoken 未找到", reply_markup=InlineKeyboardMarkup(buttons)
+            )
+
+    @handler.callback_query(r"^players_manager\|export_cookies\|", block=False)
+    async def export_cookies(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        callback_query = update.callback_query
+        message = update.effective_message
+        user = callback_query.from_user
+
+        _, user_id, player_id = self.players_manager_callback(callback_query.data)
+        if user.id != user_id:
+            if callback_query.message:
+                await callback_query.message.delete()
+            return
+
+        player = await self.players_service.get(user.id, player_id=player_id)
+        if player is None:
+            await callback_query.edit_message_text(f"账号 {player_id} 未找到")
+            return
+
+        player_info = await self.player_info_service.get(player)
+        if player_info is None:
+            await callback_query.edit_message_text(f"账号 {player_id} 信息未找到")
+            return
+
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    "« 返回",
+                    callback_data=f"players_manager|get|{user.id}|{player.player_id}",
+                )
+            ],
+        ]
+
+        cookies_data = await self.cookies_service.get(player.user_id, player.account_id, player.region)
+        if cookies_data is None:
+            await callback_query.edit_message_text(
+                f"玩家 {player.player_id} {player_info.nickname} cookies 未找到", reply_markup=InlineKeyboardMarkup(buttons)
+            )
+
+        cookies = SimpleCookie()
+        for key, value in cookies_data.data.items():
+            cookies[key] = value
+
+        cookie_str = cookies.output(header="", sep=";")
+
+        await message.reply_html(
+            f"<pre>{html.escape(cookie_str)}</pre>",
+        )
+        await message.reply_text(
+            f"玩家 {player.player_id} {player_info.nickname} cookies 导出成功", reply_markup=InlineKeyboardMarkup(buttons)
+        )
+        await message.delete()
+
     @handler.callback_query(r"^players_manager\|main\|", block=False)
-    async def set_main(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def set_main(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
@@ -185,7 +328,7 @@ class PlayersManagesPlugin(Plugin):
         )
 
     @handler.callback_query(r"^players_manager\|del\|", block=False)
-    async def delete(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def delete(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
 
