@@ -42,7 +42,7 @@ jobs:
         with:
           author_name: github-actions[bot]
           author_email: github-actions[bot]@users.noreply.github.com
-          message: ':Update poetry.lock and requirements.txt'
+          message: ':arrow_up: Update poetry.lock and requirements.txt'
           add: |
             'poetry.lock'
             'requirements.txt'
