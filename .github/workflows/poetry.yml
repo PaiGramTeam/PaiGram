@@ -5,9 +5,11 @@ on:
     paths:
       - pyproject.toml
   workflow_dispatch:
+    description: 'Set to true to run the workflow'
 
 jobs:
   update-lockfile-and-requirements:
+    name: Update Lockfile and Requirements
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -18,10 +20,13 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: Install dependencies
+      - name: Install Poetry
         run: |
           pip install --upgrade pip
           pip install poetry
+
+      - name: Install dependencies
+        run: |
           rm -r poetry.lock
           poetry install
 
@@ -30,8 +35,14 @@ jobs:
         run: |
           poetry lock
           poetry export -f requirements.txt --output requirements.txt --without-hashes
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          git add poetry.lock requirements.txt
-          git commit -m "Update poetry.lock and requirements.txt"
-          git push
+
+      - name: Commit changes
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.client_payload.run_workflow == true }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: github-actions[bot]
+          author_email: github-actions[bot]@users.noreply.github.com
+          message: ':Update poetry.lock and requirements.txt'
+          add: |
+            'poetry.lock'
+            'requirements.txt'
