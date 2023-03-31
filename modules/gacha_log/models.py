@@ -9,7 +9,7 @@ from modules.gacha_log.const import UIGF_VERSION
 
 
 class ImportType(Enum):
-    TGPaimonBot = "TGPaimonBot"
+    PaiGram = "PaiGram"
     PAIMONMOE = "PAIMONMOE"
     FXQ = "FXQ"
     UIGF = "UIGF"

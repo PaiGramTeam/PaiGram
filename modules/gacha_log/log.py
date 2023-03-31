@@ -128,9 +128,7 @@ class GachaLog:
         if not state:
             raise GachaLogNotFound
         save_path = self.gacha_log_path / f"{user_id}-{uid}-uigf.json"
-        info = UIGFModel(
-            info=UIGFInfo(uid=uid, export_app=ImportType.TGPaimonBot.value, export_app_version="v3"), list=[]
-        )
+        info = UIGFModel(info=UIGFInfo(uid=uid, export_app=ImportType.PaiGram.value, export_app_version="v3"), list=[])
         for items in data.item_list.values():
             for item in items:
                 info.list.append(
