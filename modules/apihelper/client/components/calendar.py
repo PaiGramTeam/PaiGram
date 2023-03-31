@@ -19,6 +19,7 @@ class Calendar:
     """原神活动日历"""
 
     ANNOUNCEMENT_LIST = "https://hk4e-api.mihoyo.com/common/hk4e_cn/announcement/api/getAnnList"
+    ANNOUNCEMENT_CONTENT = "https://hk4e-api.mihoyo.com/common/hk4e_cn/announcement/api/getAnnContent"
     ANNOUNCEMENT_PARAMS = {
         "game": "hk4e",
         "game_biz": "hk4e_cn",
@@ -69,6 +70,35 @@ class Calendar:
         """获取当前时间"""
         return datetime.now().replace(minute=0, second=0, microsecond=0)
 
+    async def parse_official_content_date(self) -> Dict[str, ActTime]:
+        """解析官方内容时间"""
+        time_map = {}
+        req = await self.client.get(self.ANNOUNCEMENT_CONTENT, params=self.ANNOUNCEMENT_PARAMS)
+        if req.status_code != 200:
+            return time_map
+        detail_data = req.json()
+        for data in detail_data.get("data", {}).get("list", []):
+            ann_id = data.get("ann_id", 0)
+            title = data.get("title", "")
+            content = data.get("content", "")
+            if ann_id in self.IGNORE_IDS or self.IGNORE_RE.findall(title):
+                continue
+            content = re.sub(r'(<|&lt;)[\w "%:;=\-\\/\\(\\),\\.]+(>|&gt;)', "", content)
+            try:
+                if reg_ret := re.search(r"(?:活动时间|祈愿介绍|任务开放时间|冒险....包|折扣时间)\s*〓([^〓]+)(〓|$)", content):
+                    if time_ret := re.search(r"(?:活动时间)?(?:〓|\s)*([0-9\\/\\: ~]{6,})", reg_ret[1]):
+                        start_time, end_time = time_ret[1].split("~")
+                        start_time = start_time.replace("/", "-").strip()
+                        end_time = end_time.replace("/", "-").strip()
+                        time_map[str(ann_id)] = ActTime(
+                            title=title,
+                            start=start_time,
+                            end=end_time,
+                        )
+            except (IndexError, ValueError):
+                continue
+        return time_map
+
     async def req_cal_data(self) -> Tuple[List[List[ActDetail]], Dict[str, ActTime]]:
         """请求日历数据"""
         list_data = await self.client.get(self.ANNOUNCEMENT_LIST, params=self.ANNOUNCEMENT_PARAMS)
@@ -79,6 +109,7 @@ class Calendar:
             for item in data.get("list", []):
                 new_list_data[idx].append(ActDetail(**item))
         time_map = {}
+        time_map.update(await self.parse_official_content_date())
         req = await self.client.get(self.MIAO_API)
         if req.status_code == 200:
             miao_data = req.json()
