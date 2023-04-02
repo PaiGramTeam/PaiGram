@@ -56,7 +56,7 @@ class GameMaterialService(BaseService):
     def __init__(self, cache: GameCacheForMaterial, collections: Optional[List[int]] = None):
         self._cache = cache
         self._hyperion = Hyperion()
-        self._collections = [428421, 1164644] if collections is None else collections
+        self._collections = [428421, 1362644] if collections is None else collections
         self._special = ["雷电将军", "珊瑚宫心海", "菲谢尔", "托马", "八重神子", "九条裟罗", "辛焱", "神里绫华"]
 
     async def _get_material_from_hyperion(self, collection_id: int, character_name: str) -> int:
@@ -91,11 +91,11 @@ class GameMaterialService(BaseService):
 
             artwork_info = await self._hyperion.get_post_info(2, post_id)
             image_url_list = artwork_info.image_urls
+            if collection_id == 1362644 or character_name in self._special:
+                image_url_list.pop(0)
             await self._cache.set_url_list(character_name, image_url_list)
         if len(image_url_list) == 0:
             return ""
         if len(image_url_list) == 1:
             return image_url_list[0]
-        if character_name in self._special:
-            return image_url_list[2]
         return image_url_list[1]
