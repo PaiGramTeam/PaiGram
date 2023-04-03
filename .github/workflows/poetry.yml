@@ -34,12 +34,9 @@ jobs:
           poetry lock
           poetry export -f requirements.txt --output requirements.txt --without-hashes
 
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v9
+      - name: Upload Lockfile and Requirements
+        uses: actions/upload-artifact@v3
         with:
-          author_name: github-actions[bot]
-          author_email: github-actions[bot]@users.noreply.github.com
-          message: ':arrow_up: Update poetry.lock and requirements.txt'
-          add: |
-            'poetry.lock'
-            'requirements.txt'
+          path: |
+            poetry.lock
+            requirements.txt
