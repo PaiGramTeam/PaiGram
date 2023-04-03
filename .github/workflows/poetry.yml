@@ -1,18 +1,13 @@
 name: Update Lockfile and Requirements
 
 on:
-  push:
-    paths:
-      - pyproject.toml
-  workflow_dispatch:
-    inputs:
-      commit_changes:
-        description: 'Commit changes'
-        required: true
-        default: false
+  pull_request:
+    types:
+      - labeled
 
 jobs:
   update-lockfile-and-requirements:
+    if: github.event.label.name == 'Update Lockfile and Requirements'
     name: Update Lockfile and Requirements
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +35,6 @@ jobs:
           poetry export -f requirements.txt --output requirements.txt --without-hashes
 
       - name: Commit changes
-        if: ${{ github.event.inputs.commit_changes == true }}
         uses: EndBug/add-and-commit@v9
         with:
           author_name: github-actions[bot]
