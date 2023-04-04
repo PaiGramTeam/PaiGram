@@ -89,9 +89,9 @@ class PublicCookiesCache(BaseService.Component):
                 await pipe.zcard(self.score_qname)
             return await pipe.execute()
 
-    async def incr_by_user_times(self, user_id: Union[List[int], int]):
+    async def incr_by_user_times(self, user_id: Union[List[int], int], amount: int = 1):
         qname = f"{self.user_times_qname}:{user_id}"
-        times = await self.client.incrby(qname)
+        times = await self.client.incrby(qname, amount)
         if times <= 1:
             await self.client.expire(qname, self.user_times_ttl)
         return times

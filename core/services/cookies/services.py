@@ -77,7 +77,7 @@ class PublicCookiesService(BaseService):
         """
         user_times = await self._cache.incr_by_user_times(user_id)
         if int(user_times) > self.user_times_limiter:
-            logger.warning("用户 %s 使用公共Cookie次数已经到达上限", user_id)
+            logger.warning("用户 %s 使用公共Cookies次数已经到达上限", user_id)
             raise TooManyRequestPublicCookies(user_id)
         while True:
             public_id, count = await self._cache.get_public_cookies(region)
@@ -96,14 +96,22 @@ class PublicCookiesService(BaseService):
             try:
                 if client.cookie_manager.user_id is None:
                     raise RuntimeError("account_id not found")
-                record_card = (await client.get_record_cards())[0]
-                if record_card.game == Game.GENSHIN and region == RegionEnum.HYPERION:
-                    await client.get_partial_genshin_user(record_card.uid)
+                record_cards = await client.get_record_cards()
+                for record_card in record_cards:
+                    if record_card.game == Game.GENSHIN:
+                        await client.get_partial_genshin_user(record_card.uid)
+                        break
+                else:
+                    accounts = await client.get_game_accounts()
+                    for account in accounts:
+                        if account.game == Game.GENSHIN:
+                            await client.get_partial_genshin_user(account.uid)
+                            break
             except InvalidCookies as exc:
                 if exc.retcode in (10001, -100):
                     logger.warning("用户 [%s] Cookies无效", public_id)
                 elif exc.retcode == 10103:
-                    logger.warning("用户 [%s] Cookie有效，但没有绑定到游戏帐户", public_id)
+                    logger.warning("用户 [%s] Cookies有效，但没有绑定到游戏帐户", public_id)
                 else:
                     logger.warning("Cookies无效 ")
                     logger.exception(exc)
@@ -137,5 +145,15 @@ class PublicCookiesService(BaseService):
             except Exception as exc:
                 await self._cache.delete_public_cookies(cookies.user_id, region)
                 raise exc
-            logger.info("用户 user_id[%s] 请求用户 user_id[%s] 的公共Cookies 该Cookie使用次数为%s次 ", user_id, public_id, count)
+            logger.info("用户 user_id[%s] 请求用户 user_id[%s] 的公共Cookies 该Cookies使用次数为%s次 ", user_id, public_id, count)
             return cookies
+
+    async def undo(self, user_id: int, cookies: Optional[Cookies] = None, status: Optional[CookiesStatusEnum] = None):
+        await self._cache.incr_by_user_times(user_id, -1)
+        if cookies is not None and status is not None:
+            cookies.status = status
+            await self._repository.update(cookies)
+            await self._cache.delete_public_cookies(cookies.user_id, cookies.region)
+            logger.info("用户 user_id[%s] 反馈用户 user_id[%s] 的Cookies状态为 %s", user_id, cookies.user_id, status.name)
+        else:
+            logger.info("用户 user_id[%s] 撤销一次公共Cookies计数", user_id)
