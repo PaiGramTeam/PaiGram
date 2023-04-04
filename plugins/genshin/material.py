@@ -162,7 +162,6 @@ class MaterialPlugin(Plugin):
         ]
 
         return {
-            "bot_username": self.application.bot.username,
             "character": {
                 "element": character.enka.element.name,
                 "image": character.enka.images.banner.url,
