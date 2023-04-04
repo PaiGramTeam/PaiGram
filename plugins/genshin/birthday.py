@@ -157,7 +157,7 @@ class BirthdayPlugin(Plugin):
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=ParseMode.HTML,
                 )
-                self.add_delete_message_job(reply_msg.chat_id, delay=30)
+                self.add_delete_message_job(reply_msg, delay=30)
                 self.add_delete_message_job(message, delay=30)
             else:
                 await message.reply_text(
