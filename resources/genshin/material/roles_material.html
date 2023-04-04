@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <title>Title</title>
+    <script src="../../js/tailwindcss-3.1.8.js"></script>
+    <link href="../../styles/public.css" rel="stylesheet" type="text/css"/>
+    <style>
+        @font-face {
+            font-family: siyuan;
+            src: url(../../fonts/SourceHanSerifCN-Heavy.woff) format("woff");
+            font-style: normal;
+        }
+
+        .text-shadow {
+            text-shadow: 0 0.08em 0.1em #000, 0 0.1em 0.3em rgba(0, 0, 0, 0.4);
+        }
+
+        .num {
+            color: white;
+            text-shadow: black 2px 0 0, black 0 2px 0, black -2px 0 0, black 0 -2px 0;
+        }
+
+        .title-fieldset {
+            border: none;
+            border-top: 2px solid;
+        }
+
+        .title-fieldset .inner {
+            margin: 0 auto;
+        }
+
+    </style>
+</head>
+<body>
+<div class="bg-no-repeat bg-cover overflow-hidden" style="background-image: url('../player_card/img/bg-{{ character.element | lower }}.jpg')">
+    <div class="relative round-l-3xl">
+        <div
+                class="absolute w-full h-full -left-1/4 -bottom-32 opacity-80 bg-no-repeat bg-center"
+                style="background-image: url('{{ character.image }}'); background-size: auto 100%; transform: scale(3); "
+        ></div>
+        <div class="relative">
+            <div class="flex-1">
+                <div class="text-7xl text-right text-neutral-200 text-shadow p-10 tracking-wide"
+                     style="font-family: siyuan,serif">
+                    <div class="mb-2 leading-relaxed">
+                        {{ character.name }}
+                    </div>
+                    <div class="flex justify-end">
+                        <div class="text-4xl">角色培养素材一览</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="relative bg-amber-50 text-center text-yellow-900 p-5 m-4 rounded-3xl text-3xl bg-no-repeat bg-center"
+         style="background-image: url('img/{{ character.association | lower}}.webp'); background-size: auto 65%;">
+        <div class="font-shadow">
+            <div class="">★等级突破★</div>
+            <div class="text-left m-10">
+                <span style="border-left: 8px solid;">&nbsp;</span>
+                <span>&nbsp;角色90级升级材料</span>
+                <div class="text-right -mt-1.5" style="float: right">
+                    <span>摩拉消耗</span>
+                    <span class="text-4xl">x2,092,530</span>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-5 font-shadow ml-14" style="justify-content: left;">
+            {% for material in level_up_materials %}
+            <div class="text-center w-28">
+                <div class="w-28 h-28">
+                    <div class="text-right text-2xl mr-1 num">{{ material.num }}</div>
+                    <div class="rounded-lg shadow-lg bg-contain bg-no-repeat"
+                         style="background-image: url('../../background/rarity/half/{{ material.rarity }}.png')">
+                        <div class="w-28 h-28 -my-8"
+                             style="background-image: url('{{ material.icon }}'); background-size: auto 100%;"></div>
+                    </div>
+                </div>
+                <div class="text-2xl">
+                    <div style="word-wrap:break-word;">{{ material.name }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="relative text-2xl mt-5 font-shadow">
+            <div class="text-2xl text-gray-700" style="font-family: HYWH,serif">
+                <span>突破至81级（其它材料数量不变）：&nbsp;摩拉&nbsp;x</span>
+                <span class="text-3xl">1,444,540&nbsp;&nbsp;</span>
+                <span>大英雄的经验</span>
+                <span class="text-3xl">x257<br></span>
+            </div>
+        </div>
+
+        <fieldset class="title-fieldset bg-yellow-900 mt-6">
+            <legend class="inner"></legend>
+        </fieldset>
+
+        <div class="font-shadow">
+            <div class="mt-4">★天赋升级★</div>
+            <div class="text-left m-10">
+                <span style="border-left: 8px solid;">&nbsp;</span>
+                <span>&nbsp;满级天赋升级材料</span>
+                <div class="text-right -mt-1.5" style="float: right">
+                    <span>摩拉消耗</span>
+                    <span class="text-4xl">x4,957,500</span>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-5 font-shadow ml-14" style="justify-content: left;">
+            {% for material in talent_materials %}
+            <div class="text-center w-28">
+                <div class="w-28 h-28">
+                    <div class="text-right text-2xl mr-1 num">{{ material.num }}</div>
+                    <div class="rounded-lg shadow-lg bg-contain bg-no-repeat"
+                         style="background-image: url('../../background/rarity/half/{{ material.rarity }}.png')">
+                        <div class="w-28 h-28 -my-8"
+                             style="background-image: url('{{ material.icon }}'); background-size: auto 100%;"></div>
+                    </div>
+                </div>
+                <div class="text-2xl">
+                    <div style="word-wrap:break-word;">{{ material.name }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="relative text-center text-gray-700 text-2xl mt-5 font-shadow" style="font-family: HYWH,serif">
+            <div style="display: flex;justify-content: center;align-content: center">
+                <table class="table-auto" style="font-family: HYWH,serif">
+                    <caption>将角色天赋升至{{ talent_level }}时所需材料：</caption>
+                    <tr><th></th></tr>
+                    <tr>
+                        {% for i in range(1, 4) %}
+                        {% if talent_amount[i] > 0 %}
+                            <td class="px-6 py-1">{{ talent_materials[i - 1].name }} x{{ talent_amount[i] }}</td>
+                        {% endif %}
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for i in range(4, 7) %}
+                        {% if talent_amount[i] > 0 %}
+                        <td class="px-6 py-1">{{ talent_materials[i - 1].name }} x{{ talent_amount[i] }}</td>
+                        {% endif %}
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for i in range(7, 9) %}
+                        {% if talent_amount[i] > 0 %}
+                        <td class="px-6 py-1">{{ talent_materials[i - 1].name }} x{{ talent_amount[i] }}</td>
+                        {% endif %}
+                        {% endfor %}
+                        {% if talent_amount[0] > 0 %}
+                        <td class="px-6 py-1">摩拉 x{{ talent_amount[0] }}</td>
+                        {% endif %}
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-xl text-center my-5 num">
+        Created by @{{ bot_username }}
+    </div>
+</div>
+</body>
+</html>
