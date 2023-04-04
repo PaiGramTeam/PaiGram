@@ -3,7 +3,7 @@ from typing import List
 from core.base_service import BaseService
 from core.dependence.redisdb import RedisDB
 
-__all__ = ["GameCache", "GameCacheForStrategy", "GameCacheForMaterial"]
+__all__ = ["GameCache", "GameCacheForStrategy"]
 
 
 class GameCache:
@@ -27,7 +27,3 @@ class GameCache:
 
 class GameCacheForStrategy(BaseService.Component, GameCache):
     qname = "game:strategy"
-
-
-class GameCacheForMaterial(BaseService.Component, GameCache):
-    qname = "game:material"
