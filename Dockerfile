@@ -15,6 +15,7 @@ RUN echo "deb http://ftp.us.debian.org/debian buster main non-free" >> /etc/apt/
     && . venv/bin/activate                         \
     && poetry config virtualenvs.create false      \
     && poetry source add --default mirrors https://pypi.tuna.tsinghua.edu.cn/simple/ \
+    && poetry source add --secondary mirrors https://mirrors.aliyun.com/pypi/simple  \
     && poetry install                              \
     && poetry install --extras all                 \
     && playwright install chromium                 \

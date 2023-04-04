@@ -22,7 +22,7 @@ services:
       driver: none
 
   paimon:
-    image: docker.io/rtpaimon/tgpaimonbot:v4
+    image: docker.io/paigramteam/paigram:v4
     restart: always
     environment:
       - WAIT_HOSTS=mysql:3306, redis:6379
