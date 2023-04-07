@@ -70,7 +70,7 @@ class UserAdminService(BaseService):
         else:
             user = User(user_id=user_id, permissions=PermissionsEnum.ADMIN)
             await self.user_repository.add(user)
-        return await self._cache.set(user.user_id)
+        return await self._cache.set(user_id)
 
     async def delete_admin(self, user_id: int) -> bool:
         user = await self.user_repository.get_by_user_id(user_id)
