@@ -6,12 +6,26 @@
     <link type="text/css" href="../../styles/tailwind.min.css" rel="stylesheet">
     <link type="text/css" href="./weapon.css" rel="stylesheet">
     <link type="text/css" href="../../styles/public.css" rel="stylesheet">
+    <style>
+        .material-star {
+            position: relative;
+            top: -5px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+        }
+    </style>
 </head>
 <body>
 <div class="page-container container mx-auto my-6 rounded-xl px-6 py-6 max-w-lg flex flex-col divide-y-2 divide-inherit" id="container">
     <div class="base-weapon-info flex py-2">
         <div class="base-weapon-info-name flex-grow m-5 ml-2 font-thin text-4xl">
             <h1>{{weapon_name}}</h1>
+            <div class="material-star mt-4" style="height: 40px;width: 20px;">
+            {% for _ in range(weapon_rarity) %}
+                <img alt="star" src="../../background/rarity/star.webp"/>
+            {% endfor %}
+            </div>
         </div>
         <div class="base-weapon-info-type-img m-2 mr-8 flex-shrink h-16 w-16">
             <img src="{{weapon_info_type_img}}">
@@ -57,6 +71,15 @@
             <div class="special-ability-info text-base">
                 <samp>{{special_ability_info}}</samp>
             </div>
+            {% if weapon_rarity > 2 %}
+            <div class="text-base opacity-70 mt-5">
+                <samp>{{weapon_description}}</samp>
+            </div>
+            {% else %}
+            <div class="text-base">
+                <samp>{{weapon_description}}</samp>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

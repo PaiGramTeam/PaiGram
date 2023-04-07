@@ -99,7 +99,7 @@ class Weapon(WikiModel):
             affix = WeaponAffix(
                 name=get_table_text(7), description=[i.find_all("td")[1].text for i in tables[3].find_all("tr")[1:]]
             )
-            description = get_table_text(-1) if len(tables) < 11 else get_table_text(9)
+            description = get_table_text(9)
             if story_table := find_table("quotes"):
                 story = story_table[0].text.strip()
             else:
