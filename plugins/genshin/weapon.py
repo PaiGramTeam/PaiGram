@@ -71,6 +71,7 @@ class WeaponPlugin(Plugin):
                     bonus = str(round(float(bonus)))
                 _template_data = {
                     "weapon_name": _weapon_data.name,
+                    "weapon_rarity": _weapon_data.rarity,
                     "weapon_info_type_img": await self.download_resource(_weapon_data.weapon_type.icon_url()),
                     "progression_secondary_stat_value": bonus,
                     "progression_secondary_stat_name": _weapon_data.attribute.type.value,
@@ -85,10 +86,12 @@ class WeaponPlugin(Plugin):
                     ],
                     "special_ability_name": _weapon_data.affix.name,
                     "special_ability_info": _weapon_data.affix.description[0],
+                    "weapon_description": _weapon_data.description,
                 }
             else:
                 _template_data = {
                     "weapon_name": _weapon_data.name,
+                    "weapon_rarity": _weapon_data.rarity,
                     "weapon_info_type_img": await self.download_resource(_weapon_data.weapon_type.icon_url()),
                     "progression_secondary_stat_value": " ",
                     "progression_secondary_stat_name": "无其它属性加成",
@@ -102,7 +105,8 @@ class WeaponPlugin(Plugin):
                         for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": "",
-                    "special_ability_info": _weapon_data.description,
+                    "special_ability_info": "",
+                    "weapon_description": _weapon_data.description,
                 }
             return _template_data
 

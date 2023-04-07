@@ -5,12 +5,26 @@
     <title>weapon</title>
     <script src="https://cdn.tailwindcss.com/"></script>
     <link type="text/css" href="./weapon.css" rel="stylesheet">
+    <style>
+    .material-star {
+        position: relative;
+        top: -5px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+    }
+    </style>
 </head>
 <body>
 <div class="container mx-auto px-6 py-6 max-w-lg" id="container">
     <div class="base-weapon-info rounded-xl flex mb-4">
         <div class="base-weapon-info-name flex-grow m-5 ml-2 text-4xl text-white">
             <h1>测试</h1>
+            <div class="material-star mt-4" style="height: 40px;width: 20px;">
+                <img alt="star" src="../../background/rarity/star.webp"/>
+                <img alt="star" src="../../background/rarity/star.webp"/>
+                <img alt="star" src="../../background/rarity/star.webp"/>
+            </div>
         </div>
         <div class="base-weapon-info-type m-2 mr-8 flex-shrink h-16 w-16">
             <img src="./../../img/example/256x256.png">
@@ -60,6 +74,10 @@
             <div class="stat-progression-base-atk text-base text-white">
                 <samp>这是个测试描述这是个测试描述这是个测试描述这是个测试描述这是个测试描述这是个测试描述
                 这是个测试描述这是个测试描述这是个测试描述这是个测试描述这是个测试描述这是个测试描述</samp>
+            </div>
+            <div class="text-base opacity-70 mt-5">
+                <samp>这是个武器介绍这是个武器介绍这是个武器介绍这是个武器介绍这是个武器介绍这是个武器介绍
+                这是个武器介绍这是个武器介绍这是个武器介绍这是个武器介绍这是个武器介绍这是个武器介绍</samp>
             </div>
         </div>
     </div>
