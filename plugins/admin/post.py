@@ -48,6 +48,8 @@ class Post(Plugin.Conversation):
     MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]], True, True)
 
     def __init__(self):
+        self.gids = 2
+        self.short_name = "ys"
         self.bbs = Hyperion(
             timeout=Timeout(
                 connect=config.connect_timeout,
@@ -68,7 +70,7 @@ class Post(Plugin.Conversation):
 
         # 请求推荐POST列表并处理
         try:
-            official_recommended_posts = await self.bbs.get_official_recommended_posts(2)
+            official_recommended_posts = await self.bbs.get_official_recommended_posts(self.gids)
         except APIHelperException as exc:
             logger.error("获取首页推荐信息失败 %s", str(exc))
             return
@@ -85,14 +87,14 @@ class Post(Plugin.Conversation):
         # 筛选出新推送的文章
         new_post_id_list = set(temp_post_id_list).difference(set(self.last_post_id_list))
 
-        if len(new_post_id_list) == 0:
+        if not new_post_id_list:
             return
 
         self.last_post_id_list = temp_post_id_list
 
         for post_id in new_post_id_list:
             try:
-                post_info = await self.bbs.get_post_info(2, post_id)
+                post_info = await self.bbs.get_post_info(self.gids, post_id)
             except APIHelperException as exc:
                 logger.error("获取文章信息失败 %s", str(exc))
                 text = f"获取 post_id[{post_id}] 文章信息失败 {str(exc)}"
@@ -108,7 +110,7 @@ class Post(Plugin.Conversation):
                     InlineKeyboardButton("取消", callback_data=f"post_admin|cancel|{post_info.post_id}"),
                 ]
             ]
-            url = f"https://www.miyoushe.com/ys/article/{post_info.post_id}"
+            url = f"https://www.miyoushe.com/{self.short_name}/article/{post_info.post_id}"
             text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理"
             try:
                 await context.bot.send_message(
@@ -124,17 +126,19 @@ class Post(Plugin.Conversation):
                 return f"[{escape_markdown(_tag.get_text(), version=2)}]({_tag.get('href')})"
             return escape_markdown(_tag.get_text(), version=2)
 
-        post_p = soup.find_all("p")
         post_text = f"*{escape_markdown(post_subject, version=2)}*\n\n"
         start = True
-        for p in post_p:
-            t = p.get_text()
-            if not t and start:
-                continue
-            start = False
-            for tag in p.contents:
-                post_text += parse_tag(tag)
-            post_text += "\n"
+        if post_p := soup.find_all("p"):
+            for p in post_p:
+                t = p.get_text()
+                if not t and start:
+                    continue
+                start = False
+                for tag in p.contents:
+                    post_text += parse_tag(tag)
+                post_text += "\n"
+        else:
+            post_text += f"{escape_markdown(soup.get_text(), version=2)}\n"
         return post_text
 
     @staticmethod
@@ -213,13 +217,13 @@ class Post(Plugin.Conversation):
         return await self.send_post_info(post_handler_data, message, post_id)
 
     async def send_post_info(self, post_handler_data: PostHandlerData, message: "Message", post_id: int) -> int:
-        post_info = await self.bbs.get_post_info(2, post_id)
-        post_images = await self.bbs.get_images_by_post_id(2, post_id)
+        post_info = await self.bbs.get_post_info(self.gids, post_id)
+        post_images = await self.bbs.get_images_by_post_id(self.gids, post_id)
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
         post_text = self.parse_post_text(post_soup, post_subject)
-        post_text += f"[source](https://www.miyoushe.com/ys/article/{post_id})"
+        post_text += f"[source](https://www.miyoushe.com/{self.short_name}/article/{post_id})"
         if len(post_text) >= MessageLimit.CAPTION_LENGTH:
             post_text = post_text[: MessageLimit.CAPTION_LENGTH]
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割")
