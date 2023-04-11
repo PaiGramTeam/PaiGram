@@ -1,5 +1,5 @@
 from telegram import Chat, Update, User
-from telegram.error import NetworkError
+from telegram.error import NetworkError, Forbidden
 from telegram.ext import CallbackContext, ChatMemberHandler
 
 from core.config import JoinGroups, config
@@ -76,10 +76,19 @@ class ChatMember(Plugin):
         if quit_status:
             try:
                 await context.bot.send_message(chat.id, "派蒙不想进去！不是旅行者的邀请！")
+            except Forbidden as exc:
+                logger.info("发送消息失败 %s", exc.message)
             except NetworkError as exc:
                 logger.info("发送消息失败 %s", exc.message)
             except Exception as exc:
                 logger.info("发送消息失败", exc_info=exc)
             await context.bot.leave_chat(chat.id)
         else:
-            await context.bot.send_message(chat.id, "感谢邀请小派蒙到本群！请使用 /help 查看咱已经学会的功能。")
+            try:
+                await context.bot.send_message(chat.id, "感谢邀请小派蒙到本群！请使用 /help 查看咱已经学会的功能。")
+            except Forbidden as exc:
+                logger.info("发送消息失败 %s", exc.message)
+            except NetworkError as exc:
+                logger.info("发送消息失败 %s", exc.message)
+            except Exception as exc:
+                logger.info("发送消息失败", exc_info=exc)
