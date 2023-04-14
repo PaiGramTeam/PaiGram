@@ -209,8 +209,8 @@ class Post(Plugin.Conversation):
                     command = self.get_ffmpeg_command(file_path, temp_path)
                     result, return_code = await self.execute(command)
                     if return_code == 0:
-                        logger.debug("ffmpeg 执行成功\n%s", result)
                         if os.path.exists(temp_path):
+                            logger.debug("ffmpeg 执行成功\n%s", result)
                             os.rename(temp_path, output_path)
                             async with aiofiles.open(output_path, mode="rb") as f:
                                 i.data = await f.read()
