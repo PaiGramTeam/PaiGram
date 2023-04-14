@@ -1,4 +1,5 @@
 import os
+from asyncio import create_subprocess_shell, subprocess
 from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 import aiofiles
@@ -22,7 +23,7 @@ from core.config import config
 from core.plugin import Plugin, conversation, handler
 from modules.apihelper.client.components.hyperion import Hyperion
 from modules.apihelper.error import APIHelperException
-from utils.helpers import execute, sha1
+from utils.helpers import sha1
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -70,13 +71,13 @@ class Post(Plugin.Conversation):
             logger.success("文章定时推送处理已经开启")
             self.application.job_queue.run_repeating(self.task, 60)
         logger.success("文章定时推送处理已经开启")
-        output = await execute("ffmpeg -version")
+        output, _ = await self.execute("ffmpeg -version")
         if "ffmpeg version" in output:
             self.ffmpeg_enable = True
             logger.info("检测到 ffmpeg 可用 已经启动编码转换")
             logger.debug("ffmpeg version info\n%s", output)
         else:
-            logger.debug("ffmpeg 不可用 已经禁用编码转换")
+            logger.warning("ffmpeg 不可用 已经禁用编码转换")
 
     async def task(self, context: "ContextTypes.DEFAULT_TYPE"):
         temp_post_id_list: List[int] = []
@@ -168,8 +169,24 @@ class Post(Plugin.Conversation):
         return InputMediaDocument(media.data, *args, **kwargs)
 
     @staticmethod
+    async def execute(command: str) -> Tuple[str, int]:
+        process = await create_subprocess_shell(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        try:
+            result = str(stdout.decode().strip()) + str(stderr.decode().strip())
+        except UnicodeDecodeError:
+            result = str(stdout.decode("gbk").strip()) + str(stderr.decode("gbk").strip())
+        return result, process.returncode
+
+    @staticmethod
     def get_ffmpeg_command(input_file: str, output_file: str):
-        return f'ffmpeg -i "{input_file}" -c:v libx264 -crf 20 -vf "fps=30,format=yuv420p" -y "{output_file}"'
+        return (
+            f'ffmpeg -i "{input_file}" '
+            f'-c:v libx264 -crf 20 -vf "fps=30,format=yuv420p,'
+            f'scale=trunc(iw/2)*2:trunc(ih/2)*2" -y "{output_file}"'
+        )
 
     async def gif_to_mp4(self, media: "List[ArtworkImage]"):
         if self.ffmpeg_enable:
@@ -190,22 +207,26 @@ class Post(Plugin.Conversation):
                     temp_file = sha1(file_name) + ".mp4"
                     temp_path = os.path.join(self.cache_dir, temp_file)
                     command = self.get_ffmpeg_command(file_path, temp_path)
-                    result = await execute(command)
-                    if os.path.exists(temp_path):
-                        logger.debug("ffmpeg 执行成功\n%s", result)
-                        os.rename(temp_path, output_path)
-                        async with aiofiles.open(output_path, mode="rb") as f:
-                            i.data = await f.read()
-                            i.file_name = output_file
-                            i.file_extension = "mp4"
+                    result, return_code = await self.execute(command)
+                    if return_code == 0:
+                        if os.path.exists(temp_path):
+                            logger.debug("ffmpeg 执行成功\n%s", result)
+                            os.rename(temp_path, output_path)
+                            async with aiofiles.open(output_path, mode="rb") as f:
+                                i.data = await f.read()
+                                i.file_name = output_file
+                                i.file_extension = "mp4"
+                        else:
+                            logger.error(
+                                "输出文件不存在！可能是 ffmpeg 命令执行失败！\n"
+                                "file_path[%s]\noutput_path[%s]\ntemp_file[%s]\nffmpeg result[%s]",
+                                file_path,
+                                output_path,
+                                temp_path,
+                                result,
+                            )
                     else:
-                        logger.error(
-                            "输出文件不存在！可能是 ffmpeg 命令执行失败！\nfile_path[%s]\noutput_path[%s]\ntemp_file[%s]\nffmpeg result[%s]\n",
-                            file_path,
-                            output_path,
-                            temp_path,
-                            result,
-                        )
+                        logger.error("ffmpeg 执行失败\n%s", result)
         return media
 
     @conversation.entry_point
