@@ -23,7 +23,7 @@ from core.config import config
 from core.plugin import Plugin, conversation, handler
 from modules.apihelper.client.components.hyperion import Hyperion
 from modules.apihelper.error import APIHelperException
-from utils.helpers import execute, sha1
+from utils.helpers import sha1
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -71,7 +71,7 @@ class Post(Plugin.Conversation):
             logger.success("文章定时推送处理已经开启")
             self.application.job_queue.run_repeating(self.task, 60)
         logger.success("文章定时推送处理已经开启")
-        output = await execute("ffmpeg -version")
+        output = await self.execute("ffmpeg -version")
         if "ffmpeg version" in output:
             self.ffmpeg_enable = True
             logger.info("检测到 ffmpeg 可用 已经启动编码转换")
@@ -182,7 +182,7 @@ class Post(Plugin.Conversation):
 
     @staticmethod
     def get_ffmpeg_command(input_file: str, output_file: str):
-        return f'ffmpeg -i "{input_file}" -c:v libx264 -crf 20 -vf "fps=30,format=yuv420p" -y "{output_file}"'
+        return f"""ffmpeg -i "{input_file}" -c:v libx264 -crf 20 -vf "fps=30,format=yuv420p,scale=trunc(iw/2)*2:trunc(ih/2)*2" -y "{output_file}" """
 
     async def gif_to_mp4(self, media: "List[ArtworkImage]"):
         if self.ffmpeg_enable:
