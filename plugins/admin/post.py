@@ -169,7 +169,7 @@ class Post(Plugin.Conversation):
 
     @staticmethod
     def get_ffmpeg_command(input_file: str, output_file: str):
-        return f'ffmpeg -i "{input_file}" -c:v libx264 -crf 20 -vf "fps=30,format=yuv420p" "{output_file}"'
+        return f'ffmpeg -i "{input_file}" -c:v libx264 -crf 20 -vf "fps=30,format=yuv420p" -y "{output_file}"'
 
     async def gif_to_mp4(self, media: "List[ArtworkImage]"):
         if self.ffmpeg_enable:
@@ -191,22 +191,19 @@ class Post(Plugin.Conversation):
                     temp_path = os.path.join(self.cache_dir, temp_file)
                     command = self.get_ffmpeg_command(file_path, temp_path)
                     result = await execute(command)
-                    if "exiting" in result:
-                        logger.error("ffmpeg 执行失败\n%s", result)
-                        continue
-                    logger.debug("ffmpeg 执行成功\n%s", result)
-                    os.rename(temp_path, output_path)
-                    if os.path.exists(output_path):
+                    if os.path.exists(temp_path):
+                        logger.debug("ffmpeg 执行成功\n%s", result)
+                        os.rename(temp_path, output_path)
                         async with aiofiles.open(output_path, mode="rb") as f:
                             i.data = await f.read()
                             i.file_name = output_file
                             i.file_extension = "mp4"
                     else:
                         logger.error(
-                            "输出文件不存在！\nfile_path[%s]\noutput_path[%s]\ntemp_file[%s]\nffmpeg result[%s]\n",
+                            "输出文件不存在！可能是 ffmpeg 命令执行失败！\nfile_path[%s]\noutput_path[%s]\ntemp_file[%s]\nffmpeg result[%s]\n",
                             file_path,
                             output_path,
-                            temp_file,
+                            temp_path,
                             result,
                         )
         return media
