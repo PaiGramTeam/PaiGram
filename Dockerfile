@@ -7,7 +7,7 @@ WORKDIR /app
 RUN echo "deb http://ftp.us.debian.org/debian buster main non-free" >> /etc/apt/sources.list.d/fonts.list \
     && apt update                                  \
     # clone
-    && apt install git wget curl -y                \
+    && apt install git wget curl ffmpeg -y                \
     && git clone -b main https://github.com/PaiGramTeam/PaiGram.git /app \
     # install dependencies \
     && pip install virtualenv==20.19.0 poetry==1.3.2  \
