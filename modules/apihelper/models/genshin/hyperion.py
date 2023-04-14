@@ -11,7 +11,8 @@ class ArtworkImage(BaseModel):
     art_id: int
     page: int = 0
     data: bytes = b""
-    ext: str = "jpg"
+    file_name: Optional[str] = None
+    file_extension: Optional[str] = None
     is_error: bool = False
 
     @property

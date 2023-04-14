@@ -1,4 +1,5 @@
 import asyncio
+import os
 import re
 from typing import List
 
@@ -118,11 +119,15 @@ class Hyperion:
         return art_list
 
     async def download_image(self, art_id: int, url: str, page: int = 0) -> ArtworkImage:
-        image = url.endswith(".jpg") or url.endswith(".png")
+        filename = os.path.basename(url)
+        _, file_extension = os.path.splitext(filename)
+        is_image = bool(file_extension in ".jpg" or file_extension in ".png")
         response = await self.client.get(
-            url, params=self.get_images_params(resize=2000) if image else None, timeout=10, de_json=False
+            url, params=self.get_images_params(resize=2000) if is_image else None, timeout=10, de_json=False
         )
-        return ArtworkImage(art_id=art_id, page=page, ext=url.split(".")[-1], data=response.content)
+        return ArtworkImage(
+            art_id=art_id, page=page, file_name=filename, file_extension=url.split(".")[-1], data=response.content
+        )
 
     async def get_new_list(self, gids: int, type_id: int, page_size: int = 20):
         """
