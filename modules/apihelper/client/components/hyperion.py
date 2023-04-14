@@ -121,7 +121,7 @@ class Hyperion:
     async def download_image(self, art_id: int, url: str, page: int = 0) -> ArtworkImage:
         filename = os.path.basename(url)
         _, file_extension = os.path.splitext(filename)
-        is_image = True if file_extension in ".jpg" or file_extension in ".png" else False
+        is_image = bool(file_extension in ".jpg" or file_extension in ".png")
         response = await self.client.get(
             url, params=self.get_images_params(resize=2000) if is_image else None, timeout=10, de_json=False
         )

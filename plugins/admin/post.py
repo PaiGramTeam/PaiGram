@@ -185,9 +185,8 @@ class Post(Plugin.Conversation):
                         i.file_name = output_file
                         i.file_extension = "mp4"
                         continue
-                    else:
-                        async with aiofiles.open(file_path, mode="wb") as f:
-                            await f.write(i.data)
+                    async with aiofiles.open(file_path, mode="wb") as f:
+                        await f.write(i.data)
                     temp_file = sha1(file_name) + ".mp4"
                     temp_path = os.path.join(self.cache_dir, temp_file)
                     command = self.get_ffmpeg_command(file_path, temp_path)
