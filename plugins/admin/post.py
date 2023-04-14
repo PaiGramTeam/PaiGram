@@ -77,7 +77,7 @@ class Post(Plugin.Conversation):
             logger.info("检测到 ffmpeg 可用 已经启动编码转换")
             logger.debug("ffmpeg version info\n%s", output)
         else:
-            logger.debug("ffmpeg 不可用 已经禁用编码转换")
+            logger.warning("ffmpeg 不可用 已经禁用编码转换")
 
     async def task(self, context: "ContextTypes.DEFAULT_TYPE"):
         temp_post_id_list: List[int] = []
