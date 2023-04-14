@@ -176,7 +176,7 @@ class Post(Plugin.Conversation):
             for i in media:
                 if i.file_extension == "gif":
                     file_path = os.path.join(self.cache_dir, i.file_name)
-                    file_name, file_extension = os.path.splitext(i.file_name)
+                    file_name, _ = os.path.splitext(i.file_name)
                     output_file = file_name + ".mp4"
                     output_path = os.path.join(self.cache_dir, output_file)
                     if os.path.exists(output_path):
@@ -203,7 +203,7 @@ class Post(Plugin.Conversation):
                             i.file_extension = "mp4"
                     else:
                         logger.error(
-                            "输出文件不存在！\nfile_path[%s]\noutput_path[%s]\ntemp_file[%s]\nffmpeg result\n",
+                            "输出文件不存在！\nfile_path[%s]\noutput_path[%s]\ntemp_file[%s]\nffmpeg result[%s]\n",
                             file_path,
                             output_path,
                             temp_file,
