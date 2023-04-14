@@ -182,7 +182,11 @@ class Post(Plugin.Conversation):
 
     @staticmethod
     def get_ffmpeg_command(input_file: str, output_file: str):
-        return f"""ffmpeg -i "{input_file}" -c:v libx264 -crf 20 -vf "fps=30,format=yuv420p,scale=trunc(iw/2)*2:trunc(ih/2)*2" -y "{output_file}" """
+        return (
+            f'ffmpeg -i "{input_file}" '
+            f'-c:v libx264 -crf 20 -vf "fps=30,format=yuv420p,'
+            f'scale=trunc(iw/2)*2:trunc(ih/2)*2" -y "{output_file}"'
+        )
 
     async def gif_to_mp4(self, media: "List[ArtworkImage]"):
         if self.ffmpeg_enable:
