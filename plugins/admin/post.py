@@ -1,5 +1,7 @@
+import os
 from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
+import aiofiles
 from bs4 import BeautifulSoup
 from httpx import Timeout
 from telegram import (
@@ -20,6 +22,7 @@ from core.config import config
 from core.plugin import Plugin, conversation, handler
 from modules.apihelper.client.components.hyperion import Hyperion
 from modules.apihelper.error import APIHelperException
+from utils.helpers import execute, sha1
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -59,11 +62,21 @@ class Post(Plugin.Conversation):
             )
         )
         self.last_post_id_list: List[int] = []
+        self.ffmpeg_enable = False
+        self.cache_dir = os.path.join(os.getcwd(), "cache")
 
     async def initialize(self):
         if config.channels and len(config.channels) > 0:
             logger.success("文章定时推送处理已经开启")
             self.application.job_queue.run_repeating(self.task, 60)
+        logger.success("文章定时推送处理已经开启")
+        output = await execute("ffmpeg -version")
+        if "ffmpeg version" in output:
+            self.ffmpeg_enable = True
+            logger.info("检测到 ffmpeg 可用 已经启动编码转换")
+            logger.debug("ffmpeg version info\n%s", output)
+        else:
+            logger.debug("ffmpeg 不可用 已经禁用编码转换")
 
     async def task(self, context: "ContextTypes.DEFAULT_TYPE"):
         temp_post_id_list: List[int] = []
@@ -145,13 +158,59 @@ class Post(Plugin.Conversation):
     def input_media(
         media: "ArtworkImage", *args, **kwargs
     ) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
-        file_type = media.format
-        if file_type is not None:
-            if file_type.lower() in {"jpg", "jpeg", "png", "webp"}:
+        file_extension = media.file_extension
+        filename = media.file_name
+        if file_extension is not None:
+            if file_extension in {"jpg", "jpeg", "png", "webp"}:
                 return InputMediaPhoto(media.data, *args, **kwargs)
-            if file_type.lower() in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
-                return InputMediaVideo(media.data, *args, **kwargs)
+            if file_extension in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
+                return InputMediaVideo(media.data, filename=filename, *args, **kwargs)
         return InputMediaDocument(media.data, *args, **kwargs)
+
+    @staticmethod
+    def get_ffmpeg_command(input_file: str, output_file: str):
+        return f'ffmpeg -i "{input_file}" -c:v libx264 -crf 20 -vf "fps=30,format=yuv420p" "{output_file}"'
+
+    async def gif_to_mp4(self, media: "List[ArtworkImage]"):
+        if self.ffmpeg_enable:
+            for i in media:
+                if i.file_extension == "gif":
+                    file_path = os.path.join(self.cache_dir, i.file_name)
+                    file_name, file_extension = os.path.splitext(i.file_name)
+                    output_file = file_name + ".mp4"
+                    output_path = os.path.join(self.cache_dir, output_file)
+                    if os.path.exists(output_path):
+                        async with aiofiles.open(output_path, mode="rb") as f:
+                            i.data = await f.read()
+                        i.file_name = output_file
+                        i.file_extension = "mp4"
+                        continue
+                    else:
+                        async with aiofiles.open(file_path, mode="wb") as f:
+                            await f.write(i.data)
+                    temp_file = sha1(file_name) + ".mp4"
+                    temp_path = os.path.join(self.cache_dir, temp_file)
+                    command = self.get_ffmpeg_command(file_path, temp_path)
+                    result = await execute(command)
+                    if "exiting" in result:
+                        logger.error("ffmpeg 执行失败\n%s", result)
+                        continue
+                    logger.debug("ffmpeg 执行成功\n%s", result)
+                    os.rename(temp_path, output_path)
+                    if os.path.exists(output_path):
+                        async with aiofiles.open(output_path, mode="rb") as f:
+                            i.data = await f.read()
+                            i.file_name = output_file
+                            i.file_extension = "mp4"
+                    else:
+                        logger.error(
+                            "输出文件不存在！\nfile_path[%s]\noutput_path[%s]\ntemp_file[%s]\nffmpeg result\n",
+                            file_path,
+                            output_path,
+                            temp_file,
+                            result,
+                        )
+        return media
 
     @conversation.entry_point
     @handler.callback_query(pattern=r"^post_admin\|", block=False)
@@ -219,6 +278,7 @@ class Post(Plugin.Conversation):
     async def send_post_info(self, post_handler_data: PostHandlerData, message: "Message", post_id: int) -> int:
         post_info = await self.bbs.get_post_info(self.gids, post_id)
         post_images = await self.bbs.get_images_by_post_id(self.gids, post_id)
+        post_images = await self.gif_to_mp4(post_images)
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
@@ -229,7 +289,7 @@ class Post(Plugin.Conversation):
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割")
         try:
             if len(post_images) > 1:
-                media = [self.input_media(img_info) for img_info in post_images if img_info.format]
+                media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
                 media[0] = self.input_media(media=post_images[0], caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
                 if len(media) > 10:
                     media = media[:10]
@@ -406,7 +466,7 @@ class Post(Plugin.Conversation):
             post_text += f" \\#{tag}"
         try:
             if len(post_images) > 1:
-                media = [self.input_media(img_info) for img_info in post_images if img_info.format]
+                media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
                 media[0] = self.input_media(media=post_images[0], caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
                 await context.bot.send_media_group(channel_id, media=media, write_timeout=len(media) * 5)
             elif len(post_images) == 1:
