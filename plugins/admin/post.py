@@ -71,7 +71,7 @@ class Post(Plugin.Conversation):
             logger.success("文章定时推送处理已经开启")
             self.application.job_queue.run_repeating(self.task, 60)
         logger.success("文章定时推送处理已经开启")
-        output = await self.execute("ffmpeg -version")
+        output, _ = await self.execute("ffmpeg -version")
         if "ffmpeg version" in output:
             self.ffmpeg_enable = True
             logger.info("检测到 ffmpeg 可用 已经启动编码转换")
