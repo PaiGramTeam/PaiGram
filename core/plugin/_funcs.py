@@ -65,6 +65,10 @@ class PluginFuncs:
             await context.bot.delete_message(chat_id=job.chat_id, message_id=message_id)
         except BadRequest as exc:
             logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
+        except Forbidden as exc:
+            logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
+        except Exception as exc:
+            logger.error("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc_info=exc)
 
     async def get_chat(self, chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, expire: int = 86400) -> Chat:
         application = self.application
