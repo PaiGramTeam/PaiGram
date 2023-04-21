@@ -3,13 +3,12 @@ import datetime
 import random
 import time
 from enum import Enum
-from json import JSONDecodeError
 from typing import Optional, Tuple, List, TYPE_CHECKING
 
 from aiohttp import ClientConnectorError
 from genshin import Game, GenshinException, AlreadyClaimed, Client, InvalidCookies
 from genshin.utility import recognize_genshin_server
-from httpx import AsyncClient, TimeoutException
+from httpx import TimeoutException
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest
@@ -23,6 +22,7 @@ from core.services.sign.services import SignServices
 from core.services.users.services import UserService
 from modules.apihelper.client.components.verify import Verify
 from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
+from plugins.tools.recognize import RecognizeSystem
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -49,10 +49,6 @@ class NeedChallenge(Exception):
 
 
 class SignSystem(Plugin):
-    REFERER = (
-        "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?"
-        "bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
-    )
 
     def __init__(
         self,
@@ -106,50 +102,6 @@ class SignSystem(Plugin):
             f"username={bot_username}&command=sign&gt={gt}&challenge={challenge}&uid={uid}"
         )
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
-
-    async def recognize(self, gt: str, challenge: str, referer: str = None) -> Optional[str]:
-        if not referer:
-            referer = self.REFERER
-        if not gt or not challenge:
-            return None
-        pass_challenge_params = {
-            "gt": gt,
-            "challenge": challenge,
-            "referer": referer,
-        }
-        if config.pass_challenge_app_key:
-            pass_challenge_params["appkey"] = config.pass_challenge_app_key
-        headers = {
-            "Accept": "*/*",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/107.0.0.0 Safari/537.36",
-        }
-        try:
-            async with AsyncClient(headers=headers) as client:
-                resp = await client.post(
-                    config.pass_challenge_api,
-                    params=pass_challenge_params,
-                    timeout=60,
-                )
-            logger.debug("recognize 请求返回：%s", resp.text)
-            data = resp.json()
-            status = data.get("status")
-            if status != 0:
-                logger.error("recognize 解析错误：[%s]%s", data.get("code"), data.get("msg"))
-            if data.get("code", 0) != 0:
-                raise RuntimeError
-            logger.info("recognize 解析成功")
-            return data["data"]["validate"]
-        except JSONDecodeError:
-            logger.warning("recognize 请求 JSON 解析失败")
-        except TimeoutException as exc:
-            logger.warning("recognize 请求超时")
-            raise exc
-        except KeyError:
-            logger.warning("recognize 请求数据错误")
-        except RuntimeError:
-            logger.warning("recognize 请求失败")
-        return None
 
     async def start_sign(
         self,
@@ -235,7 +187,7 @@ class SignSystem(Plugin):
                             _gt = _request_daily_reward.get("gt", "")
                             _challenge = _request_daily_reward.get("challenge", "")
                             logger.info("UID[%s] 创建验证码\ngt[%s]\nchallenge[%s]", client.uid, _gt, _challenge)
-                            _validate = await self.recognize(_gt, _challenge)
+                            _validate = await RecognizeSystem.recognize(_gt, _challenge, uid=client.uid)
                             if _validate:
                                 logger.success("recognize 通过验证成功\nchallenge[%s]\nvalidate[%s]", _challenge, _validate)
                                 request_daily_reward = await client.request_daily_reward(
