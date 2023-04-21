@@ -49,7 +49,6 @@ class NeedChallenge(Exception):
 
 
 class SignSystem(Plugin):
-
     def __init__(
         self,
         redis: RedisDB,
