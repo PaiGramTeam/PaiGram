@@ -149,7 +149,7 @@ class SignSystem(Plugin):
                     challenge = request_daily_reward.get("challenge", "")
                     logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
                     validate = await self.verify.ajax(
-                        referer=self.REFERER,
+                        referer=RecognizeSystem.REFERER,
                         gt=gt,
                         challenge=challenge,
                     )
