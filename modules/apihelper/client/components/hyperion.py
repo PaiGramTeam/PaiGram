@@ -123,7 +123,7 @@ class Hyperion:
         _, file_extension = os.path.splitext(filename)
         is_image = bool(file_extension in ".jpg" or file_extension in ".png")
         response = await self.client.get(
-            url, params=self.get_images_params(resize=2000) if is_image else None, timeout=10, de_json=False
+            url, params=self.get_images_params(resize=2000) if is_image else None, de_json=False
         )
         return ArtworkImage(
             art_id=art_id, page=page, file_name=filename, file_extension=url.split(".")[-1], data=response.content
