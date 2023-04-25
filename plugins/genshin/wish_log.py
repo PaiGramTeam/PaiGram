@@ -202,6 +202,9 @@ class WishLogPlugin(Plugin.Conversation):
         if message.document:
             await self.import_from_file(user, message)
             return ConversationHandler.END
+        if not message.text:
+            await message.reply_text("请发送文件或链接")
+            return INPUT_URL
         authkey = from_url_get_authkey(message.text)
         reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后")
         await message.reply_chat_action(ChatAction.TYPING)
