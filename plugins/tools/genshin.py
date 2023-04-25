@@ -1,15 +1,14 @@
 import asyncio
 import random
-from datetime import datetime, timedelta, time
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from datetime import datetime, time, timedelta
+from typing import Optional, TYPE_CHECKING, Tuple, Union
 
 import genshin
 from genshin.errors import GenshinException
-from genshin.models import BaseCharacter
-from genshin.models import CalculatorCharacterDetails
+from genshin.models import BaseCharacter, CalculatorCharacterDetails
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
-from sqlmodel import SQLModel, Field, String, Column, Integer, BigInteger, select, DateTime, func, delete, Index
+from sqlmodel import BigInteger, Column, DateTime, Field, Index, Integer, SQLModel, String, delete, func, select
 from telegram.ext import ContextTypes
 
 from core.basemodel import RegionEnum
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
     from sqlalchemy import Table
     from genshin import Client as GenshinClient
 
-__all__ = ("GenshinHelper", "PlayerNotFoundError", "CookiesNotFoundError")
+__all__ = ("GenshinHelper", "PlayerNotFoundError", "CookiesNotFoundError", "CharacterDetails")
 
 
 class PlayerNotFoundError(Exception):

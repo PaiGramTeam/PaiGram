@@ -472,6 +472,7 @@ class _NamecardAssets(_AssetsService):
 
     def __call__(self, target: int) -> "_NamecardAssets":
         result = _NamecardAssets(self.client)
+        target = int(target) if not isinstance(target, int) else target
         if target > 10000000:
             target = self._get_id_from_avatar_id(target)
         result.id = target

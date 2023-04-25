@@ -230,7 +230,7 @@ class DailyMaterial(Plugin):
             logger.info("正在获取每日素材缓存")
             self.data = await self._refresh_data()
         for domain, sche in self.data.items():
-            area = DOMAIN_AREA_MAP[domain]  # 获取秘境所在的区域
+            area = DOMAIN_AREA_MAP[domain := domain.strip()]  # 获取秘境所在的区域
             type_ = "avatar" if DOMAINS.index(domain) < 4 else "weapon"  # 获取秘境的培养素材的类型：是天赋书还是武器突破材料
             # 将读取到的数据存入 local_data 中
             local_data[type_].append({"name": area, "materials": sche[weekday][0], "items": sche[weekday][1]})
@@ -387,7 +387,7 @@ class DailyMaterial(Plugin):
                 for tag in calendar:
                     tag: Tag
                     if tag.name == "span":  # 如果是秘境
-                        key = tag.find("a").text
+                        key = tag.find("a").text.strip()
                         result[key] = [[[], []] for _ in range(7)]
                         for day, div in enumerate(tag.find_all("div")):
                             result[key][day][0] = []
@@ -462,6 +462,17 @@ class DailyMaterial(Plugin):
                     new_items.append(ITEM)
                     task_list.append(task(*ITEM))
             await asyncio.gather(*task_list)  # 等待所有任务执行完成
+        try:
+            await message.edit_text(
+                "\n".join(message.text_html.split("\n")[:2] + ["图标素材下载完成!"]), parse_mode=ParseMode.HTML
+            )
+        except RetryAfter as e:
+            await asyncio.sleep(e.retry_after)
+            await message.edit_text(
+                "\n".join(message.text_html.split("\n")[:2] + ["图标素材下载完成!"]), parse_mode=ParseMode.HTML
+            )
+        except Exception as e:
+            logger.debug(e)
 
         logger.info("图标素材下载完成")
         return the_time.value
