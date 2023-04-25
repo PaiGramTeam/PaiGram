@@ -22,7 +22,7 @@ asyncmy = "^0.2.7"
 pyppeteer = "^1.0.2"
 aiofiles = "^23.1.0"
 python-dotenv = "^1.0.0"
-alembic = "^1.10.3"
+alembic = "^1.10.4"
 black = "^23.3.0"
 rich = "^13.3.1"
 enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
