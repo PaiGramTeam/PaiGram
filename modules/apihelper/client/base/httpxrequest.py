@@ -19,7 +19,7 @@ timeout = httpx.Timeout(
 
 class HTTPXRequest(AbstractAsyncContextManager):
     def __init__(self, *args, headers=None, **kwargs):
-        self._client = httpx.AsyncClient(headers=headers, timeout=timeout, *args, **kwargs)
+        self._client = httpx.AsyncClient(headers=headers, *args, **kwargs)
 
     async def __aenter__(self):
         try:
