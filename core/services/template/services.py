@@ -182,7 +182,7 @@ class TemplatePreviewer(BaseService, load=application_config.webserver.enable an
         @self.web_app.get("/preview/{path:path}")
         async def preview_template(path: str, key: Optional[str] = None):  # pylint: disable=W0612
             # 如果是 /preview/ 开头的静态文件，直接返回内容。比如使用相对链接 ../ 引入的静态资源
-            if not path.endswith(".html"):
+            if not (path.endswith(".html") ^ path.endswith(".jinja2")):
                 full_path = self.template_service.template_dir / path
                 if not full_path.is_file():
                     raise HTTPException(status_code=404, detail=f"Template '{path}' not found")
