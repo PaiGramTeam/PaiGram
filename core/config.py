@@ -1,4 +1,3 @@
-from functools import cached_property
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Union
@@ -75,7 +74,7 @@ class WebServerConfig(Settings):
     class Config(Settings.Config):
         env_prefix = "web_"
 
-    @cached_property
+    @property
     def url(self) -> str:
         # noinspection HttpUrlsUsage
         return "http://" + self.host + ':' + str(self.port)
