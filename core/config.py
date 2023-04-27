@@ -78,7 +78,7 @@ class WebServerConfig(Settings):
     @cached_property
     def url(self) -> str:
         # noinspection HttpUrlsUsage
-        return "http://" + self.host + ':' + str(self.port)
+        return "http://" + self.host + ":" + str(self.port)
 
 
 class ErrorConfig(Settings):
