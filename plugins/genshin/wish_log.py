@@ -323,6 +323,7 @@ class WishLogPlugin(Plugin.Conversation):
             else:
                 name_card, _, _, _ = await self.player_info.get_player_info(client.uid, user)
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+                data["name_card"] = name_card
                 png_data = await self.template_service.render(
                     "genshin/wish_log/wish_log.jinja2",
                     data,
