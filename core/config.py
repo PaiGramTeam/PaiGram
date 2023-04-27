@@ -68,12 +68,16 @@ class WebServerConfig(Settings):
     enable: bool = False
     """是否启用WebServer"""
 
-    url: AnyUrl = "http://localhost:8080"
     host: str = "localhost"
     port: int = 8080
 
     class Config(Settings.Config):
         env_prefix = "web_"
+
+    @property
+    def url(self) -> str:
+        # noinspection HttpUrlsUsage
+        return "http://" + self.host + ":" + str(self.port)
 
 
 class ErrorConfig(Settings):
