@@ -13,6 +13,7 @@ from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
 from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError
+from plugins.tools.player_info import PlayerInfoSystem
 from utils.genshin import get_authkey_by_stoken
 from utils.log import logger
 
@@ -28,12 +29,14 @@ class PayLogPlugin(Plugin.Conversation):
         players_service: PlayersService,
         cookie_service: CookiesService,
         helper: GenshinHelper,
+        player_info: PlayerInfoSystem,
     ):
         self.template_service = template_service
         self.players_service = players_service
         self.cookie_service = cookie_service
         self.pay_log = PayLog()
         self.helper = helper
+        self.player_info = player_info
 
     async def _refresh_user_data(self, user: User, authkey: str = None) -> str:
         """刷新用户数据
@@ -214,8 +217,10 @@ class PayLogPlugin(Plugin.Conversation):
             await message.reply_chat_action(ChatAction.TYPING)
             data = await self.pay_log.get_analysis(user.id, client)
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+            name_card, _, _, _ = await self.player_info.get_player_info(client.uid, user)
+            data["name_card"] = name_card
             png_data = await self.template_service.render(
-                "genshin/pay_log/pay_log.html", data, full_page=True, query_selector=".container"
+                "genshin/pay_log/pay_log.jinja2", data, full_page=True, query_selector=".container"
             )
             await png_data.reply_photo(message)
         except PayLogNotFound:
