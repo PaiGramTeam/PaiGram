@@ -28,6 +28,7 @@ from modules.gacha_log.error import (
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
 from plugins.tools.genshin import PlayerNotFoundError, GenshinHelper
+from plugins.tools.player_info import PlayerInfoSystem
 from utils.genshin import get_authkey_by_stoken
 from utils.log import logger
 
@@ -50,6 +51,7 @@ class WishLogPlugin(Plugin.Conversation):
         assets: AssetsService,
         cookie_service: CookiesService,
         helper: GenshinHelper,
+        player_info: PlayerInfoSystem,
     ):
         self.template_service = template_service
         self.players_service = players_service
@@ -58,6 +60,7 @@ class WishLogPlugin(Plugin.Conversation):
         self.zh_dict = None
         self.gacha_log = GachaLog()
         self.helper = helper
+        self.player_info = player_info
 
     async def initialize(self) -> None:
         await update_paimon_moe_zh(False)
@@ -318,9 +321,11 @@ class WishLogPlugin(Plugin.Conversation):
                     self.add_delete_message_job(reply_message, delay=300)
                     self.add_delete_message_job(message, delay=300)
             else:
+                name_card, _, _, _ = await self.player_info.get_player_info(client.uid, user)
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+                data["name_card"] = name_card
                 png_data = await self.template_service.render(
-                    "genshin/gacha_log/gacha_log.html",
+                    "genshin/wish_log/wish_log.jinja2",
                     data,
                     full_page=True,
                     file_type=FileType.DOCUMENT if len(data.get("fiveLog")) > 36 else FileType.PHOTO,
@@ -377,13 +382,15 @@ class WishLogPlugin(Plugin.Conversation):
                     self.add_delete_message_job(reply_message)
                     self.add_delete_message_job(message)
             else:
+                name_card, _, _, _ = await self.player_info.get_player_info(client.uid, user)
                 document = False
                 if data["hasMore"] and not group:
                     document = True
                     data["hasMore"] = False
+                data["name_card"] = name_card
                 await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if document else ChatAction.UPLOAD_PHOTO)
                 png_data = await self.template_service.render(
-                    "genshin/gacha_count/gacha_count.html",
+                    "genshin/wish_count/wish_count.jinja2",
                     data,
                     full_page=True,
                     query_selector=".body_box",
