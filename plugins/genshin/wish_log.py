@@ -321,7 +321,7 @@ class WishLogPlugin(Plugin.Conversation):
                     self.add_delete_message_job(reply_message, delay=300)
                     self.add_delete_message_job(message, delay=300)
             else:
-                name_card, _, _, _ = await self.player_info.get_player_info(client.uid, user)
+                name_card = await self.player_info.get_name_card(client.uid, user)
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                 data["name_card"] = name_card
                 png_data = await self.template_service.render(
@@ -382,7 +382,7 @@ class WishLogPlugin(Plugin.Conversation):
                     self.add_delete_message_job(reply_message)
                     self.add_delete_message_job(message)
             else:
-                name_card, _, _, _ = await self.player_info.get_player_info(client.uid, user)
+                name_card = await self.player_info.get_name_card(client.uid, user)
                 document = False
                 if data["hasMore"] and not group:
                     document = True

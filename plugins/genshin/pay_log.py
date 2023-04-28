@@ -217,7 +217,7 @@ class PayLogPlugin(Plugin.Conversation):
             await message.reply_chat_action(ChatAction.TYPING)
             data = await self.pay_log.get_analysis(user.id, client)
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-            name_card, _, _, _ = await self.player_info.get_player_info(client.uid, user)
+            name_card = await self.player_info.get_name_card(client.uid, user)
             data["name_card"] = name_card
             png_data = await self.template_service.render(
                 "genshin/pay_log/pay_log.jinja2", data, full_page=True, query_selector=".container"
