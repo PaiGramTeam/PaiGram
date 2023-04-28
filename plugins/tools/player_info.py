@@ -37,7 +37,7 @@ class PlayerInfoSystem(Plugin):
                 if player_info.hand_image is not None:
                     avatar = (await self.assets_service.avatar(player_info.hand_image).icon()).as_uri()
                     try:
-                        rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[player_info.hand_image]
+                        rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(player_info.hand_image)]
                     except KeyError:
                         logger.warning("未找到角色 %s 的等级", player_info.hand_image)
         except Exception as exc:  # pylint: disable=W0703
