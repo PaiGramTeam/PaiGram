@@ -15,7 +15,7 @@ Jinja2 = "^3.1.2"
 python-telegram-bot = { version = "^20.1", extras = ["ext", "rate-limiter"] }
 sqlmodel = "^0.0.8"
 colorlog = "^6.7.0"
-fakeredis = "^2.10.3"
+fakeredis = "^2.11.1"
 redis = "^4.5.4"
 beautifulsoup4 = "^4.12.1"
 asyncmy = "^0.2.7"
