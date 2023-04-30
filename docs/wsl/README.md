@@ -77,6 +77,8 @@
   (venv) ~/PaiGram $ playwright install chromium
   Downloading Chromium 107.0.5304.18 (playwright build v1028) - 137.8 Mb [====================] 100% 0.0s
   Chromium 107.0.5304.18 (playwright build v1028) downloaded to /home/username/.cache/ms-playwright/chromium-1028 
+  (venv) ~/PaiGram $ playwright install-deps chromium
+  ...
   (venv) ~/PaiGram $
   ```
 - 安装chromium依赖
