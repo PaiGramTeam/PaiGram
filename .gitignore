@@ -139,6 +139,7 @@ data/
 plugins/genshin/daily/daily.json
 metadata/data/
 resources/assets/
+run.ps1
 
 ### private plugins ###
 plugins/private
