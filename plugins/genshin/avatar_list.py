@@ -189,8 +189,8 @@ class AvatarListPlugin(Plugin):
     async def avatar_list(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
-
-        all_avatars = "all" in message.text  # 是否发送全部角色
+        args = [i.lower() for i in context.match.groups() if i]
+        all_avatars = "全部" in args or "all" in message.text  # 是否发送全部角色
 
         logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
 
