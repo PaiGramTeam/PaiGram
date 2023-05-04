@@ -3,7 +3,7 @@ from typing import List, Optional, Sequence, TYPE_CHECKING
 
 from genshin import Client, GenshinException, InvalidCookies
 from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
@@ -17,12 +17,11 @@ from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA
 from modules.wiki.base import Model
-from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, PlayerNotFoundError, CharacterDetails
+from plugins.tools.genshin import CharacterDetails, CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
 from utils.log import logger
 
 if TYPE_CHECKING:
     from telegram.ext import ContextTypes
-    from telegram import Update, User
 
 
 class SkillData(Model):
@@ -185,15 +184,13 @@ class AvatarListPlugin(Plugin):
             name_card = (await self.assets_service.namecard(210001).navbar()).as_uri()
         return name_card, avatar, nickname, rarity
 
-    @handler.command("avatars", filters.Regex(r"^/avatars\s*(?:(\d+)|(all))?$"), block=False)
+    @handler.command("avatars", block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
     async def avatar_list(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
 
-        args = [i.lower() for i in context.match.groups() if i]
-
-        all_avatars = any(["all" in args, "全部" in args])  # 是否发送全部角色
+        all_avatars = "all" in message.text  # 是否发送全部角色
 
         logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
 
