@@ -267,7 +267,7 @@ class GachaLog:
 
     @staticmethod
     def check_avatar_up(name: str, gacha_time: datetime.datetime) -> bool:
-        if name in {"莫娜", "七七", "迪卢克", "琴"}:
+        if name in {"莫娜", "七七", "迪卢克", "琴", "迪希雅"}:
             return False
         if name == "刻晴":
             start_time = datetime.datetime.strptime("2021-02-17 18:00:00", "%Y-%m-%d %H:%M:%S")
