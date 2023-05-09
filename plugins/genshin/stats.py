@@ -113,15 +113,10 @@ class PlayerStatsPlugins(Plugin):
             "style": random.choice(["mondstadt", "liyue"]),  # nosec
         }
 
-        # html = await self.template_service.render_async(
-        #     "genshin/stats/stats.html", data
-        # )
-        # logger.debug(html)
-
         await self.cache_images(user_info)
 
         return await self.template_service.render(
-            "genshin/stats/stats.html",
+            "genshin/stats/stats.jinja2",
             data,
             {"width": 650, "height": 800},
             full_page=True,

@@ -46,7 +46,7 @@
       }
       .enka-log:before {
         content: "\e93a";
-        font-family: shicon;
+          font-family: shicon, serif;
         font-size: 1.25em;
       }
     </style>
@@ -63,7 +63,7 @@
           style="background-image: url('{{ character.image.banner.url }}'); background-size: auto 100%;"
         ></div>
         <div class="relative w-full flex p-5 space-x-8">
-          {% include 'genshin/player_card/constellations.html' %}
+          {% include "genshin/player_card/constellations.jinja2" %}
 
           <div class="flex-1 space-y-4">
             <div class="text-right italic">
@@ -83,8 +83,8 @@
               </div>
             </div>
 
-            {% include 'genshin/player_card/skills.html' %} {% include
-            'genshin/player_card/stats.html' %}
+            {% include "genshin/player_card/skills.jinja2" %} {% include
+            "genshin/player_card/stats.jinja2" %}
           </div>
         </div>
       </div>
@@ -93,11 +93,11 @@
       <div class="px-5 relative">
         <div class="grid grid-cols-3 gap-4">
           <div class="flex flex-col space-y-2">
-            {% include 'genshin/player_card/weapon.html' %} {% include
-            'genshin/player_card/score.html' %}
+            {% include "genshin/player_card/weapon.jinja2" %} {% include
+            "genshin/player_card/score.jinja2" %}
           </div>
 
-          {% include 'genshin/player_card/artifacts.html' %}
+          {% include "genshin/player_card/artifacts.jinja2" %}
         </div>
       </div>
 

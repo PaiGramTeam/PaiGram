@@ -82,7 +82,7 @@ class DailyNotePlugin(Plugin):
             "transformer_recovery_time": transformer_recovery_time,
         }
         render_result = await self.template_service.render(
-            "genshin/daily_note/daily_note.html",
+            "genshin/daily_note/daily_note.jinja2",
             render_data,
             {"width": 600, "height": 548},
             full_page=False,

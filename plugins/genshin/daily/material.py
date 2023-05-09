@@ -314,14 +314,14 @@ class DailyMaterial(Plugin):
 
         character_img_data, weapon_img_data = await asyncio.gather(
             self.template_service.render(  # 渲染角色素材页
-                "genshin/daily_material/character.html",
+                "genshin/daily_material/character.jinja2",
                 {"data": render_data},
                 {"width": 1164, "height": 500},
                 file_type=file_type,
                 ttl=30 * 24 * 60 * 60,
             ),
             self.template_service.render(  # 渲染武器素材页
-                "genshin/daily_material/weapon.html",
+                "genshin/daily_material/weapon.jinja2",
                 {"data": render_data},
                 {"width": 1164, "height": 500},
                 file_type=file_type,
