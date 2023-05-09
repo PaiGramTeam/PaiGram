@@ -16,7 +16,7 @@ python-telegram-bot = { version = "^20.1", extras = ["ext", "rate-limiter"] }
 sqlmodel = "^0.0.8"
 colorlog = "^6.7.0"
 fakeredis = "^2.11.1"
-redis = "^4.5.4"
+redis = "^4.5.5"
 beautifulsoup4 = "^4.12.1"
 asyncmy = "^0.2.7"
 pyppeteer = "^1.0.2"
