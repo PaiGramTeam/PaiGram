@@ -239,7 +239,7 @@ class AvatarListPlugin(Plugin):
         await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if as_document else ChatAction.UPLOAD_PHOTO)
 
         image = await self.template_service.render(
-            "genshin/avatar_list/main.html",
+            "genshin/avatar_list/main.jinja2",
             render_data,
             viewport={"width": 1040, "height": 500},
             full_page=True,

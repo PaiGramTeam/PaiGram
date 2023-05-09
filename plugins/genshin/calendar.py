@@ -52,7 +52,7 @@ class CalendarPlugin(Plugin):
         data = await self._fetch_data()
         data["display_mode"] = mode
         image = await self.template_service.render(
-            "genshin/calendar/calendar.html",
+            "genshin/calendar/calendar.jinja2",
             data,
             query_selector=".container",
         )

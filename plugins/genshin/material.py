@@ -181,7 +181,7 @@ class MaterialPlugin(Plugin):
         if not data:
             return
         return await self.template_service.render(
-            "genshin/material/roles_material.html",
+            "genshin/material/roles_material.jinja2",
             data,
             {"width": 960, "height": 1460},
             full_page=True,

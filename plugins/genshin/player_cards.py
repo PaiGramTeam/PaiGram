@@ -228,7 +228,7 @@ class PlayerCards(Plugin):
         buttons = self.gen_button(data, user.id, uid, update_button=False)
         render_data = await self.parse_holder_data(data)
         holder = await self.template_service.render(
-            "genshin/player_card/holder.html",
+            "genshin/player_card/holder.jinja2",
             render_data,
             viewport={"width": 750, "height": 580},
             ttl=60 * 10,
@@ -492,13 +492,8 @@ class RenderTemplate:
             "DigitType": DigitType,
         }
 
-        # html = await self.template_service.render_async(
-        #     "genshin/player_card/player_card.html", data
-        # )
-        # logger.debug(html)
-
         return await self.template_service.render(
-            "genshin/player_card/player_card.html",
+            "genshin/player_card/player_card.jinja2",
             data,
             {"width": 950, "height": 1080},
             full_page=True,
