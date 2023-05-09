@@ -63,7 +63,7 @@ class LedgerPlugin(Plugin):
             "color": color,
         }
         render_result = await self.template_service.render(
-            "genshin/ledger/ledger.html", ledger_data, {"width": 580, "height": 610}
+            "genshin/ledger/ledger.jinja2", ledger_data, {"width": 580, "height": 610}
         )
         return render_result
 

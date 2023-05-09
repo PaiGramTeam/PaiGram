@@ -116,7 +116,7 @@ body {
     left: 3px;
     width: 106px;
     height: 448px;
-    clip-path: url(#wishframe);
+    clip-path: url(#wish-frame);
     z-index: 100;
 }
 
@@ -134,7 +134,7 @@ body {
     width: 106px;
     height: 448px;
     z-index: 101;
-    clip-path: url(#wishframe);
+    clip-path: url(#wish-frame);
 }
 
 .item-weapon-img {

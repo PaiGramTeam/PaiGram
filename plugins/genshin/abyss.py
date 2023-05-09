@@ -280,7 +280,7 @@ class AbyssPlugin(Plugin):
 
             def overview_task():
                 return -1, self.template_service.render(
-                    "genshin/abyss/overview.html", render_data, viewport={"width": 750, "height": 580}
+                    "genshin/abyss/overview.jinja2", render_data, viewport={"width": 750, "height": 580}
                 )
 
             def floor_task(floor_index: int):
@@ -288,7 +288,7 @@ class AbyssPlugin(Plugin):
                 return (
                     floor_d["floor"],
                     self.template_service.render(
-                        "genshin/abyss/floor.html",
+                        "genshin/abyss/floor.jinja2",
                         {
                             **render_data,
                             "floor": floor_d,
@@ -314,7 +314,7 @@ class AbyssPlugin(Plugin):
             render_data["data"] = jsonlib.loads(result)
             return [
                 await self.template_service.render(
-                    "genshin/abyss/overview.html", render_data, viewport={"width": 750, "height": 580}
+                    "genshin/abyss/overview.jinja2", render_data, viewport={"width": 750, "height": 580}
                 )
             ]
         num_dic = {
@@ -342,6 +342,6 @@ class AbyssPlugin(Plugin):
         render_data["total_stars"] = f"{floor_data[0]['stars']}/{floor_data[0]['max_stars']}"
         return [
             await self.template_service.render(
-                "genshin/abyss/floor.html", render_data, viewport={"width": 690, "height": 500}
+                "genshin/abyss/floor.jinja2", render_data, viewport={"width": 690, "height": 500}
             )
         ]

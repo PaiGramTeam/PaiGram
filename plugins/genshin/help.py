@@ -22,7 +22,7 @@ class HelpPlugin(Plugin):
         logger.info("用户 %s[%s] 发出help命令", user.full_name, user.id)
         await message.reply_chat_action(ChatAction.TYPING)
         render_result = await self.template_service.render(
-            "bot/help/help.html",
+            "bot/help/help.jinja2",
             {"bot_username": self.application.bot.username},
             {"width": 1280, "height": 900},
             ttl=30 * 24 * 60 * 60,

@@ -266,7 +266,7 @@ class WishSimulatorPlugin(Plugin):
         template_data["items"] = data
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         png_data = await self.template_service.render(
-            "genshin/gacha/gacha.html", template_data, {"width": 1157, "height": 603}, False
+            "genshin/wish/wish.jinja2", template_data, {"width": 1157, "height": 603}, False
         )
 
         reply_message = await message.reply_photo(png_data.photo)

@@ -120,7 +120,7 @@ class WeaponPlugin(Plugin):
                 self.add_delete_message_job(reply_message)
             return
         png_data = await self.template_service.render(
-            "genshin/weapon/weapon.html", template_data, {"width": 540, "height": 540}, ttl=31 * 24 * 60 * 60
+            "genshin/weapon/weapon.jinja2", template_data, {"width": 540, "height": 540}, ttl=31 * 24 * 60 * 60
         )
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         reply_photo = await png_data.reply_photo(
