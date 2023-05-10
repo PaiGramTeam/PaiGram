@@ -89,7 +89,9 @@ async def update_metadata_from_github(overwrite: bool = True):
             text_map_json_data = {}
             async with client.stream("GET", text_map_url) as response:
                 async for line in response.aiter_lines():
-                    if (string_id := (splits := line.split(":"))[0].strip(' "')) in string_ids:
+                    splits = line.split(":")
+                    string_id = splits[0].strip(' "')
+                    if string_id in string_ids:
                         text_map_json_data[string_id] = splits[1].strip('\n ,"')
                         string_ids.remove(string_id)
                     if not string_ids:
