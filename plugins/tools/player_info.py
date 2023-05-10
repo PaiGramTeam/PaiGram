@@ -51,9 +51,8 @@ class PlayerInfoSystem(Plugin):
         player_info = await self.player_info_service.get(player)
         name_card: Optional[str] = None
         try:
-            if player_info is not None:
-                if player_info.name_card is not None:
-                    name_card = (await self.assets_service.namecard(int(player_info.name_card)).navbar()).as_uri()
+            if player_info is not None and player_info.name_card is not None:
+                name_card = (await self.assets_service.namecard(int(player_info.name_card)).navbar()).as_uri()
         except Exception as exc:  # pylint: disable=W0703
             logger.error("卡片信息请求失败 %s", str(exc))
         if name_card is None:  # 默认

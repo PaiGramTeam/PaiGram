@@ -17,7 +17,7 @@ class HelpRawPlugin(Plugin):
         self.help_raw: Optional[str] = None
 
     async def initialize(self):
-        file_path = os.path.join(os.getcwd(), "resources", "bot", "help", "help.html")  # resources/bot/help/help.html
+        file_path = os.path.join(os.getcwd(), "resources", "bot", "help", "help.jinja2")
         async with aiofiles.open(file_path, mode="r", encoding="utf-8") as f:
             html_content = await f.read()
         soup = BeautifulSoup(html_content, "lxml")

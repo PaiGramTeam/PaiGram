@@ -68,7 +68,7 @@ class PluginFuncs:
         except Forbidden as exc:
             logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
         except Exception as exc:
-            logger.error("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc_info=exc)
+            logger.error("删除消息 %s message_id[%s] 失败", chat_info, message_id, exc_info=exc)
 
     async def get_chat(self, chat_id: Union[str, int], redis_db: Optional[RedisDB] = None, expire: int = 86400) -> Chat:
         application = self.application
