@@ -5,7 +5,7 @@ import aiofiles
 import httpx
 from httpx import UnsupportedProtocol
 from telegram import Chat, Message, ReplyKeyboardRemove, Update
-from telegram.error import BadRequest, Forbidden
+from telegram.error import Forbidden, NetworkError
 from telegram.ext import CallbackContext, ConversationHandler, Job
 
 from core.dependence.redisdb import RedisDB
@@ -53,7 +53,7 @@ class PluginFuncs:
                 chat_info = f"{full_name}[{chat.id}]"
             else:
                 chat_info = f"{chat.title}[{chat.id}]"
-        except (BadRequest, Forbidden) as exc:
+        except (NetworkError, Forbidden) as exc:
             logger.warning("获取 chat info 失败 %s", exc.message)
         except Exception as exc:
             logger.warning("获取 chat info 消息失败 %s", str(exc))
@@ -63,7 +63,7 @@ class PluginFuncs:
         try:
             # noinspection PyTypeChecker
             await context.bot.delete_message(chat_id=job.chat_id, message_id=message_id)
-        except BadRequest as exc:
+        except NetworkError as exc:
             logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)
         except Forbidden as exc:
             logger.warning("删除消息 %s message_id[%s] 失败 %s", chat_info, message_id, exc.message)

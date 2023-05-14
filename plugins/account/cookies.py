@@ -334,6 +334,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             player = account_cookies_plugin_data.player
             genshin_account = account_cookies_plugin_data.genshin_account
             if player:
+                player.account_id = account_cookies_plugin_data.account_id
                 await self.players_service.update(player)
                 cookies_data_base = account_cookies_plugin_data.cookies_data_base
                 if cookies_data_base:
