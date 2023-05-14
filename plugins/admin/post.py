@@ -54,7 +54,13 @@ class Post(Plugin.Conversation):
     def __init__(self):
         self.gids = 2
         self.short_name = "ys"
-        self.bbs = Hyperion(
+        self.last_post_id_list: List[int] = []
+        self.ffmpeg_enable = False
+        self.cache_dir = os.path.join(os.getcwd(), "cache")
+
+    @staticmethod
+    def get_bbs_client() -> Hyperion:
+        return Hyperion(
             timeout=Timeout(
                 connect=config.connect_timeout,
                 read=config.read_timeout,
@@ -62,9 +68,6 @@ class Post(Plugin.Conversation):
                 pool=config.pool_timeout,
             )
         )
-        self.last_post_id_list: List[int] = []
-        self.ffmpeg_enable = False
-        self.cache_dir = os.path.join(os.getcwd(), "cache")
 
     async def initialize(self):
         if config.channels and len(config.channels) > 0:
@@ -80,11 +83,12 @@ class Post(Plugin.Conversation):
             logger.warning("ffmpeg 不可用 已经禁用编码转换")
 
     async def task(self, context: "ContextTypes.DEFAULT_TYPE"):
+        bbs = self.get_bbs_client()
         temp_post_id_list: List[int] = []
 
         # 请求推荐POST列表并处理
         try:
-            official_recommended_posts = await self.bbs.get_official_recommended_posts(self.gids)
+            official_recommended_posts = await bbs.get_official_recommended_posts(self.gids)
         except APIHelperException as exc:
             logger.error("获取首页推荐信息失败 %s", str(exc))
             return
@@ -108,7 +112,7 @@ class Post(Plugin.Conversation):
 
         for post_id in new_post_id_list:
             try:
-                post_info = await self.bbs.get_post_info(self.gids, post_id)
+                post_info = await bbs.get_post_info(self.gids, post_id)
             except APIHelperException as exc:
                 logger.error("获取文章信息失败 %s", str(exc))
                 text = f"获取 post_id[{post_id}] 文章信息失败 {str(exc)}"
@@ -132,6 +136,7 @@ class Post(Plugin.Conversation):
                 )
             except BadRequest as exc:
                 logger.error("发送消息失败 %s", exc.message)
+        await bbs.close()
 
     @staticmethod
     def parse_post_text(soup: BeautifulSoup, post_subject: str) -> str:
@@ -286,15 +291,17 @@ class Post(Plugin.Conversation):
             await message.reply_text("退出投稿", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
 
-        post_id = self.bbs.extract_post_id(update.message.text)
+        post_id = Hyperion.extract_post_id(update.message.text)
         if post_id == -1:
             await message.reply_text("获取作品ID错误，请检查连接是否合法", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         return await self.send_post_info(post_handler_data, message, post_id)
 
     async def send_post_info(self, post_handler_data: PostHandlerData, message: "Message", post_id: int) -> int:
-        post_info = await self.bbs.get_post_info(self.gids, post_id)
-        post_images = await self.bbs.get_images_by_post_id(self.gids, post_id)
+        bbs = self.get_bbs_client()
+        post_info = await bbs.get_post_info(self.gids, post_id)
+        post_images = await bbs.get_images_by_post_id(self.gids, post_id)
+        await bbs.close()
         post_images = await self.gif_to_mp4(post_images)
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
