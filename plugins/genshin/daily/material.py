@@ -230,7 +230,8 @@ class DailyMaterial(Plugin):
             logger.info("正在获取每日素材缓存")
             self.data = await self._refresh_data()
         for domain, sche in self.data.items():
-            area = DOMAIN_AREA_MAP[domain := domain.strip()]  # 获取秘境所在的区域
+            domain = domain.strip()
+            area = DOMAIN_AREA_MAP[domain]  # 获取秘境所在的区域
             type_ = "avatar" if DOMAINS.index(domain) < 4 else "weapon"  # 获取秘境的培养素材的类型：是天赋书还是武器突破材料
             # 将读取到的数据存入 local_data 中
             local_data[type_].append({"name": area, "materials": sche[weekday][0], "items": sche[weekday][1]})
