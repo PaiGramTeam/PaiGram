@@ -90,7 +90,7 @@ class BindAccountPlugin(Plugin.Conversation):
         else:
             await message.reply_text("选择错误，请重新选择")
             return CHECK_SERVER
-        reply_keyboard = [["通过玩家ID", "用过账号ID"], ["退出"]]
+        reply_keyboard = [["通过玩家ID", "通过账号ID"], ["退出"]]
         await message.reply_markdown_v2(
             "请选择你要绑定的方式", reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
         )
@@ -106,7 +106,7 @@ class BindAccountPlugin(Plugin.Conversation):
         if message.text == "通过玩家ID":
             await message.reply_text("请输入你的玩家ID（非通行证ID）", reply_markup=ReplyKeyboardRemove())
             return CHECK_PLAYER_ID
-        if message.text == "用过账号ID":
+        if message.text == "通过账号ID":
             await message.reply_text("请输入你的通行证ID（非玩家ID）", reply_markup=ReplyKeyboardRemove())
             return CHECK_ACCOUNT_ID
         await message.reply_text("选择错误，请重新选择")
