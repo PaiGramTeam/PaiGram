@@ -26,7 +26,7 @@ class VerificationPlugins(Plugin):
             return
         url = (
             f"{config.pass_challenge_user_web}/webapp?"
-            f"username={context.bot.username}&command=verify&gt={gt}&challenge={challenge}&uid={uid}"
+            f"gt={gt}&username={context.bot.username}&command=verify&challenge={challenge}&uid={uid}"
         )
         await message.reply_text(
             "请尽快在10秒内完成手动验证\n或发送 /web_cancel 取消操作",
