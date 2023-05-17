@@ -98,7 +98,7 @@ class SignSystem(Plugin):
             return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
         url = (
             f"{config.pass_challenge_user_web}?"
-            f"username={bot_username}&command=sign&gt={gt}&challenge={challenge}&uid={uid}"
+            f"gt={gt}&username={bot_username}&command=sign&challenge={challenge}&uid={uid}"
         )
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
@@ -148,6 +148,7 @@ class SignSystem(Plugin):
                     gt = request_daily_reward.get("gt", "")
                     challenge = request_daily_reward.get("challenge", "")
                     logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
+                    self.verify.account_id = client.hoyolab_id
                     validate = await self.verify.ajax(
                         referer=RecognizeSystem.REFERER,
                         gt=gt,

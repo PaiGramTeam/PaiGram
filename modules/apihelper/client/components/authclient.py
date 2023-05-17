@@ -11,7 +11,7 @@ from qrcode.image.pure import PyPNGImage
 
 from ...logger import logger
 from ...models.genshin.cookies import CookiesModel
-from ...utility.helpers import get_device_id, get_ds
+from ...utility.helpers import get_device_id, get_ds, update_device_headers
 
 __all__ = ("AuthClient",)
 
@@ -87,13 +87,12 @@ class AuthClient:
             "Accept": "application/json",
             "x-rpc-game_biz": "bbs_cn",
             "x-rpc-sys_version": "11",
-            "x-rpc-device_id": get_device_id(self.USER_AGENT),
-            "x-rpc-device_fp": "".join(random.choices((ascii_letters + digits), k=13)),
             "x-rpc-device_name": "Chrome 108.0.0.0",
             "x-rpc-device_model": "Windows 10 64-bit",
             "x-rpc-app_id": "bll8iq97cem8",
             "User-Agent": "okhttp/4.8.0",
         }
+        update_device_headers(self.user_id, headers)
         app_version, client_type, ds_sign = get_ds(new_ds=True, data=data)
         headers["x-rpc-app_version"] = app_version
         headers["x-rpc-client_type"] = client_type

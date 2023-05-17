@@ -4,7 +4,7 @@ import time
 from typing import Dict, Optional
 
 from ..base.hyperionrequest import HyperionRequest
-from ...utility.helpers import get_ua, get_device_id, get_ds
+from ...utility.helpers import get_ua, get_ds, update_device_headers
 
 __all__ = ("Verify",)
 
@@ -14,6 +14,8 @@ class Verify:
     VERIFICATION_HOST = "api.geetest.com"
     CREATE_VERIFICATION_URL = "/game_record/app/card/wapi/createVerification"
     VERIFY_VERIFICATION_URL = "/game_record/app/card/wapi/verifyVerification"
+    REFERER_URL = "/game_record/app/genshin/api/dailyNote"
+    GAME = "2"
     AJAX_URL = "/ajax.php"
 
     USER_AGENT = get_ua()
@@ -24,7 +26,6 @@ class Verify:
         "User-Agent": USER_AGENT,
         "X-Requested-With": "com.mihoyo.hyperion",
         "Referer": "https://webstatic.mihoyo.com/",
-        "x-rpc-device_id": get_device_id(USER_AGENT),
         "x-rpc-page": "3.1.3_#/ys",
     }
 
@@ -35,7 +36,8 @@ class Verify:
         "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
     }
 
-    def __init__(self, cookies: Dict = None):
+    def __init__(self, account_id: int = None, cookies: Dict = None):
+        self.account_id = account_id
         self.client = HyperionRequest(headers=self.BBS_HEADERS, cookies=cookies)
 
     def get_verification_headers(self, referer: str):
@@ -49,6 +51,9 @@ class Verify:
         headers["x-rpc-app_version"] = app_version
         headers["x-rpc-client_type"] = client_type
         headers["DS"] = ds
+        headers["x-rpc-challenge_path"] = f"https://{self.HOST}{self.REFERER_URL}"
+        headers["x-rpc-challenge_game"] = self.GAME
+        update_device_headers(self.account_id, headers)
         return headers
 
     @staticmethod

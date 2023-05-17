@@ -4,7 +4,7 @@ from genshin import Client
 from genshin.client.routes import InternationalRoute  # noqa F401
 from genshin.utility import recognize_genshin_server
 
-from modules.apihelper.utility.helpers import hex_digest, get_ds
+from modules.apihelper.utility.helpers import hex_digest, get_ds, update_device_headers
 
 AUTHKEY_API = "https://api-takumi.mihoyo.com/binding/api/genAuthKey"
 HK4E_LOGIN_URL = InternationalRoute(
@@ -15,7 +15,6 @@ GACHA_HEADERS = {
     "User-Agent": "okhttp/4.8.0",
     "x-rpc-sys_version": "12",
     "x-rpc-channel": "mihoyo",
-    "x-rpc-device_id": "",
     "x-rpc-device_name": "",
     "x-rpc-device_model": "",
     "Referer": "https://app.mihoyo.com",
@@ -37,8 +36,8 @@ async def get_authkey_by_stoken(client: Client) -> Optional[str]:
         "region": recognize_genshin_server(client.uid),
     }
     device_id = hex_digest(str(client.uid))
-    headers["x-rpc-device_id"] = device_id
     device = f"Paimon Build {device_id[:5]}"
+    update_device_headers(client.hoyolab_id, headers)
     headers["x-rpc-device_name"] = device
     headers["x-rpc-device_model"] = device
     app_version, client_type, ds_sign = get_ds()
