@@ -141,8 +141,12 @@ class Post(Plugin.Conversation):
     @staticmethod
     def parse_post_text(soup: BeautifulSoup, post_subject: str) -> str:
         def parse_tag(_tag: "Tag") -> str:
-            if _tag.name == "a" and _tag.get("href"):
-                return f"[{escape_markdown(_tag.get_text(), version=2)}]({_tag.get('href')})"
+            if _tag.name == "a":
+                href = _tag.get("href")
+                if href and href.startswith("/"):
+                    href = f"https://www.miyoushe.com{href}"
+                if href and href.startswith("http"):
+                    return f"[{escape_markdown(_tag.get_text(), version=2)}]({href})"
             return escape_markdown(_tag.get_text(), version=2)
 
         post_text = f"*{escape_markdown(post_subject, version=2)}*\n\n"
@@ -323,8 +327,7 @@ class Post(Plugin.Conversation):
                 image = post_images[0]
                 await message.reply_photo(image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
             else:
-                await message.reply_text(post_text, reply_markup=ReplyKeyboardRemove())
-                return ConversationHandler.END
+                await message.reply_text(post_text, parse_mode=ParseMode.MARKDOWN_V2)
         except BadRequest as exc:
             await message.reply_text(f"发送图片时发生错误 {exc.message}", reply_markup=ReplyKeyboardRemove())
             logger.error("Post模块发送图片时发生错误 %s", exc.message)
