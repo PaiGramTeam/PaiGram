@@ -120,7 +120,10 @@ class _AssetsService(ABC):
         error = None
         for _ in range(5):
             try:
-                return await self.client.get(url, follow_redirects=False)
+                response = await self.client.get(url, follow_redirects=False)
+                if response.headers['content-length'] == '2358':
+                    continue
+                return response
             except (TransportError, SSLZeroReturnError) as e:
                 error = e
                 await asyncio.sleep(interval)
@@ -171,7 +174,8 @@ class _AssetsService(ABC):
             async for url in func(item):
                 if url is not None:
                     try:
-                        response = await self._request(url := str(url))
+                        if (response := await self._request(url := str(url))) is None:
+                            continue
                         response.raise_for_status()
                         yield url
                     except HTTPStatusError:
@@ -529,7 +533,7 @@ class AssetsService(BaseService.Dependence):
 
     def __init__(self):
         for attr, assets_type_name in filter(
-            lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
+                lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
         ):
             setattr(self, attr, globals()[assets_type_name]())
 
