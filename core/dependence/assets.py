@@ -121,7 +121,7 @@ class _AssetsService(ABC):
         for _ in range(5):
             try:
                 response = await self.client.get(url, follow_redirects=False)
-                if response.headers["content-length"] == "2358":
+                if response.headers.get('content-length', None) == '2358':
                     continue
                 return response
             except (TransportError, SSLZeroReturnError) as e:
@@ -533,7 +533,7 @@ class AssetsService(BaseService.Dependence):
 
     def __init__(self):
         for attr, assets_type_name in filter(
-            lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
+                lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
         ):
             setattr(self, attr, globals()[assets_type_name]())
 
