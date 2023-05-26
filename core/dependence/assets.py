@@ -120,7 +120,10 @@ class _AssetsService(ABC):
         error = None
         for _ in range(5):
             try:
-                return await self.client.get(url, follow_redirects=False)
+                response = await self.client.get(url, follow_redirects=False)
+                if response.headers.get("content-length", None) == "2358":
+                    continue
+                return response
             except (TransportError, SSLZeroReturnError) as e:
                 error = e
                 await asyncio.sleep(interval)
@@ -171,7 +174,8 @@ class _AssetsService(ABC):
             async for url in func(item):
                 if url is not None:
                     try:
-                        response = await self._request(url := str(url))
+                        if (response := await self._request(url := str(url))) is None:
+                            continue
                         response.raise_for_status()
                         yield url
                     except HTTPStatusError:
