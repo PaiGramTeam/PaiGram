@@ -468,10 +468,15 @@ class _NamecardAssets(_AssetsService):
 
     @lru_cache
     def _get_id_from_avatar_id(self, avatar_id: Union[int, str]) -> int:
-        avatar_icon_name = AVATAR_DATA[str(avatar_id)]["icon"].replace("AvatarIcon", "NameCardIcon")
+        avatar_icon_name = AVATAR_DATA[str(avatar_id)]["icon"].split("_")[-1]
+        fallback = None
         for namecard_id, namecard_data in NAMECARD_DATA.items():
-            if namecard_data["icon"] == avatar_icon_name:
+            if namecard_data["icon"].split("_")[-1] == avatar_icon_name:
                 return int(namecard_id)
+            elif avatar_icon_name in namecard_data["icon"].split("_")[-1]:
+                fallback = int(namecard_id)
+        if fallback:
+            return fallback
         raise ValueError(avatar_id)
 
     def __call__(self, target: int) -> "_NamecardAssets":
