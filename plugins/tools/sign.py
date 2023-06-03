@@ -98,7 +98,7 @@ class SignSystem(Plugin):
             return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", callback_data=data)]])
         url = (
             f"{config.pass_challenge_user_web}?"
-            f"username={bot_username}&command=sign&gt={gt}&challenge={challenge}&uid={uid}"
+            f"gt={gt}&username={bot_username}&command=sign&challenge={challenge}&uid={uid}"
         )
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
