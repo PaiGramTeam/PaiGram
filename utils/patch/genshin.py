@@ -9,7 +9,8 @@ from genshin import constants, types, utility
 from genshin.client import routes
 from genshin.utility import generate_dynamic_secret, ds
 
-from modules.apihelper.utility.helpers import get_ds, get_ua, get_device_id, hex_digest
+from modules.apihelper.utility.helpers import get_ds, get_ua, get_device_id, hex_digest, update_device_headers
+from utils.log import logger
 from utils.patch.methods import patch, patchable
 
 DEVICE_ID = get_device_id()
@@ -108,7 +109,7 @@ class CalculatorClient:
 class BaseClient:
     @patchable
     async def request_hoyolab(
-        self,
+        self: "genshin.Client",
         url: aiohttp.typedefs.StrOrURL,
         *,
         lang: typing.Optional[str] = None,
@@ -151,11 +152,11 @@ class BaseClient:
                 "User-Agent": ua,
                 "X_Requested_With": "com.mihoyo.hoyolab",
                 "Referer": "https://webstatic.mihoyo.com",
-                "x-rpc-device_id": get_device_id(device_id),
                 "x-rpc-app_version": app_version,
                 "x-rpc-client_type": client_type,
                 "ds": ds_sign,
             }
+            update_device_headers(self.hoyolab_id, headers)
         else:
             raise TypeError(f"{region!r} is not a valid region.")
 
@@ -164,7 +165,7 @@ class BaseClient:
 
     @patchable
     async def request(
-        self,
+        self: "genshin.Client",
         url: aiohttp.typedefs.StrOrURL,
         *,
         method: typing.Optional[str] = None,
@@ -189,6 +190,8 @@ class BaseClient:
 
         headers = dict(headers or {})
         headers.setdefault("User-Agent", self.USER_AGENT)
+        update_device_headers(self.hoyolab_id, headers)
+        logger.debug("Account ID: %s  Header: %s" % (self.hoyolab_id, headers))
 
         if method is None:
             method = "POST" if data else "GET"
@@ -218,7 +221,7 @@ class BaseClient:
 
     @patchable
     async def request_bbs(
-        self,
+        self: "genshin.Client",
         url: aiohttp.typedefs.StrOrURL,
         *,
         lang: typing.Optional[str] = None,
@@ -256,12 +259,12 @@ class BaseClient:
                 add_headers = {
                     "User-Agent": ua,
                     "Referer": "https://www.miyoushe.com/ys/",
-                    "x-rpc-device_id": get_device_id(device_id),
                     "x-rpc-app_version": app_version,
                     "x-rpc-client_type": "4",
                     "ds": ds_sign,
                 }
                 headers.update(add_headers)
+                update_device_headers(self.hoyolab_id, headers)
         elif self.region == types.Region.OVERSEAS:
             headers.update(ds.get_ds_headers(data=data, params=params, region=region, lang=lang or self.lang))
             headers["Referer"] = str(routes.BBS_REFERER_URL.get_url(self.region))
@@ -276,7 +279,7 @@ class BaseClient:
 class DailyRewardClient:
     @patchable
     async def request_daily_reward(
-        self,
+        self: "genshin.Client",
         endpoint: str,
         *,
         game: typing.Optional[types.Game] = None,
@@ -331,7 +334,6 @@ class DailyRewardClient:
                 "bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
             )
             headers["x-rpc-device_name"] = device
-            headers["x-rpc-device_id"] = get_device_id(device_id)
             headers["x-rpc-app_version"] = app_version
             headers["x-rpc-client_type"] = client_type
             headers["x-rpc-sys_version"] = "12"
@@ -347,7 +349,7 @@ class DailyRewardClient:
                 headers["x-rpc-challenge"] = challenge
                 headers["x-rpc-validate"] = validate
                 headers["x-rpc-seccode"] = f"{validate}|jordan"
-
+            update_device_headers(self.hoyolab_id, headers)
         else:
             raise TypeError(f"{self.region!r} is not a valid region.")
 

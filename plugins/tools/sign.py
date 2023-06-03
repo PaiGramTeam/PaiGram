@@ -148,6 +148,7 @@ class SignSystem(Plugin):
                     gt = request_daily_reward.get("gt", "")
                     challenge = request_daily_reward.get("challenge", "")
                     logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
+                    self.verify.account_id = client.hoyolab_id
                     validate = await self.verify.ajax(
                         referer=RecognizeSystem.REFERER,
                         gt=gt,

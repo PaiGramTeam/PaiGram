@@ -4,9 +4,9 @@ import random
 import string
 import time
 import uuid
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Dict
 
-__all__ = ("get_device_id", "hex_digest", "get_ds", "get_recognize_server", "get_ua")
+__all__ = ("get_device_id", "hex_digest", "get_ds", "get_recognize_server", "get_ua", "update_device_headers")
 
 RECOGNIZE_SERVER = {
     "1": "cn_gf01",
@@ -21,6 +21,14 @@ RECOGNIZE_SERVER = {
 
 def get_device_id(name: str = ""):
     return str(uuid.uuid3(uuid.NAMESPACE_URL, name))
+
+
+def update_device_headers(account_id: int, headers: Dict = None) -> Dict[str, str]:
+    account_id = account_id or 0
+    headers = headers or {}
+    headers["x-rpc-device_id"] = get_device_id(str(account_id))
+    headers["x-rpc-device_fp"] = hex_digest(headers["x-rpc-device_id"])[:13]
+    return headers
 
 
 def hex_digest(text):
