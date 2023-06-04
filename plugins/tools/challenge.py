@@ -77,6 +77,8 @@ class ChallengeSystem(Plugin):
                     return client.uid, "ajax", "ajax"
             except APIHelperException as exc:
                 logger.warning("用户 %s ajax 验证失效 错误信息为 %s", user_id, str(exc))
+            logger.warning("用户 %s ajax 验证失败 重新申请验证", user_id)
+            return await self.create_challenge(user_id, need_verify, False)
         await self.set_challenge(client.uid, gt, challenge)
         return client.uid, gt, challenge
 
