@@ -1,6 +1,6 @@
 import asyncio
 import contextlib
-from typing import Callable, Coroutine, Any, Union, List, Dict, Optional, TypeVar, Type, TYPE_CHECKING
+from typing import Callable, Coroutine, Any, Union, List, Dict, Optional, TypeVar, Type
 
 from telegram.error import RetryAfter
 from telegram.ext import BaseRateLimiter, ApplicationHandlerStop
@@ -39,11 +39,14 @@ class RateLimiter(BaseRateLimiter[int]):
         loop = asyncio.get_running_loop()
         time = loop.time()
         chat_limit_time = self._limiter_info.get(chat_id)
+
+        await self._retry_after_event.wait()
+
         if chat_limit_time:
             if time >= chat_limit_time:
                 raise ApplicationHandlerStop
             del self._limiter_info[chat_id]
-        await self._retry_after_event.wait()
+
         try:
             return await callback(*args, **kwargs)
         except RetryAfter as exc:
