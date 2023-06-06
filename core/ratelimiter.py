@@ -31,7 +31,6 @@ class RateLimiter(BaseRateLimiter[int]):
         data: Dict[str, Any],
         rate_limit_args: Optional[RL_ARGS],
     ) -> Union[bool, JSONDict, List[JSONDict]]:
-
         chat_id = data.get("chat_id")
 
         with contextlib.suppress(ValueError, TypeError):
