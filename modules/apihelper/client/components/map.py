@@ -64,12 +64,14 @@ class MapHelper:
     async def refresh_query_map(self) -> None:
         """刷新查询映射"""
         data = {}
-        params = self.COUNT_PARAMS.copy()
-        label_data = await self.client.get(self.LABEL_URL, params=params)
-        for label_tree_source in label_data.json().get("data", {}).get("tree", []):
-            label_tree = LabelTree(**label_tree_source)
-            for child in label_tree.children:
-                data[child.name] = str(child.id)
+        for map_id in self.MAP_ID_LIST:
+            params = self.COUNT_PARAMS.copy()
+            params["map_id"] = map_id
+            label_data = await self.client.get(self.LABEL_URL, params=params)
+            for label_tree_source in label_data.json().get("data", {}).get("tree", []):
+                label_tree = LabelTree(**label_tree_source)
+                for child in label_tree.children:
+                    data[child.name] = str(child.id)
         self.query_map = data
         self.save(data, self.query_map_path)
 
