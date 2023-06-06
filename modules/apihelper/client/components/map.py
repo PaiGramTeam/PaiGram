@@ -22,8 +22,8 @@ class MapHelper:
     """提瓦特大地图"""
 
     MAP_API_URL = "https://map.minigg.cn/map/get_map"
-    LABEL_URL = "https://waf-api-takumi.mihoyo.com/common/map_user/ys_obc/v1/map/label/tree"
-    COUNT_URL = "https://waf-api-takumi.mihoyo.com/common/map_user/ys_obc/v1/map/point/list"
+    LABEL_URL = "https://api-takumi.mihoyo.com/common/map_user/ys_obc/v1/map/label/tree"
+    COUNT_URL = "https://api-takumi.mihoyo.com/common/map_user/ys_obc/v1/map/point/list"
     COUNT_PARAMS = {"app_sn": "ys_obc", "map_id": "2", "lang": "zh-cn"}
     MAP_ID_LIST = [
         "2",
