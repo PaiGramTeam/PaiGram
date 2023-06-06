@@ -1,6 +1,6 @@
 from base64 import b64decode as parse_token
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Iterator, Dict
 
 import ujson as json
 from aiofiles import open as async_open
@@ -19,6 +19,17 @@ RESOURCE_DEFAULT_PATH = f"{RESOURCE_REPO}/{RESOURCE_BRANCH}/{RESOURCE_ROOT}/"
 client = AsyncClient()
 
 
+async def fix_metadata_from_ambr(json_data: Dict[str, Dict], data_type: str):
+    if data_type == "weapon":
+        need_append_ids = [11304]
+        need_attr = ["id", "rank", "type", "name", "icon", "route"]
+        for wid in need_append_ids:
+            url = AMBR_HOST.join(f"v2/chs/{data_type}/{wid}")
+            response = await client.get(url)
+            json_data_ = json.loads(response.text)["data"]
+            json_data[str(json_data_["id"])] = {k: json_data_[k] for k in need_attr}
+
+
 async def update_metadata_from_ambr(overwrite: bool = True):
     result = []
     targets = ["material", "weapon", "avatar", "reliquary"]
@@ -30,6 +41,7 @@ async def update_metadata_from_ambr(overwrite: bool = True):
         path.parent.mkdir(parents=True, exist_ok=True)
         response = await client.get(url)
         json_data = json.loads(response.text)["data"]["items"]
+        await fix_metadata_from_ambr(json_data, target)
         async with async_open(path, mode="w", encoding="utf-8") as file:
             data = json.dumps(json_data, ensure_ascii=False)
             await file.write(data)
