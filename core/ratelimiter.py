@@ -42,8 +42,7 @@ class RateLimiter(BaseRateLimiter[int]):
         if chat_limit_time:
             if time >= chat_limit_time:
                 raise ApplicationHandlerStop
-            else:
-                del self._limiter_info[chat_id]
+            del self._limiter_info[chat_id]
         await self._retry_after_event.wait()
         try:
             return await callback(*args, **kwargs)
