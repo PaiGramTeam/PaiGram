@@ -22,9 +22,9 @@ class MapHelper:
     """提瓦特大地图"""
 
     MAP_API_URL = "https://map.minigg.cn/map/get_map"
-    LABEL_URL = "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/label/tree?app_sn=ys_obc"
-    COUNT_URL = "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/map/point/list"
-    COUNT_PARAMS = {"app_sn": "ys_obc", "map_id": "2"}
+    LABEL_URL = "https://waf-api-takumi.mihoyo.com/common/map_user/ys_obc/v1/map/label/tree"
+    COUNT_URL = "https://waf-api-takumi.mihoyo.com/common/map_user/ys_obc/v1/map/point/list"
+    COUNT_PARAMS = {"app_sn": "ys_obc", "map_id": "2", "lang": "zh-cn"}
     MAP_ID_LIST = [
         "2",
         "7",
@@ -64,7 +64,8 @@ class MapHelper:
     async def refresh_query_map(self) -> None:
         """刷新查询映射"""
         data = {}
-        label_data = await self.client.get(self.LABEL_URL)
+        params = self.COUNT_PARAMS.copy()
+        label_data = await self.client.get(self.LABEL_URL, params=params)
         for label_tree_source in label_data.json().get("data", {}).get("tree", []):
             label_tree = LabelTree(**label_tree_source)
             for child in label_tree.children:
