@@ -48,7 +48,7 @@ class RateLimiter(BaseRateLimiter[int]):
         try:
             return await callback(*args, **kwargs)
         except RetryAfter as exc:
-            logger.warning("触发洪水限制\nchat_id=%s, retry_after=%s", chat_id, exc.retry_after)
+            logger.warning("chat_id[%s] 触发洪水限制 当前被服务器限制 retry_after[%s]秒", chat_id, exc.retry_after)
             self._limiter_info[chat_id] = time + (exc.retry_after * 2)
             sleep = exc.retry_after + 0.1
             self._retry_after_event.clear()
