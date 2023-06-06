@@ -62,8 +62,6 @@ async def update_metadata_from_github(overwrite: bool = True):
         return
 
     hosts = [
-        URL(f"https://ghproxy.net/https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}"),
-        URL(f"https://github.91chi.fun/https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}"),
         URL(f"https://raw.fastgit.org/{RESOURCE_DEFAULT_PATH}"),
         URL(f"https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}"),
     ]
