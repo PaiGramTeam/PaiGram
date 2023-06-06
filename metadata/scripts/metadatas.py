@@ -1,4 +1,3 @@
-from base64 import b64decode as parse_token
 from contextlib import contextmanager
 from typing import Iterator, Dict
 
@@ -9,12 +8,12 @@ from httpx import URL, AsyncClient, RemoteProtocolError, Response
 from utils.const import AMBR_HOST, PROJECT_ROOT
 from utils.log import logger
 
-__all__ = ["update_metadata_from_ambr", "update_metadata_from_github", "make_github_fast", "RESOURCE_DEFAULT_PATH"]
-GENSHIN_PY_DATA_REPO = parse_token("aHR0cHM6Ly9naXRsYWIuY29tL0RpbWJyZWF0aC9nYW1lZGF0YS8tL3Jhdy9tYXN0ZXIv").decode()
+__all__ = ["update_metadata_from_ambr", "update_metadata_from_github", "RESOURCE_DEFAULT_PATH", "RESOURCE_FAST_URL"]
 RESOURCE_REPO = "PaiGramTeam/PaiGram_Resources"
 RESOURCE_BRANCH = "remote"
 RESOURCE_ROOT = "Resources"
 RESOURCE_DEFAULT_PATH = f"{RESOURCE_REPO}/{RESOURCE_BRANCH}/{RESOURCE_ROOT}/"
+RESOURCE_FAST_URL = f"https://genshin-res.paimon.vip/{RESOURCE_ROOT}/"
 
 client = AsyncClient()
 
@@ -62,6 +61,7 @@ async def update_metadata_from_github(overwrite: bool = True):
         return
 
     hosts = [
+        URL(RESOURCE_FAST_URL),
         URL(f"https://raw.fastgit.org/{RESOURCE_DEFAULT_PATH}"),
         URL(f"https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}"),
     ]
@@ -140,11 +140,3 @@ async def update_metadata_from_github(overwrite: bool = True):
                 logger.error("在从 %s 下载元数据的过程中遇到了错误: %s", host, str(exc))
                 continue
             raise exc
-
-
-def make_github_fast(url: str) -> str:
-    url = url.replace("Dimbreath/GenshinData/master/", RESOURCE_DEFAULT_PATH)
-    return url.replace(
-        GENSHIN_PY_DATA_REPO,
-        f"https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}",
-    )

@@ -2,13 +2,13 @@ from typing import List, Dict
 
 from httpx import AsyncClient, HTTPError
 
-from metadata.scripts.metadatas import RESOURCE_DEFAULT_PATH
+from metadata.scripts.metadatas import RESOURCE_FAST_URL
 
 
 class Remote:
     """拉取云控资源"""
 
-    BASE_URL = f"https://raw.githubusercontent.com/{RESOURCE_DEFAULT_PATH}"
+    BASE_URL = RESOURCE_FAST_URL
     CALENDAR = f"{BASE_URL}calendar.json"
     BIRTHDAY = f"{BASE_URL}birthday.json"
     MATERIAL = f"{BASE_URL}roles_material.json"
