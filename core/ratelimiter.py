@@ -12,6 +12,7 @@ RL_ARGS = TypeVar("RL_ARGS")
 
 
 class RateLimiter(BaseRateLimiter[int]):
+    _lock = asyncio.Lock()
     __slots__ = (
         "_limiter_info",
         "_retry_after_event",
@@ -38,14 +39,15 @@ class RateLimiter(BaseRateLimiter[int]):
 
         loop = asyncio.get_running_loop()
         time = loop.time()
-        chat_limit_time = self._limiter_info.get(chat_id)
 
         await self._retry_after_event.wait()
 
-        if chat_limit_time:
-            if time >= chat_limit_time:
-                raise ApplicationHandlerStop
-            del self._limiter_info[chat_id]
+        async with self._lock:
+            chat_limit_time = self._limiter_info.get(chat_id)
+            if chat_limit_time:
+                if time >= chat_limit_time:
+                    raise ApplicationHandlerStop
+                del self._limiter_info[chat_id]
 
         try:
             return await callback(*args, **kwargs)
