@@ -185,7 +185,7 @@ class Map(Plugin):
         except MapException as e:
             await message.reply_text(e.message)
 
-    @handler.command("refresh_map", admin=True)
+    @handler.command("refresh_map", admin=True, block=False)
     async def refresh_map(self, update: Update, _: CallbackContext):
         message = update.effective_message
         msg = await message.reply_text("正在刷新地图数据，请耐心等待...")

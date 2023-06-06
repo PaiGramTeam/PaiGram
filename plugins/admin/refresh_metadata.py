@@ -11,7 +11,7 @@ __all__ = ("MetadataPlugin",)
 
 
 class MetadataPlugin(Plugin):
-    @handler.command("refresh_metadata", admin=True)
+    @handler.command("refresh_metadata", admin=True, block=False)
     async def refresh(self, update: Update, _: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user

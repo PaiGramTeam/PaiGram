@@ -340,7 +340,7 @@ class DailyMaterial(Plugin):
 
         logger.debug("角色、武器培养素材图发送成功")
 
-    @handler.command("refresh_daily_material", block=False)
+    @handler.command("refresh_daily_material", admin=True, block=False)
     async def refresh(self, update: Update, context: CallbackContext):
         user = update.effective_user
         message = update.effective_message
