@@ -815,19 +815,19 @@ lua = ["lupa (>=1.14,<2.0)"]
 
 [[package]]
 name = "fastapi"
-version = "0.95.1"
+version = "0.96.0"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "fastapi-0.95.1-py3-none-any.whl", hash = "sha256:a870d443e5405982e1667dfe372663abf10754f246866056336d7f01c21dab07"},
-    {file = "fastapi-0.95.1.tar.gz", hash = "sha256:9569f0a381f8a457ec479d90fa01005cfddaae07546eb1f3fa035bc4797ae7d5"},
+    {file = "fastapi-0.96.0-py3-none-any.whl", hash = "sha256:b8e11fe81e81eab4e1504209917338e0b80f783878a42c2b99467e5e1019a1e9"},
+    {file = "fastapi-0.96.0.tar.gz", hash = "sha256:71232d47c2787446991c81c41c249f8a16238d52d779c0e6b43927d3773dbe3c"},
 ]
 
 [package.dependencies]
 pydantic = ">=1.6.2,<1.7 || >1.7,<1.7.1 || >1.7.1,<1.7.2 || >1.7.2,<1.7.3 || >1.7.3,<1.8 || >1.8,<1.8.1 || >1.8.1,<2.0.0"
-starlette = ">=0.26.1,<0.27.0"
+starlette = ">=0.27.0,<0.28.0"
 
 [package.extras]
 all = ["email-validator (>=1.1.1)", "httpx (>=0.23.0)", "itsdangerous (>=1.1.0)", "jinja2 (>=2.11.2)", "orjson (>=3.2.1)", "python-multipart (>=0.0.5)", "pyyaml (>=5.3.1)", "ujson (>=4.0.1,!=4.0.2,!=4.1.0,!=4.2.0,!=4.3.0,!=5.0.0,!=5.1.0)", "uvicorn[standard] (>=0.12.0)"]
@@ -2120,14 +2120,14 @@ idna2008 = ["idna"]
 
 [[package]]
 name = "rich"
-version = "13.3.4"
+version = "13.4.1"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
 category = "main"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "rich-13.3.4-py3-none-any.whl", hash = "sha256:22b74cae0278fd5086ff44144d3813be1cedc9115bdfabbfefd86400cb88b20a"},
-    {file = "rich-13.3.4.tar.gz", hash = "sha256:b5d573e13605423ec80bdd0cd5f8541f7844a0e71a13f74cf454ccb2f490708b"},
+    {file = "rich-13.4.1-py3-none-any.whl", hash = "sha256:d204aadb50b936bf6b1a695385429d192bc1fdaf3e8b907e8e26f4c4e4b5bf75"},
+    {file = "rich-13.4.1.tar.gz", hash = "sha256:76f6b65ea7e5c5d924ba80e322231d7cb5b5981aa60bfc1e694f1bc097fe6fe1"},
 ]
 
 [package.dependencies]
@@ -2140,19 +2140,19 @@ jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
 name = "sentry-sdk"
-version = "1.24.0"
+version = "1.25.0"
 description = "Python client for Sentry (https://sentry.io)"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "sentry-sdk-1.24.0.tar.gz", hash = "sha256:0bbcecda9f51936904c1030e7fef0fe693e633888f02a14d1cb68646a50e83b3"},
-    {file = "sentry_sdk-1.24.0-py2.py3-none-any.whl", hash = "sha256:56d6d9d194c898d853a7c1dd99bed92ce82334ee1282292c15bcc967ff1a49b5"},
+    {file = "sentry-sdk-1.25.0.tar.gz", hash = "sha256:5be3296fc574fa8a4d9b213b4dcf8c8d0246c08f8bd78315c6286f386c37555a"},
+    {file = "sentry_sdk-1.25.0-py2.py3-none-any.whl", hash = "sha256:fe85cf5d0b3d0aa3480df689f9f6dc487de783defb0a95043368375dc893645e"},
 ]
 
 [package.dependencies]
 certifi = "*"
-urllib3 = {version = ">=1.26.11,<2.0.0", markers = "python_version >= \"3.6\""}
+urllib3 = {version = ">=1.26.11", markers = "python_version >= \"3.6\""}
 
 [package.extras]
 aiohttp = ["aiohttp (>=3.5)"]
@@ -2367,14 +2367,14 @@ sqlalchemy2-stubs = "*"
 
 [[package]]
 name = "starlette"
-version = "0.26.1"
+version = "0.27.0"
 description = "The little ASGI library that shines."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "starlette-0.26.1-py3-none-any.whl", hash = "sha256:e87fce5d7cbdde34b76f0ac69013fd9d190d581d80681493016666e6f96c6d5e"},
-    {file = "starlette-0.26.1.tar.gz", hash = "sha256:41da799057ea8620e4667a3e69a5b1923ebd32b1819c8fa75634bbe8d8bea9bd"},
+    {file = "starlette-0.27.0-py3-none-any.whl", hash = "sha256:918416370e846586541235ccd38a474c08b80443ed31c578a418e2209b3eef91"},
+    {file = "starlette-0.27.0.tar.gz", hash = "sha256:6a6b0d042acb8d469a01eba54e9cda6cbd24ac602c4cd016723117d6a7e73b75"},
 ]
 
 [package.dependencies]
@@ -2953,4 +2953,4 @@ test = ["pytest", "pytest-asyncio", "flaky"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "8c0e6a7d1837d312c2747e2b27eec385b034a66358a820bc527ee38cc0b16de0"
+content-hash = "5344d643b58c5020fab3db77c3ae2489657e9f6309b3235a8c6897a9eb77bfc6"
