@@ -72,7 +72,7 @@ class WeaponPlugin(Plugin):
                 _template_data = {
                     "weapon_name": _weapon_data.name,
                     "weapon_rarity": _weapon_data.rarity,
-                    "weapon_info_type_img": await self.download_resource(_weapon_data.weapon_type.icon_url()),
+                    "weapon_info_type_img": _weapon_data.weapon_type.name,
                     "progression_secondary_stat_value": bonus,
                     "progression_secondary_stat_name": _weapon_data.attribute.type.value,
                     "weapon_info_source_img": (
@@ -92,7 +92,7 @@ class WeaponPlugin(Plugin):
                 _template_data = {
                     "weapon_name": _weapon_data.name,
                     "weapon_rarity": _weapon_data.rarity,
-                    "weapon_info_type_img": await self.download_resource(_weapon_data.weapon_type.icon_url()),
+                    "weapon_info_type_img": _weapon_data.weapon_type.name,
                     "progression_secondary_stat_value": " ",
                     "progression_secondary_stat_name": "无其它属性加成",
                     "weapon_info_source_img": (
