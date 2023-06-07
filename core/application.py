@@ -24,6 +24,7 @@ from core.config import config as application_config
 from core.handler.limiterhandler import LimiterHandler
 from core.manager import Managers
 from core.override.telegram import HTTPXRequest
+from core.ratelimiter import RateLimiter
 from utils.const import WRAPPER_ASSIGNMENTS
 from utils.log import logger
 from utils.models.signal import Singleton
@@ -76,6 +77,7 @@ class Application(Singleton):
                     pool_timeout=application_config.pool_timeout,
                 )
             )
+            .rate_limiter(RateLimiter())
             .build()
         )
         web_server = Server(
