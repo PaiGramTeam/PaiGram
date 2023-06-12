@@ -1,10 +1,11 @@
 import contextlib
 from pathlib import Path
-from typing import Tuple, Optional, List, Dict
+from typing import Tuple, Optional, List, Dict, TYPE_CHECKING
 
 import aiofiles
-from genshin import Client, AuthkeyTimeout, InvalidAuthkey
-from genshin.models import TransactionKind, BaseTransaction
+from simnet import GenshinClient
+from simnet.errors import AuthkeyTimeout, InvalidAuthkey
+from simnet.models.genshin.transaction import TransactionKind, BaseTransaction
 
 from modules.pay_log.error import PayLogAuthkeyTimeout, PayLogInvalidAuthkey, PayLogNotFound
 from modules.pay_log.models import PayLog as PayLogModel, BaseInfo
@@ -15,6 +16,7 @@ try:
 
 except ImportError:
     import json as jsonlib
+
 
 PAY_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "pay_log")
 PAY_LOG_PATH.mkdir(parents=True, exist_ok=True)
@@ -112,20 +114,22 @@ class PayLog:
     async def get_log_data(
         self,
         user_id: int,
-        client: Client,
+        player_id: int,
         authkey: str,
     ) -> int:
         """使用 authkey 获取历史记录数据，并合并旧数据
         :param user_id: 用户id
-        :param client: genshin client
+        :param player_id: player_id
         :param authkey: authkey
         :return: 更新结果
         """
         new_num = 0
-        pay_log, have_old = await self.load_history_info(str(user_id), str(client.uid))
+        pay_log, have_old = await self.load_history_info(str(user_id), str(player_id))
         history_ids = [i.id for i in pay_log.list]
         try:
-            async for data in client.transaction_log(TransactionKind.CRYSTAL, authkey=authkey):
+            async with GenshinClient(player_id=player_id) as client:
+                transaction_log = await client.transaction_log(authkey=authkey, kind=TransactionKind.CRYSTAL)
+            for data in transaction_log:
                 if data.id not in history_ids:
                     pay_log.list.append(data)
                     new_num += 1
@@ -136,7 +140,7 @@ class PayLog:
         if new_num > 0 or have_old:
             pay_log.list.sort(key=lambda x: (x.time, x.id), reverse=True)
             pay_log.info.update_now()
-            await self.save_pay_log_info(str(user_id), str(client.uid), pay_log)
+            await self.save_pay_log_info(str(user_id), str(client.player_id), pay_log)
         return new_num
 
     @staticmethod
@@ -180,13 +184,13 @@ class PayLog:
             raise PayLogNotFound
         return all_amount, month_datas
 
-    async def get_analysis(self, user_id: int, client: Client):
+    async def get_analysis(self, user_id: int, player_id: int):
         """获取分析数据
         :param user_id: 用户id
         :param client: genshin client
         :return: 分析数据
         """
-        pay_log, status = await self.load_history_info(str(user_id), str(client.uid))
+        pay_log, status = await self.load_history_info(str(user_id), str(player_id))
         if not status:
             raise PayLogNotFound
         # 单双倍结晶数
@@ -227,7 +231,7 @@ class PayLog:
             if price_data[i]["count"] > 0
         ]
         return {
-            "uid": client.uid,
+            "uid": client.player_id,
             "datas": datas,
             "bar_data": month_datas,
             "pie_data": pie_datas,

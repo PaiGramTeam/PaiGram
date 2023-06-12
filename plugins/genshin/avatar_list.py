@@ -1,9 +1,11 @@
 import asyncio
 from typing import List, Optional, Sequence, TYPE_CHECKING
 
-from genshin import Client, GenshinException, InvalidCookies
-from genshin.models import CalculatorCharacterDetails, CalculatorTalent, Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, User
+from simnet import GenshinClient
+from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies
+from simnet.models.genshin.calculator import CalculatorTalent, CalculatorCharacterDetails
+from simnet.models.genshin.chronicle.characters import Character
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
@@ -17,10 +19,12 @@ from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA
 from modules.wiki.base import Model
-from plugins.tools.genshin import CharacterDetails, CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
+from plugins.tools.genshin import CharacterDetails
+from plugins.tools.simnet import SIMNetClient, CookiesNotFoundError, PlayerNotFoundError
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from telegram import Update
     from telegram.ext import ContextTypes
 
 
@@ -55,7 +59,7 @@ class AvatarListPlugin(Plugin):
         cookies_service: CookiesService = None,
         assets_service: AssetsService = None,
         template_service: TemplateService = None,
-        helper: GenshinHelper = None,
+        helper: SIMNetClient = None,
         character_details: CharacterDetails = None,
         player_info_service: PlayerInfoService = None,
     ) -> None:
@@ -67,7 +71,9 @@ class AvatarListPlugin(Plugin):
         self.player_service = player_service
         self.player_info_service = player_info_service
 
-    async def get_user_client(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> Optional[Client]:
+    async def get_user_client(
+        self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"
+    ) -> Optional["GenshinClient"]:
         message = update.effective_message
         user = update.effective_user
         try:
@@ -99,7 +105,7 @@ class AvatarListPlugin(Plugin):
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
 
-    async def get_avatar_data(self, character: Character, client: Client) -> Optional["AvatarData"]:
+    async def get_avatar_data(self, character: Character, client: "GenshinClient") -> Optional["AvatarData"]:
         detail = await self.character_details.get_character_details(client, character)
         if detail is None:
             return None
@@ -136,7 +142,7 @@ class AvatarListPlugin(Plugin):
         )
 
     async def get_avatars_data(
-        self, characters: Sequence[Character], client: Client, max_length: int = None
+        self, characters: Sequence[Character], client: "GenshinClient", max_length: int = None
     ) -> List["AvatarData"]:
         async def _task(c):
             return await self.get_avatar_data(c, client)
@@ -201,31 +207,33 @@ class AvatarListPlugin(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
 
         try:
-            characters = await client.get_genshin_characters(client.uid)
+            characters = await client.get_genshin_characters(client.player_id)
             avatar_datas: List[AvatarData] = await self.get_avatars_data(
                 characters, client, None if all_avatars else 20
             )
         except InvalidCookies as exc:
             await notice.delete()
-            await client.get_genshin_user(client.uid)
-            logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
+            await client.get_genshin_user(client.player_id)
+            logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
             reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
             if filters.ChatType.GROUPS.filter(message):
                 self.add_delete_message_job(reply_message, delay=30)
                 self.add_delete_message_job(message, delay=30)
             return
-        except GenshinException as e:
+        except SimnetBadRequest as e:
             await notice.delete()
-            if e.retcode == -502002:
+            if e.ret_code == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
                 self.add_delete_message_job(reply_message, delay=20)
                 return
             raise e
+        finally:
+            await client.shutdown()
 
-        name_card, avatar, nickname, rarity = await self.get_final_data(client.uid, user)
+        name_card, avatar, nickname, rarity = await self.get_final_data(client.player_id, user)
 
         render_data = {
-            "uid": client.uid,  # 玩家uid
+            "uid": client.player_id,  # 玩家uid
             "nickname": nickname,  # 玩家昵称
             "avatar": avatar,  # 玩家头像
             "rarity": rarity,  # 玩家头像对应的角色星级

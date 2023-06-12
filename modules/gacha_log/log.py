@@ -8,9 +8,10 @@ from pathlib import Path
 from typing import Dict, IO, List, Optional, Tuple, Union
 
 import aiofiles
-from genshin import AuthkeyTimeout, Client, InvalidAuthkey
-from genshin.models import BannerType
 from openpyxl import load_workbook
+from simnet import GenshinClient
+from simnet.errors import AuthkeyTimeout, InvalidAuthkey
+from simnet.models.genshin.wish import BannerType
 
 from core.dependence.assets import AssetsService
 from metadata.pool.pool import get_pool_by_id
@@ -104,7 +105,7 @@ class GachaLog:
     async def save_gacha_log_info(self, user_id: str, uid: str, info: GachaLogInfo):
         """保存抽卡记录数据
         :param user_id: 用户id
-        :param uid: 原神uid
+        :param uid: 玩家uid
         :param info: 抽卡记录数据
         """
         save_path = self.gacha_log_path / f"{user_id}-{uid}.json"
@@ -171,13 +172,13 @@ class GachaLog:
                 new_num += 1
         return new_num
 
-    async def import_gacha_log_data(self, user_id: int, client: Client, data: dict, verify_uid: bool = True) -> int:
+    async def import_gacha_log_data(self, user_id: int, player_id: int, data: dict, verify_uid: bool = True) -> int:
         new_num = 0
         try:
             uid = data["info"]["uid"]
             if not verify_uid:
-                uid = client.uid
-            elif int(uid) != client.uid:
+                uid = player_id
+            elif int(uid) != player_id:
                 raise GachaLogAccountNotFound
             try:
                 import_type = ImportType(data["info"]["export_app"])
@@ -218,22 +219,24 @@ class GachaLog:
         except Exception as exc:
             raise GachaLogException from exc
 
-    async def get_gacha_log_data(self, user_id: int, client: Client, authkey: str) -> int:
+    async def get_gacha_log_data(self, user_id: int, player_id: int, authkey: str) -> int:
         """使用authkey获取抽卡记录数据，并合并旧数据
         :param user_id: 用户id
-        :param client: genshin client
+        :param player_id: 玩家id
         :param authkey: authkey
         :return: 更新结果
         """
         new_num = 0
-        gacha_log, _ = await self.load_history_info(str(user_id), str(client.uid))
+        gacha_log, _ = await self.load_history_info(str(user_id), str(player_id))
         if gacha_log.get_import_type == ImportType.PAIMONMOE:
             raise GachaLogMixedProvider
         # 将唯一 id 放入临时数据中，加快查找速度
         temp_id_data = {pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()}
         try:
             for pool_id, pool_name in GACHA_TYPE_LIST.items():
-                async for data in client.wish_history(pool_id, authkey=authkey):
+                async with GenshinClient(player_id=player_id) as client:
+                    wish_history = await client.wish_history(pool_id, authkey=authkey)
+                for data in wish_history:
                     item = GachaItem(
                         id=str(data.id),
                         name=data.name,
@@ -262,7 +265,7 @@ class GachaLog:
             i.sort(key=lambda x: (x.time, x.id))
         gacha_log.update_time = datetime.datetime.now()
         gacha_log.import_type = ImportType.UIGF.value
-        await self.save_gacha_log_info(str(user_id), str(client.uid), gacha_log)
+        await self.save_gacha_log_info(str(user_id), str(client.player_id), gacha_log)
         return new_num
 
     @staticmethod
@@ -482,16 +485,16 @@ class GachaLog:
                     return f"{pool_name} · 非"
         return pool_name
 
-    async def get_analysis(self, user_id: int, client: Client, pool: BannerType, assets: AssetsService):
+    async def get_analysis(self, user_id: int, player_id: int, pool: BannerType, assets: AssetsService):
         """
         获取抽卡记录分析数据
         :param user_id: 用户id
-        :param client: genshin client
+        :param player_id: 玩家id
         :param pool: 池子类型
         :param assets: 资源服务
         :return: 分析数据
         """
-        gacha_log, status = await self.load_history_info(str(user_id), str(client.uid))
+        gacha_log, status = await self.load_history_info(str(user_id), str(player_id))
         if not status:
             raise GachaLogNotFound
         pool_name = GACHA_TYPE_LIST[pool]
@@ -514,7 +517,7 @@ class GachaLog:
         last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
         first_time = data[-1].time.strftime("%Y-%m-%d %H:%M")
         return {
-            "uid": client.uid,
+            "uid": player_id,
             "allNum": total,
             "type": pool.value,
             "typeName": pool_name,
@@ -526,17 +529,17 @@ class GachaLog:
         }
 
     async def get_pool_analysis(
-        self, user_id: int, client: Client, pool: BannerType, assets: AssetsService, group: bool
+        self, user_id: int, player_id:int, pool: BannerType, assets: AssetsService, group: bool
     ) -> dict:
         """获取抽卡记录分析数据
         :param user_id: 用户id
-        :param client: genshin client
+        :param player_id: 玩家id
         :param pool: 池子类型
         :param assets: 资源服务
         :param group: 是否群组
         :return: 分析数据
         """
-        gacha_log, status = await self.load_history_info(str(user_id), str(client.uid))
+        gacha_log, status = await self.load_history_info(str(user_id), str(player_id))
         if not status:
             raise GachaLogNotFound
         pool_name = GACHA_TYPE_LIST[pool]
@@ -566,20 +569,20 @@ class GachaLog:
             )
         pool_data = [i for i in pool_data if i["count"] > 0]
         return {
-            "uid": client.uid,
+            "uid": player_id,
             "typeName": pool_name,
             "pool": pool_data[:6] if group else pool_data,
             "hasMore": len(pool_data) > 6,
         }
 
-    async def get_all_five_analysis(self, user_id: int, client: Client, assets: AssetsService) -> dict:
+    async def get_all_five_analysis(self, user_id: int, player_id: int, assets: AssetsService) -> dict:
         """获取五星抽卡记录分析数据
         :param user_id: 用户id
-        :param client: genshin client
+        :param player_id: 玩家id
         :param assets: 资源服务
         :return: 分析数据
         """
-        gacha_log, status = await self.load_history_info(str(user_id), str(client.uid))
+        gacha_log, status = await self.load_history_info(str(user_id), str(player_id))
         if not status:
             raise GachaLogNotFound
         pools = []
@@ -607,7 +610,7 @@ class GachaLog:
             for up_pool in pools
         ]
         return {
-            "uid": client.uid,
+            "uid": player_id,
             "typeName": "五星列表",
             "pool": pool_data,
             "hasMore": False,

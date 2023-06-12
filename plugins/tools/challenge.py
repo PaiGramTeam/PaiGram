@@ -5,9 +5,10 @@ from genshin import Region, GenshinException
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin
 from core.services.cookies import CookiesService
+from core.services.players import PlayersService
 from modules.apihelper.client.components.verify import Verify
 from modules.apihelper.error import ResponseException, APIHelperException
-from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
+from plugins.tools.simnet import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from utils.log import logger
 
 __all__ = ("ChallengeSystemException", "ChallengeSystem")
@@ -24,12 +25,14 @@ class ChallengeSystem(Plugin):
         self,
         cookies_service: CookiesService,
         redis: RedisDB,
-        genshin_helper: GenshinHelper,
+        genshin_helper: SIMNetClient,
+        player: PlayersService,
     ) -> None:
         self.cookies_service = cookies_service
         self.genshin_helper = genshin_helper
         self.cache = redis.client
         self.qname = "plugin:challenge:"
+        self.players_service = player
 
     async def get_challenge(self, uid: int) -> Tuple[Optional[str], Optional[str]]:
         data = await self.cache.get(f"{self.qname}{uid}")
@@ -61,7 +64,11 @@ class ChallengeSystem(Plugin):
                     raise exc
             else:
                 raise ChallengeSystemException("账户正常，无需验证")
-        verify = Verify(account_id=client.hoyolab_id, cookies=client.cookie_manager.cookies)
+            finally:
+                await client.shutdown()
+        else:
+            await client.shutdown()
+        verify = Verify(cookies=dict(client.cookies))
         try:
             data = await verify.create()
             challenge = data["challenge"]
@@ -74,26 +81,26 @@ class ChallengeSystem(Plugin):
                 validate = await verify.ajax(referer="https://webstatic.mihoyo.com/", gt=gt, challenge=challenge)
                 if validate:
                     await verify.verify(challenge, validate)
-                    return client.uid, "ajax", "ajax"
+                    return client.player_id, "ajax", "ajax"
             except APIHelperException as exc:
                 logger.warning("用户 %s ajax 验证失效 错误信息为 %s", user_id, str(exc))
-            logger.warning("用户 %s ajax 验证失败 重新申请验证", user_id)
-            return await self.create_challenge(user_id, need_verify, False)
-        await self.set_challenge(client.uid, gt, challenge)
-        return client.uid, gt, challenge
+        await self.set_challenge(client.player_id, gt, challenge)
+        return client.player_id, gt, challenge
 
     async def pass_challenge(self, user_id: int, validate: str, challenge: Optional[str] = None) -> bool:
-        try:
-            client = await self.genshin_helper.get_genshin_client(user_id)
-        except PlayerNotFoundError:
+        player = await self.players_service.get_player(user_id)
+        if player is None:
             raise ChallengeSystemException("用户未找到")
-        if client.region != Region.CHINESE:
+        if player.region != Region.CHINESE:
             raise ChallengeSystemException("非法用户")
+        cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
+        if cookie_model is None:
+            raise ChallengeSystemException("无需验证")
         if challenge is None:
-            _, challenge = await self.get_challenge(client.uid)
+            _, challenge = await self.get_challenge(player.player_id)
         if challenge is None:
             raise ChallengeSystemException("验证失效 请求已经过期")
-        verify = Verify(account_id=client.hoyolab_id, cookies=client.cookie_manager.cookies)
+        verify = Verify(cookies=cookie_model.data)
         try:
             await verify.verify(challenge=challenge, validate=validate)
         except ResponseException as exc:

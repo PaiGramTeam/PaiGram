@@ -1,19 +1,26 @@
+from typing import TYPE_CHECKING
 import os
 import re
 from datetime import datetime, timedelta
 
-from genshin import DataNotPublic, InvalidCookies, GenshinException
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from simnet.errors import DataNotPublic, BadRequest as SimnetBadRequest, InvalidCookies
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import filters, CallbackContext
+from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
 
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
+from plugins.tools.simnet import SIMNetClient, PlayerNotFoundError, CookiesNotFoundError
+
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import ContextTypes
+    from simnet import GenshinClient
 
 __all__ = ("LedgerPlugin",)
 
@@ -23,7 +30,7 @@ class LedgerPlugin(Plugin):
 
     def __init__(
         self,
-        helper: GenshinHelper,
+        helper: SIMNetClient,
         cookies_service: CookiesService,
         template_service: TemplateService,
     ):
@@ -32,8 +39,8 @@ class LedgerPlugin(Plugin):
         self.current_dir = os.getcwd()
         self.helper = helper
 
-    async def _start_get_ledger(self, client, month=None) -> RenderResult:
-        diary_info = await client.get_diary(client.uid, month=month)
+    async def _start_get_ledger(self, client: "GenshinClient", month=None) -> RenderResult:
+        diary_info = await client.get_genshin_diary(client.player_id, month=month)
         color = ["#73a9c6", "#d56565", "#70b2b4", "#bd9a5a", "#739970", "#7a6da7", "#597ea0"]
         categories = [
             {
@@ -51,7 +58,7 @@ class LedgerPlugin(Plugin):
             return f"{round(amount / 10000, 2)}w" if amount >= 10000 else amount
 
         ledger_data = {
-            "uid": client.uid,
+            "uid": client.player_id,
             "day": diary_info.month,
             "current_primogems": format_amount(diary_info.month_data.current_primogems),
             "gacha": int(diary_info.month_data.current_primogems / 160),
@@ -69,7 +76,7 @@ class LedgerPlugin(Plugin):
 
     @handler.command(command="ledger", block=False)
     @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user = update.effective_user
         message = update.effective_message
 
@@ -106,19 +113,19 @@ class LedgerPlugin(Plugin):
         logger.info("用户 %s[%s] 查询旅行札记", user.full_name, user.id)
         await message.reply_chat_action(ChatAction.TYPING)
         try:
-            client = await self.helper.get_genshin_client(user.id)
-            try:
-                render_result = await self._start_get_ledger(client, month)
-            except InvalidCookies as exc:  # 如果抛出InvalidCookies 判断是否真的玄学过期（或权限不足？）
-                await client.get_genshin_user(client.uid)
-                logger.warning(
-                    "用户 %s[%s] 无法请求旅行札记数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original
-                )
-                reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
-                if filters.ChatType.GROUPS.filter(message):
-                    self.add_delete_message_job(reply_message, delay=30)
-                    self.add_delete_message_job(message, delay=30)
-                return
+            async with self.helper.genshin(user.id) as client:
+                try:
+                    render_result = await self._start_get_ledger(client, month)
+                except InvalidCookies as exc:  # 如果抛出InvalidCookies 判断是否真的玄学过期（或权限不足？）
+                    await client.get_genshin_user(client.player_id)
+                    logger.warning(
+                        "用户 %s[%s] 无法请求旅行札记数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original
+                    )
+                    reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
+                    if filters.ChatType.GROUPS.filter(message):
+                        self.add_delete_message_job(reply_message, delay=30)
+                        self.add_delete_message_job(message, delay=30)
+                    return
         except (PlayerNotFoundError, CookiesNotFoundError):
             buttons = [
                 [
@@ -142,10 +149,10 @@ class LedgerPlugin(Plugin):
                 self.add_delete_message_job(reply_message, delay=30)
                 self.add_delete_message_job(message, delay=30)
             return
-        except GenshinException as exc:
-            if exc.retcode == -120:
+        except SimnetBadRequest as exc:
+            if exc.ret_code == -120:
                 await message.reply_text("当前角色冒险等阶不足，暂时无法获取信息")
                 return
             raise exc
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await render_result.reply_photo(message, filename=f"{client.uid}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"{client.player_id}.png", allow_sending_without_reply=True)

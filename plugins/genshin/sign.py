@@ -10,10 +10,12 @@ from telegram.helpers import create_deep_linked_url
 from core.config import config
 from core.handler.callbackqueryhandler import CallbackQueryHandler
 from core.plugin import Plugin, handler
+from core.services.cookies import CookiesService
+from core.services.players import PlayersService
 from core.services.sign.models import Sign as SignUser, SignStatusEnum
 from core.services.sign.services import SignServices
 from core.services.users.services import UserAdminService
-from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
+from plugins.tools.simnet import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from plugins.tools.sign import SignSystem, NeedChallenge
 from utils.log import logger
 
@@ -25,20 +27,26 @@ class Sign(Plugin):
 
     def __init__(
         self,
-        genshin_helper: GenshinHelper,
+        genshin_helper: SIMNetClient,
         sign_service: SignServices,
         user_admin_service: UserAdminService,
         sign_system: SignSystem,
+        player: PlayersService,
+        cookies: CookiesService,
     ):
         self.user_admin_service = user_admin_service
         self.sign_service = sign_service
         self.sign_system = sign_system
         self.genshin_helper = genshin_helper
+        self.players_service = player
+        self.cookies_service = cookies
 
     async def _process_auto_sign(self, user_id: int, chat_id: int, method: str) -> str:
-        try:
-            await self.genshin_helper.get_genshin_client(user_id)
-        except (PlayerNotFoundError, CookiesNotFoundError):
+        player = await self.players_service.get_player(user_id)
+        if player is None:
+            return "未查询到账号信息，请先私聊派蒙绑定账号"
+        cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
+        if cookie_model is None:
             return "未查询到账号信息，请先私聊派蒙绑定账号"
         user: SignUser = await self.sign_service.get_by_user_id(user_id)
         if user:
@@ -93,20 +101,20 @@ class Sign(Plugin):
         if filters.ChatType.GROUPS.filter(message):
             self.add_delete_message_job(message)
         try:
-            client = await self.genshin_helper.get_genshin_client(user.id)
-            await message.reply_chat_action(ChatAction.TYPING)
-            _, challenge = await self.sign_system.get_challenge(client.uid)
-            if validate:
-                _, challenge = await self.sign_system.get_challenge(client.uid)
-                if challenge:
-                    sign_text = await self.sign_system.start_sign(client, challenge=challenge, validate=validate)
+            async with self.genshin_helper.genshin(user.id) as client:
+                await message.reply_chat_action(ChatAction.TYPING)
+                _, challenge = await self.sign_system.get_challenge(client.player_id)
+                if validate:
+                    _, challenge = await self.sign_system.get_challenge(client.player_id)
+                    if challenge:
+                        sign_text = await self.sign_system.start_sign(client, challenge=challenge, validate=validate)
+                    else:
+                        reply_message = await message.reply_text("请求已经过期", allow_sending_without_reply=True)
+                        if filters.ChatType.GROUPS.filter(reply_message):
+                            self.add_delete_message_job(reply_message)
+                        return
                 else:
-                    reply_message = await message.reply_text("请求已经过期", allow_sending_without_reply=True)
-                    if filters.ChatType.GROUPS.filter(reply_message):
-                        self.add_delete_message_job(reply_message)
-                    return
-            else:
-                sign_text = await self.sign_system.start_sign(client)
+                    sign_text = await self.sign_system.start_sign(client)
             reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self.add_delete_message_job(reply_message)

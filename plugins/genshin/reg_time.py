@@ -1,11 +1,11 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from genshin import Client, GenshinException, InvalidCookies
-from genshin.client.routes import InternationalRoute  # noqa F401
-from genshin.utility import recognize_genshin_server, get_ds_headers
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from simnet.client.routes import InternationalRoute
+from simnet.errors import InvalidCookies, BadRequest as SIMNetBadRequest
+from simnet.utils.player import recognize_genshin_server, recognize_genshin_game_biz
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
-from telegram.ext import CallbackContext
 from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
 
@@ -13,9 +13,13 @@ from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.users.services import UserService
-from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
-from utils.genshin import fetch_hk4e_token_by_cookie, recognize_genshin_game_biz
+from plugins.tools.simnet import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import ContextTypes
+    from simnet import GenshinClient
 
 try:
     import ujson as jsonlib
@@ -36,7 +40,7 @@ class RegTimePlugin(Plugin):
         self,
         user_service: UserService = None,
         cookie_service: CookiesService = None,
-        helper: GenshinHelper = None,
+        helper: SIMNetClient = None,
         redis: RedisDB = None,
     ):
         self.cache = redis.client
@@ -46,53 +50,36 @@ class RegTimePlugin(Plugin):
         self.helper = helper
 
     @staticmethod
-    async def get_reg_time(client: Client) -> str:
+    async def get_reg_time(client: "GenshinClient") -> str:
         """获取原神注册时间"""
-        await fetch_hk4e_token_by_cookie(client)
+        game_biz = recognize_genshin_game_biz(client.player_id)
+        region = recognize_genshin_server(client.player_id)
+        await client.get_hk4e_token_by_cookie_token(game_biz, region)
         url = REG_TIME_URL.get_url(client.region)
-        params = {
-            "game_biz": recognize_genshin_game_biz(client.uid),
-            "lang": "zh-cn",
-            "badge_uid": client.uid,
-            "badge_region": recognize_genshin_server(client.uid),
-        }
-        headers = get_ds_headers(
-            client.region,
-            params=params,
-            lang="zh-cn",
-        )
-        data = await client.cookie_manager.request(url, method="GET", params=params, headers=headers)
+        params = {"game_biz": game_biz, "lang": "zh-cn", "badge_uid": client.player_id, "badge_region": region}
+        data = await client.request_lab(url, method="GET", params=params)
         if time := jsonlib.loads(data.get("data", "{}")).get("1", 0):
             return datetime.fromtimestamp(time).strftime("%Y-%m-%d %H:%M:%S")
         raise RegTimePlugin.NotFoundRegTimeError
 
-    async def get_reg_time_from_cache(self, client: Client) -> str:
+    async def get_reg_time_from_cache(self, client: "GenshinClient") -> str:
         """从缓存中获取原神注册时间"""
-        if reg_time := await self.cache.get(f"{self.cache_key}{client.uid}"):
+        if reg_time := await self.cache.get(f"{self.cache_key}{client.player_id}"):
             return reg_time.decode("utf-8")
         reg_time = await self.get_reg_time(client)
-        await self.cache.set(f"{self.cache_key}{client.uid}", reg_time)
+        await self.cache.set(f"{self.cache_key}{client.player_id}", reg_time)
         return reg_time
 
     @handler.command("reg_time", block=False)
     @handler.message(filters.Regex(r"^原神账号注册时间$"), block=False)
-    async def reg_time(self, update: Update, context: CallbackContext) -> None:
+    async def reg_time(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 原神注册时间命令请求", user.full_name, user.id)
         try:
-            client = await self.helper.get_genshin_client(user.id)
-            game_uid = client.uid
-            try:
+            async with self.helper.genshin(user.id) as client:
+                game_uid = client.player_id
                 reg_time = await self.get_reg_time_from_cache(client)
-            except InvalidCookies as exc:
-                await client.get_genshin_user(client.uid)
-                logger.warning("用户 %s[%s] 无法请求注册时间 API返回信息为 [%s]%s", user.full_name, user.id, exc.retcode, exc.original)
-                reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，")
-                if filters.ChatType.GROUPS.filter(message):
-                    self.add_delete_message_job(reply_message, delay=30)
-                    self.add_delete_message_job(message, delay=30)
-                return
             await message.reply_text(f"你的原神账号 [{game_uid}] 注册时间为：{reg_time}")
         except (PlayerNotFoundError, CookiesNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
@@ -110,8 +97,16 @@ class RegTimePlugin(Plugin):
                     parse_mode=ParseMode.HTML,
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
-        except GenshinException as exc:
-            if exc.retcode == -501101:
+        except InvalidCookies as exc:
+            await client.get_genshin_user(client.player_id)
+            logger.warning("用户 %s[%s] 无法请求注册时间 API返回信息为 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
+            reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，")
+            if filters.ChatType.GROUPS.filter(message):
+                self.add_delete_message_job(reply_message, delay=30)
+                self.add_delete_message_job(message, delay=30)
+            return
+        except SIMNetBadRequest as exc:
+            if exc.ret_code == -501101:
                 await message.reply_text("当前角色冒险等阶未达到10级，暂时无法获取信息")
             else:
                 raise exc

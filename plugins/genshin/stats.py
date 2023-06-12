@@ -1,19 +1,24 @@
 import random
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from genshin import Client, GenshinException
-from genshin.models import GenshinUserStats
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from simnet.errors import BadRequest as SimnetBadRequest
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, filters
+from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
 
 from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
+from plugins.tools.simnet import SIMNetClient, PlayerNotFoundError, CookiesNotFoundError
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import ContextTypes
+    from simnet.models.genshin.chronicle.stats import GenshinUserStats
+    from simnet import GenshinClient
 
 __all__ = ("PlayerStatsPlugins",)
 
@@ -21,17 +26,13 @@ __all__ = ("PlayerStatsPlugins",)
 class PlayerStatsPlugins(Plugin):
     """玩家统计查询"""
 
-    def __init__(
-        self,
-        template: TemplateService,
-        helper: GenshinHelper,
-    ):
+    def __init__(self, template: TemplateService, helper: SIMNetClient):
         self.template_service = template
         self.helper = helper
 
     @handler.command("stats", block=False)
     @handler.message(filters.Regex("^玩家统计查询(.*)"), block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> Optional[int]:
+    async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 查询游戏用户命令请求", user.full_name, user.id)
@@ -46,12 +47,14 @@ class PlayerStatsPlugins(Plugin):
             return
         try:
             try:
-                client = await self.helper.get_genshin_client(user.id)
+                async with self.helper.genshin(user.id) as client:
+                    render_result = await self.render(client, uid)
             except CookiesNotFoundError:
-                client, uid = await self.helper.get_public_genshin_client(user.id)
-            render_result = await self.render(client, uid)
+                async with self.helper.public_genshin(user.id) as client:
+                    render_result = await self.render(client, uid)
         except PlayerNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
+            buttons = [
+                [InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
                 reply_message = await message.reply_text(
                     "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
@@ -59,10 +62,11 @@ class PlayerStatsPlugins(Plugin):
                 self.add_delete_message_job(reply_message, delay=30)
                 self.add_delete_message_job(message, delay=30)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
+                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号",
+                                         reply_markup=InlineKeyboardMarkup(buttons))
             return
-        except GenshinException as exc:
-            if exc.retcode == 1034 and uid:
+        except SimnetBadRequest as exc:
+            if exc.ret_code == 1034 and uid:
                 await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
                 return
             raise exc
@@ -75,11 +79,11 @@ class PlayerStatsPlugins(Plugin):
             await message.reply_text("角色数据有误 估计是派蒙晕了")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await render_result.reply_photo(message, filename=f"{client.uid}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"{client.player_id}.png", allow_sending_without_reply=True)
 
-    async def render(self, client: Client, uid: Optional[int] = None) -> RenderResult:
+    async def render(self, client: "GenshinClient", uid: Optional[int] = None) -> RenderResult:
         if uid is None:
-            uid = client.uid
+            uid = client.player_id
 
         user_info = await client.get_genshin_user(uid)
         logger.debug(user_info)
@@ -122,7 +126,7 @@ class PlayerStatsPlugins(Plugin):
             full_page=True,
         )
 
-    async def cache_images(self, data: GenshinUserStats) -> None:
+    async def cache_images(self, data: "GenshinUserStats") -> None:
         """缓存所有图片到本地"""
         # TODO: 并发下载所有资源
 

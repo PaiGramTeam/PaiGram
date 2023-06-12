@@ -6,9 +6,10 @@ from enum import Enum
 from typing import Optional, Tuple, List, TYPE_CHECKING
 
 from aiohttp import ClientConnectorError
-from genshin import Game, GenshinException, AlreadyClaimed, Client, InvalidCookies
+from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies
 from genshin.utility import recognize_genshin_server
 from httpx import TimeoutException
+from simnet.utils.enum_ import Game
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest
@@ -21,11 +22,12 @@ from core.services.sign.models import SignStatusEnum
 from core.services.sign.services import SignServices
 from core.services.users.services import UserService
 from modules.apihelper.client.components.verify import Verify
-from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
+from plugins.tools.simnet import SIMNetClient, CookiesNotFoundError, PlayerNotFoundError
 from plugins.tools.recognize import RecognizeSystem
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from simnet import GenshinClient
     from telegram.ext import ContextTypes
 
 
@@ -55,7 +57,7 @@ class SignSystem(Plugin):
         user_service: UserService,
         cookies_service: CookiesService,
         sign_service: SignServices,
-        genshin_helper: GenshinHelper,
+        genshin_helper: SIMNetClient,
     ):
         self.cookies_service = cookies_service
         self.user_service = user_service
@@ -104,7 +106,7 @@ class SignSystem(Plugin):
 
     async def start_sign(
         self,
-        client: Client,
+        client: "GenshinClient",
         challenge: Optional[str] = None,
         validate: Optional[str] = None,
         is_sleep: bool = False,
@@ -112,28 +114,28 @@ class SignSystem(Plugin):
         title: Optional[str] = "签到结果",
     ) -> str:
         if is_sleep:
-            if recognize_genshin_server(client.uid) in ("cn_gf01", "cn_qd01"):
+            if recognize_genshin_server(client.player_id) in ("cn_gf01", "cn_qd01"):
                 await asyncio.sleep(random.randint(10, 300))  # nosec
             else:
                 await asyncio.sleep(random.randint(0, 3))  # nosec
         try:
             rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
-        except GenshinException as error:
-            logger.warning("UID[%s] 获取签到信息失败，API返回信息为 %s", client.uid, str(error))
+        except SimnetBadRequest as error:
+            logger.warning("UID[%s] 获取签到信息失败，API返回信息为 %s", client.player_id, str(error))
             if is_raise:
                 raise error
             return f"获取签到信息失败，API返回信息为 {str(error)}"
         try:
             daily_reward_info = await client.get_reward_info(game=Game.GENSHIN, lang="zh-cn")  # 获取签到信息失败
-        except GenshinException as error:
-            logger.warning("UID[%s] 获取签到状态失败，API返回信息为 %s", client.uid, str(error))
+        except SimnetBadRequest as error:
+            logger.warning("UID[%s] 获取签到状态失败，API返回信息为 %s", client.player_id, str(error))
             if is_raise:
                 raise error
             return f"获取签到状态失败，API返回信息为 {str(error)}"
         if not daily_reward_info.signed_in:
             try:
                 if validate:
-                    logger.info("UID[%s] 正在尝试通过验证码\nchallenge[%s]\nvalidate[%s]", client.uid, challenge, validate)
+                    logger.info("UID[%s] 正在尝试通过验证码\nchallenge[%s]\nvalidate[%s]", client.player_id, challenge, validate)
                 request_daily_reward = await client.request_daily_reward(
                     "sign",
                     method="POST",
@@ -147,8 +149,8 @@ class SignSystem(Plugin):
                     # 尝试通过 ajax 请求绕过签到
                     gt = request_daily_reward.get("gt", "")
                     challenge = request_daily_reward.get("challenge", "")
-                    logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
-                    self.verify.account_id = client.hoyolab_id
+                    logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge)
+                    self.verify.account_id = client.account_id
                     validate = await self.verify.ajax(
                         referer=RecognizeSystem.REFERER,
                         gt=gt,
@@ -166,16 +168,16 @@ class SignSystem(Plugin):
                         )
                         logger.debug("request_daily_reward 返回 %s", request_daily_reward)
                         if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                            logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.uid, challenge)
+                            logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.player_id, challenge)
                             raise NeedChallenge(
-                                uid=client.uid,
+                                uid=client.player_id,
                                 gt=request_daily_reward.get("gt", ""),
                                 challenge=request_daily_reward.get("challenge", ""),
                             )
                     elif config.pass_challenge_app_key:
                         # 如果无法绕过 检查配置文件是否配置识别 API 尝试请求绕过
                         # 注意 需要重新获取没有进行任何请求的 Challenge
-                        logger.info("UID[%s] 正在使用 recognize 重新请求签到", client.uid)
+                        logger.info("UID[%s] 正在使用 recognize 重新请求签到", client.player_id)
                         _request_daily_reward = await client.request_daily_reward(
                             "sign",
                             method="POST",
@@ -186,8 +188,8 @@ class SignSystem(Plugin):
                         if _request_daily_reward and _request_daily_reward.get("success", 0) == 1:
                             _gt = _request_daily_reward.get("gt", "")
                             _challenge = _request_daily_reward.get("challenge", "")
-                            logger.info("UID[%s] 创建验证码\ngt[%s]\nchallenge[%s]", client.uid, _gt, _challenge)
-                            _validate = await RecognizeSystem.recognize(_gt, _challenge, uid=client.uid)
+                            logger.info("UID[%s] 创建验证码\ngt[%s]\nchallenge[%s]", client.player_id, _gt, _challenge)
+                            _validate = await RecognizeSystem.recognize(_gt, _challenge, uid=client.player_id)
                             if _validate:
                                 logger.success("recognize 通过验证成功\nchallenge[%s]\nvalidate[%s]", _challenge, _validate)
                                 request_daily_reward = await client.request_daily_reward(
@@ -199,55 +201,57 @@ class SignSystem(Plugin):
                                     validate=_validate,
                                 )
                                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                                    logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.uid, _challenge)
+                                    logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.player_id, _challenge)
                                     gt = request_daily_reward.get("gt", "")
                                     challenge = request_daily_reward.get("challenge", "")
-                                    logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
+                                    logger.success(
+                                        "UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge
+                                    )
                                     raise NeedChallenge(
-                                        uid=client.uid,
+                                        uid=client.player_id,
                                         gt=gt,
                                         challenge=challenge,
                                     )
-                                logger.success("UID[%s] 通过 recognize 签到成功", client.uid)
+                                logger.success("UID[%s] 通过 recognize 签到成功", client.player_id)
                             else:
                                 request_daily_reward = await client.request_daily_reward(
                                     "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
                                 )
                                 gt = request_daily_reward.get("gt", "")
                                 challenge = request_daily_reward.get("challenge", "")
-                                logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
-                                raise NeedChallenge(uid=client.uid, gt=gt, challenge=challenge)
+                                logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge)
+                                raise NeedChallenge(uid=client.player_id, gt=gt, challenge=challenge)
                     else:
                         request_daily_reward = await client.request_daily_reward(
                             "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
                         )
                         gt = request_daily_reward.get("gt", "")
                         challenge = request_daily_reward.get("challenge", "")
-                        logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.uid, gt, challenge)
-                        raise NeedChallenge(uid=client.uid, gt=gt, challenge=challenge)
+                        logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge)
+                        raise NeedChallenge(uid=client.player_id, gt=gt, challenge=challenge)
                 else:
-                    logger.success("UID[%s] 签到成功", client.uid)
+                    logger.success("UID[%s] 签到成功", client.player_id)
             except TimeoutException as error:
-                logger.warning("UID[%s] 签到请求超时", client.uid)
+                logger.warning("UID[%s] 签到请求超时", client.player_id)
                 if is_raise:
                     raise error
                 return "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
             except AlreadyClaimed as error:
-                logger.warning("UID[%s] 已经签到", client.uid)
+                logger.warning("UID[%s] 已经签到", client.player_id)
                 if is_raise:
                     raise error
                 result = "今天旅行者已经签到过了~"
-            except GenshinException as error:
-                logger.warning("UID %s 签到失败，API返回信息为 %s", client.uid, str(error))
+            except SimnetBadRequest as error:
+                logger.warning("UID %s 签到失败，API返回信息为 %s", client.player_id, str(error))
                 if is_raise:
                     raise error
                 return f"获取签到状态失败，API返回信息为 {str(error)}"
             else:
                 result = "OK"
         else:
-            logger.info("UID[%s] 已经签到", client.uid)
+            logger.info("UID[%s] 已经签到", client.player_id)
             result = "今天旅行者已经签到过了~"
-        logger.info("UID[%s] 签到结果 %s", client.uid, result)
+        logger.info("UID[%s] 签到结果 %s", client.player_id, result)
         reward = rewards[daily_reward_info.claimed_rewards - (1 if daily_reward_info.signed_in else 0)]
         today = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         cn_timezone = datetime.timezone(datetime.timedelta(hours=8))
@@ -258,7 +262,7 @@ class SignSystem(Plugin):
         message = (
             f"#### {title} ####\n"
             f"时间：{today} (UTC+8)\n"
-            f"UID: {client.uid}\n"
+            f"UID: {client.player_id}\n"
             f"今日奖励: {reward.name} × {reward.amount}\n"
             f"本月漏签次数：{missed_days}\n"
             f"签到结果: {result}"
@@ -284,15 +288,15 @@ class SignSystem(Plugin):
                 continue
             user_id = sign_db.user_id
             try:
-                client = await self.genshin_helper.get_genshin_client(user_id)
-                text = await self.start_sign(client, is_sleep=True, is_raise=True, title=title)
+                async with self.genshin_helper.genshin(user_id) as client:
+                    text = await self.start_sign(client, is_sleep=True, is_raise=True, title=title)
             except InvalidCookies:
                 text = "自动签到执行失败，Cookie无效"
                 sign_db.status = SignStatusEnum.INVALID_COOKIES
             except AlreadyClaimed:
                 text = "今天旅行者已经签到过了~"
                 sign_db.status = SignStatusEnum.ALREADY_CLAIMED
-            except GenshinException as exc:
+            except SimnetBadRequest as exc:
                 text = f"自动签到执行失败，API返回信息为 {str(exc)}"
                 sign_db.status = SignStatusEnum.GENSHIN_EXCEPTION
             except ClientConnectorError:
