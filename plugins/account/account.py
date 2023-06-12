@@ -48,11 +48,11 @@ class BindAccountPlugin(Plugin.Conversation):
     """UID用户绑定"""
 
     def __init__(
-            self,
-            players_service: PlayersService = None,
-            cookies_service: CookiesService = None,
-            player_info_service: PlayerInfoService = None,
-            public_cookies_service: PublicCookiesService = None,
+        self,
+        players_service: PlayersService = None,
+        cookies_service: CookiesService = None,
+        player_info_service: PlayerInfoService = None,
+        public_cookies_service: PublicCookiesService = None,
     ):
         self.public_cookies_service = public_cookies_service
         self.cookies_service = cookies_service
@@ -165,8 +165,7 @@ class BindAccountPlugin(Plugin.Conversation):
         bind_account_plugin_data.account_id = account_id
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, record_card.nickname,
-                    record_card.uid)
+        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, record_card.nickname, record_card.uid)
         text = (
             f"*角色信息*\n"
             f"角色名称：{escape_markdown(record_card.nickname, version=2)}\n"
@@ -241,8 +240,7 @@ class BindAccountPlugin(Plugin.Conversation):
             return ConversationHandler.END
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, player_stats.info.nickname,
-                    player_id)
+        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, player_stats.info.nickname, player_id)
         text = (
             f"*角色信息*\n"
             f"角色名称：{escape_markdown(player_stats.info.nickname, version=2)}\n"
