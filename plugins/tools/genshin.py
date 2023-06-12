@@ -5,9 +5,9 @@ from typing import Optional, TYPE_CHECKING, Union
 
 from genshin.models import Character
 from simnet.errors import BadRequest as SimnetBadRequest
+from simnet.models.genshin.calculator import CalculatorCharacterDetails
 
 from pydantic import ValidationError
-from simnet.models.genshin.calculator import CalculatorCharacterDetails
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import BigInteger, Column, DateTime, Field, Index, Integer, SQLModel, String, delete, func, select
 from telegram.ext import ContextTypes

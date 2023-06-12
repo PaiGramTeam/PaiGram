@@ -7,9 +7,9 @@ from typing import Optional, Tuple, List, TYPE_CHECKING
 
 from aiohttp import ClientConnectorError
 from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies
+from simnet.utils.enum_ import Game
 from genshin.utility import recognize_genshin_server
 from httpx import TimeoutException
-from simnet.utils.enum_ import Game
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest

@@ -4,7 +4,7 @@ from typing import Optional
 
 from simnet import GenshinClient
 from simnet.utils.enum_ import Region
-from simnet.errors import InvalidCookies, BadRequest as SimnetBadRequest, TooManyRequests
+from simnet.errors import BadRequest as SimnetBadRequest
 
 from core.basemodel import RegionEnum
 from core.error import ServiceNotFoundError

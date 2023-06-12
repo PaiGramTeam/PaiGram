@@ -5,11 +5,10 @@ from simnet import GenshinClient
 from simnet.errors import (
     InvalidCookies,
     BadRequest as SimnetBadRequest,
-    TooManyRequests,
     DataNotPublic,
     AccountNotFound,
 )
-from simnet.utils.enum_ import Region, Game
+from simnet.utils.enum_ import Region
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject
 from telegram.ext import ConversationHandler, filters
 from telegram.helpers import escape_markdown
