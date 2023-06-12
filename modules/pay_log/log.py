@@ -187,7 +187,7 @@ class PayLog:
     async def get_analysis(self, user_id: int, player_id: int):
         """获取分析数据
         :param user_id: 用户id
-        :param client: genshin client
+        :param player_id: 玩家id
         :return: 分析数据
         """
         pay_log, status = await self.load_history_info(str(user_id), str(player_id))
@@ -231,7 +231,7 @@ class PayLog:
             if price_data[i]["count"] > 0
         ]
         return {
-            "uid": client.player_id,
+            "uid": player_id,
             "datas": datas,
             "bar_data": month_datas,
             "pie_data": pie_datas,
