@@ -211,7 +211,7 @@ class GenshinHelper(Plugin):
             raise ServiceNotFoundError(*filter(lambda x: x is None, temp))
 
     @asynccontextmanager
-    def genshin(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
+    async def genshin(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
         player = await self.players_service.get_player(user_id, region)
         if player is None:
             raise PlayerNotFoundError(user_id)
@@ -259,7 +259,7 @@ class GenshinHelper(Plugin):
         return GenshinClient(cookies, region=game_region, account_id=player.account_id, player_id=player.player_id)
 
     @asynccontextmanager
-    def public_genshin(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
+    async def public_genshin(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
         player = await self.players_service.get_player(user_id, region)
 
         region = player.region
