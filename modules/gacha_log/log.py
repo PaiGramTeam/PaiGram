@@ -529,7 +529,7 @@ class GachaLog:
         }
 
     async def get_pool_analysis(
-        self, user_id: int, player_id:int, pool: BannerType, assets: AssetsService, group: bool
+        self, user_id: int, player_id: int, pool: BannerType, assets: AssetsService, group: bool
     ) -> dict:
         """获取抽卡记录分析数据
         :param user_id: 用户id

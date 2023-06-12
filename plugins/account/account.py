@@ -2,8 +2,13 @@ from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
 from simnet import GenshinClient
-from simnet.errors import InvalidCookies, BadRequest as SimnetBadRequest, TooManyRequests, DataNotPublic, \
-    AccountNotFound
+from simnet.errors import (
+    InvalidCookies,
+    BadRequest as SimnetBadRequest,
+    TooManyRequests,
+    DataNotPublic,
+    AccountNotFound,
+)
 from simnet.utils.enum_ import Region, Game
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject
 from telegram.ext import ConversationHandler, filters

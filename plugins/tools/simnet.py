@@ -90,7 +90,6 @@ class SIMNetClient(Plugin):
 
     @asynccontextmanager
     def public_genshin(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
-
         player = await self.players_service.get_player(user_id, region)
 
         region = player.region
