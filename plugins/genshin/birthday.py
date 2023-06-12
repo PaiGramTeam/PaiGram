@@ -2,7 +2,6 @@ import re
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 
-
 from simnet.client.routes import Route
 from simnet.errors import BadRequest as SimnetBadRequest
 from simnet.utils.player import recognize_genshin_server, recognize_genshin_game_biz
@@ -18,7 +17,7 @@ from core.services.users.services import UserService
 from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId, roleToName
 from modules.apihelper.client.components.calendar import Calendar
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -44,7 +43,7 @@ class BirthdayPlugin(Plugin):
     def __init__(
         self,
         user_service: UserService,
-        helper: SIMNetClient,
+        helper: GenshinHelper,
         cookie_service: CookiesService,
     ):
         """Load Data."""

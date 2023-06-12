@@ -1,5 +1,4 @@
-from simnet import GenshinClient
-from simnet.utils.enum_ import Region
+from simnet import GenshinClient, Region
 from simnet.utils.player import recognize_genshin_game_biz, recognize_genshin_server
 from telegram import Update, User, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
@@ -15,7 +14,6 @@ from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
 from plugins.tools.player_info import PlayerInfoSystem
-
 from utils.log import logger
 
 INPUT_URL, CONFIRM_DELETE = range(10100, 10102)

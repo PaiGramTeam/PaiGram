@@ -13,7 +13,7 @@ from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.users.services import UserService
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -40,7 +40,7 @@ class RegTimePlugin(Plugin):
         self,
         user_service: UserService = None,
         cookie_service: CookiesService = None,
-        helper: SIMNetClient = None,
+        helper: GenshinHelper = None,
         redis: RedisDB = None,
     ):
         self.cache = redis.client

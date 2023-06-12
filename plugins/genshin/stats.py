@@ -11,7 +11,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ __all__ = ("PlayerStatsPlugins",)
 class PlayerStatsPlugins(Plugin):
     """玩家统计查询"""
 
-    def __init__(self, template: TemplateService, helper: SIMNetClient):
+    def __init__(self, template: TemplateService, helper: GenshinHelper):
         self.template_service = template
         self.helper = helper
 

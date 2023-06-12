@@ -1,8 +1,7 @@
 from typing import List, Optional
 
-from simnet import GenshinClient
+from simnet import GenshinClient, Region, Game
 from simnet.errors import InvalidCookies, BadRequest as SimnetBadRequest, TooManyRequests
-from simnet.utils.enum_ import Region, Game
 
 from core.base_service import BaseService
 from core.basemodel import RegionEnum

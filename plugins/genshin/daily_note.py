@@ -11,7 +11,7 @@ from telegram.helpers import create_deep_linked_url
 from core.plugin import Plugin, handler
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ class DailyNotePlugin(Plugin):
     def __init__(
         self,
         template: TemplateService,
-        helper: SIMNetClient,
+        helper: GenshinHelper,
     ):
         self.template_service = template
         self.helper = helper

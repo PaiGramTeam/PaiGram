@@ -2,10 +2,9 @@ from datetime import datetime
 from typing import Dict, Optional
 
 from arkowrapper import ArkoWrapper
-from simnet import GenshinClient
+from simnet import GenshinClient, Region
 from simnet.errors import DataNotPublic, InvalidCookies, BadRequest as SimnetBadRequest
 from simnet.models.lab.record import Account
-from simnet.utils.enum_ import Region
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update
 from telegram.constants import ParseMode
 from telegram.ext import CallbackContext, ConversationHandler, filters

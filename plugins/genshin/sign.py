@@ -15,7 +15,7 @@ from core.services.players import PlayersService
 from core.services.sign.models import Sign as SignUser, SignStatusEnum
 from core.services.sign.services import SignServices
 from core.services.users.services import UserAdminService
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from plugins.tools.sign import SignSystem, NeedChallenge
 from utils.log import logger
 
@@ -27,7 +27,7 @@ class Sign(Plugin):
 
     def __init__(
         self,
-        genshin_helper: SIMNetClient,
+        genshin_helper: GenshinHelper,
         sign_service: SignServices,
         user_admin_service: UserAdminService,
         sign_system: SignSystem,

@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING
 import os
 import re
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 from simnet.errors import DataNotPublic, BadRequest as SimnetBadRequest, InvalidCookies
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -13,8 +13,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
-
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -30,7 +29,7 @@ class LedgerPlugin(Plugin):
 
     def __init__(
         self,
-        helper: SIMNetClient,
+        helper: GenshinHelper,
         cookies_service: CookiesService,
         template_service: TemplateService,
     ):

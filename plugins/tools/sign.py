@@ -6,10 +6,10 @@ from enum import Enum
 from typing import Optional, Tuple, List, TYPE_CHECKING
 
 from aiohttp import ClientConnectorError
-from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies
-from simnet.utils.enum_ import Game
 from genshin.utility import recognize_genshin_server
 from httpx import TimeoutException
+from simnet import Game
+from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest
@@ -22,7 +22,7 @@ from core.services.sign.models import SignStatusEnum
 from core.services.sign.services import SignServices
 from core.services.users.services import UserService
 from modules.apihelper.client.components.verify import Verify
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from plugins.tools.recognize import RecognizeSystem
 from utils.log import logger
 
@@ -57,7 +57,7 @@ class SignSystem(Plugin):
         user_service: UserService,
         cookies_service: CookiesService,
         sign_service: SignServices,
-        genshin_helper: SIMNetClient,
+        genshin_helper: GenshinHelper,
     ):
         self.cookies_service = cookies_service
         self.user_service = user_service

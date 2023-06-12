@@ -28,7 +28,7 @@ from utils.log import logger
 if TYPE_CHECKING:
     from sqlalchemy import Table
 
-__all__ = ("CharacterDetails",)
+__all__ = ("GenshinHelper", "PlayerNotFoundError", "CookiesNotFoundError", "CharacterDetails")
 
 
 class CharacterDetailsSQLModel(SQLModel, table=True):
@@ -194,7 +194,7 @@ class CookiesNotFoundError(Exception):
         super().__init__(f"{user_id} cookies not found")
 
 
-class SIMNetClient(Plugin):
+class GenshinHelper(Plugin):
     def __init__(
         self,
         cookies: CookiesService,

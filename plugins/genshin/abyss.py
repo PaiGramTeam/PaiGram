@@ -5,10 +5,10 @@ from datetime import datetime
 from functools import lru_cache, partial
 from typing import Any, Coroutine, List, Match, Optional, Tuple, Union
 
-from simnet import GenshinClient
-from simnet.errors import BadRequest as SimnetBadRequest
 from arkowrapper import ArkoWrapper
 from pytz import timezone
+from simnet import GenshinClient
+from simnet.errors import BadRequest as SimnetBadRequest
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
@@ -20,7 +20,7 @@ from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
 from metadata.genshin import game_id_to_role_id
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.helpers import async_re_sub
 from utils.log import logger
 
@@ -79,7 +79,7 @@ class AbyssPlugin(Plugin):
     def __init__(
         self,
         template: TemplateService,
-        helper: SIMNetClient,
+        helper: GenshinHelper,
         assets_service: AssetsService,
     ):
         self.template_service = template

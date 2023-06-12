@@ -9,7 +9,7 @@ from core.config import config
 from core.plugin import handler, Plugin
 from core.services.players import PlayersService
 from plugins.tools.challenge import ChallengeSystem, ChallengeSystemException
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from plugins.tools.sign import SignSystem, NeedChallenge
 from utils.log import logger
 
@@ -20,7 +20,7 @@ class StartPlugin(Plugin):
         player: PlayersService,
         sign_system: SignSystem,
         challenge_system: ChallengeSystem,
-        genshin_helper: SIMNetClient,
+        genshin_helper: GenshinHelper,
     ):
         self.challenge_system = challenge_system
         self.sign_system = sign_system

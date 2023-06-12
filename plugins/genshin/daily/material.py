@@ -14,7 +14,6 @@ import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
 from simnet.errors import InvalidCookies, BadRequest as SimnetBadRequest
@@ -28,7 +27,7 @@ from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
-from plugins.tools.genshin import CharacterDetails, PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import CharacterDetails, PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -106,7 +105,7 @@ class DailyMaterial(Plugin):
         self,
         assets: AssetsService,
         template_service: TemplateService,
-        helper: SIMNetClient,
+        helper: GenshinHelper,
         character_details: CharacterDetails,
     ):
         self.assets_service = assets

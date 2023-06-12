@@ -8,7 +8,7 @@ from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from modules.apihelper.client.components.verify import Verify
 from modules.apihelper.error import ResponseException, APIHelperException
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 __all__ = ("ChallengeSystemException", "ChallengeSystem")
@@ -25,7 +25,7 @@ class ChallengeSystem(Plugin):
         self,
         cookies_service: CookiesService,
         redis: RedisDB,
-        genshin_helper: SIMNetClient,
+        genshin_helper: GenshinHelper,
         player: PlayersService,
     ) -> None:
         self.cookies_service = cookies_service
