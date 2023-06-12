@@ -19,16 +19,13 @@ from core.dependence.database import Database
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin
-from core.services.cookies import CookiesService, PublicCookiesService
 from core.services.cookies.services import CookiesService, PublicCookiesService
-from core.services.players import PlayersService
 from core.services.players.services import PlayersService
 from core.services.users.services import UserService
 from core.sqlmodel.session import AsyncSession
 from utils.log import logger
 
 if TYPE_CHECKING:
-    from simnet import GenshinClient
     from sqlalchemy import Table
 
 __all__ = ("CharacterDetails",)
