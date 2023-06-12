@@ -1,6 +1,6 @@
 import contextlib
 from pathlib import Path
-from typing import Tuple, Optional, List, Dict, TYPE_CHECKING
+from typing import Tuple, Optional, List, Dict
 
 import aiofiles
 from simnet import GenshinClient

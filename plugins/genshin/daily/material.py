@@ -10,7 +10,6 @@ from pathlib import Path
 from ssl import SSLZeroReturnError
 from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple, TYPE_CHECKING
 
-import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
@@ -29,6 +28,12 @@ from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
 from plugins.tools.genshin import CharacterDetails, PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
+
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
 
 if TYPE_CHECKING:
     from telegram import Update
@@ -129,7 +134,7 @@ class DailyMaterial(Plugin):
             asyncio.create_task(task_daily())  # 创建后台任务
         if not data and DATA_FILE_PATH.exists():  # 若存在，则读取至内存中
             async with async_open(DATA_FILE_PATH) as file:
-                data = json.loads(await file.read())
+                data = jsonlib.loads(await file.read())
         self.data = data
 
     async def _get_skills_data(self, client: "GenshinClient", character: Character) -> Optional[List[int]]:
@@ -411,7 +416,7 @@ class DailyMaterial(Plugin):
                         # noinspection PyUnresolvedReferences
                         result[stage][day][1] = list(set(result[stage][day][1]))  # 去重
                 async with async_open(DATA_FILE_PATH, "w", encoding="utf-8") as file:
-                    await file.write(json.dumps(result))  # skipcq: PY-W0079
+                    await file.write(jsonlib.dumps(result))  # skipcq: PY-W0079
                 logger.info("每日素材刷新成功")
                 break
             except (HTTPError, SSLZeroReturnError):

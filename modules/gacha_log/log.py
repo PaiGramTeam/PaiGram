@@ -5,7 +5,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from os import PathLike
 from pathlib import Path
-from typing import Dict, IO, List, Optional, Tuple, Union
+from typing import Dict, IO, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import aiofiles
 from openpyxl import load_workbook
@@ -13,7 +13,6 @@ from simnet import GenshinClient
 from simnet.errors import AuthkeyTimeout, InvalidAuthkey
 from simnet.models.genshin.wish import BannerType
 
-from core.dependence.assets import AssetsService
 from metadata.pool.pool import get_pool_by_id
 from metadata.shortname import roleToId, weaponToId
 from modules.gacha_log.const import GACHA_TYPE_LIST, PAIMONMOE_VERSION
@@ -41,6 +40,10 @@ from modules.gacha_log.models import (
     UIGFModel,
 )
 from utils.const import PROJECT_ROOT
+
+if TYPE_CHECKING:
+    from core.dependence.assets import AssetsService
+
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
@@ -284,7 +287,7 @@ class GachaLog:
                 return False
         return True
 
-    async def get_all_5_star_items(self, data: List[GachaItem], assets: AssetsService, pool_name: str = "角色祈愿"):
+    async def get_all_5_star_items(self, data: List[GachaItem], assets: "AssetsService", pool_name: str = "角色祈愿"):
         """
         获取所有5星角色
         :param data: 抽卡记录
@@ -324,7 +327,7 @@ class GachaLog:
         return result, count
 
     @staticmethod
-    async def get_all_4_star_items(data: List[GachaItem], assets: AssetsService):
+    async def get_all_4_star_items(data: List[GachaItem], assets: "AssetsService"):
         """
         获取 no_fout_star
         :param data: 抽卡记录
@@ -485,7 +488,7 @@ class GachaLog:
                     return f"{pool_name} · 非"
         return pool_name
 
-    async def get_analysis(self, user_id: int, player_id: int, pool: BannerType, assets: AssetsService):
+    async def get_analysis(self, user_id: int, player_id: int, pool: BannerType, assets: "AssetsService"):
         """
         获取抽卡记录分析数据
         :param user_id: 用户id
@@ -529,7 +532,7 @@ class GachaLog:
         }
 
     async def get_pool_analysis(
-        self, user_id: int, player_id: int, pool: BannerType, assets: AssetsService, group: bool
+        self, user_id: int, player_id: int, pool: BannerType, assets: "AssetsService", group: bool
     ) -> dict:
         """获取抽卡记录分析数据
         :param user_id: 用户id
@@ -575,7 +578,7 @@ class GachaLog:
             "hasMore": len(pool_data) > 6,
         }
 
-    async def get_all_five_analysis(self, user_id: int, player_id: int, assets: AssetsService) -> dict:
+    async def get_all_five_analysis(self, user_id: int, player_id: int, assets: "AssetsService") -> dict:
         """获取五星抽卡记录分析数据
         :param user_id: 用户id
         :param player_id: 玩家id
