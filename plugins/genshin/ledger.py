@@ -13,7 +13,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.simnet import SIMNetClient, PlayerNotFoundError, CookiesNotFoundError
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 
 from utils.log import logger
 

@@ -28,8 +28,7 @@ from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
-from plugins.tools.genshin import CharacterDetails
-from plugins.tools.simnet import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import CharacterDetails, PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from utils.log import logger
 
 if TYPE_CHECKING:

@@ -8,7 +8,7 @@ from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from modules.apihelper.client.components.verify import Verify
 from modules.apihelper.error import ResponseException, APIHelperException
-from plugins.tools.simnet import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from utils.log import logger
 
 __all__ = ("ChallengeSystemException", "ChallengeSystem")

@@ -13,7 +13,7 @@ from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.users.services import UserService
-from plugins.tools.simnet import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from utils.log import logger
 
 if TYPE_CHECKING:

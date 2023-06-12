@@ -9,7 +9,7 @@ from core.config import config
 from core.plugin import handler, Plugin
 from core.services.players import PlayersService
 from plugins.tools.challenge import ChallengeSystem, ChallengeSystemException
-from plugins.tools.simnet import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from plugins.tools.sign import SignSystem, NeedChallenge
 from utils.log import logger
 

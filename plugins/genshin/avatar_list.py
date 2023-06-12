@@ -19,8 +19,7 @@ from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA
 from modules.wiki.base import Model
-from plugins.tools.genshin import CharacterDetails
-from plugins.tools.simnet import SIMNetClient, CookiesNotFoundError, PlayerNotFoundError
+from plugins.tools.genshin import CharacterDetails, PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from utils.log import logger
 
 if TYPE_CHECKING:

@@ -15,7 +15,7 @@ from core.services.players import PlayersService
 from core.services.sign.models import Sign as SignUser, SignStatusEnum
 from core.services.sign.services import SignServices
 from core.services.users.services import UserAdminService
-from plugins.tools.simnet import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from plugins.tools.sign import SignSystem, NeedChallenge
 from utils.log import logger
 

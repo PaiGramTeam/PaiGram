@@ -11,7 +11,7 @@ from telegram.helpers import create_deep_linked_url
 from core.plugin import Plugin, handler
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.simnet import SIMNetClient, CookiesNotFoundError, PlayerNotFoundError
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, SIMNetClient
 from utils.log import logger
 
 if TYPE_CHECKING:
