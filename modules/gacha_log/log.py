@@ -9,7 +9,7 @@ from typing import Dict, IO, List, Optional, Tuple, Union
 
 import aiofiles
 from genshin import AuthkeyTimeout, Client, InvalidAuthkey
-from genshin.models import BannerType
+from genshin.models import GenshinBannerType
 from openpyxl import load_workbook
 
 from core.dependence.assets import AssetsService
@@ -164,7 +164,7 @@ class GachaLog:
     def import_data_backend(all_items: List[GachaItem], gacha_log: GachaLogInfo, temp_id_data: Dict) -> int:
         new_num = 0
         for item_info in all_items:
-            pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
+            pool_name = GACHA_TYPE_LIST[GenshinBannerType(int(item_info.gacha_type))]
             if item_info.id not in temp_id_data[pool_name]:
                 gacha_log.item_list[pool_name].append(item_info)
                 temp_id_data[pool_name].append(item_info.id)
@@ -482,7 +482,7 @@ class GachaLog:
                     return f"{pool_name} · 非"
         return pool_name
 
-    async def get_analysis(self, user_id: int, client: Client, pool: BannerType, assets: AssetsService):
+    async def get_analysis(self, user_id: int, client: Client, pool: GenshinBannerType, assets: AssetsService):
         """
         获取抽卡记录分析数据
         :param user_id: 用户id
@@ -502,13 +502,13 @@ class GachaLog:
         all_five, no_five_star = await self.get_all_5_star_items(data, assets, pool_name)
         all_four, no_four_star = await self.get_all_4_star_items(data, assets)
         summon_data = None
-        if pool == BannerType.CHARACTER1:
+        if pool == GenshinBannerType.CHARACTER1:
             summon_data = self.get_301_pool_data(total, all_five, no_five_star, no_four_star)
             pool_name = self.count_fortune(pool_name, summon_data)
-        elif pool == BannerType.WEAPON:
+        elif pool == GenshinBannerType.WEAPON:
             summon_data = self.get_302_pool_data(total, all_five, all_four, no_five_star, no_four_star)
             pool_name = self.count_fortune(pool_name, summon_data, True)
-        elif pool == BannerType.PERMANENT:
+        elif pool == GenshinBannerType.PERMANENT:
             summon_data = self.get_200_pool_data(total, all_five, all_four, no_five_star, no_four_star)
             pool_name = self.count_fortune(pool_name, summon_data)
         last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
@@ -526,7 +526,7 @@ class GachaLog:
         }
 
     async def get_pool_analysis(
-        self, user_id: int, client: Client, pool: BannerType, assets: AssetsService, group: bool
+        self, user_id: int, client: Client, pool: GenshinBannerType, assets: AssetsService, group: bool
     ) -> dict:
         """获取抽卡记录分析数据
         :param user_id: 用户id

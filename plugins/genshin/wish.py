@@ -16,7 +16,7 @@ from metadata.genshin import AVATAR_DATA, WEAPON_DATA, avatar_to_game_id, weapon
 from metadata.shortname import weaponToName
 from modules.apihelper.client.components.gacha import Gacha as GachaClient
 from modules.apihelper.models.genshin.gacha import GachaInfo
-from modules.gacha.banner import BannerType, GachaBanner
+from modules.gacha.banner import GenshinBannerType, GachaBanner
 from modules.gacha.player.info import PlayerGachaInfo
 from modules.gacha.system import BannerSystem
 from utils.log import logger
@@ -99,16 +99,16 @@ class WishSimulatorHandle:
                     banner.fallback_items4_pool1.append(weapon_to_game_id(r4_prob["item_name"]))
         if gacha_type in {301, 400}:
             banner.wish_max_progress = 1
-            banner.banner_type = BannerType.EVENT
+            banner.banner_type = GenshinBannerType.EVENT
             banner.weight4 = ((1, 510), (8, 510), (10, 10000))
             banner.weight5 = ((1, 60), (73, 60), (90, 10000))
         elif gacha_type == 302:
             banner.wish_max_progress = 2
-            banner.banner_type = BannerType.WEAPON
+            banner.banner_type = GenshinBannerType.WEAPON
             banner.weight4 = ((1, 600), (7, 600), (10, 10000))
             banner.weight5 = ((1, 70), (62, 70), (90, 10000))
         else:
-            banner.banner_type = BannerType.STANDARD
+            banner.banner_type = GenshinBannerType.STANDARD
         return banner
 
     async def gacha_base_info(self, gacha_name: str = "角色活动", default: bool = False) -> GachaInfo:
@@ -228,7 +228,7 @@ class WishSimulatorPlugin(Plugin):
         player_gacha_info = await self.gacha_db.get(user.id)
         # 检查 wish_item_id
         if (
-            banner.banner_type == BannerType.WEAPON
+            banner.banner_type == GenshinBannerType.WEAPON
             and player_gacha_info.event_weapon_banner.wish_item_id not in banner.rate_up_items5
         ):
             player_gacha_info.event_weapon_banner.wish_item_id = 0

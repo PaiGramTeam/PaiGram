@@ -252,12 +252,23 @@ class _Conversation(_Plugin, ConversationFuncs, ABC):
 
                         handlers: List[HandlerType] = []
                         for data in datas:
-                            handlers.append(
-                                data.type(
-                                    callback=func,
-                                    **data.kwargs,
+                            if data.admin:
+                                handlers.append(
+                                    AdminHandler(
+                                        handler=data.type(
+                                            callback=func,
+                                            **data.kwargs,
+                                        ),
+                                        application=self.application,
+                                    )
                                 )
-                            )
+                            else:
+                                handlers.append(
+                                    data.type(
+                                        callback=func,
+                                        **data.kwargs,
+                                    )
+                                )
 
                         if conversation_data := getattr(func, _CONVERSATION_HANDLER_ATTR_NAME, None):
                             if (_type := conversation_data.type) is ConversationDataType.Entry:

@@ -2,7 +2,7 @@ from io import BytesIO
 
 import genshin
 from aiofiles import open as async_open
-from genshin.models import BannerType
+from genshin.models import GenshinBannerType
 from telegram import Document, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, MessageHandler, filters
@@ -304,12 +304,12 @@ class WishLogPlugin(Plugin.Conversation):
     async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        pool_type = BannerType.CHARACTER1
+        pool_type = GenshinBannerType.CHARACTER1
         if args := self.get_args(context):
             if "武器" in args:
-                pool_type = BannerType.WEAPON
+                pool_type = GenshinBannerType.WEAPON
             elif "常驻" in args:
-                pool_type = BannerType.STANDARD
+                pool_type = GenshinBannerType.STANDARD
         logger.info("用户 %s[%s] 抽卡记录命令请求 || 参数 %s", user.full_name, user.id, pool_type.name)
         try:
             client = await self.helper.get_genshin_client(user.id, need_cookie=False)
@@ -358,13 +358,13 @@ class WishLogPlugin(Plugin.Conversation):
     async def command_start_count(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        pool_type = BannerType.CHARACTER1
+        pool_type = GenshinBannerType.CHARACTER1
         all_five = False
         if args := self.get_args(context):
             if "武器" in args:
-                pool_type = BannerType.WEAPON
+                pool_type = GenshinBannerType.WEAPON
             elif "常驻" in args:
-                pool_type = BannerType.STANDARD
+                pool_type = GenshinBannerType.STANDARD
             elif "仅五星" in args:
                 all_five = True
         logger.info("用户 %s[%s] 抽卡统计命令请求 || 参数 %s || 仅五星 %s", user.full_name, user.id, pool_type.name, all_five)
