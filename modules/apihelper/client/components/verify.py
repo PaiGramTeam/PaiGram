@@ -4,7 +4,8 @@ import time
 from typing import Dict, Optional
 
 from ..base.hyperionrequest import HyperionRequest
-from ...utility.helpers import get_ua, get_ds, update_device_headers
+from ...utility.devices import devices_methods
+from ...utility.helpers import get_ua, get_ds
 
 __all__ = ("Verify",)
 
@@ -45,7 +46,7 @@ class Verify:
         headers["Referer"] = referer
         return headers
 
-    def get_headers(self, data: dict = None, params: dict = None):
+    async def get_headers(self, data: dict = None, params: dict = None):
         headers = self.BBS_HEADERS.copy()
         app_version, client_type, ds = get_ds(new_ds=True, data=data, params=params)
         headers["x-rpc-app_version"] = app_version
@@ -53,7 +54,7 @@ class Verify:
         headers["DS"] = ds
         headers["x-rpc-challenge_path"] = f"https://{self.HOST}{self.REFERER_URL}"
         headers["x-rpc-challenge_game"] = self.GAME
-        update_device_headers(self.account_id, headers)
+        await devices_methods.update_device_headers(self.account_id, headers)
         return headers
 
     @staticmethod
@@ -63,7 +64,7 @@ class Verify:
     async def create(self, is_high: bool = False):
         url = self.get_url(self.HOST, self.CREATE_VERIFICATION_URL)
         params = {"is_high": "true" if is_high else "false"}
-        headers = self.get_headers(params=params)
+        headers = await self.get_headers(params=params)
         response = await self.client.get(url, params=params, headers=headers)
         return response
 
@@ -71,7 +72,7 @@ class Verify:
         url = self.get_url(self.HOST, self.VERIFY_VERIFICATION_URL)
         data = {"geetest_challenge": challenge, "geetest_validate": validate, "geetest_seccode": f"{validate}|jordan"}
 
-        headers = self.get_headers(data=data)
+        headers = await self.get_headers(data=data)
         response = await self.client.post(url, json=data, headers=headers)
         return response
 
