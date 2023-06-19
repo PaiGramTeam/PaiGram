@@ -67,7 +67,7 @@ class AccountDevicesPlugin(Plugin.Conversation):
         for k in optional_keys:
             if k not in headers:
                 continue
-            elif headers.get(k) and len(headers.get(k)) > 64:
+            if headers.get(k) and len(headers.get(k)) > 64:
                 raise ValueError
 
         data.device_id = headers.get("x-rpc-device_id")
