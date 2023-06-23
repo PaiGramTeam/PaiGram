@@ -2058,13 +2058,13 @@ jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
 name = "sentry-sdk"
-version = "1.25.0"
+version = "1.26.0"
 description = "Python client for Sentry (https://sentry.io)"
 optional = false
 python-versions = "*"
 files = [
-    {file = "sentry-sdk-1.25.0.tar.gz", hash = "sha256:5be3296fc574fa8a4d9b213b4dcf8c8d0246c08f8bd78315c6286f386c37555a"},
-    {file = "sentry_sdk-1.25.0-py2.py3-none-any.whl", hash = "sha256:fe85cf5d0b3d0aa3480df689f9f6dc487de783defb0a95043368375dc893645e"},
+    {file = "sentry-sdk-1.26.0.tar.gz", hash = "sha256:760e4fb6d01c994110507133e08ecd4bdf4d75ee4be77f296a3579796cf73134"},
+    {file = "sentry_sdk-1.26.0-py2.py3-none-any.whl", hash = "sha256:0c9f858337ec3781cf4851972ef42bba8c9828aea116b0dbed8f38c5f9a1896c"},
 ]
 
 [package.dependencies]
@@ -2840,4 +2840,4 @@ test = ["flaky", "pytest", "pytest-asyncio"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "dcf9cf7af1d79020a494806565532207e0f93be36d86709c54715d1c1c358e90"
+content-hash = "f19edee5542e4bc4991d429354549fcd8909b3132ca53fbebf7309ce1a758cfc"
