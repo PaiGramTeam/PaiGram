@@ -22,6 +22,7 @@ from rich.traceback import (
     Traceback as BaseTraceback,
 )
 
+from core.config import config
 from utils.log._style import MonokaiProStyle
 
 if TYPE_CHECKING:
@@ -199,7 +200,7 @@ class Traceback(BaseTraceback):
                     name=frame_summary.f_code.co_name,
                     locals={
                         key: pretty.traverse(
-                            value,
+                            Traceback.filter_value(value),
                             max_length=locals_max_length,
                             max_string=locals_max_string,
                             max_depth=locals_max_depth,
@@ -343,3 +344,9 @@ class Traceback(BaseTraceback):
                         if frame.locals
                         else syntax
                     )
+
+    @staticmethod
+    def filter_value(value: Any) -> Any:
+        if isinstance(value, str):
+            return value.replace(config.bot_token, "TOKEN")
+        return value

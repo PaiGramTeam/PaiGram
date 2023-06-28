@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 httpx = "^0.23.3"
-ujson = "^5.7.0"
+ujson = "^5.8.0"
 genshin = { git = "https://github.com/thesadru/genshin.py" }
 Jinja2 = "^3.1.2"
 python-telegram-bot = { version = "^20.1", extras = ["ext", "rate-limiter"] }
@@ -33,7 +33,7 @@ pytest-asyncio = { version = "^0.21.0", optional = true }
 flaky = { version = "^3.7.0", optional = true }
 lxml = "^4.9.2"
 arko-wrapper = "^0.2.8"
-fastapi = "^0.96.0"
+fastapi = "^0.97.0"
 uvicorn = { extras = ["standard"], version = "^0.22.0" }
 sentry-sdk = "^1.25.0"
 GitPython = "^3.1.30"

@@ -7,7 +7,7 @@ from modules.gacha.error import GachaIllegalArgument
 from modules.gacha.utils import lerp
 
 
-class BannerType(Enum):
+class GenshinBannerType(Enum):
     STANDARD = 0
     EVENT = 1
     WEAPON = 2
@@ -35,7 +35,7 @@ class GachaBanner(BaseModel):
     title: str = ""
     html_title: str = ""
     banner_id: str = ""
-    banner_type: BannerType = BannerType.STANDARD
+    banner_type: GenshinBannerType = GenshinBannerType.STANDARD
     wish_max_progress: int = 0
     pool_balance_weights4: Tuple[int] = ((1, 255), (17, 255), (21, 10455))
     pool_balance_weights5: Tuple[int] = ((1, 30), (147, 150), (181, 10230))
@@ -58,7 +58,7 @@ class GachaBanner(BaseModel):
         raise GachaIllegalArgument
 
     def has_epitomized(self):
-        return self.banner_type == BannerType.WEAPON
+        return self.banner_type == GenshinBannerType.WEAPON
 
     def get_event_chance(self, rarity: int) -> int:
         if rarity == 4:

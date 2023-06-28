@@ -130,7 +130,7 @@ class PayLogPlugin(Plugin.Conversation):
     @conversation.entry_point
     @handler(CommandHandler, command="pay_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler(MessageHandler, filters=filters.Regex("^删除充值记录$") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_delete(self, update: Update, _: CallbackContext) -> int:
+    async def command_start_delete(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 删除充值记录命令请求", user.full_name, user.id)
@@ -143,6 +143,7 @@ class PayLogPlugin(Plugin.Conversation):
         if not status:
             await message.reply_text("你还没有导入充值记录哦~")
             return ConversationHandler.END
+        context.chat_data["uid"] = client.uid
         await message.reply_text("你确定要删除充值记录吗？（此项操作无法恢复），如果确定请发送 ”确定“，发送其他内容取消")
         return CONFIRM_DELETE
 

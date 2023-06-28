@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from modules.gacha.banner import BannerType, GachaBanner
+from modules.gacha.banner import GenshinBannerType, GachaBanner
 from modules.gacha.player.banner import PlayerGachaBannerInfo
 
 
@@ -23,8 +23,8 @@ class PlayerGachaInfo(BaseModel):
             self.event_character_banner = PlayerGachaBannerInfo()
 
     def get_banner_info(self, banner: GachaBanner) -> PlayerGachaBannerInfo:
-        if banner.banner_type == BannerType.EVENT:
+        if banner.banner_type == GenshinBannerType.EVENT:
             return self.event_character_banner
-        if banner.banner_type == BannerType.WEAPON:
+        if banner.banner_type == GenshinBannerType.WEAPON:
             return self.event_weapon_banner
         return self.standard_banner

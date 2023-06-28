@@ -4,9 +4,9 @@ import random
 import string
 import time
 import uuid
-from typing import Any, Mapping, Optional, Dict
+from typing import Any, Mapping, Optional
 
-__all__ = ("get_device_id", "hex_digest", "get_ds", "get_recognize_server", "get_ua", "update_device_headers")
+__all__ = ("get_device_id", "hex_digest", "get_ds", "get_recognize_server", "get_ua")
 
 RECOGNIZE_SERVER = {
     "1": "cn_gf01",
@@ -21,14 +21,6 @@ RECOGNIZE_SERVER = {
 
 def get_device_id(name: str = ""):
     return str(uuid.uuid3(uuid.NAMESPACE_URL, name))
-
-
-def update_device_headers(account_id: int, headers: Dict = None) -> Dict[str, str]:
-    account_id = account_id or 0
-    headers = headers or {}
-    headers["x-rpc-device_id"] = get_device_id(str(account_id))
-    headers["x-rpc-device_fp"] = hex_digest(headers["x-rpc-device_id"])[:13]
-    return headers
 
 
 def hex_digest(text):
@@ -62,13 +54,13 @@ def get_ds(ds_type: str = None, new_ds: bool = False, data: Any = None, params: 
         c = hex_digest(f"salt={salt}&t={t}&r={r}")
         return f"{t},{r},{c}"
 
-    app_version = "2.46.1"
+    app_version = "2.53.0"
     client_type = "5"
-    salt = "X7UOLLnTuNS3kgTJ1BUHOvKpiqp3kmym"
+    salt = "0PUWkNIBnLcg8GgRNRJc14kSn4SrPBsS"
     ds = old()
     if ds_type in {"android", "2"}:
         client_type = "2"
-        salt = "KZazpG4cO2QECFDBUCxdhS8cYCsQHfzn"
+        salt = "yuzHvf4MkGYyoS4837hHOwLMyVOmtPuY"
         ds = old()
     elif ds_type == "android_new":
         client_type = "2"

@@ -11,7 +11,8 @@ from qrcode.image.pure import PyPNGImage
 
 from ...logger import logger
 from ...models.genshin.cookies import CookiesModel
-from ...utility.helpers import get_device_id, get_ds, update_device_headers
+from ...utility.devices import devices_methods
+from ...utility.helpers import get_device_id, get_ds
 
 __all__ = ("AuthClient",)
 
@@ -92,7 +93,7 @@ class AuthClient:
             "x-rpc-app_id": "bll8iq97cem8",
             "User-Agent": "okhttp/4.8.0",
         }
-        update_device_headers(self.user_id, headers)
+        await devices_methods.update_device_headers(self.user_id, headers)
         app_version, client_type, ds_sign = get_ds(new_ds=True, data=data)
         headers["x-rpc-app_version"] = app_version
         headers["x-rpc-client_type"] = client_type

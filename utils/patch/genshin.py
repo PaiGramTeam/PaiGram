@@ -9,8 +9,8 @@ from genshin import constants, types, utility
 from genshin.client import routes
 from genshin.utility import generate_dynamic_secret, ds
 
-from modules.apihelper.utility.helpers import get_ds, get_ua, get_device_id, hex_digest, update_device_headers
-from utils.log import logger
+from modules.apihelper.utility.devices import devices_methods
+from modules.apihelper.utility.helpers import get_ds, get_ua, get_device_id, hex_digest
 from utils.patch.methods import patch, patchable
 
 DEVICE_ID = get_device_id()
@@ -156,7 +156,7 @@ class BaseClient:
                 "x-rpc-client_type": client_type,
                 "ds": ds_sign,
             }
-            update_device_headers(self.hoyolab_id, headers)
+            await devices_methods.update_device_headers(self.hoyolab_id, headers)
         else:
             raise TypeError(f"{region!r} is not a valid region.")
 
@@ -190,8 +190,7 @@ class BaseClient:
 
         headers = dict(headers or {})
         headers.setdefault("User-Agent", self.USER_AGENT)
-        update_device_headers(self.hoyolab_id, headers)
-        logger.debug("Account ID: %s  Header: %s" % (self.hoyolab_id, headers))
+        await devices_methods.update_device_headers(self.hoyolab_id, headers)
 
         if method is None:
             method = "POST" if data else "GET"
@@ -264,7 +263,7 @@ class BaseClient:
                     "ds": ds_sign,
                 }
                 headers.update(add_headers)
-                update_device_headers(self.hoyolab_id, headers)
+                await devices_methods.update_device_headers(self.hoyolab_id, headers)
         elif self.region == types.Region.OVERSEAS:
             headers.update(ds.get_ds_headers(data=data, params=params, region=region, lang=lang or self.lang))
             headers["Referer"] = str(routes.BBS_REFERER_URL.get_url(self.region))
@@ -349,7 +348,7 @@ class DailyRewardClient:
                 headers["x-rpc-challenge"] = challenge
                 headers["x-rpc-validate"] = validate
                 headers["x-rpc-seccode"] = f"{validate}|jordan"
-            update_device_headers(self.hoyolab_id, headers)
+            await devices_methods.update_device_headers(self.hoyolab_id, headers)
         else:
             raise TypeError(f"{self.region!r} is not a valid region.")
 
