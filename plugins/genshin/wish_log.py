@@ -2,6 +2,7 @@ from io import BytesIO
 
 from aiofiles import open as async_open
 from simnet import GenshinClient, Region
+from simnet.models.genshin.wish import BannerType
 from simnet.utils.player import recognize_genshin_game_biz, recognize_genshin_server
 from telegram import Document, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ChatAction

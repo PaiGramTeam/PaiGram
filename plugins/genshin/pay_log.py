@@ -143,7 +143,7 @@ class PayLogPlugin(Plugin.Conversation):
         if not status:
             await message.reply_text("你还没有导入充值记录哦~")
             return ConversationHandler.END
-        context.chat_data["uid"] = client.uid
+        context.chat_data["uid"] = player_info.player_id
         await message.reply_text("你确定要删除充值记录吗？（此项操作无法恢复），如果确定请发送 ”确定“，发送其他内容取消")
         return CONFIRM_DELETE
 
