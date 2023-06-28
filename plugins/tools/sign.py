@@ -6,10 +6,10 @@ from enum import Enum
 from typing import Optional, Tuple, List, TYPE_CHECKING
 
 from aiohttp import ClientConnectorError
-from genshin.utility import recognize_genshin_server
 from httpx import TimeoutException
 from simnet import Game
 from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies
+from simnet.utils.player import recognize_genshin_server
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest

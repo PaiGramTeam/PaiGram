@@ -1,6 +1,7 @@
 from typing import Tuple, Optional
 
-from genshin import Region, GenshinException
+from simnet import Region
+from simnet.errors import BadRequest as SIMNetBadRequest
 
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin
@@ -59,7 +60,7 @@ class ChallengeSystem(Plugin):
         if need_verify:
             try:
                 await client.get_genshin_notes()
-            except GenshinException as exc:
+            except SIMNetBadRequest as exc:
                 if exc.retcode != 1034:
                     raise exc
             else:

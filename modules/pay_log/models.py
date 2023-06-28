@@ -1,9 +1,8 @@
 import datetime
-
 from typing import Any, List
 
-from genshin.models import BaseTransaction
 from pydantic import BaseModel, BaseConfig
+from simnet.models.genshin.transaction import BaseTransaction
 
 try:
     import ujson as jsonlib
