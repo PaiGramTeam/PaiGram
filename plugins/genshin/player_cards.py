@@ -221,9 +221,9 @@ class PlayerCards(Plugin):
         if isinstance(data, str):
             await callback_query.answer(text=data, show_alert=True)
             return
-        if data.characters is None:
-            await message.delete()
+        if len(data.characters) == 0:
             await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
+            await message.delete()
             return
         buttons = self.gen_button(data, user.id, uid, update_button=False)
         render_data = await self.parse_holder_data(data)
@@ -286,9 +286,9 @@ class PlayerCards(Plugin):
         if isinstance(data, str):
             await message.reply_text(data)
             return
-        if data.characters is None:
-            await message.delete()
+        if len(data.characters) == 0:
             await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
+            await message.delete()
             return
         if page:
             buttons = self.gen_button(data, user.id, uid, page, not await self.cache.ttl(uid) > 0)
