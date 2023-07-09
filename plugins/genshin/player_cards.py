@@ -162,8 +162,17 @@ class PlayerCards(Plugin):
         else:
             logger.info("用户 %s[%s] 角色卡片查询命令请求", user.full_name, user.id)
             ttl = await self.cache.ttl(player_info.player_id)
-
-            buttons = self.gen_button(data, user.id, player_info.player_id, update_button=ttl < 0)
+            if data.characters is None or len(data.characters) == 0:
+                buttons = [
+                    [
+                        InlineKeyboardButton(
+                            "更新面板",
+                            callback_data=f"update_player_card|{user.id}|{player_info.player_id,}",
+                        )
+                    ]
+                ]
+            else:
+                buttons = self.gen_button(data, user.id, player_info.player_id, update_button=ttl < 0)
             if isinstance(self.kitsune, str):
                 photo = self.kitsune
             else:
@@ -221,7 +230,7 @@ class PlayerCards(Plugin):
         if isinstance(data, str):
             await callback_query.answer(text=data, show_alert=True)
             return
-        if len(data.characters) == 0:
+        if data.characters is None or len(data.characters) == 0:
             await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
             await message.delete()
             return
@@ -286,7 +295,7 @@ class PlayerCards(Plugin):
         if isinstance(data, str):
             await message.reply_text(data)
             return
-        if len(data.characters) == 0:
+        if data.characters is None or len(data.characters) == 0:
             await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
             await message.delete()
             return
