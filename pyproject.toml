@@ -23,7 +23,7 @@ pyppeteer = "^1.0.2"
 aiofiles = "^23.1.0"
 python-dotenv = "^1.0.0"
 alembic = "^1.11.1"
-black = "^23.3.0"
+black = "^23.7.0"
 rich = "^13.4.1"
 enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
 TgCrypto = { version = "^1.2.5", optional = true }
