@@ -28,6 +28,7 @@ from modules.gacha_log.error import (
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
+from plugins.tools.genshin import GenshinHelper
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
@@ -54,6 +55,7 @@ class WishLogPlugin(Plugin.Conversation):
         assets: AssetsService,
         cookie_service: CookiesService,
         player_info: PlayerInfoSystem,
+        genshin_helper: GenshinHelper,
     ):
         self.template_service = template_service
         self.players_service = players_service
@@ -62,6 +64,7 @@ class WishLogPlugin(Plugin.Conversation):
         self.zh_dict = None
         self.gacha_log = GachaLog()
         self.player_info = player_info
+        self.genshin_helper = genshin_helper
 
     async def initialize(self) -> None:
         await update_paimon_moe_zh(False)
@@ -79,14 +82,12 @@ class WishLogPlugin(Plugin.Conversation):
         """
         try:
             logger.debug("尝试获取已绑定的原神账号")
-            player_info = await self.players_service.get_player(user.id, region=RegionEnum.HYPERION)
-            if player_info is None:
-                raise PlayerNotFoundError
+            client = await self.genshin_helper.get_genshin_client(user.id)
             if authkey:
-                new_num = await self.gacha_log.get_gacha_log_data(user.id, player_info.player_id, authkey)
+                new_num = await self.gacha_log.get_gacha_log_data(user.id, client, authkey)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
             if data:
-                new_num = await self.gacha_log.import_gacha_log_data(user.id, player_info.player_id, data, verify_uid)
+                new_num = await self.gacha_log.import_gacha_log_data(user.id, client.player_id, data, verify_uid)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
         except GachaLogNotFound:
             return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"

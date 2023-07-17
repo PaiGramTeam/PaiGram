@@ -98,7 +98,8 @@ class RegTimePlugin(Plugin):
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
         except InvalidCookies as exc:
-            await client.get_genshin_user(client.player_id)
+            async with self.helper.genshin(user.id) as client:
+                await client.get_genshin_user(client.player_id)
             logger.warning("用户 %s[%s] 无法请求注册时间 API返回信息为 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
             reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，")
             if filters.ChatType.GROUPS.filter(message):

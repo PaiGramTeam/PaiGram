@@ -114,21 +114,20 @@ class PayLog:
     async def get_log_data(
         self,
         user_id: int,
-        player_id: int,
+        client: GenshinClient,
         authkey: str,
     ) -> int:
         """使用 authkey 获取历史记录数据，并合并旧数据
         :param user_id: 用户id
-        :param player_id: player_id
+        :param client: GenshinClient
         :param authkey: authkey
         :return: 更新结果
         """
         new_num = 0
-        pay_log, have_old = await self.load_history_info(str(user_id), str(player_id))
+        pay_log, have_old = await self.load_history_info(str(user_id), str(client.player_id))
         history_ids = [i.id for i in pay_log.list]
         try:
-            async with GenshinClient(player_id=player_id) as client:
-                transaction_log = await client.transaction_log(authkey=authkey, kind=TransactionKind.CRYSTAL)
+            transaction_log = await client.transaction_log(authkey=authkey, kind=TransactionKind.CRYSTAL)
             for data in transaction_log:
                 if data.id not in history_ids:
                     pay_log.list.append(data)

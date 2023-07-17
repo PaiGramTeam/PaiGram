@@ -13,6 +13,7 @@ from core.services.template.services import TemplateService
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
+from plugins.tools.genshin import GenshinHelper
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
@@ -32,13 +33,14 @@ class PayLogPlugin(Plugin.Conversation):
         players_service: PlayersService,
         cookie_service: CookiesService,
         player_info: PlayerInfoSystem,
+        genshin_helper: GenshinHelper,
     ):
         self.template_service = template_service
         self.players_service = players_service
         self.cookie_service = cookie_service
         self.pay_log = PayLog()
-        self.helper = None
         self.player_info = player_info
+        self.genshin_helper = genshin_helper
 
     async def _refresh_user_data(self, user: User, authkey: str = None) -> str:
         """刷新用户数据
@@ -48,10 +50,8 @@ class PayLogPlugin(Plugin.Conversation):
         """
         try:
             logger.debug("尝试获取已绑定的原神账号")
-            player_info = await self.players_service.get_player(user.id, region=RegionEnum.HYPERION)
-            if player_info is None:
-                raise PlayerNotFoundError
-            new_num = await self.pay_log.get_log_data(user.id, player_info.player_id, authkey)
+            client = await self.genshin_helper.get_genshin_client(user.id)
+            new_num = await self.pay_log.get_log_data(user.id, client, authkey)
             return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条充值记录"
         except PayLogNotFound:
             return "派蒙没有找到你的充值记录，快去充值吧~"

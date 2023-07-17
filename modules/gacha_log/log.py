@@ -222,23 +222,22 @@ class GachaLog:
         except Exception as exc:
             raise GachaLogException from exc
 
-    async def get_gacha_log_data(self, user_id: int, player_id: int, authkey: str) -> int:
+    async def get_gacha_log_data(self, user_id: int, client: GenshinClient, authkey: str) -> int:
         """使用authkey获取抽卡记录数据，并合并旧数据
         :param user_id: 用户id
-        :param player_id: 玩家id
+        :param client: GenshinClient
         :param authkey: authkey
         :return: 更新结果
         """
         new_num = 0
-        gacha_log, _ = await self.load_history_info(str(user_id), str(player_id))
+        gacha_log, _ = await self.load_history_info(str(user_id), str(client.player_id))
         if gacha_log.get_import_type == ImportType.PAIMONMOE:
             raise GachaLogMixedProvider
         # 将唯一 id 放入临时数据中，加快查找速度
         temp_id_data = {pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()}
         try:
             for pool_id, pool_name in GACHA_TYPE_LIST.items():
-                async with GenshinClient(player_id=player_id) as client:
-                    wish_history = await client.wish_history(pool_id, authkey=authkey)
+                wish_history = await client.wish_history(pool_id.value, authkey=authkey)
                 for data in wish_history:
                     item = GachaItem(
                         id=str(data.id),

@@ -158,16 +158,16 @@ class CharacterDetails(Plugin):
     ) -> Optional["CalculatorCharacterDetails"]:
         """缓存 character_details 并定时对其进行数据存储 当遇到 Too Many Requests 可以获取以前的数据"""
         uid = client.player_id
+        if isinstance(character, Character):
+            character_id = character.id
+        else:
+            character_id = character
         if uid is not None:
-            if isinstance(character, Character):
-                character_id = character.id
-            else:
-                character_id = character
             detail = await self.get_character_details_for_redis(uid, character_id)
             if detail is not None:
                 return detail
             try:
-                detail = await client.get_character_details(character)
+                detail = await client.get_character_details(character_id)
             except SimnetBadRequest as exc:
                 if "Too Many Requests" in exc.message:
                     return await self.get_character_details_for_mysql(uid, character_id)
@@ -175,7 +175,7 @@ class CharacterDetails(Plugin):
             asyncio.create_task(self.set_character_details(uid, character_id, detail.json()))
             return detail
         try:
-            return await client.get_character_details(character)
+            return await client.get_character_details(character_id)
         except SimnetBadRequest as exc:
             if "Too Many Requests" in exc.message:
                 logger.warning("Too Many Requests")
@@ -232,7 +232,7 @@ class GenshinHelper(Plugin):
             raise TypeError("Region is not None")
 
         async with GenshinClient(
-            cookies, region=game_region, account_id=player.account_id, player_id=player.player_id
+            cookies, region=game_region, account_id=player.account_id, player_id=player.player_id, lang="zh-cn"
         ) as client:
             yield client
 
@@ -256,7 +256,9 @@ class GenshinHelper(Plugin):
         else:
             raise TypeError("Region is not None")
 
-        return GenshinClient(cookies, region=game_region, account_id=player.account_id, player_id=player.player_id)
+        return GenshinClient(
+            cookies, region=game_region, account_id=player.account_id, player_id=player.player_id, lang="zh-cn"
+        )
 
     @asynccontextmanager
     async def public_genshin(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
@@ -273,7 +275,9 @@ class GenshinHelper(Plugin):
         else:
             raise TypeError("Region is not `RegionEnum.NULL`")
 
-        async with GenshinClient(cookies, region=game_region, account_id=player.account_id, player_id=uid) as client:
+        async with GenshinClient(
+            cookies, region=game_region, account_id=player.account_id, player_id=uid, lang="zh-cn"
+        ) as client:
             try:
                 yield client
             except SimnetBadRequest as exc:
