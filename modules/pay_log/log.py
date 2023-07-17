@@ -127,7 +127,7 @@ class PayLog:
         pay_log, have_old = await self.load_history_info(str(user_id), str(client.player_id))
         history_ids = [i.id for i in pay_log.list]
         try:
-            transaction_log = await client.transaction_log(authkey=authkey, kind=TransactionKind.CRYSTAL)
+            transaction_log = await client.transaction_log(authkey=authkey, kind=TransactionKind.CRYSTAL.value)
             for data in transaction_log:
                 if data.id not in history_ids:
                     pay_log.list.append(data)

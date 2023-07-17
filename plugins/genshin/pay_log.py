@@ -89,7 +89,7 @@ class PayLogPlugin(Plugin.Conversation):
                             authkey = await client.get_authkey_by_stoken(
                                 recognize_genshin_game_biz(client.player_id),
                                 recognize_genshin_server(client.player_id),
-                                "webview_gacha",
+                                "csc",
                             )
         if not authkey:
             await message.reply_text(
