@@ -172,7 +172,7 @@ class CharacterDetails(Plugin):
                 if "Too Many Requests" in exc.message:
                     return await self.get_character_details_for_mysql(uid, character_id)
                 raise exc
-            asyncio.create_task(self.set_character_details(uid, character_id, detail.json()))
+            asyncio.create_task(self.set_character_details(uid, character_id, detail.json(by_alias=True)))
             return detail
         try:
             return await client.get_character_details(character_id)
