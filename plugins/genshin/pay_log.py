@@ -86,7 +86,7 @@ class PayLogPlugin(Plugin.Conversation):
                             lang="zh-cn",
                             uid=player_info.player_id,
                         )
-                        authkey = await get_authkey_by_stoken(client)
+                        authkey = await get_authkey_by_stoken(client, auth_appid="csc")
         if not authkey:
             await message.reply_text(
                 "<b>开始导入充值历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
