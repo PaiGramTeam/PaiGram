@@ -222,7 +222,26 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         async with GenshinClient(cookies=cookies.to_dict(), region=region) as client:
-            if not cookies.check():
+            check_cookie = cookies.check()
+            if cookies.login_ticket is not None:
+                try:
+                    cookies.cookie_token = await client.get_cookie_token_by_login_ticket()
+                    cookies.account_id = cookies.account_id
+                    cookies.ltuid = cookies.account_id
+                    logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
+                    cookies.stoken = await client.get_stoken_by_login_ticket()
+                    logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
+                    cookies.ltoken = await client.get_ltoken_by_stoken()
+                    logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
+                    check_cookie = True
+                except SimnetBadRequest as exc:
+                    logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
+                except Exception as exc:
+                    logger.error("绑定时获取新Cookie失败 [%s]", (str(exc)))
+                finally:
+                    cookies.login_ticket = None
+                    cookies.login_uid = None
+            if not check_cookie:
                 await message.reply_text("检测到Cookie不完整，可能会出现问题。", reply_markup=ReplyKeyboardRemove())
             try:
                 if client.account_id is None and cookies.is_v2:
@@ -263,23 +282,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 logger.debug("用户 %s[%s] Cookies错误", user.full_name, user.id, exc_info=exc)
                 await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
-            if cookies.login_ticket is not None:
-                try:
-                    if cookies.login_ticket is not None and await client.get_stoken_by_login_ticket():
-                        logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
-                        if await client.get_cookie_token_by_stoken():
-                            logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
-                            if await client.get_ltoken_by_stoken():
-                                logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
-                except SimnetBadRequest as exc:
-                    logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
-                except Exception as exc:
-                    logger.error("绑定时获取新Cookie失败 [%s]", (str(exc)))
-                finally:
-                    if cookies.user_id is not None:
-                        account_cookies_plugin_data.account_id = cookies.user_id
-                    cookies.login_ticket = None
-                    cookies.login_uid = None
         if account_cookies_plugin_data.account_id is None:
             await message.reply_text("无法获取账号ID，请检查Cookie是否正确或请稍后重试")
             return ConversationHandler.END
