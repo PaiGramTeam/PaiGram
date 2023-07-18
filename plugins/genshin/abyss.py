@@ -6,8 +6,9 @@ from functools import lru_cache, partial
 from typing import Any, Coroutine, List, Match, Optional, Tuple, Union
 
 from arkowrapper import ArkoWrapper
-from genshin import Client, GenshinException
 from pytz import timezone
+from simnet import GenshinClient
+from simnet.errors import BadRequest as SimnetBadRequest
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
@@ -19,7 +20,7 @@ from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
 from metadata.genshin import game_id_to_role_id
-from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.helpers import async_re_sub
 from utils.log import logger
 
@@ -28,7 +29,6 @@ try:
 
 except ImportError:
     import json as jsonlib
-
 
 TZ = timezone("Asia/Shanghai")
 cmd_pattern = r"(?i)^/abyss\s*((?:\d+)|(?:all))?\s*(pre)?"
@@ -129,12 +129,38 @@ class AbyssPlugin(Plugin):
             extra={"markup": True},
         )
 
+        await message.reply_chat_action(ChatAction.TYPING)
+
+        reply_text: Optional[Message] = None
+
+        if total:
+            reply_text = await message.reply_text("派蒙需要时间整理深渊数据，还请耐心等待哦~")
+
         try:
             try:
-                client = await self.helper.get_genshin_client(user.id)
-                uid = client.uid
+                async with self.helper.genshin(user.id) as client:
+                    images = await self.get_rendered_pic(client, client.player_id, floor, total, previous)
             except CookiesNotFoundError:
-                client, uid = await self.helper.get_public_genshin_client(user.id)
+                # Cookie 不存在使用公开接口
+                async with self.helper.public_genshin(user.id) as client:
+                    images = await self.get_rendered_pic(client, uid, floor, total, previous)
+        except SimnetBadRequest as exc:
+            if exc.ret_code == 1034 and client.player_id != uid:
+                await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
+                return
+            raise exc
+        except AbyssUnlocked:  # 若深渊未解锁
+            await message.reply_text("还未解锁深渊哦~")
+            return
+        except NoMostKills:  # 若深渊还未挑战
+            await message.reply_text("还没有挑战本次深渊呢，咕咕咕~")
+            return
+        except AbyssNotFoundError:
+            await message.reply_text("无法查询玩家挑战队伍详情，只能查询统计详情哦~")
+            return
+        except IndexError:  # 若深渊为挑战此层
+            await message.reply_text("还没有挑战本层呢，咕咕咕~")
+            return
         except PlayerNotFoundError:  # 若未找到账号
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
@@ -152,41 +178,12 @@ class AbyssPlugin(Plugin):
                 self.add_delete_message_job(reply_message)
                 self.add_delete_message_job(message)
             return
+        finally:
+            if reply_text is not None:
+                await reply_text.delete()
 
-        async def reply_message_func(content: str) -> None:
-            _user = await client.get_genshin_user(uid)
-            _reply_msg = await message.reply_text(
-                f"旅行者 {_user.info.nickname}(<code>{uid}</code>) {content}", parse_mode=ParseMode.HTML
-            )
-
-        reply_text: Optional[Message] = None
-
-        if total:
-            reply_text = await message.reply_text("派蒙需要时间整理深渊数据，还请耐心等待哦~")
-
-        await message.reply_chat_action(ChatAction.TYPING)
-
-        try:
-            images = await self.get_rendered_pic(client, uid, floor, total, previous)
-        except GenshinException as exc:
-            if exc.retcode == 1034 and client.uid != uid:
-                await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
-                return
-            raise exc
-        except AbyssUnlocked:  # 若深渊未解锁
-            await reply_message_func("还未解锁深渊哦~")
-            return
-        except NoMostKills:  # 若深渊还未挑战
-            await reply_message_func("还没有挑战本次深渊呢，咕咕咕~")
-            return
-        except AbyssNotFoundError:
-            await reply_message_func("无法查询玩家挑战队伍详情，只能查询统计详情哦~")
-            return
-        except IndexError:  # 若深渊为挑战此层
-            await reply_message_func("还没有挑战本层呢，咕咕咕~")
-            return
         if images is None:
-            await reply_message_func(f"还没有第 {floor} 层的挑战数据")
+            await message.reply_text(f"还没有第 {floor} 层的挑战数据")
             return
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
@@ -196,13 +193,10 @@ class AbyssPlugin(Plugin):
                 message, allow_sending_without_reply=True, write_timeout=60
             )
 
-        if reply_text is not None:
-            await reply_text.delete()
-
         logger.info("用户 %s[%s] [bold]深渊挑战数据[/bold]: 成功发送图片", user.full_name, user.id, extra={"markup": True})
 
     async def get_rendered_pic(
-        self, client: Client, uid: int, floor: int, total: bool, previous: bool
+        self, client: GenshinClient, uid: int, floor: int, total: bool, previous: bool
     ) -> Union[
         Tuple[
             Union[BaseException, Any],
@@ -233,7 +227,7 @@ class AbyssPlugin(Plugin):
                 return value.astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S")
             return value
 
-        abyss_data = await client.get_spiral_abyss(uid, previous=previous, lang="zh-cn")
+        abyss_data = await client.get_genshin_spiral_abyss(uid, previous=previous, lang="zh-cn")
 
         if not abyss_data.unlocked:
             raise AbyssUnlocked()

@@ -1,8 +1,9 @@
 from io import BytesIO
 
-import genshin
 from aiofiles import open as async_open
-from genshin.models import GenshinBannerType
+from simnet import GenshinClient, Region
+from simnet.models.genshin.wish import BannerType
+from simnet.utils.player import recognize_genshin_game_biz, recognize_genshin_server
 from telegram import Document, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, MessageHandler, filters
@@ -27,9 +28,8 @@ from modules.gacha_log.error import (
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
-from plugins.tools.genshin import PlayerNotFoundError, GenshinHelper
+from plugins.tools.genshin import GenshinHelper
 from plugins.tools.player_info import PlayerInfoSystem
-from utils.genshin import get_authkey_by_stoken
 from utils.log import logger
 
 try:
@@ -41,6 +41,10 @@ except ImportError:
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
 
+class PlayerNotFoundError(Exception):
+    pass
+
+
 class WishLogPlugin(Plugin.Conversation):
     """抽卡记录导入/导出/分析"""
 
@@ -50,8 +54,8 @@ class WishLogPlugin(Plugin.Conversation):
         players_service: PlayersService,
         assets: AssetsService,
         cookie_service: CookiesService,
-        helper: GenshinHelper,
         player_info: PlayerInfoSystem,
+        genshin_helper: GenshinHelper,
     ):
         self.template_service = template_service
         self.players_service = players_service
@@ -59,8 +63,8 @@ class WishLogPlugin(Plugin.Conversation):
         self.cookie_service = cookie_service
         self.zh_dict = None
         self.gacha_log = GachaLog()
-        self.helper = helper
         self.player_info = player_info
+        self.genshin_helper = genshin_helper
 
     async def initialize(self) -> None:
         await update_paimon_moe_zh(False)
@@ -78,12 +82,12 @@ class WishLogPlugin(Plugin.Conversation):
         """
         try:
             logger.debug("尝试获取已绑定的原神账号")
-            client = await self.helper.get_genshin_client(user.id, need_cookie=False)
+            client = await self.genshin_helper.get_genshin_client(user.id)
             if authkey:
                 new_num = await self.gacha_log.get_gacha_log_data(user.id, client, authkey)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
             if data:
-                new_num = await self.gacha_log.import_gacha_log_data(user.id, client, data, verify_uid)
+                new_num = await self.gacha_log.import_gacha_log_data(user.id, client.player_id, data, verify_uid)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
         except GachaLogNotFound:
             return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"
@@ -169,14 +173,14 @@ class WishLogPlugin(Plugin.Conversation):
                         (value for key, value in cookies.data.items() if key in ["ltuid", "login_uid"]), None
                     ):
                         cookies.data["stuid"] = stuid
-                        client = genshin.Client(
-                            cookies=cookies.data,
-                            game=genshin.types.Game.GENSHIN,
-                            region=genshin.Region.CHINESE,
-                            lang="zh-cn",
-                            uid=player_info.player_id,
-                        )
-                        authkey = await get_authkey_by_stoken(client)
+                        async with GenshinClient(
+                            cookies=cookies.data, region=Region.CHINESE, lang="zh-cn", player_id=player_info.player_id
+                        ) as client:
+                            authkey = await client.get_authkey_by_stoken(
+                                recognize_genshin_game_biz(client.player_id),
+                                recognize_genshin_server(client.player_id),
+                                "webview_gacha",
+                            )
         if not authkey:
             await message.reply_text(
                 "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
@@ -223,13 +227,15 @@ class WishLogPlugin(Plugin.Conversation):
         user = update.effective_user
         logger.info("用户 %s[%s] 删除抽卡记录命令请求", user.full_name, user.id)
         try:
-            client = await self.helper.get_genshin_client(user.id, need_cookie=False)
-            context.chat_data["uid"] = client.uid
+            player_info = await self.players_service.get_player(user.id)
+            if player_info is None:
+                raise PlayerNotFoundError
+            context.chat_data["uid"] = player_info.player_id
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return ConversationHandler.END
-        _, status = await self.gacha_log.load_history_info(str(user.id), str(client.uid), only_status=True)
+        _, status = await self.gacha_log.load_history_info(str(user.id), str(player_info.player_id), only_status=True)
         if not status:
             await message.reply_text("你还没有导入抽卡记录哦~")
             return ConversationHandler.END
@@ -251,6 +257,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler(CommandHandler, command="gacha_log_force_delete", block=False, admin=True)
     async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
         message = update.effective_message
+        user = update.effective_user
         args = self.get_args(context)
         if not args:
             await message.reply_text("请指定用户ID")
@@ -259,12 +266,14 @@ class WishLogPlugin(Plugin.Conversation):
             cid = int(args[0])
             if cid < 0:
                 raise ValueError("Invalid cid")
-            client = await self.helper.get_genshin_client(cid, need_cookie=False)
-            _, status = await self.gacha_log.load_history_info(str(cid), str(client.uid), only_status=True)
+            player_info = await self.players_service.get_player(user.id)
+            if player_info is None:
+                raise PlayerNotFoundError
+            _, status = await self.gacha_log.load_history_info(str(cid), str(player_info.player_id), only_status=True)
             if not status:
                 await message.reply_text("该用户还没有导入抽卡记录")
                 return
-            status = await self.gacha_log.remove_history_info(str(cid), str(client.uid))
+            status = await self.gacha_log.remove_history_info(str(cid), str(player_info.player_id))
             await message.reply_text("抽卡记录已强制删除" if status else "抽卡记录删除失败")
         except GachaLogNotFound:
             await message.reply_text("该用户还没有导入抽卡记录")
@@ -280,9 +289,11 @@ class WishLogPlugin(Plugin.Conversation):
         user = update.effective_user
         logger.info("用户 %s[%s] 导出抽卡记录命令请求", user.full_name, user.id)
         try:
-            client = await self.helper.get_genshin_client(user.id, need_cookie=False)
+            player_info = await self.players_service.get_player(user.id)
+            if player_info is None:
+                raise PlayerNotFoundError
             await message.reply_chat_action(ChatAction.TYPING)
-            path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(client.uid))
+            path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(player_info.player_id))
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.2")
         except GachaLogNotFound:
@@ -304,24 +315,26 @@ class WishLogPlugin(Plugin.Conversation):
     async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        pool_type = GenshinBannerType.CHARACTER1
+        pool_type = BannerType.CHARACTER1
         if args := self.get_args(context):
             if "武器" in args:
-                pool_type = GenshinBannerType.WEAPON
+                pool_type = BannerType.WEAPON
             elif "常驻" in args:
-                pool_type = GenshinBannerType.STANDARD
+                pool_type = BannerType.STANDARD
         logger.info("用户 %s[%s] 抽卡记录命令请求 || 参数 %s", user.full_name, user.id, pool_type.name)
         try:
-            client = await self.helper.get_genshin_client(user.id, need_cookie=False)
+            player_info = await self.players_service.get_player(user.id)
+            if player_info is None:
+                raise PlayerNotFoundError
             await message.reply_chat_action(ChatAction.TYPING)
-            data = await self.gacha_log.get_analysis(user.id, client, pool_type, self.assets_service)
+            data = await self.gacha_log.get_analysis(user.id, player_info.player_id, pool_type, self.assets_service)
             if isinstance(data, str):
                 reply_message = await message.reply_text(data)
                 if filters.ChatType.GROUPS.filter(message):
                     self.add_delete_message_job(reply_message, delay=300)
                     self.add_delete_message_job(message, delay=300)
             else:
-                name_card = await self.player_info.get_name_card(client.uid, user)
+                name_card = await self.player_info.get_name_card(player_info.player_id, user)
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                 data["name_card"] = name_card
                 png_data = await self.template_service.render(
@@ -358,31 +371,35 @@ class WishLogPlugin(Plugin.Conversation):
     async def command_start_count(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         user = update.effective_user
-        pool_type = GenshinBannerType.CHARACTER1
+        pool_type = BannerType.CHARACTER1
         all_five = False
         if args := self.get_args(context):
             if "武器" in args:
-                pool_type = GenshinBannerType.WEAPON
+                pool_type = BannerType.WEAPON
             elif "常驻" in args:
-                pool_type = GenshinBannerType.STANDARD
+                pool_type = BannerType.STANDARD
             elif "仅五星" in args:
                 all_five = True
         logger.info("用户 %s[%s] 抽卡统计命令请求 || 参数 %s || 仅五星 %s", user.full_name, user.id, pool_type.name, all_five)
         try:
-            client = await self.helper.get_genshin_client(user.id, need_cookie=False)
+            player_info = await self.players_service.get_player(user.id)
+            if player_info is None:
+                raise PlayerNotFoundError
             group = filters.ChatType.GROUPS.filter(message)
             await message.reply_chat_action(ChatAction.TYPING)
             if all_five:
-                data = await self.gacha_log.get_all_five_analysis(user.id, client, self.assets_service)
+                data = await self.gacha_log.get_all_five_analysis(user.id, player_info.player_id, self.assets_service)
             else:
-                data = await self.gacha_log.get_pool_analysis(user.id, client, pool_type, self.assets_service, group)
+                data = await self.gacha_log.get_pool_analysis(
+                    user.id, player_info.player_id, pool_type, self.assets_service, group
+                )
             if isinstance(data, str):
                 reply_message = await message.reply_text(data)
                 if filters.ChatType.GROUPS.filter(message):
                     self.add_delete_message_job(reply_message)
                     self.add_delete_message_job(message)
             else:
-                name_card = await self.player_info.get_name_card(client.uid, user)
+                name_card = await self.player_info.get_name_card(player_info.player_id, user)
                 document = False
                 if data["hasMore"] and not group:
                     document = True

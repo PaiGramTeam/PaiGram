@@ -47,24 +47,24 @@ class GachaItem(BaseModel):
         if item_id := (roleToId(v) or weaponToId(v)):
             if item_id not in not_real_roles:
                 return v
-        raise ValueError("Invalid name")
+        raise ValueError(f"Invalid name {v}")
 
     @validator("gacha_type")
     def check_gacha_type(cls, v):
         if v not in {"100", "200", "301", "302", "400"}:
-            raise ValueError("gacha_type must be 200, 301, 302 or 400")
+            raise ValueError(f"gacha_type must be 200, 301, 302 or 400, invalid value: {v}")
         return v
 
     @validator("item_type")
     def check_item_type(cls, item):
         if item not in {"角色", "武器"}:
-            raise ValueError("error item type")
+            raise ValueError(f"error item type {item}")
         return item
 
     @validator("rank_type")
     def check_rank_type(cls, rank):
         if rank not in {"5", "4", "3"}:
-            raise ValueError("error rank type")
+            raise ValueError(f"error rank type {rank}")
         return rank
 
 

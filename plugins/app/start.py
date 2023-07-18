@@ -7,6 +7,7 @@ from telegram.helpers import escape_markdown
 
 from core.config import config
 from core.plugin import handler, Plugin
+from core.services.players import PlayersService
 from plugins.tools.challenge import ChallengeSystem, ChallengeSystemException
 from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from plugins.tools.sign import SignSystem, NeedChallenge
@@ -14,10 +15,17 @@ from utils.log import logger
 
 
 class StartPlugin(Plugin):
-    def __init__(self, sign_system: SignSystem, challenge_system: ChallengeSystem, genshin_helper: GenshinHelper):
+    def __init__(
+        self,
+        player: PlayersService,
+        sign_system: SignSystem,
+        challenge_system: ChallengeSystem,
+        genshin_helper: GenshinHelper,
+    ):
         self.challenge_system = challenge_system
         self.sign_system = sign_system
         self.genshin_helper = genshin_helper
+        self.players_service = player
 
     @handler.command("start", block=False)
     async def start(self, update: Update, context: CallbackContext) -> None:
@@ -77,14 +85,14 @@ class StartPlugin(Plugin):
 
     async def process_sign_validate(self, message: Message, user: User, validate: str):
         try:
-            client = await self.genshin_helper.get_genshin_client(user.id)
-            await message.reply_chat_action(ChatAction.TYPING)
-            _, challenge = await self.sign_system.get_challenge(client.uid)
-            if not challenge:
-                await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
-                return
-            sign_text = await self.sign_system.start_sign(client, challenge=challenge, validate=validate)
-            await message.reply_text(sign_text, allow_sending_without_reply=True)
+            async with self.genshin_helper.genshin(user.id) as client:
+                await message.reply_chat_action(ChatAction.TYPING)
+                _, challenge = await self.sign_system.get_challenge(client.player_id)
+                if not challenge:
+                    await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
+                    return
+                sign_text = await self.sign_system.start_sign(client, challenge=challenge, validate=validate)
+                await message.reply_text(sign_text, allow_sending_without_reply=True)
         except (PlayerNotFoundError, CookiesNotFoundError):
             logger.warning("用户 %s[%s] 账号信息未找到", user.full_name, user.id)
         except NeedChallenge:
@@ -119,13 +127,13 @@ class StartPlugin(Plugin):
         )
 
     async def get_sign_button(self, message: Message, user: User, bot_username: str):
-        try:
-            client = await self.genshin_helper.get_genshin_client(user.id)
-            await message.reply_chat_action(ChatAction.TYPING)
-            button = await self.sign_system.get_challenge_button(bot_username, client.uid, user.id, callback=False)
-            if not button:
-                await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
-                return
-            await message.reply_text("请尽快点击下方按钮进行验证。", allow_sending_without_reply=True, reply_markup=button)
-        except (PlayerNotFoundError, CookiesNotFoundError):
+        player = await self.players_service.get_player(user.id)
+        if player is None:
             logger.warning("用户 %s[%s] 账号信息未找到", user.full_name, user.id)
+            return
+        await message.reply_chat_action(ChatAction.TYPING)
+        button = await self.sign_system.get_challenge_button(bot_username, player.player_id, user.id, callback=False)
+        if not button:
+            await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
+            return
+        await message.reply_text("请尽快点击下方按钮进行验证。", allow_sending_without_reply=True, reply_markup=button)

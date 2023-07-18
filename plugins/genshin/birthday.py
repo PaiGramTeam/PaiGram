@@ -1,13 +1,13 @@
 import re
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
-from genshin import Client, GenshinException
-from genshin.client.routes import Route
-from genshin.utility import recognize_genshin_server
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from simnet.client.routes import Route
+from simnet.errors import BadRequest as SimnetBadRequest
+from simnet.utils.player import recognize_genshin_server, recognize_genshin_game_biz
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
-from telegram.ext import filters, MessageHandler, CommandHandler, CallbackContext
+from telegram.ext import filters, MessageHandler, CommandHandler
 from telegram.helpers import create_deep_linked_url
 
 from core.basemodel import RegionEnum
@@ -17,9 +17,13 @@ from core.services.users.services import UserService
 from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId, roleToName
 from modules.apihelper.client.components.calendar import Calendar
-from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
-from utils.genshin import fetch_hk4e_token_by_cookie, recognize_genshin_game_biz
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from simnet import GenshinClient
+    from telegram import Update
+    from telegram.ext import ContextTypes
 
 BIRTHDAY_URL = Route(
     "https://hk4e-api.mihoyo.com/event/birthdaystar/account/post_my_draw",
@@ -61,7 +65,7 @@ class BirthdayPlugin(Plugin):
         return (self.birthday_list.get(key, [])).copy()
 
     @handler.command(command="birthday", block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         key = (
@@ -113,20 +117,20 @@ class BirthdayPlugin(Plugin):
             self.add_delete_message_job(reply_message)
 
     @staticmethod
-    async def get_card(client: Client, role_id: int) -> None:
+    async def get_card(client: "GenshinClient", role_id: int) -> None:
         """领取画片"""
         url = BIRTHDAY_URL.get_url()
         params = {
-            "game_biz": recognize_genshin_game_biz(client.uid),
+            "game_biz": recognize_genshin_game_biz(client.player_id),
             "lang": "zh-cn",
-            "badge_uid": client.uid,
-            "badge_region": recognize_genshin_server(client.uid),
+            "badge_uid": client.player_id,
+            "badge_region": recognize_genshin_server(client.player_id),
             "activity_id": "20220301153521",
         }
         json = {
             "role_id": role_id,
         }
-        await client.cookie_manager.request(url, method="POST", params=params, json=json)
+        await client.request_lab(url, method="POST", params=params, data=json)
 
     @staticmethod
     def role_to_id(name: str) -> Optional[int]:
@@ -136,7 +140,7 @@ class BirthdayPlugin(Plugin):
 
     @handler(CommandHandler, command="birthday_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^领取角色生日画片$"), block=False)
-    async def command_birthday_card_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_birthday_card_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 领取生日画片命令请求", user.full_name, user.id)
@@ -148,7 +152,28 @@ class BirthdayPlugin(Plugin):
                 self.add_delete_message_job(reply_message)
             return
         try:
-            client = await self.helper.get_genshin_client(user.id)
+            async with self.helper.genshin(user.id) as client:
+                if client.region == RegionEnum.HOYOLAB:
+                    text = "此功能当前只支持国服账号哦~"
+                else:
+                    game_biz = recognize_genshin_game_biz(client.player_id)
+                    region = recognize_genshin_server(client.player_id)
+                    await client.get_hk4e_token_by_cookie_token(game_biz, region)
+                    for name in today_list.copy():
+                        if role_id := self.role_to_id(name):
+                            try:
+                                await self.get_card(client, role_id)
+                            except SimnetBadRequest as e:
+                                if e.ret_code in {-512008, -512009}:  # 未过生日、已领取过
+                                    today_list.remove(name)
+                    if today_list:
+                        text = f"成功领取了 {'、'.join(today_list)} 的生日画片~"
+                    else:
+                        text = "没有领取到生日画片哦 ~ 可能是已经领取过了"
+                reply_message = await message.reply_text(text)
+                if filters.ChatType.GROUPS.filter(reply_message):
+                    self.add_delete_message_job(message)
+                    self.add_delete_message_job(reply_message)
         except (CookiesNotFoundError, PlayerNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):
@@ -166,22 +191,3 @@ class BirthdayPlugin(Plugin):
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
             return
-        if client.region == RegionEnum.HOYOLAB:
-            text = "此功能当前只支持国服账号哦~"
-        else:
-            await fetch_hk4e_token_by_cookie(client)
-            for name in today_list.copy():
-                if role_id := self.role_to_id(name):
-                    try:
-                        await self.get_card(client, role_id)
-                    except GenshinException as e:
-                        if e.retcode in {-512008, -512009}:  # 未过生日、已领取过
-                            today_list.remove(name)
-            if today_list:
-                text = f"成功领取了 {'、'.join(today_list)} 的生日画片~"
-            else:
-                text = "没有领取到生日画片哦 ~ 可能是已经领取过了"
-        reply_message = await message.reply_text(text)
-        if filters.ChatType.GROUPS.filter(reply_message):
-            self.add_delete_message_job(message)
-            self.add_delete_message_job(reply_message)

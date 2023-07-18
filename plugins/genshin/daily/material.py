@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import os
 import re
 from asyncio import Lock
@@ -9,28 +8,37 @@ from functools import partial
 from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
-from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple, TYPE_CHECKING
 
-import ujson as json
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from genshin import Client, GenshinException, InvalidCookies
-from genshin.models import Character
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
-from telegram import Message, Update, User
+from simnet.errors import InvalidCookies, BadRequest as SimnetBadRequest
+from simnet.models.genshin.chronicle.characters import Character
+from telegram import Message, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
-from telegram.ext import CallbackContext
 
 from core.dependence.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
 from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
-from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError, CharacterDetails
+from plugins.tools.genshin import CharacterDetails, PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
+
+try:
+    import ujson as jsonlib
+
+except ImportError:
+    import json as jsonlib
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import ContextTypes
+    from simnet import GenshinClient
 
 INTERVAL = 1
 
@@ -126,24 +134,24 @@ class DailyMaterial(Plugin):
             asyncio.create_task(task_daily())  # 创建后台任务
         if not data and DATA_FILE_PATH.exists():  # 若存在，则读取至内存中
             async with async_open(DATA_FILE_PATH) as file:
-                data = json.loads(await file.read())
+                data = jsonlib.loads(await file.read())
         self.data = data
 
-    async def _get_skills_data(self, client: Client, character: Character) -> Optional[List[int]]:
+    async def _get_skills_data(self, client: "GenshinClient", character: Character) -> Optional[List[int]]:
         detail = await self.character_details.get_character_details(client, character)
         if detail is None:
             return None
         talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
         return [t.level for t in talents]
 
-    async def _get_data_from_user(self, user: User) -> Tuple[Optional[Client], Dict[str, List[Any]]]:
+    async def _get_data_from_user(self, user: User) -> Tuple[Optional["GenshinClient"], Dict[str, List[Any]]]:
         """获取已经绑定的账号的角色、武器信息"""
         user_data = {"avatar": [], "weapon": []}
         try:
             logger.debug("尝试获取已绑定的原神账号")
             client = await self.helper.get_genshin_client(user.id)
-            logger.debug("获取账号数据成功: UID=%s", client.uid)
-            characters = await client.get_genshin_characters(client.uid)
+            logger.debug("获取账号数据成功: UID=%s", client.player_id)
+            characters = await client.get_genshin_characters(client.player_id)
             for character in characters:
                 if character.name == "旅行者":  # 跳过主角
                     continue
@@ -153,7 +161,7 @@ class DailyMaterial(Plugin):
                     ItemData(
                         id=cid,
                         name=character.name,
-                        rarity=character.rarity,
+                        rarity=int(character.rarity),
                         level=character.level,
                         constellation=character.constellation,
                         gid=character.id,
@@ -187,7 +195,7 @@ class DailyMaterial(Plugin):
         return None, user_data
 
     @handler.command("daily_material", block=False)
-    async def daily_material(self, update: Update, context: CallbackContext):
+    async def daily_material(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
         args = self.get_args(context)
@@ -240,7 +248,7 @@ class DailyMaterial(Plugin):
         client, user_data = await self._get_data_from_user(user)
 
         await message.reply_chat_action(ChatAction.TYPING)
-        render_data = RenderData(title=title, time=time, uid=client.uid if client else client)
+        render_data = RenderData(title=title, time=time, uid=client.player_id if client else client)
 
         calculator_sync: bool = True  # 默认养成计算器同步为开启
         for type_ in ["avatar", "weapon"]:
@@ -258,8 +266,8 @@ class DailyMaterial(Plugin):
                                         i.skills = skills
                                     except InvalidCookies:
                                         calculator_sync = False
-                                    except GenshinException as e:
-                                        if e.retcode == -502002:
+                                    except SimnetBadRequest as e:
+                                        if e.ret_code == -502002:
                                             calculator_sync = False  # 发现角色养成计算器没启用 设置状态为 False 并防止下次继续获取
                                             self.add_delete_message_job(notice, delay=5)
                                             await notice.edit_text(
@@ -341,7 +349,7 @@ class DailyMaterial(Plugin):
         logger.debug("角色、武器培养素材图发送成功")
 
     @handler.command("refresh_daily_material", admin=True, block=False)
-    async def refresh(self, update: Update, context: CallbackContext):
+    async def refresh(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
 
@@ -408,7 +416,7 @@ class DailyMaterial(Plugin):
                         # noinspection PyUnresolvedReferences
                         result[stage][day][1] = list(set(result[stage][day][1]))  # 去重
                 async with async_open(DATA_FILE_PATH, "w", encoding="utf-8") as file:
-                    await file.write(json.dumps(result))  # skipcq: PY-W0079
+                    await file.write(jsonlib.dumps(result))  # skipcq: PY-W0079
                 logger.info("每日素材刷新成功")
                 break
             except (HTTPError, SSLZeroReturnError):
@@ -437,11 +445,13 @@ class DailyMaterial(Plugin):
             """修改提示消息"""
             async with lock:
                 if message is not None and time_() >= (the_time.value + INTERVAL):
-                    with contextlib.suppress(TimedOut, RetryAfter):
+                    try:
                         await message.edit_text(
                             "\n".join(message.text_html.split("\n")[:2] + [text]), parse_mode=ParseMode.HTML
                         )
                         the_time.value = time_()
+                    except (TimedOut, RetryAfter):
+                        pass
 
         async def task(item_id, name, item_type):
             logger.debug("正在开始下载 %s 的图标素材", name)

@@ -5,8 +5,8 @@ from typing import Optional
 
 import aiofiles
 from aiohttp import ClientError, ClientConnectorError
-from genshin import DataNotPublic, GenshinException, InvalidCookies, TooManyRequests
 from httpx import HTTPError, TimeoutException
+from simnet.errors import DataNotPublic, BadRequest as SIMNetBadRequest, InvalidCookies, TooManyRequests
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden, TelegramError, TimedOut, NetworkError
@@ -100,7 +100,7 @@ class ErrorHandler(Plugin):
 
     @error_handler()
     async def process_genshin_exception(self, update: object, context: CallbackContext):
-        if not isinstance(context.error, GenshinException) or not isinstance(update, Update):
+        if not isinstance(context.error, SIMNetBadRequest) or not isinstance(update, Update):
             return
         exc = context.error
         notice: Optional[str] = None

@@ -1,8 +1,13 @@
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-import genshin
-from genshin import DataNotPublic, GenshinException, types, AccountNotFound, InvalidCookies
+from simnet import GenshinClient, Region
+from simnet.errors import (
+    InvalidCookies,
+    BadRequest as SimnetBadRequest,
+    DataNotPublic,
+    AccountNotFound,
+)
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject
 from telegram.ext import ConversationHandler, filters
 from telegram.helpers import escape_markdown
@@ -15,7 +20,6 @@ from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
 from core.services.players.services import PlayersService, PlayerInfoService
 from utils.log import logger
-
 
 if TYPE_CHECKING:
     from telegram import Update
@@ -133,26 +137,24 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if region == RegionEnum.HYPERION:
-            client = genshin.Client(cookies=cookies.data, game=types.Game.GENSHIN, region=types.Region.CHINESE)
+            client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
         elif region == RegionEnum.HOYOLAB:
-            client = genshin.Client(
-                cookies=cookies.data, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
-            )
+            client = GenshinClient(cookies=cookies.data, region=Region.OVERSEAS, lang="zh-cn")
         else:
             return ConversationHandler.END
         try:
             record_card = await client.get_record_card(account_id)
+            if record_card is None:
+                await message.reply_text("请在设置展示主界面添加原神", reply_markup=ReplyKeyboardRemove())
+                return ConversationHandler.END
         except DataNotPublic:
             await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())
             logger.warning("获取账号信息发生错误 %s 账户信息未公开", account_id)
             return ConversationHandler.END
-        except GenshinException as exc:
+        except SimnetBadRequest as exc:
             await message.reply_text("获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
             logger.error("获取账号信息发生错误")
             logger.exception(exc)
-            return ConversationHandler.END
-        if record_card.game != types.Game.GENSHIN:
-            await message.reply_text("角色信息查询返回非原神游戏信息，请设置展示主界面为原神", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         player_info = await self.players_service.get(
             user.id, player_id=record_card.uid, region=bind_account_plugin_data.region
@@ -197,11 +199,9 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if region == RegionEnum.HYPERION:
-            client = genshin.Client(cookies=cookies.data, game=types.Game.GENSHIN, region=types.Region.CHINESE)
+            client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
         elif region == RegionEnum.HOYOLAB:
-            client = genshin.Client(
-                cookies=cookies.data, game=types.Game.GENSHIN, region=types.Region.OVERSEAS, lang="zh-cn"
-            )
+            client = GenshinClient(cookies=cookies.data, region=Region.OVERSEAS, lang="zh-cn")
         else:
             return ConversationHandler.END
         try:
@@ -218,8 +218,8 @@ class BindAccountPlugin(Plugin.Conversation):
             await self.public_cookies_service.undo(user.id, cookies, CookiesStatusEnum.INVALID_COOKIES)
             await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
             return ConversationHandler.END
-        except GenshinException as exc:
-            if exc.retcode == 1034:
+        except SimnetBadRequest as exc:
+            if exc.ret_code == 1034:
                 await self.public_cookies_service.undo(user.id)
                 await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
                 return ConversationHandler.END
@@ -230,6 +230,8 @@ class BindAccountPlugin(Plugin.Conversation):
         except ValueError:
             await message.reply_text("ID 格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
+        finally:
+            await client.shutdown()
         player_info = await self.players_service.get(
             user.id, player_id=player_id, region=bind_account_plugin_data.region
         )
