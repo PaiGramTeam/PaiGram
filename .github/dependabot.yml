@@ -9,3 +9,5 @@ updates:
     open-pull-requests-limit: 10
     allow:
       - dependency-type: "direct"
+    commit-message:
+      prefix: ":arrow_up:"

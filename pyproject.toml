@@ -15,8 +15,8 @@ Jinja2 = "^3.1.2"
 python-telegram-bot = { version = "^20.1", extras = ["ext", "rate-limiter"] }
 sqlmodel = "^0.0.8"
 colorlog = "^6.7.0"
-fakeredis = "^2.15.0"
-redis = "^4.5.4"
+fakeredis = "^2.16.0"
+redis = "^4.6.0"
 beautifulsoup4 = "^4.12.1"
 asyncmy = "^0.2.7"
 pyppeteer = "^1.0.2"
@@ -33,16 +33,16 @@ pytest-asyncio = { version = "^0.21.0", optional = true }
 flaky = { version = "^3.7.0", optional = true }
 lxml = "^4.9.2"
 arko-wrapper = "^0.2.8"
-fastapi = "^0.98.0"
+fastapi = "<0.100.0"
 uvicorn = { extras = ["standard"], version = "^0.22.0" }
-sentry-sdk = "^1.26.0"
+sentry-sdk = "^1.28.1"
 GitPython = "^3.1.30"
 openpyxl = "^3.1.1"
 async-lru = "^2.0.2"
 thefuzz = "^0.19.0"
 qrcode = "^7.4.2"
-cryptography = "^41.0.1"
-pillow = "^9.4.0"
+cryptography = "^41.0.2"
+pillow = "^10.0.0"
 playwright = "^1.27.1"
 aiosqlite = { extras = ["sqlite"], version = "^0.19.0" }
 simnet = { git = "https://github.com/PaiGramTeam/SIMNet" }

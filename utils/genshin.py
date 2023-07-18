@@ -27,11 +27,11 @@ def recognize_genshin_game_biz(game_uid: int) -> str:
     return "hk4e_cn" if game_uid < 600000000 else "hk4e_global"
 
 
-async def get_authkey_by_stoken(client: Client) -> Optional[str]:
+async def get_authkey_by_stoken(client: Client, auth_appid: str = "webview_gacha") -> Optional[str]:
     """通过 stoken 获取 authkey"""
     headers = GACHA_HEADERS.copy()
     json = {
-        "auth_appid": "webview_gacha",
+        "auth_appid": auth_appid,
         "game_biz": recognize_genshin_game_biz(client.uid),
         "game_uid": client.uid,
         "region": recognize_genshin_server(client.uid),
