@@ -20,6 +20,7 @@ from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
 from core.plugin import Plugin
 from core.services.cookies.services import CookiesService, PublicCookiesService
+from core.services.devices import DevicesService
 from core.services.players.services import PlayersService
 from core.services.users.services import UserService
 from core.sqlmodel.session import AsyncSession
@@ -201,12 +202,13 @@ class GenshinHelper(Plugin):
         public_cookies: PublicCookiesService,
         user: UserService,
         player: PlayersService,
+        devices: DevicesService,
     ) -> None:
         self.cookies_service = cookies
         self.public_cookies_service = public_cookies
         self.user_service = user
         self.players_service = player
-
+        self.devices_service = devices
         if None in (temp := [self.user_service, self.cookies_service, self.players_service]):
             raise ServiceNotFoundError(*filter(lambda x: x is None, temp))
 
@@ -231,8 +233,21 @@ class GenshinHelper(Plugin):
         else:
             raise TypeError("Region is not None")
 
+        device_id: Optional[str] = None
+        device_fp: Optional[str] = None
+        devices = await self.devices_service.get(player.account_id)
+        if devices:
+            device_id = devices.device_id
+            device_fp = devices.device_fp
+
         async with GenshinClient(
-            cookies, region=game_region, account_id=player.account_id, player_id=player.player_id, lang="zh-cn"
+            cookies,
+            region=game_region,
+            account_id=player.account_id,
+            player_id=player.player_id,
+            lang="zh-cn",
+            device_id=device_id,
+            device_fp=device_fp,
         ) as client:
             yield client
 
