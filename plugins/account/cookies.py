@@ -226,8 +226,8 @@ class AccountCookiesPlugin(Plugin.Conversation):
             if cookies.login_ticket is not None:
                 try:
                     cookies.cookie_token = await client.get_cookie_token_by_login_ticket()
-                    cookies.account_id = cookies.account_id
-                    cookies.ltuid = cookies.account_id
+                    cookies.account_id = client.account_id
+                    cookies.ltuid = client.account_id
                     logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
                     cookies.stoken = await client.get_stoken_by_login_ticket()
                     logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
