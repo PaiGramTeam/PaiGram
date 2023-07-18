@@ -10,7 +10,6 @@ readme = "README.md"
 python = "^3.8"
 httpx = "^0.23.3"
 ujson = "^5.8.0"
-genshin = { git = "https://github.com/thesadru/genshin.py" }
 Jinja2 = "^3.1.2"
 python-telegram-bot = { version = "^20.1", extras = ["ext", "rate-limiter"] }
 sqlmodel = "^0.0.8"
