@@ -271,8 +271,21 @@ class GenshinHelper(Plugin):
         else:
             raise TypeError("Region is not None")
 
+        device_id: Optional[str] = None
+        device_fp: Optional[str] = None
+        devices = await self.devices_service.get(player.account_id)
+        if devices:
+            device_id = devices.device_id
+            device_fp = devices.device_fp
+
         return GenshinClient(
-            cookies, region=game_region, account_id=player.account_id, player_id=player.player_id, lang="zh-cn"
+            cookies,
+            region=game_region,
+            account_id=player.account_id,
+            player_id=player.player_id,
+            lang="zh-cn",
+            device_id=device_id,
+            device_fp=device_fp,
         )
 
     @asynccontextmanager
@@ -290,8 +303,21 @@ class GenshinHelper(Plugin):
         else:
             raise TypeError("Region is not `RegionEnum.NULL`")
 
+        device_id: Optional[str] = None
+        device_fp: Optional[str] = None
+        devices = await self.devices_service.get(cookies.account_id)
+        if devices:
+            device_id = devices.device_id
+            device_fp = devices.device_fp
+
         async with GenshinClient(
-            cookies, region=game_region, account_id=player.account_id, player_id=uid, lang="zh-cn"
+            cookies,
+            region=game_region,
+            account_id=player.account_id,
+            player_id=uid,
+            lang="zh-cn",
+            device_id=device_id,
+            device_fp=device_fp,
         ) as client:
             try:
                 yield client
