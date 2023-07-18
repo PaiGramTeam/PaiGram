@@ -34,9 +34,6 @@ class AuthClient:
     QRCODE_GET_API = f"https://{HK4E_SDK_HOST}/hk4e_cn/combo/panda/qrcode/query"
     GET_COOKIE_ACCOUNT_BY_GAME_TOKEN_API = f"https://{TAKUMI_HOST}/auth/api/getCookieAccountInfoByGameToken"
     GET_TOKEN_BY_GAME_LTOKEN_API = f"https://{PASSPORT_HOST}/account/ma-cn-session/app/getTokenByGameToken"
-    GET_COOKIES_TOKEN_BY_STOKEN_API = f"https://{PASSPORT_HOST}/account/auth/api/getCookieAccountInfoBySToken"
-    GET_LTOKEN_BY_STOKEN_API = f"https://{PASSPORT_HOST}/account/auth/api/getLTokenBySToken"
-    get_STOKEN_URL = f"https://{TAKUMI_HOST}/auth/api/getMultiTokenByLoginTicket"
 
     def __init__(
         self,
@@ -59,24 +56,6 @@ class AuthClient:
             self.user_id = user_id
         else:
             self.user_id = self.cookies.user_id
-
-    async def get_stoken_by_login_ticket(self) -> bool:
-        if self.cookies.login_ticket is None and self.user_id is None:
-            return False
-        params = {"login_ticket": self.cookies.login_ticket, "uid": self.user_id, "token_types": 3}
-        data = await self.client.get(self.get_STOKEN_URL, params=params, headers={"User-Agent": self.USER_AGENT})
-        res_json = data.json()
-        res_data = res_json.get("data", {}).get("list", [])
-        for i in res_data:
-            name = i.get("name")
-            token = i.get("token")
-            if name and token and hasattr(self.cookies, name):
-                setattr(self.cookies, name, token)
-        if self.cookies.stoken:
-            if self.cookies.stuid:
-                self.cookies.stuid = self.user_id
-            return True
-        return False
 
     async def get_ltoken_by_game_token(self, game_token: str) -> bool:
         if self.user_id is None:
@@ -153,68 +132,6 @@ class AuthClient:
             res_data = res_json.get("data", {})
             if res_data.get("stat", "") == "Confirmed":
                 return await self._set_cookie_by_game_token(res_json.get("data", {}))
-
-    async def get_cookie_token_by_stoken(self) -> bool:
-        if self.cookies.stoken is None:
-            return False
-        user_id = self.cookies.user_id
-        headers = {
-            "x-rpc-app_version": "2.11.1",
-            "User-Agent": (
-                "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
-                "AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.11.1"
-            ),
-            "x-rpc-client_type": "5",
-            "Referer": "https://webstatic.mihoyo.com/",
-            "Origin": "https://webstatic.mihoyo.com",
-        }
-        params = {
-            "stoken": self.cookies.stoken,
-            "uid": user_id,
-        }
-        res = await self.client.get(
-            self.GET_COOKIES_TOKEN_BY_STOKEN_API,
-            headers=headers,
-            params=params,
-        )
-        res_json = res.json()
-        cookie_token = res_json.get("data", {}).get("cookie_token", "")
-        if cookie_token:
-            self.cookies.cookie_token = cookie_token
-            self.cookies.account_id = user_id
-            return True
-        return False
-
-    async def get_ltoken_by_stoken(self) -> bool:
-        if self.cookies.stoken is None:
-            return False
-        user_id = self.cookies.user_id
-        headers = {
-            "x-rpc-app_version": "2.11.1",
-            "User-Agent": (
-                "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
-                "AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.11.1"
-            ),
-            "x-rpc-client_type": "5",
-            "Referer": "https://webstatic.mihoyo.com/",
-            "Origin": "https://webstatic.mihoyo.com",
-        }
-        params = {
-            "stoken": self.cookies.stoken,
-            "uid": user_id,
-        }
-        res = await self.client.get(
-            self.GET_LTOKEN_BY_STOKEN_API,
-            headers=headers,
-            params=params,
-        )
-        res_json = res.json()
-        ltoken = res_json.get("data", {}).get("ltoken", "")
-        if ltoken:
-            self.cookies.ltoken = ltoken
-            self.cookies.ltuid = user_id
-            return True
-        return False
 
     @staticmethod
     def generate_qrcode(url: str) -> bytes:
