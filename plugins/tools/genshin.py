@@ -311,7 +311,7 @@ class GenshinHelper(Plugin):
             device_fp = devices.device_fp
 
         async with GenshinClient(
-            cookies,
+            cookies.data,
             region=game_region,
             account_id=player.account_id,
             player_id=uid,
