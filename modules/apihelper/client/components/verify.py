@@ -1,7 +1,9 @@
 import json
 import re
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
+
+from httpx import Cookies
 
 from ..base.hyperionrequest import HyperionRequest
 from ...utility.devices import devices_methods
@@ -37,7 +39,7 @@ class Verify:
         "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
     }
 
-    def __init__(self, account_id: int = None, cookies: Dict = None):
+    def __init__(self, account_id: int = None, cookies: Union[Dict, Cookies] = None):
         self.account_id = account_id
         self.client = HyperionRequest(headers=self.BBS_HEADERS, cookies=cookies)
 

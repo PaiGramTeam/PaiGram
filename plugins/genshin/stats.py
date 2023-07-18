@@ -84,7 +84,6 @@ class PlayerStatsPlugins(Plugin):
             uid = client.player_id
 
         user_info = await client.get_genshin_user(uid)
-        logger.debug(user_info)
 
         # 因为需要替换线上图片地址为本地地址，先克隆数据，避免修改原数据
         user_info = user_info.copy(deep=True)

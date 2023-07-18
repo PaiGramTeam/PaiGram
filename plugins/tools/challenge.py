@@ -69,7 +69,7 @@ class ChallengeSystem(Plugin):
                 await client.shutdown()
         else:
             await client.shutdown()
-        verify = Verify(cookies=dict(client.cookies))
+        verify = Verify(cookies=client.cookies)
         try:
             data = await verify.create()
             challenge = data["challenge"]
