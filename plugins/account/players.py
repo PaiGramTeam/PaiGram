@@ -2,6 +2,7 @@ import html
 from http.cookies import SimpleCookie
 from typing import Tuple, TYPE_CHECKING
 
+from simnet import Region, GenshinClient
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import filters
 
@@ -10,7 +11,6 @@ from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.players.services import PlayerInfoService
-from modules.apihelper.client.components.authclient import AuthClient
 from modules.apihelper.models.genshin.cookies import CookiesModel
 from utils.log import logger
 
@@ -211,12 +211,13 @@ class PlayersManagesPlugin(Plugin):
 
         if cookies.stoken is not None:
             try:
-                auth_client = AuthClient(cookies=cookies)
-                if await auth_client.get_cookie_token_by_stoken():
+                region = Region.CHINESE if player.region.value == 1 else Region.OVERSEAS
+                async with GenshinClient(cookies=cookies.to_dict(), region=region) as client:
+                    cookies.cookie_token = await client.get_cookie_token_by_stoken()
                     logger.success("用户 %s[%s] 刷新 cookie_token 成功", user.full_name, user.id)
-                    if await auth_client.get_ltoken_by_stoken():
-                        logger.success("用户 %s[%s] 刷新 ltoken 成功", user.full_name, user.id)
-                        auth_client.cookies.remove_v2()
+                    cookies.ltoken = await client.get_ltoken_by_stoken()
+                    logger.success("用户 %s[%s] 刷新 ltoken 成功", user.full_name, user.id)
+                    cookies.remove_v2()
             except Exception as exc:  # pylint: disable=W0703
                 logger.error("刷新 cookie_token 失败 [%s]", (str(exc)))
                 await callback_query.edit_message_text(
