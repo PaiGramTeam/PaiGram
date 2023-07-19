@@ -124,14 +124,17 @@ class ErrorHandler(Plugin):
             elif exc.retcode == -500001:
                 notice = self.ERROR_MSG_PREFIX + "网络出小差了，请稍后重试~"
             elif exc.retcode == -1:
-                notice = self.ERROR_MSG_PREFIX + "系统发生错误，请稍后重试~"
+                logger.warning("内部数据库错误 [%s]%s", exc.ret_code, exc.original)
+                notice = self.ERROR_MSG_PREFIX + "系统内部数据库错误，请稍后重试~"
             elif exc.retcode == -10001:  # 参数异常 不应该抛出异常 进入下一步处理
                 pass
             else:
                 logger.error("GenshinException", exc_info=exc)
-                notice = (
-                    self.ERROR_MSG_PREFIX + f"获取账号信息发生错误 错误信息为 {exc.original if exc.original else exc.retcode} ~ 请稍后再试"
-                )
+                message = exc.original if exc.original else exc.message
+                if message:
+                    notice = self.ERROR_MSG_PREFIX + f"获取信息发生错误 错误信息为 {message} ~ 请稍后再试"
+                else:
+                    notice = self.ERROR_MSG_PREFIX + f"获取信息发生错误 请稍后再试"
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop
