@@ -5,10 +5,9 @@ import time
 from enum import Enum
 from typing import Optional, Tuple, List, TYPE_CHECKING
 
-from aiohttp import ClientConnectorError
 from httpx import TimeoutException
 from simnet import Game
-from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies
+from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies, TimedOut as SimnetTimedOut
 from simnet.utils.player import recognize_genshin_server
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
@@ -299,7 +298,7 @@ class SignSystem(Plugin):
             except SimnetBadRequest as exc:
                 text = f"自动签到执行失败，API返回信息为 {str(exc)}"
                 sign_db.status = SignStatusEnum.GENSHIN_EXCEPTION
-            except ClientConnectorError:
+            except SimnetTimedOut:
                 text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
                 sign_db.status = SignStatusEnum.TIMEOUT_ERROR
             except NeedChallenge:

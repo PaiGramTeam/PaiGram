@@ -3,6 +3,7 @@ from typing import Tuple, Optional
 from simnet import Region
 from simnet.errors import BadRequest as SIMNetBadRequest
 
+from core.basemodel import RegionEnum
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin
 from core.services.cookies import CookiesService
@@ -92,7 +93,7 @@ class ChallengeSystem(Plugin):
         player = await self.players_service.get_player(user_id)
         if player is None:
             raise ChallengeSystemException("用户未找到")
-        if player.region != Region.CHINESE:
+        if player.region != RegionEnum.HYPERION:
             raise ChallengeSystemException("非法用户")
         cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookie_model is None:
