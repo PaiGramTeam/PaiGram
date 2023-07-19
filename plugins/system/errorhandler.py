@@ -6,8 +6,13 @@ from typing import Optional
 import aiofiles
 from aiohttp import ClientError, ClientConnectorError
 from httpx import HTTPError, TimeoutException
-from simnet.errors import DataNotPublic, BadRequest as SIMNetBadRequest, InvalidCookies, TooManyRequests, \
-    CookieException
+from simnet.errors import (
+    DataNotPublic,
+    BadRequest as SIMNetBadRequest,
+    InvalidCookies,
+    TooManyRequests,
+    CookieException,
+)
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden, TelegramError, TimedOut, NetworkError
