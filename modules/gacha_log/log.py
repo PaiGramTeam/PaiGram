@@ -9,9 +9,10 @@ from typing import Dict, IO, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import aiofiles
 from openpyxl import load_workbook
-from simnet import GenshinClient
+from simnet import GenshinClient, Region
 from simnet.errors import AuthkeyTimeout, InvalidAuthkey
 from simnet.models.genshin.wish import BannerType
+from simnet.utils.player import recognize_genshin_server
 
 from metadata.pool.pool import get_pool_by_id
 from metadata.shortname import roleToId, weaponToId
@@ -222,19 +223,27 @@ class GachaLog:
         except Exception as exc:
             raise GachaLogException from exc
 
-    async def get_gacha_log_data(self, user_id: int, client: GenshinClient, authkey: str) -> int:
+    @staticmethod
+    def get_game_client(player_id: int) -> GenshinClient:
+        if recognize_genshin_server(player_id) in ["cn_gf01", "cn_qd01"]:
+            return GenshinClient(player_id=player_id, region=Region.CHINESE, lang="zh-cn")
+        else:
+            return GenshinClient(player_id=player_id, region=Region.OVERSEAS, lang="zh-cn")
+
+    async def get_gacha_log_data(self, user_id: int, player_id: int, authkey: str) -> int:
         """使用authkey获取抽卡记录数据，并合并旧数据
         :param user_id: 用户id
-        :param client: GenshinClient
+        :param player_id: 玩家id
         :param authkey: authkey
         :return: 更新结果
         """
         new_num = 0
-        gacha_log, _ = await self.load_history_info(str(user_id), str(client.player_id))
+        gacha_log, _ = await self.load_history_info(str(user_id), str(player_id))
         if gacha_log.get_import_type == ImportType.PAIMONMOE:
             raise GachaLogMixedProvider
         # 将唯一 id 放入临时数据中，加快查找速度
         temp_id_data = {pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()}
+        client = self.get_game_client(player_id)
         try:
             for pool_id, pool_name in GACHA_TYPE_LIST.items():
                 wish_history = await client.wish_history(pool_id.value, authkey=authkey)
@@ -263,11 +272,13 @@ class GachaLog:
             raise GachaLogAuthkeyTimeout from exc
         except InvalidAuthkey as exc:
             raise GachaLogInvalidAuthkey from exc
+        finally:
+            await client.shutdown()
         for i in gacha_log.item_list.values():
             i.sort(key=lambda x: (x.time, x.id))
         gacha_log.update_time = datetime.datetime.now()
         gacha_log.import_type = ImportType.UIGF.value
-        await self.save_gacha_log_info(str(user_id), str(client.player_id), gacha_log)
+        await self.save_gacha_log_info(str(user_id), str(player_id), gacha_log)
         return new_num
 
     @staticmethod

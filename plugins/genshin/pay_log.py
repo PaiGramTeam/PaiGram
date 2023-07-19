@@ -33,14 +33,20 @@ class PayLogPlugin(Plugin.Conversation):
         players_service: PlayersService,
         cookie_service: CookiesService,
         player_info: PlayerInfoSystem,
-        genshin_helper: GenshinHelper,
     ):
         self.template_service = template_service
         self.players_service = players_service
         self.cookie_service = cookie_service
         self.pay_log = PayLog()
         self.player_info = player_info
-        self.genshin_helper = genshin_helper
+
+    async def get_player_id(self, uid: int) -> int:
+        """获取绑定的游戏ID"""
+        logger.debug("尝试获取已绑定的原神账号")
+        player = await self.players_service.get_player(uid)
+        if player is None:
+            raise PlayerNotFoundError(uid)
+        return player.player_id
 
     async def _refresh_user_data(self, user: User, authkey: str = None) -> str:
         """刷新用户数据
@@ -49,9 +55,8 @@ class PayLogPlugin(Plugin.Conversation):
         :return: 返回信息
         """
         try:
-            logger.debug("尝试获取已绑定的原神账号")
-            client = await self.genshin_helper.get_genshin_client(user.id)
-            new_num = await self.pay_log.get_log_data(user.id, client, authkey)
+            player_id = await self.get_player_id(user.id)
+            new_num = await self.pay_log.get_log_data(user.id, player_id, authkey)
             return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条充值记录"
         except PayLogNotFound:
             return "派蒙没有找到你的充值记录，快去充值吧~"
@@ -192,11 +197,9 @@ class PayLogPlugin(Plugin.Conversation):
         user = update.effective_user
         logger.info("用户 %s[%s] 导出充值记录命令请求", user.full_name, user.id)
         try:
-            player_info = await self.players_service.get_player(user.id)
-            if player_info is None:
-                raise PlayerNotFoundError
             await message.reply_chat_action(ChatAction.TYPING)
-            path = self.pay_log.get_file_path(str(user.id), str(player_info.player_id))
+            player_id = await self.get_player_id(user.id)
+            path = self.pay_log.get_file_path(str(user.id), str(player_id))
             if not path.exists():
                 raise PayLogNotFound
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
@@ -219,13 +222,11 @@ class PayLogPlugin(Plugin.Conversation):
         user = update.effective_user
         logger.info("用户 %s[%s] 充值记录统计命令请求", user.full_name, user.id)
         try:
-            player_info = await self.players_service.get_player(user.id)
-            if player_info is None:
-                raise PlayerNotFoundError
             await message.reply_chat_action(ChatAction.TYPING)
-            data = await self.pay_log.get_analysis(user.id, player_info.player_id)
+            player_id = await self.get_player_id(user.id)
+            data = await self.pay_log.get_analysis(user.id, player_id)
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-            name_card = await self.player_info.get_name_card(player_info.player_id, user)
+            name_card = await self.player_info.get_name_card(player_id, user)
             data["name_card"] = name_card
             png_data = await self.template_service.render(
                 "genshin/pay_log/pay_log.jinja2", data, full_page=True, query_selector=".container"
