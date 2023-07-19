@@ -5,8 +5,8 @@ from core.config import config
 from utils.patch.methods import patch, patchable
 
 
-@patch(simnet.StarRailClient)
-class StarRailClient:
+@patch(simnet.GenshinClient)
+class GenshinClient:
     @patchable
     def __init__(self, *args, **kwargs):
         self.old___init__(*args, **kwargs)
