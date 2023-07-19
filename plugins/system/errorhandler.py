@@ -12,6 +12,7 @@ from simnet.errors import (
     InvalidCookies,
     TooManyRequests,
     CookieException,
+    TimedOut as SIMNetTimedOut,
 )
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
@@ -106,10 +107,14 @@ class ErrorHandler(Plugin):
 
     @error_handler()
     async def process_genshin_exception(self, update: object, context: CallbackContext):
-        if not isinstance(context.error, SIMNetBadRequest) or not isinstance(update, Update):
-            return
         exc = context.error
         notice: Optional[str] = None
+        if isinstance(exc, SIMNetTimedOut):
+            notice = self.ERROR_MSG_PREFIX + " 服务器熟啦 ~ 请稍后再试"
+            self.create_notice_task(update, context, notice)
+            raise ApplicationHandlerStop
+        if not isinstance(exc, SIMNetBadRequest) or not isinstance(update, Update):
+            return
         if isinstance(exc, TooManyRequests):
             notice = self.ERROR_MSG_PREFIX + "Cookie 无效，请尝试重新绑定"
         elif isinstance(exc, InvalidCookies):
