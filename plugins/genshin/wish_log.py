@@ -261,6 +261,7 @@ class WishLogPlugin(Plugin.Conversation):
     async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
         message = update.effective_message
         user = update.effective_user
+        logger.info("用户 %s[%s] 强制删除抽卡记录命令请求", user.full_name, user.id)
         args = self.get_args(context)
         if not args:
             await message.reply_text("请指定用户ID")
