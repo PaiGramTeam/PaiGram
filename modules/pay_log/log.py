@@ -3,9 +3,10 @@ from pathlib import Path
 from typing import Tuple, Optional, List, Dict
 
 import aiofiles
-from simnet import GenshinClient
+from simnet import GenshinClient, Region
 from simnet.errors import AuthkeyTimeout, InvalidAuthkey
 from simnet.models.genshin.transaction import TransactionKind, BaseTransaction
+from simnet.utils.player import recognize_genshin_server
 
 from modules.pay_log.error import PayLogAuthkeyTimeout, PayLogInvalidAuthkey, PayLogNotFound
 from modules.pay_log.models import PayLog as PayLogModel, BaseInfo
@@ -111,21 +112,28 @@ class PayLog:
         # 写入数据
         await self.save_json(save_path, info)
 
+    @staticmethod
+    def get_game_client(player_id: int) -> GenshinClient:
+        if recognize_genshin_server(player_id) in ["cn_gf01", "cn_qd01"]:
+            return GenshinClient(player_id=player_id, region=Region.CHINESE, lang="zh-cn")
+        return GenshinClient(player_id=player_id, region=Region.OVERSEAS, lang="zh-cn")
+
     async def get_log_data(
         self,
         user_id: int,
-        client: GenshinClient,
+        player_id: int,
         authkey: str,
     ) -> int:
         """使用 authkey 获取历史记录数据，并合并旧数据
         :param user_id: 用户id
-        :param client: GenshinClient
+        :param player_id: 游戏id
         :param authkey: authkey
         :return: 更新结果
         """
         new_num = 0
-        pay_log, have_old = await self.load_history_info(str(user_id), str(client.player_id))
+        pay_log, have_old = await self.load_history_info(str(user_id), str(player_id))
         history_ids = [i.id for i in pay_log.list]
+        client = self.get_game_client(player_id)
         try:
             transaction_log = await client.transaction_log(authkey=authkey, kind=TransactionKind.CRYSTAL.value)
             for data in transaction_log:
@@ -136,6 +144,8 @@ class PayLog:
             raise PayLogAuthkeyTimeout from exc
         except InvalidAuthkey as exc:
             raise PayLogInvalidAuthkey from exc
+        finally:
+            await client.shutdown()
         if new_num > 0 or have_old:
             pay_log.list.sort(key=lambda x: (x.time, x.id), reverse=True)
             pay_log.info.update_now()

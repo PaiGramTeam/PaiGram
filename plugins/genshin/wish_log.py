@@ -28,7 +28,6 @@ from modules.gacha_log.error import (
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
-from plugins.tools.genshin import GenshinHelper
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
@@ -55,7 +54,6 @@ class WishLogPlugin(Plugin.Conversation):
         assets: AssetsService,
         cookie_service: CookiesService,
         player_info: PlayerInfoSystem,
-        genshin_helper: GenshinHelper,
     ):
         self.template_service = template_service
         self.players_service = players_service
@@ -64,12 +62,19 @@ class WishLogPlugin(Plugin.Conversation):
         self.zh_dict = None
         self.gacha_log = GachaLog()
         self.player_info = player_info
-        self.genshin_helper = genshin_helper
 
     async def initialize(self) -> None:
         await update_paimon_moe_zh(False)
         async with async_open(GACHA_LOG_PAIMON_MOE_PATH, "r", encoding="utf-8") as load_f:
             self.zh_dict = jsonlib.loads(await load_f.read())
+
+    async def get_player_id(self, uid: int) -> int:
+        """获取绑定的游戏ID"""
+        logger.debug("尝试获取已绑定的原神账号")
+        player = await self.players_service.get_player(uid)
+        if player is None:
+            raise PlayerNotFoundError(uid)
+        return player.player_id
 
     async def _refresh_user_data(
         self, user: User, data: dict = None, authkey: str = None, verify_uid: bool = True
@@ -82,12 +87,12 @@ class WishLogPlugin(Plugin.Conversation):
         """
         try:
             logger.debug("尝试获取已绑定的原神账号")
-            client = await self.genshin_helper.get_genshin_client(user.id)
+            player_id = await self.get_player_id(user.id)
             if authkey:
-                new_num = await self.gacha_log.get_gacha_log_data(user.id, client, authkey)
+                new_num = await self.gacha_log.get_gacha_log_data(user.id, player_id, authkey)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
             if data:
-                new_num = await self.gacha_log.import_gacha_log_data(user.id, client.player_id, data, verify_uid)
+                new_num = await self.gacha_log.import_gacha_log_data(user.id, player_id, data, verify_uid)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
         except GachaLogNotFound:
             return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"
@@ -227,15 +232,13 @@ class WishLogPlugin(Plugin.Conversation):
         user = update.effective_user
         logger.info("用户 %s[%s] 删除抽卡记录命令请求", user.full_name, user.id)
         try:
-            player_info = await self.players_service.get_player(user.id)
-            if player_info is None:
-                raise PlayerNotFoundError
-            context.chat_data["uid"] = player_info.player_id
+            player_id = await self.get_player_id(user.id)
+            context.chat_data["uid"] = player_id
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
             return ConversationHandler.END
-        _, status = await self.gacha_log.load_history_info(str(user.id), str(player_info.player_id), only_status=True)
+        _, status = await self.gacha_log.load_history_info(str(user.id), str(player_id), only_status=True)
         if not status:
             await message.reply_text("你还没有导入抽卡记录哦~")
             return ConversationHandler.END
@@ -258,6 +261,7 @@ class WishLogPlugin(Plugin.Conversation):
     async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
         message = update.effective_message
         user = update.effective_user
+        logger.info("用户 %s[%s] 强制删除抽卡记录命令请求", user.full_name, user.id)
         args = self.get_args(context)
         if not args:
             await message.reply_text("请指定用户ID")
@@ -266,14 +270,12 @@ class WishLogPlugin(Plugin.Conversation):
             cid = int(args[0])
             if cid < 0:
                 raise ValueError("Invalid cid")
-            player_info = await self.players_service.get_player(user.id)
-            if player_info is None:
-                raise PlayerNotFoundError
-            _, status = await self.gacha_log.load_history_info(str(cid), str(player_info.player_id), only_status=True)
+            player_id = await self.get_player_id(cid)
+            _, status = await self.gacha_log.load_history_info(str(cid), str(player_id), only_status=True)
             if not status:
                 await message.reply_text("该用户还没有导入抽卡记录")
                 return
-            status = await self.gacha_log.remove_history_info(str(cid), str(player_info.player_id))
+            status = await self.gacha_log.remove_history_info(str(cid), str(player_id))
             await message.reply_text("抽卡记录已强制删除" if status else "抽卡记录删除失败")
         except GachaLogNotFound:
             await message.reply_text("该用户还没有导入抽卡记录")
@@ -289,11 +291,9 @@ class WishLogPlugin(Plugin.Conversation):
         user = update.effective_user
         logger.info("用户 %s[%s] 导出抽卡记录命令请求", user.full_name, user.id)
         try:
-            player_info = await self.players_service.get_player(user.id)
-            if player_info is None:
-                raise PlayerNotFoundError
+            player_id = await self.get_player_id(user.id)
             await message.reply_chat_action(ChatAction.TYPING)
-            path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(player_info.player_id))
+            path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(player_id))
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.2")
         except GachaLogNotFound:
@@ -323,18 +323,16 @@ class WishLogPlugin(Plugin.Conversation):
                 pool_type = BannerType.STANDARD
         logger.info("用户 %s[%s] 抽卡记录命令请求 || 参数 %s", user.full_name, user.id, pool_type.name)
         try:
-            player_info = await self.players_service.get_player(user.id)
-            if player_info is None:
-                raise PlayerNotFoundError
+            player_id = await self.get_player_id(user.id)
             await message.reply_chat_action(ChatAction.TYPING)
-            data = await self.gacha_log.get_analysis(user.id, player_info.player_id, pool_type, self.assets_service)
+            data = await self.gacha_log.get_analysis(user.id, player_id, pool_type, self.assets_service)
             if isinstance(data, str):
                 reply_message = await message.reply_text(data)
                 if filters.ChatType.GROUPS.filter(message):
                     self.add_delete_message_job(reply_message, delay=300)
                     self.add_delete_message_job(message, delay=300)
             else:
-                name_card = await self.player_info.get_name_card(player_info.player_id, user)
+                name_card = await self.player_info.get_name_card(player_id, user)
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                 data["name_card"] = name_card
                 png_data = await self.template_service.render(
@@ -382,24 +380,20 @@ class WishLogPlugin(Plugin.Conversation):
                 all_five = True
         logger.info("用户 %s[%s] 抽卡统计命令请求 || 参数 %s || 仅五星 %s", user.full_name, user.id, pool_type.name, all_five)
         try:
-            player_info = await self.players_service.get_player(user.id)
-            if player_info is None:
-                raise PlayerNotFoundError
+            player_id = await self.get_player_id(user.id)
             group = filters.ChatType.GROUPS.filter(message)
             await message.reply_chat_action(ChatAction.TYPING)
             if all_five:
-                data = await self.gacha_log.get_all_five_analysis(user.id, player_info.player_id, self.assets_service)
+                data = await self.gacha_log.get_all_five_analysis(user.id, player_id, self.assets_service)
             else:
-                data = await self.gacha_log.get_pool_analysis(
-                    user.id, player_info.player_id, pool_type, self.assets_service, group
-                )
+                data = await self.gacha_log.get_pool_analysis(user.id, player_id, pool_type, self.assets_service, group)
             if isinstance(data, str):
                 reply_message = await message.reply_text(data)
                 if filters.ChatType.GROUPS.filter(message):
                     self.add_delete_message_job(reply_message)
                     self.add_delete_message_job(message)
             else:
-                name_card = await self.player_info.get_name_card(player_info.player_id, user)
+                name_card = await self.player_info.get_name_card(player_id, user)
                 document = False
                 if data["hasMore"] and not group:
                     document = True
