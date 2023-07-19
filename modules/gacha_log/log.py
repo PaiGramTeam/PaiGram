@@ -227,8 +227,7 @@ class GachaLog:
     def get_game_client(player_id: int) -> GenshinClient:
         if recognize_genshin_server(player_id) in ["cn_gf01", "cn_qd01"]:
             return GenshinClient(player_id=player_id, region=Region.CHINESE, lang="zh-cn")
-        else:
-            return GenshinClient(player_id=player_id, region=Region.OVERSEAS, lang="zh-cn")
+        return GenshinClient(player_id=player_id, region=Region.OVERSEAS, lang="zh-cn")
 
     async def get_gacha_log_data(self, user_id: int, player_id: int, authkey: str) -> int:
         """使用authkey获取抽卡记录数据，并合并旧数据

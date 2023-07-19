@@ -116,8 +116,7 @@ class PayLog:
     def get_game_client(player_id: int) -> GenshinClient:
         if recognize_genshin_server(player_id) in ["cn_gf01", "cn_qd01"]:
             return GenshinClient(player_id=player_id, region=Region.CHINESE, lang="zh-cn")
-        else:
-            return GenshinClient(player_id=player_id, region=Region.OVERSEAS, lang="zh-cn")
+        return GenshinClient(player_id=player_id, region=Region.OVERSEAS, lang="zh-cn")
 
     async def get_log_data(
         self,

@@ -13,7 +13,6 @@ from core.services.template.services import TemplateService
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
-from plugins.tools.genshin import GenshinHelper
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
