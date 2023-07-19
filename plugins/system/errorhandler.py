@@ -13,6 +13,7 @@ from simnet.errors import (
     TooManyRequests,
     CookieException,
     TimedOut as SIMNetTimedOut,
+    SIMNetException,
 )
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
@@ -107,6 +108,8 @@ class ErrorHandler(Plugin):
 
     @error_handler()
     async def process_genshin_exception(self, update: object, context: CallbackContext):
+        if not isinstance(context.error, SIMNetException) or not isinstance(update, Update):
+            return
         exc = context.error
         notice: Optional[str] = None
         if isinstance(exc, SIMNetTimedOut):
