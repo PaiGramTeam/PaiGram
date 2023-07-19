@@ -225,11 +225,10 @@ class GenshinHelper(Plugin):
             raise CookiesNotFoundError(user_id)
         cookies = cookie_model.data
 
-        region = player.region
-        if region == RegionEnum.HYPERION:  # 国服
-            game_region = Region.CHINESE
-        elif region == RegionEnum.HOYOLAB:  # 国际服
-            game_region = Region.OVERSEAS
+        if player.region == RegionEnum.HYPERION:  # 国服
+            region = Region.CHINESE
+        elif player.region == RegionEnum.HOYOLAB:  # 国际服
+            region = Region.OVERSEAS
         else:
             raise TypeError("Region is not None")
 
@@ -242,7 +241,7 @@ class GenshinHelper(Plugin):
 
         async with GenshinClient(
             cookies,
-            region=game_region,
+            region=region,
             account_id=player.account_id,
             player_id=player.player_id,
             lang="zh-cn",
@@ -263,11 +262,10 @@ class GenshinHelper(Plugin):
             raise CookiesNotFoundError(user_id)
         cookies = cookie_model.data
 
-        region = player.region
-        if region == RegionEnum.HYPERION:
-            game_region = Region.CHINESE
-        elif region == RegionEnum.HOYOLAB:
-            game_region = Region.OVERSEAS
+        if player.region == RegionEnum.HYPERION:
+            region = Region.CHINESE
+        elif player.region == RegionEnum.HOYOLAB:
+            region = Region.OVERSEAS
         else:
             raise TypeError("Region is not None")
 
@@ -280,7 +278,7 @@ class GenshinHelper(Plugin):
 
         return GenshinClient(
             cookies,
-            region=game_region,
+            region=region,
             account_id=player.account_id,
             player_id=player.player_id,
             lang="zh-cn",
@@ -296,10 +294,10 @@ class GenshinHelper(Plugin):
         cookies = await self.public_cookies_service.get_cookies(user_id, region)
 
         uid = player.player_id
-        if region is RegionEnum.HYPERION:
-            game_region = Region.CHINESE
-        elif region is RegionEnum.HOYOLAB:
-            game_region = Region.OVERSEAS
+        if player.region == RegionEnum.HYPERION:
+            region = Region.CHINESE
+        elif player.region == RegionEnum.HOYOLAB:
+            region = Region.OVERSEAS
         else:
             raise TypeError("Region is not `RegionEnum.NULL`")
 
@@ -312,7 +310,7 @@ class GenshinHelper(Plugin):
 
         async with GenshinClient(
             cookies.data,
-            region=game_region,
+            region=region,
             account_id=player.account_id,
             player_id=uid,
             lang="zh-cn",
