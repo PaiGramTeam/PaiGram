@@ -6,7 +6,13 @@ from typing import Optional
 import aiofiles
 from aiohttp import ClientError, ClientConnectorError
 from httpx import HTTPError, TimeoutException
-from simnet.errors import DataNotPublic, BadRequest as SIMNetBadRequest, InvalidCookies, TooManyRequests
+from simnet.errors import (
+    DataNotPublic,
+    BadRequest as SIMNetBadRequest,
+    InvalidCookies,
+    TooManyRequests,
+    CookieException,
+)
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden, TelegramError, TimedOut, NetworkError
@@ -111,6 +117,12 @@ class ErrorHandler(Plugin):
                 notice = self.ERROR_MSG_PREFIX + "Cookie 无效，请尝试重新绑定"
             elif exc.retcode == 10103:
                 notice = self.ERROR_MSG_PREFIX + "Cookie 有效，但没有绑定到游戏帐户，请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。"
+            else:
+                logger.error("未知Cookie错误", exc_info=exc)
+                notice = self.ERROR_MSG_PREFIX + f"Cookie 无效 错误信息为 {exc.original} 请尝试重新绑定"
+        elif isinstance(exc, CookieException):
+            if exc.retcode == 0:
+                notice = self.ERROR_MSG_PREFIX + "Cookie 已经被刷新，请尝试重试操作~"
             else:
                 logger.error("未知Cookie错误", exc_info=exc)
                 notice = self.ERROR_MSG_PREFIX + f"Cookie 无效 错误信息为 {exc.original} 请尝试重新绑定"
