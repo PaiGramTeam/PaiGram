@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Union
 
 from pydantic import ValidationError
 from simnet import GenshinClient, Region
-from simnet.errors import BadRequest as SimnetBadRequest
+from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, NetworkError, CookieException
 from simnet.models.genshin.calculator import CalculatorCharacterDetails
 from simnet.models.genshin.chronicle.characters import Character
 from sqlalchemy.exc import SQLAlchemyError
@@ -248,7 +248,27 @@ class GenshinHelper(Plugin):
             device_id=device_id,
             device_fp=device_fp,
         ) as client:
-            yield client
+            try:
+                yield client
+            except InvalidCookies as exc:
+                stoken = client.cookies.get("stoken")
+                if stoken is not None:
+                    try:
+                        await client.get_cookie_token_by_stoken()
+                        logger.success("用户 %s 刷新 cookie_token 成功", user_id)
+                        await client.get_ltoken_by_stoken()
+                        logger.success("用户 %s 刷新 ltoken 成功", user_id)
+                    except SimnetBadRequest as _exc:
+                        logger.warning(
+                            "用户 %s 刷新 token 失败 [%s]%s", user_id, _exc.ret_code, _exc.original or _exc.message
+                        )
+                    except NetworkError:
+                        logger.warning("用户 %s 刷新 Cookies 失败 网络错误", user_id)
+                    except Exception as _exc:
+                        logger.error("用户 %s 刷新 Cookies 失败", user_id, exc_info=_exc)
+                    else:
+                        raise CookieException(message="The cookie has been refreshed.") from exc
+                raise exc
 
     async def get_genshin_client(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
         player = await self.players_service.get_player(user_id, region)
