@@ -1,6 +1,7 @@
 from typing import Tuple, Optional
 
 from simnet import Region
+from simnet.client.cookies import Cookies
 from simnet.errors import BadRequest as SIMNetBadRequest
 
 from core.basemodel import RegionEnum
@@ -102,7 +103,7 @@ class ChallengeSystem(Plugin):
             _, challenge = await self.get_challenge(player.player_id)
         if challenge is None:
             raise ChallengeSystemException("验证失效 请求已经过期")
-        verify = Verify(cookies=cookie_model.data)
+        verify = Verify(cookies=Cookies(cookie_model.data))
         try:
             await verify.verify(challenge=challenge, validate=validate)
         except ResponseException as exc:
