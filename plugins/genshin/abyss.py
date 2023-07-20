@@ -139,6 +139,7 @@ class AbyssPlugin(Plugin):
         try:
             try:
                 async with self.helper.genshin(user.id) as client:
+                    await client.get_record_cards()
                     images = await self.get_rendered_pic(client, client.player_id, floor, total, previous)
             except CookiesNotFoundError:
                 # Cookie 不存在使用公开接口
