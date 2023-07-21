@@ -2,8 +2,8 @@
 import asyncio
 import re
 from datetime import datetime
-from functools import lru_cache, partial
-from typing import Any, Coroutine, List, Match, Optional, Tuple, Union
+from functools import lru_cache
+from typing import Any, Coroutine, List, Optional, Tuple, Union
 
 from arkowrapper import ArkoWrapper
 from pytz import timezone
@@ -19,9 +19,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
-from metadata.genshin import game_id_to_role_id
 from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
-from utils.helpers import async_re_sub
 from utils.log import logger
 
 try:
@@ -36,16 +34,6 @@ msg_pattern = r"^深渊数据((?:查询)|(?:总览))(上期)?\D?(\d*)?.*?$"
 
 regex_01 = r"['\"]icon['\"]:\s*['\"](.*?)['\"]"
 regex_02 = r"['\"]side_icon['\"]:\s*['\"](.*?)['\"]"
-
-
-async def replace_01(match: Match, assets_service: AssetsService) -> str:
-    aid = game_id_to_role_id(re.findall(r"UI_AvatarIcon_(.*?).png", match.group(1))[0])
-    return (await assets_service.avatar(aid).icon()).as_uri()
-
-
-async def replace_02(match: Match, assets_service: AssetsService) -> str:
-    aid = game_id_to_role_id(re.findall(r"UI_AvatarIcon_Side_(.*?).png", match.group(1))[0])
-    return (await assets_service.avatar(aid).side()).as_uri()
 
 
 @lru_cache
@@ -159,9 +147,6 @@ class AbyssPlugin(Plugin):
         except AbyssNotFoundError:
             await message.reply_text("无法查询玩家挑战队伍详情，只能查询统计详情哦~")
             return
-        except IndexError:  # 若深渊为挑战此层
-            await message.reply_text("还没有挑战本层呢，咕咕咕~")
-            return
         except PlayerNotFoundError:  # 若未找到账号
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
             if filters.ChatType.GROUPS.filter(message):
@@ -243,10 +228,7 @@ class AbyssPlugin(Plugin):
         total_stars = f"{sum(stars)} ({'-'.join(map(str, stars))})"
 
         render_data = {}
-        result = await async_re_sub(
-            regex_01, partial(replace_01, assets_service=self.assets_service), abyss_data.json(encoder=json_encoder)
-        )
-        result = await async_re_sub(regex_02, partial(replace_02, assets_service=self.assets_service), result)
+        result = abyss_data.json(encoder=json_encoder)
 
         render_data["time"] = time
         render_data["stars"] = total_stars
