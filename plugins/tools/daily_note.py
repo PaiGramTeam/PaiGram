@@ -231,15 +231,12 @@ class DailyNoteSystem(Plugin):
     @staticmethod
     async def check_need_note(web_config: WebAppData) -> bool:
         need_verify = False
-        if web_config.resin:
-            if web_config.resin.noticed:
-                need_verify = True
-        if web_config.realm:
-            if web_config.realm.noticed:
-                need_verify = True
-        if web_config.expedition:
-            if web_config.expedition.noticed:
-                need_verify = True
+        if web_config.resin and web_config.resin.noticed:
+            need_verify = True
+        if web_config.realm and web_config.realm.noticed:
+            need_verify = True
+        if web_config.expedition and web_config.expedition.noticed:
+            need_verify = True
         return need_verify
 
     async def import_web_config(self, user_id: int, web_config: WebAppData):

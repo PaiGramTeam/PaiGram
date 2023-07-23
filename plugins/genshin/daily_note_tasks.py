@@ -1,5 +1,5 @@
 from pydantic import ValidationError
-from simnet import GenshinClient, Region
+from simnet import Region
 from simnet.errors import DataNotPublic, BadRequest as SimnetBadRequest
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, KeyboardButton, WebAppInfo
 from telegram.ext import CallbackContext, ConversationHandler, filters
@@ -87,8 +87,7 @@ class DailyNoteTasksPlugin(Plugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        else:
-            await message.reply_text("输入错误，请重新输入")
+        await message.reply_text("输入错误，请重新输入")
         return SET_BY_WEB
 
     @conversation.state(state=SET_BY_WEB)
