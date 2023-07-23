@@ -13,7 +13,7 @@ class NotesJob(Plugin):
     def __init__(self, daily_note_system: DailyNoteSystem):
         self.daily_note_system = daily_note_system
 
-    @job.run_repeating(interval=datetime.timedelta(seconds=30), name="NotesJob")
+    @job.run_repeating(interval=datetime.timedelta(minutes=20), name="NotesJob")
     async def card(self, context: "ContextTypes.DEFAULT_TYPE"):
         logger.info("正在执行自动便签提醒")
         await self.daily_note_system.do_get_notes_job(context)
