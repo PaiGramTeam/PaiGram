@@ -1,40 +1,32 @@
 import re
-from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from simnet.client.routes import Route
-from simnet.errors import BadRequest as SimnetBadRequest
-from simnet.utils.player import recognize_genshin_server, recognize_genshin_game_biz
+from simnet import Region
+from simnet.errors import RegionNotSupported
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
 from telegram.ext import filters, MessageHandler, CommandHandler
 from telegram.helpers import create_deep_linked_url
 
-from core.basemodel import RegionEnum
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
-from core.services.users.services import UserService
+from core.services.task.models import Task as TaskUser, TaskStatusEnum
+from core.services.task.services import TaskCardServices
+from core.services.users.services import UserService, UserAdminService
 from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId, roleToName
-from modules.apihelper.client.components.calendar import Calendar
+from plugins.tools.birthday_card import (
+    BirthdayCardSystem,
+    rm_starting_str,
+    BirthdayCardNoBirthdayError,
+    BirthdayCardAlreadyClaimedError,
+)
 from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
-    from simnet import GenshinClient
     from telegram import Update
     from telegram.ext import ContextTypes
-
-BIRTHDAY_URL = Route(
-    "https://hk4e-api.mihoyo.com/event/birthdaystar/account/post_my_draw",
-)
-
-
-def rm_starting_str(string, starting):
-    """Remove the starting character from a string."""
-    while string[0] == str(starting):
-        string = string[1:]
-    return string
 
 
 class BirthdayPlugin(Plugin):
@@ -45,36 +37,23 @@ class BirthdayPlugin(Plugin):
         user_service: UserService,
         helper: GenshinHelper,
         cookie_service: CookiesService,
+        card_system: BirthdayCardSystem,
+        user_admin_service: UserAdminService,
+        card_service: TaskCardServices,
     ):
         """Load Data."""
-        self.birthday_list = {}
         self.user_service = user_service
         self.cookie_service = cookie_service
         self.helper = helper
-
-    async def initialize(self):
-        self.birthday_list = await Calendar.async_gen_birthday_list()
-        self.birthday_list.get("6_1", []).append("派蒙")
-
-    async def get_today_birthday(self) -> List[str]:
-        key = (
-            rm_starting_str(datetime.now().strftime("%m"), "0")
-            + "_"
-            + rm_starting_str(datetime.now().strftime("%d"), "0")
-        )
-        return (self.birthday_list.get(key, [])).copy()
+        self.card_system = card_system
+        self.user_admin_service = user_admin_service
+        self.card_service = card_service
 
     @handler.command(command="birthday", block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
-        key = (
-            rm_starting_str(datetime.now().strftime("%m"), "0")
-            + "_"
-            + rm_starting_str(datetime.now().strftime("%d"), "0")
-        )
         args = self.get_args(context)
-
         if len(args) >= 1:
             msg = args[0]
             logger.info("用户 %s[%s] 查询角色生日命令请求 || 参数 %s", user.full_name, user.id, msg)
@@ -83,7 +62,7 @@ class BirthdayPlugin(Plugin):
                     month = rm_starting_str(re.findall(r"\d+", msg)[0], "0")
                     day = rm_starting_str(re.findall(r"\d+", msg)[1], "0")
                     key = f"{month}_{day}"
-                    day_list = self.birthday_list.get(key, [])
+                    day_list = self.card_system.birthday_list.get(key, [])
                     date = f"{month}月{day}日"
                     text = f"{date} 是 {'、'.join(day_list)} 的生日哦~" if day_list else f"{date} 没有角色过生日哦~"
                 except IndexError:
@@ -102,13 +81,11 @@ class BirthdayPlugin(Plugin):
                         birthday = AVATAR_DATA[aid]["birthday"]
                         text = f"{name} 的生日是 {birthday[0]}月{birthday[1]}日 哦~"
                     reply_message = await message.reply_text(text)
-
                 except KeyError:
                     reply_message = await message.reply_text("请输入正确的日期格式，如1-1，或输入正确的角色名称。")
-
         else:
             logger.info("用户 %s[%s] 查询今日角色生日列表", user.full_name, user.id)
-            today_list = await self.get_today_birthday()
+            today_list = self.card_system.get_today_birthday()
             text = f"今天是 {'、'.join(today_list)} 的生日哦~" if today_list else "今天没有角色过生日哦~"
             reply_message = await message.reply_text(text)
 
@@ -116,60 +93,65 @@ class BirthdayPlugin(Plugin):
             self.add_delete_message_job(message)
             self.add_delete_message_job(reply_message)
 
-    @staticmethod
-    async def get_card(client: "GenshinClient", role_id: int) -> None:
-        """领取画片"""
-        url = BIRTHDAY_URL.get_url()
-        params = {
-            "game_biz": recognize_genshin_game_biz(client.player_id),
-            "lang": "zh-cn",
-            "badge_uid": client.player_id,
-            "badge_region": recognize_genshin_server(client.player_id),
-            "activity_id": "20220301153521",
-        }
-        json = {
-            "role_id": role_id,
-        }
-        await client.request_lab(url, method="POST", params=params, data=json)
-
-    @staticmethod
-    def role_to_id(name: str) -> Optional[int]:
-        if name == "派蒙":
-            return -1
-        return roleToId(name)
+    async def _process_auto_birthday_card(self, user_id: int, chat_id: int, method: str) -> str:
+        try:
+            async with self.helper.genshin(user_id) as client:
+                if client.region != Region.CHINESE:
+                    return "此功能当前只支持国服账号哦~"
+        except (PlayerNotFoundError, CookiesNotFoundError):
+            return "未查询到账号信息，请先私聊派蒙绑定账号"
+        user: TaskUser = await self.card_service.get_by_user_id(user_id)
+        if user:
+            if method == "关闭":
+                await self.card_service.remove(user)
+                return "关闭自动领取生日画片成功"
+            if method == "开启":
+                if user.chat_id == chat_id:
+                    return "自动领取生日画片已经开启过了"
+                user.chat_id = chat_id
+                user.status = TaskStatusEnum.STATUS_SUCCESS
+                await self.card_service.update(user)
+                return "修改自动领取生日画片对话成功"
+        elif method == "关闭":
+            return "您还没有开启自动领取生日画片"
+        elif method == "开启":
+            user = self.card_service.create(user_id, chat_id, TaskStatusEnum.STATUS_SUCCESS)
+            await self.card_service.add(user)
+            return "开启自动领取生日画片成功"
 
     @handler(CommandHandler, command="birthday_card", block=False)
     @handler(MessageHandler, filters=filters.Regex("^领取角色生日画片$"), block=False)
     async def command_birthday_card_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
+        args = self.get_args(context)
+        if len(args) >= 1:
+            msg = None
+            if args[0] == "开启自动领取":
+                if await self.user_admin_service.is_admin(user.id):
+                    msg = await self._process_auto_birthday_card(user.id, message.chat_id, "开启")
+                else:
+                    msg = await self._process_auto_birthday_card(user.id, user.id, "开启")
+            elif args[0] == "关闭自动领取":
+                msg = await self._process_auto_birthday_card(user.id, message.chat_id, "关闭")
+            if msg:
+                logger.info("用户 %s[%s] 自动领取生日画片命令请求 || 参数 %s", user.full_name, user.id, args[0])
+                reply_message = await message.reply_text(msg)
+                if filters.ChatType.GROUPS.filter(message):
+                    self.add_delete_message_job(reply_message, delay=30)
+                    self.add_delete_message_job(message, delay=30)
+                return
         logger.info("用户 %s[%s] 领取生日画片命令请求", user.full_name, user.id)
-        today_list = await self.get_today_birthday()
-        if not today_list:
-            reply_message = await message.reply_text("今天没有角色过生日哦~")
-            if filters.ChatType.GROUPS.filter(reply_message):
-                self.add_delete_message_job(message)
-                self.add_delete_message_job(reply_message)
-            return
         try:
             async with self.helper.genshin(user.id) as client:
-                if client.region == RegionEnum.HOYOLAB:
+                try:
+                    text = await self.card_system.start_get_card(client)
+                except RegionNotSupported:
                     text = "此功能当前只支持国服账号哦~"
-                else:
-                    game_biz = recognize_genshin_game_biz(client.player_id)
-                    region = recognize_genshin_server(client.player_id)
-                    await client.get_hk4e_token_by_cookie_token(game_biz, region)
-                    for name in today_list.copy():
-                        if role_id := self.role_to_id(name):
-                            try:
-                                await self.get_card(client, role_id)
-                            except SimnetBadRequest as e:
-                                if e.ret_code in {-512008, -512009}:  # 未过生日、已领取过
-                                    today_list.remove(name)
-                    if today_list:
-                        text = f"成功领取了 {'、'.join(today_list)} 的生日画片~"
-                    else:
-                        text = "没有领取到生日画片哦 ~ 可能是已经领取过了"
+                except BirthdayCardNoBirthdayError:
+                    text = "今天没有角色过生日哦~"
+                except BirthdayCardAlreadyClaimedError:
+                    text = "没有领取到生日画片哦 ~ 可能是已经领取过了"
                 reply_message = await message.reply_text(text)
                 if filters.ChatType.GROUPS.filter(reply_message):
                     self.add_delete_message_job(message)

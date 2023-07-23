@@ -1,4 +1,3 @@
-import datetime
 from typing import Optional, Tuple
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -12,8 +11,8 @@ from core.handler.callbackqueryhandler import CallbackQueryHandler
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
-from core.services.sign.models import Sign as SignUser, SignStatusEnum
-from core.services.sign.services import SignServices
+from core.services.task.models import Task as SignUser, TaskStatusEnum
+from core.services.task.services import SignServices
 from core.services.users.services import UserAdminService
 from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from plugins.tools.sign import SignSystem, NeedChallenge
@@ -57,18 +56,13 @@ class Sign(Plugin):
                 if user.chat_id == chat_id:
                     return "自动签到已经开启过了"
                 user.chat_id = chat_id
-                user.status = SignStatusEnum.STATUS_SUCCESS
+                user.status = TaskStatusEnum.STATUS_SUCCESS
                 await self.sign_service.update(user)
                 return "修改自动签到通知对话成功"
         elif method == "关闭":
             return "您还没有开启自动签到"
         elif method == "开启":
-            user = SignUser(
-                user_id=user_id,
-                chat_id=chat_id,
-                time_created=datetime.datetime.now(),
-                status=SignStatusEnum.STATUS_SUCCESS,
-            )
+            user = self.sign_service.create(user_id, chat_id, TaskStatusEnum.STATUS_SUCCESS)
             await self.sign_service.add(user)
             return "开启自动签到成功"
 

@@ -1,5 +1,5 @@
 from telegram import Update
-from telegram.ext import CallbackContext, CommandHandler
+from telegram.ext import CallbackContext
 
 from core.plugin import Plugin, handler
 from plugins.tools.sign import SignSystem, SignJobType
@@ -10,7 +10,7 @@ class SignAll(Plugin):
     def __init__(self, sign_system: SignSystem):
         self.sign_system = sign_system
 
-    @handler(CommandHandler, command="sign_all", block=False, admin=True)
+    @handler.command(command="sign_all", block=False, admin=True)
     async def sign_all(self, update: Update, context: CallbackContext):
         user = update.effective_user
         logger.info("用户 %s[%s] sign_all 命令请求", user.full_name, user.id)

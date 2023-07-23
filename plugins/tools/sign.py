@@ -17,8 +17,8 @@ from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin
 from core.services.cookies import CookiesService
-from core.services.sign.models import SignStatusEnum
-from core.services.sign.services import SignServices
+from core.services.task.models import TaskStatusEnum
+from core.services.task.services import SignServices
 from core.services.users.services import UserService
 from modules.apihelper.client.components.verify import Verify
 from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
@@ -269,16 +269,16 @@ class SignSystem(Plugin):
         return message
 
     async def do_sign_job(self, context: "ContextTypes.DEFAULT_TYPE", job_type: SignJobType):
-        include_status: List[SignStatusEnum] = [
-            SignStatusEnum.STATUS_SUCCESS,
-            SignStatusEnum.TIMEOUT_ERROR,
-            SignStatusEnum.NEED_CHALLENGE,
+        include_status: List[TaskStatusEnum] = [
+            TaskStatusEnum.STATUS_SUCCESS,
+            TaskStatusEnum.TIMEOUT_ERROR,
+            TaskStatusEnum.NEED_CHALLENGE,
         ]
         if job_type == SignJobType.START:
             title = "自动签到"
         elif job_type == SignJobType.REDO:
             title = "自动重新签到"
-            include_status.remove(SignStatusEnum.STATUS_SUCCESS)
+            include_status.remove(TaskStatusEnum.STATUS_SUCCESS)
         else:
             raise ValueError
         sign_list = await self.sign_service.get_all()
@@ -291,19 +291,19 @@ class SignSystem(Plugin):
                     text = await self.start_sign(client, is_sleep=True, is_raise=True, title=title)
             except InvalidCookies:
                 text = "自动签到执行失败，Cookie无效"
-                sign_db.status = SignStatusEnum.INVALID_COOKIES
+                sign_db.status = TaskStatusEnum.INVALID_COOKIES
             except AlreadyClaimed:
                 text = "今天旅行者已经签到过了~"
-                sign_db.status = SignStatusEnum.ALREADY_CLAIMED
+                sign_db.status = TaskStatusEnum.ALREADY_CLAIMED
             except SimnetBadRequest as exc:
                 text = f"自动签到执行失败，API返回信息为 {str(exc)}"
-                sign_db.status = SignStatusEnum.GENSHIN_EXCEPTION
+                sign_db.status = TaskStatusEnum.GENSHIN_EXCEPTION
             except SimnetTimedOut:
                 text = "签到失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
-                sign_db.status = SignStatusEnum.TIMEOUT_ERROR
+                sign_db.status = TaskStatusEnum.TIMEOUT_ERROR
             except NeedChallenge:
                 text = "签到失败，触发验证码风控"
-                sign_db.status = SignStatusEnum.NEED_CHALLENGE
+                sign_db.status = TaskStatusEnum.NEED_CHALLENGE
             except PlayerNotFoundError:
                 logger.info("用户 user_id[%s] 玩家不存在 关闭并移除自动签到", user_id)
                 await self.sign_service.remove(sign_db)
@@ -316,21 +316,20 @@ class SignSystem(Plugin):
                 logger.error("执行自动签到时发生错误 user_id[%s]", user_id, exc_info=exc)
                 text = "签到失败了呜呜呜 ~ 执行自动签到时发生错误"
             else:
-                sign_db.status = SignStatusEnum.STATUS_SUCCESS
+                sign_db.status = TaskStatusEnum.STATUS_SUCCESS
             if sign_db.chat_id < 0:
                 text = f'<a href="tg://user?id={sign_db.user_id}">NOTICE {sign_db.user_id}</a>\n\n{text}'
             try:
                 await context.bot.send_message(sign_db.chat_id, text, parse_mode=ParseMode.HTML)
             except BadRequest as exc:
                 logger.error("执行自动签到时发生错误 user_id[%s] Message[%s]", user_id, exc.message)
-                sign_db.status = SignStatusEnum.BAD_REQUEST
+                sign_db.status = TaskStatusEnum.BAD_REQUEST
             except Forbidden as exc:
                 logger.error("执行自动签到时发生错误 user_id[%s] message[%s]", user_id, exc.message)
-                sign_db.status = SignStatusEnum.FORBIDDEN
+                sign_db.status = TaskStatusEnum.FORBIDDEN
             except Exception as exc:
                 logger.error("执行自动签到时发生错误 user_id[%s]", user_id, exc_info=exc)
                 continue
             else:
-                sign_db.status = SignStatusEnum.STATUS_SUCCESS
-            sign_db.time_updated = datetime.datetime.now()
+                sign_db.status = TaskStatusEnum.STATUS_SUCCESS
             await self.sign_service.update(sign_db)
