@@ -1,5 +1,5 @@
 import base64
-from typing import TYPE_CHECKING, List, Optional, Dict
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel, validator
 from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, TimedOut as SimnetTimedOut
@@ -341,7 +341,10 @@ class DailyNoteSystem(Plugin):
                 if not notice_text:
                     continue
                 if task_user_db.chat_id < 0:
-                    notice_text = f'<a href="tg://user?id={task_user_db.user_id}">NOTICE {task_user_db.user_id}</a>\n\n{notice_text}'
+                    notice_text = (
+                        f'<a href="tg://user?id={task_user_db.user_id}">'
+                        f"NOTICE {task_user_db.user_id}</a>\n\n{notice_text}"
+                    )
                 try:
                     await context.bot.send_message(task_user_db.chat_id, notice_text, parse_mode=ParseMode.HTML)
                 except BadRequest as exc:
