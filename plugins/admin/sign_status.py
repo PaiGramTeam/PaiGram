@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import CallbackContext, CommandHandler
 
 from core.plugin import Plugin, handler
-from core.services.sign.services import SignServices
+from core.services.task.services import SignServices
 from utils.log import logger
 
 
