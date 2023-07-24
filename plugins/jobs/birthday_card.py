@@ -13,7 +13,7 @@ class CardJob(Plugin):
     def __init__(self, card_system: BirthdayCardSystem):
         self.card_system = card_system
 
-    @job.run_daily(time=datetime.time(hour=0, minute=1, second=0), name="CardJob")
+    @job.run_daily(time=datetime.time(hour=0, minute=23, second=0), name="CardJob")
     async def card(self, context: "ContextTypes.DEFAULT_TYPE"):
         logger.info("正在执行自动领取生日画片")
         await self.card_system.do_get_card_job(context)

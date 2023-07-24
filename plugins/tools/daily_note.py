@@ -307,6 +307,7 @@ class DailyNoteSystem(Plugin):
             if task_db.status not in include_status:
                 continue
             user_id = task_db.user_id
+            logger.info("自动便签提醒 - 请求便签信息 user_id[%s]", user_id)
             try:
                 async with self.genshin_helper.genshin(user_id) as client:
                     text = await self.start_get_notes(client, task_db)
@@ -319,8 +320,8 @@ class DailyNoteSystem(Plugin):
                 text = f"自动便签提醒执行失败，API返回信息为 {str(exc)}"
                 task_db.status = TaskStatusEnum.GENSHIN_EXCEPTION
             except SimnetTimedOut:
-                text = "便签获取失败了呜呜呜 ~ 服务器连接超时 服务器熟啦 ~ "
-                task_db.status = TaskStatusEnum.TIMEOUT_ERROR
+                logger.info("用户 user_id[%s] 请求便签超时", user_id)
+                continue
             except PlayerNotFoundError:
                 logger.info("用户 user_id[%s] 玩家不存在 关闭并移除自动便签提醒", user_id)
                 await self.remove_task_user(task_db)
