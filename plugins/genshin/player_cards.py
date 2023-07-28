@@ -167,7 +167,7 @@ class PlayerCards(Plugin):
                     [
                         InlineKeyboardButton(
                             "更新面板",
-                            callback_data=f"update_player_card|{user.id}|{player_info.player_id,}",
+                            callback_data=f"update_player_card|{user.id}|{player_info.player_id}",
                         )
                     ]
                 ]
