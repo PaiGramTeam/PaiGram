@@ -311,8 +311,6 @@ class DailyNoteSystem(Plugin):
             try:
                 async with self.genshin_helper.genshin(user_id) as client:
                     text = await self.start_get_notes(client, task_db)
-                if all(not i for i in text):
-                    continue
             except InvalidCookies:
                 text = "自动便签提醒执行失败，Cookie无效"
                 task_db.status = TaskStatusEnum.INVALID_COOKIES
