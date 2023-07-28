@@ -260,13 +260,13 @@ test = ["pytest", "pytest-rerunfailures"]
 
 [[package]]
 name = "async-lru"
-version = "2.0.3"
+version = "2.0.4"
 description = "Simple LRU cache for asyncio"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "async-lru-2.0.3.tar.gz", hash = "sha256:b714c9d1415fca4e264da72a9e2abc66880ce7430e03a973341f88ea4c0d4869"},
-    {file = "async_lru-2.0.3-py3-none-any.whl", hash = "sha256:00c0a8899c20b9c88663a47732689ff98189c9fa08ad9f734d7722f934d250b1"},
+    {file = "async-lru-2.0.4.tar.gz", hash = "sha256:b8a59a5df60805ff63220b2a0c5b5393da5521b113cd5465a44eb037d81a5627"},
+    {file = "async_lru-2.0.4-py3-none-any.whl", hash = "sha256:ff02944ce3c288c5be660c42dbcca0742b32c3b279d6dceda655190240b99224"},
 ]
 
 [package.dependencies]
@@ -2800,4 +2800,4 @@ test = ["flaky", "pytest", "pytest-asyncio"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "d46e4adb1782a2c466573321009999b782cc6161ae7b1332184cf5ea7d493514"
+content-hash = "17afb90f6868651eefa60ab12d7c70874a6491f7779f83f2ecf9df5d4935dbcd"
