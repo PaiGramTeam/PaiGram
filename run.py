@@ -19,7 +19,7 @@ def run():
 
 
 def main():
-    from core.builtins.reloader import Reloader
+    from gram_core.builtins.reloader import Reloader
     from core.config import config
 
     if config.auto_reload:  # 是否启动重载器
