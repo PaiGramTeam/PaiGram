@@ -2,7 +2,11 @@ from gram_core.base_service import BaseService
 from gram_core.basemodel import RegionEnum
 from gram_core.services.cookies.error import CookieServiceError
 from gram_core.services.cookies.models import CookiesStatusEnum, CookiesDataBase as Cookies
-from gram_core.services.cookies.services import CookiesService, PublicCookiesService as BasePublicCookiesService, NeedContinue
+from gram_core.services.cookies.services import (
+    CookiesService,
+    PublicCookiesService as BasePublicCookiesService,
+    NeedContinue,
+)
 
 from simnet import GenshinClient, Region, Game
 from simnet.errors import InvalidCookies, TooManyRequests, BadRequest as SimnetBadRequest
