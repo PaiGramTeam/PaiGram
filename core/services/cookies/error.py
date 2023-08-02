@@ -1,12 +1,3 @@
-class CookieServiceError(Exception):
-    pass
+from gram_core.services.cookies.error import CookieServiceError, CookiesCachePoolExhausted, TooManyRequestPublicCookies
 
-
-class CookiesCachePoolExhausted(CookieServiceError):
-    def __init__(self):
-        super().__init__("Cookies cache pool is exhausted")
-
-
-class TooManyRequestPublicCookies(CookieServiceError):
-    def __init__(self, user_id):
-        super().__init__(f"{user_id} too many request public cookies")
+__all__ = ("CookieServiceError", "CookiesCachePoolExhausted", "TooManyRequestPublicCookies")
