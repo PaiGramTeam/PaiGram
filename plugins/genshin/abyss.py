@@ -311,7 +311,7 @@ class AbyssPlugin(Plugin):
         else:
             render_data["floor-num"] = f"十{num_dic.get(str(floor % 10))}"
         floors = jsonlib.loads(result)["floors"]
-        if (floor_data := list(filter(lambda x: x["floor"] == floor, floors))) is None:
+        if not (floor_data := list(filter(lambda x: x["floor"] == floor, floors))):
             return None
         avatars = await client.get_genshin_characters(uid, lang="zh-cn")
         render_data["avatar_data"] = {i.id: i.constellation for i in avatars}
