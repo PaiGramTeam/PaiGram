@@ -9,6 +9,7 @@ from httpx import TimeoutException
 from simnet import Game
 from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies, TimedOut as SimnetTimedOut
 from simnet.utils.player import recognize_genshin_server
+from sqlalchemy.orm.exc import StaleDataError
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest
@@ -332,4 +333,7 @@ class SignSystem(Plugin):
                 continue
             else:
                 sign_db.status = TaskStatusEnum.STATUS_SUCCESS
-            await self.sign_service.update(sign_db)
+            try:
+                await self.sign_service.update(sign_db)
+            except StaleDataError:
+                logger.warning("用户 user_id[%s] 自动签到数据过期，跳过更新数据", user_id)

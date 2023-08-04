@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from simnet.errors import BadRequest as SimnetBadRequest, RegionNotSupported, InvalidCookies, TimedOut as SimnetTimedOut
 from simnet.client.routes import Route
+from simnet.errors import BadRequest as SimnetBadRequest, RegionNotSupported, InvalidCookies, TimedOut as SimnetTimedOut
 from simnet.utils.player import recognize_genshin_game_biz, recognize_genshin_server
+from sqlalchemy.orm.exc import StaleDataError
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 
@@ -179,4 +180,7 @@ class BirthdayCardSystem(Plugin):
                 continue
             else:
                 task_db.status = TaskStatusEnum.STATUS_SUCCESS
-            await self.card_service.update(task_db)
+            try:
+                await self.card_service.update(task_db)
+            except StaleDataError:
+                logger.warning("用户 user_id[%s] 自动领取生日画片数据过期，跳过更新数据", user_id)

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, List, Optional
 from pydantic import BaseModel, validator
 from simnet import Region
 from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, TimedOut as SimnetTimedOut
+from sqlalchemy.orm.exc import StaleDataError
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 
@@ -222,11 +223,20 @@ class DailyNoteSystem(Plugin):
 
     async def update_task_user(self, user: DailyNoteTaskUser):
         if user.resin_db:
-            await self.resin_service.update(user.resin_db)
+            try:
+                await self.resin_service.update(user.resin_db)
+            except StaleDataError:
+                logger.warning("用户 user_id[%s] 自动便签提醒 - 树脂数据过期，跳过更新数据", user.user_id)
         if user.realm_db:
-            await self.realm_service.update(user.realm_db)
+            try:
+                await self.realm_service.update(user.realm_db)
+            except StaleDataError:
+                logger.warning("用户 user_id[%s] 自动便签提醒 - 洞天宝钱数据过期，跳过更新数据", user.user_id)
         if user.expedition_db:
-            await self.expedition_service.update(user.expedition_db)
+            try:
+                await self.expedition_service.update(user.expedition_db)
+            except StaleDataError:
+                logger.warning("用户 user_id[%s] 自动便签提醒 - 探索派遣数据过期，跳过更新数据", user.user_id)
 
     @staticmethod
     async def check_need_note(web_config: WebAppData) -> bool:
