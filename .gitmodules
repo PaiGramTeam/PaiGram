@@ -1,0 +1,4 @@
+[submodule "gram_core"]
+	path = gram_core
+	url = https://github.com/PaiGramTeam/GramCore.git
+	branch = v4
