@@ -23,7 +23,7 @@ aiofiles = "^23.1.0"
 python-dotenv = "^1.0.0"
 alembic = "^1.11.1"
 black = "^23.3.0"
-rich = "^13.5.1"
+rich = "^13.5.2"
 enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
 TgCrypto = { version = "^1.2.5", optional = true }
 Pyrogram = { version = "^2.0.102", optional = true }
@@ -40,7 +40,7 @@ openpyxl = "^3.1.1"
 async-lru = "^2.0.4"
 thefuzz = "^0.19.0"
 qrcode = "^7.4.2"
-cryptography = "^41.0.2"
+cryptography = "^41.0.3"
 pillow = "^10.0.0"
 playwright = "^1.27.1"
 aiosqlite = { extras = ["sqlite"], version = "^0.19.0" }
