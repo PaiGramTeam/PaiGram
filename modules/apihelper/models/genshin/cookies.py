@@ -13,6 +13,7 @@ class CookiesModel(BaseModel):
 
     stoken: Optional[str] = None
     stuid: Optional[IntStr] = None
+    mid: Optional[str] = None
 
     account_id: Optional[IntStr] = None
     cookie_token: Optional[str] = None
