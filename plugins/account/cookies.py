@@ -1,7 +1,11 @@
+import asyncio
 from datetime import datetime
+from io import BytesIO
 from typing import Dict, Optional
 
+import qrcode
 from arkowrapper import ArkoWrapper
+from qrcode.image.pure import PyPNGImage
 from simnet import GenshinClient, Region
 from simnet.errors import DataNotPublic, InvalidCookies, BadRequest as SimnetBadRequest
 from simnet.models.lab.record import Account
@@ -16,7 +20,6 @@ from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStat
 from core.services.cookies.services import CookiesService
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
 from core.services.players.services import PlayersService, PlayerInfoService
-from modules.apihelper.client.components.authclient import AuthClient
 from modules.apihelper.models.genshin.cookies import CookiesModel
 from utils.log import logger
 
@@ -93,6 +96,16 @@ class AccountCookiesPlugin(Plugin.Conversation):
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return CHECK_SERVER
 
+    @staticmethod
+    def generate_qrcode(url: str) -> bytes:
+        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(image_factory=PyPNGImage, fill_color="black", back_color="white")
+        bio = BytesIO()
+        img.save(bio)
+        return bio.getvalue()
+
     @conversation.entry_point
     @handler.command("qlogin", filters=filters.ChatType.PRIVATE, block=False)
     async def qrcode_login(self, update: Update, context: CallbackContext):
@@ -106,14 +119,25 @@ class AccountCookiesPlugin(Plugin.Conversation):
         else:
             account_cookies_plugin_data.reset()
         account_cookies_plugin_data.region = RegionEnum.HYPERION
-        auth_client = AuthClient()
-        url, ticket = await auth_client.create_qrcode_login()
-        data = auth_client.generate_qrcode(url)
-        text = f"你好 {user.mention_html()} ！该绑定方法仅支持国服，请在3分钟内使用米游社扫码并确认进行绑定。"
-        await message.reply_photo(data, caption=text, parse_mode=ParseMode.HTML)
-        if await auth_client.check_qrcode_login(ticket):
-            account_cookies_plugin_data.cookies = auth_client.cookies.to_dict()
-            return await self.check_cookies(update, context)
+        async with GenshinClient(region=Region.CHINESE) as client:
+            url, ticket = await client.gen_login_qrcode()
+            data = self.generate_qrcode(url)
+            text = f"你好 {user.mention_html()} ！该绑定方法仅支持国服，请在3分钟内使用米游社扫码并确认进行绑定。"
+            await message.reply_photo(data, caption=text, parse_mode=ParseMode.HTML)
+            for _ in range(20):
+                await asyncio.sleep(10)
+                try:
+                    if game_token := await client.check_login_qrcode(ticket):
+                        cookies = {"stuid": str(client.account_id), "ltuid": str(client.account_id)}
+                        cookies["stoken"], cookies["mid"] = await client.get_stoken_v2_and_mid_by_game_token(game_token)
+                        cookies["cookie_token"] = await client.get_cookie_token_by_stoken()
+                        cookies["ltoken"] = await client.get_ltoken_by_stoken()
+                        account_cookies_plugin_data.cookies = cookies
+                        return await self.check_cookies(update, context)
+                except SimnetBadRequest as e:
+                    if e.ret_code == -106:
+                        break
+                    raise e
         await message.reply_markdown_v2("可能是验证码已过期或者你没有同意授权，请重新发送命令进行绑定。")
         return ConversationHandler.END
 
