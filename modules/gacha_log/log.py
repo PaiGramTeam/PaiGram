@@ -387,7 +387,11 @@ class GachaLog:
         # 五星常驻
         five_star_const = five_star - five_star_up
         # UP 平均
-        up_avg = round((total - no_five_star) / five_star_up, 2) if five_star_up != 0 else 0
+        up_avg = (
+            round((total - no_five_star - (all_five[0].count if not all_five[0].isUp else 0)) / five_star_up, 2)
+            if five_star_up != 0
+            else 0
+        )
         # UP 花费原石
         up_cost = sum(i.count * 160 for i in all_five if i.isUp)
         up_cost = f"{round(up_cost / 10000, 2)}w" if up_cost >= 10000 else up_cost
