@@ -2,13 +2,13 @@
 
 [[package]]
 name = "aiofiles"
-version = "23.2.0"
+version = "23.2.1"
 description = "File support for asyncio."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "aiofiles-23.2.0-py3-none-any.whl", hash = "sha256:d7adbeef4bada163e70bd3163866680332f622b4437d9d8246bd74b6d791d83a"},
-    {file = "aiofiles-23.2.0.tar.gz", hash = "sha256:7a321e787cb3839e7d70f56121bf9197a1980609a0fe06a6f96c573406ce4fca"},
+    {file = "aiofiles-23.2.1-py3-none-any.whl", hash = "sha256:19297512c647d4b27a2cf7c34caa7e405c0d60b5560618a29a9fe027b18b0107"},
+    {file = "aiofiles-23.2.1.tar.gz", hash = "sha256:84ec2218d8419404abcb9f0c02df3f34c6e0a68ed41072acfb1cef5cbc29051a"},
 ]
 
 [[package]]
@@ -2800,4 +2800,4 @@ test = ["flaky", "pytest", "pytest-asyncio"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "428950481d297f16d9aec890eb144850a6b7fb6ebfe2beb278527fad15469001"
+content-hash = "d20a676ad73e251c89cd2b0365f47715b5e02f040a6c2855b123423c7d480fcd"
