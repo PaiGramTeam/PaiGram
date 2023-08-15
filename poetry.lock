@@ -775,13 +775,13 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "fakeredis"
-version = "2.17.0"
+version = "2.18.0"
 description = "Python implementation of redis API, can be used for testing purposes."
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "fakeredis-2.17.0-py3-none-any.whl", hash = "sha256:a99ef6e5642c31e91d36be78809fec3743e2bf7aaa682685b0d65a849fecd148"},
-    {file = "fakeredis-2.17.0.tar.gz", hash = "sha256:e304bc7addb2f862c3550cb7db58548418a0fadd4cd78a4de66464c84fbc2195"},
+    {file = "fakeredis-2.18.0-py3-none-any.whl", hash = "sha256:bc7a82e9caec80096659fd9a810b72d21f833574be26ff7b97955db626d60bac"},
+    {file = "fakeredis-2.18.0.tar.gz", hash = "sha256:f9c18d3dba81a470953cc042868b411e334109e065cde53a7a82beef6702a1de"},
 ]
 
 [package.dependencies]
@@ -790,7 +790,7 @@ sortedcontainers = ">=2,<3"
 
 [package.extras]
 json = ["jsonpath-ng (>=1.5,<2.0)"]
-lua = ["lupa (>=1.14,<2.0)"]
+lua = ["lupa (>=1.14,<3.0)"]
 
 [[package]]
 name = "fastapi"
@@ -2800,4 +2800,4 @@ test = ["flaky", "pytest", "pytest-asyncio"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "d20a676ad73e251c89cd2b0365f47715b5e02f040a6c2855b123423c7d480fcd"
+content-hash = "e697fd7e8eea5b1aea96328ca044c825bd3fc69a8884c9c4ee01334325d101f5"
