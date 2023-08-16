@@ -69,7 +69,17 @@ class AccountCookiesPlugin(Plugin.Conversation):
     def parse_cookie(cookie: Dict[str, str]) -> Dict[str, str]:
         cookies = {}
 
-        v1_keys = ["ltoken", "ltuid", "account_id", "cookie_token", "stoken", "stuid", "login_uid", "login_ticket"]
+        v1_keys = [
+            "ltoken",
+            "ltuid",
+            "account_id",
+            "cookie_token",
+            "stoken",
+            "stuid",
+            "login_uid",
+            "login_ticket",
+            "mid",
+        ]
         v2_keys = ["ltoken_v2", "ltmid_v2", "ltuid_v2", "account_mid_v2", "cookie_token_v2", "account_id_v2"]
 
         for k in v1_keys + v2_keys:
@@ -255,6 +265,9 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     cookies.login_uid = None
             if not check_cookie:
                 await message.reply_text("检测到Cookie不完整，可能会出现问题。", reply_markup=ReplyKeyboardRemove())
+            if cookies.stoken and cookies.stoken.startswith("v2") and cookies.mid is None:
+                await message.reply_text("检测到缺少 mid，请尝试添加 mid 或者删除 stoken 后重新绑定。", reply_markup=ReplyKeyboardRemove())
+                return ConversationHandler.END
             try:
                 if client.account_id is None and cookies.is_v2:
                     logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
