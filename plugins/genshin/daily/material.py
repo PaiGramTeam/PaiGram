@@ -504,7 +504,7 @@ class ItemData(BaseModel):
 
 
 class AreaData(BaseModel):
-    name: Literal["蒙德", "璃月", "稻妻", "须弥"]  # 区域名
+    name: Literal["蒙德", "璃月", "稻妻", "须弥", "枫丹"]  # 区域名
     material_name: str  # 区域的材料系列名
     materials: List[ItemData] = []  # 区域材料
     items: Iterable[ItemData] = []  # 可培养的角色或武器
