@@ -218,7 +218,7 @@ class ErrorHandler(Plugin):
         notice: Optional[str] = None
         if isinstance(exc, TimeoutException):
             notice = self.ERROR_MSG_PREFIX + " 服务器熟啦 ~ 请稍后再试"
-            logger.warning("Httpx exception[%s]", str(exc))
+            logger.warning("Httpx [%s]\n%s[%s]", exc.__class__.__name__, exc.request.method, exc.request.url)
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop
