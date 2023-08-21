@@ -23,6 +23,7 @@ from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.plugin import Plugin, error_handler
+from gram_core.services.players.error import PlayerNotFoundError
 from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
 from modules.errorpush import (
     PbClient,
@@ -30,6 +31,7 @@ from modules.errorpush import (
     SentryClient,
     SentryClientException,
 )
+from plugins.tools.genshin import CookiesNotFoundError, PlayerNotFoundError as GenshinPlayerNotFoundError
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
 
@@ -73,6 +75,16 @@ class ErrorHandler(Plugin):
                     [
                         InlineKeyboardButton(
                             "点我通过验证", url=create_deep_linked_url(context.bot.username, "verify_verification")
+                        )
+                    ]
+                ]
+            )
+        elif "绑定账号" in content:
+            buttons = InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "点我绑定账号", url=create_deep_linked_url(self.application.bot.username, "set_cookie")
                         )
                     ]
                 ]
@@ -236,6 +248,16 @@ class ErrorHandler(Plugin):
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop
+
+    @error_handler()
+    async def process_player_and_cookie_not_found(self, update: object, context: CallbackContext):
+        if not isinstance(
+            context.error, (CookiesNotFoundError, PlayerNotFoundError, GenshinPlayerNotFoundError)
+        ) or not isinstance(update, Update):
+            return
+        notice = "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号"
+        self.create_notice_task(update, context, notice)
+        raise ApplicationHandlerStop
 
     @error_handler(block=False)
     async def process_z_error(self, update: object, context: CallbackContext) -> None:

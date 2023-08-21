@@ -136,6 +136,7 @@ logs/
 report/
 data/
 /resources/*/*/test/
+/resources/*/*/*.map
 plugins/genshin/daily/daily.json
 metadata/data/
 resources/assets/

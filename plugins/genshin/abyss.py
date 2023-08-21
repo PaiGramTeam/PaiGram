@@ -9,17 +9,16 @@ from arkowrapper import ArkoWrapper
 from pytz import timezone
 from simnet import GenshinClient
 from simnet.errors import BadRequest as SimnetBadRequest
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
+from telegram import Message, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
-from telegram.helpers import create_deep_linked_url
 
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 try:
@@ -76,7 +75,7 @@ class AbyssPlugin(Plugin):
 
     @handler.command("abyss", block=False)
     @handler.message(filters.Regex(msg_pattern), block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, _: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
         uid: Optional[int] = None
@@ -146,17 +145,6 @@ class AbyssPlugin(Plugin):
             return
         except AbyssNotFoundError:
             await message.reply_text("无法查询玩家挑战队伍详情，只能查询统计详情哦~")
-            return
-        except PlayerNotFoundError:  # 若未找到账号
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_uid"))]]
-            if filters.ChatType.GROUPS.filter(message):
-                reply_message = await message.reply_text(
-                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
-                )
-                self.add_delete_message_job(reply_message)
-                self.add_delete_message_job(message)
-            else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         except TooManyRequestPublicCookies:
             reply_message = await message.reply_text("查询次数太多，请您稍后重试")

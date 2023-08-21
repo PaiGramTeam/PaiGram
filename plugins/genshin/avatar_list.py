@@ -2,13 +2,12 @@ import asyncio
 from typing import List, Optional, Sequence, TYPE_CHECKING
 
 from simnet import GenshinClient
-from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies
+from simnet.errors import BadRequest as SimnetBadRequest
 from simnet.models.genshin.calculator import CalculatorTalent, CalculatorCharacterDetails
 from simnet.models.genshin.chronicle.characters import Character
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, User
-from telegram.constants import ChatAction, ParseMode
+from telegram import User
+from telegram.constants import ChatAction
 from telegram.ext import filters
-from telegram.helpers import create_deep_linked_url
 
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
@@ -19,7 +18,7 @@ from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA
 from modules.wiki.base import Model
-from plugins.tools.genshin import CharacterDetails, PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import CharacterDetails, GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -69,40 +68,6 @@ class AvatarListPlugin(Plugin):
         self.character_details = character_details
         self.player_service = player_service
         self.player_info_service = player_info_service
-
-    async def get_user_client(
-        self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"
-    ) -> Optional["GenshinClient"]:
-        message = update.effective_message
-        user = update.effective_user
-        try:
-            return await self.helper.get_genshin_client(user.id)
-        except PlayerNotFoundError:  # 若未找到账号
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
-            if filters.ChatType.GROUPS.filter(message):
-                reply_message = await message.reply_text(
-                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
-                )
-                self.add_delete_message_job(reply_message, delay=30)
-                self.add_delete_message_job(message, delay=30)
-            else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
-        except CookiesNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
-            if filters.ChatType.GROUPS.filter(message):
-                reply_message = await message.reply_text(
-                    "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙绑定账号",
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                    parse_mode=ParseMode.HTML,
-                )
-                self.add_delete_message_job(reply_message, delay=30)
-                self.add_delete_message_job(message, delay=30)
-            else:
-                await message.reply_text(
-                    "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定",
-                    parse_mode=ParseMode.HTML,
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                )
 
     async def get_avatar_data(self, character: Character, client: "GenshinClient") -> Optional["AvatarData"]:
         detail = await self.character_details.get_character_details(client, character)
@@ -191,43 +156,29 @@ class AvatarListPlugin(Plugin):
 
     @handler.command("avatars", block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
-    async def avatar_list(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+    async def avatar_list(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
         all_avatars = "全部" in message.text or "all" in message.text  # 是否发送全部角色
 
         logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
-
-        client = await self.get_user_client(update, context)
-        if not client:
-            return
-
-        notice = await message.reply_text("派蒙需要收集整理数据，还请耐心等待哦~")
-        await message.reply_chat_action(ChatAction.TYPING)
-
+        notice = None
         try:
-            characters = await client.get_genshin_characters(client.player_id)
-            avatar_datas: List[AvatarData] = await self.get_avatars_data(
-                characters, client, None if all_avatars else 20
-            )
-        except InvalidCookies as exc:
-            await notice.delete()
-            await client.get_genshin_user(client.player_id)
-            logger.warning("用户 %s[%s] 无法请求角色数数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
-            reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
-            if filters.ChatType.GROUPS.filter(message):
-                self.add_delete_message_job(reply_message, delay=30)
-                self.add_delete_message_job(message, delay=30)
-            return
+            async with self.helper.genshin(user.id) as client:
+                notice = await message.reply_text("派蒙需要收集整理数据，还请耐心等待哦~")
+                await message.reply_chat_action(ChatAction.TYPING)
+                characters = await client.get_genshin_characters(client.player_id)
+                avatar_datas: List[AvatarData] = await self.get_avatars_data(
+                    characters, client, None if all_avatars else 20
+                )
         except SimnetBadRequest as e:
-            await notice.delete()
+            if notice:
+                await notice.delete()
             if e.ret_code == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
                 self.add_delete_message_job(reply_message, delay=20)
                 return
             raise e
-        finally:
-            await client.shutdown()
 
         name_card, avatar, nickname, rarity = await self.get_final_data(client.player_id, user)
 
