@@ -18,7 +18,6 @@ from httpx import AsyncClient, HTTPError, TimeoutException
 from pydantic import BaseModel
 from simnet.errors import InvalidCookies, BadRequest as SimnetBadRequest
 from simnet.models.genshin.chronicle.characters import Character
-from telegram import User
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 
@@ -40,7 +39,7 @@ if TYPE_CHECKING:
     from telegram import Update
     from telegram.ext import ContextTypes
     from simnet import GenshinClient
-    from telegram import Message
+    from telegram import Message, User
 
 INTERVAL = 1
 
@@ -146,7 +145,7 @@ class DailyMaterial(Plugin):
         talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
         return [t.level for t in talents]
 
-    async def _get_data_from_user(self, user: User) -> Tuple[Optional["GenshinClient"], Dict[str, List[Any]]]:
+    async def _get_data_from_user(self, user: "User") -> Tuple[Optional["GenshinClient"], Dict[str, List[Any]]]:
         """获取已经绑定的账号的角色、武器信息"""
         user_data = {"avatar": [], "weapon": []}
         try:
@@ -467,7 +466,7 @@ class DailyMaterial(Plugin):
                 logger.warning("Httpx [%s]\n%s[%s]", exc.__class__.__name__, exc.request.method, exc.request.url)
                 return exc
             except Exception as exc:
-                logger.error("图标素材下载出现异常！", exc_info=e)
+                logger.error("图标素材下载出现异常！", exc_info=exc)
                 return exc
 
         notice_text = "图标素材下载完成"
