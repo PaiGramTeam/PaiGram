@@ -8,16 +8,16 @@ from functools import partial
 from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
+from time import time as time_
 from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple, TYPE_CHECKING
 
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
-from httpx import AsyncClient, HTTPError
+from httpx import AsyncClient, HTTPError, TimeoutException
 from pydantic import BaseModel
 from simnet.errors import InvalidCookies, BadRequest as SimnetBadRequest
 from simnet.models.genshin.chronicle.characters import Character
-from telegram import Message, User
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 
@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from telegram import Update
     from telegram.ext import ContextTypes
     from simnet import GenshinClient
+    from telegram import Message, User
 
 INTERVAL = 1
 
@@ -144,7 +145,7 @@ class DailyMaterial(Plugin):
         talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
         return [t.level for t in talents]
 
-    async def _get_data_from_user(self, user: User) -> Tuple[Optional["GenshinClient"], Dict[str, List[Any]]]:
+    async def _get_data_from_user(self, user: "User") -> Tuple[Optional["GenshinClient"], Dict[str, List[Any]]]:
         """获取已经绑定的账号的角色、武器信息"""
         user_data = {"avatar": [], "weapon": []}
         try:
@@ -431,14 +432,10 @@ class DailyMaterial(Plugin):
         # noinspection PyTypeChecker
         return result
 
-    async def _download_icon(self, message: Optional[Message] = None) -> float:
+    async def _download_icon(self, message: "Message") -> float:
         """下载素材图标"""
         asset_list = []
-
-        from time import time as time_
-
         lock = asyncio.Lock()
-
         the_time = Value(c_double, time_() - INTERVAL)
 
         async def edit_message(text):
@@ -454,17 +451,25 @@ class DailyMaterial(Plugin):
                         pass
 
         async def task(item_id, name, item_type):
-            logger.debug("正在开始下载 %s 的图标素材", name)
-            await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。")
-            asset: AssetsServiceType = getattr(self.assets_service, item_type)(item_id)  # 获取素材对象
-            asset_list.append(asset.honey_id)
-            # 找到该素材对象的所有图标类型
-            # 并根据图标类型找到下载对应图标的函数
-            for icon_type in asset.icon_types:
-                await getattr(asset, icon_type)(True)  # 执行下载函数
-            logger.debug("%s 的图标素材下载成功", name)
-            await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。<b>成功！</b>")
+            try:
+                logger.debug("正在开始下载 %s 的图标素材", name)
+                await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。")
+                asset: AssetsServiceType = getattr(self.assets_service, item_type)(item_id)
+                asset_list.append(asset.honey_id)
+                # 找到该素材对象的所有图标类型
+                # 并根据图标类型找到下载对应图标的函数
+                for icon_type in asset.icon_types:
+                    await getattr(asset, icon_type)(True)  # 执行下载函数
+                logger.debug("%s 的图标素材下载成功", name)
+                await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。<b>成功！</b>")
+            except TimeoutException as exc:
+                logger.warning("Httpx [%s]\n%s[%s]", exc.__class__.__name__, exc.request.method, exc.request.url)
+                return exc
+            except Exception as exc:
+                logger.error("图标素材下载出现异常！", exc_info=exc)
+                return exc
 
+        notice_text = "图标素材下载完成"
         for TYPE, ITEMS in HONEY_DATA.items():  # 遍历每个对象
             task_list = []
             new_items = []
@@ -472,16 +477,18 @@ class DailyMaterial(Plugin):
                 if (ITEM := [ID, DATA[1], TYPE]) not in new_items:
                     new_items.append(ITEM)
                     task_list.append(task(*ITEM))
-            await asyncio.gather(*task_list)  # 等待所有任务执行完成
+            results = await asyncio.gather(*task_list, return_exceptions=True)  # 等待所有任务执行完成
+            for result in results:
+                if isinstance(result, TimeoutException):
+                    notice_text = f"{result.__class__.__name__} 图标素材下载过程中请求超时.\n有关详细信息，请查看日志"
+                elif isinstance(result, Exception):
+                    notice_text = f"{result.__class__.__name__} 图标素材下载过程中发生异常.\n有关详细信息，请查看日志"
+                    break
         try:
-            await message.edit_text(
-                "\n".join(message.text_html.split("\n")[:2] + ["图标素材下载完成!"]), parse_mode=ParseMode.HTML
-            )
+            await message.edit_text(notice_text)
         except RetryAfter as e:
-            await asyncio.sleep(e.retry_after)
-            await message.edit_text(
-                "\n".join(message.text_html.split("\n")[:2] + ["图标素材下载完成!"]), parse_mode=ParseMode.HTML
-            )
+            await asyncio.sleep(e.retry_after + 0.1)
+            await message.edit_text(notice_text)
         except Exception as e:
             logger.debug(e)
 
