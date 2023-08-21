@@ -3,17 +3,15 @@ import re
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from simnet.errors import DataNotPublic, BadRequest as SimnetBadRequest, InvalidCookies
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from simnet.errors import DataNotPublic, BadRequest as SimnetBadRequest
 from telegram.constants import ChatAction
 from telegram.ext import filters
-from telegram.helpers import create_deep_linked_url
 
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -113,35 +111,7 @@ class LedgerPlugin(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             async with self.helper.genshin(user.id) as client:
-                try:
-                    render_result = await self._start_get_ledger(client, month)
-                except InvalidCookies as exc:  # 如果抛出InvalidCookies 判断是否真的玄学过期（或权限不足？）
-                    await client.get_genshin_user(client.player_id)
-                    logger.warning(
-                        "用户 %s[%s] 无法请求旅行札记数据 API返回信息为 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original
-                    )
-                    reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，请尝试重新获取Cookie。")
-                    if filters.ChatType.GROUPS.filter(message):
-                        self.add_delete_message_job(reply_message, delay=30)
-                        self.add_delete_message_job(message, delay=30)
-                    return
-        except (PlayerNotFoundError, CookiesNotFoundError):
-            buttons = [
-                [
-                    InlineKeyboardButton(
-                        "点我绑定账号", url=create_deep_linked_url(self.application.bot.username, "set_cookie")
-                    )
-                ]
-            ]
-            if filters.ChatType.GROUPS.filter(message):
-                reply_message = await message.reply_text(
-                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
-                )
-                self.add_delete_message_job(reply_message, delay=30)
-                self.add_delete_message_job(message, delay=30)
-            else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
-            return
+                render_result = await self._start_get_ledger(client, month)
         except DataNotPublic:
             reply_message = await message.reply_text("查询失败惹，可能是旅行札记功能被禁用了？请先通过米游社或者 hoyolab 获取一次旅行札记后重试。")
             if filters.ChatType.GROUPS.filter(message):

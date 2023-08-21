@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from simnet.client.routes import InternationalRoute
-from simnet.errors import InvalidCookies, BadRequest as SIMNetBadRequest
+from simnet.errors import BadRequest as SIMNetBadRequest
 from simnet.utils.player import recognize_genshin_server, recognize_genshin_game_biz
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
@@ -97,15 +97,6 @@ class RegTimePlugin(Plugin):
                     parse_mode=ParseMode.HTML,
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
-        except InvalidCookies as exc:
-            async with self.helper.genshin(user.id) as client:
-                await client.get_genshin_user(client.player_id)
-            logger.warning("用户 %s[%s] 无法请求注册时间 API返回信息为 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
-            reply_message = await message.reply_text("出错了呜呜呜 ~ 当前访问令牌无法请求角色数数据，")
-            if filters.ChatType.GROUPS.filter(message):
-                self.add_delete_message_job(reply_message, delay=30)
-                self.add_delete_message_job(message, delay=30)
-            return
         except SIMNetBadRequest as exc:
             if exc.ret_code == -501101:
                 await message.reply_text("当前角色冒险等阶未达到10级，暂时无法获取信息")

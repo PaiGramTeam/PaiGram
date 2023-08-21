@@ -2,16 +2,14 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from simnet.errors import BadRequest as SimnetBadRequest
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import filters
-from telegram.helpers import create_deep_linked_url
 
 from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -52,17 +50,6 @@ class PlayerStatsPlugins(Plugin):
             except CookiesNotFoundError:
                 async with self.helper.public_genshin(user.id) as client:
                     render_result = await self.render(client, uid)
-        except PlayerNotFoundError:
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
-            if filters.ChatType.GROUPS.filter(message):
-                reply_message = await message.reply_text(
-                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号", reply_markup=InlineKeyboardMarkup(buttons)
-                )
-                self.add_delete_message_job(reply_message, delay=30)
-                self.add_delete_message_job(message, delay=30)
-            else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
-            return
         except SimnetBadRequest as exc:
             if exc.ret_code == 1034 and uid:
                 await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
