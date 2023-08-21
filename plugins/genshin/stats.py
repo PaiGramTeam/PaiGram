@@ -110,6 +110,7 @@ class PlayerStatsPlugins(Plugin):
                 ("岩神瞳", "geoculi"),
                 ("雷神瞳", "electroculi"),
                 ("草神瞳", "dendroculi"),
+                ("水神瞳", "hydroculi"),
             ],
             "style": random.choice(["mondstadt", "liyue"]),  # nosec
         }
