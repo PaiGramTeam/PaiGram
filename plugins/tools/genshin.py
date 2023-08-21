@@ -254,10 +254,12 @@ class GenshinHelper(Plugin):
                 stoken = client.cookies.get("stoken")
                 if stoken is not None:
                     try:
-                        cookie_model.data["cookie_token"] = await client.get_cookie_token_by_stoken()
+                        new_cookies = cookie_model.data.copy()
+                        new_cookies["cookie_token"] = await client.get_cookie_token_by_stoken()
                         logger.success("用户 %s 刷新 cookie_token 成功", user_id)
-                        cookie_model.data["ltoken"] = await client.get_ltoken_by_stoken()
+                        new_cookies["ltoken"] = await client.get_ltoken_by_stoken()
                         logger.success("用户 %s 刷新 ltoken 成功", user_id)
+                        cookie_model.data = new_cookies
                         await self.cookies_service.update(cookie_model)
                     except SimnetBadRequest as _exc:
                         logger.warning(
