@@ -44,8 +44,8 @@ INTERVAL = 1
 
 DATA_TYPE = Dict[str, List[List[str]]]
 DATA_FILE_PATH = Path(__file__).joinpath("../daily.json").resolve()
-DOMAINS = ["忘却之峡", "太山府", "菫色之庭", "昏识塔", "塞西莉亚苗圃", "震雷连山密宫", "砂流之庭", "有顶塔"]
-DOMAIN_AREA_MAP = dict(zip(DOMAINS, ["蒙德", "璃月", "稻妻", "须弥"] * 2))
+DOMAINS = ["忘却之峡", "太山府", "菫色之庭", "昏识塔", "塞西莉亚苗圃", "震雷连山密宫", "砂流之庭", "有顶塔", "苍白的遗荣", "深潮的余响"]
+DOMAIN_AREA_MAP = dict(zip(DOMAINS, ["蒙德", "璃月", "稻妻", "须弥", "枫丹"] * 2))
 
 WEEK_MAP = ["一", "二", "三", "四", "五", "六", "日"]
 
