@@ -75,7 +75,7 @@ class AbyssPlugin(Plugin):
 
     @handler.command("abyss", block=False)
     @handler.message(filters.Regex(msg_pattern), block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, _: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
         uid: Optional[int] = None

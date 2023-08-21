@@ -156,12 +156,13 @@ class AvatarListPlugin(Plugin):
 
     @handler.command("avatars", block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
-    async def avatar_list(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+    async def avatar_list(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
         all_avatars = "全部" in message.text or "all" in message.text  # 是否发送全部角色
 
         logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
+        notice = None
         try:
             async with self.helper.genshin(user.id) as client:
                 notice = await message.reply_text("派蒙需要收集整理数据，还请耐心等待哦~")
@@ -171,7 +172,8 @@ class AvatarListPlugin(Plugin):
                     characters, client, None if all_avatars else 20
                 )
         except SimnetBadRequest as e:
-            await notice.delete()
+            if notice:
+                await notice.delete()
             if e.ret_code == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
                 self.add_delete_message_job(reply_message, delay=20)
