@@ -46,6 +46,7 @@ class PlayerStatsPlugins(Plugin):
         try:
             try:
                 async with self.helper.genshin(user.id) as client:
+                    await client.get_record_cards()
                     render_result = await self.render(client, uid)
             except CookiesNotFoundError:
                 async with self.helper.public_genshin(user.id) as client:
