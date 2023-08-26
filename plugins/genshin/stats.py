@@ -11,6 +11,7 @@ from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
 from utils.log import logger
+from utils.uid import mask_number
 
 if TYPE_CHECKING:
     from telegram import Update
@@ -77,7 +78,7 @@ class PlayerStatsPlugins(Plugin):
         user_info = user_info.copy(deep=True)
 
         data = {
-            "uid": uid,
+            "uid": mask_number(uid),
             "info": user_info.info,
             "stats": user_info.stats,
             "explorations": user_info.explorations,

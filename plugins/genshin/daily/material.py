@@ -480,9 +480,9 @@ class DailyMaterial(Plugin):
             results = await asyncio.gather(*task_list, return_exceptions=True)  # 等待所有任务执行完成
             for result in results:
                 if isinstance(result, TimeoutException):
-                    notice_text = f"{result.__class__.__name__} 图标素材下载过程中请求超时.\n有关详细信息，请查看日志"
+                    notice_text = "图标素材下载过程中请求超时\n有关详细信息，请查看日志"
                 elif isinstance(result, Exception):
-                    notice_text = f"{result.__class__.__name__} 图标素材下载过程中发生异常.\n有关详细信息，请查看日志"
+                    notice_text = "图标素材下载过程中发生异常\n有关详细信息，请查看日志"
                     break
         try:
             await message.edit_text(notice_text)

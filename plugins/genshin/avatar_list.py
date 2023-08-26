@@ -20,6 +20,7 @@ from metadata.genshin import AVATAR_DATA
 from modules.wiki.base import Model
 from plugins.tools.genshin import CharacterDetails, GenshinHelper
 from utils.log import logger
+from utils.uid import mask_number
 
 if TYPE_CHECKING:
     from telegram import Update
@@ -183,7 +184,7 @@ class AvatarListPlugin(Plugin):
         name_card, avatar, nickname, rarity = await self.get_final_data(client.player_id, user)
 
         render_data = {
-            "uid": client.player_id,  # 玩家uid
+            "uid": mask_number(client.player_id),  # 玩家uid
             "nickname": nickname,  # 玩家昵称
             "avatar": avatar,  # 玩家头像
             "rarity": rarity,  # 玩家头像对应的角色星级
