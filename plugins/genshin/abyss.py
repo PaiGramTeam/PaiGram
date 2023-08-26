@@ -20,6 +20,7 @@ from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
 from utils.log import logger
+from utils.uid import mask_number
 
 try:
     import ujson as jsonlib
@@ -220,7 +221,7 @@ class AbyssPlugin(Plugin):
 
         render_data["time"] = time
         render_data["stars"] = total_stars
-        render_data["uid"] = uid
+        render_data["uid"] = mask_number(uid)
         render_data["floor_colors"] = {
             1: "#374952",
             2: "#374952",

@@ -11,6 +11,7 @@ from simnet.utils.player import recognize_genshin_server
 from modules.pay_log.error import PayLogAuthkeyTimeout, PayLogInvalidAuthkey, PayLogNotFound
 from modules.pay_log.models import PayLog as PayLogModel, BaseInfo
 from utils.const import PROJECT_ROOT
+from utils.uid import mask_number
 
 try:
     import ujson as jsonlib
@@ -240,7 +241,7 @@ class PayLog:
             if price_data[i]["count"] > 0
         ]
         return {
-            "uid": player_id,
+            "uid": mask_number(player_id),
             "datas": datas,
             "bar_data": month_datas,
             "pie_data": pie_datas,

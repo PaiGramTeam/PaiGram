@@ -41,6 +41,7 @@ from modules.gacha_log.models import (
     UIGFModel,
 )
 from utils.const import PROJECT_ROOT
+from utils.uid import mask_number
 
 if TYPE_CHECKING:
     from core.dependence.assets import AssetsService
@@ -533,7 +534,7 @@ class GachaLog:
         last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
         first_time = data[-1].time.strftime("%Y-%m-%d %H:%M")
         return {
-            "uid": player_id,
+            "uid": mask_number(player_id),
             "allNum": total,
             "type": pool.value,
             "typeName": pool_name,

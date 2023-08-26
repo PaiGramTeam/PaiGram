@@ -37,6 +37,7 @@ from utils.enkanetwork import RedisCache
 from utils.helpers import download_resource
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
+from utils.uid import mask_number
 
 if TYPE_CHECKING:
     from enkanetwork import CharacterInfo, EquipmentsStats
@@ -486,7 +487,7 @@ class RenderTemplate:
                 artifact_total_score_label = r[0]
 
         data = {
-            "uid": self.uid,
+            "uid": mask_number(self.uid),
             "character": self.character,
             "stats": await self.de_stats(),
             "weapon": self.find_weapon(),
