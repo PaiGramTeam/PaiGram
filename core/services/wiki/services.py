@@ -58,8 +58,12 @@ class WikiService(BaseService):
         用于把Redis的缓存全部加载进Python
         :return:
         """
-
+        logger.info("正在重新获取Wiki")
+        logger.info("正在重新获取武器信息")
+        await self.refresh_weapon()
+        logger.info("正在重新获取角色信息")
         await self.refresh_characters()
+        logger.info("刷新成功")
 
     async def init(self) -> NoReturn:
         """
