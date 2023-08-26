@@ -28,6 +28,7 @@ from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
 from plugins.tools.genshin import CharacterDetails, PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from utils.log import logger
+from utils.uid import mask_number
 
 try:
     import ujson as jsonlib
@@ -249,7 +250,7 @@ class DailyMaterial(Plugin):
         client, user_data = await self._get_data_from_user(user)
 
         await message.reply_chat_action(ChatAction.TYPING)
-        render_data = RenderData(title=title, time=time, uid=client.player_id if client else client)
+        render_data = RenderData(title=title, time=time, uid=mask_number(client.player_id) if client else client)
 
         calculator_sync: bool = True  # 默认养成计算器同步为开启
         for type_ in ["avatar", "weapon"]:
@@ -520,7 +521,7 @@ class AreaData(BaseModel):
 class RenderData(BaseModel):
     title: str  # 页面标题，主要用于显示星期几
     time: str  # 页面时间
-    uid: Optional[int] = None  # 用户UID
+    uid: Optional[str] = None  # 用户UID
     character: List[AreaData] = []  # 角色数据
     weapon: List[AreaData] = []  # 武器数据
 
