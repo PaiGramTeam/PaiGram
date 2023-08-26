@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Optional, Tuple, List, TYPE_CHECKING
 
 from httpx import TimeoutException
-from simnet import Game, Region
+from simnet import Game
 from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies, TimedOut as SimnetTimedOut
 from simnet.utils.player import recognize_genshin_server
 from sqlalchemy.orm.exc import StaleDataError
@@ -136,23 +136,14 @@ class SignSystem(Plugin):
             try:
                 if validate:
                     logger.info("UID[%s] 正在尝试通过验证码\nchallenge[%s]\nvalidate[%s]", client.player_id, challenge, validate)
-                if client.region == Region.OVERSEAS:
-                    request_daily_reward = await client.request_daily_reward(
-                        "sign",
-                        method="POST",
-                        challenge="9a7e3af0ef6ae8afcb37f091b4224fb0",
-                        game=Game.GENSHIN,
-                        lang="zh-cn",
-                    )
-                else:
-                    request_daily_reward = await client.request_daily_reward(
-                        "sign",
-                        method="POST",
-                        game=Game.GENSHIN,
-                        lang="zh-cn",
-                        challenge=challenge,
-                        validate=validate,
-                    )
+                request_daily_reward = await client.request_daily_reward(
+                    "sign",
+                    method="POST",
+                    game=Game.GENSHIN,
+                    lang="zh-cn",
+                    challenge=challenge,
+                    validate=validate,
+                )
                 logger.debug("request_daily_reward 返回 %s", request_daily_reward)
                 if request_daily_reward and request_daily_reward.get("success", 0) == 1:
                     # 尝试通过 ajax 请求绕过签到
