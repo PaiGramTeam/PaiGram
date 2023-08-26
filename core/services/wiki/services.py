@@ -61,7 +61,6 @@ class WikiService(BaseService):
 
         await self.refresh_characters()
 
-
     async def init(self) -> NoReturn:
         """
         用于把Redis的缓存全部加载进Python
