@@ -142,10 +142,11 @@ class GachaLog:
                         id=item.id,
                         name=item.name,
                         gacha_type=item.gacha_type,
+                        item_id=roleToId(item.name) if item.item_type == "角色" else weaponToId(item.name),
                         item_type=item.item_type,
                         rank_type=item.rank_type,
                         time=item.time.strftime("%Y-%m-%d %H:%M:%S"),
-                        uigf_gacha_type=item.gacha_type,
+                        uigf_gacha_type=item.gacha_type if item.gacha_type != "400" else "301",
                     )
                 )
         await self.save_json(save_path, json.loads(info.json()))
