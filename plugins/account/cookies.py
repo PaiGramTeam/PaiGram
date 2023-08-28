@@ -138,10 +138,18 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 await asyncio.sleep(10)
                 try:
                     if game_token := await client.check_login_qrcode(ticket):
-                        cookies = {"stuid": str(client.account_id), "ltuid": str(client.account_id)}
-                        cookies["stoken"], cookies["mid"] = await client.get_stoken_v2_and_mid_by_game_token(game_token)
-                        cookies["cookie_token"] = await client.get_cookie_token_by_stoken()
-                        cookies["ltoken"] = await client.get_ltoken_by_stoken()
+                        stoken_v2, mid = await client.get_stoken_v2_and_mid_by_game_token(game_token)
+                        cookie_token = await client.get_cookie_token_by_stoken()
+                        ltoken = await client.get_ltoken_by_stoken()
+                        cookies = {
+                            "stuid": str(client.account_id),
+                            "ltuid": str(client.account_id),
+                            "account_id": str(client.account_id),
+                            "stoken": stoken_v2,
+                            "mid": mid,
+                            "cookie_token": cookie_token,
+                            "ltoken": ltoken,
+                        }
                         account_cookies_plugin_data.cookies = cookies
                         return await self.check_cookies(update, context)
                 except SimnetBadRequest as e:
