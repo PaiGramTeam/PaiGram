@@ -13,14 +13,11 @@ from core.services.template.services import TemplateService
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
+from plugins.tools.genshin import PlayerNotFoundError
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
 INPUT_URL, CONFIRM_DELETE = range(10100, 10102)
-
-
-class PlayerNotFoundError(Exception):
-    pass
 
 
 class PayLogPlugin(Plugin.Conversation):

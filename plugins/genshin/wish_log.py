@@ -28,6 +28,7 @@ from modules.gacha_log.error import (
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
+from plugins.tools.genshin import PlayerNotFoundError
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
@@ -38,10 +39,6 @@ except ImportError:
     import json as jsonlib
 
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
-
-
-class PlayerNotFoundError(Exception):
-    pass
 
 
 class WishLogPlugin(Plugin.Conversation):
