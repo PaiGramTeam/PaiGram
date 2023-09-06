@@ -1,3 +1,3 @@
-from utils.patch import aiohttp, simnet
+from utils.patch import simnet
 
-__all__ = ["aiohttp", "simnet"]
+__all__ = ["simnet"]
