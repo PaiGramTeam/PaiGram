@@ -19,7 +19,19 @@ except ImportError:
 if TYPE_CHECKING:
     from redis import asyncio as aioredis
 
-__all__ = ("RedisCache",)
+__all__ = ("RedisCache", "StaticCache", "HTTPClient", "EnkaNetworkAPI")
+
+
+class StaticCache(Cache):
+    def __init__(self, maxsize: int, ttl: int) -> None:
+        self.cache = TTLCache(maxsize, ttl)
+
+    async def get(self, key) -> Dict[str, Any]:
+        data = self.cache.get(key)
+        return jsonlib.loads(data) if data is not None else data
+
+    async def set(self, key, value) -> None:
+        self.cache[key] = jsonlib.dumps(value)
 
 
 class RedisCache(Cache):
@@ -98,18 +110,6 @@ class HTTPClient(_HTTPClient):
             raise EnkaServerError(f"Server error status code: {response.status_code}")
 
         return {"status": response.status_code, "content": response.content}
-
-
-class StaticCache(Cache):
-    def __init__(self, maxsize: int, ttl: int) -> None:
-        self.cache = TTLCache(maxsize, ttl)
-
-    async def get(self, key) -> Dict[str, Any]:
-        data = self.cache.get(key)
-        return jsonlib.loads(data) if data is not None else data
-
-    async def set(self, key, value) -> None:
-        self.cache[key] = jsonlib.dumps(value)
 
 
 class EnkaNetworkAPI(_EnkaNetworkAPI):
