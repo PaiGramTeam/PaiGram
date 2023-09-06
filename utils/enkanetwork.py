@@ -3,8 +3,11 @@ import warnings
 from typing import Dict, Any, Optional, TYPE_CHECKING
 
 from cachetools import TTLCache
-from enkanetwork import Cache, EnkaServerError, TimedOut, ERROR_ENKA, EnkaNetworkAPI as _EnkaNetworkAPI, Assets
+from enkanetwork.assets import Assets
+from enkanetwork.cache import Cache
+from enkanetwork.client import EnkaNetworkAPI as _EnkaNetworkAPI
 from enkanetwork.config import Config
+from enkanetwork.exception import TimedOut, NetworkError, EnkaServerError, ERROR_ENKA
 from enkanetwork.http import HTTPClient as _HTTPClient, Route
 from httpx import AsyncClient, TimeoutException, HTTPError, Timeout
 
@@ -80,10 +83,10 @@ class HTTPClient(_HTTPClient):
 
         try:
             response = await self.client.request(method, url, **kwargs)
-        except HTTPError as e:
-            raise EnkaServerError from e
         except TimeoutException as e:
             raise TimedOut from e
+        except HTTPError as e:
+            raise NetworkError from e
 
         _host = response.url.host
 
@@ -133,5 +136,5 @@ class EnkaNetworkAPI(_EnkaNetworkAPI):
             Config.init_cache(StaticCache(1024, 60 * 1))
 
         # http client
-        self.__http = HTTPClient(key=key, agent=user_agent, timeout=timeout)
+        self.__http = HTTPClient(key=key, agent=user_agent, timeout=timeout)  # skipcq: PTC-W0037
         self._closed = False
