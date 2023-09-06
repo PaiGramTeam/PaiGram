@@ -14,10 +14,11 @@ from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel, PlayerInfo
 from core.services.players.repositories import PlayerInfoRepository
-from gram_core.services.players.services import PlayersService
 from utils.enkanetwork import RedisCache, EnkaNetworkAPI
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException
+
+from gram_core.services.players.services import PlayersService
 
 __all__ = ("PlayersService", "PlayerInfoService")
 
