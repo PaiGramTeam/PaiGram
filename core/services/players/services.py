@@ -3,11 +3,11 @@ from typing import Optional
 
 from aiohttp import ClientConnectorError
 from enkanetwork import (
-    EnkaNetworkAPI,
     VaildateUIDError,
     HTTPException,
     EnkaPlayerNotFound,
     PlayerInfo as EnkaPlayerInfo,
+    TimedOut,
 )
 
 from core.base_service import BaseService
@@ -15,9 +15,8 @@ from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel, PlayerInfo
 from core.services.players.repositories import PlayerInfoRepository
-from utils.enkanetwork import RedisCache
+from utils.enkanetwork import RedisCache, EnkaNetworkAPI
 from utils.log import logger
-from utils.patch.aiohttp import AioHttpTimeoutException
 
 from gram_core.services.players.services import PlayersService
 
@@ -50,7 +49,7 @@ class PlayerInfoService(BaseService):
             return response.player
         except (VaildateUIDError, EnkaPlayerNotFound, HTTPException) as exc:
             logger.warning("EnkaNetwork 请求失败: %s", str(exc))
-        except AioHttpTimeoutException as exc:
+        except TimedOut as exc:
             logger.warning("EnkaNetwork 请求超时: %s", str(exc))
         except ClientConnectorError as exc:
             logger.warning("EnkaNetwork 请求错误: %s", str(exc))
