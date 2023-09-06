@@ -473,7 +473,7 @@ class _NamecardAssets(_AssetsService):
         for namecard_id, namecard_data in NAMECARD_DATA.items():
             if namecard_data["icon"].split("_")[-1] == avatar_icon_name:
                 return int(namecard_id)
-            elif avatar_icon_name in namecard_data["icon"].split("_")[-1]:
+            if avatar_icon_name in namecard_data["icon"].split("_")[-1]:
                 fallback = int(namecard_id)
         if fallback:
             return fallback
