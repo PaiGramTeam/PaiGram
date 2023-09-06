@@ -15,6 +15,7 @@ from enkanetwork import (
     EnkaServerUnknown,
     EnkaServerRateLimit,
     EnkaPlayerNotFound,
+    TimedOut,
 )
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -35,7 +36,6 @@ from modules.playercards.helpers import ArtifactStatsTheory
 from utils.enkanetwork import RedisCache, EnkaNetworkAPI
 from utils.helpers import download_resource
 from utils.log import logger
-from utils.patch.aiohttp import AioHttpTimeoutException
 from utils.uid import mask_number
 
 if TYPE_CHECKING:
@@ -76,7 +76,7 @@ class PlayerCards(Plugin):
             data = await self.player_cards_file.merge_info(uid, data)
             await self.cache.set(uid, data)
             return EnkaNetworkResponse.parse_obj(data)
-        except AioHttpTimeoutException:
+        except TimedOut:
             error = "Enka.Network 服务请求超时，请稍后重试"
         except EnkaServerRateLimit:
             error = "Enka.Network 已对此API进行速率限制，请稍后重试"
