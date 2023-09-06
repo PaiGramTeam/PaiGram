@@ -140,7 +140,7 @@ class ErrorHandler(Plugin):
                 notice = self.ERROR_MSG_PREFIX + f"Cookie 无效 错误信息为 {exc.original} 请尝试重新绑定"
         elif isinstance(exc, CookieException):
             if exc.retcode == 0:
-                notice = self.ERROR_MSG_PREFIX + "Cookie 已经被刷新，请尝试重试操作~"
+                notice = self.ERROR_MSG_PREFIX + "Cookie 已经被刷新，请尝试重试发送命令~"
             else:
                 logger.error("未知Cookie错误", exc_info=exc)
                 notice = self.ERROR_MSG_PREFIX + f"Cookie 无效 错误信息为 {exc.original} 请尝试重新绑定"
@@ -164,7 +164,7 @@ class ErrorHandler(Plugin):
                 if message:
                     notice = self.ERROR_MSG_PREFIX + f"获取信息发生错误 错误信息为 {message} ~ 请稍后再试"
                 else:
-                    notice = self.ERROR_MSG_PREFIX + f"获取信息发生错误 请稍后再试"
+                    notice = self.ERROR_MSG_PREFIX + "获取信息发生错误 请稍后再试"
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop
