@@ -4,7 +4,6 @@ import traceback
 from typing import Optional
 
 import aiofiles
-from aiohttp import ClientError, ClientConnectorError
 from httpx import HTTPError, TimeoutException
 from simnet.errors import (
     DataNotPublic,
