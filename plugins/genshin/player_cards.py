@@ -3,7 +3,6 @@ from typing import Any, List, Tuple, Union, Optional, TYPE_CHECKING
 
 from enkanetwork import (
     DigitType,
-    EnkaNetworkAPI,
     EnkaNetworkResponse,
     EnkaServerError,
     Equipments,
@@ -33,7 +32,7 @@ from core.services.template.services import TemplateService
 from metadata.shortname import roleToName
 from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
-from utils.enkanetwork import RedisCache
+from utils.enkanetwork import RedisCache, EnkaNetworkAPI
 from utils.helpers import download_resource
 from utils.log import logger
 from utils.patch.aiohttp import AioHttpTimeoutException

@@ -1,12 +1,17 @@
+import logging
+import warnings
 from typing import Dict, Any, Optional, TYPE_CHECKING
 
-from enkanetwork import Cache
+from cachetools import TTLCache
+from enkanetwork import Cache, EnkaServerError, TimedOut, ERROR_ENKA, EnkaNetworkAPI as _EnkaNetworkAPI, Assets
+from enkanetwork.config import Config
+from enkanetwork.http import HTTPClient as _HTTPClient, Route
+from httpx import AsyncClient, TimeoutException, HTTPError, Timeout
 
 try:
     import ujson as jsonlib
 except ImportError:
     import json as jsonlib
-
 
 if TYPE_CHECKING:
     from redis import asyncio as aioredis
@@ -43,3 +48,89 @@ class RedisCache(Cache):
     async def ttl(self, key) -> int:
         qname = self.get_qname(key)
         return await self.redis.ttl(qname)
+
+
+class HTTPClient(_HTTPClient):
+    async def close(self) -> None:
+        await self.client.aclose()
+
+    def __init__(
+        self, *, key: Optional[str] = None, agent: Optional[str] = None, timeout: Optional[Any] = None
+    ) -> None:
+        if timeout is None:
+            timeout = Timeout(
+                connect=5.0,
+                read=5.0,
+                write=5.0,
+                pool=1.0,
+            )
+
+        if agent is not None:
+            Config.init_user_agent(agent)
+        agent = agent or Config.USER_AGENT
+        if key is None:
+            warnings.warn("'key' has depercated.")
+        self.client = AsyncClient(timeout=timeout, headers={"User-Agent": agent})
+
+    async def request(self, route: Route, **kwargs: Any) -> Any:
+        method = route.method
+        url = route.url
+        username = route.username
+
+        try:
+            response = await self.client.request(method, url, **kwargs)
+        except HTTPError as e:
+            raise EnkaServerError from e
+        except TimeoutException as e:
+            raise TimedOut from e
+
+        _host = response.url.host
+
+        if response.is_error:
+            if _host == Config.ENKA_URL:
+                err = ERROR_ENKA.get(response.status_code, None)
+                if err:
+                    raise err[0](err[1].format(uid=username))
+            raise EnkaServerError(f"Server error status code: {response.status_code}")
+
+        return {"status": response.status_code, "content": response.content}
+
+
+class StaticCache(Cache):
+    def __init__(self, maxsize: int, ttl: int) -> None:
+        self.cache = TTLCache(maxsize, ttl)
+
+    async def get(self, key) -> Dict[str, Any]:
+        data = self.cache.get(key)
+        return jsonlib.loads(data) if data is not None else data
+
+    async def set(self, key, value) -> None:
+        self.cache[key] = jsonlib.dumps(value)
+
+
+class EnkaNetworkAPI(_EnkaNetworkAPI):
+    def __init__(
+        self,
+        *,
+        lang: str = "en",
+        debug: bool = False,
+        key: str = "",
+        cache: bool = True,
+        user_agent: str = "",
+        timeout: int = 10,
+    ) -> None:  # noqa: E501
+        # Logging
+        logging.basicConfig()
+        logging.getLogger("enkanetwork").setLevel(logging.DEBUG if debug else logging.ERROR)  # noqa: E501
+
+        # Set language and load config
+        self.assets = Assets(lang)
+
+        # Cache
+        self._enable_cache = cache
+        if self._enable_cache:
+            Config.init_cache(StaticCache(1024, 60 * 1))
+
+        # http client
+        self.__http = HTTPClient(key=key, agent=user_agent, timeout=timeout)
+        self._closed = False
