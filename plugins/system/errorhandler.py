@@ -4,7 +4,6 @@ import traceback
 from typing import Optional
 
 import aiofiles
-from aiohttp import ClientError, ClientConnectorError
 from httpx import HTTPError, TimeoutException
 from simnet.errors import (
     DataNotPublic,
@@ -33,7 +32,6 @@ from modules.errorpush import (
 )
 from plugins.tools.genshin import CookiesNotFoundError, PlayerNotFoundError as GenshinPlayerNotFoundError
 from utils.log import logger
-from utils.patch.aiohttp import AioHttpTimeoutException
 
 try:
     import ujson as jsonlib
@@ -231,20 +229,6 @@ class ErrorHandler(Plugin):
         if isinstance(exc, TimeoutException):
             notice = self.ERROR_MSG_PREFIX + " 服务器熟啦 ~ 请稍后再试"
             logger.warning("Httpx [%s]\n%s[%s]", exc.__class__.__name__, exc.request.method, exc.request.url)
-        if notice:
-            self.create_notice_task(update, context, notice)
-            raise ApplicationHandlerStop
-
-    @error_handler()
-    async def process_aiohttp_exception(self, update: object, context: CallbackContext):
-        if not isinstance(context.error, ClientError) or not isinstance(update, Update):
-            return
-        exc = context.error
-        notice: Optional[str] = None
-        if isinstance(exc, AioHttpTimeoutException):
-            notice = self.ERROR_MSG_PREFIX + " 服务器熟啦 ~ 请稍后再试"
-        elif isinstance(exc, ClientConnectorError):
-            notice = self.ERROR_MSG_PREFIX + " 连接服务器异常"
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop
