@@ -52,7 +52,8 @@ class RedisCache(Cache):
 
 class HTTPClient(_HTTPClient):
     async def close(self) -> None:
-        await self.client.aclose()
+        if not self.client.is_closed:
+            await self.client.aclose()
 
     def __init__(
         self, *, key: Optional[str] = None, agent: Optional[str] = None, timeout: Optional[Any] = None
