@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
+from simnet import Region
 from simnet.client.routes import Route
 from simnet.errors import BadRequest as SimnetBadRequest, RegionNotSupported, InvalidCookies, TimedOut as SimnetTimedOut
 from simnet.utils.player import recognize_genshin_game_biz, recognize_genshin_server
@@ -8,7 +9,6 @@ from sqlalchemy.orm.exc import StaleDataError
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 
-from core.basemodel import RegionEnum
 from core.plugin import Plugin
 from core.services.task.models import TaskStatusEnum
 from core.services.task.services import TaskCardServices
@@ -100,7 +100,7 @@ class BirthdayCardSystem(Plugin):
         self,
         client: "GenshinClient",
     ) -> str:
-        if client.region == RegionEnum.HOYOLAB:
+        if client.region == Region.OVERSEAS:
             raise RegionNotSupported
         today_list = self.get_today_birthday()
         if not today_list:
