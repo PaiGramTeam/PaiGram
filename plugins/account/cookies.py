@@ -382,6 +382,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                         account_id=account_cookies_plugin_data.account_id,
                         data=account_cookies_plugin_data.cookies,
                         region=account_cookies_plugin_data.region,
+                        status=CookiesStatusEnum.STATUS_SUCCESS,
                         is_share=True,  # todo 用户可以自行选择是否将Cookies加入公共池
                     )
                     await self.cookies_service.add(cookies)
@@ -410,6 +411,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     account_id=account_cookies_plugin_data.account_id,
                     data=account_cookies_plugin_data.cookies,
                     region=account_cookies_plugin_data.region,
+                    status=CookiesStatusEnum.STATUS_SUCCESS,
                     is_share=True,  # todo 用户可以自行选择是否将Cookies加入公共池
                 )
                 await self.cookies_service.add(cookies)

@@ -24,6 +24,7 @@ from core.services.devices import DevicesService
 from core.services.players.services import PlayersService
 from core.services.users.services import UserService
 from core.sqlmodel.session import AsyncSession
+from gram_core.services.cookies.models import CookiesStatusEnum
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -260,6 +261,7 @@ class GenshinHelper(Plugin):
                         new_cookies["ltoken"] = await client.get_ltoken_by_stoken()
                         logger.success("用户 %s 刷新 ltoken 成功", user_id)
                         cookie_model.data = new_cookies
+                        cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
                         await self.cookies_service.update(cookie_model)
                     except SimnetBadRequest as _exc:
                         logger.warning(

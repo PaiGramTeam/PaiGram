@@ -11,6 +11,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.players.services import PlayerInfoService
+from gram_core.services.cookies.models import CookiesStatusEnum
 from modules.apihelper.models.genshin.cookies import CookiesModel
 from utils.log import logger
 
@@ -226,6 +227,7 @@ class PlayersManagesPlugin(Plugin):
                 )
                 return
             cookies_data.data = cookies.to_dict()
+            cookies_data.status = CookiesStatusEnum.STATUS_SUCCESS
             await self.cookies_service.update(cookies_data)
             await callback_query.edit_message_text(
                 f"玩家 {player.player_id} {player_info.nickname} cookies 刷新成功", reply_markup=InlineKeyboardMarkup(buttons)
