@@ -48,11 +48,16 @@ class RefreshCookiesJob(Plugin):
                     except InvalidCookies:
                         cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
                         logger.info("用户 user_id[%s] Cookies 已经过期", cookie_model.user_id)
-                    except SimnetBadRequest:
-                        logger.warning("用户 user_id[%s] 刷新 Cookies 时出现错误", cookie_model.user_id)
+                    except SimnetBadRequest as _exc:
+                        logger.warning(
+                            "用户 user_id[%s] 刷新 Cookies 时出现错误 [%s]%s",
+                            cookie_model.user_id,
+                            _exc.status_code,
+                            _exc.message,
+                        )
                         continue
                     except SimnetTimedOut:
-                        logger.warning("用户 user_id[%s] 刷新 Cookies 时超时", cookie_model.user_id)
+                        logger.warning("用户 user_id[%s] 刷新 Cookies 时连接超时", cookie_model.user_id)
                         continue
                     except SimnetNetworkError:
                         logger.warning("用户 user_id[%s] 刷新 Cookies 时网络错误", cookie_model.user_id)
@@ -69,5 +74,7 @@ class RefreshCookiesJob(Plugin):
                             logger.error("用户 user_id[%s] 更新 Cookies 时出现错误", cookie_model.user_id, exc_info=_exc)
                     except Exception as _exc:
                         logger.error("用户 user_id[%s] 更新 Cookies 状态失败", cookie_model.user_id, exc_info=_exc)
+                    else:
+                        logger.debug("用户 user_id[%s] 刷新 Cookies 成功")
 
         logger.success("执行每日刷新 Cookies 任务完成")
