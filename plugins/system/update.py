@@ -57,7 +57,8 @@ class UpdatePlugin(Plugin):
             if len(args) > 0:
                 await execute("git reset --hard origin/main")
             await execute("git pull --all")
-            if len(args) > 0:
+            await execute("git submodule update")
+            if len(args) > 1:
                 await execute(f"{executable} -m poetry install --extras all")
             logger.info("更新成功 正在重启")
             await reply_text.edit_text("更新成功 正在重启")
