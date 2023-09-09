@@ -8,10 +8,11 @@ from telegram import (
     InlineQueryResultCachedPhoto,
     InputTextMessageContent,
     Update,
+    InlineQueryResultsButton,
 )
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, InlineQueryHandler
+from telegram.ext import CallbackContext
 
 from core.dependence.assets import AssetsCouldNotFound, AssetsService
 from core.plugin import Plugin, handler
@@ -71,7 +72,7 @@ class Inline(Plugin):
         self.refresh_task.append(asyncio.create_task(task_weapons()))
         self.refresh_task.append(asyncio.create_task(task_characters()))
 
-    @handler(InlineQueryHandler, block=False)
+    @handler.inline_query(block=False)
     async def inline_query(self, update: Update, _: CallbackContext) -> None:
         user = update.effective_user
         ilq = cast(InlineQuery, update.inline_query)
@@ -107,7 +108,7 @@ class Inline(Plugin):
                             id=str(uuid4()),
                             title=name,
                             description=f"查看武器列表并查询 {name}",
-                            thumb_url=icon,
+                            thumbnail_url=icon,
                             input_message_content=InputTextMessageContent(
                                 f"武器查询{name}", parse_mode=ParseMode.MARKDOWN_V2
                             ),
@@ -122,7 +123,7 @@ class Inline(Plugin):
                             id=str(uuid4()),
                             title=name,
                             description=f"查看角色攻略列表并查询 {name}",
-                            thumb_url=icon,
+                            thumbnail_url=icon,
                             input_message_content=InputTextMessageContent(
                                 f"角色攻略查询{name}", parse_mode=ParseMode.MARKDOWN_V2
                             ),
@@ -149,7 +150,7 @@ class Inline(Plugin):
                             id=str(uuid4()),
                             title=f"当前查询内容为 {args[0]}",
                             description="如果无查看图片描述 这是正常的 客户端问题",
-                            thumb_url="https://www.miyoushe.com/_nuxt/img/game-ys.dfc535b.jpg",
+                            thumbnail_url="https://www.miyoushe.com/_nuxt/img/game-ys.dfc535b.jpg",
                             input_message_content=InputTextMessageContent(f"当前查询内容为 {args[0]}\n如果无查看图片描述 这是正常的 客户端问题"),
                         )
                     )
@@ -181,10 +182,12 @@ class Inline(Plugin):
         try:
             await ilq.answer(
                 results=results_list,
-                switch_pm_text=switch_pm_text,
-                switch_pm_parameter="inline_message",
                 cache_time=0,
                 auto_pagination=True,
+                button=InlineQueryResultsButton(
+                    text=switch_pm_text,
+                    start_parameter="inline_message",
+                ),
             )
         except BadRequest as exc:
             if "Query is too old" in exc.message:  # 过时请求全部忽略
@@ -195,6 +198,8 @@ class Inline(Plugin):
             logger.warning("inline_query发生BadRequest错误", exc_info=exc)
             await ilq.answer(
                 results=[],
-                switch_pm_text="糟糕，发生错误了。",
-                switch_pm_parameter="inline_message",
+                button=InlineQueryResultsButton(
+                    text="糟糕，发生错误了。",
+                    start_parameter="inline_message",
+                ),
             )
