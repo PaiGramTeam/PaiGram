@@ -11,6 +11,7 @@ from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, Networ
 from simnet.models.genshin.calculator import CalculatorCharacterDetails
 from simnet.models.genshin.chronicle.characters import Character
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm.exc import StaleDataError
 from sqlmodel import BigInteger, Column, DateTime, Field, Index, Integer, SQLModel, String, delete, func, select
 from telegram.ext import ContextTypes
 
@@ -252,6 +253,8 @@ class GenshinHelper(Plugin):
             try:
                 yield client
             except InvalidCookies as exc:
+                refresh = False
+                cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
                 stoken = client.cookies.get("stoken")
                 if stoken is not None:
                     try:
@@ -262,17 +265,31 @@ class GenshinHelper(Plugin):
                         logger.success("用户 %s 刷新 ltoken 成功", user_id)
                         cookie_model.data = new_cookies
                         cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
-                        await self.cookies_service.update(cookie_model)
+                    except InvalidCookies:
+                        logger.info("用户 user_id[%s] Cookies 已经过期", cookie_model.user_id)
                     except SimnetBadRequest as _exc:
                         logger.warning(
                             "用户 %s 刷新 token 失败 [%s]%s", user_id, _exc.ret_code, _exc.original or _exc.message
                         )
+                        cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
                     except NetworkError:
                         logger.warning("用户 %s 刷新 Cookies 失败 网络错误", user_id)
+                        cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
                     except Exception as _exc:
                         logger.error("用户 %s 刷新 Cookies 失败", user_id, exc_info=_exc)
                     else:
-                        raise CookieException(message="The cookie has been refreshed.") from exc
+                        refresh = True
+                try:
+                    await self.cookies_service.update(cookie_model)
+                except StaleDataError as _exc:
+                    if "UPDATE" in str(_exc):
+                        logger.warning("用户 user_id[%s] 刷新 Cookies 失败，数据不存在", cookie_model.user_id)
+                    else:
+                        logger.error("用户 user_id[%s] 更新 Cookies 时出现错误", cookie_model.user_id, exc_info=_exc)
+                except Exception as _exc:
+                    logger.error("用户 user_id[%s] 更新 Cookies 失败", cookie_model.user_id, exc_info=_exc)
+                if refresh:
+                    raise CookieException(message="The cookie has been refreshed.") from exc
                 raise exc
 
     async def get_genshin_client(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
