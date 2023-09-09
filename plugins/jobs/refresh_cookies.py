@@ -42,35 +42,34 @@ class RefreshCookiesJob(Plugin):
                             new_cookies["ltoken"] = await client.get_ltoken_by_stoken()
                             cookie_model.data = new_cookies
                             cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
-                            await self.cookies.update(cookie_model)
                     except ValueError:
-                        try:
-                            cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
-                            await self.cookies.update(cookie_model)
-                        except StaleDataError as _exc:
-                            if "UPDATE" in str(_exc):
-                                logger.warning("用户 user_id[%s] 刷新 Cookies 失败，数据不存在", cookie_model.user_id)
-                            else:
-                                logger.error("用户 user_id[%s] 更新Cookies 时出现错误", cookie_model.user_id, exc_info=_exc)
-                        except Exception as _exc:
-                            logger.error("用户 user_id[%s] 更新Cookies 状态失败", cookie_model.user_id, exc_info=_exc)
+                        cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
+                        logger.warning("用户 user_id[%s] Cookies 不完整", cookie_model.user_id)
+                        continue
                     except InvalidCookies:
-                        try:
-                            cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
-                            await self.cookies.update(cookie_model)
-                        except StaleDataError as _exc:
-                            if "UPDATE" in str(_exc):
-                                logger.warning("用户 user_id[%s] 刷新 Cookies 失败，数据不存在", cookie_model.user_id)
-                            else:
-                                logger.error("用户 user_id[%s] 更新Cookies 时出现错误", cookie_model.user_id, exc_info=_exc)
-                        except Exception as _exc:
-                            logger.error("用户 user_id[%s] 更新Cookies 状态失败", cookie_model.user_id, exc_info=_exc)
+                        cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
+                        logger.info("用户 user_id[%s] Cookies 已经过期", cookie_model.user_id)
+                        continue
                     except SimnetBadRequest:
                         logger.warning("用户 user_id[%s] 刷新 Cookies 时出现错误", cookie_model.user_id)
+                        continue
                     except SimnetTimedOut:
                         logger.warning("用户 user_id[%s] 刷新 Cookies 时超时", cookie_model.user_id)
+                        continue
                     except SimnetNetworkError:
                         logger.warning("用户 user_id[%s] 刷新 Cookies 时网络错误", cookie_model.user_id)
+                        continue
                     except Exception as _exc:
                         logger.error("用户 user_id[%s] 刷新 Cookies 失败", cookie_model.user_id, exc_info=_exc)
+                        continue
+                    try:
+                        await self.cookies.update(cookie_model)
+                    except StaleDataError as _exc:
+                        if "UPDATE" in str(_exc):
+                            logger.warning("用户 user_id[%s] 刷新 Cookies 失败，数据不存在", cookie_model.user_id)
+                        else:
+                            logger.error("用户 user_id[%s] 更新Cookies 时出现错误", cookie_model.user_id, exc_info=_exc)
+                    except Exception as _exc:
+                        logger.error("用户 user_id[%s] 更新Cookies 状态失败", cookie_model.user_id, exc_info=_exc)
+
         logger.success("执行每日刷新 Cookies 任务完成")
