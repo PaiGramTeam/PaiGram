@@ -45,11 +45,9 @@ class RefreshCookiesJob(Plugin):
                     except ValueError:
                         cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
                         logger.warning("用户 user_id[%s] Cookies 不完整", cookie_model.user_id)
-                        continue
                     except InvalidCookies:
                         cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
                         logger.info("用户 user_id[%s] Cookies 已经过期", cookie_model.user_id)
-                        continue
                     except SimnetBadRequest:
                         logger.warning("用户 user_id[%s] 刷新 Cookies 时出现错误", cookie_model.user_id)
                         continue
