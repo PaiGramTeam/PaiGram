@@ -37,17 +37,6 @@ try:
 except ImportError:
     import json as jsonlib
 
-FullChatPermissions = ChatPermissions(
-    can_send_messages=True,
-    can_send_media_messages=True,
-    can_send_polls=True,
-    can_send_other_messages=True,
-    can_add_web_page_previews=True,
-    can_change_info=True,
-    can_invite_users=True,
-    can_pin_messages=True,
-)
-
 
 class GroupCaptcha(Plugin):
     """群验证模块"""
@@ -119,7 +108,9 @@ class GroupCaptcha(Plugin):
     async def restore_member(context: "ContextTypes.DEFAULT_TYPE", chat_id: int, user_id: int):
         logger.debug("重置用户权限 user_id[%s] 在 chat_id[%s]", chat_id, user_id)
         try:
-            await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=FullChatPermissions)
+            await context.bot.restrict_chat_member(
+                chat_id=chat_id, user_id=user_id, permissions=ChatPermissions.all_permissions()
+            )
         except BadRequest as exc:
             logger.error("GroupCaptcha插件在 chat_id[%s] user_id[%s] 执行restore失败", chat_id, user_id, exc_info=exc)
 
