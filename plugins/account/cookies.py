@@ -273,8 +273,11 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     cookies.login_uid = None
             if not check_cookie:
                 await message.reply_text("检测到Cookie不完整，可能会出现问题。", reply_markup=ReplyKeyboardRemove())
+            if not cookies.stoken:
+                await message.reply_text("检测到缺少 stoken，请尝试添加 stoken 后重新绑定。", reply_markup=ReplyKeyboardRemove())
+                return ConversationHandler.END
             if cookies.stoken and cookies.stoken.startswith("v2") and cookies.mid is None:
-                await message.reply_text("检测到缺少 mid，请尝试添加 mid 或者删除 stoken 后重新绑定。", reply_markup=ReplyKeyboardRemove())
+                await message.reply_text("检测到缺少 mid，请尝试添加 mid 后重新绑定。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
             try:
                 if client.account_id is None and cookies.is_v2:
