@@ -57,8 +57,6 @@ class RefreshCookiesJob(Plugin):
                             _exc.ret_code,
                             _exc.original or _exc.message,
                         )
-                        if _exc.ret_code == -3 and database_region == RegionEnum.HOYOLAB:
-                            cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
                         continue
                     except SimnetTimedOut:
                         logger.warning("用户 user_id[%s] 刷新 Cookies 时连接超时", cookie_model.user_id)

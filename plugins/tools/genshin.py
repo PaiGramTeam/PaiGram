@@ -271,10 +271,7 @@ class GenshinHelper(Plugin):
                         logger.warning(
                             "用户 %s 刷新 token 失败 [%s]%s", user_id, _exc.ret_code, _exc.original or _exc.message
                         )
-                        if _exc.ret_code == -3 and cookie_model.region == RegionEnum.HOYOLAB:
-                            cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
-                        else:
-                            cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
+                        cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
                     except NetworkError:
                         logger.warning("用户 %s 刷新 Cookies 失败 网络错误", user_id)
                         cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
