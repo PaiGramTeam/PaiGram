@@ -3,7 +3,6 @@ from io import BytesIO
 from aiofiles import open as async_open
 from simnet import GenshinClient, Region
 from simnet.models.genshin.wish import BannerType
-from simnet.utils.player import recognize_genshin_game_biz, recognize_genshin_server
 from telegram import Document, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
@@ -178,11 +177,7 @@ class WishLogPlugin(Plugin.Conversation):
                         async with GenshinClient(
                             cookies=cookies.data, region=Region.CHINESE, lang="zh-cn", player_id=player_info.player_id
                         ) as client:
-                            authkey = await client.get_authkey_by_stoken(
-                                recognize_genshin_game_biz(client.player_id),
-                                recognize_genshin_server(client.player_id),
-                                "webview_gacha",
-                            )
+                            authkey = await client.get_authkey_by_stoken("webview_gacha")
         if not authkey:
             await message.reply_text(
                 "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"

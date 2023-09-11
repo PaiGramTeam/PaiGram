@@ -1,5 +1,4 @@
 from simnet import GenshinClient, Region
-from simnet.utils.player import recognize_genshin_game_biz, recognize_genshin_server
 from telegram import Update, User, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
@@ -87,11 +86,7 @@ class PayLogPlugin(Plugin.Conversation):
                         async with GenshinClient(
                             cookies=cookies.data, region=Region.CHINESE, lang="zh-cn", player_id=player_info.player_id
                         ) as client:
-                            authkey = await client.get_authkey_by_stoken(
-                                recognize_genshin_game_biz(client.player_id),
-                                recognize_genshin_server(client.player_id),
-                                "csc",
-                            )
+                            authkey = await client.get_authkey_by_stoken("csc")
         if not authkey:
             await message.reply_text(
                 "<b>开始导入充值历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
