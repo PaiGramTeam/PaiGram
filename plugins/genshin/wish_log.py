@@ -1,4 +1,6 @@
 from io import BytesIO
+from typing import Optional
+from urllib.parse import urlencode
 
 from aiofiles import open as async_open
 from simnet import GenshinClient, Region
@@ -156,6 +158,18 @@ class WishLogPlugin(Plugin.Conversation):
             text = "文件解析失败，请检查文件是否符合 UIGF 标准"
         await reply.edit_text(text)
 
+    async def gen_authkey(self, uid: int) -> Optional[str]:
+        player_info = await self.players_service.get_player(uid, region=RegionEnum.HYPERION)
+        if player_info is not None:
+            cookies = await self.cookie_service.get(uid, account_id=player_info.account_id)
+            if cookies is not None and cookies.data and "stoken" in cookies.data:
+                if stuid := next((value for key, value in cookies.data.items() if key in ["ltuid", "login_uid"]), None):
+                    cookies.data["stuid"] = stuid
+                    async with GenshinClient(
+                        cookies=cookies.data, region=Region.CHINESE, lang="zh-cn", player_id=player_info.player_id
+                    ) as client:
+                        return await client.get_authkey_by_stoken("webview_gacha")
+
     @conversation.entry_point
     @handler.command(command="gacha_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导入抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
@@ -166,18 +180,7 @@ class WishLogPlugin(Plugin.Conversation):
         logger.info("用户 %s[%s] 导入抽卡记录命令请求", user.full_name, user.id)
         authkey = from_url_get_authkey(args[0] if args else "")
         if not args:
-            player_info = await self.players_service.get_player(user.id, region=RegionEnum.HYPERION)
-            if player_info is not None:
-                cookies = await self.cookie_service.get(user.id, account_id=player_info.account_id)
-                if cookies is not None and cookies.data and "stoken" in cookies.data:
-                    if stuid := next(
-                        (value for key, value in cookies.data.items() if key in ["ltuid", "login_uid"]), None
-                    ):
-                        cookies.data["stuid"] = stuid
-                        async with GenshinClient(
-                            cookies=cookies.data, region=Region.CHINESE, lang="zh-cn", player_id=player_info.player_id
-                        ) as client:
-                            authkey = await client.get_authkey_by_stoken("webview_gacha")
+            authkey = await self.gen_authkey(user.id)
         if not authkey:
             await message.reply_text(
                 "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
@@ -301,6 +304,25 @@ class WishLogPlugin(Plugin.Conversation):
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+
+    @handler.command(command="gacha_log_url", filters=filters.ChatType.PRIVATE, block=False)
+    @handler.message(filters=filters.Regex("^抽卡记录链接(.*)") & filters.ChatType.PRIVATE, block=False)
+    async def command_start_url(self, update: Update, _: CallbackContext) -> None:
+        message = update.effective_message
+        user = update.effective_user
+        logger.info("用户 %s[%s] 生成抽卡记录链接命令请求", user.full_name, user.id)
+        authkey = await self.gen_authkey(user.id)
+        if not authkey:
+            await message.reply_text("生成失败，仅国服且绑定 stoken 的用户才能生成抽卡记录链接")
+        else:
+            url = "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
+            params = {
+                "authkey_ver": 1,
+                "lang": "zh-cn",
+                "gacha_type": 301,
+                "authkey": authkey,
+            }
+            await message.reply_text(f"{url}?{urlencode(params)}", disable_web_page_preview=True)
 
     @handler.command(command="gacha_log", block=False)
     @handler.message(filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
