@@ -379,18 +379,11 @@ class GroupCaptcha(Plugin):
                     ),
                 ]
             )
-            if new_chat_members_message:
-                reply_message = (
-                    f"*欢迎来到「提瓦特」世界！* \n"
-                    f"问题: {escape_markdown(question.text, version=2)} \n"
-                    f"请在*{self.time_out}*秒内回答问题"
-                )
-            else:
-                reply_message = (
-                    f"*欢迎 {user.mention_markdown_v2()} 来到「提瓦特」世界！* \n"
-                    f"问题: {escape_markdown(question.text, version=2)} \n"
-                    f"请在*{self.time_out}*秒内回答问题"
-                )
+            reply_message = (
+                f"*欢迎 {user.mention_markdown_v2()} 来到「提瓦特」世界！* \n"
+                f"问题: {escape_markdown(question.text, version=2)} \n"
+                f"请在*{self.time_out}*秒内回答问题"
+            )
             logger.debug(
                 "发送入群验证问题 %s[%s] \n给%s[%s] 在 %s[%s]",
                 question.text,
@@ -401,16 +394,11 @@ class GroupCaptcha(Plugin):
                 chat.id,
             )
             try:
-                if new_chat_members_message:
-                    question_message = await new_chat_members_message.reply_markdown_v2(
-                        reply_message, reply_markup=InlineKeyboardMarkup(buttons), allow_sending_without_reply=True
-                    )
-                else:
-                    question_message = await chat.send_message(
-                        reply_message,
-                        reply_markup=InlineKeyboardMarkup(buttons),
-                        parse_mode=ParseMode.MARKDOWN_V2,
-                    )
+                question_message = await chat.send_message(
+                    reply_message,
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                )
             except BadRequest as exc:
                 await chat.send_message("派蒙分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
                 raise exc
@@ -422,16 +410,6 @@ class GroupCaptcha(Plugin):
                 user_id=user.id,
                 job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_kick"},
             )
-            if new_chat_members_message:
-                context.job_queue.run_once(
-                    callback=self.clean_message_job,
-                    when=self.time_out,
-                    data=new_chat_members_message.message_id,
-                    name=f"{chat.id}|{user.id}|auth_clean_join_message",
-                    chat_id=chat.id,
-                    user_id=user.id,
-                    job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_join_message"},
-                )
             context.job_queue.run_once(
                 callback=self.clean_message_job,
                 when=self.time_out,
@@ -441,6 +419,11 @@ class GroupCaptcha(Plugin):
                 user_id=user.id,
                 job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_question_message"},
             )
+            try:
+                if new_chat_members_message:
+                    await new_chat_members_message.delete()
+            except BadRequest as exc:
+                logger.warning("无法删除 Chat Members Message [%s]", exc.message)
             if PYROGRAM_AVAILABLE and self.mtp:
                 try:
                     if new_chat_members_message:
