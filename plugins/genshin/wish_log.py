@@ -360,6 +360,8 @@ class WishLogPlugin(Plugin.Conversation):
                     await png_data.reply_document(message, filename="抽卡记录.png")
                 else:
                     await png_data.reply_photo(message)
+        except PlayerNotFoundError:
+            await message.reply_text("该用户暂未绑定账号")
         except GachaLogNotFound:
             logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
