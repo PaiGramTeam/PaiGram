@@ -392,7 +392,7 @@ class PlayerCards(Plugin):
             if idx > 6:
                 break
         return {
-            "uid": data.uid,
+            "uid": mask_number(data.uid),
             "level": data.player.level,
             "signature": data.player.signature,
             "characters": characters_data,
