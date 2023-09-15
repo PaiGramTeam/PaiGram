@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
+from simnet.errors import RedemptionInvalid, RegionNotSupported, RedemptionClaimed
 from telegram import Update, ReplyKeyboardRemove, Message, User, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
@@ -12,6 +13,9 @@ from plugins.tools.challenge import ChallengeSystem, ChallengeSystemException
 from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from plugins.tools.sign import SignSystem, NeedChallenge
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from simnet import GenshinClient
 
 
 class StartPlugin(Plugin):
@@ -61,6 +65,10 @@ class StartPlugin(Plugin):
                 if _command == "sign":
                     logger.info("用户 %s[%s] 通过start命令 进入签到流程", user.full_name, user.id)
                     await self.process_sign_validate(message, user, _challenge)
+            elif args[0].startswith("redeem_"):
+                _code = args[0].split("_")[1]
+                logger.info("用户 %s[%s] 通过start命令 进入兑换码兑换流程 code[%s]", user.full_name, user.id, _code)
+                await self.process_redeem(message, user, _code)
             else:
                 await message.reply_html(f"你好 {user.mention_html()} ！我是派蒙 ！\n请点击 /{args[0]} 命令进入对应流程")
             return
@@ -137,3 +145,19 @@ class StartPlugin(Plugin):
             await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
             return
         await message.reply_text("请尽快点击下方按钮进行验证。", allow_sending_without_reply=True, reply_markup=button)
+
+    async def process_redeem(self, message: Message, user: User, code: str):
+        try:
+            if not code:
+                raise RedemptionInvalid
+            async with self.genshin_helper.genshin(user.id) as client:
+                client: "GenshinClient"
+                await client.redeem_code_by_hoyolab(code)
+            msg = "兑换码兑换成功。"
+        except RegionNotSupported:
+            msg = "此服务器暂不支持进行兑换哦~"
+        except RedemptionInvalid:
+            msg = "兑换码格式不正确，请确认。"
+        except RedemptionClaimed:
+            msg = "此兑换码已经兑换过了。"
+        await message.reply_text(msg)
