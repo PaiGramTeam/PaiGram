@@ -14,7 +14,8 @@ with open(_fight_prop_rule_file, "r", encoding="utf-8") as f:
 class ArtifactStatsTheory:
     def __init__(self, character_name: str):
         self.character_name = character_name
-        fight_prop_rule_list = fight_prop_rule_data.get(self.character_name, [])
+        self.fight_prop_rules = fight_prop_rule_data.get(self.character_name, {})
+        fight_prop_rule_list = list(self.fight_prop_rules.keys())
         self.main_prop = [FightProp(fight_prop_rule) for fight_prop_rule in fight_prop_rule_list]
         if not self.main_prop:
             self.main_prop = [
@@ -41,6 +42,10 @@ class ArtifactStatsTheory:
             返回得分
         """
         score: float = 0
-        if sub_stats.prop_id in map(lambda x: x.name, self.main_prop):
-            score = float(FightPropScore[sub_stats.prop_id].value) * sub_stats.value
+        main_prop = {x.name: x for x in self.main_prop}
+        if prop := main_prop.get(sub_stats.prop_id):
+            weight = self.fight_prop_rules.get(prop.value, 0.0)
+            if weight == 0.0:
+                weight = float(FightPropScore[sub_stats.prop_id].value)
+            score = weight * sub_stats.value
         return round(score, 1)
