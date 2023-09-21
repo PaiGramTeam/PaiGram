@@ -108,10 +108,11 @@ class Hyperion:
             self.download_image(post_info.post_id, post_info.image_urls[page], page)
             for page in range(len(post_info.image_urls))
         ]
-        result_list = await asyncio.gather(*task_list)
-        for result in result_list:
-            if isinstance(result, ArtworkImage):
-                art_list.append(result)
+        result_lists = await asyncio.gather(*task_list)
+        for result_list in result_lists:
+            for result in result_list:
+                if isinstance(result, ArtworkImage):
+                    art_list.append(result)
 
         def take_page(elem: ArtworkImage):
             return elem.page
@@ -119,7 +120,7 @@ class Hyperion:
         art_list.sort(key=take_page)
         return art_list
 
-    async def download_image(self, art_id: int, url: str, page: int = 0) -> ArtworkImage:
+    async def download_image(self, art_id: int, url: str, page: int = 0) -> List[ArtworkImage]:
         filename = os.path.basename(url)
         _, file_extension = os.path.splitext(filename)
         is_image = bool(file_extension in ".jpg" or file_extension in ".png")
@@ -127,7 +128,7 @@ class Hyperion:
         response = await self.client.get(
             url, params=self.get_images_params(resize=2000) if is_image else None, de_json=False
         )
-        return ArtworkImage(
+        return ArtworkImage.gen(
             art_id=art_id, page=page, file_name=filename, file_extension=url.split(".")[-1], data=response.content
         )
 

@@ -25,6 +25,32 @@ class ArtworkImage(BaseModel):
                 pass
         return None
 
+    @staticmethod
+    def gen(*args, **kwargs) -> List["ArtworkImage"]:
+        data = [ArtworkImage(*args, **kwargs)]
+        if data[0].file_extension and data[0].file_extension in ["gif", "mp4"]:
+            return data
+        try:
+            with BytesIO(data[0].data) as stream, Image.open(stream) as image:
+                width, height = image.size
+                crop_height = height
+                crop_num = 1
+                max_height = 10000 - width
+                while crop_height > max_height:
+                    crop_num += 1
+                    crop_height = height / crop_num
+                new_data = []
+                for i in range(crop_num):
+                    slice_image = image.crop((0, crop_height * i, width, crop_height * (i + 1)))
+                    bio = BytesIO()
+                    slice_image.save(bio, "png")
+                    kwargs["data"] = bio.getvalue()
+                    kwargs["file_extension"] = "png"
+                    new_data.append(ArtworkImage(*args, **kwargs))
+                return new_data
+        except UnidentifiedImageError:
+            return data
+
 
 class PostInfo(BaseModel):
     _data: dict = PrivateAttr()
