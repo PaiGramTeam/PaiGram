@@ -261,8 +261,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
                     cookies.stoken = await client.get_stoken_by_login_ticket()
                     logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
-                    cookies.ltoken = await client.get_ltoken_by_stoken()
-                    logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
                     check_cookie = True
                 except SimnetBadRequest as exc:
                     logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
@@ -278,6 +276,15 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 return ConversationHandler.END
             if cookies.stoken and cookies.stoken.startswith("v2") and cookies.mid is None:
                 await message.reply_text("检测到缺少 mid，请尝试添加 mid 后重新绑定。", reply_markup=ReplyKeyboardRemove())
+                return ConversationHandler.END
+            try:
+                cookies.cookie_token = await client.get_cookie_token_by_stoken(cookies.stoken, mid=cookies.mid)
+                logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
+                cookies.ltoken = await client.get_ltoken_by_stoken()
+                logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
+            except SimnetBadRequest as exc:
+                logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
+                await message.reply_text("Stoken 无效，请重新绑定。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
             try:
                 if client.account_id is None and cookies.is_v2:
