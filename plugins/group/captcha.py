@@ -354,7 +354,6 @@ class GroupCaptcha(Plugin):
                     )
                     return
                 raise exc
-            new_chat_members_message = await self.get_new_chat_members_message(user, context)
             question_id = random.choice(question_id_list)  # nosec
             question = await self.quiz_service.get_question(question_id)
             buttons = [
@@ -419,6 +418,7 @@ class GroupCaptcha(Plugin):
                 user_id=user.id,
                 job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_question_message"},
             )
+            new_chat_members_message = await self.get_new_chat_members_message(user, context)
             try:
                 if new_chat_members_message:
                     await new_chat_members_message.delete()
