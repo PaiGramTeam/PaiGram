@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from simnet.errors import RedemptionInvalid, RedemptionClaimed, RegionNotSupported
+from simnet.errors import RedemptionInvalid, RedemptionClaimed, RegionNotSupported, RedemptionCooldown
 from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.ext import filters
@@ -45,6 +45,8 @@ class Redeem(Plugin):
             msg = "兑换码格式不正确，请确认。"
         except RedemptionClaimed:
             msg = "此兑换码已经兑换过了。"
+        except RedemptionCooldown as e:
+            msg = e.message
         reply_message = await message.reply_text(msg)
         if filters.ChatType.GROUPS.filter(reply_message):
             self.add_delete_message_job(reply_message)

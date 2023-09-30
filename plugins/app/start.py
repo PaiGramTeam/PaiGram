@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
-from simnet.errors import RedemptionInvalid, RegionNotSupported, RedemptionClaimed
+from simnet.errors import RedemptionInvalid, RegionNotSupported, RedemptionClaimed, RedemptionCooldown
 from telegram import Update, ReplyKeyboardRemove, Message, User, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler
@@ -160,4 +160,6 @@ class StartPlugin(Plugin):
             msg = "兑换码格式不正确，请确认。"
         except RedemptionClaimed:
             msg = "此兑换码已经兑换过了。"
+        except RedemptionCooldown as e:
+            msg = e.message
         await message.reply_text(msg)
