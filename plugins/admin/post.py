@@ -1,8 +1,10 @@
+import math
 import os
 from asyncio import create_subprocess_shell, subprocess
 from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 import aiofiles
+from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
 from httpx import Timeout
 from telegram import (
@@ -139,7 +141,7 @@ class Post(Plugin.Conversation):
         await bbs.close()
 
     @staticmethod
-    def parse_post_text(soup: BeautifulSoup, post_subject: str) -> str:
+    def parse_post_text(soup: BeautifulSoup, post_subject: str) -> Tuple[str, bool]:
         def parse_tag(_tag: "Tag") -> str:
             if _tag.name == "a":
                 href = _tag.get("href")
@@ -151,18 +153,25 @@ class Post(Plugin.Conversation):
 
         post_text = f"*{escape_markdown(post_subject, version=2)}*\n\n"
         start = True
+        too_long = False
         if post_p := soup.find_all("p"):
-            for p in post_p:
-                t = p.get_text()
-                if not t and start:
-                    continue
-                start = False
-                for tag in p.contents:
-                    post_text += parse_tag(tag)
-                post_text += "\n"
+            try:
+                for p in post_p:
+                    t = p.get_text()
+                    if not t and start:
+                        continue
+                    start = False
+                    for tag in p.contents:
+                        post_text_ = post_text + parse_tag(tag)
+                        if len(post_text_) >= (MessageLimit.CAPTION_LENGTH - 55):
+                            raise RecursionError
+                        post_text = post_text_
+                    post_text += "\n"
+            except RecursionError:
+                too_long = True
         else:
             post_text += f"{escape_markdown(soup.get_text(), version=2)}\n"
-        return post_text
+        return post_text, too_long
 
     @staticmethod
     def input_media(
@@ -170,12 +179,16 @@ class Post(Plugin.Conversation):
     ) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
         file_extension = media.file_extension
         filename = media.file_name
+        doc = None
         if file_extension is not None:
             if file_extension in {"jpg", "jpeg", "png", "webp"}:
-                return InputMediaPhoto(media.data, *args, **kwargs)
+                doc = InputMediaPhoto(media.data, *args, **kwargs)
             if file_extension in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
-                return InputMediaVideo(media.data, filename=filename, *args, **kwargs)
-        return InputMediaDocument(media.data, *args, **kwargs)
+                doc = InputMediaVideo(media.data, filename=filename, *args, **kwargs)
+        if not doc:
+            doc = InputMediaDocument(media.data, *args, **kwargs)
+        doc._frozen = False
+        return doc
 
     @staticmethod
     async def execute(command: str) -> Tuple[str, int]:
@@ -310,19 +323,19 @@ class Post(Plugin.Conversation):
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
-        post_text = self.parse_post_text(post_soup, post_subject)
-        post_text += f"[source](https://www.miyoushe.com/{self.short_name}/article/{post_id})"
-        if len(post_text) >= MessageLimit.CAPTION_LENGTH:
+        post_text, too_long = self.parse_post_text(post_soup, post_subject)
+        post_text += f"\n[source](https://www.miyoushe.com/{self.short_name}/article/{post_id})"
+        if too_long or len(post_text) >= MessageLimit.CAPTION_LENGTH:
             post_text = post_text[: MessageLimit.CAPTION_LENGTH]
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割")
         try:
             if len(post_images) > 1:
                 media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
-                media[0] = self.input_media(media=post_images[0], caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
-                if len(media) > 10:
-                    media = media[:10]
-                    await message.reply_text("获取到的图片已经超过10张，为了保证发送成功，已经删除一部分图片")
-                await message.reply_media_group(media, write_timeout=len(media) * 5)
+                index = ((math.ceil(len(media) / 10) - 1) * 10 + 1) if len(media) > 10 else 0
+                media[index].caption = post_text
+                media[index].parse_mode = ParseMode.MARKDOWN_V2
+                for group in ArkoWrapper(media).group(10):  # 每 10 张图片分一个组
+                    await message.reply_media_group(list(group), write_timeout=len(group) * 5)
             elif len(post_images) == 1:
                 image = post_images[0]
                 await message.reply_photo(image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
@@ -494,8 +507,11 @@ class Post(Plugin.Conversation):
         try:
             if len(post_images) > 1:
                 media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
-                media[0] = self.input_media(media=post_images[0], caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
-                await context.bot.send_media_group(channel_id, media=media, write_timeout=len(media) * 5)
+                index = ((math.ceil(len(media) / 10) - 1) * 10 + 1) if len(media) > 10 else 0
+                media[index].caption = post_text
+                media[index].parse_mode = ParseMode.MARKDOWN_V2
+                for group in ArkoWrapper(media).group(10):  # 每 10 张图片分一个组
+                    await context.bot.send_media_group(channel_id, media=list(group), write_timeout=len(group) * 5)
             elif len(post_images) == 1:
                 image = post_images[0]
                 await context.bot.send_photo(
