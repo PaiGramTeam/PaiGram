@@ -216,12 +216,12 @@ class BindAccountPlugin(Plugin.Conversation):
             return ConversationHandler.END
         except InvalidCookies:
             await self.public_cookies_service.undo(user.id, cookies, CookiesStatusEnum.INVALID_COOKIES)
-            await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
+            await message.reply_text("出错了呜呜呜 ~ 请稍后重试或者绑定 cookie")
             return ConversationHandler.END
         except SimnetBadRequest as exc:
             if exc.ret_code == 1034:
                 await self.public_cookies_service.undo(user.id)
-                await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
+                await message.reply_text("出错了呜呜呜 ~ 请稍后重试或者绑定 cookie")
                 return ConversationHandler.END
             await message.reply_text("获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
             logger.error("获取账号信息发生错误")

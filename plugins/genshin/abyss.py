@@ -134,9 +134,8 @@ class AbyssPlugin(Plugin):
                 async with self.helper.public_genshin(user.id) as client:
                     images = await self.get_rendered_pic(client, uid, floor, total, previous)
         except SimnetBadRequest as exc:
-            if exc.ret_code == 1034 and client.player_id != uid:
-                await message.reply_text("出错了呜呜呜 ~ 请稍后重试")
-                return
+            if exc.ret_code == 1034 and uid and uid != client.player_id:
+                raise CookiesNotFoundError(uid) from exc
             raise exc
         except AbyssUnlocked:  # 若深渊未解锁
             await message.reply_text("还未解锁深渊哦~")
