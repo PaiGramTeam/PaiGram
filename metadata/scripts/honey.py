@@ -189,5 +189,5 @@ async def update_honey_metadata(overwrite: bool = True) -> FULL_DATA_TYPE | None
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     async with async_open(path, mode="w", encoding="utf-8") as file:
-        await file.write(json.dumps(result, ensure_ascii=False))
+        await file.write(json.dumps(result, ensure_ascii=False, indent=4))
     return result

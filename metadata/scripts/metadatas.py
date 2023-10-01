@@ -42,7 +42,7 @@ async def update_metadata_from_ambr(overwrite: bool = True):
         json_data = json.loads(response.text)["data"]["items"]
         await fix_metadata_from_ambr(json_data, target)
         async with async_open(path, mode="w", encoding="utf-8") as file:
-            data = json.dumps(json_data, ensure_ascii=False)
+            data = json.dumps(json_data, ensure_ascii=False, indent=4)
             await file.write(data)
         result.append(json_data)
     return result
@@ -75,10 +75,10 @@ async def update_metadata_from_github(overwrite: bool = True):
                 started = False
                 cell = []
                 async for line in response.aiter_lines():
-                    if line == "  {\n":
+                    if line == "  {":
                         started = True
                         continue
-                    if line in ["  },\n", "  }\n"]:
+                    if line in ["  },", "  }"]:
                         started = False
                         if any("MATERIAL_NAMECARD" in x for x in cell):
                             material_json_data.append(json.loads("{" + "".join(cell) + "}"))
@@ -89,7 +89,7 @@ async def update_metadata_from_github(overwrite: bool = True):
                             cell = []
                             started = False
                             continue
-                        cell.append(line.strip(" \n"))
+                        cell.append(line.strip(" "))
 
             string_ids = []
             for namecard_data in material_json_data:
@@ -129,7 +129,7 @@ async def update_metadata_from_github(overwrite: bool = True):
                     }
                 )
             async with async_open(path, mode="w", encoding="utf-8") as file:
-                data = json.dumps(data, ensure_ascii=False)
+                data = json.dumps(data, ensure_ascii=False, indent=4)
                 await file.write(data)
             return data
         except RemoteProtocolError as exc:
