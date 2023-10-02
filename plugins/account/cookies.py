@@ -20,6 +20,8 @@ from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStat
 from core.services.cookies.services import CookiesService
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
 from core.services.players.services import PlayersService, PlayerInfoService
+from gram_core.services.devices import DevicesService
+from gram_core.services.devices.models import DevicesDataBase as Devices
 from modules.apihelper.models.genshin.cookies import CookiesModel
 from utils.log import logger
 
@@ -30,22 +32,26 @@ class AccountIdNotFound(Exception):
     pass
 
 
+class AccountCookiesPluginDeviceData(TelegramObject):
+    device_id: str = ""
+    device_fp: str = ""
+    device_name: Optional[str] = None
+
+
 class AccountCookiesPluginData(TelegramObject):
-    player: Optional[Player] = None
-    cookies_data_base: Optional[Cookies] = None
     region: RegionEnum = RegionEnum.NULL
     cookies: dict = {}
     account_id: int = 0
     # player_id: int = 0
     genshin_account: Optional[Account] = None
+    device: Optional[AccountCookiesPluginDeviceData] = None
 
     def reset(self):
-        self.player = None
-        self.cookies_data_base = None
         self.region = RegionEnum.NULL
         self.cookies = {}
         self.account_id = 0
         self.genshin_account = None
+        self.device = None
 
 
 CHECK_SERVER, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10103)
@@ -59,10 +65,12 @@ class AccountCookiesPlugin(Plugin.Conversation):
         players_service: PlayersService = None,
         cookies_service: CookiesService = None,
         player_info_service: PlayerInfoService = None,
+        devices_service: DevicesService = None,
     ):
         self.cookies_service = cookies_service
         self.players_service = players_service
         self.player_info_service = player_info_service
+        self.devices_service = devices_service
 
     # noinspection SpellCheckingInspection
     @staticmethod
@@ -86,6 +94,26 @@ class AccountCookiesPlugin(Plugin.Conversation):
             cookies[k] = cookie.get(k)
 
         return {k: v for k, v in cookies.items() if v is not None}
+
+    @staticmethod
+    def parse_headers(headers: Dict[str, str]) -> AccountCookiesPluginDeviceData:
+        data = AccountCookiesPluginDeviceData()
+        must_keys = {"x-rpc-device_id": 36, "x-rpc-device_fp": 13}
+        optional_keys = ["x-rpc-device_name"]
+        for k, v in must_keys.items():
+            if (k not in headers) or (not headers.get(k)):
+                raise ValueError
+            if len(headers.get(k)) != v:
+                raise ValueError
+        for k in optional_keys:
+            if k not in headers:
+                continue
+            if headers.get(k) and len(headers.get(k)) > 64:
+                raise ValueError
+        data.device_id = headers.get("x-rpc-device_id")
+        data.device_fp = headers.get("x-rpc-device_fp")
+        data.device_name = headers.get("x-rpc-device_name")
+        return data
 
     @conversation.entry_point
     @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=False)
@@ -178,33 +206,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             return CHECK_SERVER
         account_cookies_plugin_data.region = region
         await message.reply_text(f"请输入{bbs_name}的Cookies！或回复退出取消操作", reply_markup=ReplyKeyboardRemove())
-        javascript = (
-            "javascript:(()=>{_=(n)=>{for(i in(r=document.cookie.split(';'))){var a=r[i].split('=');if(a["
-            "0].trim()==n)return a[1]}};c=_('login_ticket')||alert('无效的Cookie,请重新登录!');c&&confirm("
-            "'将Cookie复制到剪贴板?')&&copy(document.cookie)})(); "
-        )
-        javascript_android = "javascript:(()=>{prompt('',document.cookie)})();"
-        account_host = "https://user.mihoyo.com" if bbs_name == "米游社" else "https://account.hoyoverse.com"
-        help_message = (
-            "<b>关于如何获取Cookies</b>\n\n"
-            "PC：\n"
-            f"1、打开<a href='{account_host}'>通行证</a>并登录\n"
-            "2、按F12打开开发者工具\n"
-            "3、将开发者工具切换至控制台(Console)\n"
-            "4、复制下方的代码，并将其粘贴在控制台中，按下回车\n"
-            f"<pre><code class='javascript'>{javascript}</code></pre>\n"
-            "Android：\n"
-            f"1、通过 Via 打开<a href='{account_host}'>通行证</a>并登录\n"
-            "2、复制下方的代码，并将其粘贴在地址栏中，点击右侧箭头\n"
-            f"<code>{javascript_android}</code>\n"
-            "iOS：\n"
-            "1、在App Store上安装Web Inspector，并在iOS设置- Safari浏览器-扩展-允许这些扩展下找到Web Inspector-打开，允许所有网站\n"
-            f"2、通过 Safari 打开<a href='{account_host}'>通行证</a>并登录\n"
-            "3、点击地址栏左侧的大小按钮 - Web Inspector扩展 - Console - 点击下方文本框复制下方代码粘贴：\n"
-            f"<pre><code class='javascript'>{javascript}</code></pre>\n"
-            "4、点击Console下的Execute"
-        )
-        await message.reply_html(help_message, disable_web_page_preview=True)
+        await message.reply_html("<b>关于如何获取Cookies</b>\n\nhttps://telegra.ph/paigramteam-bot-setcookies-10-02")
         return INPUT_COOKIES
 
     @conversation.state(state=INPUT_COOKIES)
@@ -231,9 +233,14 @@ class AccountCookiesPlugin(Plugin.Conversation):
             logger.debug("解析Cookies出现错误", exc_info=exc)
             await message.reply_text("解析Cookies出现错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
+        if account_cookies_plugin_data.region == RegionEnum.HYPERION:
+            try:
+                account_cookies_plugin_data.device = self.parse_headers(cookie)
+            except ValueError:
+                await message.reply_text("警告，解析 Devices 出现错误，可能无法绕过风控，查询操作将需要通过验证。")
         if not cookies:
             logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
-            await message.reply_text("Cookies格式有误，请检查", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text("Cookies格式有误，请检查后重新尝试绑定", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         account_cookies_plugin_data.cookies = cookies
         return await self.check_cookies(update, context)
@@ -339,13 +346,11 @@ class AccountCookiesPlugin(Plugin.Conversation):
         player_info = await self.players_service.get(
             user.id, player_id=genshin_account.uid, region=account_cookies_plugin_data.region
         )
-        account_cookies_plugin_data.player = player_info
         if player_info:
             cookies_database = await self.cookies_service.get(
                 user.id, player_info.account_id, account_cookies_plugin_data.region
             )
             if cookies_database:
-                account_cookies_plugin_data.cookies_data_base = cookies_database
                 await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
@@ -363,6 +368,69 @@ class AccountCookiesPlugin(Plugin.Conversation):
         account_cookies_plugin_data.cookies = cookies.to_dict()
         return COMMAND_RESULT
 
+    async def update_devices(self, account_id: int, device: AccountCookiesPluginDeviceData):
+        if not device:
+            return
+        device_model = await self.devices_service.get(account_id)
+        if device_model:
+            device_model.device_id = device.device_id
+            device_model.device_fp = device.device_fp
+            device_model.device_name = device.device_name
+            await self.devices_service.update(device_model)
+        else:
+            device_model = Devices(
+                account_id=account_id,
+                device_id=device.device_id,
+                device_fp=device.device_fp,
+                device_name=device.device_name,
+            )
+            await self.devices_service.add(device_model)
+
+    async def update_player(self, uid: int, genshin_account: Account, region: RegionEnum, account_id: int):
+        player = await self.players_service.get(uid, player_id=genshin_account.uid, region=region)
+        if player:
+            player.account_id = account_id
+            await self.players_service.update(player)
+        else:
+            player_model = Player(
+                user_id=uid,
+                account_id=account_id,
+                player_id=genshin_account.uid,
+                region=region,
+                is_chosen=True,  # todo 多账号
+            )
+            await self.update_player_info(player_model, genshin_account.nickname)
+            await self.players_service.add(player_model)
+
+    async def update_player_info(self, player: Player, nickname: str):
+        player_info = await self.player_info_service.get(player)
+        if player_info is None:
+            player_info = PlayerInfoSQLModel(
+                user_id=player.user_id,
+                player_id=player.player_id,
+                nickname=nickname,
+                create_time=datetime.now(),
+                is_update=True,
+            )  # 不添加更新时间
+            await self.player_info_service.add(player_info)
+
+    async def update_cookies(self, uid: int, account_id: int, region: RegionEnum, cookies: Dict):
+        cookies_data_base = await self.cookies_service.get(uid, account_id, region)
+        if cookies_data_base:
+            cookies_data_base.data = cookies
+            cookies_data_base.status = CookiesStatusEnum.STATUS_SUCCESS
+            await self.cookies_service.update(cookies_data_base)
+        else:
+            cookies = Cookies(
+                user_id=uid,
+                account_id=account_id,
+                data=cookies,
+                region=region,
+                status=CookiesStatusEnum.STATUS_SUCCESS,
+                is_share=True,  # todo 用户可以自行选择是否将Cookies加入公共池
+            )
+            await self.cookies_service.add(cookies)
+
     @conversation.state(state=COMMAND_RESULT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
     async def command_result(self, update: Update, context: CallbackContext) -> int:
@@ -373,56 +441,18 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if message.text == "确认":
-            player = account_cookies_plugin_data.player
             genshin_account = account_cookies_plugin_data.genshin_account
-            if player:
-                player.account_id = account_cookies_plugin_data.account_id
-                await self.players_service.update(player)
-                cookies_data_base = account_cookies_plugin_data.cookies_data_base
-                if cookies_data_base:
-                    cookies_data_base.data = account_cookies_plugin_data.cookies
-                    cookies_data_base.status = CookiesStatusEnum.STATUS_SUCCESS
-                    await self.cookies_service.update(cookies_data_base)
-                else:
-                    cookies = Cookies(
-                        user_id=user.id,
-                        account_id=account_cookies_plugin_data.account_id,
-                        data=account_cookies_plugin_data.cookies,
-                        region=account_cookies_plugin_data.region,
-                        status=CookiesStatusEnum.STATUS_SUCCESS,
-                        is_share=True,  # todo 用户可以自行选择是否将Cookies加入公共池
-                    )
-                    await self.cookies_service.add(cookies)
-                logger.success("用户 %s[%s] 更新Cookies", user.full_name, user.id)
-            else:
-                player = Player(
-                    user_id=user.id,
-                    account_id=account_cookies_plugin_data.account_id,
-                    player_id=genshin_account.uid,
-                    region=account_cookies_plugin_data.region,
-                    is_chosen=True,  # todo 多账号
-                )
-                player_info = await self.player_info_service.get(player)
-                if player_info is None:
-                    player_info = PlayerInfoSQLModel(
-                        user_id=player.user_id,
-                        player_id=player.player_id,
-                        nickname=genshin_account.nickname,
-                        create_time=datetime.now(),
-                        is_update=True,
-                    )  # 不添加更新时间
-                    await self.player_info_service.add(player_info)
-                await self.players_service.add(player)
-                cookies = Cookies(
-                    user_id=user.id,
-                    account_id=account_cookies_plugin_data.account_id,
-                    data=account_cookies_plugin_data.cookies,
-                    region=account_cookies_plugin_data.region,
-                    status=CookiesStatusEnum.STATUS_SUCCESS,
-                    is_share=True,  # todo 用户可以自行选择是否将Cookies加入公共池
-                )
-                await self.cookies_service.add(cookies)
-                logger.info("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
+            await self.update_player(
+                user.id, genshin_account, account_cookies_plugin_data.region, account_cookies_plugin_data.account_id
+            )
+            await self.update_cookies(
+                user.id,
+                account_cookies_plugin_data.account_id,
+                account_cookies_plugin_data.region,
+                account_cookies_plugin_data.cookies,
+            )
+            await self.update_devices(account_cookies_plugin_data.account_id, account_cookies_plugin_data.device)
+            logger.info("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("回复错误，请重新输入")
