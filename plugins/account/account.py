@@ -29,13 +29,11 @@ __all__ = ("BindAccountPlugin",)
 
 
 class BindAccountPluginData(TelegramObject):
-    player: Optional[Player] = None
     region: RegionEnum = RegionEnum.HYPERION
     player_id: Optional[int] = None
     nickname: Optional[str] = None
 
     def reset(self):
-        self.player = None
         self.region = RegionEnum.NULL
         self.player_id = None
         self.nickname = None
@@ -268,6 +266,9 @@ class BindAccountPlugin(Plugin.Conversation):
             player_info = await self.players_service.get_player(user.id)  # 寻找主账号
             if player_info is not None and player_info.is_chosen:
                 is_chosen = False
+            if player_info is not None and player_info.player_id == player_id:
+                await message.reply_text("你已经绑定该账号")
+                return ConversationHandler.END
             player = Player(
                 user_id=user.id,
                 player_id=player_id,
