@@ -293,6 +293,9 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
                 await message.reply_text("Stoken 无效，请重新绑定。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
+            except UnicodeEncodeError:
+                await message.reply_text("Stoken 非法，请重新绑定。", reply_markup=ReplyKeyboardRemove())
+                return ConversationHandler.END
             try:
                 if client.account_id is None and cookies.is_v2:
                     logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
