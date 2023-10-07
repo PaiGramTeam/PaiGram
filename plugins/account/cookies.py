@@ -289,7 +289,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
                 cookies.ltoken = await client.get_ltoken_by_stoken()
                 logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
-            except SimnetBadRequest as exc:
+            except (SimnetBadRequest, UnicodeEncodeError) as exc:
                 logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
                 await message.reply_text("Stoken 无效，请重新绑定。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
