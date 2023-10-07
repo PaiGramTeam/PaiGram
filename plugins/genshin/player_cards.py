@@ -1,5 +1,5 @@
 import math
-from typing import Any, List, Tuple, Union, Optional, TYPE_CHECKING
+from typing import Any, List, Tuple, Union, Optional, TYPE_CHECKING, Dict
 
 from enkanetwork import (
     DigitType,
@@ -31,6 +31,7 @@ from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from core.services.template.services import TemplateService
 from metadata.shortname import roleToName
+from modules.apihelper.client.components.remote import Remote
 from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
 from utils.enkanetwork import RedisCache, EnkaNetworkAPI
@@ -64,6 +65,13 @@ class PlayerCards(Plugin):
         self.assets_service = assets_service
         self.template_service = template_service
         self.kitsune: Optional[str] = None
+        self.fight_prop_rule: Dict[str, Dict[str, float]] = {}
+
+    async def initialize(self):
+        await self._refresh()
+
+    async def _refresh(self):
+        self.fight_prop_rule = await Remote.get_fight_prop_rule_data()
 
     async def _update_enka_data(self, uid) -> Union[EnkaNetworkResponse, str]:
         try:
@@ -193,7 +201,7 @@ class PlayerCards(Plugin):
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         render_result = await RenderTemplate(
-            player_info.player_id, characters, self.template_service
+            player_info.player_id, characters, self.fight_prop_rule, self.template_service
         ).render()  # pylint: disable=W0631
         await render_result.reply_photo(
             message,
@@ -313,7 +321,9 @@ class PlayerCards(Plugin):
             return
         await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        render_result = await RenderTemplate(uid, characters, self.template_service).render()  # pylint: disable=W0631
+        render_result = await RenderTemplate(
+            uid, characters, self.fight_prop_rule, self.template_service
+        ).render()  # pylint: disable=W0631
         render_result.filename = f"player_card_{uid}_{result}.png"
         await render_result.edit_media(message)
 
@@ -454,12 +464,14 @@ class RenderTemplate:
         self,
         uid: Union[int, str],
         character: "CharacterInfo",
+        fight_prop_rule: Dict[str, Dict[str, float]],
         template_service: TemplateService = None,
     ):
         self.uid = uid
         self.template_service = template_service
         # 因为需要替换线上 enka 图片地址为本地地址，先克隆数据，避免修改原数据
         self.character = character.copy(deep=True)
+        self.fight_prop_rule = fight_prop_rule
 
     async def render(self):
         # 缓存所有图片到本地
@@ -590,7 +602,7 @@ class RenderTemplate:
     def find_artifacts(self) -> List[Artifact]:
         """在 equipments 数组中找到圣遗物，并转换成带有分数的 model。equipments 数组包含圣遗物和武器"""
 
-        stats = ArtifactStatsTheory(self.character.name)
+        stats = ArtifactStatsTheory(self.character.name, self.fight_prop_rule)
 
         def substat_score(s: "EquipmentsStats") -> float:
             return stats.theory(s)

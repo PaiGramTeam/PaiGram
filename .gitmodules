@@ -2,6 +2,3 @@
 	path = gram_core
 	url = https://github.com/PaiGramTeam/GramCore.git
 	branch = v4
-[submodule "modules/playercards/metadata"]
-	path = modules/playercards/metadata
-	url = https://github.com/PaiGramTeam/FightPropRule.git

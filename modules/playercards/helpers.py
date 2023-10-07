@@ -1,18 +1,12 @@
-import os
+from typing import Dict
 
-import ujson as json
 from enkanetwork import EquipmentsStats
 
 from modules.playercards.fight_prop import FightProp, FightPropScore
 
-_project_path = os.path.dirname(__file__)
-_fight_prop_rule_file = os.path.join(_project_path, "metadata", "FightPropRule_genshin.json")
-with open(_fight_prop_rule_file, "r", encoding="utf-8") as f:
-    fight_prop_rule_data: dict = json.load(f)
-
 
 class ArtifactStatsTheory:
-    def __init__(self, character_name: str):
+    def __init__(self, character_name: str, fight_prop_rule_data: Dict[str, Dict[str, float]]):
         self.character_name = character_name
         self.fight_prop_rules = fight_prop_rule_data.get(self.character_name, {})
         fight_prop_rule_list = list(self.fight_prop_rules.keys())
