@@ -48,6 +48,8 @@ class GroupCaptcha(Plugin):
         self.mtp = mtp.client
         self.cache = redis.client
         self.ttl = 60 * 60
+        self.verify_groups = config.verify_groups
+        self.user_mismatch = config.notice.user_mismatch
 
     async def initialize(self):
         logger.info("群验证模块正在刷新问题列表")
@@ -143,7 +145,7 @@ class GroupCaptcha(Plugin):
         chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
         if not self.is_admin(chat_administrators, user.id):
             logger.debug("用户 %s[%s] 在群 %s[%s] 非群管理", user.full_name, user.id, chat.title, chat.id)
-            await callback_query.answer(text="你不是管理！\n" + config.notice.user_mismatch, show_alert=True)
+            await callback_query.answer(text="你不是管理！\n" + self.user_mismatch, show_alert=True)
             return
         result, user_id = await admin_callback(callback_query.data)
         try:
@@ -247,7 +249,7 @@ class GroupCaptcha(Plugin):
         user_id, result, question, answer = await query_callback(callback_query.data)
         logger.info("用户 %s[%s] 在群 %s[%s] 点击Auth认证命令", user.full_name, user.id, chat.title, chat.id)
         if user.id != user_id:
-            await callback_query.answer(text="这不是你的验证！\n" + config.notice.user_mismatch, show_alert=True)
+            await callback_query.answer(text="这不是你的验证！\n" + self.user_mismatch, show_alert=True)
             return
         logger.info(
             "用户 %s[%s] 在群 %s[%s] 认证结果为 %s", user.full_name, user.id, chat.title, chat.id, "通过" if result else "失败"
@@ -296,13 +298,7 @@ class GroupCaptcha(Plugin):
     async def new_mem(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         chat = message.chat
-        if len(config.verify_groups) >= 1:
-            for verify_group in config.verify_groups:
-                if verify_group == chat.id:
-                    break
-            else:
-                return
-        else:
+        if chat.id not in self.verify_groups:
             return
         for user in message.new_chat_members:
             if user.id == context.bot.id:
@@ -317,13 +313,7 @@ class GroupCaptcha(Plugin):
     @handler.chat_member(chat_member_types=ChatMemberHandler.CHAT_MEMBER, block=False)
     async def track_users(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         chat = update.effective_chat
-        if len(config.verify_groups) >= 1:
-            for verify_group in config.verify_groups:
-                if verify_group == chat.id:
-                    break
-            else:
-                return
-        else:
+        if chat.id not in self.verify_groups:
             return
         new_chat_member = update.chat_member.new_chat_member
         from_user = update.chat_member.from_user
@@ -422,8 +412,8 @@ class GroupCaptcha(Plugin):
                 user_id=user.id,
                 job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_question_message"},
             )
-            new_chat_members_message = await self.get_new_chat_members_message(user, context)
             if PYROGRAM_AVAILABLE and self.mtp:
+                new_chat_members_message = await self.get_new_chat_members_message(user, context)
                 try:
                     if new_chat_members_message:
                         if question_message.id - new_chat_members_message.id - 1:
