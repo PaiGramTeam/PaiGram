@@ -124,6 +124,7 @@ class Association(Enum):
     Inazuma = "稻妻"
     Liyue = "璃月"
     Mondstadt = "蒙德"
+    Fontaine = "枫丹"
 
     @classmethod
     def convert(cls, string: str) -> Optional[Self]:
