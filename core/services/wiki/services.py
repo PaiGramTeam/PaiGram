@@ -1,4 +1,4 @@
-from typing import List, NoReturn, Optional
+from typing import List, Optional
 
 from core.base_service import BaseService
 from core.services.wiki.cache import WikiCache
@@ -19,7 +19,7 @@ class WikiService(BaseService):
         self._weapon_list = []
         self.first_run = True
 
-    async def refresh_weapon(self) -> NoReturn:
+    async def refresh_weapon(self):
         weapon_name_list = await Weapon.get_name_list()
         logger.info("一共找到 %s 把武器信息", len(weapon_name_list))
 
@@ -36,7 +36,7 @@ class WikiService(BaseService):
         await self._cache.delete("weapon")
         await self._cache.set("weapon", [i.json() for i in weapon_list])
 
-    async def refresh_characters(self) -> NoReturn:
+    async def refresh_characters(self):
         character_name_list = await Character.get_name_list()
         logger.info("一共找到 %s 个角色信息", len(character_name_list))
 
@@ -53,7 +53,7 @@ class WikiService(BaseService):
         await self._cache.delete("characters")
         await self._cache.set("characters", [i.json() for i in character_list])
 
-    async def refresh_wiki(self) -> NoReturn:
+    async def refresh_wiki(self):
         """
         用于把Redis的缓存全部加载进Python
         :return:
@@ -65,7 +65,7 @@ class WikiService(BaseService):
         await self.refresh_characters()
         logger.info("刷新成功")
 
-    async def init(self) -> NoReturn:
+    async def init(self):
         """
         用于把Redis的缓存全部加载进Python
         :return:

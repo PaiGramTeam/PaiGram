@@ -16,7 +16,7 @@ class BaseQueue(Protocol[T]):  # pylint: disable=W0049
     def closed(self) -> bool:
         raise NotImplementedError
 
-    def task_done(self) -> NoReturn:
+    def task_done(self):
         raise NotImplementedError()
 
     def qsize(self) -> int:
@@ -49,7 +49,7 @@ class SyncQueue(BaseQueue[T], Protocol[T]):  # pylint: disable=W0049
     def closed(self) -> bool:
         raise NotImplementedError
 
-    def task_done(self) -> NoReturn:
+    def task_done(self):
         raise NotImplementedError()
 
     def qsize(self) -> int:
