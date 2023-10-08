@@ -309,6 +309,10 @@ class GroupCaptcha(Plugin):
                 return
             logger.debug("用户 %s[%s] 加入群 %s[%s]", user.full_name, user.id, chat.title, chat.id)
             await self.set_new_chat_members_message(user, message)
+            try:
+                await message.delete()
+            except BadRequest as exc:
+                logger.warning("无法删除 Chat Members Message [%s]", exc.message)
 
     @handler.chat_member(chat_member_types=ChatMemberHandler.CHAT_MEMBER, block=False)
     async def track_users(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -419,11 +423,6 @@ class GroupCaptcha(Plugin):
                 job_kwargs={"replace_existing": True, "id": f"{chat.id}|{user.id}|auth_clean_question_message"},
             )
             new_chat_members_message = await self.get_new_chat_members_message(user, context)
-            try:
-                if new_chat_members_message:
-                    await new_chat_members_message.delete()
-            except BadRequest as exc:
-                logger.warning("无法删除 Chat Members Message [%s]", exc.message)
             if PYROGRAM_AVAILABLE and self.mtp:
                 try:
                     if new_chat_members_message:
