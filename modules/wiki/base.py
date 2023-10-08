@@ -11,7 +11,8 @@ from bs4 import BeautifulSoup
 from httpx import URL, AsyncClient, HTTPError, Response
 from pydantic import BaseConfig as PydanticBaseConfig
 from pydantic import BaseModel as PydanticBaseModel
-from typing_extensions import Self
+
+from utils.log import logger
 
 try:
     import ujson as jsonlib
@@ -90,7 +91,7 @@ class WikiModel(Model):
 
     @classmethod
     @abstractmethod
-    async def _parse_soup(cls, soup: BeautifulSoup) -> Self:
+    async def _parse_soup(cls, soup: BeautifulSoup) -> "WikiModel":
         """解析 soup 生成对应 WikiModel
 
         Args:
@@ -100,7 +101,7 @@ class WikiModel(Model):
         """
 
     @classmethod
-    async def _scrape(cls, url: Union[URL, str]) -> Self:
+    async def _scrape(cls, url: Union[URL, str]) -> "WikiModel":
         """从 url 中爬取数据，并返回对应的 Model
 
         Args:
@@ -112,7 +113,7 @@ class WikiModel(Model):
         return await cls._parse_soup(BeautifulSoup(response.text, "lxml"))
 
     @classmethod
-    async def get_by_id(cls, id_: str) -> Self:
+    async def get_by_id(cls, id_: str) -> "WikiModel":
         """通过ID获取Model
 
         Args:
@@ -123,7 +124,7 @@ class WikiModel(Model):
         return await cls._scrape(await cls.get_url_by_id(id_))
 
     @classmethod
-    async def get_by_name(cls, name: str) -> Optional[Self]:
+    async def get_by_name(cls, name: str) -> Optional["WikiModel"]:
         """通过名称获取Model
 
         Args:
@@ -135,7 +136,7 @@ class WikiModel(Model):
         return None if url is None else await cls._scrape(url)
 
     @classmethod
-    async def get_full_data(cls) -> List[Self]:
+    async def get_full_data(cls) -> List["WikiModel"]:
         """获取全部数据的 Model
 
         Returns:
@@ -144,7 +145,7 @@ class WikiModel(Model):
         return [i async for i in cls.full_data_generator()]
 
     @classmethod
-    async def full_data_generator(cls) -> AsyncIterator[Self]:
+    async def full_data_generator(cls) -> AsyncIterator["WikiModel"]:
         """Model 生成器
 
         这是一个异步生成器，该函数在使用时会爬取所有数据，并将其转为对应的 Model，然后存至一个队列中
@@ -153,13 +154,18 @@ class WikiModel(Model):
         Returns:
             返回能爬到的所有的 WikiModel 所组成的 List
         """
-        queue: Queue[Self] = Queue()  # 存放 Model 的队列
+        queue: Queue["WikiModel"] = Queue()  # 存放 Model 的队列
         signal = Value("i", 0)  # 一个用于异步任务同步的信号
 
         async def task(u):
             # 包装的爬虫任务
-            await queue.put(await cls._scrape(u))  # 爬取一条数据，并将其放入队列中
-            signal.value -= 1  # 信号量减少 1 ，说明该爬虫任务已经完成
+            try:
+                await queue.put(await cls._scrape(u))  # 爬取一条数据，并将其放入队列中
+            except Exception as exc:  # pylint: disable=W0703
+                logger.error("爬取数据出现异常 %s", str(exc))
+                logger.debug("异常信息", exc_info=exc)
+            finally:
+                signal.value -= 1  # 信号量减少 1 ，说明该爬虫任务已经完成
 
         for _, url in await cls.get_name_list(with_url=True):  # 遍历爬取所有需要爬取的页面
             signal.value += 1  # 信号量增加 1 ，说明有一个爬虫任务被添加
