@@ -162,7 +162,8 @@ class WikiModel(Model):
             try:
                 await queue.put(await cls._scrape(u))  # 爬取一条数据，并将其放入队列中
             except Exception as exc:  # pylint: disable=W0703
-                logger.error("爬取数据出现异常", exc_info=exc)
+                logger.error("爬取数据出现异常 %s", str(exc))
+                logger.debug("异常信息", exc_info=exc)
             finally:
                 signal.value -= 1  # 信号量减少 1 ，说明该爬虫任务已经完成
 
