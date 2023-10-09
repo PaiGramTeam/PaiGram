@@ -52,6 +52,8 @@
   ```
   $ git clone git@github.com:PaiGramTeam/PaiGram.git
   ...
+  $ git submodule update --init --recursive
+  ...
   $ cd PaiGram/
   ~/PaiGram $
   ```
