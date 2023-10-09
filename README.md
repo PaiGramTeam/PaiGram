@@ -71,7 +71,7 @@ venv\Scripts\activate.bat
 .\venv\Scripts\Activate.ps1
 ```
 
-- Install the required pip dependencies:
+**Install Dependencies**
 
 ```bash
 pip install poetry
@@ -79,13 +79,15 @@ poetry install --extras all
 playwright install chromium
 ```
 
-- Optional Dependencies:
+Optional Dependencies
 
 ```bash
-poetry install --extras pyro
+poetry install --extras all
 ```
 
-- Create a dotenv config (`.env`) based on the given example. Ensure to provide the necessary database connection
+**Edit Config**
+
+Create a dotenv config (`.env`) based on the given example. Ensure to provide the necessary database connection
   details and bot token parameters.
 
 ```bash

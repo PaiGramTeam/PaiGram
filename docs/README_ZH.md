@@ -65,7 +65,7 @@ venv\Scripts\activate.bat
 .\venv\Scripts\Activate.ps1
 ```
 
-- 安装所需的 pip 依赖：
+**Install Dependencies**
 
 ```bash
 pip install poetry
@@ -73,13 +73,15 @@ poetry install --extras all
 playwright install chromium
 ```
 
-- 可选依赖：
+Optional Dependencies
 
 ```bash
-poetry install --extras pyro
+poetry install --extras all
 ```
 
-- 根据给定示例创建 dotenv 配置（`.env`）。确保提供必要的数据库连接详细信息和机器人令牌参数。
+**编辑配置文件**
+
+根据给定示例创建 dotenv 配置（`.env`）。确保提供必要的数据库连接详细信息和机器人 token 参数。
 
 ```bash
 cp .env.example .env
