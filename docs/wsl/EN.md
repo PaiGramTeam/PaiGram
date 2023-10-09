@@ -52,11 +52,14 @@
   ```
   $ git clone git@github.com:PaiGramTeam/PaiGram.git
   ...
+  $ git submodule update --init --recursive
+  ...
   $ cd PaiGram/
   ~/PaiGram $
   ```
 
 ## Project setup
+
 - Virtual environment is recommended. Set it up via `venv` or `virtualenv`:
   ```
   ~/PaiGram $ python3 -m venv venv
