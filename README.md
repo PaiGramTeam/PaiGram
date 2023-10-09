@@ -25,9 +25,15 @@ PaiGram based on [python-telegram-bot](https://github.com/python-telegram-bot/py
 
 ## Usage
 
-[Use WSL2 Ubuntu 22.04 Setup](/docs/wsl/EN.md)
+Depending on your preferred environment, follow one of the setups below:
 
-### Clone PaiGram from Git
+### **WSL2 Ubuntu 22.04 Setup**
+
+For contributors using WSL2 on Ubuntu 22.04, follow the [detailed guide here](/docs/wsl/EN.md).
+
+### **Standard Setup (All Environments)**
+
+#### 1. Clone PaiGram from Git
 
 ```bash
 git clone git@github.com:PaiGramTeam/PaiGram.git
@@ -35,37 +41,37 @@ cd PaiGram/
 git submodule update --init --recursive
 ```
 
-### Project Setup
+#### 2. Project Setup
 
-- Using a virtual environment is recommended. Set it up via `venv` or `virtualenv`
+- It's recommended to use a virtual environment. You can set it up via `venv` or `virtualenv`.
 
-**Create Virtual environment**
+**Create Virtual environment:**
 
 ```bash
 python3 -m venv venv
 ```
 
-**Activate the virtual environment**
+**Activate the virtual environment:**
 
-*Linux*
+*For Linux:*
 
 ```bash
 source venv/bin/activate
 ```
 
-*Windows Command Prompt*
+*For Windows Command Prompt:*
 
 ```bash
 venv\Scripts\activate.bat
 ```
 
-*Windows PowerShell*
+*For Windows PowerShell:*
 
 ```bash
 .\venv\Scripts\Activate.ps1
 ```
 
-- Install pip dependencies
+- Install the required pip dependencies:
 
 ```bash
 pip install poetry
@@ -79,37 +85,36 @@ playwright install chromium
 poetry install --extras pyro
 ```
 
-- Create dotenv config (`.env`) from the example:
-
-Create the `.env` file and fill in database connection and bot token parameters.
+- Create a dotenv config (`.env`) based on the given example. Ensure to provide the necessary database connection
+  details and bot token parameters.
 
 ```bash
 cp .env.example .env
 ```
 
-For detailed configuration, see [Wiki/Env Settings](https://github.com/PaiGramTeam/PaiGram/wiki/Env-Settings)
+For detailed configurations, refer to the [Wiki/Env Settings](https://github.com/PaiGramTeam/PaiGram/wiki/Env-Settings).
 
-### Database Setup with Alembic
+#### 3. Database Setup with Alembic
 
 ```bash
 alembic upgrade head
 ```
 
-### Run PaiGram
+#### 4. Run PaiGram
+
+Ensure the `venv` is still active:
 
 ```bash
 python ./run.py
 ```
 
-Ensure the `venv` is still active and run the above command to start PaiGram.
+### **Alternative Deployments**
 
-## Deployment with Docker
+- **Docker:** For deployments using Docker, see
+  the [Wiki/Deploy with Docker](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker).
 
-See [Wiki/Deploy with Docker](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker)
-
-## Deployment with Podman
-
-See [Wiki/Deploy with Podman](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Podman)
+- **Podman:** For deployments using Podman, see
+  the [Wiki/Deploy with Podman](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Podman).
 
 ## Additional Information
 

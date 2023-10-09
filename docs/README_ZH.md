@@ -22,49 +22,50 @@
 - MySQL or SQLite
 - Redis
 
-## 使用
+## 使用方法
 
-[使用 WSL2 Ubuntu 22.04 部署](/docs/wsl/EN.md)
+根据您首选的环境，按照以下设置之一进行操作：
 
-### clone PaiGram 项目
+### **WSL2 Ubuntu 22.04 设置**
 
+对于在 Ubuntu 22.04 上使用 WSL2 的贡献者，请按照[这里的详细指南](/docs/wsl/EN.md)进行操作。
+
+### **标准设置（所有环境）**
+
+#### 1. 从 Git 克隆 PaiGram
 ```bash
 git clone git@github.com:PaiGramTeam/PaiGram.git
 cd PaiGram/
 git submodule update --init --recursive
 ```
 
-### 设置工程
+#### 2. 项目设置
 
-- 推荐使用虚拟环境。可以通过 `venv` 或 `virtualenv` 来设置
+- 建议使用虚拟环境。您可以通过 `venv` 或 `virtualenv` 进行设置。
 
-**创建虚拟环境**
-
+**创建虚拟环境：**
 ```bash
 python3 -m venv venv
 ```
 
-**进入虚拟环境**
+**激活虚拟环境：**
 
-*Linux*
-
+*对于 Linux:*
 ```bash
 source venv/bin/activate
 ```
 
-*Windows Command Prompt*
-
+*对于 Windows 命令提示符:*
 ```bash
 venv\Scripts\activate.bat
 ```
 
-*Windows PowerShell*
-
+*对于 Windows PowerShell:*
 ```bash
 .\venv\Scripts\Activate.ps1
 ```
 
-- 安装依赖
+- 安装所需的 pip 依赖：
 
 ```bash
 pip install poetry
@@ -72,43 +73,39 @@ poetry install --extras all
 playwright install chromium
 ```
 
-- Optional Dependencies:
+- 可选依赖：
 
 ```bash
 poetry install --extras pyro
 ```
 
-- 根据示例创建 dotenv 配置（`.env`）：
-
-创建 `.env` 文件并填写数据库连接和机器人令牌
+- 根据给定示例创建 dotenv 配置（`.env`）。确保提供必要的数据库连接详细信息和机器人令牌参数。
 
 ```bash
 cp .env.example .env
 ```
 
-详细配置说明见 [Wiki/Env Settings](https://github.com/PaiGramTeam/PaiGram/wiki/Env-Settings)
+要进行详细的配置，请参阅[Wiki/Env 设置](https://github.com/PaiGramTeam/PaiGram/wiki/Env-Settings)。
 
-### 使用 Alembic 初始化数据库
+#### 3. 使用 Alembic 设置数据库
 
 ```bash
 alembic upgrade head
 ```
 
-### 运行 PaiGram
+#### 4. 运行 PaiGram
+
+*运行前请确保你依然处于虚拟环境中*
 
 ```bash
 python ./run.py
 ```
 
-确保你依然处在虚拟环境中，并运行上述命令以启动 PaiGram。
+### **其他部署方法**
 
-## 使用 Docker 部署
+- **Docker:** 对于使用 Docker 的部署，请参阅[Wiki/使用 Docker 部署](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker)。
 
-See [Wiki/Deploy with Docker](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker)
-
-## 使用 Podman 部署
-
-See [Wiki/Deploy with Podman](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Podman)
+- **Podman:** 对于使用 Podman 的部署，请参阅[Wiki/使用 Podman 部署](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Podman)。
 
 ## 其他说明
 
