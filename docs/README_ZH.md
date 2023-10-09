@@ -41,7 +41,7 @@ git submodule update --init --recursive
 
 #### 2. 项目设置
 
-- 建议使用虚拟环境。您可以通过 `venv` 或 `virtualenv` 进行设置。
+建议使用虚拟环境。您可以通过 `venv` 或 `virtualenv` 进行设置。
 
 **创建虚拟环境：**
 ```bash
@@ -65,7 +65,7 @@ venv\Scripts\activate.bat
 .\venv\Scripts\Activate.ps1
 ```
 
-**Install Dependencies**
+**安装依赖：**
 
 ```bash
 pip install poetry
@@ -73,13 +73,13 @@ poetry install --extras all
 playwright install chromium
 ```
 
-Optional Dependencies
+可选依赖
 
 ```bash
 poetry install --extras all
 ```
 
-**编辑配置文件**
+**编辑配置文件：**
 
 根据给定示例创建 dotenv 配置（`.env`）。确保提供必要的数据库连接详细信息和机器人 token 参数。
 

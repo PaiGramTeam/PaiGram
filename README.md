@@ -15,7 +15,7 @@ PaiGram based on [python-telegram-bot](https://github.com/python-telegram-bot/py
 
 ![Alt](https://repobeats.axiom.co/api/embed/f73c1121006cb86196f83da2170242b7a97f8be0.svg "Repobeats analytics image")
 
-[ZH README](/docs/README_ZH.md)
+[中文文档](/docs/README_ZH.md)
 
 ## System Dependencies
 
@@ -43,7 +43,7 @@ git submodule update --init --recursive
 
 #### 2. Project Setup
 
-- It's recommended to use a virtual environment. You can set it up via `venv` or `virtualenv`.
+It's recommended to use a virtual environment. You can set it up via `venv` or `virtualenv`.
 
 **Create Virtual environment:**
 
@@ -71,7 +71,7 @@ venv\Scripts\activate.bat
 .\venv\Scripts\Activate.ps1
 ```
 
-**Install Dependencies**
+**Install Dependencies:**
 
 ```bash
 pip install poetry
@@ -85,7 +85,7 @@ Optional Dependencies
 poetry install --extras all
 ```
 
-**Edit Config**
+**Edit Config:**
 
 Create a dotenv config (`.env`) based on the given example. Ensure to provide the necessary database connection
   details and bot token parameters.
