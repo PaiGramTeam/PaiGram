@@ -27,11 +27,11 @@ PaiGram based on [python-telegram-bot](https://github.com/python-telegram-bot/py
 
 Depending on your preferred environment, follow one of the setups below:
 
-### **WSL2 Ubuntu 22.04 Setup**
+### WSL2 Ubuntu 22.04 Setup
 
 For contributors using WSL2 on Ubuntu 22.04, follow the [detailed guide here](/docs/wsl/EN.md).
 
-### **Standard Setup (All Environments)**
+### Standard Setup (All Environments)
 
 #### 1. Clone PaiGram from Git
 
@@ -110,7 +110,7 @@ Ensure the `venv` is still active:
 python ./run.py
 ```
 
-### **Alternative Deployments**
+### Alternative Deployments
 
 - **Docker:** For deployments using Docker, see
   the [Wiki/Deploy with Docker](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker).

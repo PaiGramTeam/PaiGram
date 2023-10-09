@@ -26,11 +26,11 @@
 
 根据您首选的环境，按照以下设置之一进行操作：
 
-### **WSL2 Ubuntu 22.04 设置**
+### WSL2 Ubuntu 22.04 设置
 
 对于在 Ubuntu 22.04 上使用 WSL2 的贡献者，请按照[这里的详细指南](/docs/wsl/EN.md)进行操作。
 
-### **标准设置（所有环境）**
+### 标准设置（所有环境）
 
 #### 1. 从 Git 克隆 PaiGram
 ```bash
@@ -103,7 +103,7 @@ alembic upgrade head
 python ./run.py
 ```
 
-### **其他部署方法**
+### 其他部署方法
 
 - **Docker:** 对于使用 Docker 的部署，请参阅[Wiki/使用 Docker 部署](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker)。
 
