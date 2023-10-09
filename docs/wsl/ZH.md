@@ -1,6 +1,6 @@
 # WSL2 Ubuntu 22.04 部署
 
-[en documentation](en.md)
+[en documentation](EN.md)
 
 ## 前置条件
 

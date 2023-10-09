@@ -57,6 +57,7 @@
   ```
 
 ## Project setup
+
 - Virtual environment is recommended. Set it up via `venv` or `virtualenv`:
   ```
   ~/PaiGram $ python3 -m venv venv
