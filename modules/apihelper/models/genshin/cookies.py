@@ -75,6 +75,12 @@ class CookiesModel(BaseModel):
         if self.account_id_v2 is None and self.account_mid_v2:
             self.account_id_v2 = user_id
 
+    def set_uid(self, user_id: int):
+        if self.account_id is None and self.cookie_token:
+            self.account_id = user_id
+        if self.ltuid is None and self.ltoken:
+            self.ltuid = user_id
+
     def check(self) -> bool:
         """检查Cookies是否完整
         :return: 成功返回 True 失败返回 False

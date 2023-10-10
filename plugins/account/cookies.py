@@ -297,12 +297,15 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 await message.reply_text("Stoken 非法，请重新绑定。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
             try:
-                if client.account_id is None and cookies.is_v2:
-                    logger.info("检测到用户 %s[%s] 使用 V2 Cookie 正在尝试获取 account_id", user.full_name, user.id)
+                if cookies.account_id is None:
+                    logger.info("正在尝试获取用户 %s[%s] account_id", user.full_name, user.id)
                     account_info = await client.get_user_info()
                     account_id = account_info.accident_id
                     account_cookies_plugin_data.account_id = account_id
-                    cookies.set_v2_uid(account_id)
+                    if cookies.is_v2:
+                        cookies.set_v2_uid(account_id)
+                    else:
+                        cookies.set_uid(account_id)
                     logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
                 else:
                     account_cookies_plugin_data.account_id = client.account_id
