@@ -20,7 +20,9 @@ class VerificationPlugins(Plugin):
         message = update.effective_message
         logger.info("用户 %s[%s] 发出verify命令", user.full_name, user.id)
         try:
-            uid, gt, challenge = await self.challenge_system.create_challenge(user.id, context.args is not None)
+            uid, gt, challenge = await self.challenge_system.create_challenge(
+                user.id, context.args is not None and not len(context.args) >= 1
+            )
         except ChallengeSystemException as exc:
             await message.reply_text(exc.message)
             return
