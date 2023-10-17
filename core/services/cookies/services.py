@@ -17,7 +17,7 @@ __all__ = ("CookiesService", "PublicCookiesService")
 
 
 class PublicCookiesService(BaseService, BasePublicCookiesService):
-    async def check_public_cookie(self, region: RegionEnum, cookies: Cookies, public_id: int):
+    async def check_public_cookie(self, region: RegionEnum, cookies: Cookies, public_id: int):  # skipcq: PY-R1000 #
         if region == RegionEnum.HYPERION:
             client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
         elif region == RegionEnum.HOYOLAB:

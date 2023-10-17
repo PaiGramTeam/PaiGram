@@ -19,6 +19,7 @@ from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
 from gram_core.basemodel import RegionEnum
+from gram_core.services.template.models import RenderResult
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 from utils.uid import mask_number
@@ -77,7 +78,7 @@ class AbyssPlugin(Plugin):
 
     @handler.command("abyss", block=False)
     @handler.message(filters.Regex(msg_pattern), block=False)
-    async def command_start(self, update: Update, _: CallbackContext) -> None:
+    async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user = update.effective_user
         message = update.effective_message
         uid: Optional[int] = None
@@ -174,17 +175,7 @@ class AbyssPlugin(Plugin):
 
     async def get_rendered_pic(
         self, client: GenshinClient, uid: int, floor: int, total: bool, previous: bool
-    ) -> Union[
-        Tuple[
-            Union[BaseException, Any],
-            Union[BaseException, Any],
-            Union[BaseException, Any],
-            Union[BaseException, Any],
-            Union[BaseException, Any],
-        ],
-        List[RenderResult],
-        None,
-    ]:
+    ) -> Tuple[Any] | List[RenderResult] | None:
         """
         获取渲染后的图片
 
