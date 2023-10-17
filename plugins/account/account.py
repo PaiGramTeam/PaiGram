@@ -101,12 +101,13 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_METHOD)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def check_method(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
+    async def check_method(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
+        bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        if message.text == "通过玩家ID":
+        if message.text == "通过玩家ID" and bind_account_plugin_data.region != RegionEnum.HYPERION:
             await message.reply_text("请输入你的玩家ID（非通行证ID）", reply_markup=ReplyKeyboardRemove())
             return CHECK_PLAYER_ID
         if message.text == "通过账号ID":

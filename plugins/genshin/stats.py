@@ -56,8 +56,6 @@ class PlayerStatsPlugins(Plugin):
                 async with self.helper.public_genshin(user.id) as client:
                     render_result = await self.render(client, uid)
         except SimnetBadRequest as exc:
-            if exc.ret_code == 1034 and uid and uid != client.player_id:
-                raise CookiesNotFoundError(uid) from exc
             raise exc
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多 请稍后重试")
