@@ -174,7 +174,7 @@ class AbyssPlugin(Plugin):
 
     async def get_rendered_pic(
         self, client: GenshinClient, uid: int, floor: int, total: bool, previous: bool
-    ) -> Tuple[Any] | List[RenderResult] | None:
+    ) -> Union[Tuple[Any], List[RenderResult], None]:
         """
         获取渲染后的图片
 
