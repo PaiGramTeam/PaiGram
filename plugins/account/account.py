@@ -250,6 +250,18 @@ class BindAccountPlugin(Plugin.Conversation):
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
         return COMMAND_RESULT
 
+    async def update_player_info(self, player: Player, nickname: str):
+        player_info = await self.player_info_service.get(player)
+        if player_info is None:
+            player_info = PlayerInfoSQLModel(
+                user_id=player.user_id,
+                player_id=player.player_id,
+                nickname=nickname,
+                create_time=datetime.now(),
+                is_update=True,
+            )  # 不添加更新时间
+            await self.player_info_service.add(player_info)
+
     @conversation.state(state=COMMAND_RESULT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
     async def command_result(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
@@ -276,16 +288,7 @@ class BindAccountPlugin(Plugin.Conversation):
                 is_chosen=is_chosen,  # todo 多账号
             )
             await self.players_service.add(player)
-            player_info = await self.player_info_service.get(player)
-            if player_info is None:
-                player_info = PlayerInfoSQLModel(
-                    user_id=player.user_id,
-                    player_id=player.player_id,
-                    nickname=nickname,
-                    create_time=datetime.now(),
-                    is_update=True,
-                )  # 不添加更新时间
-                await self.player_info_service.add(player_info)
+            await self.update_player_info(player, nickname)
             logger.success("用户 %s[%s] 绑定UID账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
