@@ -17,7 +17,7 @@ __all__ = ("CookiesService", "PublicCookiesService")
 
 
 class PublicCookiesService(BaseService, BasePublicCookiesService):
-    async def check_public_cookie(self, region: RegionEnum, cookies: Cookies, public_id: int):
+    async def check_public_cookie(self, region: RegionEnum, cookies: Cookies, public_id: int):  # skipcq: PY-R1000 #
         if region == RegionEnum.HYPERION:
             client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
         elif region == RegionEnum.HOYOLAB:
@@ -28,16 +28,17 @@ class PublicCookiesService(BaseService, BasePublicCookiesService):
             if client.account_id is None:
                 raise RuntimeError("account_id not found")
             record_cards = await client.get_record_cards()
-            for record_card in record_cards:
-                if record_card.game == Game.GENSHIN:
-                    await client.get_partial_genshin_user(record_card.uid)
-                    break
-            else:
-                accounts = await client.get_game_accounts()
-                for account in accounts:
-                    if account.game == Game.GENSHIN:
-                        await client.get_partial_genshin_user(account.uid)
+            if client.region == Region.OVERSEAS:
+                for record_card in record_cards:
+                    if record_card.game == Game.GENSHIN:
+                        await client.get_partial_genshin_user(record_card.uid)
                         break
+                else:
+                    accounts = await client.get_game_accounts()
+                    for account in accounts:
+                        if account.game == Game.GENSHIN:
+                            await client.get_partial_genshin_user(account.uid)
+                            break
         except InvalidCookies as exc:
             if exc.ret_code in (10001, -100):
                 logger.warning("用户 [%s] Cookies无效", public_id)

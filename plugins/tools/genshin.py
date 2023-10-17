@@ -193,7 +193,9 @@ class PlayerNotFoundError(Exception):
 
 
 class CookiesNotFoundError(Exception):
-    def __init__(self, user_id):
+    def __init__(self, user_id: int, region: Optional[RegionEnum] = None):
+        self.user_id = user_id
+        self.region = region
         super().__init__(f"{user_id} cookies not found")
 
 
@@ -221,10 +223,10 @@ class GenshinHelper(Plugin):
             raise PlayerNotFoundError(user_id)
 
         if player.account_id is None:
-            raise CookiesNotFoundError(user_id)
+            raise CookiesNotFoundError(user_id, player.region)
         cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookie_model is None:
-            raise CookiesNotFoundError(user_id)
+            raise CookiesNotFoundError(user_id, player.region)
         cookies = cookie_model.data
 
         if player.region == RegionEnum.HYPERION:  # 国服
@@ -298,10 +300,10 @@ class GenshinHelper(Plugin):
             raise PlayerNotFoundError(user_id)
 
         if player.account_id is None:
-            raise CookiesNotFoundError(user_id)
+            raise CookiesNotFoundError(user_id, player.region)
         cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookie_model is None:
-            raise CookiesNotFoundError(user_id)
+            raise CookiesNotFoundError(user_id, player.region)
         cookies = cookie_model.data
 
         if player.region == RegionEnum.HYPERION:
