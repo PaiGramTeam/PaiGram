@@ -9,6 +9,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
+from gram_core.basemodel import RegionEnum
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 from utils.uid import mask_number
@@ -49,7 +50,9 @@ class PlayerStatsPlugins(Plugin):
                 async with self.helper.genshin(user.id) as client:
                     await client.get_record_cards()
                     render_result = await self.render(client, uid)
-            except CookiesNotFoundError:
+            except CookiesNotFoundError as exc:
+                if exc.region == RegionEnum.HYPERION:
+                    raise exc
                 async with self.helper.public_genshin(user.id) as client:
                     render_result = await self.render(client, uid)
         except SimnetBadRequest as exc:

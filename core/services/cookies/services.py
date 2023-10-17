@@ -28,16 +28,17 @@ class PublicCookiesService(BaseService, BasePublicCookiesService):
             if client.account_id is None:
                 raise RuntimeError("account_id not found")
             record_cards = await client.get_record_cards()
-            for record_card in record_cards:
-                if record_card.game == Game.GENSHIN:
-                    await client.get_partial_genshin_user(record_card.uid)
-                    break
-            else:
-                accounts = await client.get_game_accounts()
-                for account in accounts:
-                    if account.game == Game.GENSHIN:
-                        await client.get_partial_genshin_user(account.uid)
+            if client.region == Region.OVERSEAS:
+                for record_card in record_cards:
+                    if record_card.game == Game.GENSHIN:
+                        await client.get_partial_genshin_user(record_card.uid)
                         break
+                else:
+                    accounts = await client.get_game_accounts()
+                    for account in accounts:
+                        if account.game == Game.GENSHIN:
+                            await client.get_partial_genshin_user(account.uid)
+                            break
         except InvalidCookies as exc:
             if exc.ret_code in (10001, -100):
                 logger.warning("用户 [%s] Cookies无效", public_id)
