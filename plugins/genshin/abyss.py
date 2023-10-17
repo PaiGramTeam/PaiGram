@@ -19,7 +19,6 @@ from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
 from gram_core.basemodel import RegionEnum
-from gram_core.services.template.models import RenderResult
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 from utils.uid import mask_number
