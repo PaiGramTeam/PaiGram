@@ -1,7 +1,5 @@
 import random
 from typing import Optional, TYPE_CHECKING
-
-from simnet.errors import BadRequest as SimnetBadRequest
 from telegram.constants import ChatAction
 from telegram.ext import filters
 
@@ -9,7 +7,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
-from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
 from utils.uid import mask_number
 
