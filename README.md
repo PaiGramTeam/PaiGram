@@ -88,7 +88,7 @@ poetry install --extras all
 **Edit Config:**
 
 Create a dotenv config (`.env`) based on the given example. Ensure to provide the necessary database connection
-  details and bot token parameters.
+details and bot token parameters.
 
 ```bash
 cp .env.example .env
@@ -134,3 +134,4 @@ Stay tuned!
 |       [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw)        | 本项目参考的爬虫代码       |
 |                  [Enka.Network](https://enka.network)                   | 角色卡片的数据来源        |
 |      [miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin)       | 角色卡片的参考项目        |
+|                   [DGP HuTao API](https://hut.ao/en/)                   | 深渊数据来源           |
