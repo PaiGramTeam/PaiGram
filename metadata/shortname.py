@@ -5,7 +5,17 @@ from typing import List
 
 from metadata.genshin import WEAPON_DATA
 
-__all__ = ["roles", "weapons", "roleToId", "roleToName", "weaponToName", "weaponToId", "not_real_roles", "roleToTag"]
+__all__ = [
+    "roles",
+    "weapons",
+    "idToName",
+    "roleToId",
+    "roleToName",
+    "weaponToName",
+    "weaponToId",
+    "not_real_roles",
+    "roleToTag",
+]
 
 # noinspection SpellCheckingInspection
 roles = {

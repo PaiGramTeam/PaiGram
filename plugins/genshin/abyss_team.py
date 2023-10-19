@@ -5,13 +5,12 @@ import re
 from telegram import Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
-from telegram.helpers import create_deep_linked_url
 
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA
-from metadata.shortname import idToName, roleToId
+from metadata.shortname import idToName
 from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClient
 from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
@@ -33,7 +32,7 @@ class AbyssTeamPlugin(Plugin):
 
     @handler.command("abyss_team", block=False)
     @handler.message(filters.Regex(r"^深渊配队"), block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
+    async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user = update.effective_user
         message = update.effective_message
 
@@ -50,7 +49,7 @@ class AbyssTeamPlugin(Plugin):
             logger.info("用户 %s[%s] 查询[bold]深渊配队推荐[/bold]帮助", user.full_name, user.id, extra={"markup": True})
             return
 
-        logger.info("用户 %s[%s] [bold]深渊配队推荐[/bold]请求", user.full_name, user.id)
+        logger.info("用户 %s[%s] [bold]深渊配队推荐[/bold]请求", user.full_name, user.id, extra={"markup": True})
 
         client = await self.helper.get_genshin_client(user.id)
 
@@ -58,7 +57,7 @@ class AbyssTeamPlugin(Plugin):
         team_data = await self.team_data.get_data()
 
         # Set of uids
-        characters = set([c.id for c in await client.get_genshin_characters(client.player_id)])
+        characters = {c.id for c in await client.get_genshin_characters(client.player_id)}
 
         teams = {
             "Up": [],
@@ -72,7 +71,7 @@ class AbyssTeamPlugin(Plugin):
                 t_rate = a_team["Rate"]
 
                 # Check availability
-                if not all([c in characters for c in t_characters]):
+                if not all(c in characters for c in t_characters):
                     continue
 
                 teams[lane].append(
@@ -99,17 +98,17 @@ class AbyssTeamPlugin(Plugin):
         async def _get_render_data(id_list):
             return [
                 {
-                    "icon": (await self.assets_service.avatar(id).icon()).as_uri(),
-                    "name": idToName(id),
-                    "star": AVATAR_DATA[str(id)]["rank"],
+                    "icon": (await self.assets_service.avatar(cid).icon()).as_uri(),
+                    "name": idToName(cid),
+                    "star": AVATAR_DATA[str(cid)]["rank"],
                     "hava": True,
                 }
-                for id in id_list
+                for cid in id_list
             ]
 
         for u in teams["Up"]:
             for d in teams["Down"]:
-                if not all([c not in d["Characters"] for c in u["Characters"]]):
+                if not all(c not in d["Characters"] for c in u["Characters"]):
                     continue
                 team = {
                     "Up": await _get_render_data(u["Characters"]),
@@ -130,4 +129,3 @@ class AbyssTeamPlugin(Plugin):
             query_selector=".bg-contain",
         )
         await render_result.reply_photo(message, filename=f"abyss_team_{user.id}.png", allow_sending_without_reply=True)
-        return

@@ -1,10 +1,7 @@
 import time
-from typing import List
+from typing import List, Dict
 
 import httpx
-from pydantic import parse_obj_as
-
-from ...models.genshin.abyss import TeamRateResult, TeamRate
 
 __all__ = ("AbyssTeam",)
 
@@ -23,22 +20,15 @@ class AbyssTeam:
     VERSION = "3.5"
 
     def __init__(self):
-        self.client = httpx.Client(headers=self.HEADERS)
+        self.client = httpx.AsyncClient(headers=self.HEADERS)
         self.time = 0
         self.data = None
         self.ttl = 10 * 60
 
-    async def get_data(self) -> TeamRateResult:
+    async def get_data(self) -> List[Dict[str, Dict]]:
         if self.data is None or self.time + self.ttl < time.time():
-            data = self.client.get(self.TEAM_RATE_API)
+            data = await self.client.get(self.TEAM_RATE_API)
             data_json = data.json()["data"]
-
-            # self.data = TeamRateResult(
-            #     version=self.VERSION,
-            #     rate_list_up=parse_obj_as(List[TeamRate], data_json["rateList"]),
-            #     rate_list_down=parse_obj_as(List[TeamRate], data_json["rateList"]),
-            #     user_count=data_json["userCount"],
-            # )
             self.data = data_json
             self.time = time.time()
         return self.data.copy()

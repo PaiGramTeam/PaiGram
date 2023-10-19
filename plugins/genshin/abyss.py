@@ -36,7 +36,7 @@ def get_args(text: str) -> Tuple[int, bool, bool]:
     prev = "pre" in text or "上期" in text
     try:
         floor = 0 if total else int(re.search(r"\d+", text).group(0))
-    except:
+    except (ValueError, IndexError):
         floor = 0
     return floor, total, prev
 
@@ -68,7 +68,7 @@ class AbyssPlugin(Plugin):
 
     @handler.command("abyss", block=False)
     @handler.message(filters.Regex(r"^深渊数据"), block=False)
-    async def command_start(self, update: Update, _: CallbackContext) -> None:
+    async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user = update.effective_user
         message = update.effective_message
 
