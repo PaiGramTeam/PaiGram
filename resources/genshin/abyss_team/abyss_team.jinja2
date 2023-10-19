@@ -45,7 +45,6 @@
         class="flex flex-row px-6 py-1 my-1 text-neutral-100 bg-white bg-opacity-10 justify-evenly text-sm"
       >
         <div>UID {{ uid }}</div>
-        <div>版本 {{ version }}</div>
       </div>
 
       {% for team in teams %}
@@ -53,7 +52,7 @@
         <div class="text-center mr-auto text-yellow-500">
           推荐配队 {{ loop.index }}
         </div>
-        {% for lane in ["up", "down"] %}
+        {% for lane in ["Up", "Down"] %}
         <div class="flex my-2 space-x-4">
           {% for i in team[lane] %}
           <div
@@ -71,10 +70,10 @@
 
           <div>
             <div class="text-neutral-300">
-              {{ lane == 'up' and '上' or '下' }}半
+              {{ lane == 'Up' and '上' or '下' }}半
             </div>
             <div class="text-neutral-400 text-sm">
-              使用率 {{ team[lane + "_rate"] }}
+              使用率 {{ team[lane + "Rate"] }}
             </div>
           </div>
         </div>
@@ -83,7 +82,7 @@
       {% endfor %}
 
       <div class="mt-6 text-center p-1 text-neutral-400 text-xs">
-        数据来源：游创工坊
+        数据来源：DGP 胡桃 API
       </div>
     </div>
   </body>

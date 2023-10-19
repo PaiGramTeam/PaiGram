@@ -751,6 +751,13 @@ def roleToId(name: str) -> int | None:
 
 # noinspection PyPep8Naming
 @functools.lru_cache()
+def idToName(id: int) -> str | None:
+    """从角色ID获取正式名"""
+    return roles[id][0] if id in roles else None
+
+
+# noinspection PyPep8Naming
+@functools.lru_cache()
 def weaponToName(shortname: str) -> str:
     """将武器昵称转为正式名"""
     return next((key for key, value in weapons.items() if shortname == key or shortname in value), shortname)
