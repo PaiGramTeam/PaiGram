@@ -56,7 +56,7 @@ class Mixpanel:
         start = self._now()
         with contextlib.suppress(Exception):
             await self._request.post(request_url, data=params, timeout=10.0)
-        logger.debug(f"Mixpanel request took {self._now() - start} seconds")
+        logger.debug(f"Mixpanel request took %s seconds", self._now() - start)
 
     async def people_set(self, distinct_id: str, properties: dict):
         message = {
