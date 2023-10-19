@@ -16,9 +16,9 @@ from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClie
 from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
 
+
 class AbyssTeamPlugin(Plugin):
-    """Recommend teams for Spiral Abyss
-    """
+    """Recommend teams for Spiral Abyss"""
 
     def __init__(
         self,
@@ -34,10 +34,9 @@ class AbyssTeamPlugin(Plugin):
     @handler.command("abyss_team", block=False)
     @handler.message(filters.Regex(r"^深渊配队"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
-
         user = update.effective_user
         message = update.effective_message
-        
+
         if "help" in message.text or "帮助" in message.text:
             await message.reply_text(
                 "<b>深渊配队推荐</b>功能使用帮助（中括号表示可选参数）\n\n"
@@ -69,20 +68,22 @@ class AbyssTeamPlugin(Plugin):
         # All of the effective and available teams
         for lane in ["Up", "Down"]:
             for a_team in team_data[12 - 9][lane]:
-                t_characters = [int(s) for s in re.findall(r'\d+', a_team["Item"])]
+                t_characters = [int(s) for s in re.findall(r"\d+", a_team["Item"])]
                 t_rate = a_team["Rate"]
 
                 # Check availability
                 if not all([c in characters for c in t_characters]):
                     continue
 
-                teams[lane].append({
-                    "Characters": t_characters,
-                    "Rate": t_rate,
-                })
+                teams[lane].append(
+                    {
+                        "Characters": t_characters,
+                        "Rate": t_rate,
+                    }
+                )
 
         # If a number is specified, use it as the number of expected teams.
-        match = re.search(r'(?<=n=)\d+', message.text)
+        match = re.search(r"(?<=n=)\d+", message.text)
         n_team = int(match.group()) if match is not None else 4
 
         if "fast" in message.text:
@@ -96,12 +97,15 @@ class AbyssTeamPlugin(Plugin):
         abyss_teams_data = {"uid": client.player_id, "teams": []}
 
         async def _get_render_data(id_list):
-            return [{
-                "icon": (await self.assets_service.avatar(id).icon()).as_uri(),
-                "name": idToName(id),
-                "star": AVATAR_DATA[str(id)]["rank"],
-                "hava": True,
-            } for id in id_list]
+            return [
+                {
+                    "icon": (await self.assets_service.avatar(id).icon()).as_uri(),
+                    "name": idToName(id),
+                    "star": AVATAR_DATA[str(id)]["rank"],
+                    "hava": True,
+                }
+                for id in id_list
+            ]
 
         for u in teams["Up"]:
             for d in teams["Down"]:
@@ -111,11 +115,11 @@ class AbyssTeamPlugin(Plugin):
                     "Up": await _get_render_data(u["Characters"]),
                     "UpRate": u["Rate"],
                     "Down": await _get_render_data(d["Characters"]),
-                    "DownRate": d["Rate"]
+                    "DownRate": d["Rate"],
                 }
                 abyss_teams_data["teams"].append(team)
         abyss_teams_data["teams"].sort(key=lambda t: t["UpRate"] * t["DownRate"], reverse=True)
-        abyss_teams_data["teams"] =abyss_teams_data["teams"][0 : min(n_team, len(abyss_teams_data["teams"]))]
+        abyss_teams_data["teams"] = abyss_teams_data["teams"][0 : min(n_team, len(abyss_teams_data["teams"]))]
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         render_result = await self.template_service.render(

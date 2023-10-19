@@ -29,15 +29,17 @@ except ImportError:
 
 TZ = timezone("Asia/Shanghai")
 
+
 @lru_cache
 def get_args(text: str) -> Tuple[int, bool, bool]:
     total = "all" in text or "总览" in text
     prev = "pre" in text or "上期" in text
     try:
-        floor = 0 if total else int(re.search(r'\d+', text).group(0))
+        floor = 0 if total else int(re.search(r"\d+", text).group(0))
     except:
         floor = 0
     return floor, total, prev
+
 
 class AbyssUnlocked(Exception):
     """根本没动"""
