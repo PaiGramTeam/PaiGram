@@ -65,7 +65,8 @@ class PlayerInfoService(BaseService):
         if player_info is None:
             player_info_enka = await self.get_player_info_from_enka(player.player_id)
             if player_info_enka is None:
-                return None
+                # todo 如果拿不到 打算从其他接口获取
+                return PlayerInfo(user_id=player.user_id, player_id=player.player_id, nickname="")
             player_info = PlayerInfo(
                 user_id=player.user_id,
                 player_id=player.player_id,
