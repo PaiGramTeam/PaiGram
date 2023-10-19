@@ -109,7 +109,7 @@ class StartPlugin(Plugin):
     async def process_validate(self, message: Message, user: User, bot_username: Optional[str] = None):
         await message.reply_text(
             "由于官方对第三方工具限制以及账户安全的考虑，频繁使用第三方工具会导致账号被风控并要求用过验证才能进行访问。\n"
-            "如出现频繁验证请求，可尝试使用 /setdevice 设置设备标识符以尝试解决该问题。\n"
+            "如出现频繁验证请求，可尝试使用 /setcookies 的新方法重新绑定以尝试解决该问题。\n"
             "如担心账号安全，建议修改密码以保护账号安全，修改账号密码后任何登录令牌都会被强制注销。\n"
         )
         try:

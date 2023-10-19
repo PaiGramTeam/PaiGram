@@ -15,10 +15,10 @@ from telegram.helpers import escape_markdown
 from core.basemodel import RegionEnum
 from core.plugin import Plugin, conversation, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
-from core.services.cookies.models import CookiesStatusEnum
 from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
 from core.services.players.services import PlayersService, PlayerInfoService
+from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -51,11 +51,13 @@ class BindAccountPlugin(Plugin.Conversation):
         cookies_service: CookiesService = None,
         player_info_service: PlayerInfoService = None,
         public_cookies_service: PublicCookiesService = None,
+        helper: GenshinHelper = None,
     ):
         self.public_cookies_service = public_cookies_service
         self.cookies_service = cookies_service
         self.players_service = players_service
         self.player_info_service = player_info_service
+        self.helper = helper
 
     @conversation.entry_point
     @handler.command(command="setuid", filters=filters.ChatType.PRIVATE, block=False)
@@ -86,14 +88,13 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if message.text == "米游社":
-            reply_keyboard = [["通过账号ID"], ["退出"]]
             bind_account_plugin_data.region = RegionEnum.HYPERION
         elif message.text == "HoYoLab":
-            reply_keyboard = [["通过玩家ID", "通过账号ID"], ["退出"]]
             bind_account_plugin_data.region = RegionEnum.HOYOLAB
         else:
             await message.reply_text("选择错误，请重新选择")
             return CHECK_SERVER
+        reply_keyboard = [["通过玩家ID", "通过账号ID"], ["退出"]]
         await message.reply_markdown_v2(
             "请选择你要绑定的方式", reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
         )
@@ -101,17 +102,16 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_METHOD)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def check_method(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+    async def check_method(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
-        bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        if message.text == "通过玩家ID" and bind_account_plugin_data.region != RegionEnum.HYPERION:
-            await message.reply_text("请输入你的玩家ID（非通行证ID）", reply_markup=ReplyKeyboardRemove())
+        if message.text == "通过玩家ID":
+            await message.reply_text("请输入你的玩家ID（非通行证ID），此 ID 在 游戏客户端 左/右下角。", reply_markup=ReplyKeyboardRemove())
             return CHECK_PLAYER_ID
         if message.text == "通过账号ID":
-            await message.reply_text("请输入你的通行证ID（非玩家ID）", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text("请输入你的通行证ID（非玩家ID），此 ID 在 社区APP '我的' 页面。", reply_markup=ReplyKeyboardRemove())
             return CHECK_ACCOUNT_ID
         await message.reply_text("选择错误，请重新选择")
         return CHECK_METHOD
@@ -194,18 +194,11 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("ID 格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         try:
-            cookies = await self.public_cookies_service.get_cookies(user.id, region)
+            async with self.helper.public_genshin(user.id, region=region, uid=player_id) as client:
+                player_stats = await client.get_genshin_user(player_id)
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        if region == RegionEnum.HYPERION:
-            client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
-        elif region == RegionEnum.HOYOLAB:
-            client = GenshinClient(cookies=cookies.data, region=Region.OVERSEAS, lang="zh-cn")
-        else:
-            return ConversationHandler.END
-        try:
-            player_stats = await client.get_genshin_user(player_id)
         except AccountNotFound:
             await message.reply_text("找不到用户，uid可能无效", reply_markup=ReplyKeyboardRemove())
             logger.warning("获取账号信息发生错误 %s 找不到用户 uid可能无效", player_id)
@@ -215,12 +208,11 @@ class BindAccountPlugin(Plugin.Conversation):
             logger.warning("获取账号信息发生错误 %s 账户信息未公开", player_id)
             return ConversationHandler.END
         except InvalidCookies:
-            await self.public_cookies_service.undo(user.id, cookies, CookiesStatusEnum.INVALID_COOKIES)
+            await self.public_cookies_service.undo(user.id)
             await message.reply_text("出错了呜呜呜 ~ 请稍后重试或者绑定 cookie")
             return ConversationHandler.END
         except SimnetBadRequest as exc:
             if exc.ret_code == 1034:
-                await self.public_cookies_service.undo(user.id)
                 await message.reply_text("出错了呜呜呜 ~ 请稍后重试或者绑定 cookie")
                 return ConversationHandler.END
             await message.reply_text("获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
@@ -230,8 +222,6 @@ class BindAccountPlugin(Plugin.Conversation):
         except ValueError:
             await message.reply_text("ID 格式有误，请检查", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        finally:
-            await client.shutdown()
         player_info = await self.players_service.get(
             user.id, player_id=player_id, region=bind_account_plugin_data.region
         )
