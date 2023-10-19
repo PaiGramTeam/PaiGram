@@ -12,7 +12,7 @@ class GameStrategyService(BaseService):
         self._cache = cache
         self._hyperion = Hyperion()
         if collections is None:
-            self._collections = [839176, 839179, 839181, 1180811, 2226210]
+            self._collections = [2319292, 2319293, 2319294, 2319295, 2319296, 2319298, 2319299]
         else:
             self._collections = collections
         self._special_posts = {"达达利亚": "21272578"}
