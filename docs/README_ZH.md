@@ -13,7 +13,6 @@
 
 基于 [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) 的 PaiGram
 
-
 ![Alt](https://repobeats.axiom.co/api/embed/f73c1121006cb86196f83da2170242b7a97f8be0.svg "Repobeats analytics image")
 
 ## 环境需求
@@ -33,6 +32,7 @@
 ### 标准设置（所有环境）
 
 #### 1. 从 Git 克隆 PaiGram
+
 ```bash
 git clone git@github.com:PaiGramTeam/PaiGram.git
 cd PaiGram/
@@ -44,6 +44,7 @@ git submodule update --init --recursive
 建议使用虚拟环境。您可以通过 `venv` 或 `virtualenv` 进行设置。
 
 **创建虚拟环境：**
+
 ```bash
 python3 -m venv venv
 ```
@@ -51,16 +52,19 @@ python3 -m venv venv
 **激活虚拟环境：**
 
 *对于 Linux:*
+
 ```bash
 source venv/bin/activate
 ```
 
 *对于 Windows 命令提示符:*
+
 ```bash
 venv\Scripts\activate.bat
 ```
 
 *对于 Windows PowerShell:*
+
 ```bash
 .\venv\Scripts\Activate.ps1
 ```
@@ -105,9 +109,11 @@ python ./run.py
 
 ### 其他部署方法
 
-- **Docker:** 对于使用 Docker 的部署，请参阅[Wiki/使用 Docker 部署](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker)。
+- **Docker:** 对于使用 Docker
+  的部署，请参阅[Wiki/使用 Docker 部署](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker)。
 
-- **Podman:** 对于使用 Podman 的部署，请参阅[Wiki/使用 Podman 部署](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Podman)。
+- **Podman:** 对于使用 Podman
+  的部署，请参阅[Wiki/使用 Podman 部署](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Podman)。
 
 ## 其他说明
 
@@ -122,4 +128,4 @@ python ./run.py
 |           [Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)           | 本项使用的抽卡图片和前端资源来源 |
 |       [Crawler-ghhw](https://github.com/DGP-Studio/Crawler-ghhw)        | 本项目参考的爬虫代码       |
 |                  [Enka.Network](https://enka.network)                   | 角色卡片的数据来源        |
-|      [miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin)       | 角色卡片的参考项目        |
+|                    [DGP 胡桃 API](https://hut.ao/zh/)                     | 深渊数据来源           |
