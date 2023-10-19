@@ -44,20 +44,11 @@ class PlayerStatsPlugins(Plugin):
             logger.warning("获取 uid 发生错误！ 错误信息为 %s", str(exc))
             await message.reply_text("输入错误")
             return
-        public = False
         try:
-            try:
-                async with self.helper.genshin(user.id) as client:
+            async with self.helper.genshin_or_public(user.id) as client:
+                if not client.public:
                     await client.get_record_cards()
-                    render_result = await self.render(client, uid)
-            except CookiesNotFoundError:
-                public = True
-                async with self.helper.public_genshin(user.id) as client:
-                    render_result = await self.render(client, uid)
-        except SimnetBadRequest as exc:
-            if exc.ret_code == 1034 and public:
-                raise CookiesNotFoundError(user.id) from exc
-            raise exc
+                render_result = await self.render(client, uid)
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多 请稍后重试")
             return

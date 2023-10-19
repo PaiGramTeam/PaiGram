@@ -123,21 +123,11 @@ class AbyssPlugin(Plugin):
 
         if total:
             reply_text = await message.reply_text("派蒙需要时间整理深渊数据，还请耐心等待哦~")
-        public = False
         try:
-            try:
-                async with self.helper.genshin(user.id) as client:
+            async with self.helper.genshin_or_public(user.id) as client:
+                if not client.public:
                     await client.get_record_cards()
-                    images = await self.get_rendered_pic(client, client.player_id, floor, total, previous)
-            except CookiesNotFoundError:
-                # Cookie 不存在使用公开接口
-                public = True
-                async with self.helper.public_genshin(user.id) as client:
-                    images = await self.get_rendered_pic(client, uid, floor, total, previous)
-        except SimnetBadRequest as exc:
-            if exc.ret_code == 1034 and public:
-                raise CookiesNotFoundError(user.id) from exc
-            raise exc
+                images = await self.get_rendered_pic(client, client.player_id, floor, total, previous)
         except AbyssUnlocked:  # 若深渊未解锁
             await message.reply_text("还未解锁深渊哦~")
             return

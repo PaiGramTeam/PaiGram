@@ -10,6 +10,7 @@ from simnet import GenshinClient, Region
 from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, NetworkError, CookieException
 from simnet.models.genshin.calculator import CalculatorCharacterDetails
 from simnet.models.genshin.chronicle.characters import Character
+from simnet.utils.player import recognize_game_biz
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import StaleDataError
 from sqlmodel import BigInteger, Column, DateTime, Field, Index, Integer, SQLModel, String, delete, func, select
@@ -375,3 +376,24 @@ class GenshinHelper(Plugin):
                     await self.public_cookies_service.undo(user_id)
                     await self.public_cookies_service.set_device_valid(client.account_id, False)
                 raise exc
+
+    @asynccontextmanager
+    async def genshin_or_public(
+        self, user_id: int, region: Optional[RegionEnum] = None, uid: Optional[int] = None
+    ) -> GenshinClient:
+        try:
+            async with self.genshin(user_id, region) as client:
+                client.public = False
+                if uid and recognize_game_biz(uid, client.game) != recognize_game_biz(client.player_id, client.game):
+                    # 如果 uid 和 player_id 服务器不一致，说明是跨服的，需要使用公共的 cookies
+                    raise CookiesNotFoundError(user_id)
+                yield client
+        except CookiesNotFoundError:
+            async with self.public_genshin(user_id, region, uid) as client:
+                try:
+                    client.public = True
+                    yield client
+                except SimnetBadRequest as exc:
+                    if exc.ret_code == 1034:
+                        raise CookiesNotFoundError(user_id) from exc
+                    raise exc
