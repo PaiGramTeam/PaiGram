@@ -340,10 +340,11 @@ class GenshinHelper(Plugin):
     async def public_genshin(
         self, user_id: int, region: Optional[RegionEnum] = None, uid: Optional[int] = None
     ) -> GenshinClient:
-        player = await self.players_service.get_player(user_id, region)
-        if player:
-            region = player.region
-            uid = player.player_id
+        if not (region or uid):
+            player = await self.players_service.get_player(user_id, region)
+            if player:
+                region = player.region
+                uid = player.player_id
 
         cookies = await self.public_cookies_service.get_cookies(user_id, region)
 
@@ -389,6 +390,8 @@ class GenshinHelper(Plugin):
                     raise CookiesNotFoundError(user_id)
                 yield client
         except CookiesNotFoundError:
+            if uid:
+                region = RegionEnum.HYPERION if uid < 600000000 else RegionEnum.HOYOLAB
             async with self.public_genshin(user_id, region, uid) as client:
                 try:
                     client.public = True
