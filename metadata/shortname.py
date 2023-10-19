@@ -761,9 +761,9 @@ def roleToId(name: str) -> int | None:
 
 # noinspection PyPep8Naming
 @functools.lru_cache()
-def idToName(id: int) -> str | None:
+def idToName(cid: int) -> str | None:
     """从角色ID获取正式名"""
-    return roles[id][0] if id in roles else None
+    return roles[cid][0] if cid in roles else None
 
 
 # noinspection PyPep8Naming

@@ -100,7 +100,7 @@ class AbyssTeamPlugin(Plugin):
                 {
                     "icon": (await self.assets_service.avatar(cid).icon()).as_uri(),
                     "name": idToName(cid),
-                    "star": AVATAR_DATA[str(cid)]["rank"],
+                    "star": AVATAR_DATA[str(cid)]["rank"] if cid not in {10000005, 10000007} else 5,
                     "hava": True,
                 }
                 for cid in id_list
