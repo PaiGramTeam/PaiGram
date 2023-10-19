@@ -74,6 +74,7 @@ class StartPlugin(Plugin):
             return
         logger.info("用户 %s[%s] 发出start命令", user.full_name, user.id)
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
+        self.track_event(update, "start")
 
     @staticmethod
     async def unknown_command(update: Update, _: CallbackContext) -> None:
@@ -86,10 +87,12 @@ class StartPlugin(Plugin):
     @handler(CommandHandler, command="ping", block=False)
     async def ping(self, update: Update, _: CallbackContext) -> None:
         await update.effective_message.reply_text("online! ヾ(✿ﾟ▽ﾟ)ノ")
+        self.track_event(update, "ping")
 
     @handler(CommandHandler, command="reply_keyboard_remove", block=False)
     async def reply_keyboard_remove(self, update: Update, _: CallbackContext) -> None:
         await update.message.reply_text("移除远程键盘成功", reply_markup=ReplyKeyboardRemove())
+        self.track_event(update, "reply_keyboard_remove")
 
     async def process_sign_validate(self, message: Message, user: User, validate: str):
         try:

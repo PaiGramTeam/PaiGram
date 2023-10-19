@@ -39,3 +39,4 @@ class VerificationPlugins(Plugin):
                 )
             ),
         )
+        self.track_event(update, "verify")

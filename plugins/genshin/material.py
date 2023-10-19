@@ -232,3 +232,4 @@ class MaterialPlugin(Plugin):
                 self.add_delete_message_job(reply_message)
             return
         await result.reply_photo(message)
+        self.track_event(update, "material")

@@ -50,3 +50,4 @@ class Redeem(Plugin):
         reply_message = await message.reply_text(msg)
         if filters.ChatType.GROUPS.filter(reply_message):
             self.add_delete_message_job(reply_message)
+        self.track_event(update, "redeem")

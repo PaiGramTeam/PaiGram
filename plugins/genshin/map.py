@@ -146,6 +146,7 @@ class Map(Plugin):
                 return
             await message.reply_text("没有找到该资源。", parse_mode="Markdown")
             return
+        self.track_event(update, "map")
         if len(maps) == 1:
             map_id = self.map_helper.MAP_ID_LIST[maps[0]]
             await self.send_media(message, map_id, resource_name)

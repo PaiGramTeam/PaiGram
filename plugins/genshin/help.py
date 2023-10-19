@@ -29,3 +29,4 @@ class HelpPlugin(Plugin):
         )
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await render_result.reply_photo(message, filename="help.png", allow_sending_without_reply=True)
+        self.track_event(update, "help")

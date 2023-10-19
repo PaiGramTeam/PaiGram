@@ -50,3 +50,4 @@ class HilichurlsPlugin(Plugin):
         logger.info("用户 %s[%s] 查询今日角色生日列表  查询丘丘语字典命令请求 || 参数 %s", user.full_name, user.id, msg)
         result = self.hilichurls_dictionary[f"{search}"]
         await message.reply_markdown_v2(f"丘丘语: `{search}`\n\n`{result}`")
+        self.track_event(update, "hilichurls")

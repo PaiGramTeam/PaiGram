@@ -157,6 +157,7 @@ class AbyssPlugin(Plugin):
             )
 
         logger.info("用户 %s[%s] [bold]深渊挑战数据[/bold]: 成功发送图片", user.full_name, user.id, extra={"markup": True})
+        self.track_event(update, "abyss")
 
     async def get_rendered_pic(
         self, client: GenshinClient, uid: int, floor: int, total: bool, previous: bool

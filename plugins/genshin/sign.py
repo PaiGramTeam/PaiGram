@@ -112,6 +112,7 @@ class Sign(Plugin):
             reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self.add_delete_message_job(reply_message)
+            self.track_event(update, "sign")
         except NeedChallenge as exc:
             button = await self.sign_system.get_challenge_button(
                 context.bot.username,
@@ -126,6 +127,7 @@ class Sign(Plugin):
             )
             if filters.ChatType.GROUPS.filter(reply_message):
                 self.add_delete_message_job(reply_message)
+            self.track_event(update, "sign_challenge")
 
     @handler(CallbackQueryHandler, pattern=r"^sign\|", block=False)
     async def sign_gen_link(self, update: Update, context: CallbackContext) -> None:

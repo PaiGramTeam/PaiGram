@@ -66,3 +66,4 @@ class QuizPlugin(Plugin):
         if filters.ChatType.GROUPS.filter(message):
             self.add_delete_message_job(message, delay=300)
             self.add_delete_message_job(poll_message, delay=300)
+        self.track_event(update, "quiz")

@@ -58,3 +58,4 @@ class CalendarPlugin(Plugin):
         )
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await image.reply_photo(message)
+        self.track_event(update, "calendar")

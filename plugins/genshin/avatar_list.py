@@ -219,3 +219,4 @@ class AvatarListPlugin(Plugin):
             "文件" if all_avatars else "图片",
             extra={"markup": True},
         )
+        self.track_event(update, "avatars")
