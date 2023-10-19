@@ -36,7 +36,7 @@ def get_args(text: str) -> Tuple[int, bool, bool]:
     prev = "pre" in text or "上期" in text
     try:
         floor = 0 if total else int(re.search(r"\d+", text).group(0))
-    except (ValueError, IndexError):
+    except (ValueError, IndexError, AttributeError):
         floor = 0
     return floor, total, prev
 
