@@ -12,6 +12,7 @@ from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.players.services import PlayerInfoService
 from gram_core.services.cookies.models import CookiesStatusEnum
+from gram_core.services.devices import DevicesService
 from modules.apihelper.models.genshin.cookies import CookiesModel
 from utils.log import logger
 
@@ -24,10 +25,17 @@ __all__ = ("PlayersManagesPlugin",)
 
 
 class PlayersManagesPlugin(Plugin):
-    def __init__(self, players: PlayersService, cookies: CookiesService, player_info_service: PlayerInfoService):
+    def __init__(
+        self,
+        players: PlayersService,
+        cookies: CookiesService,
+        player_info_service: PlayerInfoService,
+        devices_service: DevicesService,
+    ):
         self.cookies_service = cookies
         self.players_service = players
         self.player_info_service = player_info_service
+        self.devices_service = devices_service
 
     @staticmethod
     def players_manager_callback(callback_query_data: str) -> Tuple[str, int, int]:
@@ -273,10 +281,15 @@ class PlayersManagesPlugin(Plugin):
             await callback_query.edit_message_text(
                 f"玩家 {player.player_id} {player_info.nickname} cookies 未找到", reply_markup=InlineKeyboardMarkup(buttons)
             )
+            return
+        device = await self.devices_service.get(player.account_id)
 
         cookies = SimpleCookie()
         for key, value in cookies_data.data.items():
             cookies[key] = value
+        if device is not None:
+            cookies["x-rpc-device_id"] = device.device_id
+            cookies["x-rpc-device_fp"] = device.device_fp
 
         cookie_str = cookies.output(header="", sep=";")
 

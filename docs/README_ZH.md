@@ -9,69 +9,63 @@
 
 <p>
 <img src="https://user-images.githubusercontent.com/70872201/190447002-119a8819-b111-4a96-a0b3-701c5e256137.png" align="right" width="100px" alt="">
-<h2 align="left">Introduction</h2>
+<h2 align="left">简介</h2>
 
-PaiGram based on [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
+基于 [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) 的 PaiGram
+
 
 ![Alt](https://repobeats.axiom.co/api/embed/f73c1121006cb86196f83da2170242b7a97f8be0.svg "Repobeats analytics image")
 
-[中文文档](/docs/README_ZH.md)
-
-## System Dependencies
+## 环境需求
 
 - Python 3.11+
 - MySQL or SQLite
 - Redis
 
-## Usage
+## 使用方法
 
-Depending on your preferred environment, follow one of the setups below:
+根据您首选的环境，按照以下设置之一进行操作：
 
-### WSL2 Ubuntu 22.04 Setup
+### WSL2 Ubuntu 22.04 设置
 
-For contributors using WSL2 on Ubuntu 22.04, follow the [detailed guide here](/docs/wsl/EN.md).
+对于在 Ubuntu 22.04 上使用 WSL2 的贡献者，请按照[这里的详细指南](/docs/wsl/ZH.md)进行操作。
 
-### Standard Setup (All Environments)
+### 标准设置（所有环境）
 
-#### 1. Clone PaiGram from Git
-
+#### 1. 从 Git 克隆 PaiGram
 ```bash
 git clone git@github.com:PaiGramTeam/PaiGram.git
 cd PaiGram/
 git submodule update --init --recursive
 ```
 
-#### 2. Project Setup
+#### 2. 项目设置
 
-It's recommended to use a virtual environment. You can set it up via `venv` or `virtualenv`.
+建议使用虚拟环境。您可以通过 `venv` 或 `virtualenv` 进行设置。
 
-**Create Virtual environment:**
-
+**创建虚拟环境：**
 ```bash
 python3 -m venv venv
 ```
 
-**Activate the virtual environment:**
+**激活虚拟环境：**
 
-*For Linux:*
-
+*对于 Linux:*
 ```bash
 source venv/bin/activate
 ```
 
-*For Windows Command Prompt:*
-
+*对于 Windows 命令提示符:*
 ```bash
 venv\Scripts\activate.bat
 ```
 
-*For Windows PowerShell:*
-
+*对于 Windows PowerShell:*
 ```bash
 .\venv\Scripts\Activate.ps1
 ```
 
-**Install Dependencies:**
+**安装依赖：**
 
 ```bash
 pip install poetry
@@ -79,52 +73,47 @@ poetry install --extras all
 playwright install chromium
 ```
 
-Optional Dependencies
+可选依赖
 
 ```bash
 poetry install --extras all
 ```
 
-**Edit Config:**
+**编辑配置文件：**
 
-Create a dotenv config (`.env`) based on the given example. Ensure to provide the necessary database connection
-  details and bot token parameters.
+根据给定示例创建 dotenv 配置（`.env`）。确保提供必要的数据库连接详细信息和机器人 token 参数。
 
 ```bash
 cp .env.example .env
 ```
 
-For detailed configurations, refer to the [Wiki/Env Settings](https://github.com/PaiGramTeam/PaiGram/wiki/Env-Settings).
+要进行详细的配置，请参阅[Wiki/Env 设置](https://github.com/PaiGramTeam/PaiGram/wiki/Env-Settings)。
 
-#### 3. Database Setup with Alembic
+#### 3. 使用 Alembic 设置数据库
 
 ```bash
 alembic upgrade head
 ```
 
-#### 4. Run PaiGram
+#### 4. 运行 PaiGram
 
-Ensure the `venv` is still active:
+*运行前请确保你依然处于虚拟环境中*
 
 ```bash
 python ./run.py
 ```
 
-### Alternative Deployments
+### 其他部署方法
 
-- **Docker:** For deployments using Docker, see
-  the [Wiki/Deploy with Docker](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker).
+- **Docker:** 对于使用 Docker 的部署，请参阅[Wiki/使用 Docker 部署](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Docker)。
 
-- **Podman:** For deployments using Podman, see
-  the [Wiki/Deploy with Podman](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Podman).
+- **Podman:** 对于使用 Podman 的部署，请参阅[Wiki/使用 Podman 部署](https://github.com/PaiGramTeam/PaiGram/wiki/Deploy-with-Podman)。
 
-## Additional Information
+## 其他说明
 
-This project is currently being expanded,
-adding more entertainment and information query features related to Genshin Impact.
-Stay tuned!
+这个项目目前正在扩展，加入更多原神相关娱乐和信息查询功能，敬请期待。
 
-## Acknowledgments
+## 感谢
 
 |                                Nickname                                 | Introduce        |
 |:-----------------------------------------------------------------------:|------------------|

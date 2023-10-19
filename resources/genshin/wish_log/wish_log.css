@@ -18,11 +18,11 @@ body {
     font-family: PingFangSC-Medium, PingFang SC, sans-serif;
     transform: scale(1.5);
     transform-origin: 0 0;
-    width: 1020px;
+    width: 980px;
 }
 
 .container {
-    width: 1020px;
+    width: 980px;
     padding: 20px 15px 10px 15px;
     background-color: #f5f6fb;
 }

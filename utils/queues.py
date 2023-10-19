@@ -71,7 +71,7 @@ class Queue(Generic[T]):
         self.closing = False
         self.pending = set()  # type: Set[asyncio.Future[Any]]
 
-        def checked_call_soon_threadsafe(callback: Callable[..., None], *args: Any) -> NoReturn:
+        def checked_call_soon_threadsafe(callback: Callable[..., None], *args: Any):
             try:
                 self.loop.call_soon_threadsafe(callback, *args)
             except RuntimeError:
@@ -79,7 +79,7 @@ class Queue(Generic[T]):
 
         self._call_soon_threadsafe = checked_call_soon_threadsafe
 
-        def checked_call_soon(callback: Callable[..., None], *args: Any) -> NoReturn:
+        def checked_call_soon(callback: Callable[..., None], *args: Any):
             if not self.loop.is_closed():
                 self.loop.call_soon(callback, *args)
 
@@ -88,7 +88,7 @@ class Queue(Generic[T]):
         self._sync_queue = _SyncQueueProxy(self)
         self._async_queue = _AsyncQueueProxy(self)
 
-    def close(self) -> NoReturn:
+    def close(self):
         """关闭队列"""
         with self.sync_mutex:
             self.closing = True
@@ -97,7 +97,7 @@ class Queue(Generic[T]):
             self.finished.set()  # 取消堵塞全部的 async_q.join()
             self.all_tasks_done.notify_all()  # 取消堵塞全部的 sync_q.join()
 
-    async def wait_closed(self) -> NoReturn:
+    async def wait_closed(self):
         if not self.closing:
             raise RuntimeError("队列已被关闭")
         await asyncio.sleep(0)
@@ -121,32 +121,32 @@ class Queue(Generic[T]):
     def async_q(self) -> "_AsyncQueueProxy[T]":
         return self._async_queue
 
-    def _init(self) -> NoReturn:
+    def _init(self):
         self._queue = deque()  # type: Deque[T]
 
     def qsize(self) -> int:
         return len(self._queue)
 
-    def put(self, item: T) -> NoReturn:
+    def put(self, item: T):
         self._queue.append(item)
 
     def get(self) -> T:
         return self._queue.popleft()
 
-    def put_internal(self, item: T) -> NoReturn:
+    def put_internal(self, item: T):
         self.put(item)
         self.unfinished_tasks += 1
         self.finished.clear()
 
-    def notify_sync_not_empty(self) -> NoReturn:
-        def f() -> NoReturn:
+    def notify_sync_not_empty(self):
+        def f():
             with self.sync_mutex:
                 self.sync_not_empty.notify()
 
         self.loop.run_in_executor(None, f)
 
-    def notify_sync_not_full(self) -> NoReturn:
-        def f() -> NoReturn:
+    def notify_sync_not_full(self):
+        def f():
             with self.sync_mutex:
                 self.sync_not_full.notify()
 
@@ -154,12 +154,12 @@ class Queue(Generic[T]):
         fut.add_done_callback(self.pending.discard)
         self.pending.add(fut)
 
-    def notify_async_not_empty(self, *, threadsafe: bool) -> NoReturn:
-        async def f() -> NoReturn:
+    def notify_async_not_empty(self, *, threadsafe: bool):
+        async def f():
             async with self.async_mutex:
                 self.async_not_empty.notify()
 
-        def task_maker() -> NoReturn:
+        def task_maker():
             task = self.loop.create_task(f())
             task.add_done_callback(self.pending.discard)
             self.pending.add(task)
@@ -169,12 +169,12 @@ class Queue(Generic[T]):
         else:
             self._call_soon(task_maker)
 
-    def notify_async_not_full(self, *, threadsafe: bool) -> NoReturn:
-        async def f() -> NoReturn:
+    def notify_async_not_full(self, *, threadsafe: bool):
+        async def f():
             async with self.async_mutex:
                 self.async_not_full.notify()
 
-        def task_maker() -> NoReturn:
+        def task_maker():
             task = self.loop.create_task(f())
             task.add_done_callback(self.pending.discard)
             self.pending.add(task)
@@ -184,7 +184,7 @@ class Queue(Generic[T]):
         else:
             self._call_soon(task_maker)
 
-    def check_closing(self) -> NoReturn:
+    def check_closing(self):
         if self.closing:
             raise RuntimeError("禁止对已关闭的队列进行操作")
 
@@ -204,7 +204,7 @@ class _SyncQueueProxy(SyncQueue[T]):  # pylint: disable=W0212
     def closed(self) -> bool:
         return self._parent.closed
 
-    def task_done(self) -> NoReturn:
+    def task_done(self):
         self._parent.check_closing()
         with self._parent.all_tasks_done:
             unfinished = self._parent.unfinished_tasks - 1
@@ -215,7 +215,7 @@ class _SyncQueueProxy(SyncQueue[T]):  # pylint: disable=W0212
                 self._parent.loop.call_soon_threadsafe(self._parent.finished.set)
             self._parent.unfinished_tasks = unfinished
 
-    def join(self) -> NoReturn:
+    def join(self):
         self._parent.check_closing()
         with self._parent.all_tasks_done:
             while self._parent.unfinished_tasks:
@@ -237,7 +237,7 @@ class _SyncQueueProxy(SyncQueue[T]):  # pylint: disable=W0212
     def full(self) -> bool:
         return 0 < self._parent.maxsize <= self._parent.qsize()
 
-    def put(self, item: T, block: bool = True, timeout: OptFloat = None) -> NoReturn:
+    def put(self, item: T, block: bool = True, timeout: OptFloat = None):
         self._parent.check_closing()
         with self._parent.sync_not_full:
             if self._parent.maxsize > 0:
@@ -285,7 +285,7 @@ class _SyncQueueProxy(SyncQueue[T]):  # pylint: disable=W0212
             self._parent.notify_async_not_full(threadsafe=True)
             return item
 
-    def put_nowait(self, item: T) -> NoReturn:
+    def put_nowait(self, item: T):
         return self.put(item, block=False)
 
     def get_nowait(self) -> T:
@@ -346,7 +346,7 @@ class _AsyncQueueProxy(AsyncQueue[T]):  # pylint: disable=W0212
                 if locked:
                     self._parent.sync_mutex.release()
 
-    def put_nowait(self, item: T) -> NoReturn:
+    def put_nowait(self, item: T):
         self._parent.check_closing()
         with self._parent.sync_mutex and 0 < self._parent.maxsize <= self._parent.qsize():
             raise AsyncQueueFull
@@ -391,7 +391,7 @@ class _AsyncQueueProxy(AsyncQueue[T]):  # pylint: disable=W0212
             self._parent.notify_sync_not_full()
             return item
 
-    def task_done(self) -> NoReturn:
+    def task_done(self):
         self._parent.check_closing()
         with self._parent.all_tasks_done:
             if self._parent.unfinished_tasks <= 0:
@@ -413,13 +413,13 @@ class _AsyncQueueProxy(AsyncQueue[T]):  # pylint: disable=W0212
 class PriorityQueue(Queue[T]):
     """优先级队列"""
 
-    def _init(self) -> NoReturn:
+    def _init(self):
         self._heap_queue: List[T] = []
 
     def qsize(self) -> int:
         return len(self._heap_queue)
 
-    def put(self, item: T) -> NoReturn:
+    def put(self, item: T):
         if not isinstance(item, tuple):
             if hasattr(item, "priority"):
                 item = (int(item.priority), item)
@@ -440,7 +440,7 @@ class LifoQueue(Queue[T]):
     def qsize(self) -> int:
         return len(self._queue)
 
-    def put(self, item: T) -> NoReturn:
+    def put(self, item: T):
         self._queue.append(item)
 
     def get(self) -> T:

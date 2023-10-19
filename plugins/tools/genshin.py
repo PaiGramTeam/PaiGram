@@ -10,6 +10,7 @@ from simnet import GenshinClient, Region
 from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, NetworkError, CookieException
 from simnet.models.genshin.calculator import CalculatorCharacterDetails
 from simnet.models.genshin.chronicle.characters import Character
+from simnet.utils.player import recognize_game_biz
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import StaleDataError
 from sqlmodel import BigInteger, Column, DateTime, Field, Index, Integer, SQLModel, String, delete, func, select
@@ -193,7 +194,9 @@ class PlayerNotFoundError(Exception):
 
 
 class CookiesNotFoundError(Exception):
-    def __init__(self, user_id):
+    def __init__(self, user_id: int, region: Optional[RegionEnum] = None):
+        self.user_id = user_id
+        self.region = region
         super().__init__(f"{user_id} cookies not found")
 
 
@@ -215,16 +218,16 @@ class GenshinHelper(Plugin):
             raise ServiceNotFoundError(*filter(lambda x: x is None, temp))
 
     @asynccontextmanager
-    async def genshin(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
+    async def genshin(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:  # skipcq: PY-R1000 #
         player = await self.players_service.get_player(user_id, region)
         if player is None:
             raise PlayerNotFoundError(user_id)
 
         if player.account_id is None:
-            raise CookiesNotFoundError(user_id)
+            raise CookiesNotFoundError(user_id, player.region)
         cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookie_model is None:
-            raise CookiesNotFoundError(user_id)
+            raise CookiesNotFoundError(user_id, player.region)
         cookies = cookie_model.data
 
         if player.region == RegionEnum.HYPERION:  # 国服
@@ -252,6 +255,11 @@ class GenshinHelper(Plugin):
         ) as client:
             try:
                 yield client
+            except SimnetBadRequest as exc:
+                if exc.ret_code == 1034 and devices is not None:
+                    devices.is_valid = False
+                    await self.devices_service.update(devices)
+                raise exc
             except InvalidCookies as exc:
                 refresh = False
                 cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
@@ -298,10 +306,10 @@ class GenshinHelper(Plugin):
             raise PlayerNotFoundError(user_id)
 
         if player.account_id is None:
-            raise CookiesNotFoundError(user_id)
+            raise CookiesNotFoundError(user_id, player.region)
         cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookie_model is None:
-            raise CookiesNotFoundError(user_id)
+            raise CookiesNotFoundError(user_id, player.region)
         cookies = cookie_model.data
 
         if player.region == RegionEnum.HYPERION:
@@ -329,16 +337,20 @@ class GenshinHelper(Plugin):
         )
 
     @asynccontextmanager
-    async def public_genshin(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
-        player = await self.players_service.get_player(user_id, region)
+    async def public_genshin(
+        self, user_id: int, region: Optional[RegionEnum] = None, uid: Optional[int] = None
+    ) -> GenshinClient:
+        if not (region or uid):
+            player = await self.players_service.get_player(user_id, region)
+            if player:
+                region = player.region
+                uid = player.player_id
 
-        region = player.region
         cookies = await self.public_cookies_service.get_cookies(user_id, region)
 
-        uid = player.player_id
-        if player.region == RegionEnum.HYPERION:
+        if region == RegionEnum.HYPERION:
             region = Region.CHINESE
-        elif player.region == RegionEnum.HOYOLAB:
+        elif region == RegionEnum.HOYOLAB:
             region = Region.OVERSEAS
         else:
             raise TypeError("Region is not `RegionEnum.NULL`")
@@ -353,7 +365,6 @@ class GenshinHelper(Plugin):
         async with GenshinClient(
             cookies.data,
             region=region,
-            account_id=player.account_id,
             player_id=uid,
             lang="zh-cn",
             device_id=device_id,
@@ -364,4 +375,28 @@ class GenshinHelper(Plugin):
             except SimnetBadRequest as exc:
                 if exc.ret_code == 1034:
                     await self.public_cookies_service.undo(user_id)
+                    await self.public_cookies_service.set_device_valid(client.account_id, False)
                 raise exc
+
+    @asynccontextmanager
+    async def genshin_or_public(
+        self, user_id: int, region: Optional[RegionEnum] = None, uid: Optional[int] = None
+    ) -> GenshinClient:
+        try:
+            async with self.genshin(user_id, region) as client:
+                client.public = False
+                if uid and recognize_game_biz(uid, client.game) != recognize_game_biz(client.player_id, client.game):
+                    # 如果 uid 和 player_id 服务器不一致，说明是跨服的，需要使用公共的 cookies
+                    raise CookiesNotFoundError(user_id)
+                yield client
+        except CookiesNotFoundError:
+            if uid:
+                region = RegionEnum.HYPERION if uid < 600000000 else RegionEnum.HOYOLAB
+            async with self.public_genshin(user_id, region, uid) as client:
+                try:
+                    client.public = True
+                    yield client
+                except SimnetBadRequest as exc:
+                    if exc.ret_code == 1034:
+                        raise CookiesNotFoundError(user_id) from exc
+                    raise exc

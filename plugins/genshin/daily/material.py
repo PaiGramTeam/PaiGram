@@ -46,7 +46,7 @@ INTERVAL = 1
 
 DATA_TYPE = Dict[str, List[List[str]]]
 DATA_FILE_PATH = Path(__file__).joinpath("../daily.json").resolve()
-DOMAINS = ["忘却之峡", "太山府", "菫色之庭", "昏识塔", "塞西莉亚苗圃", "震雷连山密宫", "砂流之庭", "有顶塔", "苍白的遗荣", "深潮的余响"]
+DOMAINS = ["忘却之峡", "太山府", "菫色之庭", "昏识塔", "苍白的遗荣", "塞西莉亚苗圃", "震雷连山密宫", "砂流之庭", "有顶塔", "深潮的余响"]
 DOMAIN_AREA_MAP = dict(zip(DOMAINS, ["蒙德", "璃月", "稻妻", "须弥", "枫丹"] * 2))
 
 WEEK_MAP = ["一", "二", "三", "四", "五", "六", "日"]
@@ -242,7 +242,7 @@ class DailyMaterial(Plugin):
         for domain, sche in self.data.items():
             domain = domain.strip()
             area = DOMAIN_AREA_MAP[domain]  # 获取秘境所在的区域
-            type_ = "avatar" if DOMAINS.index(domain) < 4 else "weapon"  # 获取秘境的培养素材的类型：是天赋书还是武器突破材料
+            type_ = "avatar" if DOMAINS.index(domain) < 5 else "weapon"  # 获取秘境的培养素材的类型：是天赋书还是武器突破材料
             # 将读取到的数据存入 local_data 中
             local_data[type_].append({"name": area, "materials": sche[weekday][0], "items": sche[weekday][1]})
 
@@ -327,14 +327,14 @@ class DailyMaterial(Plugin):
             self.template_service.render(  # 渲染角色素材页
                 "genshin/daily_material/character.jinja2",
                 {"data": render_data},
-                {"width": 1164, "height": 500},
+                {"width": 2268, "height": 500},
                 file_type=file_type,
                 ttl=30 * 24 * 60 * 60,
             ),
             self.template_service.render(  # 渲染武器素材页
                 "genshin/daily_material/weapon.jinja2",
                 {"data": render_data},
-                {"width": 1164, "height": 500},
+                {"width": 2268, "height": 500},
                 file_type=file_type,
                 ttl=30 * 24 * 60 * 60,
             ),

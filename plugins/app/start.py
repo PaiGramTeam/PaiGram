@@ -109,8 +109,8 @@ class StartPlugin(Plugin):
     async def process_validate(self, message: Message, user: User, bot_username: Optional[str] = None):
         await message.reply_text(
             "由于官方对第三方工具限制以及账户安全的考虑，频繁使用第三方工具会导致账号被风控并要求用过验证才能进行访问。\n"
-            "如果出现频繁验证请求，建议暂停使用本Bot在内的第三方工具查询功能。\n"
-            "在暂停使用期间依然出现频繁认证，建议修改密码以保护账号安全。"
+            "如出现频繁验证请求，可尝试使用 /setcookies 的新方法重新绑定以尝试解决该问题。\n"
+            "如担心账号安全，建议修改密码以保护账号安全，修改账号密码后任何登录令牌都会被强制注销。\n"
         )
         try:
             uid, gt, challenge = await self.challenge_system.create_challenge(user.id, ajax=True)

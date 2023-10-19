@@ -171,6 +171,7 @@ class WishLogPlugin(Plugin.Conversation):
                         return await client.get_authkey_by_stoken("webview_gacha")
 
     @conversation.entry_point
+    @handler.command(command="wish_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导入抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
@@ -220,6 +221,7 @@ class WishLogPlugin(Plugin.Conversation):
         return ConversationHandler.END
 
     @conversation.entry_point
+    @handler.command(command="wish_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^删除抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
     async def command_start_delete(self, update: Update, context: CallbackContext) -> int:
@@ -252,6 +254,7 @@ class WishLogPlugin(Plugin.Conversation):
         await message.reply_text("已取消")
         return ConversationHandler.END
 
+    @handler.command(command="wish_log_force_delete", block=False, admin=True)
     @handler.command(command="gacha_log_force_delete", block=False, admin=True)
     async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
         message = update.effective_message
@@ -279,6 +282,7 @@ class WishLogPlugin(Plugin.Conversation):
         except (ValueError, IndexError):
             await message.reply_text("用户ID 不合法")
 
+    @handler.command(command="wish_log_export", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_export", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导出抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
     async def command_start_export(self, update: Update, context: CallbackContext) -> None:
@@ -305,6 +309,7 @@ class WishLogPlugin(Plugin.Conversation):
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
 
+    @handler.command(command="wish_log_url", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_url", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^抽卡记录链接(.*)") & filters.ChatType.PRIVATE, block=False)
     async def command_start_url(self, update: Update, _: CallbackContext) -> None:
@@ -324,6 +329,7 @@ class WishLogPlugin(Plugin.Conversation):
             }
             await message.reply_text(f"{url}?{urlencode(params)}", disable_web_page_preview=True)
 
+    @handler.command(command="wish_log", block=False)
     @handler.command(command="gacha_log", block=False)
     @handler.message(filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
     async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
@@ -369,6 +375,7 @@ class WishLogPlugin(Plugin.Conversation):
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
 
+    @handler.command(command="wish_count", block=False)
     @handler.command(command="gacha_count", block=False)
     @handler.message(filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=False)
     async def command_start_count(self, update: Update, context: CallbackContext) -> None:

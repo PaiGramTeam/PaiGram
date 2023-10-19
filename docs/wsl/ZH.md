@@ -1,6 +1,6 @@
 # WSL2 Ubuntu 22.04 部署
 
-[en documentation](en.md)
+[en documentation](EN.md)
 
 ## 前置条件
 
@@ -53,6 +53,8 @@
 - 克隆项目
   ```
   $ git clone git@github.com:PaiGramTeam/PaiGram.git
+  ...
+  $ git submodule update --init --recursive
   ...
   $ cd PaiGram/
   ~/PaiGram $

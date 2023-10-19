@@ -1,3 +1,5 @@
+from typing import Optional
+
 from gram_core.base_service import BaseService
 from gram_core.basemodel import RegionEnum
 from gram_core.services.cookies.error import CookieServiceError
@@ -17,11 +19,27 @@ __all__ = ("CookiesService", "PublicCookiesService")
 
 
 class PublicCookiesService(BaseService, BasePublicCookiesService):
-    async def check_public_cookie(self, region: RegionEnum, cookies: Cookies, public_id: int):
+    async def initialize(self) -> None:
+        logger.info("正在初始化公共Cookies池")
+        await self.refresh()
+        logger.success("刷新公共Cookies池成功")
+
+    async def check_public_cookie(self, region: RegionEnum, cookies: Cookies, public_id: int):  # skipcq: PY-R1000 #
+        device_id: Optional[str] = None
+        device_fp: Optional[str] = None
+        devices = await self.devices_repository.get(cookies.account_id)
+        if devices:
+            device_id = devices.device_id
+            device_fp = devices.device_fp
+
         if region == RegionEnum.HYPERION:
-            client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
+            client = GenshinClient(
+                cookies=cookies.data, region=Region.CHINESE, device_id=device_id, device_fp=device_fp
+            )
         elif region == RegionEnum.HOYOLAB:
-            client = GenshinClient(cookies=cookies.data, region=Region.OVERSEAS, lang="zh-cn")
+            client = GenshinClient(
+                cookies=cookies.data, region=Region.OVERSEAS, lang="zh-cn", device_id=device_id, device_fp=device_fp
+            )
         else:
             raise CookieServiceError
         try:
@@ -61,6 +79,7 @@ class PublicCookiesService(BaseService, BasePublicCookiesService):
                 raise exc
             if exc.ret_code == 1034:
                 logger.warning("用户 [%s] 触发验证", public_id)
+                await self.set_device_valid(client.account_id, False)
             else:
                 logger.warning("用户 [%s] 获取账号信息发生错误，错误信息为", public_id)
                 logger.exception(exc)
