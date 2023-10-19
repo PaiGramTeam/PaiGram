@@ -28,24 +28,17 @@ except ImportError:
     import json as jsonlib
 
 TZ = timezone("Asia/Shanghai")
-cmd_pattern = r"(?i)^/abyss(?:@[\w]+)?\s*((?:\d+)|(?:all))?\s*(pre)?"
-msg_pattern = r"^深渊数据((?:查询)|(?:总览))(上期)?\D?(\d*)?.*?$"
-
-regex_01 = r"['\"]icon['\"]:\s*['\"](.*?)['\"]"
-regex_02 = r"['\"]side_icon['\"]:\s*['\"](.*?)['\"]"
 
 
 @lru_cache
 def get_args(text: str) -> Tuple[int, bool, bool]:
-    if text.startswith("/"):
-        result = re.match(cmd_pattern, text).groups()
-        try:
-            floor = int(result[0] or 0)
-        except ValueError:
-            floor = 0
-        return floor, result[0] == "all", bool(result[1])
-    result = re.match(msg_pattern, text).groups()
-    return int(result[2] or 0), result[0] == "总览", result[1] == "上期"
+    total = "all" in text or "总览" in text
+    prev = "pre" in text or "上期" in text
+    try:
+        floor = 0 if total else int(re.search(r"\d+", text).group(0))
+    except (ValueError, IndexError):
+        floor = 0
+    return floor, total, prev
 
 
 class AbyssUnlocked(Exception):
@@ -74,7 +67,7 @@ class AbyssPlugin(Plugin):
         self.assets_service = assets_service
 
     @handler.command("abyss", block=False)
-    @handler.message(filters.Regex(msg_pattern), block=False)
+    @handler.message(filters.Regex(r"^深渊数据"), block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user = update.effective_user
         message = update.effective_message

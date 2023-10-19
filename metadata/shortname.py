@@ -5,7 +5,17 @@ from typing import List
 
 from metadata.genshin import WEAPON_DATA
 
-__all__ = ["roles", "weapons", "roleToId", "roleToName", "weaponToName", "weaponToId", "not_real_roles", "roleToTag"]
+__all__ = [
+    "roles",
+    "weapons",
+    "idToName",
+    "roleToId",
+    "roleToName",
+    "weaponToName",
+    "weaponToId",
+    "not_real_roles",
+    "roleToTag",
+]
 
 # noinspection SpellCheckingInspection
 roles = {
@@ -747,6 +757,13 @@ def roleToId(name: str) -> int | None:
     """获取角色ID"""
     name = str.casefold(name)
     return next((key for key, value in roles.items() for n in value if n == name), None)
+
+
+# noinspection PyPep8Naming
+@functools.lru_cache()
+def idToName(id: int) -> str | None:
+    """从角色ID获取正式名"""
+    return roles[id][0] if id in roles else None
 
 
 # noinspection PyPep8Naming
