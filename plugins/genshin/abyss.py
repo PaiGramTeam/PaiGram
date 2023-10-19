@@ -8,7 +8,6 @@ from typing import Any, Coroutine, List, Optional, Tuple, Union
 from arkowrapper import ArkoWrapper
 from pytz import timezone
 from simnet import GenshinClient
-from simnet.errors import BadRequest as SimnetBadRequest
 from telegram import Message, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
@@ -18,8 +17,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
-from gram_core.basemodel import RegionEnum
-from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -80,7 +78,6 @@ class AbyssPlugin(Plugin):
     async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user = update.effective_user
         message = update.effective_message
-        uid: Optional[int] = None
 
         # 若查询帮助
         if (message.text.startswith("/") and "help" in message.text) or "帮助" in message.text:
@@ -124,20 +121,11 @@ class AbyssPlugin(Plugin):
 
         if total:
             reply_text = await message.reply_text("派蒙需要时间整理深渊数据，还请耐心等待哦~")
-
         try:
-            try:
-                async with self.helper.genshin(user.id) as client:
+            async with self.helper.genshin_or_public(user.id) as client:
+                if not client.public:
                     await client.get_record_cards()
-                    images = await self.get_rendered_pic(client, client.player_id, floor, total, previous)
-            except CookiesNotFoundError as exc:
-                if exc.region == RegionEnum.HYPERION:
-                    raise exc
-                # Cookie 不存在使用公开接口
-                async with self.helper.public_genshin(user.id) as client:
-                    images = await self.get_rendered_pic(client, uid, floor, total, previous)
-        except SimnetBadRequest as exc:
-            raise exc
+                images = await self.get_rendered_pic(client, client.player_id, floor, total, previous)
         except AbyssUnlocked:  # 若深渊未解锁
             await message.reply_text("还未解锁深渊哦~")
             return
