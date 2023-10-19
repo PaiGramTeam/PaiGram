@@ -36,3 +36,4 @@ class HelpRawPlugin(Plugin):
             user = update.effective_user
             logger.info("用户 %s[%s] 发出 help_raw 命令", user.full_name, user.id)
             await message.reply_text(self.help_raw, allow_sending_without_reply=True)
+            self.track_event(update, "help_raw")

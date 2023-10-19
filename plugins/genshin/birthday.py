@@ -92,6 +92,7 @@ class BirthdayPlugin(Plugin):
         if filters.ChatType.GROUPS.filter(reply_message):
             self.add_delete_message_job(message)
             self.add_delete_message_job(reply_message)
+        self.track_event(update, "birthday")
 
     async def _process_auto_birthday_card(self, user_id: int, chat_id: int, method: str) -> str:
         try:
@@ -156,6 +157,7 @@ class BirthdayPlugin(Plugin):
                 if filters.ChatType.GROUPS.filter(reply_message):
                     self.add_delete_message_job(message)
                     self.add_delete_message_job(reply_message)
+                self.track_event(update, "birthday_card")
         except (CookiesNotFoundError, PlayerNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):

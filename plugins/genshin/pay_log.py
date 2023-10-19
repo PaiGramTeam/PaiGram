@@ -103,6 +103,7 @@ class PayLogPlugin(Plugin.Conversation):
         await message.reply_chat_action(ChatAction.TYPING)
         data = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(data)
+        self.track_event(update, "pay_log_import")
         return ConversationHandler.END
 
     @conversation.state(state=INPUT_URL)
@@ -121,6 +122,7 @@ class PayLogPlugin(Plugin.Conversation):
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(text)
+        self.track_event(update, "pay_log_import")
         return ConversationHandler.END
 
     @conversation.entry_point
@@ -153,6 +155,7 @@ class PayLogPlugin(Plugin.Conversation):
             await message.reply_text("充值记录已删除" if status else "充值记录删除失败")
             return ConversationHandler.END
         await message.reply_text("已取消")
+        self.track_event(update, "pay_log_delete")
         return ConversationHandler.END
 
     @handler(CommandHandler, command="pay_log_force_delete", block=False, admin=True)
@@ -195,6 +198,7 @@ class PayLogPlugin(Plugin.Conversation):
                 raise PayLogNotFound
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption="充值记录导出文件")
+            self.track_event(update, "pay_log_export")
         except PayLogNotFound:
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
@@ -223,6 +227,7 @@ class PayLogPlugin(Plugin.Conversation):
                 "genshin/pay_log/pay_log.jinja2", data, full_page=True, query_selector=".container"
             )
             await png_data.reply_photo(message)
+            self.track_event(update, "pay_log")
         except PayLogNotFound:
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]

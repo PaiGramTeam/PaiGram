@@ -121,4 +121,5 @@ class DailyNoteTasksPlugin(Plugin.Conversation):
                 await message.reply_text(f"WebApp返回错误 {result.message}", reply_markup=ReplyKeyboardRemove())
         else:
             logger.warning("用户 %s[%s] WEB_APP_DATA 非法数据", user.full_name, user.id)
+        self.track_event(update, "daily_note_tasks")
         return ConversationHandler.END

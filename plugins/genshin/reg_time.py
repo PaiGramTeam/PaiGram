@@ -81,6 +81,7 @@ class RegTimePlugin(Plugin):
                 game_uid = client.player_id
                 reg_time = await self.get_reg_time_from_cache(client)
             await message.reply_text(f"你的原神账号 [{game_uid}] 注册时间为：{reg_time}")
+            self.track_event(update, "reg_time")
         except (PlayerNotFoundError, CookiesNotFoundError):
             buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
             if filters.ChatType.GROUPS.filter(message):

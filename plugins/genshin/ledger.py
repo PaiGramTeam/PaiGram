@@ -126,3 +126,4 @@ class LedgerPlugin(Plugin):
             raise exc
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await render_result.reply_photo(message, filename=f"{client.player_id}.png", allow_sending_without_reply=True)
+        self.track_event(update, "ledger")

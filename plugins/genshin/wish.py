@@ -273,6 +273,7 @@ class WishSimulatorPlugin(Plugin):
         if filters.ChatType.GROUPS.filter(message):
             self.add_delete_message_job(reply_message, name="wish_simulator")
             self.add_delete_message_job(message, name="wish_simulator")
+        self.track_event(update, "wish")
 
     @handler(CommandHandler, command="set_wish", block=False)
     @handler(MessageHandler, filters=filters.Regex("^非首模拟器定轨(.*)"), block=False)
@@ -322,3 +323,4 @@ class WishSimulatorPlugin(Plugin):
         if filters.ChatType.GROUPS.filter(reply_message):
             self.add_delete_message_job(message, delay=30)
             self.add_delete_message_job(reply_message, delay=30)
+        self.track_event(update, "set_wish")

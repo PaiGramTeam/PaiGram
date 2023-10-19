@@ -463,6 +463,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await self.update_devices(account_cookies_plugin_data.account_id, account_cookies_plugin_data.device)
             logger.info("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
+            self.track_event(update, "set_cookies")
             return ConversationHandler.END
         await message.reply_text("回复错误，请重新输入")
         return COMMAND_RESULT

@@ -137,6 +137,7 @@ class PlayerCards(Plugin):
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
         data = await self._load_history(player_info.player_id)
+        self.track_event(update, "player_card")
         if data is None:
             if isinstance(self.kitsune, str):
                 photo = self.kitsune

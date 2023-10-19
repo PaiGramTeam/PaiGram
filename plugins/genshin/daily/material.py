@@ -349,6 +349,7 @@ class DailyMaterial(Plugin):
         await RenderGroupResult([character_img_data, weapon_img_data]).reply_media_group(message)
 
         logger.debug("角色、武器培养素材图发送成功")
+        self.track_event(update, "daily_material")
 
     @handler.command("refresh_daily_material", admin=True, block=False)
     async def refresh(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):

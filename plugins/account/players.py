@@ -76,6 +76,7 @@ class PlayersManagesPlugin(Plugin):
             await callback_query.edit_message_text("从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons))
         else:
             await message.reply_text("从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons))
+        self.track_event(update, "players_list")
 
     @handler.callback_query(r"^players_manager\|get\|", block=False)
     async def get_player(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -143,6 +144,7 @@ class PlayersManagesPlugin(Plugin):
         await callback_query.edit_message_text(
             f"这里是 {player.player_id} {player_info.nickname}\n你想用这个账号做什么？", reply_markup=InlineKeyboardMarkup(buttons)
         )
+        self.track_event(update, "players_get", update_user=False)
 
     @handler.callback_query(r"^players_manager\|update\|", block=False)
     async def update_user(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -179,6 +181,7 @@ class PlayersManagesPlugin(Plugin):
             await callback_query.edit_message_text(
                 f"更新玩家信息 {player.player_id} 更新失败 请稍后重试", reply_markup=InlineKeyboardMarkup(buttons)
             )
+        self.track_event(update, "players_update", update_user=False)
 
     @handler.callback_query(r"^players_manager\|refresh_cookies\|", block=False)
     async def refresh_cookies(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -244,6 +247,7 @@ class PlayersManagesPlugin(Plugin):
             await callback_query.edit_message_text(
                 f"玩家 {player.player_id} {player_info.nickname} stoken 未找到", reply_markup=InlineKeyboardMarkup(buttons)
             )
+        self.track_event(update, "players_refresh_cookies", update_user=False)
 
     @handler.callback_query(r"^players_manager\|export_cookies\|", block=False)
     async def export_cookies(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -300,6 +304,7 @@ class PlayersManagesPlugin(Plugin):
             f"玩家 {player.player_id} {player_info.nickname} cookies 导出成功", reply_markup=InlineKeyboardMarkup(buttons)
         )
         await message.delete()
+        self.track_event(update, "players_export_cookies", update_user=False)
 
     @handler.callback_query(r"^players_manager\|main\|", block=False)
     async def set_main(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -342,6 +347,7 @@ class PlayersManagesPlugin(Plugin):
         await callback_query.edit_message_text(
             f"成功设置 {player.player_id} {player_info.nickname} 为主账号", reply_markup=InlineKeyboardMarkup(buttons)
         )
+        self.track_event(update, "players_set_main", update_user=False)
 
     @handler.callback_query(r"^players_manager\|del\|", block=False)
     async def delete(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -402,3 +408,4 @@ class PlayersManagesPlugin(Plugin):
         else:
             if callback_query.message:
                 await callback_query.message.delete()
+        self.track_event(update, "players_del", update_user=False)
