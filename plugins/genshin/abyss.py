@@ -78,7 +78,6 @@ class AbyssPlugin(Plugin):
     async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user = update.effective_user
         message = update.effective_message
-        uid: Optional[int] = None
 
         # 若查询帮助
         if (message.text.startswith("/") and "help" in message.text) or "帮助" in message.text:
