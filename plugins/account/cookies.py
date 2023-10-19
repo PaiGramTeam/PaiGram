@@ -237,7 +237,8 @@ class AccountCookiesPlugin(Plugin.Conversation):
             try:
                 account_cookies_plugin_data.device = self.parse_headers(cookie)
             except ValueError:
-                await message.reply_text("警告，解析 Devices 出现错误，可能无法绕过风控，查询操作将需要通过验证。")
+                account_cookies_plugin_data.device = None
+                await message.reply_text("解析 Devices 出现错误，可能无法绕过风控，查询操作将需要通过验证。")
         if not cookies:
             logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
             await message.reply_text("Cookies格式有误，请检查后重新尝试绑定", reply_markup=ReplyKeyboardRemove())
@@ -382,6 +383,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             device_model.device_id = device.device_id
             device_model.device_fp = device.device_fp
             device_model.device_name = device.device_name
+            device_model.is_valid = True
             await self.devices_service.update(device_model)
         else:
             device_model = Devices(
@@ -389,6 +391,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 device_id=device.device_id,
                 device_fp=device.device_fp,
                 device_name=device.device_name,
+                is_valid=True,
             )
             await self.devices_service.add(device_model)
 

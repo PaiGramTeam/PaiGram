@@ -18,7 +18,6 @@ from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
-from gram_core.basemodel import RegionEnum
 from plugins.tools.genshin import CookiesNotFoundError, GenshinHelper
 from utils.log import logger
 from utils.uid import mask_number
@@ -130,13 +129,13 @@ class AbyssPlugin(Plugin):
                 async with self.helper.genshin(user.id) as client:
                     await client.get_record_cards()
                     images = await self.get_rendered_pic(client, client.player_id, floor, total, previous)
-            except CookiesNotFoundError as exc:
-                if exc.region == RegionEnum.HYPERION:
-                    raise exc
+            except CookiesNotFoundError:
                 # Cookie 不存在使用公开接口
                 async with self.helper.public_genshin(user.id) as client:
                     images = await self.get_rendered_pic(client, uid, floor, total, previous)
         except SimnetBadRequest as exc:
+            if exc.ret_code == 1034 and uid and uid != client.player_id:
+                raise CookiesNotFoundError(uid) from exc
             raise exc
         except AbyssUnlocked:  # 若深渊未解锁
             await message.reply_text("还未解锁深渊哦~")

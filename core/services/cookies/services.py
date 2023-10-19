@@ -17,6 +17,11 @@ __all__ = ("CookiesService", "PublicCookiesService")
 
 
 class PublicCookiesService(BaseService, BasePublicCookiesService):
+    async def initialize(self) -> None:
+        logger.info("正在初始化公共Cookies池")
+        await self.refresh()
+        logger.success("刷新公共Cookies池成功")
+
     async def check_public_cookie(self, region: RegionEnum, cookies: Cookies, public_id: int):  # skipcq: PY-R1000 #
         if region == RegionEnum.HYPERION:
             client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
@@ -28,17 +33,16 @@ class PublicCookiesService(BaseService, BasePublicCookiesService):
             if client.account_id is None:
                 raise RuntimeError("account_id not found")
             record_cards = await client.get_record_cards()
-            if client.region == Region.OVERSEAS:
-                for record_card in record_cards:
-                    if record_card.game == Game.GENSHIN:
-                        await client.get_partial_genshin_user(record_card.uid)
+            for record_card in record_cards:
+                if record_card.game == Game.GENSHIN:
+                    await client.get_partial_genshin_user(record_card.uid)
+                    break
+            else:
+                accounts = await client.get_game_accounts()
+                for account in accounts:
+                    if account.game == Game.GENSHIN:
+                        await client.get_partial_genshin_user(account.uid)
                         break
-                else:
-                    accounts = await client.get_game_accounts()
-                    for account in accounts:
-                        if account.game == Game.GENSHIN:
-                            await client.get_partial_genshin_user(account.uid)
-                            break
         except InvalidCookies as exc:
             if exc.ret_code in (10001, -100):
                 logger.warning("用户 [%s] Cookies无效", public_id)
@@ -62,6 +66,7 @@ class PublicCookiesService(BaseService, BasePublicCookiesService):
                 raise exc
             if exc.ret_code == 1034:
                 logger.warning("用户 [%s] 触发验证", public_id)
+                await self.set_device_valid(client.account_id, False)
             else:
                 logger.warning("用户 [%s] 获取账号信息发生错误，错误信息为", public_id)
                 logger.exception(exc)
