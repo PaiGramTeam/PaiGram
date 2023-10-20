@@ -34,7 +34,7 @@ class RefreshCookiesJob(Plugin):
     async def daily_refresh_cookies(self, _: "ContextTypes.DEFAULT_TYPE"):
         logger.info("正在执行每日刷新 Cookies 任务")
         for database_region, client_region in REGION.items():
-            for cookie_model in await self.cookies.get_all_by_region(database_region):
+            for cookie_model in await self.cookies.get_all(region=database_region):
                 cookies = cookie_model.data
                 if cookies.get("stoken") is not None and cookie_model.status != CookiesStatusEnum.INVALID_COOKIES:
                     try:
