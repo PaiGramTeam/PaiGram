@@ -29,15 +29,20 @@ except ImportError:
 
 TZ = timezone("Asia/Shanghai")
 
+get_args_pattern = re.compile(r"\d+")
+
 
 @lru_cache
 def get_args(text: str) -> Tuple[int, bool, bool]:
     total = "all" in text or "总览" in text
     prev = "pre" in text or "上期" in text
-    try:
-        floor = 0 if total else int(re.search(r"\d+", text).group(0))
-    except (ValueError, IndexError, AttributeError):
-        floor = 0
+    floor = 0
+
+    if not total:
+        m = get_args_pattern.search(text)
+        if m is not None:
+            floor = int(m.group(0))
+
     return floor, total, prev
 
 
