@@ -1,0 +1,30 @@
+{
+  "HuTao": {
+    "skills": [
+      {
+        "name": "大招蒸发伤害",
+        "index": "12",
+        "damage_key": "vaporize"
+      },
+      {
+        "name": "低血量大招蒸发伤害",
+        "index": "13",
+        "damage_key": "vaporize"
+      }
+    ],
+    "config_skill": {
+      "after_e": true
+    },
+    "config": {
+      "le_50": true
+    },
+    "config_weapon": {
+      "StaffOfHoma": {
+          "be50_rate": 1
+        }
+    },
+    "artifact_config": {
+      "config_crimson_witch_of_flames": {"level": 1}
+    }
+  }
+}
