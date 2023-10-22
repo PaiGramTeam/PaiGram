@@ -94,7 +94,7 @@ class Akasha:
             return []
         return [AkashaLeaderboardCategory(**i) for i in data]
 
-    async def get_leaderboard(self, calculation_id: str) -> List[AkashaLeaderboard]:
+    async def get_leaderboard(self, calculation_id: str, uid: int = None) -> List[AkashaLeaderboard]:
         params = {
             "sort": "calculation.result",
             "p": "",
@@ -106,6 +106,8 @@ class Akasha:
             "uids": "",
             "fromId": "",
         }
+        if uid:
+            params["uids"] = f"[uid]{uid}"
         try:
             resp = await self.client.get(LEADERBOARD_API, params=params)
             data = resp.json()["data"]

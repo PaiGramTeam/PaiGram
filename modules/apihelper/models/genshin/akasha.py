@@ -77,6 +77,10 @@ class AkashaLeaderboardCalculation(BaseModel):
     id: str
     result: float
 
+    @property
+    def int(self) -> int:
+        return int(self.result)
+
 
 class AkashaLeaderboardArtifactSet(BaseModel):
     icon: str
@@ -94,6 +98,18 @@ class AkashaLeaderboardOwner(BaseModel):
 
 class AkashaLeaderboardStatsValue(BaseModel):
     value: float
+
+    @property
+    def int(self) -> int:
+        return int(self.value)
+
+    @property
+    def percent(self) -> str:
+        return f"{self.value * 100:.1f}"
+
+    @property
+    def web_value(self) -> str:
+        return f"{self.value:.2f}"
 
 
 class AkashaLeaderboardStats(BaseModel):

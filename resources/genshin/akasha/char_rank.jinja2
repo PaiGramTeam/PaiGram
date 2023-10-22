@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Avatar List</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+    <style>
+        .avatar > div::after {
+            background-position: center center;
+            background-size: cover;
+            background-image: url("../../background/rarity/half/{{ rarity }}.png");
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="head" style="background-image: url('{{ namecard }}')">
+        <div class="avatar">
+            <div><img src="{{ avatar }}" alt="avatar"></div>
+        </div>
+        <div class="player">
+            <div>
+                <div class="nickname">{{ character }}</div>
+                <div class="uid">角色排行   共 {{ count }} 条数据</div>
+            </div>
+        </div>
+        <div class="logo"></div>
+    </div>
+    {% for akasha_data in all_data %}
+    <div class="content">
+        <div class="row">
+            <div>#</div>
+            <div style="flex: 3">UID</div>
+            <div style="flex: 3">昵称</div>
+            <div style="flex: 3">暴击 : 暴伤</div>
+            <div style="flex: 2">生命</div>
+            <div style="flex: 2">攻击</div>
+            <div style="flex: 2">防御</div>
+            <div style="flex: 2">精通</div>
+            <div style="flex: 2">充能</div>
+            <div style="flex: 2">HYPER</div>
+        </div>
+        {% for data in akasha_data %}
+            <div
+                    {% if loop.index is even %}
+                        class="row second-row"
+                    {% else %}
+                        class="row"
+                    {% endif %}
+            >
+                <div>{{ data.index }}</div>
+                <div style="flex: 3">{{ data.uid }}</div>
+                <div style="flex: 3" class="username">{{ data.owner.nickname }}</div>
+                <div style="flex: 3">{{ data.stats.critRate.percent }} : {{ data.stats.critDamage.percent }}</div>
+                <div style="flex: 2">{{ data.stats.maxHp.int }}</div>
+                <div style="flex: 2">{{ data.stats.atk.int }}</div>
+                <div style="flex: 2">{{ data.stats.def_.int }}</div>
+                <div style="flex: 2">{{ data.stats.elementalMastery.int }}</div>
+                <div style="flex: 2">{{ data.stats.energyRecharge.percent }}%</div>
+                <div style="flex: 2; background-color: rgb(229 171 229/70%)">{{ data.calculation.int }}</div>
+            </div>
+        {% endfor %}
+    </div>
+    {% if loop.index == 1 %}
+    <div style="height: 50px"></div>
+    {% endif %}
+    {% endfor %}
+</div>
+</body>
+</html>
