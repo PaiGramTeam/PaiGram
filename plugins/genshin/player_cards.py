@@ -30,7 +30,7 @@ from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from core.services.template.services import TemplateService
-from metadata.shortname import roleToName
+from metadata.shortname import roleToName, idToName
 from modules.apihelper.client.components.remote import Remote
 from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
@@ -576,8 +576,8 @@ class RenderTemplate:
         }
 
         if GENSHIN_ARTIFACT_FUNCTION_AVAILABLE:
-            character_name = characters_map.get(self.character.id)
-            damage_config = self.damage_config.get(character_name)
+            character_cn_name = idToName(self.character.id)
+            damage_config = self.damage_config.get(character_cn_name)
             if damage_config is not None:
                 data["damage_function_available"] = True
                 data["damage_info"] = self.render_damage(damage_config)
@@ -593,8 +593,9 @@ class RenderTemplate:
     def render_damage(self, damage_config: Optional[Dict]) -> List:
         character, weapon, artifacts = enka_parser(self.original_data, self.character.id)
         character_name = character.name
+        character_cn_name = idToName(self.character.id)
         if damage_config is None:
-            damage_config = self.damage_config.get(character_name)
+            damage_config = self.damage_config.get(character_cn_name)
         skills = damage_config.get("skills")
         config_skill = damage_config.get("config_skill")
         if config_skill is not None:
