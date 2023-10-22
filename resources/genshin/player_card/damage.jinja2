@@ -1,0 +1,18 @@
+<table class="table-auto border-collapse w-full bg-black bg-opacity-20 rounded-lg">
+    <thead>
+    <tr class="bg-black bg-opacity-20">
+        <th class="px-4 py-2">技能</th>
+        <th class="px-4 py-2">暴击伤害</th>
+        <th class="px-4 py-2">期望伤害</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in damage_info %}
+        <tr class="text-center">
+            <td class="border px-4 py-2">{{ item.skill_info.name }}</td>
+            <td class="border px-4 py-2">{{ item.damage.critical|round|int }}</td>
+            <td class="border px-4 py-2">{{ item.damage.expectation|round|int }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
