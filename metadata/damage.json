@@ -2,6 +2,11 @@
   "HuTao": {
     "skills": [
       {
+        "name": "重击蒸发伤害",
+        "index": "7",
+        "damage_key": "vaporize"
+      },
+      {
         "name": "大招蒸发伤害",
         "index": "12",
         "damage_key": "vaporize"
