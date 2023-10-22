@@ -1,5 +1,5 @@
 import math
-from typing import TYPE_CHECKING, Union, List, Optional, Tuple, Dict, re
+from typing import TYPE_CHECKING, Union, List, Optional, Tuple, Dict
 
 import aiofiles
 from enkanetwork import (
@@ -86,6 +86,13 @@ class Damage(Plugin):
     async def initialize(self) -> None:
         async with aiofiles.open(DAMAGE_CONFIG_PATH, "r", encoding="utf-8") as f:
             self.damage_config = jsonlib.loads(await f.read())
+
+    @handler.command("damage_config", block=False, admin=True)
+    async def damage_config_refuse(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        message = update.effective_message
+        async with aiofiles.open(DAMAGE_CONFIG_PATH, "r", encoding="utf-8") as f:
+            self.damage_config = jsonlib.loads(await f.read())
+        await message.reply_text("刷新成功")
 
     async def _update_enka_data(self, uid) -> Union[EnkaNetworkResponse, str]:
         try:
@@ -440,11 +447,6 @@ class RenderTemplate:
         self.avatar_id = avatar_id
         self.damage_config = damage_config
 
-    @staticmethod
-    def camel_to_snake(name):
-        name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-        return "config_" + re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
-
     async def render(self):
         character, weapon, artifacts = enka_parser(self.enka_data, self.avatar_id)
         character_name = character.name
@@ -453,6 +455,8 @@ class RenderTemplate:
         config_skill = damage_config.get("config_skill")
         if config_skill is not None:
             config_skill = {character_name: config_skill}
+        else:
+            config_skill = "NoConfig"
         character_config = damage_config.get("config")
         artifact_config = damage_config.get("artifact_config")
         if character_config is not None:
