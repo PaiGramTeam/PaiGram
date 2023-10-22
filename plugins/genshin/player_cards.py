@@ -89,6 +89,7 @@ class PlayerCards(Plugin):
         self.template_service = template_service
         self.kitsune: Optional[str] = None
         self.fight_prop_rule: Dict[str, Dict[str, float]] = {}
+        self.damage_config: Dict = {}
 
     async def initialize(self):
         await self._refresh()
