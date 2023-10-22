@@ -138,7 +138,7 @@ class PlayerCards(Plugin):
         message = update.effective_message
         args = self.get_args(context)
         await message.reply_chat_action(ChatAction.TYPING)
-        
+
         player_info = await self.player_service.get_player(user.id)
         if player_info is None:
             buttons = [
