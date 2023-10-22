@@ -2,7 +2,6 @@ import copy
 import math
 from typing import Any, List, Tuple, Union, Optional, TYPE_CHECKING, Dict
 
-import aiofiles
 from enkanetwork import (
     DigitType,
     EnkaNetworkResponse,
@@ -22,13 +21,12 @@ from enkanetwork import (
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, MessageHandler, filters
+from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.dependence.assets import DEFAULT_EnkaAssets, AssetsService
 from core.dependence.redisdb import RedisDB
-from core.handler.callbackqueryhandler import CallbackQueryHandler
 from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from core.services.template.services import TemplateService
@@ -36,7 +34,6 @@ from metadata.shortname import roleToName
 from modules.apihelper.client.components.remote import Remote
 from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
-from utils.const import PROJECT_ROOT
 from utils.enkanetwork import RedisCache, EnkaNetworkAPI
 from utils.helpers import download_resource
 from utils.log import logger
@@ -52,6 +49,7 @@ try:
     GENSHIN_ARTIFACT_FUNCTION_AVAILABLE = True
 except ImportError as exc:
     get_damage_analysis = None
+    characters_map = {}
     enka_parser = None
     CalculatorConfig = None
     SkillInfo = None
@@ -68,9 +66,6 @@ try:
     import ujson as jsonlib
 except ImportError:
     import json as jsonlib
-
-
-DAMAGE_CONFIG_PATH = PROJECT_ROOT.joinpath("metadata", "damage.json")
 
 
 class PlayerCards(Plugin):
@@ -93,11 +88,10 @@ class PlayerCards(Plugin):
 
     async def initialize(self):
         await self._refresh()
-        async with aiofiles.open(DAMAGE_CONFIG_PATH, "r", encoding="utf-8") as f:
-            self.damage_config = jsonlib.loads(await f.read())
 
     async def _refresh(self):
         self.fight_prop_rule = await Remote.get_fight_prop_rule_data()
+        self.damage_config = await Remote.get_damage_data()
 
     async def _update_enka_data(self, uid) -> Union[EnkaNetworkResponse, str]:
         try:
@@ -137,13 +131,14 @@ class PlayerCards(Plugin):
     async def _load_history(self, uid) -> Optional[Dict]:
         return await self.player_cards_file.load_history_info(uid)
 
-    @handler(CommandHandler, command="player_card", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^角色卡片查询(.*)"), block=False)
+    @handler.command(command="player_card", block=False)
+    @handler.message(filters=filters.Regex("^角色卡片查询(.*)"), block=False)
     async def player_cards(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user = update.effective_user
         message = update.effective_message
         args = self.get_args(context)
         await message.reply_chat_action(ChatAction.TYPING)
+        
         player_info = await self.player_service.get_player(user.id)
         if player_info is None:
             buttons = [
@@ -246,7 +241,7 @@ class PlayerCards(Plugin):
             filename=f"player_card_{player_info.player_id}_{character_name}.png",
         )
 
-    @handler(CallbackQueryHandler, pattern=r"^update_player_card\|", block=False)
+    @handler.callback_query(pattern=r"^update_player_card\|", block=False)
     async def update_player_card(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         user = update.effective_user
         message = update.effective_message
@@ -291,7 +286,7 @@ class PlayerCards(Plugin):
         )
         await holder.edit_media(message, reply_markup=InlineKeyboardMarkup(buttons))
 
-    @handler(CallbackQueryHandler, pattern=r"^get_player_card\|", block=False)
+    @handler.callback_query(pattern=r"^get_player_card\|", block=False)
     async def get_player_cards(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
         user = callback_query.from_user
@@ -344,7 +339,7 @@ class PlayerCards(Plugin):
             await message.delete()
             return
         if page:
-            buttons = self.gen_button(enka_response, user.id, uid, page, not await self.cache.ttl(uid) > 0)
+            buttons = self.gen_button(enka_response, user.id, uid, page, await self.cache.ttl(uid) <= 0)
             await message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
             await callback_query.answer(f"已切换到第 {page} 页", show_alert=False)
             return
