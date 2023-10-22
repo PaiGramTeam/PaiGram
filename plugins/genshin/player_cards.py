@@ -60,7 +60,7 @@ except ImportError as exc:
 if TYPE_CHECKING:
     from enkanetwork import CharacterInfo, EquipmentsStats
     from telegram.ext import ContextTypes
-    from telegram import Update
+    from telegram import Update, Message
 
 try:
     import ujson as jsonlib
@@ -131,6 +131,33 @@ class PlayerCards(Plugin):
     async def _load_history(self, uid) -> Optional[Dict]:
         return await self.player_cards_file.load_history_info(uid)
 
+    async def get_uid_and_ch(
+        self, user_id: int, args: List[str], reply: Optional["Message"]
+    ) -> Tuple[Optional[int], Optional[str]]:
+        """通过消息获取 uid，优先级：args > reply > self"""
+        uid, ch_name, user_id_ = None, None, user_id
+        if args:
+            for i in args:
+                if i is not None:
+                    if i.isdigit() and len(i) == 9:
+                        uid = int(i)
+                    else:
+                        ch_name = roleToName(i)
+        if reply:
+            try:
+                user_id_ = reply.from_user.id
+            except AttributeError:
+                pass
+        if not uid:
+            player_info = await self.player_service.get_player(user_id_)
+            if player_info is not None:
+                uid = player_info.player_id
+            if (not uid) and (user_id_ != user_id):
+                player_info = await self.player_service.get_player(user_id)
+                if player_info is not None:
+                    uid = player_info.player_id
+        return uid, ch_name
+
     @handler.command(command="player_card", block=False)
     @handler.message(filters=filters.Regex("^角色卡片查询(.*)"), block=False)
     async def player_cards(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -138,9 +165,8 @@ class PlayerCards(Plugin):
         message = update.effective_message
         args = self.get_args(context)
         await message.reply_chat_action(ChatAction.TYPING)
-
-        player_info = await self.player_service.get_player(user.id)
-        if player_info is None:
+        uid, character_name = await self.get_uid_and_ch(user.id, args, message.reply_to_message)
+        if uid is None:
             buttons = [
                 [
                     InlineKeyboardButton(
@@ -160,9 +186,8 @@ class PlayerCards(Plugin):
             else:
                 await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
             return
-        original_data = await self._load_history(player_info.player_id)
-        enka_response = EnkaNetworkResponse.parse_obj(copy.deepcopy(original_data))
-        if enka_response is None:
+        original_data = await self._load_history(uid)
+        if original_data is None or len(original_data.get("avatarInfoList", [])) == 0:
             if isinstance(self.kitsune, str):
                 photo = self.kitsune
             else:
@@ -171,7 +196,7 @@ class PlayerCards(Plugin):
                 [
                     InlineKeyboardButton(
                         "更新面板",
-                        callback_data=f"update_player_card|{user.id}|{player_info.player_id}",
+                        callback_data=f"update_player_card|{user.id}|{uid}",
                     )
                 ]
             ]
@@ -183,29 +208,29 @@ class PlayerCards(Plugin):
             if reply_message.photo:
                 self.kitsune = reply_message.photo[-1].file_id
             return
-        if len(args) == 1:
-            character_name = roleToName(args[0])
+        enka_response = EnkaNetworkResponse.parse_obj(copy.deepcopy(original_data))
+        if character_name is not None:
             logger.info(
                 "用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]",
                 user.full_name,
                 user.id,
                 character_name,
-                player_info.player_id,
+                uid,
             )
         else:
             logger.info("用户 %s[%s] 角色卡片查询命令请求", user.full_name, user.id)
-            ttl = await self.cache.ttl(player_info.player_id)
+            ttl = await self.cache.ttl(uid)
             if enka_response.characters is None or len(enka_response.characters) == 0:
                 buttons = [
                     [
                         InlineKeyboardButton(
                             "更新面板",
-                            callback_data=f"update_player_card|{user.id}|{player_info.player_id}",
+                            callback_data=f"update_player_card|{user.id}|{uid}",
                         )
                     ]
                 ]
             else:
-                buttons = self.gen_button(enka_response, user.id, player_info.player_id, update_button=ttl < 0)
+                buttons = self.gen_button(enka_response, user.id, uid, update_button=ttl < 0)
             if isinstance(self.kitsune, str):
                 photo = self.kitsune
             else:
@@ -227,9 +252,9 @@ class PlayerCards(Plugin):
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         original_data: Optional[Dict] = None
         if GENSHIN_ARTIFACT_FUNCTION_AVAILABLE:
-            original_data = await self._load_history(player_info.player_id)
+            original_data = await self._load_history(uid)
         render_result = await RenderTemplate(
-            player_info.player_id,
+            uid,
             characters,
             self.fight_prop_rule,
             self.damage_config,
@@ -238,7 +263,7 @@ class PlayerCards(Plugin):
         ).render()  # pylint: disable=W0631
         await render_result.reply_photo(
             message,
-            filename=f"player_card_{player_info.player_id}_{character_name}.png",
+            filename=f"player_card_{uid}_{character_name}.png",
         )
 
     @handler.callback_query(pattern=r"^update_player_card\|", block=False)
