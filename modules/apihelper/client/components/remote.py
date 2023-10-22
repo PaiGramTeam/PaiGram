@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from httpx import AsyncClient
 
@@ -14,6 +14,7 @@ class Remote:
     BIRTHDAY = f"{BASE_URL}birthday.json"
     MATERIAL = f"{BASE_URL}roles_material.json"
     RULE = f"{RESOURCE_FightPropRule_URL}FightPropRule_genshin.json"
+    DAMAGE = f"{RESOURCE_FightPropRule_URL}GenshinDamageRule.json"
 
     @staticmethod
     async def get_remote_calendar() -> Dict[str, Dict]:
@@ -24,7 +25,7 @@ class Remote:
                 if req.status_code == 200:
                     return req.json()
                 return {}
-        except Exception as exc:
+        except Exception as exc:  # skipcq: PYL-W0703
             logger.error("获取云端日历失败: %s", exc_info=exc)
             return {}
 
@@ -37,7 +38,7 @@ class Remote:
                 if req.status_code == 200:
                     return req.json()
                 return {}
-        except Exception as exc:
+        except Exception as exc:  # skipcq: PYL-W0703
             logger.error("获取云端生日失败: %s", exc_info=exc)
             return {}
 
@@ -50,7 +51,7 @@ class Remote:
                 if req.status_code == 200:
                     return req.json()
                 return {}
-        except Exception as exc:
+        except Exception as exc:  # skipcq: PYL-W0703
             logger.error("获取云端角色材料失败: %s", exc_info=exc)
             return {}
 
@@ -63,6 +64,19 @@ class Remote:
                 if req.status_code == 200:
                     return req.json()
                 return {}
-        except Exception as exc:
+        except Exception as exc:  # skipcq: PYL-W0703
             logger.error("获取云端圣遗物评分规则失败: %s", exc_info=exc)
+            return {}
+
+    @staticmethod
+    async def get_damage_data() -> Dict[str, Any]:
+        """获取云端伤害计算规则"""
+        try:
+            async with AsyncClient() as client:
+                req = await client.get(Remote.DAMAGE)
+                if req.status_code == 200:
+                    return req.json()
+                return {}
+        except Exception as exc:  # skipcq: PYL-W0703
+            logger.error("获取云端伤害计算规则失败: %s", exc_info=exc)
             return {}
