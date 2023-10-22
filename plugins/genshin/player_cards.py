@@ -550,7 +550,7 @@ class RenderTemplate:
             # 需要在模板中使用的 enum 类型
             "DigitType": DigitType,
             "damage_function_available": False,
-            "damage": [],
+            "damage_info": [],
         }
 
         if GENSHIN_ARTIFACT_FUNCTION_AVAILABLE:
