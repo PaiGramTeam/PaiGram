@@ -621,7 +621,7 @@ class RenderTemplate:
                 artifact_config=artifact_config,
             )
             damage_key = skill.get("damage_key")
-            transformative_damage_key = skill.get("transformative_damage")
+            transformative_damage_key = skill.get("transformative_damage_key")
             damage_info = {"skill_info": skill, "damage": None, "transformative_damage": None}
             if damage_key is not None:
                 damage_analysis = get_damage_analysis(calculator_config)
