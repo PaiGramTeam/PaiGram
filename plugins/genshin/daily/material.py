@@ -9,14 +9,15 @@ from multiprocessing import Value
 from pathlib import Path
 from ssl import SSLZeroReturnError
 from time import time as time_
-from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
 
 from aiofiles import open as async_open
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
 from httpx import AsyncClient, HTTPError, TimeoutException
 from pydantic import BaseModel
-from simnet.errors import InvalidCookies, BadRequest as SimnetBadRequest
+from simnet.errors import BadRequest as SimnetBadRequest
+from simnet.errors import InvalidCookies
 from simnet.models.genshin.chronicle.characters import Character
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
@@ -26,7 +27,7 @@ from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
-from plugins.tools.genshin import CharacterDetails, PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import CharacterDetails, CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -37,10 +38,9 @@ except ImportError:
     import json as jsonlib
 
 if TYPE_CHECKING:
-    from telegram import Update
-    from telegram.ext import ContextTypes
     from simnet import GenshinClient
-    from telegram import Message, User
+    from telegram import Message, Update, User
+    from telegram.ext import ContextTypes
 
 INTERVAL = 1
 
@@ -327,14 +327,14 @@ class DailyMaterial(Plugin):
             self.template_service.render(  # 渲染角色素材页
                 "genshin/daily_material/character.jinja2",
                 {"data": render_data},
-                {"width": 2268, "height": 500},
+                {"width": 1338, "height": 500},
                 file_type=file_type,
                 ttl=30 * 24 * 60 * 60,
             ),
             self.template_service.render(  # 渲染武器素材页
                 "genshin/daily_material/weapon.jinja2",
                 {"data": render_data},
-                {"width": 2268, "height": 500},
+                {"width": 1338, "height": 500},
                 file_type=file_type,
                 ttl=30 * 24 * 60 * 60,
             ),
