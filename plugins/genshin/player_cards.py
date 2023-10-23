@@ -40,8 +40,7 @@ from utils.log import logger
 from utils.uid import mask_number
 
 try:
-    from python_genshin_artifact.calculator import get_damage_analysis
-    from python_genshin_artifact.enka.characters import characters_map
+    from python_genshin_artifact.calculator import get_damage_analysis, get_transformative_damage
     from python_genshin_artifact.enka.enka_parser import enka_parser
     from python_genshin_artifact.models.calculator import CalculatorConfig
     from python_genshin_artifact.models.skill import SkillInfo
@@ -49,11 +48,10 @@ try:
     GENSHIN_ARTIFACT_FUNCTION_AVAILABLE = True
 except ImportError as exc:
     get_damage_analysis = None
-    characters_map = {}
+    get_transformative_damage = None
     enka_parser = None
     CalculatorConfig = None
     SkillInfo = None
-    Assets = None
 
     GENSHIN_ARTIFACT_FUNCTION_AVAILABLE = False
 
@@ -622,12 +620,18 @@ class RenderTemplate:
                 skill=skill_info,
                 artifact_config=artifact_config,
             )
-            damage_analysis = get_damage_analysis(calculator_config)
             damage_key = skill.get("damage_key")
-            damage_value = getattr(damage_analysis, damage_key)
-            if damage_value is not None:
-                damage_info = {"damage": damage_value, "skill_info": skill}
-                damage.append(damage_info)
+            transformative_damage_key = skill.get("transformative_damage")
+            damage_info = {"skill_info": skill, "damage": None, "transformative_damage": None}
+            if damage_key is not None:
+                damage_analysis = get_damage_analysis(calculator_config)
+                damage_value = getattr(damage_analysis, damage_key)
+                damage_info.setdefault("damage", damage_value)
+            if transformative_damage_key is not None:
+                transformative_damage = get_transformative_damage(calculator_config)
+                transformative_damage_value = getattr(transformative_damage, transformative_damage_key)
+                damage_info.setdefault("transformative_damage", transformative_damage_value)
+            damage.append(damage_info)
 
         return damage
 
