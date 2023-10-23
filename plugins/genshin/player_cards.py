@@ -626,11 +626,11 @@ class RenderTemplate:
             if damage_key is not None:
                 damage_analysis = get_damage_analysis(calculator_config)
                 damage_value = getattr(damage_analysis, damage_key)
-                damage_info.setdefault("damage", damage_value)
+                damage_info["damage"] = damage_value
             if transformative_damage_key is not None:
                 transformative_damage = get_transformative_damage(calculator_config)
                 transformative_damage_value = getattr(transformative_damage, transformative_damage_key)
-                damage_info.setdefault("transformative_damage", transformative_damage_value)
+                damage_info["transformative_damage"] = transformative_damage_value
             damage.append(damage_info)
 
         return damage
