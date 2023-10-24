@@ -58,7 +58,7 @@ def sort_item(items: List["ItemData"]) -> Iterable["ItemData"]:
     排序规则：持有（星级 > 等级 > 命座/精炼) > 未持有（星级 > 等级 > 命座/精炼）
     """
 
-    def key(item: ItemData):
+    def key(item: "ItemData"):
         # 有个小小的意外逻辑，不影响排序输出，如果要修改可能需要注意下：
         # constellation 可以为 None 或 0，此时都会被判断为 False
         # 此时 refinment or constellation or -1 都会返回 -1
