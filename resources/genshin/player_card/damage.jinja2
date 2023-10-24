@@ -10,8 +10,18 @@
     {% for item in damage_info %}
         <tr class="text-center odd:bg-white odd:bg-opacity-10">
             <td class="border px-4 py-2">{{ item.skill_info.name }}</td>
-            <td class="border px-4 py-2">{{ item.damage.critical|round|int }}</td>
-            <td class="border px-4 py-2">{{ item.damage.expectation|round|int }}</td>
+            {%- if item.damage != None -%}
+                {%- if item.damage.is_heal or item.damage.is_shield -%}
+                    <td class="border px-4 py-2 " colspan="2">{{ item.damage.expectation|round|int }}</td>
+                {%- else -%}
+                    <td class="border px-4 py-2">{{ item.damage.critical|round|int }}</td>
+                    <td class="border px-4 py-2">{{ item.damage.expectation|round|int }}</td>
+                {%- endif -%}
+            {%- elif item.transformative_damage != None -%}
+                <td class="border px-4 py-2 " colspan="2">{{ item.transformative_damage|round|int }}</td>
+            {%- else -%}
+                <td class="border px-4 py-2" colspan="2"></td>
+            {%- endif -%}
         </tr>
     {% endfor %}
     </tbody>
