@@ -42,6 +42,7 @@ from utils.uid import mask_number
 try:
     from python_genshin_artifact.calculator import get_damage_analysis, get_transformative_damage
     from python_genshin_artifact.enka.enka_parser import enka_parser
+    from python_genshin_artifact.error import JsonParseException, EnkaParseException
     from python_genshin_artifact.models.calculator import CalculatorConfig
     from python_genshin_artifact.models.skill import SkillInfo
 
@@ -577,8 +578,14 @@ class RenderTemplate:
             character_cn_name = idToName(self.character.id)
             damage_config = self.damage_config.get(character_cn_name)
             if damage_config is not None:
-                data["damage_function_available"] = True
-                data["damage_info"] = self.render_damage(damage_config)
+                try:
+                    data["damage_info"] = self.render_damage(damage_config)
+                except JsonParseException as _exc:
+                    logger.error(str(_exc))
+                except EnkaParseException as _exc:
+                    logger.error(str(_exc))
+                else:
+                    data["damage_function_available"] = True
 
         return await self.template_service.render(
             "genshin/player_card/player_card.jinja2",
