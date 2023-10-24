@@ -57,27 +57,20 @@ def sort_item(items: List["ItemData"]) -> Iterable["ItemData"]:
 
     排序规则：持有（星级 > 等级 > 命座/精炼) > 未持有（星级 > 等级 > 命座/精炼）
     """
-    return (
-        ArkoWrapper(items)
-        .sort(lambda x: x.level or -1, reverse=True)
-        .groupby(lambda x: x.level is None)  # 根据持有与未持有进行分组并排序
-        .map(
-            lambda x: (
-                ArkoWrapper(x[1])
-                .sort(lambda y: y.rarity, reverse=True)
-                .groupby(lambda y: y.rarity)  # 根据星级分组并排序
-                .map(
-                    lambda y: (
-                        ArkoWrapper(y[1])
-                        .sort(lambda z: z.refinement or z.constellation or -1, reverse=True)
-                        .groupby(lambda z: z.refinement or z.constellation or -1)  # 根据命座/精炼进行分组并排序
-                        .map(lambda i: ArkoWrapper(i[1]).sort(lambda j: j.id))
-                    )
-                )
-            )
+
+    def key(item: ItemData):
+        # 有个小小的意外逻辑，不影响排序输出，如果要修改可能需要注意下：
+        # constellation 可以为 None 或 0，此时都会被判断为 False
+        # 此时 refinment or constellation or -1 都会返回 -1
+        # 但不影响排序结果
+        return (
+            item.level is not None,  # 根据持有与未持有进行分组并排序
+            item.rarity,  # 根据星级分组并排序
+            item.refinement or item.constellation or -1,  # 根据命座/精炼进行分组并排序
+            item.id,  # 默认按照物品 ID 进行排序
         )
-        .flat(3)
-    )
+
+    return sorted(items, key=key, reverse=True)
 
 
 def get_material_serial_name(names: Iterable[str]) -> str:
