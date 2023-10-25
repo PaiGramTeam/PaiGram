@@ -14,6 +14,7 @@ from simnet.utils.player import recognize_game_biz
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import StaleDataError
 from sqlmodel import BigInteger, Column, DateTime, Field, Index, Integer, SQLModel, String, delete, func, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 from telegram.ext import ContextTypes
 
 from core.basemodel import RegionEnum
@@ -25,7 +26,6 @@ from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.devices import DevicesService
 from core.services.players.services import PlayersService
 from core.services.users.services import UserService
-from core.sqlmodel.session import AsyncSession
 from gram_core.services.cookies.models import CookiesStatusEnum
 from utils.log import logger
 
