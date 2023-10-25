@@ -1,11 +1,11 @@
 from typing import List
 
 from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.base_service import BaseService
 from core.dependence.database import Database
 from core.services.quiz.models import AnswerDB, QuestionDB
-from core.sqlmodel.session import AsyncSession
 
 __all__ = ("QuizRepository",)
 
