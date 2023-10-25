@@ -331,7 +331,7 @@ class Post(Plugin.Conversation):
         try:
             if len(post_images) > 1:
                 media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
-                index = ((math.ceil(len(media) / 10) - 1) * 10 + 1) if len(media) > 10 else 0
+                index = (math.ceil(len(media) / 10) - 1) * 10
                 media[index].caption = post_text
                 media[index].parse_mode = ParseMode.MARKDOWN_V2
                 for group in ArkoWrapper(media).group(10):  # 每 10 张图片分一个组
@@ -507,7 +507,7 @@ class Post(Plugin.Conversation):
         try:
             if len(post_images) > 1:
                 media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
-                index = ((math.ceil(len(media) / 10) - 1) * 10 + 1) if len(media) > 10 else 0
+                index = (math.ceil(len(media) / 10) - 1) * 10
                 media[index].caption = post_text
                 media[index].parse_mode = ParseMode.MARKDOWN_V2
                 for group in ArkoWrapper(media).group(10):  # 每 10 张图片分一个组
