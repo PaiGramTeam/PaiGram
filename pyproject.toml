@@ -44,6 +44,7 @@ pillow = "^10.0.1"
 playwright = "^1.28.0"
 aiosqlite = { extras = ["sqlite"], version = "^0.19.0" }
 simnet = { git = "https://github.com/PaiGramTeam/SIMNet" }
+cssselect = "^1.2.0"
 
 [tool.poetry.extras]
 pyro = ["Pyrogram", "TgCrypto"]
