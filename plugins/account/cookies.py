@@ -184,7 +184,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     if e.ret_code == -106:
                         break
                     raise e
-        await message.reply_markdown_v2("可能是验证码已过期或者你没有同意授权，请重新发送命令进行绑定。")
+        await message.reply_text("可能是验证码已过期或者你没有同意授权，请重新发送命令进行绑定。")
         return ConversationHandler.END
 
     @conversation.state(state=CHECK_SERVER)
@@ -294,6 +294,11 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
                 await message.reply_text("Stoken 无效，请重新绑定。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
+            except ValueError as e:
+                if "account_id" in str(e):
+                    await message.reply_text("account_id 未找到，请检查输入是否有误。")
+                    return ConversationHandler.END
+                raise e
             except UnicodeEncodeError:
                 await message.reply_text("Stoken 非法，请重新绑定。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
