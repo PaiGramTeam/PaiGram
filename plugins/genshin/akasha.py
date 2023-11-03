@@ -41,12 +41,12 @@ class AkashaPlugin(Plugin):
         akasha = Akasha()
         categories = await akasha.get_leaderboard_categories(character_id)
         if len(categories) == 0 or len(categories[0].weapons) == 0:
-            raise NotImplementedError("暂不支持该角色")
+            raise NotImplementedError
         calculation_id = categories[0].weapons[0].calculationId
         count = categories[0].count
         data = await akasha.get_leaderboard(calculation_id)
         if len(data) == 0:
-            raise NotImplementedError("暂不支持该角色")
+            raise NotImplementedError
         user_data = []
         if uid:
             user_data = await akasha.get_leaderboard(calculation_id, uid)
@@ -82,11 +82,21 @@ class AkashaPlugin(Plugin):
         message = update.effective_message
         args = self.get_args(context)
         if len(args) == 0:
-            await message.reply_text("请指定要查询的角色")
+            reply_message = await message.reply_text("请指定要查询的角色")
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self.add_delete_message_job(message)
+                self.add_delete_message_job(reply_message)
             return
         avatar_name = roleToName(args[0])
         uid = await self.get_user_uid(user.id)
-        render_data = await self.get_avatar_board_render_data(avatar_name, uid)
+        try:
+            render_data = await self.get_avatar_board_render_data(avatar_name, uid)
+        except NotImplementedError:
+            reply_message = await message.reply_text("暂不支持该角色")
+            if filters.ChatType.GROUPS.filter(reply_message):
+                self.add_delete_message_job(message)
+                self.add_delete_message_job(reply_message)
+            return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
 
         image = await self.template_service.render(
@@ -96,6 +106,6 @@ class AkashaPlugin(Plugin):
             full_page=True,
             query_selector=".container",
             file_type=FileType.PHOTO,
-            ttl=30 * 24 * 60 * 60,
+            ttl=24 * 60 * 60,
         )
         await image.reply_photo(message)
