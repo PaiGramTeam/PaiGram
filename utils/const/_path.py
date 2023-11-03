@@ -13,6 +13,8 @@ PLUGIN_DIR = PROJECT_ROOT / "plugins"
 RESOURCE_DIR = PROJECT_ROOT / "resources"
 # cache 目录
 CACHE_DIR = PROJECT_ROOT / "cache"
+# data 目录
+DATA_DIR = PROJECT_ROOT / "metadata" / "data"
 
 if not CACHE_DIR.exists():
     CACHE_DIR.mkdir(exist_ok=True, parents=True)
