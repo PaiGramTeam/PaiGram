@@ -37,7 +37,8 @@ class AkashaPlugin(Plugin):
             return None
         return player.player_id
 
-    async def get_leaderboard_data(self, character_id: int, uid: int = None):
+    @staticmethod
+    async def get_leaderboard_data(character_id: int, uid: int = None):
         akasha = Akasha()
         categories = await akasha.get_leaderboard_categories(character_id)
         if len(categories) == 0 or len(categories[0].weapons) == 0:
