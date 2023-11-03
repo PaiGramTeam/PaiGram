@@ -34,10 +34,10 @@ from utils.log import logger
 from utils.uid import mask_number
 
 try:
-    import ujson as json
+    import ujson as jsonlib
 
 except ImportError:
-    import json as json
+    import json as jsonlib
 
 if TYPE_CHECKING:
     from simnet import GenshinClient
@@ -184,16 +184,16 @@ class DailyMaterial(Plugin):
                 class Loader(BaseModel):
                     everyday_materials: List[Dict[str, AreaDailyMaterials]]
 
-                loader = Loader(everyday_materials=json.loads(await cache.read()))
+                loader = Loader(everyday_materials=jsonlib.loads(await cache.read()))
                 self.everyday_materials = loader.everyday_materials
 
     async def _get_skills_data(self, client: "FragileGenshinClient", character: Character) -> Optional[List[int]]:
         if client.damaged:
             return None
-        assert client.client is not None
         detail = None
         try:
-            detail = await self.character_details.get_character_details(client.client, character)
+            real_client = typing.cast("GenshinClient", client.client)
+            detail = await self.character_details.get_character_details(real_client, character)
         except InvalidCookies:
             client.damaged = True
         except SimnetBadRequest as e:
@@ -220,15 +220,10 @@ class DailyMaterial(Plugin):
                 character_assets = self.assets_service.avatar(character_id)
                 character_icon = await character_assets.icon(False)
                 character_side = await character_assets.side(False)
-                if TYPE_CHECKING:
-                    assert character.rarity is not None
-                    assert character.name is not None
-                    assert character_icon is not None
-                    assert character_side is not None
                 user_data.avatar[character_id] = ItemData(
                     id=character_id,
-                    name=character.name,
-                    rarity=int(character.rarity),
+                    name=typing.cast(str, character.name),
+                    rarity=int(typing.cast(str, character.rarity)),
                     level=character.level,
                     constellation=character.constellation,
                     gid=character.id,
@@ -355,26 +350,21 @@ class DailyMaterial(Plugin):
                 raise
             [_, material_name, material_rarity] = HONEY_DATA["material"][material_id]
             material_icon = await material.icon(False)
-            if TYPE_CHECKING:
-                assert material_icon is not None
-                assert isinstance(material_name, str)
-                assert isinstance(material_rarity, int)
             material_uri = material_icon.as_uri()
             area_materials.append(
                 ItemData(
                     id=material_id,
                     icon=material_uri,
-                    name=material_name,
-                    rarity=material_rarity,
+                    name=typing.cast(str, material_name),
+                    rarity=typing.cast(int, material_rarity),
                 )
             )
         return area_materials
 
     @handler.command("daily_material", block=False)
     async def daily_material(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
-        user = update.effective_user
-        message = update.effective_message
-        assert user is not None and message is not None
+        user = typing.cast("User", update.effective_user)
+        message = typing.cast("Message", update.effective_message)
         args = self.get_args(context)
         now = datetime.now()
 
@@ -472,7 +462,6 @@ class DailyMaterial(Plugin):
     async def refresh(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
-        assert user is not None and message is not None
 
         logger.info("用户 {%s}[%s] 刷新[bold]每日素材[/]缓存命令", user.full_name, user.id, extra={"markup": True})
         if self.locks[0].locked():
@@ -516,7 +505,7 @@ class DailyMaterial(Plugin):
                 continue
             self.everyday_materials = _parse_honey_impact_source(response.content)
             # 当场缓存到文件
-            content = json.dumps(
+            content = jsonlib.dumps(
                 self.everyday_materials,
                 ensure_ascii=False,
                 separators=(",", ":"),
@@ -531,15 +520,11 @@ class DailyMaterial(Plugin):
         honey_item = HONEY_DATA[item_type].get(item_id)
         if honey_item is None:
             return None
-        if TYPE_CHECKING:
-            assert isinstance(honey_item[0], str)  # honeyimpact 上的链接
-            assert isinstance(honey_item[1], str)  # 名字
-            assert isinstance(honey_item[2], int)  # 星级
         icon = await getattr(self.assets_service, item_type)(item_id).icon()
         return ItemData(
             id=item_id,
-            name=honey_item[1],
-            rarity=honey_item[2],
+            name=typing.cast(str, honey_item[1]),
+            rarity=typing.cast(int, honey_item[2]),
             icon=icon.as_uri(),
         )
 
@@ -641,7 +626,10 @@ def _parse_honey_impact_source(source: bytes) -> List[Dict[str, "AreaDailyMateri
     </div>
     ```
     """
-    honey_item_url_map: Dict[str, str] = {url: hid for hid, [url, _, _] in HONEY_DATA["material"].items()}  # type: ignore
+    honey_item_url_map: Dict[str, str] = {
+        typing.cast(str, honey_url): typing.cast(str, honey_id)
+        for honey_id, [honey_url, _, _] in HONEY_DATA["material"].items()
+    }
     everyday_materials: List[Dict[str, "AreaDailyMaterials"]] = [{} for _ in range(7)]
     calendar = lxml.etree.HTML(source).cssselect(".calendar_day_wrap")[0]
     current_country = "蒙德"
@@ -668,10 +656,9 @@ def _parse_honey_impact_source(source: bytes) -> List[Dict[str, "AreaDailyMateri
                 continue  # 暂时不做旅行者的天赋计算
             href = typing.cast(str, element.attrib["href"])  # Item ID 在 href 中
             item_is_weapon = href.startswith("/i_n")
-            item_id = "{}{}".format(
-                "" if item_is_weapon else "10000",  # 角色 ID 前缀固定 10000，但是 honey impact 替换成了角色名
-                "".join(filter(str.isdigit, href)),  # 剩余部分非字母的是真正的 Item ID 组成部分
-            )
+            # 角色 ID 前缀固定 10000，但是 honey impact 替换成了角色名
+            # 剩余部分的数字是真正的 Item ID 组成部分
+            item_id = f"{'' if item_is_weapon else '10000'}{''.join(filter(str.isdigit, href))}"
             for weekday in map(int, element[0].attrib["data-days"]):  # data-days 中存的是星期几可以刷素材
                 # 如果我用 getattr 的话 Pyright 一直提示我 "item_id" is not accessed，你有什么头猪吗？
                 ascendible_items = everyday_materials[weekday][current_country]
