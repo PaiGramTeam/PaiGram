@@ -1,18 +1,18 @@
 import asyncio
-import os.path
 import typing
 from asyncio import Lock
 from ctypes import c_double
 from datetime import datetime
 from functools import partial
 from multiprocessing import Value
+from os import path
 from ssl import SSLZeroReturnError
 from time import time as time_
 from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Tuple
 
 import aiofiles
 import aiofiles.os
-import lxml.etree
+import bs4
 import pydantic.json
 from arkowrapper import ArkoWrapper
 from httpx import AsyncClient, HTTPError, TimeoutException
@@ -126,7 +126,7 @@ def get_material_serial_name(names: Iterable[str]) -> str:
 class DailyMaterial(Plugin):
     """每日素材表"""
 
-    everyday_materials: List[Dict[str, "AreaDailyMaterials"]] = None  # type: ignore
+    everyday_materials: List[Dict[str, "AreaDailyMaterials"]] = [{} for _ in range(7)]
     """
     everyday_materials 储存的是一周中每天能刷的素材 ID
     按照如下形式组织
@@ -617,7 +617,7 @@ def _parse_honey_impact_source(source: bytes) -> List[Dict[str, "AreaDailyMateri
       <a href="">
         <!-- data-days 储存可以刷素材的星期几，如 146 指的是 周二/周五/周日 -->
         <div data-assign="char_编号" data-days="146" class="calendar_pic_wrap">
-          <img src="" />
+          <img src="" /> <!-- Item ID 在此 -->
           <span> 角色名 </span> <!-- 角色名周围的空格是切实存在的 -->
         </div>
         <!-- 以此类推，该国家所有角色都会被列出 -->
@@ -626,44 +626,47 @@ def _parse_honey_impact_source(source: bytes) -> List[Dict[str, "AreaDailyMateri
     </div>
     ```
     """
-    honey_item_url_map: Dict[str, str] = {
+    honey_item_url_map: Dict[str, str] = {  # 这个变量可以静态化，不过考虑到这个函数三天调用一次，懒得改了
         typing.cast(str, honey_url): typing.cast(str, honey_id)
         for honey_id, [honey_url, _, _] in HONEY_DATA["material"].items()
     }
+    calendar = bs4.BeautifulSoup(source, "lxml").select_one(".calendar_day_wrap")
+    if calendar is None:
+        return []  # 多半是格式错误或者网页数据有误
     everyday_materials: List[Dict[str, "AreaDailyMaterials"]] = [{} for _ in range(7)]
-    calendar = lxml.etree.HTML(source).cssselect(".calendar_day_wrap")[0]
-    current_country = "蒙德"
-    for element in calendar:
-        if element.tag == "span":  # 找到代表秘境的 span
-            domain_name = typing.cast(str, element[0].text)  # 秘境名
-            current_country = DOMAIN_AREA_MAP[domain_name]  # 从秘境名反推国家
+    current_country: str = ""
+    for element in calendar.find_all(recursive=False):
+        element: bs4.Tag
+        if element.name == "span":  # 找到代表秘境的 span
+            domain_name = next(iter(element)).text  # 第一个孩子节点的 text
+            current_country = DOMAIN_AREA_MAP[domain_name]  # 后续处理 a 列表也会用到这个 current_country
             materials_type = f"{DOMAIN_TYPE_MAP[domain_name]}_materials"
-            # 后续处理 a 列表也会用到这个 current_country
-            for div in element.iterfind("div"):  # div 对应的是一周中的每一天，一共 7 个 div
-                weekday = int(div.attrib["data-days"])  # 一周中的第几天（周一对应 0，周日对应 6）
+            for div in element.find_all("div", recursive=False):  # 7 个 div 对应的是一周中的每一天
+                div: bs4.Tag
+                weekday = int(div.attrs["data-days"])  # data-days 是一周中的第几天（周一 0，周日 6）
                 if current_country not in everyday_materials[weekday]:
                     everyday_materials[weekday][current_country] = AreaDailyMaterials()
-                materials = getattr(everyday_materials[weekday][current_country], materials_type)
-                for a in div:  # 当天能刷的所有素材在 a 列表中
-                    href = typing.cast(str, a.attrib["href"])  # 素材 ID 在 href 中
-                    honey_url = os.path.dirname(href).removeprefix("/")
+                materials: List[str] = getattr(everyday_materials[weekday][current_country], materials_type)
+                for a in div.find_all("a", recursive=False):  # 当天能刷的所有素材在 a 列表中
+                    a: bs4.Tag
+                    href = a.attrs["href"]  # 素材 ID 在 href 中
+                    honey_url = path.dirname(href).removeprefix("/")
                     materials.append(honey_item_url_map[honey_url])
-        if element.tag == "a":
-            # country_name 是从上面的 span 继承下来的
-            # 下面的 item 对应的是角色或者武器
-            item_name = typing.cast(str, element[0][1].text).strip()
-            if item_name == "旅行者":
-                continue  # 暂时不做旅行者的天赋计算
-            href = typing.cast(str, element.attrib["href"])  # Item ID 在 href 中
+        if element.name == "a":
+            # country_name 是从上面的 span 继承下来的，下面的 item 对应的是角色或者武器
+            # element 的第一个 child，也就是 div.calendar_pic_wrap
+            calendar_pic_wrap = typing.cast(bs4.Tag, next(iter(element)))  # element 的第一个孩子
+            item_name_span = calendar_pic_wrap.select_one("span")
+            if item_name_span is None or item_name_span.text.strip() == "旅行者":
+                continue  # 因为旅行者的天赋计算比较复杂，不做旅行者的天赋计算
+            href = element.attrs["href"]  # Item ID 在 href 中
             item_is_weapon = href.startswith("/i_n")
-            # 角色 ID 前缀固定 10000，但是 honey impact 替换成了角色名
-            # 剩余部分的数字是真正的 Item ID 组成部分
+            # 角色 ID 前缀固定 10000，但是 honey impact 替换成了角色名，剩余部分的数字是真正的 Item ID 组成部分
             item_id = f"{'' if item_is_weapon else '10000'}{''.join(filter(str.isdigit, href))}"
-            for weekday in map(int, element[0].attrib["data-days"]):  # data-days 中存的是星期几可以刷素材
-                # 如果我用 getattr 的话 Pyright 一直提示我 "item_id" is not accessed，你有什么头猪吗？
-                ascendible_items = everyday_materials[weekday][current_country]
-                ascendible_items = ascendible_items.weapon if item_is_weapon else ascendible_items.avatar
-                ascendible_items.append(item_id)
+            for weekday in map(int, calendar_pic_wrap.attrs["data-days"]):  # data-days 中存的是星期几可以刷素材
+                ascendable_items = everyday_materials[weekday][current_country]
+                ascendable_items = ascendable_items.weapon if item_is_weapon else ascendable_items.avatar
+                ascendable_items.append(item_id)
     return everyday_materials
 
 
