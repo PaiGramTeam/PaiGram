@@ -5,8 +5,6 @@ from typing import Tuple, TYPE_CHECKING
 from simnet import Region, GenshinClient
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import filters
-
-from core.basemodel import RegionEnum
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
