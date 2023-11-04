@@ -286,10 +286,22 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 await message.reply_text("检测到缺少 mid，请尝试添加 mid 后重新绑定。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
             try:
-                cookies.cookie_token = await client.get_cookie_token_by_stoken(cookies.stoken, mid=cookies.mid)
-                logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
-                cookies.ltoken = await client.get_ltoken_by_stoken()
-                logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
+                if region == Region.CHINESE:
+                    cookies.stoken, cookies.mid = await client.get_stoken_v2_and_mid_by_by_stoken(
+                        cookies.stoken, cookies.account_id
+                    )
+                    logger.success("用户 %s[%s] 绑定时获取 stoken_v2, mid 成功", user.full_name, user.id)
+                    cookies.cookie_token = await client.get_cookie_token_by_stoken(cookies.stoken, mid=cookies.mid)
+                    logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
+                    cookies.ltoken = await client.get_ltoken_by_stoken()
+                    logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
+                else:
+                    cookies_model = await client.get_all_token_by_stoken(cookies.stoken, cookies.account_id)
+                    cookies.stoken = cookies_model.stoken
+                    cookies.mid = cookies_model.mid
+                    cookies.ltoken = cookies_model.ltoken
+                    cookies.cookie_token = cookies_model.cookie_token
+                    logger.success("用户 %s[%s] 绑定时获取 stoken_v2, mid, ltoken, cookie_token 成功", user.full_name, user.id)
             except SimnetBadRequest as exc:
                 logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
                 await message.reply_text("Stoken 无效，请重新绑定。", reply_markup=ReplyKeyboardRemove())

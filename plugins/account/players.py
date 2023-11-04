@@ -128,15 +128,12 @@ class PlayersManagesPlugin(Plugin):
                     InlineKeyboardButton(
                         "导出 Cookies",
                         callback_data=f"players_manager|export_cookies|{user.id}|{player.player_id}",
-                    )
+                    ),
+                    InlineKeyboardButton(
+                        "刷新 Cookies",
+                        callback_data=f"players_manager|refresh_cookies|{user.id}|{player.player_id}",
+                    ),
                 ]
-                if player.region == RegionEnum.HYPERION:
-                    temp_buttons.append(
-                        InlineKeyboardButton(
-                            "刷新 Cookies",
-                            callback_data=f"players_manager|refresh_cookies|{user.id}|{player.player_id}",
-                        )
-                    )
 
                 buttons.insert(-1, temp_buttons)
 
