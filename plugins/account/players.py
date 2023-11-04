@@ -5,8 +5,6 @@ from typing import Tuple, TYPE_CHECKING
 from simnet import Region, GenshinClient
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import filters
-
-from core.basemodel import RegionEnum
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
@@ -128,15 +126,12 @@ class PlayersManagesPlugin(Plugin):
                     InlineKeyboardButton(
                         "导出 Cookies",
                         callback_data=f"players_manager|export_cookies|{user.id}|{player.player_id}",
-                    )
+                    ),
+                    InlineKeyboardButton(
+                        "刷新 Cookies",
+                        callback_data=f"players_manager|refresh_cookies|{user.id}|{player.player_id}",
+                    ),
                 ]
-                if player.region == RegionEnum.HYPERION:
-                    temp_buttons.append(
-                        InlineKeyboardButton(
-                            "刷新 Cookies",
-                            callback_data=f"players_manager|refresh_cookies|{user.id}|{player.player_id}",
-                        )
-                    )
 
                 buttons.insert(-1, temp_buttons)
 
