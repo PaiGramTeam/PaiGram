@@ -1,5 +1,5 @@
 # pylint: disable=W0049
-from typing import NoReturn, Optional, Protocol, TypeVar
+from typing import Optional, Protocol, TypeVar
 
 __all__ = ["BaseQueue", "SyncQueue", "AsyncQueue"]
 

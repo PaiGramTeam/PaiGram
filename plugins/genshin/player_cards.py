@@ -47,7 +47,7 @@ try:
     from python_genshin_artifact.models.skill import SkillInfo
 
     GENSHIN_ARTIFACT_FUNCTION_AVAILABLE = True
-except ImportError as exc:
+except ImportError:
     get_damage_analysis = None
     get_transformative_damage = None
     enka_parser = None
