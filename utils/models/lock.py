@@ -10,7 +10,7 @@ __all__ = ("HashLock",)
 
 _lock: "LockType" = Lock()
 _locks: Dict[int, "LockType"] = {}
-_clean_lock_task_map: Dict[int, Task]
+_clean_lock_task_map: Dict[int, Task] = {}
 
 
 async def delete_lock(target: int) -> None:
@@ -42,7 +42,7 @@ class HashLock:
             target = hash(target)
         self.target = target
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> bool:
         # noinspection PyTypeChecker
         return self.lock.__enter__()
 
