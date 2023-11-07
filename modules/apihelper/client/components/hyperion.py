@@ -124,7 +124,6 @@ class Hyperion:
         filename = os.path.basename(url)
         _, file_extension = os.path.splitext(filename)
         is_image = bool(file_extension in ".jpg" or file_extension in ".png")
-        url = url.replace("https://upload-bbs.miyoushe.com", config.upload_bbs_host)
         response = await self.client.get(
             url, params=self.get_images_params(resize=2000) if is_image else None, de_json=False
         )
