@@ -1,3 +1,5 @@
-from utils.patch import simnet
+import pkgutil
+from pathlib import Path
 
-__all__ = ["simnet"]
+for _, file, _ in pkgutil.iter_modules([str(Path(__file__).parent.absolute())]):
+    __import__(file, globals(), level=1)
