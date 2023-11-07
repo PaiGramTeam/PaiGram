@@ -617,7 +617,7 @@ roles = {
     10000088: ["夏洛蒂", "charlotte"],
     10000089: ["芙宁娜", "furina"],
 }
-not_real_roles = [10000088, 10000089]
+not_real_roles = []
 weapons = {
     # 1.x
     "决斗之枪": ["决斗枪", "决斗", "月卡枪"],
