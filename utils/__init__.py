@@ -1,3 +1,3 @@
 import utils.patch
 
-__all__ = ["patch"]
+__all__ = (utils.patch, )

@@ -3,7 +3,6 @@ import os
 import re
 from typing import List
 
-from core.config import config
 from ..base.hyperionrequest import HyperionRequest
 from ...models.genshin.hyperion import PostInfo, ArtworkImage
 from ...typedefs import JSON_DATA
