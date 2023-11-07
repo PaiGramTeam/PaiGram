@@ -1,3 +1,3 @@
-from utils.patch import httpx, simnet
+import utils.patch
 
-__all__ = ["httpx", "simnet"]
+__all__ = ["patch"]
