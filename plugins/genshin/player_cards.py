@@ -604,8 +604,6 @@ class RenderTemplate:
         config_skill = damage_config.get("config_skill")
         if config_skill is not None:
             config_skill = {character_name: config_skill}
-        else:
-            config_skill = "NoConfig"
         character_config = damage_config.get("config")
         artifact_config = damage_config.get("artifact_config")
         if character_config is not None:
