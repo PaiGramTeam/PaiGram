@@ -200,7 +200,7 @@ class PlayerCards(Plugin):
             ]
             reply_message = await message.reply_photo(
                 photo=photo,
-                caption="角色列表未找到，请尝试点击下方按钮从 EnkaNetwork 更新角色列表",
+                caption="角色列表未找到，请尝试点击下方按钮从 Enka.Network 更新角色列表",
                 reply_markup=InlineKeyboardMarkup(buttons),
             )
             if reply_message.photo:
@@ -289,7 +289,6 @@ class PlayerCards(Plugin):
             return
 
         await message.reply_chat_action(ChatAction.TYPING)
-        await callback_query.answer(text="正在从 EnkaNetwork 获取角色列表 请不要重复点击按钮")
         data = await self._update_enka_data(uid)
         if isinstance(data, str):
             await callback_query.answer(text=data, show_alert=True)
@@ -298,6 +297,7 @@ class PlayerCards(Plugin):
             await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
             await message.delete()
             return
+        await callback_query.answer(text="正在从 Enka.Network 获取角色列表 请不要重复点击按钮")
         buttons = self.gen_button(data, user.id, uid, update_button=False)
         render_data = await self.parse_holder_data(data)
         holder = await self.template_service.render(
