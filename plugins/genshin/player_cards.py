@@ -40,11 +40,10 @@ from utils.log import logger
 from utils.uid import mask_number
 
 try:
-    from python_genshin_artifact.calculator import get_damage_analysis, get_transformative_damage
+    from python_genshin_artifact import get_damage_analysis, get_transformative_damage
     from python_genshin_artifact.enka.enka_parser import enka_parser
     from python_genshin_artifact.error import JsonParseException, EnkaParseException
-    from python_genshin_artifact.models.calculator import CalculatorConfig
-    from python_genshin_artifact.models.skill import SkillInfo
+    from python_genshin_artifact import CalculatorConfig, SkillInterface
 
     GENSHIN_ARTIFACT_FUNCTION_AVAILABLE = True
 except ImportError:
@@ -52,7 +51,7 @@ except ImportError:
     get_transformative_damage = None
     enka_parser = None
     CalculatorConfig = None
-    SkillInfo = None
+    SkillInterface = None
 
     GENSHIN_ARTIFACT_FUNCTION_AVAILABLE = False
 
@@ -605,8 +604,6 @@ class RenderTemplate:
         config_skill = damage_config.get("config_skill")
         if config_skill is not None:
             config_skill = {character_name: config_skill}
-        else:
-            config_skill = "NoConfig"
         character_config = damage_config.get("config")
         artifact_config = damage_config.get("artifact_config")
         if character_config is not None:
@@ -619,7 +616,7 @@ class RenderTemplate:
         damage = []
         for skill in skills:
             index = skill.get("index")
-            skill_info = SkillInfo(index=index, config=config_skill)
+            skill_info = SkillInterface(index=index, config=config_skill)
             calculator_config = CalculatorConfig(
                 character=character,
                 weapon=weapon,
