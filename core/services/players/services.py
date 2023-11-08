@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from aiohttp import ClientConnectorError
 from enkanetwork import (
     VaildateUIDError,
     HTTPException,
     EnkaPlayerNotFound,
     PlayerInfo as EnkaPlayerInfo,
     TimedOut,
+    EnkaServerMaintanance,
 )
 
 from core.base_service import BaseService
@@ -15,10 +15,9 @@ from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel, PlayerInfo
 from core.services.players.repositories import PlayerInfoRepository
+from gram_core.services.players.services import PlayersService
 from utils.enkanetwork import RedisCache, EnkaNetworkAPI
 from utils.log import logger
-
-from gram_core.services.players.services import PlayersService
 
 __all__ = ("PlayersService", "PlayerInfoService")
 
@@ -47,14 +46,18 @@ class PlayerInfoService(BaseService):
         try:
             response = await self.enka_client.fetch_user(player_id, info=True)
             return response.player
-        except (VaildateUIDError, EnkaPlayerNotFound, HTTPException) as exc:
-            logger.warning("EnkaNetwork 请求失败: %s", str(exc))
-        except TimedOut as exc:
-            logger.warning("EnkaNetwork 请求超时: %s", str(exc))
-        except ClientConnectorError as exc:
-            logger.warning("EnkaNetwork 请求错误: %s", str(exc))
+        except VaildateUIDError:
+            logger.warning("Enka.Network 请求失败 UID 不正确")
+        except EnkaPlayerNotFound:
+            logger.warning("Enka.Network 请求失败 玩家不存在")
+        except EnkaServerMaintanance:
+            logger.warning("Enka.Network 正在进行服务器维护，请耐心等待5至8小时或者1天。")
+        except TimedOut:
+            logger.warning("Enka.Network 请求超时")
+        except HTTPException as exc:
+            logger.warning("Enka.Network 请求失败: %s", str(exc))
         except Exception as exc:
-            logger.error("EnkaNetwork 请求失败: %s", exc_info=exc)
+            logger.error("Enka.Network 请求失败: %s", exc_info=exc)
         return None
 
     async def get(self, player: Player) -> Optional[PlayerInfo]:
