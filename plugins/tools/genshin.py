@@ -255,11 +255,6 @@ class GenshinHelper(Plugin):
         ) as client:
             try:
                 yield client
-            except SimnetBadRequest as exc:
-                if exc.ret_code == 1034 and devices is not None:
-                    devices.is_valid = False
-                    await self.devices_service.update(devices)
-                raise exc
             except InvalidCookies as exc:
                 refresh = False
                 cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
@@ -298,6 +293,11 @@ class GenshinHelper(Plugin):
                     logger.error("用户 user_id[%s] 更新 Cookies 失败", cookie_model.user_id, exc_info=_exc)
                 if refresh:
                     raise CookieException(message="The cookie has been refreshed.") from exc
+                raise exc
+            except SimnetBadRequest as exc:
+                if exc.ret_code == 1034 and devices is not None:
+                    devices.is_valid = False
+                    await self.devices_service.update(devices)
                 raise exc
 
     async def get_genshin_client(self, user_id: int, region: Optional[RegionEnum] = None) -> GenshinClient:
