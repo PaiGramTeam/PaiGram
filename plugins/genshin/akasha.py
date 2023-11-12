@@ -59,8 +59,15 @@ class AkashaPlugin(Plugin):
 
     async def get_avatar_board_render_data(self, character: str, uid: int):
         character_id = roleToId(character)
-        name_card = (await self.assets_service.namecard(character_id).navbar()).as_uri()
-        avatar = (await self.assets_service.avatar(character_id).icon()).as_uri()
+        if not character_id:
+            raise NotImplementedError
+        try:
+            name_card = (await self.assets_service.namecard(character_id).navbar()).as_uri()
+            avatar = (await self.assets_service.avatar(character_id).icon()).as_uri()
+        except KeyError:
+            logger.warning("未找到角色 %s 的角色名片/头像", character_id)
+            name_card = None
+            avatar = None
         rarity = 5
         try:
             rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(character_id)]
@@ -93,7 +100,7 @@ class AkashaPlugin(Plugin):
         try:
             render_data = await self.get_avatar_board_render_data(avatar_name, uid)
         except NotImplementedError:
-            reply_message = await message.reply_text("暂不支持该角色")
+            reply_message = await message.reply_text("暂不支持该角色，或者角色名称错误")
             if filters.ChatType.GROUPS.filter(reply_message):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)
