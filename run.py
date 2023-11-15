@@ -11,6 +11,7 @@ except ImportError:
 
 
 def run():
+    __import__("utils.patch")
     from core.application import Application
     from dotenv import load_dotenv
 
