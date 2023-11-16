@@ -13,6 +13,7 @@ from simnet.errors import (
     CookieException,
     TimedOut as SIMNetTimedOut,
     SIMNetException,
+    NeedChallenge,
 )
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ParseMode
@@ -146,11 +147,11 @@ class ErrorHandler(Plugin):
                 notice = self.ERROR_MSG_PREFIX + f"Cookie 无效 错误信息为 {exc.original} 请尝试重新绑定"
         elif isinstance(exc, DataNotPublic):
             notice = self.ERROR_MSG_PREFIX + "查询的用户数据未公开"
+        elif isinstance(exc, NeedChallenge):
+            notice = self.ERROR_MSG_PREFIX + "服务器检测到该账号可能存在异常，请求被拒绝，请尝试通过验证"
         else:
             if exc.retcode == -130:
                 notice = self.ERROR_MSG_PREFIX + "未设置默认角色，请尝试重新绑定"
-            elif exc.retcode == 1034:
-                notice = self.ERROR_MSG_PREFIX + "服务器检测到该账号可能存在异常，请求被拒绝，请尝试通过验证"
             elif exc.retcode == -500001:
                 notice = self.ERROR_MSG_PREFIX + "网络出小差了，请稍后重试~"
             elif exc.retcode == -1:
