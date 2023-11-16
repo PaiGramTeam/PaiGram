@@ -7,6 +7,7 @@ from simnet.errors import (
     BadRequest as SimnetBadRequest,
     DataNotPublic,
     AccountNotFound,
+    NeedChallenge,
 )
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject
 from telegram.ext import ConversationHandler, filters
@@ -210,20 +211,16 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())
             logger.warning("获取账号信息发生错误 %s 账户信息未公开", player_id)
             return ConversationHandler.END
-        except InvalidCookies:
+        except (InvalidCookies, NeedChallenge):
             await self.public_cookies_service.undo(user.id)
             await message.reply_text("出错了呜呜呜 ~ 请稍后重试或者绑定 cookie")
             return ConversationHandler.END
         except SimnetBadRequest as exc:
-            if exc.ret_code == 1034:
-                await message.reply_text("出错了呜呜呜 ~ 请稍后重试或者绑定 cookie")
-                return ConversationHandler.END
-            elif exc.ret_code == -10001:
+            if exc.ret_code == -10001:
                 await message.reply_text("账号所属服务器与选择服务器不符，请检查", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
             await message.reply_text("获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
-            logger.error("获取账号信息发生错误")
-            logger.exception(exc)
+            logger.error("获取账号信息发生错误", exc_info=exc)
             return ConversationHandler.END
         except ValueError:
             await message.reply_text("ID 格式有误，请检查", reply_markup=ReplyKeyboardRemove())
