@@ -54,6 +54,10 @@ class NoMostKills(Exception):
     """挑战了但是数据没刷新"""
 
 
+class FloorNotFoundError(Exception):
+    """只有数据统计，层数统计未出"""
+
+
 class AbyssNotFoundError(Exception):
     """如果查询别人，是无法找到队伍详细，只有数据统计"""
 
@@ -130,6 +134,9 @@ class AbyssPlugin(Plugin):
         except NoMostKills:  # 若深渊还未挑战
             await message.reply_text("还没有挑战本次深渊呢，咕咕咕~")
             return
+        except FloorNotFoundError:
+            await message.reply_text("深渊详细数据未找到，咕咕咕~")
+            return
         except AbyssNotFoundError:
             await message.reply_text("无法查询玩家挑战队伍详情，只能查询统计详情哦~")
             return
@@ -181,10 +188,12 @@ class AbyssPlugin(Plugin):
         abyss_data = await client.get_genshin_spiral_abyss(uid, previous=previous, lang="zh-cn")
 
         if not abyss_data.unlocked:
-            raise AbyssUnlocked()
+            raise AbyssUnlocked
         if not abyss_data.ranks.most_kills:
-            raise NoMostKills()
-        if (total or (floor > 0)) and not abyss_data.floors[0].chambers[0].battles:
+            raise NoMostKills
+        if (total or (floor > 0)) and len(abyss_data.floors) == 0:
+            raise FloorNotFoundError
+        if (total or (floor > 0)) and len(abyss_data.floors[0].chambers[0].battles) == 0:
             raise AbyssNotFoundError
 
         start_time = abyss_data.start_time.astimezone(TZ)
