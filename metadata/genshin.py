@@ -5,11 +5,14 @@ from __future__ import annotations
 import functools
 from typing import Any, Generic, ItemsView, Iterator, KeysView, Optional, TypeVar, ValuesView
 
-import ujson as json
-
 from utils.const import PROJECT_ROOT
 from utils.log import logger
 from utils.typedefs import StrOrInt
+
+try:
+    import ujson as jsonlib
+except ImportError:
+    import json as jsonlib
 
 __all__ = (
     "HONEY_DATA",
@@ -52,7 +55,7 @@ class Data(dict, Generic[K, V]):
                 )
                 self._dict = {}
             with open(path, encoding="utf-8") as file:
-                self._dict = json.load(file)
+                self._dict = jsonlib.load(file)
             _cache.update({self._file_name: self._dict})
         return self._dict
 

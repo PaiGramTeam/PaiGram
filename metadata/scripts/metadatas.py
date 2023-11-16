@@ -1,12 +1,16 @@
 from contextlib import contextmanager
 from typing import Iterator, Dict
 
-import ujson as json
 from aiofiles import open as async_open
 from httpx import URL, AsyncClient, RemoteProtocolError, Response
 
 from utils.const import AMBR_HOST, PROJECT_ROOT
 from utils.log import logger
+
+try:
+    import ujson as jsonlib
+except ImportError:
+    import json as jsonlib
 
 __all__ = [
     "update_metadata_from_ambr",
@@ -32,7 +36,7 @@ async def fix_metadata_from_ambr(json_data: Dict[str, Dict], data_type: str):
         for wid in need_append_ids:
             url = AMBR_HOST.join(f"v2/chs/{data_type}/{wid}")
             response = await client.get(url)
-            json_data_ = json.loads(response.text)["data"]
+            json_data_ = jsonlib.loads(response.text)["data"]
             json_data[str(json_data_["id"])] = {k: json_data_[k] for k in need_attr}
 
 
@@ -46,10 +50,10 @@ async def update_metadata_from_ambr(overwrite: bool = True):
         url = AMBR_HOST.join(f"v2/chs/{target}")
         path.parent.mkdir(parents=True, exist_ok=True)
         response = await client.get(url)
-        json_data = json.loads(response.text)["data"]["items"]
+        json_data = jsonlib.loads(response.text)["data"]["items"]
         await fix_metadata_from_ambr(json_data, target)
         async with async_open(path, mode="w", encoding="utf-8") as file:
-            data = json.dumps(json_data, ensure_ascii=False, indent=4)
+            data = jsonlib.dumps(json_data, ensure_ascii=False, indent=4)
             await file.write(data)
         result.append(json_data)
     return result
@@ -88,7 +92,7 @@ async def update_metadata_from_github(overwrite: bool = True):
                     if line in ["  },", "  }"]:
                         started = False
                         if any("MATERIAL_NAMECARD" in x for x in cell):
-                            material_json_data.append(json.loads("{" + "".join(cell) + "}"))
+                            material_json_data.append(jsonlib.loads("{" + "".join(cell) + "}"))
                         cell = []
                         continue
                     if started:
@@ -136,7 +140,7 @@ async def update_metadata_from_github(overwrite: bool = True):
                     }
                 )
             async with async_open(path, mode="w", encoding="utf-8") as file:
-                data = json.dumps(data, ensure_ascii=False, indent=4)
+                data = jsonlib.dumps(data, ensure_ascii=False, indent=4)
                 await file.write(data)
             return data
         except RemoteProtocolError as exc:

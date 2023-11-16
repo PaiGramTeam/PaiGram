@@ -1,8 +1,12 @@
-import ujson as json
-
 from core.base_service import BaseService
 from core.dependence.redisdb import RedisDB
 from modules.wiki.base import Model
+
+try:
+    import ujson as jsonlib
+except ImportError:
+    import json as jsonlib
+
 
 __all__ = ["WikiCache"]
 
@@ -17,7 +21,7 @@ class WikiCache(BaseService.Component):
         if isinstance(value, Model):
             value = value.json()
         elif isinstance(value, (dict, list)):
-            value = json.dumps(value)
+            value = jsonlib.dumps(value)
         await self.client.set(qname, value)
 
     async def delete(self, key: str):
@@ -28,10 +32,10 @@ class WikiCache(BaseService.Component):
         qname = f"{self.qname}:{key}"
         # noinspection PyBroadException
         try:
-            result = json.loads(await self.client.get(qname))
+            result = jsonlib.loads(await self.client.get(qname))
         except Exception:  # pylint: disable=W0703
             result = []
         if isinstance(result, list) and len(result) > 0:
             for num, item in enumerate(result):
-                result[num] = json.loads(item)
+                result[num] = jsonlib.loads(item)
         return result

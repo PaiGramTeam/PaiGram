@@ -4,7 +4,6 @@ import asyncio
 import re
 from typing import Dict, List, Optional
 
-import ujson as json
 from aiofiles import open as async_open
 from httpx import AsyncClient, HTTPError, Response
 
@@ -12,6 +11,11 @@ from modules.wiki.base import HONEY_HOST
 from utils.const import PROJECT_ROOT
 from utils.log import logger
 from utils.typedefs import StrOrInt
+
+try:
+    import ujson as jsonlib
+except ImportError:
+    import json as jsonlib
 
 __all__ = [
     "get_avatar_data",
@@ -46,7 +50,7 @@ async def get_avatar_data() -> DATA_TYPE:
     url = "https://genshin.honeyhunterworld.com/fam_chars/?lang=CHS"
     response = await request(url)
     chaos_data = re.findall(r"sortable_data\.push\((.*?)\);\s*sortable_cur_page", response.text)[0]
-    json_data = json.loads(chaos_data)  # 转为 json
+    json_data = jsonlib.loads(chaos_data)  # 转为 json
     for data in json_data:
         cid = int("10000" + re.findall(r"\d+", data[1])[0])
         honey_id = re.findall(r"/(.*?)/", data[1])[0]
@@ -64,7 +68,7 @@ async def get_weapon_data() -> DATA_TYPE:
     for url in urls:
         response = await request(url)
         chaos_data = re.findall(r"sortable_data\.push\((.*?)\);\s*sortable_cur_page", response.text)[0]
-        json_data = json.loads(chaos_data)  # 转为 json
+        json_data = jsonlib.loads(chaos_data)  # 转为 json
         for data in json_data:
             name = re.findall(r">(.*)<", data[1])[0]
             if name in ["「一心传」名刀", "石英大剑", "琥珀玥", "黑檀弓"]:  # 跳过特殊的武器
@@ -85,12 +89,12 @@ async def get_material_data() -> DATA_TYPE:
     urls = weapon + talent + namecard
 
     response = await request("https://api.ambr.top/v2/chs/material")
-    ambr_data = json.loads(response.text)["data"]["items"]
+    ambr_data = jsonlib.loads(response.text)["data"]["items"]
 
     for url in urls:
         response = await request(url)
         chaos_data = re.findall(r"sortable_data\.push\((.*?)\);\s*sortable_cur_page", response.text)[0]
-        json_data = json.loads(chaos_data)  # 转为 json
+        json_data = jsonlib.loads(chaos_data)  # 转为 json
         for data in json_data:
             honey_id = re.findall(r"/(.*?)/", data[1])[0]
             name = re.findall(r">(.*)<", data[1])[0]
@@ -108,18 +112,18 @@ async def get_artifact_data() -> DATA_TYPE:
     async def get_first_id(_link) -> str:
         _response = await request(_link)
         _chaos_data = re.findall(r"sortable_data\.push\((.*?)\);\s*sortable_cur_page", _response.text)[0]
-        _json_data = json.loads(_chaos_data)
+        _json_data = jsonlib.loads(_chaos_data)
         return re.findall(r"/(.*?)/", _json_data[-1][1])[0]
 
     result = {}
     url = "https://genshin.honeyhunterworld.com/fam_art_set/?lang=CHS"
 
     response = await request("https://api.ambr.top/v2/chs/reliquary")
-    ambr_data = json.loads(response.text)["data"]["items"]
+    ambr_data = jsonlib.loads(response.text)["data"]["items"]
 
     response = await request(url)
     chaos_data = re.findall(r"sortable_data\.push\((.*?)\);\s*sortable_cur_page", response.text)[0]
-    json_data = json.loads(chaos_data)  # 转为 json
+    json_data = jsonlib.loads(chaos_data)  # 转为 json
     for data in json_data:
         honey_id = re.findall(r"/(.*?)/", data[1])[0]
         name = re.findall(r"alt=\"(.*?)\"", data[0])[0]
@@ -151,7 +155,7 @@ async def get_namecard_data() -> DATA_TYPE:
 
     response = await request(url)
     chaos_data = re.findall(r"sortable_data\.push\((.*?)\);\s*sortable_cur_page", response.text)[0]
-    json_data = json.loads(chaos_data)
+    json_data = jsonlib.loads(chaos_data)
     for data in json_data:
         honey_id = re.findall(r"/(.*?)/", data[1])[0]
         name = re.findall(r"alt=\"(.*?)\"", data[0])[0]
@@ -189,5 +193,5 @@ async def update_honey_metadata(overwrite: bool = True) -> FULL_DATA_TYPE | None
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     async with async_open(path, mode="w", encoding="utf-8") as file:
-        await file.write(json.dumps(result, ensure_ascii=False, indent=4))
+        await file.write(jsonlib.dumps(result, ensure_ascii=False, indent=4))
     return result

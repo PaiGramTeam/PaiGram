@@ -24,10 +24,10 @@ from utils.log._style import DEFAULT_STYLE
 from utils.log._traceback import Traceback
 
 try:
-    import ujson as json
+    import ujson as jsonlib
     from ujson import JSONDecodeError
 except ImportError:
-    import json
+    import json as jsonlib
     from json import JSONDecodeError
 
 if TYPE_CHECKING:
@@ -250,7 +250,7 @@ class Handler(DefaultRichHandler):
         if message is not None:
             try:
                 if self.auto_load_json:
-                    message_renderable = self.render_message(record, json.loads(message))
+                    message_renderable = self.render_message(record, jsonlib.loads(message))
             except JSONDecodeError:
                 pass
             finally:
