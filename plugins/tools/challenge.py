@@ -2,7 +2,7 @@ from typing import Tuple, Optional
 
 from simnet import Region
 from simnet.client.cookies import Cookies
-from simnet.errors import BadRequest as SIMNetBadRequest
+from simnet.errors import NeedChallenge
 
 from core.basemodel import RegionEnum
 from core.dependence.redisdb import RedisDB
@@ -62,9 +62,8 @@ class ChallengeSystem(Plugin):
         if need_verify:
             try:
                 await client.get_genshin_notes()
-            except SIMNetBadRequest as exc:
-                if exc.retcode != 1034:
-                    raise exc
+            except NeedChallenge:
+                pass
             else:
                 raise ChallengeSystemException("账户正常，无需验证")
             finally:

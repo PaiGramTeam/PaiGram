@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Union
 
 from pydantic import ValidationError
 from simnet import GenshinClient, Region
-from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, NetworkError, CookieException
+from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, NetworkError, CookieException, NeedChallenge
 from simnet.models.genshin.calculator import CalculatorCharacterDetails
 from simnet.models.genshin.chronicle.characters import Character
 from simnet.utils.player import recognize_game_biz
@@ -294,8 +294,8 @@ class GenshinHelper(Plugin):
                 if refresh:
                     raise CookieException(message="The cookie has been refreshed.") from exc
                 raise exc
-            except SimnetBadRequest as exc:
-                if exc.ret_code == 1034 and devices is not None:
+            except NeedChallenge as exc:
+                if devices is not None:
                     devices.is_valid = False
                     await self.devices_service.update(devices)
                 raise exc
@@ -372,10 +372,9 @@ class GenshinHelper(Plugin):
         ) as client:
             try:
                 yield client
-            except SimnetBadRequest as exc:
-                if exc.ret_code == 1034:
-                    await self.public_cookies_service.undo(user_id)
-                    await self.public_cookies_service.set_device_valid(client.account_id, False)
+            except NeedChallenge as exc:
+                await self.public_cookies_service.undo(user_id)
+                await self.public_cookies_service.set_device_valid(client.account_id, False)
                 raise exc
 
     @asynccontextmanager
@@ -396,7 +395,5 @@ class GenshinHelper(Plugin):
                 try:
                     client.public = True
                     yield client
-                except SimnetBadRequest as exc:
-                    if exc.ret_code == 1034:
-                        raise CookiesNotFoundError(user_id) from exc
-                    raise exc
+                except NeedChallenge as exc:
+                    raise CookiesNotFoundError(user_id) from exc

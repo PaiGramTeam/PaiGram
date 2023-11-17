@@ -11,7 +11,7 @@ from gram_core.services.cookies.services import (
 )
 
 from simnet import GenshinClient, Region, Game
-from simnet.errors import InvalidCookies, TooManyRequests, BadRequest as SimnetBadRequest
+from simnet.errors import InvalidCookies, TooManyRequests, BadRequest as SimnetBadRequest, NeedChallenge
 
 from utils.log import logger
 
@@ -74,15 +74,16 @@ class PublicCookiesService(BaseService, BasePublicCookiesService):
             await self._repository.update(cookies)
             await self._cache.delete_public_cookies(cookies.user_id, region)
             raise NeedContinue
+        except NeedChallenge:
+            logger.warning("用户 [%s] 触发验证", public_id)
+            await self.set_device_valid(client.account_id, False)
+            await self._cache.delete_public_cookies(cookies.user_id, region)
+            raise NeedContinue
         except SimnetBadRequest as exc:
             if "invalid content type" in exc.message:
                 raise exc
-            if exc.ret_code == 1034:
-                logger.warning("用户 [%s] 触发验证", public_id)
-                await self.set_device_valid(client.account_id, False)
-            else:
-                logger.warning("用户 [%s] 获取账号信息发生错误，错误信息为", public_id)
-                logger.exception(exc)
+            logger.warning("用户 [%s] 获取账号信息发生错误，错误信息为", public_id)
+            logger.exception(exc)
             await self._cache.delete_public_cookies(cookies.user_id, region)
             raise NeedContinue
         except RuntimeError as exc:
