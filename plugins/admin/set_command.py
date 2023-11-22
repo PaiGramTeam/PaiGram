@@ -48,27 +48,27 @@ class SetCommandPlugin(Plugin):
         ]
         group_command = [
             # 通用
-            # BotCommand("help", "帮助"),
-            # BotCommand("quiz", "派蒙的十万个为什么"),
-            # BotCommand("wish", " 非洲人模拟器（抽卡模拟器）"),
-            # BotCommand("set_wish", "抽卡模拟器定轨"),
-            # BotCommand("calendar", "活动日历"),
+            BotCommand("help", "帮助"),
+            BotCommand("quiz", "派蒙的十万个为什么"),
+            BotCommand("wish", " 非洲人模拟器（抽卡模拟器）"),
+            BotCommand("set_wish", "抽卡模拟器定轨"),
+            BotCommand("calendar", "活动日历"),
             # Wiki 类
-            # BotCommand("weapon", "查询武器"),
-            # BotCommand("strategy", "查询角色攻略"),
-            # BotCommand("material", "角色培养素材查询"),
+            BotCommand("weapon", "查询武器"),
+            BotCommand("strategy", "查询角色攻略"),
+            BotCommand("material", "角色培养素材查询"),
             # UID 查询类
-            # BotCommand("stats", "玩家统计查询"),
-            # BotCommand("player_card", "查询角色卡片"),
+            BotCommand("stats", "玩家统计查询"),
+            BotCommand("player_card", "查询角色卡片"),
             BotCommand("avatar_board", "角色排名"),
             # Cookie 查询类
-            # BotCommand("dailynote", "查询实时便笺"),
-            # BotCommand("ledger", "查询当月旅行札记"),
-            # BotCommand("abyss", "查询深渊战绩"),
-            # BotCommand("abyss_team", "查询深渊推荐配队"),
-            # BotCommand("avatars", "查询角色练度"),
-            # BotCommand("reg_time", "账号注册时间"),
-            # BotCommand("daily_material", "今日素材表"),
+            BotCommand("dailynote", "查询实时便笺"),
+            BotCommand("ledger", "查询当月旅行札记"),
+            BotCommand("abyss", "查询深渊战绩"),
+            BotCommand("abyss_team", "查询深渊推荐配队"),
+            BotCommand("avatars", "查询角色练度"),
+            BotCommand("reg_time", "账号注册时间"),
+            BotCommand("daily_material", "今日素材表"),
         ]
         admin_command = [
             BotCommand("add_admin", "添加管理员"),
