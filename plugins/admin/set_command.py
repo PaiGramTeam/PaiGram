@@ -1,7 +1,6 @@
 from telegram import (
     Update,
     BotCommand,
-    BotCommandScopeAllGroupChats,
     BotCommandScopeAllPrivateChats,
     BotCommandScopeChat,
 )
