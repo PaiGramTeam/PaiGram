@@ -11,7 +11,7 @@ from gram_core.services.cookies.services import (
 )
 
 from simnet import GenshinClient, Region, Game
-from simnet.errors import InvalidCookies, TooManyRequests, BadRequest as SimnetBadRequest, NeedChallenge
+from simnet.errors import InvalidCookies, TooManyRequests, BadRequest as SimnetBadRequest, NeedChallenge, InvalidDevice
 
 from utils.log import logger
 
@@ -76,6 +76,11 @@ class PublicCookiesService(BaseService, BasePublicCookiesService):
             raise NeedContinue
         except NeedChallenge:
             logger.warning("用户 [%s] 触发验证", public_id)
+            await self.set_device_valid(client.account_id, False)
+            await self._cache.delete_public_cookies(cookies.user_id, region)
+            raise NeedContinue
+        except InvalidDevice:
+            logger.warning("用户 [%s] 设备信息无效", public_id)
             await self.set_device_valid(client.account_id, False)
             await self._cache.delete_public_cookies(cookies.user_id, region)
             raise NeedContinue
