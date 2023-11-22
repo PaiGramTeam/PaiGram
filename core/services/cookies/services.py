@@ -5,6 +5,7 @@ from gram_core.basemodel import RegionEnum
 from gram_core.services.cookies.error import CookieServiceError
 from gram_core.services.cookies.models import CookiesStatusEnum, CookiesDataBase as Cookies
 from gram_core.services.cookies.services import (
+    InvalidDevice,
     CookiesService,
     PublicCookiesService as BasePublicCookiesService,
     NeedContinue,
@@ -76,6 +77,11 @@ class PublicCookiesService(BaseService, BasePublicCookiesService):
             raise NeedContinue
         except NeedChallenge:
             logger.warning("用户 [%s] 触发验证", public_id)
+            await self.set_device_valid(client.account_id, False)
+            await self._cache.delete_public_cookies(cookies.user_id, region)
+            raise NeedContinue
+        except InvalidDevice:
+            logger.warning("用户 [%s] 设备信息无效", public_id)
             await self.set_device_valid(client.account_id, False)
             await self._cache.delete_public_cookies(cookies.user_id, region)
             raise NeedContinue
