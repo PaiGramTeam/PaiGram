@@ -33,7 +33,7 @@ def upgrade() -> None:
         sa.Column(
             "time_created",
             sa.DateTime(),
-            server_default=sa.text("now()"),
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=True,
         ),
         sa.Column("time_updated", sa.DateTime(), nullable=True),
