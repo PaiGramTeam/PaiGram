@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Tupl
 import aiofiles
 import aiofiles.os
 import bs4
-import pydantic.json
+import pydantic
 from arkowrapper import ArkoWrapper
 from httpx import AsyncClient, HTTPError, TimeoutException
 from pydantic import BaseModel
@@ -32,12 +32,6 @@ from plugins.tools.genshin import CharacterDetails, CookiesNotFoundError, Genshi
 from utils.const import DATA_DIR
 from utils.log import logger
 from utils.uid import mask_number
-
-try:
-    import ujson as jsonlib
-
-except ImportError:
-    import json as jsonlib
 
 if TYPE_CHECKING:
     from simnet import GenshinClient
@@ -124,15 +118,15 @@ def get_material_serial_name(names: Iterable[str]) -> str:
 
 
 class MaterialsData(BaseModel):
-    data: Optional[List[Dict[str, "AreaDailyMaterialsData"]]] = None
+    __root__: Optional[List[Dict[str, "AreaDailyMaterialsData"]]] = None
 
     def weekday(self, weekday: int) -> Dict[str, "AreaDailyMaterialsData"]:
-        if self.data is None:
+        if self.__root__ is None:
             return {}
-        return self.data[weekday]
+        return self.__root__[weekday]
 
     def is_empty(self) -> bool:
-        return self.data is None
+        return self.__root__ is None
 
 
 class DailyMaterial(Plugin):
@@ -192,8 +186,11 @@ class DailyMaterial(Plugin):
         # 若存在则直接使用缓存
         if await aiofiles.os.path.exists(DATA_FILE_PATH):
             async with aiofiles.open(DATA_FILE_PATH, "rb") as cache:
-                data = jsonlib.loads(await cache.read())
-                self.everyday_materials = MaterialsData(data=data)
+                try:
+                    self.everyday_materials.parse_raw(await cache.read())
+                except pydantic.ValidationError:
+                    await aiofiles.os.remove(DATA_FILE_PATH)
+                    asyncio.create_task(task_daily())
 
     async def _get_skills_data(self, client: "FragileGenshinClient", character: Character) -> Optional[List[int]]:
         if client.damaged:
@@ -513,12 +510,7 @@ class DailyMaterial(Plugin):
                 continue
             self.everyday_materials = _parse_honey_impact_source(response.content)
             # 当场缓存到文件
-            content = jsonlib.dumps(
-                self.everyday_materials,
-                ensure_ascii=False,
-                separators=(",", ":"),
-                default=pydantic.json.pydantic_encoder,
-            )
+            content = self.everyday_materials.json(ensure_ascii=False, separators=(",", ":"))
             async with aiofiles.open(DATA_FILE_PATH, "w", encoding="utf-8") as file:
                 await file.write(content)
             return
@@ -675,7 +667,7 @@ def _parse_honey_impact_source(source: bytes) -> MaterialsData:
                 ascendable_items = everyday_materials[weekday][current_country]
                 ascendable_items = ascendable_items.weapon if item_is_weapon else ascendable_items.avatar
                 ascendable_items.append(item_id)
-    return MaterialsData(data=everyday_materials)
+    return MaterialsData(__root__=everyday_materials)
 
 
 class FragileGenshinClient:
