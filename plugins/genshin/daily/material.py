@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Tupl
 import aiofiles
 import aiofiles.os
 import bs4
+import pydantic
 from arkowrapper import ArkoWrapper
 from httpx import AsyncClient, HTTPError, TimeoutException
 from pydantic import BaseModel
@@ -185,7 +186,11 @@ class DailyMaterial(Plugin):
         # 若存在则直接使用缓存
         if await aiofiles.os.path.exists(DATA_FILE_PATH):
             async with aiofiles.open(DATA_FILE_PATH, "rb") as cache:
-                self.everyday_materials.parse_raw(await cache.read())
+                try:
+                    self.everyday_materials.parse_raw(await cache.read())
+                except pydantic.ValidationError:
+                    await aiofiles.os.remove(DATA_FILE_PATH)
+                    asyncio.create_task(task_daily())
 
     async def _get_skills_data(self, client: "FragileGenshinClient", character: Character) -> Optional[List[int]]:
         if client.damaged:
