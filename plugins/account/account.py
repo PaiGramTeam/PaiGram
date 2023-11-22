@@ -15,7 +15,7 @@ from telegram.helpers import escape_markdown
 
 from core.basemodel import RegionEnum
 from core.plugin import Plugin, conversation, handler
-from core.services.cookies.error import TooManyRequestPublicCookies
+from core.services.cookies.error import TooManyRequestPublicCookies, CookiesCachePoolExhausted
 from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
 from core.services.players.services import PlayersService, PlayerInfoService
@@ -136,6 +136,9 @@ class BindAccountPlugin(Plugin.Conversation):
             cookies = await self.public_cookies_service.get_cookies(user.id, region)
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        except CookiesCachePoolExhausted:
+            await message.reply_text("公共Cookies池已经耗尽，请稍后重试或者绑定 cookie", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if region == RegionEnum.HYPERION:
             client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
