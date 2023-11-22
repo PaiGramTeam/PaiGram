@@ -20,19 +20,31 @@ class HelpRawPlugin(Plugin):
         file_path = os.path.join(os.getcwd(), "resources", "bot", "help", "help.jinja2")
         async with aiofiles.open(file_path, mode="r", encoding="utf-8") as f:
             html_content = await f.read()
-        soup = BeautifulSoup(html_content, "lxml")
-        command_div = soup.find_all("div", _class="command")
+        soup = BeautifulSoup(html_content, "html.parser")
+        commands = []
+        command_div = soup.find_all("div", class_="command")
         for div in command_div:
-            command_name_div = div.find("div", _class="command_name")
-            if command_name_div:
-                command_description_div = div.find("div", _class="command-description")
-                if command_description_div:
-                    self.help_raw += f"/{command_name_div.text} - {command_description_div}"
+            command_name_div = div.find("div", class_="command-name")
+            command_description_div = div.find("div", class_="command-description")
+            if command_name_div and command_description_div:
+                command_name_div_text = command_name_div.text.strip()
+                if command_name_div_text.startswith(r"@{{bot_username}}"):
+                    command_name_div_text = command_name_div_text.replace(
+                        r"@{{bot_username}}", self.application.telegram.bot.name
+                    )
+                commands.append(f"{command_name_div_text} - {command_description_div.text.strip()}")
+        if commands:
+            self.help_raw = "\n".join(commands)
 
     @handler.command(command="help_raw", block=False)
     async def start(self, update: Update, _: CallbackContext):
-        if self.help_raw is not None:
-            message = update.effective_message
-            user = update.effective_user
-            logger.info("用户 %s[%s] 发出 help_raw 命令", user.full_name, user.id)
-            await message.reply_text(self.help_raw, allow_sending_without_reply=True)
+        message = update.effective_message
+        user = update.effective_user
+        logger.info("用户 %s[%s] 发出 help_raw 命令", user.full_name, user.id)
+
+        if self.help_raw is None:
+            await self.initialize()
+        if self.help_raw is None:
+            await message.reply_text("出错了呜呜呜~派蒙没有找到任何帮助信息")
+            return
+        await message.reply_text(self.help_raw, allow_sending_without_reply=True)
