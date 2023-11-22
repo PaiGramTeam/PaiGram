@@ -29,7 +29,7 @@ from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
 from metadata.genshin import AVATAR_DATA, HONEY_DATA
 from plugins.tools.genshin import CharacterDetails, CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
-from utils.const import PROJECT_ROOT
+from utils.const import DATA_DIR
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 INTERVAL = 1
 
-DATA_FILE_PATH = PROJECT_ROOT.joinpath("data/daily_material.json").resolve()
+DATA_FILE_PATH = DATA_DIR.joinpath("daily_material.json").resolve()
 # fmt: off
 # 章节顺序、国家（区域）名是从《足迹》 PV 中取的
 DOMAINS = [
@@ -69,7 +69,7 @@ DOMAINS = [
 ]
 # fmt: on
 DOMAIN_AREA_MAP = dict(zip(DOMAINS, ["蒙德", "璃月", "稻妻", "须弥", "枫丹", "纳塔", "至冬", "坎瑞亚"] * 2))
-# 此处 avatar 和 weapon 需要分别对应 AreaDailyMaterials 中的两个 *_materials 字段，具体逻辑见 _parse_honey_impact_source
+# 此处 avatar 和 weapon 需要分别对应 AreaDailyMaterialsData 中的两个 *_materials 字段，具体逻辑见 _parse_honey_impact_source
 DOMAIN_TYPE_MAP = dict(zip(DOMAINS, len(DOMAINS) // 2 * ["avatar"] + len(DOMAINS) // 2 * ["weapon"]))
 
 WEEK_MAP = ["一", "二", "三", "四", "五", "六", "日"]
@@ -123,15 +123,27 @@ def get_material_serial_name(names: Iterable[str]) -> str:
     return result
 
 
+class MaterialsData(BaseModel):
+    data: Optional[List[Dict[str, "AreaDailyMaterialsData"]]] = None
+
+    def weekday(self, weekday: int) -> Dict[str, "AreaDailyMaterialsData"]:
+        if self.data is None:
+            return {}
+        return self.data[weekday]
+
+    def is_empty(self) -> bool:
+        return self.data is None
+
+
 class DailyMaterial(Plugin):
     """每日素材表"""
 
-    everyday_materials: List[Dict[str, "AreaDailyMaterials"]] = [{} for _ in range(7)]
+    everyday_materials: "MaterialsData" = MaterialsData()
     """
     everyday_materials 储存的是一周中每天能刷的素材 ID
     按照如下形式组织
     ```python
-    everyday_materials[周几][国家] = AreaDailyMaterials(
+    everyday_materials[周几][国家] = AreaDailyMaterialsData(
       avatar=[角色, 角色, ...],
       avatar_materials=[精通素材, 精通素材, 精通素材],
       weapon=[武器, 武器, ...]
@@ -179,13 +191,9 @@ class DailyMaterial(Plugin):
 
         # 若存在则直接使用缓存
         if await aiofiles.os.path.exists(DATA_FILE_PATH):
-            async with aiofiles.open(DATA_FILE_PATH) as cache:
-
-                class Loader(BaseModel):
-                    everyday_materials: List[Dict[str, AreaDailyMaterials]]
-
-                loader = Loader(everyday_materials=jsonlib.loads(await cache.read()))
-                self.everyday_materials = loader.everyday_materials
+            async with aiofiles.open(DATA_FILE_PATH, "rb") as cache:
+                data = jsonlib.loads(await cache.read())
+                self.everyday_materials = MaterialsData(data=data)
 
     async def _get_skills_data(self, client: "FragileGenshinClient", character: Character) -> Optional[List[int]]:
         if client.damaged:
@@ -264,7 +272,7 @@ class DailyMaterial(Plugin):
         self,
         area_name: str,
         user_owned: "UserOwned",
-        area_daily: "AreaDailyMaterials",
+        area_daily: "AreaDailyMaterialsData",
         loading_prompt: "Message",
     ) -> Optional["AreaData"]:
         """
@@ -296,7 +304,7 @@ class DailyMaterial(Plugin):
         self,
         area_name: str,
         user_owned: "UserOwned",
-        area_daily: "AreaDailyMaterials",
+        area_daily: "AreaDailyMaterialsData",
         client: "FragileGenshinClient",
         loading_prompt: "Message",
     ) -> Optional["AreaData"]:
@@ -399,13 +407,13 @@ class DailyMaterial(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
 
         # 获取已经缓存的秘境素材信息
-        if not self.everyday_materials:  # 若没有缓存每日素材表的数据
+        if self.everyday_materials.is_empty():  # 若没有缓存每日素材表的数据
             logger.info("正在获取每日素材缓存")
             await self._refresh_everyday_materials()
 
         # 尝试获取用户已绑定的原神账号信息
         client, user_owned = await self._get_items_from_user(user)
-        today_materials = self.everyday_materials[weekday]
+        today_materials = self.everyday_materials.weekday(weekday)
         fragile_client = FragileGenshinClient(client)
         area_avatars: List["AreaData"] = []
         area_weapons: List["AreaData"] = []
@@ -592,7 +600,7 @@ class DailyMaterial(Plugin):
         return the_time.value
 
 
-def _parse_honey_impact_source(source: bytes) -> List[Dict[str, "AreaDailyMaterials"]]:
+def _parse_honey_impact_source(source: bytes) -> MaterialsData:
     """
     ## honeyimpact 的源码格式:
     ```html
@@ -632,8 +640,8 @@ def _parse_honey_impact_source(source: bytes) -> List[Dict[str, "AreaDailyMateri
     }
     calendar = bs4.BeautifulSoup(source, "lxml").select_one(".calendar_day_wrap")
     if calendar is None:
-        return []  # 多半是格式错误或者网页数据有误
-    everyday_materials: List[Dict[str, "AreaDailyMaterials"]] = [{} for _ in range(7)]
+        return MaterialsData()  # 多半是格式错误或者网页数据有误
+    everyday_materials: List[Dict[str, "AreaDailyMaterialsData"]] = [{} for _ in range(7)]
     current_country: str = ""
     for element in calendar.find_all(recursive=False):
         element: bs4.Tag
@@ -645,7 +653,7 @@ def _parse_honey_impact_source(source: bytes) -> List[Dict[str, "AreaDailyMateri
                 div: bs4.Tag
                 weekday = int(div.attrs["data-days"])  # data-days 是一周中的第几天（周一 0，周日 6）
                 if current_country not in everyday_materials[weekday]:
-                    everyday_materials[weekday][current_country] = AreaDailyMaterials()
+                    everyday_materials[weekday][current_country] = AreaDailyMaterialsData()
                 materials: List[str] = getattr(everyday_materials[weekday][current_country], materials_type)
                 for a in div.find_all("a", recursive=False):  # 当天能刷的所有素材在 a 列表中
                     a: bs4.Tag
@@ -667,7 +675,7 @@ def _parse_honey_impact_source(source: bytes) -> List[Dict[str, "AreaDailyMateri
                 ascendable_items = everyday_materials[weekday][current_country]
                 ascendable_items = ascendable_items.weapon if item_is_weapon else ascendable_items.avatar
                 ascendable_items.append(item_id)
-    return everyday_materials
+    return MaterialsData(data=everyday_materials)
 
 
 class FragileGenshinClient:
@@ -723,9 +731,9 @@ class UserOwned(BaseModel):
     """用户同时可以拥有多把同名武器，因此是 ID 到 List 的映射"""
 
 
-class AreaDailyMaterials(BaseModel):
+class AreaDailyMaterialsData(BaseModel):
     """
-    AreaDailyMaterials 储存某一天某个国家所有可以刷的突破素材以及可以突破的角色和武器
+    AreaDailyMaterialsData 储存某一天某个国家所有可以刷的突破素材以及可以突破的角色和武器
     对应 /daily_material 命令返回的图中一个国家横向这一整条的信息
     """
 
@@ -771,3 +779,6 @@ class AreaDailyMaterials(BaseModel):
     - 13509 薙草之稻光
     - 14509 神乐之真意
     """
+
+
+MaterialsData.update_forward_refs()
