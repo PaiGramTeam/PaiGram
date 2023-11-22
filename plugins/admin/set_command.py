@@ -20,7 +20,7 @@ class SetCommandPlugin(Plugin):
         logger.info("用户 %s[%s] 发出 set_command 命令", user.full_name, user.id)
         user_command = [
             BotCommand("cancel", "取消操作（解决一切玄学问题）"),
-            # BotCommand("help_raw", "查看文本帮助"), # 等做了在再出来吧
+            # BotCommand("help_raw", "查看文本帮助"), # 等做了再出来吧
             # gacha_log 相关
             BotCommand("wish_log", "查看抽卡记录"),
             BotCommand("wish_log_import", "导入抽卡记录"),
