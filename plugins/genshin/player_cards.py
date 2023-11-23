@@ -157,6 +157,7 @@ class PlayerCards(Plugin):
         return uid, ch_name
 
     @handler.command(command="player_card", block=False)
+    @handler.command(command="player_cards", block=False)
     @handler.message(filters=filters.Regex("^角色卡片查询(.*)"), block=False)
     async def player_cards(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user = update.effective_user

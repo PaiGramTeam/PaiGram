@@ -38,6 +38,7 @@ class DailyNoteTasksPlugin(Plugin.Conversation):
         self.note_system = note_system
 
     @conversation.entry_point
+    @handler.command(command="dailynote_tasks", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="daily_note_tasks", filters=filters.ChatType.PRIVATE, block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> int:
         user = update.effective_user
