@@ -1,26 +1,26 @@
-from telegram import (
-    Update,
-    BotCommand,
-    BotCommandScopeAllPrivateChats,
-    BotCommandScopeChat,
-)
-from telegram.ext import CommandHandler, CallbackContext
+from typing import TYPE_CHECKING
+
+from telegram import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeChat
 
 from core.plugin import Plugin, handler
 from core.config import config
 from utils.log import logger
 
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import ContextTypes
+
 
 class SetCommandPlugin(Plugin):
-    @handler(CommandHandler, command="set_command", block=False, admin=True)
-    @handler(CommandHandler, command="set_commands", block=False, admin=True)
-    async def set_command(self, update: Update, context: CallbackContext):
+    @handler.command("set_command", block=False, admin=True)
+    @handler.command("set_commands", block=False, admin=True)
+    async def set_command(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
         logger.info("用户 %s[%s] 发出 set_command 命令", user.full_name, user.id)
         user_command = [
             BotCommand("cancel", "取消操作（解决一切玄学问题）"),
-            # BotCommand("help_raw", "查看文本帮助"), # 等做了再出来吧
+            BotCommand("help_raw", "查看文本帮助"),
             # gacha_log 相关
             BotCommand("wish_log", "查看抽卡记录"),
             BotCommand("wish_log_import", "导入抽卡记录"),
