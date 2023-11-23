@@ -82,7 +82,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("update", "更新"),
         ]
         await context.bot.set_my_commands(commands=group_command)  # 留空，default 为 botCommandScopeDefault, 所有聊天可见
-        await context.bot.set_my_commands(commands=user_command, scope=BotCommandScopeAllPrivateChats)
+        await context.bot.set_my_commands(commands=user_command, scope=BotCommandScopeAllPrivateChats())
         if config.error.notification_chat_id:
             await context.bot.set_my_commands(
                 commands=admin_command, scope=BotCommandScopeChat(config.error.notification_chat_id)
