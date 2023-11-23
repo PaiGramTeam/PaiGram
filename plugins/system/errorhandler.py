@@ -1,3 +1,4 @@
+import difflib
 import os
 import time
 import traceback
@@ -57,6 +58,7 @@ class ErrorHandler(Plugin):
             os.mkdir(self.report_dir)
         self.pb_client = PbClient(config.error.pb_url, config.error.pb_sunset, config.error.pb_max_lines)
         self.sentry = SentryClient(config.error.sentry_dsn)
+        self.tb_string = ""
 
     async def notice_user(self, update: object, context: CallbackContext, content: str):
         if not isinstance(update, Update):
@@ -252,15 +254,39 @@ class ErrorHandler(Plugin):
         # 必须 `process_` 加上 `z` 保证该函数最后一个注册
         """记录错误并发送消息通知开发人员。
         logger the error and send a telegram message to notify the developer."""
+        if isinstance(update, Update):
+            effective_user = update.effective_user
+            effective_message = update.effective_message
+            try:
+                if effective_message is not None:
+                    chat = effective_message.chat
+                    logger.info(
+                        "尝试通知用户 %s[%s] 在 %s[%s] 的 update_id[%s] 错误信息",
+                        effective_user.full_name,
+                        effective_user.id,
+                        chat.full_name,
+                        chat.id,
+                        update.update_id,
+                    )
+                    text = "出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！"
+                    await context.bot.send_message(
+                        effective_message.chat_id, text, reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.HTML
+                    )
+            except NetworkError as exc:
+                logger.error("发送 update_id[%s] 错误信息失败 错误信息为 %s", update.update_id, exc.message)
 
+        tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+        tb_string = "".join(tb_list)
+
+        if difflib.SequenceMatcher(None, self.tb_string, tb_string).quick_ratio() >= 0.93:
+            logger.debug("相似的错误信息已经发送过了")
+            return
+        self.tb_string = tb_string
         logger.error("处理函数时发生异常")
         logger.exception(context.error, exc_info=(type(context.error), context.error, context.error.__traceback__))
 
         if not self.notice_chat_id:
             return
-
-        tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
-        tb_string = "".join(tb_list)
 
         update_str = update.to_dict() if isinstance(update, Update) else str(update)
 
@@ -295,25 +321,6 @@ class ErrorHandler(Plugin):
             logger.exception(exc)
         except FileNotFoundError:
             logger.error("发送日记失败 文件不存在")
-        effective_user = update.effective_user
-        effective_message = update.effective_message
-        try:
-            if effective_message is not None:
-                chat = effective_message.chat
-                logger.info(
-                    "尝试通知用户 %s[%s] 在 %s[%s] 的 update_id[%s] 错误信息",
-                    effective_user.full_name,
-                    effective_user.id,
-                    chat.full_name,
-                    chat.id,
-                    update.update_id,
-                )
-                text = "出错了呜呜呜 ~ 派蒙这边发生了点问题无法处理！"
-                await context.bot.send_message(
-                    effective_message.chat_id, text, reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.HTML
-                )
-        except NetworkError as exc:
-            logger.error("发送 update_id[%s] 错误信息失败 错误信息为 %s", update.update_id, exc.message)
         if self.pb_client.enabled:
             logger.info("正在上传日记到 pb")
             try:
