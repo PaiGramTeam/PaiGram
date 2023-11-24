@@ -75,7 +75,7 @@ class Hyperion:
         :param resize: 图片大小
         :param quality: 图片质量
         :param auto_orient: 自适应
-        :param interlace: 未知
+        :param interlace: 图片渐进显示
         :param images_format: 图片格式
         :return:
         """
