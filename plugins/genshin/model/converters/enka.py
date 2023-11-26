@@ -1,4 +1,3 @@
-import json
 from decimal import Decimal
 from enkanetwork import (
     CharacterInfo as EnkaCharacterInfo,
@@ -8,36 +7,24 @@ from enkanetwork import (
     EquipmentsType,
     EquipType,
     EquipmentsStats,
-    DigitType,
+    DigitType as EnkaDigitType,
 )
 
-from utils.const import PROJECT_ROOT
-from ..model import (
-    Character,
+from plugins.genshin.model import (
+    Digit,
+    DigitType,
+    CharacterInfo,
+    Digit,
+    DigitType,
     CharacterStats,
-    Weapon,
+    WeaponInfo,
     WeaponType,
     Artifact,
     ArtifactPosition,
     ArtifactAttribute,
     ArtifactAttributeType,
 )
-
-METADATA_PATH = PROJECT_ROOT.joinpath("metadata").joinpath("data")
-WEAPON_METADATA = {}
-ARTIFACTS_METADATA = {}
-CHARACTERS_METADATA = {}
-
-def load_metadata():
-    global WEAPON_METADATA
-    WEAPON_METADATA = json.loads(METADATA_PATH.joinpath("weapon.json").read_text())
-
-    global ARTIFACTS_METADATA
-    ARTIFACTS_METADATA = json.loads(METADATA_PATH.joinpath("reliquary.json").read_text())
-
-    global CHARACTERS_METADATA
-    CHARACTERS_METADATA = json.loads(METADATA_PATH.joinpath("avatar.json").read_text())
-load_metadata()
+from plugins.genshin.model.metadata import ARTIFACTS_METADATA, WEAPON_METADATA, CHARACTERS_METADATA
 
 
 class EnkaConverter:
@@ -58,7 +45,7 @@ class EnkaConverter:
         raise ValueError(f"Unknown weapon type: {type_str}")
 
     @classmethod
-    def to_weapon(cls, equipment: Equipments) -> Weapon:
+    def to_weapon_info(cls, equipment: Equipments) -> WeaponInfo:
         if equipment.type != EquipmentsType.WEAPON:
             raise ValueError(f"Not weapon equipment type: {equipment.type}")
 
@@ -66,9 +53,9 @@ class EnkaConverter:
         if not weapon_data:
             raise ValueError(f"Unknown weapon id: {equipment.id}")
 
-        return Weapon(
+        return WeaponInfo(
             id=equipment.id,
-            name=weapon_data["route"],
+            weapon=weapon_data["route"],
             type=cls.to_weapon_type(weapon_data["type"]),
             level=equipment.level,
             max_level=equipment.max_level,
@@ -122,7 +109,10 @@ class EnkaConverter:
     def to_artifact_attribute(cls, equip_stat: EquipmentsStats) -> ArtifactAttribute:
         return ArtifactAttribute(
             type=cls.to_artifact_attribute_type(equip_stat.prop_id),
-            value=Decimal(equip_stat.value) / 100 if equip_stat.type == DigitType.PERCENT else Decimal(equip_stat.value),
+            digit=Digit(
+                value=Decimal(equip_stat.value),
+                type=DigitType.PERCENT if equip_stat.type == EnkaDigitType.PERCENT else DigitType.NUMERIC,
+            ),
         )
 
     @classmethod
@@ -144,13 +134,15 @@ class EnkaConverter:
         if equipment.type != EquipmentsType.ARTIFACT:
             raise ValueError(f"Not artifact equipment type: {equipment.type}")
 
-        artifact_data = next((data for data in ARTIFACTS_METADATA.values() if data["name"] == equipment.detail.artifact_name_set), None)
+        artifact_data = next(
+            (data for data in ARTIFACTS_METADATA.values() if data["name"] == equipment.detail.artifact_name_set), None
+        )
         if not artifact_data:
             raise ValueError(f"Unknown artifact: {equipment}")
 
         return Artifact(
             id=artifact_data["id"],
-            name=artifact_data["route"],
+            set=artifact_data["route"],
             position=cls.to_artifact_position(equipment.detail.artifact_type),
             level=equipment.level,
             rarity=equipment.detail.rarity,
@@ -162,21 +154,24 @@ class EnkaConverter:
     def to_character_stats(cls, character_stats: EnkaCharacterStats) -> CharacterStats:
         return CharacterStats(
             **{
-                stat: Decimal(value.value) / 100 if isinstance(value, StatsPercentage) else Decimal(value.value)
+                stat: Digit(
+                    value=Decimal(value.value),
+                    type=DigitType.PERCENT if isinstance(value, StatsPercentage) else DigitType.NUMERIC,
+                )
                 for stat, value in character_stats._iter()
             }
         )
 
     @classmethod
-    def to_character(cls, character_info: EnkaCharacterInfo) -> Character:
+    def to_character_info(cls, character_info: EnkaCharacterInfo) -> CharacterInfo:
         character_data = CHARACTERS_METADATA.get(str(character_info.id))
         weapon_equip = next((equip for equip in character_info.equipments if equip.type == EquipmentsType.WEAPON), None)
         artifacts_equip = [equip for equip in character_info.equipments if equip.type == EquipmentsType.ARTIFACT]
-        return Character(
+        return CharacterInfo(
             id=character_info.id,
-            name=character_data["route"],
+            character=character_data["route"],
             rarity=character_info.rarity,
-            weapon=cls.to_weapon(weapon_equip) if weapon_equip else None,
+            weapon_info=cls.to_weapon_info(weapon_equip) if weapon_equip else None,
             artifacts=[cls.to_artifact(equip) for equip in artifacts_equip],
             level=character_info.level,
             max_level=character_info.max_level,
