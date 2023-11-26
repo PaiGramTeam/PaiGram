@@ -244,7 +244,7 @@ class GCSimConverter:
 
     @classmethod
     def from_gcsim_script(cls, script: str) -> GCSim:
-        options = ''
+        options = ""
         characters = {}
         active_character = None
         targets = []
@@ -272,7 +272,9 @@ class GCSimConverter:
                 if m.group(2) == "char":
                     characters[m.group(1)] = cls.from_gcsim_char_line(line, characters[m.group(1)])
                 elif m.group(2) == "add weapon":
-                    characters[m.group(1)].weapon_info = cls.from_gcsim_weapon_line(line, characters[m.group(1)].weapon_info)
+                    characters[m.group(1)].weapon_info = cls.from_gcsim_weapon_line(
+                        line, characters[m.group(1)].weapon_info
+                    )
                 elif m.group(2) == "add set":
                     characters[m.group(1)].set_info.append(cls.from_gcsim_set_line(line))
                 elif m.group(2) == "add stats":
@@ -310,4 +312,3 @@ class GCSimConverter:
             unparsed=unparsed_lines,
             script="\n".join(script_lines) if script_lines else "\n".join(unparsed_lines),
         )
-            

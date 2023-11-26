@@ -20,7 +20,7 @@ GCSimSet = NewType("GCSimSet", str)
 
 
 class GCSimWeaponInfo(BaseModel):
-    weapon: GCSimWeapon = 'dullblade'
+    weapon: GCSimWeapon = "dullblade"
     refinement: int = 1
     level: int = 1
     max_level: int = 20
@@ -70,7 +70,7 @@ class GCSimCharacterInfo(BaseModel):
     level: int = 1
     max_level: int = 20
     constellation: int = 0
-    talent: List[int] = [1,1,1]
+    talent: List[int] = [1, 1, 1]
     weapon_info: GCSimWeaponInfo = GCSimWeaponInfo()
     set_info: List[GCSimSetInfo] = []
     stats: GCSimCharacterStats = GCSimCharacterStats()

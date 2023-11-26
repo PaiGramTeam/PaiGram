@@ -6,6 +6,7 @@ WEAPON_METADATA = {}
 ARTIFACTS_METADATA = {}
 CHARACTERS_METADATA = {}
 
+
 def load_metadata():
     global WEAPON_METADATA
     WEAPON_METADATA = json.loads(METADATA_PATH.joinpath("weapon.json").read_text())
@@ -15,4 +16,6 @@ def load_metadata():
 
     global CHARACTERS_METADATA
     CHARACTERS_METADATA = json.loads(METADATA_PATH.joinpath("avatar.json").read_text())
+
+
 load_metadata()

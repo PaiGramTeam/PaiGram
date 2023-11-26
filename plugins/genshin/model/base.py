@@ -8,13 +8,16 @@ Character = NewType("Character", str)
 Weapon = NewType("Weapon", str)
 Set = NewType("Set", str)
 
+
 class DigitType(Enum):
     NUMERIC = "numeric"
     PERCENT = "percent"
 
+
 class Digit(BaseModel):
     type: DigitType
     value: Decimal
+
 
 class WeaponType(Enum):
     BOW = "bow"
@@ -118,9 +121,7 @@ class CharacterStats(BaseModel):
     ATTACK_PERCENT: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_ATTACK_PERCENT")
     BASE_DEFENSE: Digit = Field(Digit(type=DigitType.NUMERIC, value=Decimal(0)), alias="FIGHT_PROP_BASE_DEFENSE")
     DEFENSE: Digit = Field(Digit(type=DigitType.NUMERIC, value=Decimal(0)), alias="FIGHT_PROP_DEFENSE")
-    DEFENSE_PERCENT: Digit = Field(
-        Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_DEFENSE_PERCENT"
-    )
+    DEFENSE_PERCENT: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_DEFENSE_PERCENT")
     ELEMENTAL_MASTERY: Digit = Field(
         Digit(type=DigitType.NUMERIC, value=Decimal(0)), alias="FIGHT_PROP_ELEMENT_MASTERY"
     )
@@ -145,13 +146,9 @@ class CharacterStats(BaseModel):
     PTRO_RES: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_FIRE_SUB_HURT")
     HYDRO_DMG_BONUS: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_WATER_ADD_HURT")
     HYDRO_RES: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_WATER_SUB_HURT")
-    DENDRO_DMG_BONUS: Digit = Field(
-        Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_GRASS_ADD_HURT"
-    )
+    DENDRO_DMG_BONUS: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_GRASS_ADD_HURT")
     DENDRO_RES: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_GRASS_SUB_HURT")
-    ELECTRO_DMG_BONUS: Digit = Field(
-        Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_ELEC_ADD_HURT"
-    )
+    ELECTRO_DMG_BONUS: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_ELEC_ADD_HURT")
     ELECTRO_RES: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_ELEC_SUB_HURT")
     ANEMO_DMG_BONUS: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_WIND_ADD_HURT")
     ANEMO_RES: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_WIND_SUB_HURT")
