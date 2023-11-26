@@ -1,22 +1,29 @@
+import re
 from typing import List, Optional
 from decimal import Decimal
 from functools import lru_cache
 from collections import defaultdict, Counter
 
+from utils.log import logger
+
 from plugins.genshin.model import (
     Set,
     Weapon,
+    DigitType,
     WeaponInfo,
     Artifact,
     ArtifactAttributeType,
     Character,
     CharacterStats,
     CharacterInfo,
+    GCSim,
+    GCSimTarget,
     GCSimWeapon,
     GCSimWeaponInfo,
     GCSimSet,
     GCSimSetInfo,
     GCSimCharacter,
+    GCSimEnergySettings,
     GCSimCharacterInfo,
     GCSimCharacterStats,
 )
@@ -25,111 +32,6 @@ from plugins.genshin.model.metadata import ARTIFACTS_METADATA, WEAPON_METADATA, 
 
 def remove_non_words(text: str) -> str:
     return text.replace("'", "").replace('"', "").replace("-", "").replace(" ", "")
-
-
-class GCSimReverseConverter:
-    @classmethod
-    @lru_cache
-    def to_char_name(cls, name: str) -> str:
-        if name == "Raiden Shogun":
-            return "raiden"
-        if name == "Yae Miko":
-            return "yaemiko"
-        if name == "Hu Tao":
-            return "hutao"
-        if "Traveler" in name:
-            s = name.split(" ")
-            traveler_name = "aether" if s[-1] == "Boy" else "lumine"
-            return f"{traveler_name}{s[0].lower()}"
-        return name.split(" ")[-1].lower()
-
-    @classmethod
-    def to_char(cls, character: CharacterInfo) -> str:
-        return (
-            f"{cls.to_char_name(character.character)} "
-            "char "
-            f"lvl={character.level}/{character.max_level} "
-            f"cons={character.constellation} "
-            f"talent={','.join(str(skill) for skill in character.skills)};"
-        )
-
-    @classmethod
-    def to_weapon_name(cls, name: str) -> str:
-        return remove_non_words(name).lower()
-
-    @classmethod
-    def to_weapon(cls, character: CharacterInfo) -> str:
-        if character.weapon_info is None:
-            return ""
-        return (
-            f"{cls.to_char_name(character.character)} "
-            f'add weapon="{cls.to_weapon_name(character.weapon_info.weapon)}" '
-            f"refine={character.weapon_info.refinement} "
-            f"lvl={character.weapon_info.level}/{character.weapon_info.max_level};"
-        )
-
-    @classmethod
-    @lru_cache
-    def to_set_name(cls, name: str) -> str:
-        return remove_non_words(name).lower()
-
-    @classmethod
-    def to_set(cls, character: CharacterInfo) -> str:
-        sets = defaultdict(list)
-        for art in character.artifacts:
-            sets[art.set].append(art)
-
-        return "\n".join(
-            f"{cls.to_char_name(character.character)} "
-            f'add set="{cls.to_set_name(set_name)}" '
-            f"count={4 if len(artifacts) >= 4 else 2};"
-            for set_name, artifacts in sets.items()
-            if len(artifacts) >= 2
-        )
-
-    @classmethod
-    def to_stats(cls, character: CharacterInfo) -> str:
-        ret = (
-            f"{cls.to_char_name(character.character)} "
-            "add stats "
-            f"hp={character.stats.HP.value} "
-            f"atk={character.stats.ATTACK.value} "
-            f"def={character.stats.DEFENSE.value} "
-            f"hp%={character.stats.HP_PERCENT.value} "
-            f"atk%={character.stats.ATTACK_PERCENT.value} "
-            f"def%={character.stats.DEFENSE_PERCENT.value} "
-            f"em={character.stats.ELEMENTAL_MASTERY.value} "
-            f"er={character.stats.ENERGY_RECHARGE.value} "
-            f"cr={character.stats.CRIT_RATE.value} "
-            f"cd={character.stats.CRIT_DMG.value} "
-        )
-        for stat in [
-            "PYRO_DMG_BONUS",
-            "HYDRO_DMG_BONUS",
-            "DENDRO_DMG_BONUS",
-            "ELECTRO_DMG_BONUS",
-            "CRYO_DMG_BONUS",
-            "ANEMO_DMG_BONUS",
-            "GEO_DMG_BONUS",
-        ]:
-            if getattr(character.stats, stat).value > 0:
-                ret += f"{stat.split('_')[0].lower()}%={getattr(character.stats, stat).value} "
-        if character.stats.PHYSICAL_DMG_BONUS.value > 0:
-            ret += f"phys%={character.stats.PHYSICAL_DMG_BONUS.value} "
-        if character.stats.HEALING_BONUS.value > 0:
-            ret += f"heal={character.stats.HEALING_BONUS.value} "
-        return ret.strip() + ";"
-
-    @classmethod
-    def to(cls, character: CharacterInfo) -> str:
-        lines = []
-        lines.append(cls.to_char(character))
-        weapon = cls.to_weapon(character)
-        if weapon:
-            lines.append(weapon)
-        lines.append(cls.to_set(character))
-        lines.append(cls.to_stats(character))
-        return "\n".join(lines)
 
 
 class GCSimConverter:
@@ -145,12 +47,10 @@ class GCSimConverter:
             s = character.split(" ")
             traveler_name = "aether" if s[-1] == "Boy" else "lumine"
             return f"{traveler_name}{s[0].lower()}"
-        # TODO: Check whether character is supported
-        return remove_non_words(character).lower()
+        return character.split(" ")[-1].lower()
 
     @classmethod
     def from_weapon(cls, weapon: Weapon) -> GCSimWeapon:
-        # TODO: Check whether weapon is supported
         return remove_non_words(weapon).lower()
 
     @classmethod
@@ -171,7 +71,6 @@ class GCSimConverter:
     @classmethod
     def from_artifacts(cls, artifacts: List[Artifact]) -> List[GCSimSetInfo]:
         c = Counter()
-        # TODO: Check whether set is supported
         for art in artifacts:
             c[cls.from_set(art.set)] += 1
         return [GCSimSetInfo(set=set_name, count=count) for set_name, count in c.items()]
@@ -227,11 +126,25 @@ class GCSimConverter:
             setattr(
                 gcsim_stats,
                 main_attr_name,
-                getattr(gcsim_stats, main_attr_name) + Decimal(art.main_attribute.digit.value),
+                getattr(gcsim_stats, main_attr_name)
+                + (
+                    Decimal(art.main_attribute.digit.value) / Decimal(100)
+                    if art.main_attribute.digit.type == DigitType.PERCENT
+                    else Decimal(art.main_attribute.digit.value)
+                ),
             )
             for sub_attr in art.sub_attributes:
                 attr_name = cls.from_attribute_type(sub_attr.type)
-                setattr(gcsim_stats, attr_name, getattr(gcsim_stats, attr_name) + Decimal(sub_attr.digit.value))
+                setattr(
+                    gcsim_stats,
+                    attr_name,
+                    getattr(gcsim_stats, attr_name)
+                    + (
+                        Decimal(sub_attr.digit.value) / Decimal(100)
+                        if sub_attr.digit.type == DigitType.PERCENT
+                        else Decimal(sub_attr.digit.value)
+                    ),
+                )
         return gcsim_stats
 
     @classmethod
@@ -247,3 +160,154 @@ class GCSimConverter:
             # NOTE: Only stats from arifacts are needed
             stats=cls.from_artifacts_stats(character.artifacts),
         )
+
+    @classmethod
+    def from_gcsim_energy(cls, line: str) -> GCSimEnergySettings:
+        energy_settings = GCSimEnergySettings()
+        for word in line.strip(";").split(" every ")[-1].split(" "):
+            if word.startswith("interval="):
+                energy_settings.intervals = list(map(int, word.split("=")[-1].split(",")))
+            elif word.startswith("amount="):
+                energy_settings.amount = int(word.split("=")[-1])
+            else:
+                logger.warning(f"Unknown energy setting: {word}")
+        return energy_settings
+
+    @classmethod
+    def from_gcsim_target(cls, line: str) -> GCSimTarget:
+        target = GCSimTarget()
+        for word in line.strip(";")[7:].split(" "):
+            if word.startswith("lvl="):
+                target.level = int(word.split("=")[-1])
+            elif word.startswith("resist="):
+                target.resist = float(word.split("=")[-1])
+            elif word.startswith("pos="):
+                target.position = tuple(p for p in word.split("=")[-1].split(","))
+            elif word.startswith("radius="):
+                target.radius = float(word.split("=")[-1])
+            elif word.startswith("hp="):
+                target.hp = int(word.split("=")[-1])
+            elif word.startswith("particle_threshold="):
+                target.particle_threshold = int(word.split("=")[-1])
+            elif word.startswith("particle_drop_count="):
+                target.particle_drop_count = int(word.split("=")[-1])
+            else:
+                logger.warning(f"Unknown target setting: {word}")
+        return target
+
+    @classmethod
+    def from_gcsim_char_line(cls, line: str, character: GCSimCharacterInfo) -> GCSimCharacterInfo:
+        for word in line.strip(";").split(" char ")[-1].split(" "):
+            if word.startswith("lvl="):
+                character.level, character.max_level = map(int, word.split("=")[-1].split("/"))
+            elif word.startswith("cons="):
+                character.constellation = int(word.split("=")[-1])
+            elif word.startswith("talent="):
+                character.talent = [int(t) for t in word.split("=")[-1].split(",")]
+            else:
+                logger.warning(f"Unknown character setting: {word}")
+        return character
+
+    @classmethod
+    def from_gcsim_weapon_line(cls, line: str, weapon_info: GCSimWeaponInfo) -> GCSimWeaponInfo:
+        for word in line.strip(";").split(" add ")[-1].split(" "):
+            if word.startswith("lvl="):
+                weapon_info.level, weapon_info.max_level = map(int, word.split("=")[-1].split("/"))
+            elif word.startswith("refine="):
+                weapon_info.refinement = int(word.split("=")[-1])
+            elif word.startswith("weapon="):
+                weapon_info.weapon = word.split("=")[-1].strip('"')
+            else:
+                logger.warning(f"Unknown weapon info: {word}")
+        return weapon_info
+
+    @classmethod
+    def from_gcsim_set_line(cls, line: str) -> GCSimSetInfo:
+        gcsim_set = None
+        count = 0
+        for word in line.strip(";").split(" add ")[-1].split(" "):
+            if word.startswith("set="):
+                gcsim_set = word.split("=")[-1].strip('"')
+            elif word.startswith("count="):
+                count = int(word.split("=")[-1])
+            else:
+                logger.warning(f"Unknown set info: {word}")
+        return GCSimSetInfo.construct(set=gcsim_set, count=count)
+
+    @classmethod
+    def from_gcsim_stats_line(cls, line: str, stats: GCSimCharacterStats) -> GCSimCharacterStats:
+        matches = re.findall(r"(\w+[%]{0,1})=(\d*\.*\d+)", line)
+        for stat, value in matches:
+            attr = stat.replace("%", "_percent").upper()
+            setattr(stats, attr, getattr(stats, attr) + Decimal(value))
+        return stats
+
+    @classmethod
+    def from_gcsim_script(cls, script: str) -> GCSim:
+        options = ''
+        characters = {}
+        active_character = None
+        targets = []
+        energy_settings = GCSimEnergySettings()
+        loop = 0
+        script_lines = []
+        script_for_loop_started = False
+        brackets = []
+        unparsed_lines = []
+        for line in script.strip().split("\n"):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("options"):
+                options = line.strip(";")
+            elif line.startswith("target"):
+                targets.append(cls.from_gcsim_target(line))
+            elif line.startswith("energy"):
+                energy_settings = cls.from_gcsim_energy(line)
+            elif line.startswith("active"):
+                active_character = line.strip(";").split(" ")[1]
+            elif m := re.match(r"(\w+) (char|add weapon|add set|add stats)", line):
+                if m.group(1) not in characters:
+                    characters[m.group(1)] = GCSimCharacterInfo(character=m.group(1))
+                if m.group(2) == "char":
+                    characters[m.group(1)] = cls.from_gcsim_char_line(line, characters[m.group(1)])
+                elif m.group(2) == "add weapon":
+                    characters[m.group(1)].weapon_info = cls.from_gcsim_weapon_line(line, characters[m.group(1)].weapon_info)
+                elif m.group(2) == "add set":
+                    characters[m.group(1)].set_info.append(cls.from_gcsim_set_line(line))
+                elif m.group(2) == "add stats":
+                    characters[m.group(1)].stats = cls.from_gcsim_stats_line(line, characters[m.group(1)].stats)
+            elif line.startswith("while"):
+                script_for_loop_started = True
+                if line.endswith("{"):
+                    brackets.append("{")
+            elif line.startswith("for"):
+                script_for_loop_started = True
+                if m := re.search(r"\w+[ ]*<(=){0,1}[ ]*(\d+)", line):
+                    loop = int(m.group(2)) + (1 if m.group(1) else 0)
+                if line.endswith("{"):
+                    brackets.append("{")
+            elif line.endswith("{"):
+                brackets.append("{")
+            elif line.endswith("}"):
+                if brackets[-1] == "{":
+                    brackets.pop()
+                    if not brackets:
+                        script_for_loop_started = False
+                else:
+                    raise ValueError(f"Unmatched bracket in line: {line}\nscript:\n{script}")
+            elif script_for_loop_started:
+                script_lines.append(line)
+            else:
+                unparsed_lines.append(line)
+        return GCSim(
+            options=options,
+            characters=list(characters.values()),
+            targets=targets,
+            energy_settings=energy_settings,
+            active_character=active_character,
+            loop=loop,
+            unparsed=unparsed_lines,
+            script="\n".join(script_lines) if script_lines else "\n".join(unparsed_lines),
+        )
+            
