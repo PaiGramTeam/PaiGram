@@ -171,6 +171,16 @@ class EnkaConverter:
         return character_data["route"]
 
     @classmethod
+    def to_character(cls, character_info: EnkaCharacterInfo) -> str:
+        character_id = str(character_info.id)
+        if character_id in ("10000005", "10000007"):
+            character_id += f"-{character_info.element.name.lower()}"
+        character_data = CHARACTERS_METADATA.get(character_id)
+        if not character_data:
+            raise ValueError(f"Unknown character: {character_info.name}\n{character_info}")
+        return character_data["route"]
+
+    @classmethod
     def to_character_info(cls, character_info: EnkaCharacterInfo) -> CharacterInfo:
         weapon_equip = next((equip for equip in character_info.equipments if equip.type == EquipmentsType.WEAPON), None)
         artifacts_equip = [equip for equip in character_info.equipments if equip.type == EquipmentsType.ARTIFACT]
