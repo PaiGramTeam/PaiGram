@@ -169,7 +169,7 @@ class GCSimConverter:
 
     @classmethod
     def merge_character_infos(cls, gcsim: GCSim, character_infos: List[CharacterInfo]) -> GCSim:
-        gcsim_characters = {ch.character:ch for ch in gcsim.characters}
+        gcsim_characters = {ch.character: ch for ch in gcsim.characters}
         for character_info in character_infos:
             try:
                 gcsim_character = cls.from_character_info(character_info)

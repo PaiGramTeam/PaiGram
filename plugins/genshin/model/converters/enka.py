@@ -159,6 +159,7 @@ class EnkaConverter:
                 for stat, value in character_stats._iter()
             }
         )
+
     @classmethod
     def to_character(cls, character_info: EnkaCharacterInfo) -> str:
         character_id = str(character_info.id)
