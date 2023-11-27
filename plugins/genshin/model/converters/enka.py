@@ -11,8 +11,6 @@ from enkanetwork import (
 )
 
 from plugins.genshin.model import (
-    Digit,
-    DigitType,
     CharacterInfo,
     Digit,
     DigitType,
