@@ -4,6 +4,8 @@ from decimal import Decimal
 from functools import lru_cache
 from collections import defaultdict, Counter
 
+from pydantic import ValidationError
+
 from utils.log import logger
 
 from plugins.genshin.model import (
@@ -27,7 +29,7 @@ from plugins.genshin.model import (
     GCSimCharacterInfo,
     GCSimCharacterStats,
 )
-from plugins.genshin.model.metadata import ARTIFACTS_METADATA, WEAPON_METADATA, CHARACTERS_METADATA
+from gcsim_pypi.aliases import CHARACTER_ALIASES, WEAPON_ALIASES, ARTIFACT_ALIASES
 
 
 def remove_non_words(text: str) -> str:
@@ -35,6 +37,10 @@ def remove_non_words(text: str) -> str:
 
 
 class GCSimConverter:
+    literal_keys_numeric_values_regex = re.compile(
+        r"([\w_%]+)=(\d+ *, *\d+ *, *\d+|[\d*\.*\d+]+ *, *[\d*\.*\d+]+|\d+/\d+|\d*\.*\d+|\d+)"
+    )
+
     @classmethod
     def from_character(cls, character: Character) -> GCSimCharacter:
         if character == "Raiden Shogun":
@@ -162,77 +168,128 @@ class GCSimConverter:
         )
 
     @classmethod
+    def merge_character_infos(cls, gcsim: GCSim, character_infos: List[CharacterInfo]) -> GCSim:
+        gcsim_characters = {ch.character:ch for ch in gcsim.characters}
+        for character_info in character_infos:
+            try:
+                gcsim_character = cls.from_character_info(character_info)
+                if gcsim_character.character in gcsim_characters:
+                    gcsim_characters[gcsim_character.character] = gcsim_character
+            except ValidationError as e:
+                errors = e.errors()
+                if errors and errors[0].get("msg").startswith("Not supported"):
+                    # Something is not supported, skip
+                    continue
+                logger.warning(f"Failed to convert character info: {character_info}")
+        gcsim.characters = list(gcsim_characters.values())
+        return gcsim
+
+    @classmethod
+    def prepend_scripts(cls, gcsim: GCSim, scripts: List[str]) -> GCSim:
+        gcsim.scripts = scripts + gcsim.scripts
+        return gcsim
+
+    @classmethod
+    def append_scripts(cls, gcsim: GCSim, scripts: List[str]) -> GCSim:
+        gcsim.scripts = gcsim.scripts + scripts
+        return gcsim
+
+    @classmethod
     def from_gcsim_energy(cls, line: str) -> GCSimEnergySettings:
         energy_settings = GCSimEnergySettings()
-        for word in line.strip(";").split(" every ")[-1].split(" "):
-            if word.startswith("interval="):
-                energy_settings.intervals = list(map(int, word.split("=")[-1].split(",")))
-            elif word.startswith("amount="):
-                energy_settings.amount = int(word.split("=")[-1])
+        matches = cls.literal_keys_numeric_values_regex.findall(line)
+        for key, value in matches:
+            if key == "interval":
+                energy_settings.intervals = list(map(int, value.split(",")))
+            elif key == "amount":
+                energy_settings.amount = int(value)
             else:
-                logger.warning(f"Unknown energy setting: {word}")
+                logger.warning(f"Unknown energy setting: {key}={value}")
         return energy_settings
 
     @classmethod
     def from_gcsim_target(cls, line: str) -> GCSimTarget:
         target = GCSimTarget()
-        for word in line.strip(";")[7:].split(" "):
-            if word.startswith("lvl="):
-                target.level = int(word.split("=")[-1])
-            elif word.startswith("resist="):
-                target.resist = float(word.split("=")[-1])
-            elif word.startswith("pos="):
-                target.position = tuple(p for p in word.split("=")[-1].split(","))
-            elif word.startswith("radius="):
-                target.radius = float(word.split("=")[-1])
-            elif word.startswith("hp="):
-                target.hp = int(word.split("=")[-1])
-            elif word.startswith("particle_threshold="):
-                target.particle_threshold = int(word.split("=")[-1])
-            elif word.startswith("particle_drop_count="):
-                target.particle_drop_count = int(word.split("=")[-1])
+        matches = cls.literal_keys_numeric_values_regex.findall(line)
+        for key, value in matches:
+            if key == "lvl":
+                target.level = int(value)
+            elif key == "hp":
+                target.hp = int(value)
+            elif key == "amount":
+                target.amount = int(value)
+            elif key == "resist":
+                target.resist = float(value)
+            elif key == "pos":
+                target.position = tuple(p for p in value.split(","))
+            elif key == "interval":
+                target.interval = list(map(int, value.split(",")))
+            elif key == "radius":
+                target.radius = float(value)
+            elif key == "particle_threshold":
+                target.particle_threshold = int(value)
+            elif key == "particle_drop_count":
+                target.particle_drop_count = int(value)
+            elif key in ("pyro", "hydro", "dendro", "electro", "anemo", "cryo", "geo", "physical"):
+                target.others[key] = float(value)
             else:
-                logger.warning(f"Unknown target setting: {word}")
+                logger.warning(f"Unknown target setting: {key}={value}")
         return target
 
     @classmethod
     def from_gcsim_char_line(cls, line: str, character: GCSimCharacterInfo) -> GCSimCharacterInfo:
-        for word in line.strip(";").split(" char ")[-1].split(" "):
-            if word.startswith("lvl="):
-                character.level, character.max_level = map(int, word.split("=")[-1].split("/"))
-            elif word.startswith("cons="):
-                character.constellation = int(word.split("=")[-1])
-            elif word.startswith("talent="):
-                character.talent = [int(t) for t in word.split("=")[-1].split(",")]
+        matches = cls.literal_keys_numeric_values_regex.findall(line)
+        for key, value in matches:
+            if key == "lvl":
+                character.level, character.max_level = map(int, value.split("/"))
+            elif key == "cons":
+                character.constellation = int(value)
+            elif key == "talent":
+                character.talent = list(map(int, value.split(",")))
+            elif key == "start_hp":
+                character.start_hp = int(value)
+            elif key == "breakthrough":
+                character.params.append(f"{key}={value}")
             else:
-                logger.warning(f"Unknown character setting: {word}")
+                logger.warning(f"Unknown character setting: {key}={value}")
         return character
 
     @classmethod
     def from_gcsim_weapon_line(cls, line: str, weapon_info: GCSimWeaponInfo) -> GCSimWeaponInfo:
-        for word in line.strip(";").split(" add ")[-1].split(" "):
-            if word.startswith("lvl="):
-                weapon_info.level, weapon_info.max_level = map(int, word.split("=")[-1].split("/"))
-            elif word.startswith("refine="):
-                weapon_info.refinement = int(word.split("=")[-1])
-            elif word.startswith("weapon="):
-                weapon_info.weapon = word.split("=")[-1].strip('"')
+        weapon_name = re.search(r"weapon= *\"(.*)\"", line).group(1)
+        if weapon_name not in WEAPON_ALIASES:
+            raise ValueError(f"Unknown weapon: {weapon_name}")
+        weapon_info.weapon = WEAPON_ALIASES[weapon_name]
+
+        for key, value in cls.literal_keys_numeric_values_regex.findall(line):
+            if key == "refine":
+                weapon_info.refinement = int(value)
+            elif key == "lvl":
+                weapon_info.level, weapon_info.max_level = map(int, value.split("/"))
+            elif key.startswith("stack"):
+                weapon_info.params.append(f"stacks={value}")
+            elif key in ("pickup_delay", "breakthrough"):
+                weapon_info.params.append(f"{key}={value}")
             else:
-                logger.warning(f"Unknown weapon info: {word}")
+                logger.warning(f"Unknown weapon setting: {key}={value}")
         return weapon_info
 
     @classmethod
     def from_gcsim_set_line(cls, line: str) -> GCSimSetInfo:
-        gcsim_set = None
-        count = 0
-        for word in line.strip(";").split(" add ")[-1].split(" "):
-            if word.startswith("set="):
-                gcsim_set = word.split("=")[-1].strip('"')
-            elif word.startswith("count="):
-                count = int(word.split("=")[-1])
+        gcsim_set = re.search(r"set= *\"(.*)\"", line).group(1)
+        if gcsim_set not in ARTIFACT_ALIASES:
+            raise ValueError(f"Unknown set: {gcsim_set}")
+        gcsim_set = ARTIFACT_ALIASES[gcsim_set]
+        set_info = GCSimSetInfo(set=gcsim_set)
+
+        for key, value in cls.literal_keys_numeric_values_regex.findall(line):
+            if key == "count":
+                set_info.count = int(value)
+            elif key.startswith("stack"):
+                set_info.params.append(f"stacks={value}")
             else:
-                logger.warning(f"Unknown set info: {word}")
-        return GCSimSetInfo.construct(set=gcsim_set, count=count)
+                logger.warning(f"Unknown set info: {key}={value}")
+        return set_info
 
     @classmethod
     def from_gcsim_stats_line(cls, line: str, stats: GCSimCharacterStats) -> GCSimCharacterStats:
@@ -246,14 +303,11 @@ class GCSimConverter:
     def from_gcsim_script(cls, script: str) -> GCSim:
         options = ""
         characters = {}
+        character_aliases = {}
         active_character = None
         targets = []
         energy_settings = GCSimEnergySettings()
-        loop = 0
         script_lines = []
-        script_for_loop_started = False
-        brackets = []
-        unparsed_lines = []
         for line in script.strip().split("\n"):
             line = line.strip()
             if not line or line.startswith("#"):
@@ -266,49 +320,32 @@ class GCSimConverter:
                 energy_settings = cls.from_gcsim_energy(line)
             elif line.startswith("active"):
                 active_character = line.strip(";").split(" ")[1]
-            elif m := re.match(r"(\w+) (char|add weapon|add set|add stats)", line):
-                if m.group(1) not in characters:
-                    characters[m.group(1)] = GCSimCharacterInfo(character=m.group(1))
+            elif m := re.match(r"(\w+)[ ]+(char|add weapon|add set|add stats)\W", line):
+                if m.group(1) not in CHARACTER_ALIASES:
+                    raise ValueError(f"Unknown character: {m.group(1)}")
+                c = CHARACTER_ALIASES[m.group(1)]
+                if c not in characters:
+                    characters[c] = GCSimCharacterInfo(character=c)
+                    if m.group(1) != c:
+                        character_aliases[c] = m.group(1)
                 if m.group(2) == "char":
-                    characters[m.group(1)] = cls.from_gcsim_char_line(line, characters[m.group(1)])
+                    characters[c] = cls.from_gcsim_char_line(line, characters[c])
                 elif m.group(2) == "add weapon":
-                    characters[m.group(1)].weapon_info = cls.from_gcsim_weapon_line(
-                        line, characters[m.group(1)].weapon_info
-                    )
+                    characters[c].weapon_info = cls.from_gcsim_weapon_line(line, characters[c].weapon_info)
                 elif m.group(2) == "add set":
-                    characters[m.group(1)].set_info.append(cls.from_gcsim_set_line(line))
+                    characters[c].set_info.append(cls.from_gcsim_set_line(line))
                 elif m.group(2) == "add stats":
-                    characters[m.group(1)].stats = cls.from_gcsim_stats_line(line, characters[m.group(1)].stats)
-            elif line.startswith("while"):
-                script_for_loop_started = True
-                if line.endswith("{"):
-                    brackets.append("{")
-            elif line.startswith("for"):
-                script_for_loop_started = True
-                if m := re.search(r"\w+[ ]*<(=){0,1}[ ]*(\d+)", line):
-                    loop = int(m.group(2)) + (1 if m.group(1) else 0)
-                if line.endswith("{"):
-                    brackets.append("{")
-            elif line.endswith("{"):
-                brackets.append("{")
-            elif line.endswith("}"):
-                if brackets[-1] == "{":
-                    brackets.pop()
-                    if not brackets:
-                        script_for_loop_started = False
-                else:
-                    raise ValueError(f"Unmatched bracket in line: {line}\nscript:\n{script}")
-            elif script_for_loop_started:
-                script_lines.append(line)
+                    characters[c].stats = cls.from_gcsim_stats_line(line, characters[c].stats)
             else:
-                unparsed_lines.append(line)
+                for alias in character_aliases:
+                    if line.startswith(alias):
+                        line = line.replace(alias, character_aliases[alias])
+                script_lines.append(line)
         return GCSim(
             options=options,
             characters=list(characters.values()),
             targets=targets,
             energy_settings=energy_settings,
             active_character=active_character,
-            loop=loop,
-            unparsed=unparsed_lines,
-            script="\n".join(script_lines) if script_lines else "\n".join(unparsed_lines),
+            script_lines=script_lines,
         )
