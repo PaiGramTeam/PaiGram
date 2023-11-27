@@ -1,17 +1,11 @@
 import json
 from pathlib import Path
-from typing import Any, NewType, List, Optional, Tuple
+from typing import Any, NewType, List, Optional, Tuple, Dict
 from decimal import Decimal
 from pydantic import BaseModel, validator
 
-import gcsim_pypi
-
-GCSIM_PYPI_PATH = Path(gcsim_pypi.__file__).parent
-AVAILABLE_GCSIM_CHARACTERS = json.loads(
-    GCSIM_PYPI_PATH.joinpath("availability").joinpath("characters.json").read_text()
-)
-AVAILABLE_GCSIM_WEAPONS = json.loads(GCSIM_PYPI_PATH.joinpath("availability").joinpath("weapons.json").read_text())
-AVAILABLE_GCSIM_ARRTIFACTS = json.loads(GCSIM_PYPI_PATH.joinpath("availability").joinpath("artifacts.json").read_text())
+from gcsim_pypi.availability import AVAILABLE_ARTIFACTS, AVAILABLE_CHARACTERS, AVAILABLE_WEAPONS
+from gcsim_pypi.aliases import ARTIFACT_ALIASES, CHARACTER_ALIASES, WEAPON_ALIASES
 
 
 GCSimCharacter = NewType("GCSimCharacter", str)
@@ -24,23 +18,25 @@ class GCSimWeaponInfo(BaseModel):
     refinement: int = 1
     level: int = 1
     max_level: int = 20
+    params: List[str] = []
 
     @validator("weapon")
     def validate_weapon(cls, v):
-        if v not in AVAILABLE_GCSIM_WEAPONS:
+        if v not in AVAILABLE_WEAPONS or v not in WEAPON_ALIASES:
             raise ValueError(f"Not supported weapon: {v}")
-        return v
+        return WEAPON_ALIASES[v]
 
 
 class GCSimSetInfo(BaseModel):
     set: GCSimSet
     count: int = 2
+    params: List[str] = []
 
     @validator("set")
     def validate_set(cls, v):
-        if v not in AVAILABLE_GCSIM_ARRTIFACTS:
+        if v not in AVAILABLE_ARTIFACTS or v not in ARTIFACT_ALIASES:
             raise ValueError(f"Not supported set: {v}")
-        return v
+        return ARTIFACT_ALIASES[v]
 
 
 class GCSimCharacterStats(BaseModel):
@@ -71,15 +67,17 @@ class GCSimCharacterInfo(BaseModel):
     max_level: int = 20
     constellation: int = 0
     talent: List[int] = [1, 1, 1]
+    start_hp: Optional[int] = None
     weapon_info: GCSimWeaponInfo = GCSimWeaponInfo()
     set_info: List[GCSimSetInfo] = []
     stats: GCSimCharacterStats = GCSimCharacterStats()
+    params: List[str] = []
 
     @validator("character")
     def validate_character(cls, v):
-        if v not in AVAILABLE_GCSIM_CHARACTERS:
+        if v not in AVAILABLE_CHARACTERS or v not in CHARACTER_ALIASES:
             raise ValueError(f"Not supported character: {v}")
-        return v
+        return CHARACTER_ALIASES[v]
 
     @property
     def char(self) -> str:
@@ -88,26 +86,56 @@ class GCSimCharacterInfo(BaseModel):
     @property
     def char_line(self) -> str:
         return (
-            f"{self.char} "
-            "char "
-            f"lvl={self.level}/{self.max_level} "
-            f"cons={self.constellation} "
-            f"talent={','.join(str(t) for t in self.talent)};"
+            " ".join(
+                filter(
+                    lambda w: w,
+                    [
+                        f"{self.char}",
+                        "char",
+                        f"lvl={self.level}/{self.max_level}",
+                        f"cons={self.constellation}",
+                        f"start_hp={self.start_hp}" if self.start_hp is not None else "",
+                        f"talent={','.join(str(t) for t in self.talent)}",
+                        f"+params=[{','.join(self.params)}] " if self.params else "",
+                    ],
+                )
+            )
+            + ";"
         )
 
     @property
     def weapon_line(self) -> str:
         return (
-            f"{self.char} "
-            f'add weapon="{self.weapon_info.weapon}" '
-            f"refine={self.weapon_info.refinement} "
-            f"lvl={self.weapon_info.level}/{self.weapon_info.max_level};"
+            " ".join(
+                filter(
+                    lambda w: w,
+                    [
+                        f"{self.char}",
+                        f'add weapon="{self.weapon_info.weapon}"',
+                        f"refine={self.weapon_info.refinement}",
+                        f"lvl={self.weapon_info.level}/{self.weapon_info.max_level}",
+                        f"+params=[{','.join(self.weapon_info.params)}] " if self.weapon_info.params else "",
+                    ],
+                )
+            )
+            + ";"
         )
 
     @property
     def set_line(self) -> str:
         return "\n".join(
-            f"{self.char} " f'add set="{set_info.set}" ' f"count={4 if set_info.count >= 4 else 2};"
+            " ".join(
+                filter(
+                    lambda w: w,
+                    [
+                        f"{self.char}",
+                        f'add set="{set_info.set}"',
+                        f"count={4 if set_info.count >= 4 else 2}",
+                        f"+params=[{','.join(set_info.params)}] " if set_info.params else "",
+                    ],
+                )
+            )
+            + ";"
             for set_info in self.set_info
             # NOTE: 祭*系列似乎并不支持
             if set_info.count > 1
@@ -139,18 +167,34 @@ class GCSimTarget(BaseModel):
     level: int = 100
     resist: float = 0.1
     position: Tuple[str, str] = ("0", "0")
+    interval: List[int] = []
     radius: Optional[float] = None
     hp: Optional[int] = None
+    amount: Optional[int] = None
     particle_threshold: Optional[int] = None
     particle_drop_count: Optional[int] = None
+    others: Dict[str, Any] = {}
 
     def __str__(self) -> str:
         return (
-            (f"target lvl={self.level} resist={self.resist} " f"pos={','.join(self.position)}")
-            + (f" radius={self.radius}" if self.radius is not None else "")
-            + (f" hp={self.hp}" if self.hp is not None else "")
-            + (f" particle_threshold={self.particle_threshold}" if self.particle_threshold is not None else "")
-            + (f" particle_drop_count={self.particle_drop_count}" if self.particle_drop_count is not None else "")
+            " ".join(
+                filter(
+                    lambda w: w,
+                    [
+                        f"target lvl={self.level} resist={self.resist} ",
+                        f"pos={','.join(self.position)}",
+                        f"radius={self.radius}" if self.radius is not None else "",
+                        f"hp={self.hp}" if self.hp is not None else "",
+                        f"amount={self.amount}" if self.amount is not None else "",
+                        f"interval={','.join(str(i) for i in self.interval)}" if self.interval else "",
+                        f"particle_threshold={self.particle_threshold}" if self.particle_threshold is not None else "",
+                        f"particle_drop_count={self.particle_drop_count}"
+                        if self.particle_drop_count is not None
+                        else "",
+                        " ".join([f"{k}={v}" for k, v in self.others.items()]),
+                    ],
+                )
+            )
             + ";"
         )
 
@@ -165,16 +209,13 @@ class GCSimEnergySettings(BaseModel):
 
 class GCSim(BaseModel):
     options: Optional[str] = None
-    characters: List[GCSimCharacterInfo]
+    characters: List[GCSimCharacterInfo] = []
     targets: List[GCSimTarget] = [GCSimTarget()]
-    energy_settings: Optional[GCSimEnergySettings]
+    energy_settings: Optional[GCSimEnergySettings] = None
     # TODO: Do we even want this?
-    hurt_settings: Optional[str]
-    active_character: Optional[GCSimCharacter]
-    loop: int = 0
-    # TODO: We need to parse those lines in the future
-    unparsed: List[str] = []
-    script: str
+    hurt_settings: Optional[str] = None
+    active_character: Optional[GCSimCharacter] = None
+    script_lines: List[str] = []
 
     def __str__(self) -> str:
         line = ""
@@ -190,12 +231,6 @@ class GCSim(BaseModel):
             line += f"active {self.active_character};\n"
         else:
             line += f"active {self.characters[0].char};\n"
-        if self.unparsed:
-            line += "\n".join(self.unparsed)
-            line += "\n"
-        if self.loop > 0:
-            line += f"for let i = 0; i < {self.loop}; i = i + 1 {{\n"
-        line += self.script
-        if self.loop > 0:
-            line += "\n}\n"
+        line += "\n".join(self.script_lines)
+        line += "\n"
         return line
