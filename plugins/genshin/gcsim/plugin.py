@@ -211,7 +211,7 @@ class GCSimPlugin(Plugin):
             fit_characters = []
             for ch in character_infos:
                 if GCSimConverter.from_character(ch.character) in [c.character for c in script.characters]:
-                    fit_characters.append(ch) 
+                    fit_characters.append(ch)
             if fit_characters:
                 fits.append(
                     GCSimFit(

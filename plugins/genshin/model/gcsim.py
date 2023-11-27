@@ -134,7 +134,8 @@ class GCSimCharacterInfo(BaseModel):
                         f"+params=[{','.join(set_info.params)}] " if set_info.params else "",
                     ],
                 )
-            ) + ";"
+            )
+            + ";"
             for set_info in self.set_info
             # NOTE: 祭*系列似乎并不支持
             if set_info.count > 1
