@@ -10,12 +10,11 @@ from dataclasses import dataclass
 from typing import Optional, Dict, TYPE_CHECKING, List
 
 import gcsim_pypi
-from enkanetwork import Assets
+from enkanetwork import Assets, EnkaNetworkResponse
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, User, Message, CallbackQuery
 from telegram.ext import CallbackContext
 from telegram.constants import ChatAction
 from telegram.helpers import create_deep_linked_url
-from enkanetwork import EnkaNetworkResponse
 
 from core.config import config
 from core.plugin import Plugin, handler
@@ -177,7 +176,7 @@ class GCSimPlugin(Plugin):
         gcsim_pypi_path = Path(gcsim_pypi.__file__).parent
 
         self.gcsim_bin_path = gcsim_pypi_path.joinpath("bin").joinpath("gcsim")
-        result = subprocess.run([self.gcsim_bin_path, "-version"], capture_output=True, text=True)
+        result = subprocess.run([self.gcsim_bin_path, "-version"], capture_output=True, text=True, check=True)
         if result.returncode == 0:
             self.gcsim_version = result.stdout.splitlines()[0]
 

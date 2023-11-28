@@ -163,7 +163,7 @@ class EnkaConverter:
     @classmethod
     def to_character(cls, character_info: EnkaCharacterInfo) -> str:
         character_id = str(character_info.id)
-        if character_id == "10000005" or character_id == "10000007":
+        if character_id in ("10000005", "10000007"):
             character_id += f"-{character_info.element.name.lower()}"
         character_data = CHARACTERS_METADATA.get(character_id)
         if not character_data:
