@@ -33,6 +33,5 @@ class PlayerGCSimScripts:
         script_key: str,
         script: str,
     ):
-        async with self._lock:
-            async with aiofiles.open(self.get_script_path(uid, script_key), "w", encoding="utf-8") as f:
-                await f.write(script)
+        async with self._lock, aiofiles.open(self.get_script_path(uid, script_key), "w", encoding="utf-8") as f:
+            await f.write(script)
