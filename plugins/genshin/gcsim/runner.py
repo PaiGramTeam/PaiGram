@@ -9,7 +9,7 @@ import multiprocessing
 from hashlib import md5
 from queue import Queue
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from asyncio.subprocess import Process  # noqa
 from typing import Optional, Dict, TYPE_CHECKING, List, Tuple, Union
 
@@ -67,7 +67,7 @@ class GCSimRunner:
         self.player_gcsim_scripts = PlayerGCSimScripts()
         self.gcsim_version: Optional[str] = None
         self.scripts: Dict[str, GCSim] = {}
-        self.max_concurrent_gcsim = (
+        max_concurrent_gcsim = (
             config.plugin_gcsim_max_concurrent
             if isinstance(config.plugin_gcsim_max_concurrent, int)
             else 0
@@ -78,6 +78,7 @@ class GCSimRunner:
             if config.plugin_gcsim_max_concurrent == "HALF"
             else multiprocessing.cpu_count()
         )
+        self.sema = asyncio.BoundedSemaphore(max_concurrent_gcsim)
         self.queue: Queue[None] = Queue()
 
     async def initialize(self):
@@ -139,17 +140,11 @@ class GCSimRunner:
         character_infos: List[CharacterInfo],
     ) -> GCSimResult:
         start_time = time.time()
-        while True:
-            while self.queue.qsize() < self.max_concurrent_gcsim:
-                self.queue.put(None)
-                try:
-                    result = await self._execute_gcsim(user_id, uid, script_key, start_time, character_infos)
-                finally:
-                    self.queue.get()
-                return result
-            await asyncio.sleep(0.1)
+        async with self.sema:
+            result = await self._execute_gcsim(user_id, uid, script_key, start_time, character_infos)
+            return result
 
-    async def calculate_fits(self, character_infos: List[CharacterInfo]) -> List[GCSimFit]:
+    async def calculate_fits(self, uid: Union[int, str], character_infos: List[CharacterInfo]) -> List[GCSimFit]:
         fits = []
         for key, script in self.scripts.items():
             # 空和莹会被认为是两个角色
@@ -167,8 +162,13 @@ class GCSimRunner:
                         total_weapon_levels=sum(ch.weapon_info.level for ch in script.characters),
                     )
                 )
-        return sorted(
+        fits = sorted(
             fits,
             key=lambda x: (x.fit_count, x.total_levels, x.total_weapon_levels),
             reverse=True,
         )
+        await self.player_gcsim_scripts.write_fits(uid, [asdict(fit) for fit in fits])
+        return fits
+
+    async def get_fits(self, uid: Union[int, str]) -> List[GCSimFit]:
+        return [GCSimFit(**fit) for fit in self.player_gcsim_scripts.get_fits(uid)]

@@ -139,6 +139,7 @@ data/
 /resources/*/*/test/
 /resources/*/*/*.map
 plugins/genshin/daily/daily.json
+plugins/genshin/gcsim/scripts/players/**/*
 metadata/data/
 resources/assets/
 run.ps1

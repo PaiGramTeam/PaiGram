@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional
+from typing import List, Optional, Tuple, Dict
 from decimal import Decimal
 from functools import lru_cache
 from collections import Counter
@@ -29,10 +29,62 @@ from plugins.genshin.model import (
     GCSimCharacterStats,
 )
 from gcsim_pypi.aliases import CHARACTER_ALIASES, WEAPON_ALIASES, ARTIFACT_ALIASES
+from plugins.genshin.model.metadata import ARTIFACTS_METADATA, WEAPON_METADATA, CHARACTERS_METADATA
 
 
 def remove_non_words(text: str) -> str:
     return text.replace("'", "").replace('"', "").replace("-", "").replace(" ", "")
+
+
+def from_character_gcsim_character(character: Character) -> GCSimCharacter:
+    if character == "Raiden Shogun":
+        return GCSimCharacter("raiden")
+    if character == "Yae Miko":
+        return GCSimCharacter("yaemiko")
+    if character == "Hu Tao":
+        return GCSimCharacter("hutao")
+    if character == "Yun Jin":
+        return GCSimCharacter("yunjin")
+    if character == "Kuki Shinobu":
+        return GCSimCharacter("kuki")
+    if "Traveler" in character:
+        s = character.split(" ")
+        traveler_name = "aether" if s[-1] == "Boy" else "lumine"
+        return GCSimCharacter(f"{traveler_name}{s[0].lower()}")
+    return GCSimCharacter(character.split(" ")[-1].lower())
+
+
+GCSIM_CHARACTER_TO_CHARACTER: Dict[GCSimCharacter, Tuple[int, Character]] = {}
+for char in CHARACTERS_METADATA.values():
+    GCSIM_CHARACTER_TO_CHARACTER[from_character_gcsim_character(char["route"])] = (char["id"], char["route"])
+for alias, char in CHARACTER_ALIASES.items():
+    if alias not in GCSIM_CHARACTER_TO_CHARACTER:
+        if char in GCSIM_CHARACTER_TO_CHARACTER:
+            GCSIM_CHARACTER_TO_CHARACTER[alias] = GCSIM_CHARACTER_TO_CHARACTER[char]
+        elif alias.startswith("traveler") or alias.startswith("aether") or alias.startswith("lumine"):
+            continue
+        else:
+            logger.warning(f"Character alias {alias} not found in GCSIM")
+
+GCSIM_WEAPON_TO_WEAPON: Dict[GCSimWeapon, Tuple[int, Weapon]] = {}
+for _weapon in WEAPON_METADATA.values():
+    GCSIM_WEAPON_TO_WEAPON[remove_non_words(_weapon["route"].lower())] = (_weapon["id"], _weapon["route"])
+for alias, _weapon in WEAPON_ALIASES.items():
+    if alias not in GCSIM_WEAPON_TO_WEAPON:
+        if _weapon in GCSIM_WEAPON_TO_WEAPON:
+            GCSIM_WEAPON_TO_WEAPON[alias] = GCSIM_WEAPON_TO_WEAPON[_weapon]
+        else:
+            logger.warning(f"Weapon alias {alias} not found in GCSIM")
+
+GCSIM_ARTIFACT_TO_ARTIFACT: Dict[GCSimSet, Tuple[int, Set]] = {}
+for _artifact in ARTIFACTS_METADATA.values():
+    GCSIM_ARTIFACT_TO_ARTIFACT[remove_non_words(_artifact["route"].lower())] = (_artifact["id"], _artifact["route"])
+for alias, _artifact in ARTIFACT_ALIASES.items():
+    if alias not in GCSIM_ARTIFACT_TO_ARTIFACT:
+        if _artifact in GCSIM_ARTIFACT_TO_ARTIFACT:
+            GCSIM_ARTIFACT_TO_ARTIFACT[alias] = GCSIM_ARTIFACT_TO_ARTIFACT[_artifact]
+        else:
+            logger.warning(f"Artifact alias {alias} not found in GCSIM")
 
 
 class GCSimConverter:
@@ -41,18 +93,16 @@ class GCSimConverter:
     )
 
     @classmethod
+    def to_character(cls, character: GCSimCharacter) -> Tuple[int, Character]:
+        return GCSIM_CHARACTER_TO_CHARACTER[character]
+
+    @classmethod
     def from_character(cls, character: Character) -> GCSimCharacter:
-        if character == "Raiden Shogun":
-            return GCSimCharacter("raiden")
-        if character == "Yae Miko":
-            return GCSimCharacter("yaemiko")
-        if character == "Hu Tao":
-            return GCSimCharacter("hutao")
-        if "Traveler" in character:
-            s = character.split(" ")
-            traveler_name = "aether" if s[-1] == "Boy" else "lumine"
-            return GCSimCharacter(f"{traveler_name}{s[0].lower()}")
-        return GCSimCharacter(character.split(" ")[-1].lower())
+        return from_character_gcsim_character(character)
+
+    @classmethod
+    def to_weapon(cls, weapon: GCSimWeapon) -> Tuple[int, Weapon]:
+        return GCSIM_WEAPON_TO_WEAPON[weapon]
 
     @classmethod
     def from_weapon(cls, weapon: Weapon) -> GCSimWeapon:
@@ -68,6 +118,10 @@ class GCSimConverter:
             level=weapon_info.level,
             max_level=weapon_info.max_level,
         )
+
+    @classmethod
+    def to_set(cls, set_name: GCSimSet) -> Tuple[int, Set]:
+        return GCSIM_ARTIFACT_TO_ARTIFACT[set_name]
 
     @classmethod
     def from_set(cls, set_name: Set) -> GCSimSet:

@@ -1,0 +1,22 @@
+<div class="flex w-full flex-row justify-between space-x-6 px-8">
+    {% for character in character_details %}
+        <div class="flex w-1/{{ character_details | length }}">
+            <div class="h-full w-full rounded-xl relative">
+                {% if extra[character.name].constellation > 0 %}
+                    {% set bg = ['blue','blue', 'green','green', 'red', 'red'][extra[character.name].constellation - 1] %}
+                    <div
+                            class="absolute top-0 right-0 rounded-tr-lg rounded-bl-lg px-1 bg-{{ bg }}-400 ">
+                        {{ extra[character.name].constellation }} 命
+                    </div>
+                {% endif %}
+                <div class="aspect-square w-full rounded-t-xl"
+                     style="background-image: url('../../background/rarity/half/{{ extra[character.name].rarity }}.png')">
+                    <img src="{{ extra[character.name].icon }}" alt=""/>
+                </div>
+                <div class="flex h-6 items-center justify-center rounded-b-xl bg-gray-200">
+                    <span class="text-md"> Lv {{ character.level }}</span>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
