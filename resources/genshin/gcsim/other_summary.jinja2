@@ -1,0 +1,28 @@
+{% for p in ["eps", "hps", "shp"] %}
+    <div class="flex flex-col h-full w-1/3 items-start justify-center rounded-xl bg-slate-600 p-4">
+        <div class="text-base text-gray-400">
+            {% if p == "eps" %}
+                每秒能量 (EPS)
+            {% elif p == "hps" %}
+                每秒治疗 (HPS)
+            {% elif p == "shp" %}
+                每秒盾量 (SHP)
+            {% endif %}
+        </div>
+        <div class="mb-1 text-3xl font-bold text-white">{{ statistics[p].mean | int }}</div>
+        <div class="flex w-full justify-between text-sm">
+            <div>
+                <div class="text-gray-400">min</div>
+                <div class="font-semibold text-gray-200">{{ statistics[p].min | int }}</div>
+            </div>
+            <div>
+                <div class="text-gray-400">max</div>
+                <div class="font-semibold text-gray-200">{{ statistics[p].max | int }}</div>
+            </div>
+            <div>
+                <div class="text-gray-400">std</div>
+                <div class="font-semibold text-gray-200">{{ statistics[p].sd | int }}</div>
+            </div>
+        </div>
+    </div>
+{% endfor %}

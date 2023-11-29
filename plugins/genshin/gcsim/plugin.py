@@ -1,4 +1,5 @@
 import time
+import json
 import copy
 import shutil
 import asyncio
@@ -20,6 +21,7 @@ from telegram.constants import ChatAction
 from telegram.helpers import create_deep_linked_url
 
 from core.config import config
+from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from gram_core.services.template.services import TemplateService
@@ -71,20 +73,24 @@ async def _no_character_return(user_id: int, uid: int, message: Message):
 
 
 class GCSimPlugin(Plugin):
-    def __init__(self, player_service: PlayersService, template_service: TemplateService):
+    def __init__(
+        self, assets_service: AssetsService, player_service: PlayersService, template_service: TemplateService
+    ):
         self.player_service = player_service
-        self.template_service = template_service
         self.player_cards_file = PlayerCardsFile()
         self.player_gcsim_scripts = PlayerGCSimScripts()
         self.gcsim_runner = GCSimRunner()
-        self.gcsim_renderer = GCSimResultRenderer()
+        self.gcsim_renderer = GCSimResultRenderer(assets_service, template_service)
+        self.scripts_per_page = 8
 
     async def initialize(self):
         await self.gcsim_runner.initialize()
 
-    def _gen_buttons(self, user_id: int, uid: int, fits: List[GCSimFit]) -> List[List[InlineKeyboardButton]]:
+    def _gen_buttons(
+        self, user_id: int, uid: int, fits: List[GCSimFit], page: int = 1
+    ) -> List[List[InlineKeyboardButton]]:
         buttons = []
-        for fit in fits:
+        for fit in fits[(page - 1) * self.scripts_per_page : page * self.scripts_per_page]:
             button = InlineKeyboardButton(
                 f"{fit.script_key} ({','.join(fit.characters)})",
                 callback_data=f"enqueue_gcsim|{user_id}|{uid}|{fit.script_key}",
@@ -92,6 +98,26 @@ class GCSimPlugin(Plugin):
             if not buttons or len(buttons[-1]) >= 1:
                 buttons.append([])
             buttons[-1].append(button)
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    "上一页",
+                    callback_data=f"gcsim_page|{user_id}|{uid}|{page - 1}"
+                    if page > 1
+                    else f"gcsim_unclickable|{user_id}|{uid}|first_page",
+                ),
+                InlineKeyboardButton(
+                    f"{page}/{int(len(fits) / self.scripts_per_page) + 1}",
+                    callback_data=f"gcsim_unclickable|{user_id}|{uid}|unclickable",
+                ),
+                InlineKeyboardButton(
+                    "下一页",
+                    callback_data=f"gcsim_page|{user_id}|{uid}|{page + 1}"
+                    if page < int(len(fits) / self.scripts_per_page) + 1
+                    else f"gcsim_unclickable|{user_id}|{uid}|last_page",
+                ),
+            ]
+        )
         return buttons
 
     async def _get_uid(self, user: User) -> Optional[int]:
@@ -119,7 +145,7 @@ class GCSimPlugin(Plugin):
         if not self.gcsim_runner.initialized:
             await message.reply_text("GCSim 未初始化，请稍候再试或重启派蒙")
             return
-        if context.user_data.get('overlapping', False):
+        if context.user_data.get("overlapping", False):
             reply = await message.reply_text("旅行者已经有脚本正在运行，请让派蒙稍微休息一下")
             await asyncio.sleep(10)
             await reply.delete()
@@ -138,11 +164,46 @@ class GCSimPlugin(Plugin):
         if not character_infos:
             return await _no_character_return(user.id, uid, message)
 
-        fits = await self.gcsim_runner.calculate_fits(character_infos)
-        buttons = self._gen_buttons(user.id, uid, fits[:10])
+        fits = await self.gcsim_runner.get_fits(uid)
+        if not fits:
+            fits = await self.gcsim_runner.calculate_fits(uid, character_infos)
+        buttons = self._gen_buttons(user.id, uid, fits)
         await message.reply_text(
             "请选择 GCSim 脚本",
             reply_markup=InlineKeyboardMarkup(buttons),
+        )
+
+    @handler.callback_query(pattern=r"^gcsim_page\|", block=False)
+    async def gcsim_page(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        callback_query = update.callback_query
+        user = callback_query.from_user
+        message = callback_query.message
+
+        user_id, uid, page = map(int, callback_query.data.split("|")[1:])
+        if user.id != user_id:
+            await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
+            return
+
+        fits = await self.gcsim_runner.get_fits(uid)
+        if not fits:
+            await callback_query.answer(text="其他数据好像被派蒙吃掉了，要不重新试试吧", show_alert=True)
+            await message.delete()
+            return
+        buttons = self._gen_buttons(user_id, uid, fits, page)
+        await callback_query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
+
+    @handler.callback_query(pattern=r"^gcsim_unclickable\|", block=False)
+    async def gcsim_unclickable(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        callback_query = update.callback_query
+
+        _, user_id, uid, reason = callback_query.data.split("|")
+        await callback_query.answer(
+            text="已经是第一页了！\n"
+            if reason == "first_page"
+            else "已经是最后一页了！\n"
+            if reason == "last_page"
+            else "这个按钮不可用\n" + config.notice.user_mismatch,
+            show_alert=True,
         )
 
     @handler.callback_query(pattern=r"^enqueue_gcsim\|", block=False)
@@ -156,7 +217,7 @@ class GCSimPlugin(Plugin):
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
 
-        logger.info("用户 %s[%s] GCSim运行请求 || %s", user.full_name, user.id, callback_query.data)
+        logger.info("用户 %s[%s] enqueue_gcsim 运行请求 || %s", user.full_name, user.id, callback_query.data)
         character_infos = await self._load_characters(uid)
         if not character_infos:
             return await _no_character_return(user.id, uid, message)
@@ -170,6 +231,14 @@ class GCSimPlugin(Plugin):
 
         result_path = self.player_gcsim_scripts.get_result_path(uid, script_key)
         if not result_path.exists():
-            await callback_query.answer(text="运行结果似乎在提瓦特之外，派蒙找不到了。", show_alert=True)
+            await callback_query.answer(text="运行结果似乎在提瓦特之外，派蒙找不到了", show_alert=True)
 
-        await self.gcsim_renderer.render(result_path)
+        result = await self.gcsim_renderer.prepare_result(result_path, character_infos)
+        if not result:
+            await callback_query.answer(text="在准备运行结果时派蒙出问题了", show_alert=True)
+
+        render_result = await self.gcsim_renderer.render(script_key, result)
+        await render_result.reply_photo(
+            message,
+            filename=f"gcsim_{uid}_{script_key}.png",
+        )
