@@ -78,7 +78,7 @@ class WeaponInfo(BaseModel):
         return v
 
     @validator("refinement")
-    def validate_refinement(cls, v, values):
+    def validate_refinement(cls, v):
         if v < 0 or v > 5:
             raise ValueError("refinement must be between 1 and 5")
         return v
@@ -143,7 +143,7 @@ class CharacterStats(BaseModel):
     )
 
     PYRO_DMG_BONUS: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_FIRE_ADD_HURT")
-    PTRO_RES: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_FIRE_SUB_HURT")
+    PYRO_RES: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_FIRE_SUB_HURT")
     HYDRO_DMG_BONUS: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_WATER_ADD_HURT")
     HYDRO_RES: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_WATER_SUB_HURT")
     DENDRO_DMG_BONUS: Digit = Field(Digit(type=DigitType.PERCENT, value=Decimal(0)), alias="FIGHT_PROP_GRASS_ADD_HURT")

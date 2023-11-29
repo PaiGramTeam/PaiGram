@@ -208,15 +208,7 @@ class PlayerCards(Plugin):
                 self.kitsune = reply_message.photo[-1].file_id
             return
         enka_response = EnkaNetworkResponse.parse_obj(copy.deepcopy(original_data))
-        if character_name is not None:
-            logger.info(
-                "用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]",
-                user.full_name,
-                user.id,
-                character_name,
-                uid,
-            )
-        else:
+        if character_name is None:
             logger.info("用户 %s[%s] 角色卡片查询命令请求", user.full_name, user.id)
             ttl = await self.cache.ttl(uid)
             if enka_response.characters is None or len(enka_response.characters) == 0:
@@ -242,6 +234,14 @@ class PlayerCards(Plugin):
             if reply_message.photo:
                 self.kitsune = reply_message.photo[-1].file_id
             return
+
+        logger.info(
+            "用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]",
+            user.full_name,
+            user.id,
+            character_name,
+            uid,
+        )
         for characters in enka_response.characters:
             if characters.name == character_name:
                 break

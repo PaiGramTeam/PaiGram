@@ -1,35 +1,13 @@
-from plugins.genshin.model.base import (
-    Artifact,
-    ArtifactAttribute,
-    ArtifactAttributeType,
-    ArtifactPosition,
-    Digit,
-    DigitType,
-    CharacterInfo,
-    Character,
-    Weapon,
-    WeaponInfo,
-    WeaponType,
-    Set,
-)
+from plugins.genshin.model.base import *
 
-from plugins.genshin.model.gcsim import (
-    GCSimCharacter,
-    GCSim,
-    GCSimEnergySettings,
-    GCSimTarget,
-    GCSimCharacterInfo,
-    GCSimCharacterStats,
-    GCSimWeaponInfo,
-    GCSimWeapon,
-    GCSimSet,
-)
+from plugins.genshin.model.gcsim import *
 
 __all__ = [
     "Digit",
     "DigitType",
     "Character",
     "CharacterInfo",
+    "CharacterStats",
     "Weapon",
     "WeaponInfo",
     "WeaponType",
@@ -40,6 +18,7 @@ __all__ = [
     "ArtifactPosition",
     "GCSimCharacter",
     "GCSimSet",
+    "GCSimSetInfo",
     "GCSimWeapon",
     "GCSimWeaponInfo",
     "GCSimCharacterStats",

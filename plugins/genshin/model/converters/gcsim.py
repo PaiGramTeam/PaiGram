@@ -2,7 +2,7 @@ import re
 from typing import List, Optional
 from decimal import Decimal
 from functools import lru_cache
-from collections import defaultdict, Counter
+from collections import Counter
 
 from pydantic import ValidationError
 
@@ -16,7 +16,6 @@ from plugins.genshin.model import (
     Artifact,
     ArtifactAttributeType,
     Character,
-    CharacterStats,
     CharacterInfo,
     GCSim,
     GCSimTarget,
@@ -44,20 +43,20 @@ class GCSimConverter:
     @classmethod
     def from_character(cls, character: Character) -> GCSimCharacter:
         if character == "Raiden Shogun":
-            return "raiden"
+            return GCSimCharacter("raiden")
         if character == "Yae Miko":
-            return "yaemiko"
+            return GCSimCharacter("yaemiko")
         if character == "Hu Tao":
-            return "hutao"
+            return GCSimCharacter("hutao")
         if "Traveler" in character:
             s = character.split(" ")
             traveler_name = "aether" if s[-1] == "Boy" else "lumine"
-            return f"{traveler_name}{s[0].lower()}"
-        return character.split(" ")[-1].lower()
+            return GCSimCharacter(f"{traveler_name}{s[0].lower()}")
+        return GCSimCharacter(character.split(" ")[-1].lower())
 
     @classmethod
     def from_weapon(cls, weapon: Weapon) -> GCSimWeapon:
-        return remove_non_words(weapon).lower()
+        return GCSimWeapon(remove_non_words(weapon).lower())
 
     @classmethod
     def from_weapon_info(cls, weapon_info: Optional[WeaponInfo]) -> GCSimWeaponInfo:
@@ -72,7 +71,7 @@ class GCSimConverter:
 
     @classmethod
     def from_set(cls, set_name: Set) -> GCSimSet:
-        return remove_non_words(set_name).lower()
+        return GCSimSet(remove_non_words(set_name).lower())
 
     @classmethod
     def from_artifacts(cls, artifacts: List[Artifact]) -> List[GCSimSetInfo]:
@@ -293,7 +292,7 @@ class GCSimConverter:
 
     @classmethod
     def from_gcsim_stats_line(cls, line: str, stats: GCSimCharacterStats) -> GCSimCharacterStats:
-        matches = re.findall(r"(\w+[%]{0,1})=(\d*\.*\d+)", line)
+        matches = re.findall(r"(\w+%?)=(\d*\.*\d+)", line)
         for stat, value in matches:
             attr = stat.replace("%", "_percent").upper()
             setattr(stats, attr, getattr(stats, attr) + Decimal(value))
@@ -320,14 +319,14 @@ class GCSimConverter:
                 energy_settings = cls.from_gcsim_energy(line)
             elif line.startswith("active"):
                 active_character = line.strip(";").split(" ")[1]
-            elif m := re.match(r"(\w+)[ ]+(char|add weapon|add set|add stats)\W", line):
+            elif m := re.match(r"(\w+) +(char|add weapon|add set|add stats)\W", line):
                 if m.group(1) not in CHARACTER_ALIASES:
                     raise ValueError(f"Unknown character: {m.group(1)}")
                 c = CHARACTER_ALIASES[m.group(1)]
                 if c not in characters:
                     characters[c] = GCSimCharacterInfo(character=c)
                     if m.group(1) != c:
-                        character_aliases[c] = m.group(1)
+                        character_aliases[m.group(1)] = c
                 if m.group(2) == "char":
                     characters[c] = cls.from_gcsim_char_line(line, characters[c])
                 elif m.group(2) == "add weapon":
@@ -338,8 +337,8 @@ class GCSimConverter:
                     characters[c].stats = cls.from_gcsim_stats_line(line, characters[c].stats)
             else:
                 for alias in character_aliases:
-                    if line.startswith(alias):
-                        line = line.replace(alias, character_aliases[alias])
+                    line = line.replace(f"{alias} ", f"{character_aliases[alias]} ")
+                    line = line.replace(f".{alias}.", f".{character_aliases[alias]}.")
                 script_lines.append(line)
         return GCSim(
             options=options,
