@@ -25,7 +25,7 @@ class PlayerGCSimScripts:
     def get_result_path(self, uid: Union[str, int], script_key: str):
         scripts_path = self.player_scripts_path.joinpath(str(uid)).joinpath("results")
         scripts_path.mkdir(parents=True, exist_ok=True)
-        return scripts_path.joinpath(f"{script_key}.txt")
+        return scripts_path.joinpath(f"{script_key}.json")
 
     async def write_script(
         self,
