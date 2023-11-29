@@ -29,7 +29,7 @@ from plugins.genshin.model.converters.enka import EnkaConverter
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 
 
-GCSIM_SCRIPTS_PATH = PROJECT_ROOT.joinpath("plugins", "genshin", "gcsim", "scripts", "gcdatabase")
+GCSIM_SCRIPTS_PATH = PROJECT_ROOT.joinpath("plugins", "genshin", "gcsim", "scripts")
 
 
 @dataclass

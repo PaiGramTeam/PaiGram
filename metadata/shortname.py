@@ -13,6 +13,8 @@ __all__ = [
     "roleToName",
     "weaponToName",
     "weaponToId",
+    "elementToName",
+    "elementsToColor",
     "not_real_roles",
     "roleToTag",
 ]
