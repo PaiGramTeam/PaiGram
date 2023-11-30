@@ -1,7 +1,6 @@
 import asyncio
 import multiprocessing
 import platform
-import subprocess
 import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -11,7 +10,6 @@ from typing import Optional, Dict, List, Union
 import aiofiles
 import gcsim_pypi
 
-from core.config import config
 from metadata.shortname import idToName
 from modules.gcsim.file import PlayerGCSimScripts
 from plugins.genshin.model.base import CharacterInfo
@@ -66,9 +64,15 @@ class GCSimRunner:
         gcsim_pypi_path = Path(gcsim_pypi.__file__).parent
 
         self.bin_path = gcsim_pypi_path.joinpath("bin").joinpath(_get_gcsim_bin_name())
-        result = subprocess.run([self.bin_path, "-version"], capture_output=True, text=True, check=True)
-        if result.returncode == 0:
-            self.gcsim_version = result.stdout.splitlines()[0]
+
+        process = await asyncio.create_subprocess_exec(
+            self.bin_path, "-version", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, text=True
+        )
+
+        stdout, stderr = await process.communicate()
+
+        if process.returncode == 0:
+            self.gcsim_version = stdout.decode().splitlines()[0]
 
         now = time.time()
         for path in GCSIM_SCRIPTS_PATH.iterdir():
