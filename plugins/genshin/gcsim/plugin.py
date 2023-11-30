@@ -179,7 +179,7 @@ class GCSimPlugin(Plugin):
     async def gcsim_unclickable(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
 
-        _, user_id, uid, reason = callback_query.data.split("|")
+        _, _, _, reason = callback_query.data.split("|")
         await callback_query.answer(
             text="已经是第一页了！\n"
             if reason == "first_page"
