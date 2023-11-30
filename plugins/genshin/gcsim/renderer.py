@@ -20,7 +20,9 @@ class GCSimResultRenderer:
         result["extra"] = {}
         for idx, character_details in enumerate(result["character_details"]):
             asset_id, character = GCSimConverter.to_character(character_details["name"])
-            character_info: CharacterInfo = next(filter(lambda c: c.character == character, character_infos), None)
+            character_info: CharacterInfo = next(
+                filter(lambda c, char=character: c.character == char, character_infos), None
+            )
             if not character_info:
                 return None
             if character_details["name"] not in result["extra"]:
