@@ -65,7 +65,7 @@ class EnkaConverter:
         )
 
     @classmethod
-    def to_artifact_attribute_type(cls, prop_id: str) -> ArtifactAttributeType:
+    def to_artifact_attribute_type(cls, prop_id: str) -> ArtifactAttributeType:  # skipcq: PY-R1000
         if prop_id == "FIGHT_PROP_HP":
             return ArtifactAttributeType.HP
         if prop_id == "FIGHT_PROP_ATTACK":

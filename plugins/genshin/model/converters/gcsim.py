@@ -137,7 +137,7 @@ class GCSimConverter:
 
     @classmethod
     @lru_cache
-    def from_attribute_type(cls, attribute_type: ArtifactAttributeType) -> str:
+    def from_attribute_type(cls, attribute_type: ArtifactAttributeType) -> str:  # skipcq: PY-R1000
         if attribute_type == ArtifactAttributeType.HP:
             return "HP"
         if attribute_type == ArtifactAttributeType.HP_PERCENT:
@@ -354,7 +354,7 @@ class GCSimConverter:
         return stats
 
     @classmethod
-    def from_gcsim_script(cls, script: str) -> GCSim:
+    def from_gcsim_script(cls, script: str) -> GCSim:  # skipcq: PY-R1000
         options = ""
         characters = {}
         character_aliases = {}
