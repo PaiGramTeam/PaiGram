@@ -73,6 +73,8 @@ class GCSimRunner:
 
         if process.returncode == 0:
             self.gcsim_version = stdout.decode().splitlines()[0]
+        else:
+            logger.error("GCSim 运行时出错: %s", stderr.decode())
 
         now = time.time()
         for path in GCSIM_SCRIPTS_PATH.iterdir():
