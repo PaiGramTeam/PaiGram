@@ -164,7 +164,7 @@ class EnkaConverter:
                     value=Decimal(value.value),
                     type=DigitType.PERCENT if isinstance(value, StatsPercentage) else DigitType.NUMERIC,
                 )
-                for stat, value in character_stats._iter()
+                for stat, value in character_stats._iter()  # pylint: disable=W0212
             }
         )
 

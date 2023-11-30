@@ -65,7 +65,7 @@ for alias, char in CHARACTER_ALIASES.items():
         elif alias.startswith("traveler") or alias.startswith("aether") or alias.startswith("lumine"):
             continue
         else:
-            logger.warning(f"Character alias {alias} not found in GCSIM")
+            logger.warning("Character alias %s not found in GCSIM", alias)
 
 GCSIM_WEAPON_TO_WEAPON: Dict[GCSimWeapon, Tuple[int, Weapon]] = {}
 for _weapon in metadata.weapon_metadata.values():
@@ -75,7 +75,7 @@ for alias, _weapon in WEAPON_ALIASES.items():
         if _weapon in GCSIM_WEAPON_TO_WEAPON:
             GCSIM_WEAPON_TO_WEAPON[alias] = GCSIM_WEAPON_TO_WEAPON[_weapon]
         else:
-            logger.warning(f"Weapon alias {alias} not found in GCSIM")
+            logger.warning("Weapon alias %s not found in GCSIM", alias)
 
 GCSIM_ARTIFACT_TO_ARTIFACT: Dict[GCSimSet, Tuple[int, Set]] = {}
 for _artifact in metadata.artifacts_metadata.values():
@@ -85,7 +85,7 @@ for alias, _artifact in ARTIFACT_ALIASES.items():
         if _artifact in GCSIM_ARTIFACT_TO_ARTIFACT:
             GCSIM_ARTIFACT_TO_ARTIFACT[alias] = GCSIM_ARTIFACT_TO_ARTIFACT[_artifact]
         else:
-            logger.warning(f"Artifact alias {alias} not found in GCSIM")
+            logger.warning("Artifact alias %s not found in GCSIM", alias)
 
 
 class GCSimConverter:
@@ -234,7 +234,7 @@ class GCSimConverter:
                 if errors and errors[0].get("msg").startswith("Not supported"):
                     # Something is not supported, skip
                     continue
-                logger.warning(f"Failed to convert character info: {character_info}")
+                logger.warning("Failed to convert character info: %s", character_info)
         gcsim.characters = list(gcsim_characters.values())
         return gcsim
 
@@ -258,7 +258,7 @@ class GCSimConverter:
             elif key == "amount":
                 energy_settings.amount = int(value)
             else:
-                logger.warning(f"Unknown energy setting: {key}={value}")
+                logger.warning("Unknown energy setting: %s=%s", key, value)
         return energy_settings
 
     @classmethod
@@ -287,7 +287,7 @@ class GCSimConverter:
             elif key in ("pyro", "hydro", "dendro", "electro", "anemo", "cryo", "geo", "physical"):
                 target.others[key] = float(value)
             else:
-                logger.warning(f"Unknown target setting: {key}={value}")
+                logger.warning("Unknown target setting: %s=%s", key, value)
         return target
 
     @classmethod
@@ -305,7 +305,7 @@ class GCSimConverter:
             elif key == "breakthrough":
                 character.params.append(f"{key}={value}")
             else:
-                logger.warning(f"Unknown character setting: {key}={value}")
+                logger.warning("Unknown character setting: %s=%s", key, value)
         return character
 
     @classmethod
@@ -325,7 +325,7 @@ class GCSimConverter:
             elif key in ("pickup_delay", "breakthrough"):
                 weapon_info.params.append(f"{key}={value}")
             else:
-                logger.warning(f"Unknown weapon setting: {key}={value}")
+                logger.warning("Unknown weapon setting: %s=%s", key, value)
         return weapon_info
 
     @classmethod
@@ -342,7 +342,7 @@ class GCSimConverter:
             elif key.startswith("stack"):
                 set_info.params.append(f"stacks={value}")
             else:
-                logger.warning(f"Unknown set info: {key}={value}")
+                logger.warning("Unknown set info: %s=%s", key, value)
         return set_info
 
     @classmethod

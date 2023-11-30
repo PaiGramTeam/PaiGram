@@ -115,12 +115,12 @@ class GCSimRunner:
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
-        logger.debug(f"GCSim 脚本 ({user_id}|{uid}|{script_key}) 用时 {time.time()-added_time:.2f}s")
+        logger.debug("GCSim 脚本 (%s|%s|%s) 用时 %.2fs", user_id, uid, script_key, time.time() - added_time)
         if stderr:
-            logger.error(f"GCSim 脚本 ({user_id}|{uid}|{script_key}) 错误: {stderr.decode('utf-8')}")
+            logger.error("GCSim 脚本 (%s|%s|%s) 错误: %s", user_id, uid, script_key, stderr.decode("utf-8"))
             return GCSimResult(error=stderr.decode("utf-8"), user_id=user_id, uid=uid, script_key=script_key)
         if stdout:
-            logger.debug(f"GCSim 脚本 ({user_id}|{uid}|{script_key}) 输出: {stdout.decode('utf-8')}")
+            logger.debug("GCSim 脚本 (%s|%s|%s) 输出: %s", user_id, uid, script_key, stdout.decode("utf-8"))
             return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key)
         return GCSimResult(error="No output", user_id=user_id, uid=uid, script_key=script_key)
 
