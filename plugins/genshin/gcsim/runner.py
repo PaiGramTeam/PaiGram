@@ -1,33 +1,22 @@
-import time
-import copy
-import shutil
 import asyncio
-import platform
-import threading
-import subprocess
 import multiprocessing
-from hashlib import md5
-from queue import Queue
-from pathlib import Path
+import platform
+import time
 from dataclasses import dataclass, asdict
-from asyncio.subprocess import Process  # noqa
-from typing import Optional, Dict, TYPE_CHECKING, List, Tuple, Union
+from pathlib import Path
+from queue import Queue
+from typing import Optional, Dict, List, Union
 
 import aiofiles
 import gcsim_pypi
-from enkanetwork import Assets, EnkaNetworkResponse
 
-from core.config import config
-from utils.log import logger
-from utils.const import PROJECT_ROOT
 from metadata.shortname import idToName
-from modules.playercards.file import PlayerCardsFile
 from modules.gcsim.file import PlayerGCSimScripts
-from plugins.genshin.model.gcsim import GCSim
 from plugins.genshin.model.base import CharacterInfo
-from plugins.genshin.model.converters.enka import EnkaConverter
 from plugins.genshin.model.converters.gcsim import GCSimConverter
-
+from plugins.genshin.model.gcsim import GCSim
+from utils.const import PROJECT_ROOT
+from utils.log import logger
 
 GCSIM_SCRIPTS_PATH = PROJECT_ROOT.joinpath("plugins", "genshin", "gcsim", "scripts")
 
@@ -67,17 +56,7 @@ class GCSimRunner:
         self.player_gcsim_scripts = PlayerGCSimScripts()
         self.gcsim_version: Optional[str] = None
         self.scripts: Dict[str, GCSim] = {}
-        max_concurrent_gcsim = (
-            config.plugin_gcsim_max_concurrent
-            if isinstance(config.plugin_gcsim_max_concurrent, int)
-            else 0
-            if config.plugin_gcsim_max_concurrent == "NONE"
-            else 1
-            if config.plugin_gcsim_max_concurrent == "ONE"
-            else multiprocessing.cpu_count() / 2
-            if config.plugin_gcsim_max_concurrent == "HALF"
-            else multiprocessing.cpu_count()
-        )
+        max_concurrent_gcsim = multiprocessing.cpu_count()
         self.sema = asyncio.BoundedSemaphore(max_concurrent_gcsim)
         self.queue: Queue[None] = Queue()
 
@@ -85,9 +64,17 @@ class GCSimRunner:
         gcsim_pypi_path = Path(gcsim_pypi.__file__).parent
 
         self.bin_path = gcsim_pypi_path.joinpath("bin").joinpath(_get_gcsim_bin_name())
-        result = subprocess.run([self.bin_path, "-version"], capture_output=True, text=True, check=True)
-        if result.returncode == 0:
-            self.gcsim_version = result.stdout.splitlines()[0]
+
+        process = await asyncio.create_subprocess_exec(
+            self.bin_path, "-version", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, text=True
+        )
+
+        stdout, stderr = await process.communicate()
+
+        if process.returncode == 0:
+            self.gcsim_version = stdout.decode().splitlines()[0]
+        else:
+            logger.error("GCSim 运行时出错: %s", stderr.decode())
 
         now = time.time()
         for path in GCSIM_SCRIPTS_PATH.iterdir():
@@ -123,12 +110,12 @@ class GCSimRunner:
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
-        logger.debug(f"GCSim 脚本 ({user_id}|{uid}|{script_key}) 用时 {time.time()-added_time:.2f}s")
+        logger.debug("GCSim 脚本 (%s|%s|%s) 用时 %.2fs", user_id, uid, script_key, time.time() - added_time)
         if stderr:
-            logger.error(f"GCSim 脚本 ({user_id}|{uid}|{script_key}) 错误: {stderr.decode('utf-8')}")
+            logger.error("GCSim 脚本 (%s|%s|%s) 错误: %s", user_id, uid, script_key, stderr.decode("utf-8"))
             return GCSimResult(error=stderr.decode("utf-8"), user_id=user_id, uid=uid, script_key=script_key)
-        elif stdout:
-            logger.debug(f"GCSim 脚本 ({user_id}|{uid}|{script_key}) 输出: {stdout.decode('utf-8')}")
+        if stdout:
+            logger.debug("GCSim 脚本 (%s|%s|%s) 输出: %s", user_id, uid, script_key, stdout.decode("utf-8"))
             return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key)
         return GCSimResult(error="No output", user_id=user_id, uid=uid, script_key=script_key)
 

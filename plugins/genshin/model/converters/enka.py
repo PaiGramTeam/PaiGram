@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 from enkanetwork import (
     CharacterInfo as EnkaCharacterInfo,
     CharacterStats as EnkaCharacterStats,
@@ -22,7 +23,9 @@ from plugins.genshin.model import (
     ArtifactAttribute,
     ArtifactAttributeType,
 )
-from plugins.genshin.model.metadata import ARTIFACTS_METADATA, WEAPON_METADATA, CHARACTERS_METADATA
+from plugins.genshin.model.metadata import Metadata
+
+metadata = Metadata()
 
 
 class EnkaConverter:
@@ -47,7 +50,7 @@ class EnkaConverter:
         if equipment.type != EquipmentsType.WEAPON:
             raise ValueError(f"Not weapon equipment type: {equipment.type}")
 
-        weapon_data = WEAPON_METADATA.get(str(equipment.id))
+        weapon_data = metadata.weapon_metadata.get(str(equipment.id))
         if not weapon_data:
             raise ValueError(f"Unknown weapon id: {equipment.id}")
 
@@ -62,7 +65,7 @@ class EnkaConverter:
         )
 
     @classmethod
-    def to_artifact_attribute_type(cls, prop_id: str) -> ArtifactAttributeType:
+    def to_artifact_attribute_type(cls, prop_id: str) -> ArtifactAttributeType:  # skipcq: PY-R1000
         if prop_id == "FIGHT_PROP_HP":
             return ArtifactAttributeType.HP
         if prop_id == "FIGHT_PROP_ATTACK":
@@ -133,7 +136,12 @@ class EnkaConverter:
             raise ValueError(f"Not artifact equipment type: {equipment.type}")
 
         artifact_data = next(
-            (data for data in ARTIFACTS_METADATA.values() if data["name"] == equipment.detail.artifact_name_set), None
+            (
+                data
+                for data in metadata.artifacts_metadata.values()
+                if data["name"] == equipment.detail.artifact_name_set
+            ),
+            None,
         )
         if not artifact_data:
             raise ValueError(f"Unknown artifact: {equipment}")
@@ -156,7 +164,7 @@ class EnkaConverter:
                     value=Decimal(value.value),
                     type=DigitType.PERCENT if isinstance(value, StatsPercentage) else DigitType.NUMERIC,
                 )
-                for stat, value in character_stats._iter()
+                for stat, value in character_stats._iter()  # pylint: disable=W0212
             }
         )
 
@@ -165,17 +173,7 @@ class EnkaConverter:
         character_id = str(character_info.id)
         if character_id in ("10000005", "10000007"):
             character_id += f"-{character_info.element.name.lower()}"
-        character_data = CHARACTERS_METADATA.get(character_id)
-        if not character_data:
-            raise ValueError(f"Unknown character: {character_info.name}\n{character_info}")
-        return character_data["route"]
-
-    @classmethod
-    def to_character(cls, character_info: EnkaCharacterInfo) -> str:
-        character_id = str(character_info.id)
-        if character_id in ("10000005", "10000007"):
-            character_id += f"-{character_info.element.name.lower()}"
-        character_data = CHARACTERS_METADATA.get(character_id)
+        character_data = metadata.characters_metadata.get(character_id)
         if not character_data:
             raise ValueError(f"Unknown character: {character_info.name}\n{character_info}")
         return character_data["route"]

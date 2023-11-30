@@ -1,12 +1,11 @@
 import re
-from typing import List, Optional, Tuple, Dict
+from collections import Counter
 from decimal import Decimal
 from functools import lru_cache
-from collections import Counter
+from typing import List, Optional, Tuple, Dict
 
+from gcsim_pypi.aliases import CHARACTER_ALIASES, WEAPON_ALIASES, ARTIFACT_ALIASES
 from pydantic import ValidationError
-
-from utils.log import logger
 
 from plugins.genshin.model import (
     Set,
@@ -28,8 +27,10 @@ from plugins.genshin.model import (
     GCSimCharacterInfo,
     GCSimCharacterStats,
 )
-from gcsim_pypi.aliases import CHARACTER_ALIASES, WEAPON_ALIASES, ARTIFACT_ALIASES
-from plugins.genshin.model.metadata import ARTIFACTS_METADATA, WEAPON_METADATA, CHARACTERS_METADATA
+from plugins.genshin.model.metadata import Metadata
+from utils.log import logger
+
+metadata = Metadata()
 
 
 def remove_non_words(text: str) -> str:
@@ -55,7 +56,7 @@ def from_character_gcsim_character(character: Character) -> GCSimCharacter:
 
 
 GCSIM_CHARACTER_TO_CHARACTER: Dict[GCSimCharacter, Tuple[int, Character]] = {}
-for char in CHARACTERS_METADATA.values():
+for char in metadata.characters_metadata.values():
     GCSIM_CHARACTER_TO_CHARACTER[from_character_gcsim_character(char["route"])] = (char["id"], char["route"])
 for alias, char in CHARACTER_ALIASES.items():
     if alias not in GCSIM_CHARACTER_TO_CHARACTER:
@@ -64,27 +65,27 @@ for alias, char in CHARACTER_ALIASES.items():
         elif alias.startswith("traveler") or alias.startswith("aether") or alias.startswith("lumine"):
             continue
         else:
-            logger.warning(f"Character alias {alias} not found in GCSIM")
+            logger.warning("Character alias %s not found in GCSIM", alias)
 
 GCSIM_WEAPON_TO_WEAPON: Dict[GCSimWeapon, Tuple[int, Weapon]] = {}
-for _weapon in WEAPON_METADATA.values():
+for _weapon in metadata.weapon_metadata.values():
     GCSIM_WEAPON_TO_WEAPON[remove_non_words(_weapon["route"].lower())] = (_weapon["id"], _weapon["route"])
 for alias, _weapon in WEAPON_ALIASES.items():
     if alias not in GCSIM_WEAPON_TO_WEAPON:
         if _weapon in GCSIM_WEAPON_TO_WEAPON:
             GCSIM_WEAPON_TO_WEAPON[alias] = GCSIM_WEAPON_TO_WEAPON[_weapon]
         else:
-            logger.warning(f"Weapon alias {alias} not found in GCSIM")
+            logger.warning("Weapon alias %s not found in GCSIM", alias)
 
 GCSIM_ARTIFACT_TO_ARTIFACT: Dict[GCSimSet, Tuple[int, Set]] = {}
-for _artifact in ARTIFACTS_METADATA.values():
+for _artifact in metadata.artifacts_metadata.values():
     GCSIM_ARTIFACT_TO_ARTIFACT[remove_non_words(_artifact["route"].lower())] = (_artifact["id"], _artifact["route"])
 for alias, _artifact in ARTIFACT_ALIASES.items():
     if alias not in GCSIM_ARTIFACT_TO_ARTIFACT:
         if _artifact in GCSIM_ARTIFACT_TO_ARTIFACT:
             GCSIM_ARTIFACT_TO_ARTIFACT[alias] = GCSIM_ARTIFACT_TO_ARTIFACT[_artifact]
         else:
-            logger.warning(f"Artifact alias {alias} not found in GCSIM")
+            logger.warning("Artifact alias %s not found in GCSIM", alias)
 
 
 class GCSimConverter:
@@ -136,7 +137,7 @@ class GCSimConverter:
 
     @classmethod
     @lru_cache
-    def from_attribute_type(cls, attribute_type: ArtifactAttributeType) -> str:
+    def from_attribute_type(cls, attribute_type: ArtifactAttributeType) -> str:  # skipcq: PY-R1000
         if attribute_type == ArtifactAttributeType.HP:
             return "HP"
         if attribute_type == ArtifactAttributeType.HP_PERCENT:
@@ -233,7 +234,7 @@ class GCSimConverter:
                 if errors and errors[0].get("msg").startswith("Not supported"):
                     # Something is not supported, skip
                     continue
-                logger.warning(f"Failed to convert character info: {character_info}")
+                logger.warning("Failed to convert character info: %s", character_info)
         gcsim.characters = list(gcsim_characters.values())
         return gcsim
 
@@ -257,7 +258,7 @@ class GCSimConverter:
             elif key == "amount":
                 energy_settings.amount = int(value)
             else:
-                logger.warning(f"Unknown energy setting: {key}={value}")
+                logger.warning("Unknown energy setting: %s=%s", key, value)
         return energy_settings
 
     @classmethod
@@ -286,7 +287,7 @@ class GCSimConverter:
             elif key in ("pyro", "hydro", "dendro", "electro", "anemo", "cryo", "geo", "physical"):
                 target.others[key] = float(value)
             else:
-                logger.warning(f"Unknown target setting: {key}={value}")
+                logger.warning("Unknown target setting: %s=%s", key, value)
         return target
 
     @classmethod
@@ -304,7 +305,7 @@ class GCSimConverter:
             elif key == "breakthrough":
                 character.params.append(f"{key}={value}")
             else:
-                logger.warning(f"Unknown character setting: {key}={value}")
+                logger.warning("Unknown character setting: %s=%s", key, value)
         return character
 
     @classmethod
@@ -324,7 +325,7 @@ class GCSimConverter:
             elif key in ("pickup_delay", "breakthrough"):
                 weapon_info.params.append(f"{key}={value}")
             else:
-                logger.warning(f"Unknown weapon setting: {key}={value}")
+                logger.warning("Unknown weapon setting: %s=%s", key, value)
         return weapon_info
 
     @classmethod
@@ -341,7 +342,7 @@ class GCSimConverter:
             elif key.startswith("stack"):
                 set_info.params.append(f"stacks={value}")
             else:
-                logger.warning(f"Unknown set info: {key}={value}")
+                logger.warning("Unknown set info: %s=%s", key, value)
         return set_info
 
     @classmethod
@@ -353,7 +354,7 @@ class GCSimConverter:
         return stats
 
     @classmethod
-    def from_gcsim_script(cls, script: str) -> GCSim:
+    def from_gcsim_script(cls, script: str) -> GCSim:  # skipcq: PY-R1000
         options = ""
         characters = {}
         character_aliases = {}
@@ -390,9 +391,9 @@ class GCSimConverter:
                 elif m.group(2) == "add stats":
                     characters[c].stats = cls.from_gcsim_stats_line(line, characters[c].stats)
             else:
-                for alias in character_aliases:
-                    line = line.replace(f"{alias} ", f"{character_aliases[alias]} ")
-                    line = line.replace(f".{alias}.", f".{character_aliases[alias]}.")
+                for key, value in character_aliases.items():
+                    line = line.replace(f"{key} ", f"{value} ")
+                    line = line.replace(f".{key}.", f".{value}.")
                 script_lines.append(line)
         return GCSim(
             options=options,

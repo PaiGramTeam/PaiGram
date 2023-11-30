@@ -1,6 +1,7 @@
-from enum import Enum
 from decimal import Decimal
+from enum import Enum
 from typing import Optional, List, NewType
+
 from pydantic import BaseModel, Field, validator
 
 # TODO: 考虑自动生成Enum
@@ -188,8 +189,6 @@ class CharacterInfo(BaseModel):
 
     @validator("skills")
     def validate_skills(cls, v):
-        # if len(v) == 0:
-        #     raise ValueError('skills must not be empty')
         if len(v) > 3:
             raise ValueError("skills must not be greater than 3")
         return v

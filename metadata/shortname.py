@@ -17,6 +17,8 @@ __all__ = [
     "elementsToColor",
     "not_real_roles",
     "roleToTag",
+    "elementToName",
+    "elementsToColor",
 ]
 
 # noinspection SpellCheckingInspection

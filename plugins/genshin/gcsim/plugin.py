@@ -1,23 +1,9 @@
-import time
-import json
 import copy
-import shutil
-import asyncio
-import platform
-import subprocess
-import multiprocessing
-from hashlib import md5
-from pathlib import Path
-from dataclasses import dataclass
-from asyncio.subprocess import Process  # noqa
-from typing import Optional, Dict, TYPE_CHECKING, List, Tuple, Union
+from typing import Optional, TYPE_CHECKING, List, Union
 
-import aiofiles
-import gcsim_pypi
-from enkanetwork import Assets, EnkaNetworkResponse
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, User, Message, CallbackQuery
-from telegram.ext import CallbackContext
-from telegram.constants import ChatAction
+from enkanetwork import EnkaNetworkResponse
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
 
 from core.config import config
@@ -25,17 +11,13 @@ from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from gram_core.services.template.services import TemplateService
-from utils.log import logger
-from utils.const import PROJECT_ROOT
-from metadata.shortname import idToName
-from modules.playercards.file import PlayerCardsFile
 from modules.gcsim.file import PlayerGCSimScripts
-from plugins.genshin.gcsim.runner import GCSimRunner, GCSimFit
+from modules.playercards.file import PlayerCardsFile
 from plugins.genshin.gcsim.renderer import GCSimResultRenderer
-from plugins.genshin.model.gcsim import GCSim
+from plugins.genshin.gcsim.runner import GCSimRunner, GCSimFit
 from plugins.genshin.model.base import CharacterInfo
 from plugins.genshin.model.converters.enka import EnkaConverter
-from plugins.genshin.model.converters.gcsim import GCSimConverter
+from utils.log import logger
 
 if TYPE_CHECKING:
     from telegram.ext import ContextTypes
@@ -120,11 +102,27 @@ class GCSimPlugin(Plugin):
         )
         return buttons
 
-    async def _get_uid(self, user: User) -> Optional[int]:
-        player_info = await self.player_service.get_player(user.id)
-        if player_info is None:
-            return None
-        return player_info.player_id
+    async def _get_uid(self, user_id: int, args: List[str], reply: Optional["Message"]) -> Optional[int]:
+        """通过消息获取 uid，优先级：args > reply > self"""
+        uid, user_id_ = None, user_id
+        if args:
+            for i in args:
+                if i is not None and i.isdigit() and len(i) == 9:
+                    uid = int(i)
+        if reply:
+            try:
+                user_id_ = reply.from_user.id
+            except AttributeError:
+                pass
+        if not uid:
+            player_info = await self.player_service.get_player(user_id_)
+            if player_info is not None:
+                uid = player_info.player_id
+            if (not uid) and (user_id_ != user_id):
+                player_info = await self.player_service.get_player(user_id)
+                if player_info is not None:
+                    uid = player_info.player_id
+        return uid
 
     async def _load_characters(self, uid: Union[int, str]) -> List[CharacterInfo]:
         original_data = await self.player_cards_file.load_history_info(uid)
@@ -141,22 +139,21 @@ class GCSimPlugin(Plugin):
 
     @handler.command(command="gcsim", block=False)
     async def gcsim(self, update: Update, context: "ContextTypes.DEFAULT_TYPE"):
+        user = update.effective_user
         message = update.effective_message
+        args = self.get_args(context)
         if not self.gcsim_runner.initialized:
             await message.reply_text("GCSim 未初始化，请稍候再试或重启派蒙")
             return
         if context.user_data.get("overlapping", False):
             reply = await message.reply_text("旅行者已经有脚本正在运行，请让派蒙稍微休息一下")
-            await asyncio.sleep(10)
-            await reply.delete()
-            # also delete original message?
-            await message.delete()
+            if filters.ChatType.GROUPS.filter(message):
+                self.add_delete_message_job(reply)
+                self.add_delete_message_job(message)
             return
-
-        user = update.effective_user
         logger.info("用户 %s[%s] 发出 gcsim 命令", user.full_name, user.id)
 
-        uid = await self._get_uid(user)
+        uid = await self._get_uid(user.id, args, message.reply_to_message)
         if uid is None:
             return await _no_account_return(message, context)
 
@@ -196,7 +193,7 @@ class GCSimPlugin(Plugin):
     async def gcsim_unclickable(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         callback_query = update.callback_query
 
-        _, user_id, uid, reason = callback_query.data.split("|")
+        _, _, _, reason = callback_query.data.split("|")
         await callback_query.answer(
             text="已经是第一页了！\n"
             if reason == "first_page"
@@ -232,10 +229,12 @@ class GCSimPlugin(Plugin):
         result_path = self.player_gcsim_scripts.get_result_path(uid, script_key)
         if not result_path.exists():
             await callback_query.answer(text="运行结果似乎在提瓦特之外，派蒙找不到了", show_alert=True)
+            return
 
         result = await self.gcsim_renderer.prepare_result(result_path, character_infos)
         if not result:
             await callback_query.answer(text="在准备运行结果时派蒙出问题了", show_alert=True)
+            return
 
         render_result = await self.gcsim_renderer.render(script_key, result)
         await render_result.reply_photo(
