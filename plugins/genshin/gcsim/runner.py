@@ -1,26 +1,25 @@
-import time
 import asyncio
+import multiprocessing
 import platform
 import subprocess
-import multiprocessing
-from queue import Queue
-from pathlib import Path
-from dataclasses import dataclass, asdict
+import time
 from asyncio.subprocess import Process  # noqa
-from typing import Optional, Dict, TYPE_CHECKING, List, Tuple, Union
+from dataclasses import dataclass, asdict
+from pathlib import Path
+from queue import Queue
+from typing import Optional, Dict, List, Union
 
 import aiofiles
 import gcsim_pypi
 
 from core.config import config
-from utils.log import logger
-from utils.const import PROJECT_ROOT
 from metadata.shortname import idToName
 from modules.gcsim.file import PlayerGCSimScripts
-from plugins.genshin.model.gcsim import GCSim
 from plugins.genshin.model.base import CharacterInfo
 from plugins.genshin.model.converters.gcsim import GCSimConverter
-
+from plugins.genshin.model.gcsim import GCSim
+from utils.const import PROJECT_ROOT
+from utils.log import logger
 
 GCSIM_SCRIPTS_PATH = PROJECT_ROOT.joinpath("plugins", "genshin", "gcsim", "scripts")
 

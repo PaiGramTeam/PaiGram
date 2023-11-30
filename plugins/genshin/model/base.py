@@ -1,6 +1,7 @@
-from enum import Enum
 from decimal import Decimal
+from enum import Enum
 from typing import Optional, List, NewType
+
 from pydantic import BaseModel, Field, validator
 
 # TODO: 考虑自动生成Enum

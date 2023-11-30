@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 from enkanetwork import (
     CharacterInfo as EnkaCharacterInfo,
     CharacterStats as EnkaCharacterStats,

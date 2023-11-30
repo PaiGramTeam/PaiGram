@@ -1,10 +1,9 @@
-from typing import Any, NewType, List, Optional, Tuple, Dict
 from decimal import Decimal
-from pydantic import BaseModel, validator
+from typing import Any, NewType, List, Optional, Tuple, Dict
 
-from gcsim_pypi.availability import AVAILABLE_ARTIFACTS, AVAILABLE_CHARACTERS, AVAILABLE_WEAPONS
 from gcsim_pypi.aliases import ARTIFACT_ALIASES, CHARACTER_ALIASES, WEAPON_ALIASES
-
+from gcsim_pypi.availability import AVAILABLE_ARTIFACTS, AVAILABLE_CHARACTERS, AVAILABLE_WEAPONS
+from pydantic import BaseModel, validator
 
 GCSimCharacter = NewType("GCSimCharacter", str)
 GCSimWeapon = NewType("GCSimWeapon", str)

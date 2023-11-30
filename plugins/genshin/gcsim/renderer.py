@@ -2,10 +2,10 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from metadata.shortname import idToName, elementToName, elementsToColor
 from core.dependence.assets import AssetsService
 from gram_core.services.template.models import RenderResult
 from gram_core.services.template.services import TemplateService
+from metadata.shortname import idToName, elementToName, elementsToColor
 from plugins.genshin.model import CharacterInfo
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 
