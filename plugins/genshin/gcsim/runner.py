@@ -66,7 +66,7 @@ class GCSimRunner:
         self.bin_path = gcsim_pypi_path.joinpath("bin").joinpath(_get_gcsim_bin_name())
 
         process = await asyncio.create_subprocess_exec(
-            self.bin_path, "-version", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, text=True
+            self.bin_path, "-version", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, text=False
         )
 
         stdout, stderr = await process.communicate()
