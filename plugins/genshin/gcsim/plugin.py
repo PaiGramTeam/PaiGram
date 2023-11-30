@@ -1,23 +1,9 @@
-import time
-import json
 import copy
-import shutil
 import asyncio
-import platform
-import subprocess
-import multiprocessing
-from hashlib import md5
-from pathlib import Path
-from dataclasses import dataclass
 from asyncio.subprocess import Process  # noqa
 from typing import Optional, Dict, TYPE_CHECKING, List, Tuple, Union
-
-import aiofiles
-import gcsim_pypi
-from enkanetwork import Assets, EnkaNetworkResponse
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, User, Message, CallbackQuery
-from telegram.ext import CallbackContext
-from telegram.constants import ChatAction
+from enkanetwork import EnkaNetworkResponse
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, User, Message
 from telegram.helpers import create_deep_linked_url
 
 from core.config import config
@@ -26,16 +12,12 @@ from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from gram_core.services.template.services import TemplateService
 from utils.log import logger
-from utils.const import PROJECT_ROOT
-from metadata.shortname import idToName
 from modules.playercards.file import PlayerCardsFile
 from modules.gcsim.file import PlayerGCSimScripts
 from plugins.genshin.gcsim.runner import GCSimRunner, GCSimFit
 from plugins.genshin.gcsim.renderer import GCSimResultRenderer
-from plugins.genshin.model.gcsim import GCSim
 from plugins.genshin.model.base import CharacterInfo
 from plugins.genshin.model.converters.enka import EnkaConverter
-from plugins.genshin.model.converters.gcsim import GCSimConverter
 
 if TYPE_CHECKING:
     from telegram.ext import ContextTypes

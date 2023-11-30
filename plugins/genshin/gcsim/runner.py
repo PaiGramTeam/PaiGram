@@ -1,12 +1,8 @@
 import time
-import copy
-import shutil
 import asyncio
 import platform
-import threading
 import subprocess
 import multiprocessing
-from hashlib import md5
 from queue import Queue
 from pathlib import Path
 from dataclasses import dataclass, asdict
@@ -15,17 +11,14 @@ from typing import Optional, Dict, TYPE_CHECKING, List, Tuple, Union
 
 import aiofiles
 import gcsim_pypi
-from enkanetwork import Assets, EnkaNetworkResponse
 
 from core.config import config
 from utils.log import logger
 from utils.const import PROJECT_ROOT
 from metadata.shortname import idToName
-from modules.playercards.file import PlayerCardsFile
 from modules.gcsim.file import PlayerGCSimScripts
 from plugins.genshin.model.gcsim import GCSim
 from plugins.genshin.model.base import CharacterInfo
-from plugins.genshin.model.converters.enka import EnkaConverter
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 
 
@@ -127,7 +120,7 @@ class GCSimRunner:
         if stderr:
             logger.error(f"GCSim 脚本 ({user_id}|{uid}|{script_key}) 错误: {stderr.decode('utf-8')}")
             return GCSimResult(error=stderr.decode("utf-8"), user_id=user_id, uid=uid, script_key=script_key)
-        elif stdout:
+        if stdout:
             logger.debug(f"GCSim 脚本 ({user_id}|{uid}|{script_key}) 输出: {stdout.decode('utf-8')}")
             return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key)
         return GCSimResult(error="No output", user_id=user_id, uid=uid, script_key=script_key)

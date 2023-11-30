@@ -28,8 +28,8 @@ from plugins.genshin.model import (
     GCSimCharacterInfo,
     GCSimCharacterStats,
 )
-from gcsim_pypi.aliases import CHARACTER_ALIASES, WEAPON_ALIASES, ARTIFACT_ALIASES
 from plugins.genshin.model.metadata import ARTIFACTS_METADATA, WEAPON_METADATA, CHARACTERS_METADATA
+from gcsim_pypi.aliases import CHARACTER_ALIASES, WEAPON_ALIASES, ARTIFACT_ALIASES
 
 
 def remove_non_words(text: str) -> str:

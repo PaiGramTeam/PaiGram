@@ -188,8 +188,6 @@ class CharacterInfo(BaseModel):
 
     @validator("skills")
     def validate_skills(cls, v):
-        # if len(v) == 0:
-        #     raise ValueError('skills must not be empty')
         if len(v) > 3:
             raise ValueError("skills must not be greater than 3")
         return v
