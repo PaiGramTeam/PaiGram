@@ -66,13 +66,14 @@ class GCSimRunner:
         self.bin_path = gcsim_pypi_path.joinpath("bin").joinpath(_get_gcsim_bin_name())
 
         process = await asyncio.create_subprocess_exec(
-            self.bin_path, "-version", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, text=False
+            self.bin_path, "-version", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
 
         stdout, stderr = await process.communicate()
 
         if process.returncode == 0:
             self.gcsim_version = stdout.decode().splitlines()[0]
+            logger.debug("GCSim version: %s", self.gcsim_version)
         else:
             logger.error("GCSim 运行时出错: %s", stderr.decode())
 
