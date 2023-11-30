@@ -107,9 +107,8 @@ class GCSimPlugin(Plugin):
         uid, user_id_ = None, user_id
         if args:
             for i in args:
-                if i is not None:
-                    if i.isdigit() and len(i) == 9:
-                        uid = int(i)
+                if i is not None and i.isdigit() and len(i) == 9:
+                    uid = int(i)
         if reply:
             try:
                 user_id_ = reply.from_user.id
