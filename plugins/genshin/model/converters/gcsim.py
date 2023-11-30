@@ -390,9 +390,9 @@ class GCSimConverter:
                 elif m.group(2) == "add stats":
                     characters[c].stats = cls.from_gcsim_stats_line(line, characters[c].stats)
             else:
-                for alias in character_aliases:
-                    line = line.replace(f"{alias} ", f"{character_aliases[alias]} ")
-                    line = line.replace(f".{alias}.", f".{character_aliases[alias]}.")
+                for key, value in character_aliases.items():
+                    line = line.replace(f"{key} ", f"{value} ")
+                    line = line.replace(f".{key}.", f".{value}.")
                 script_lines.append(line)
         return GCSim(
             options=options,
