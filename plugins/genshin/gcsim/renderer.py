@@ -6,7 +6,7 @@ from core.dependence.assets import AssetsService
 from gram_core.services.template.models import RenderResult
 from gram_core.services.template.services import TemplateService
 from metadata.shortname import idToName, elementToName, elementsToColor
-from plugins.genshin.model import CharacterInfo, GCSim, GCSimCharacter, GCSimCharacterInfo
+from plugins.genshin.model import GCSim, GCSimCharacterInfo
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 
 
@@ -21,7 +21,7 @@ class GCSimResultRenderer:
         for idx, character_details in enumerate(result["character_details"]):
             asset_id, _ = GCSimConverter.to_character(character_details["name"])
             gcsim_character: GCSimCharacterInfo = next(
-                filter(lambda gc: gc.character == character_details["name"], script.characters), None
+                filter(lambda gc, cn=character_details["name"]: gc.character == cn, script.characters), None
             )
             if not gcsim_character:
                 return None
