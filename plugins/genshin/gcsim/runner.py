@@ -7,7 +7,6 @@ from pathlib import Path
 from queue import Queue
 from typing import Optional, Dict, List, Union
 
-import aiofiles
 import gcsim_pypi
 
 from metadata.shortname import idToName
@@ -64,7 +63,7 @@ class GCSimRunner:
         self.queue: Queue[None] = Queue()
 
     @staticmethod
-    async def check_gcsim_script(name: str, script: str) -> Optional[GCSim]:
+    def check_gcsim_script(name: str, script: str) -> Optional[GCSim]:
         try:
             return GCSimConverter.from_gcsim_script(script)
         except ValueError as e:
@@ -74,12 +73,12 @@ class GCSimRunner:
         self.scripts.clear()
         new_scripts = await Remote.get_gcsim_scripts()
         for name, text in new_scripts.items():
-            if script := await self.check_gcsim_script(name, text):
+            if script := self.check_gcsim_script(name, text):
                 self.scripts[name] = script
         for path in GCSIM_SCRIPTS_PATH.iterdir():
             if path.is_file():
-                async with aiofiles.open(path, "r") as f:
-                    if script := await self.check_gcsim_script(path.name, await f.read()):
+                with open(path, "r") as f:
+                    if script := self.check_gcsim_script(path.name, f.read()):
                         self.scripts[path.stem] = script
 
     async def initialize(self):

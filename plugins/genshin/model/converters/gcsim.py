@@ -363,7 +363,7 @@ class GCSimConverter:
         energy_settings = GCSimEnergySettings()
         script_lines = []
         for line in script.strip().split("\n"):
-            line = line.strip()
+            line = line.split("#")[0].strip()
             if not line or line.startswith("#"):
                 continue
             if line.startswith("options"):
