@@ -254,4 +254,6 @@ class GCSimPlugin(Plugin):
         await render_result.reply_photo(
             message,
             filename=f"gcsim_{uid}_{script_key}.png",
+            caption=f"GCSim {script_key} 运行结果",
         )
+        self.add_delete_message_job(message, delay=1)

@@ -11,14 +11,16 @@ import aiofiles
 import gcsim_pypi
 
 from metadata.shortname import idToName
+from modules.apihelper.client.components.remote import Remote
 from modules.gcsim.file import PlayerGCSimScripts
 from plugins.genshin.model.base import CharacterInfo
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 from plugins.genshin.model.gcsim import GCSim
-from utils.const import PLUGIN_DIR
+from utils.const import DATA_DIR
 from utils.log import logger
 
-GCSIM_SCRIPTS_PATH = PLUGIN_DIR.joinpath("genshin", "gcsim", "scripts")
+GCSIM_SCRIPTS_PATH = DATA_DIR / "gcsim" / "scripts"
+GCSIM_SCRIPTS_PATH.mkdir(parents=True, exist_ok=True)
 
 
 @dataclass
@@ -61,6 +63,25 @@ class GCSimRunner:
         self.sema = asyncio.BoundedSemaphore(max_concurrent_gcsim)
         self.queue: Queue[None] = Queue()
 
+    @staticmethod
+    async def check_gcsim_script(name: str, script: str) -> Optional[GCSim]:
+        try:
+            return GCSimConverter.from_gcsim_script(script)
+        except ValueError as e:
+            logger.error("无法解析 GCSim 脚本 %s: %s", name, e)
+
+    async def refresh(self):
+        self.scripts.clear()
+        new_scripts = await Remote.get_gcsim_scripts()
+        for name, text in new_scripts.items():
+            if script := await self.check_gcsim_script(name, text):
+                self.scripts[name] = script
+        for path in GCSIM_SCRIPTS_PATH.iterdir():
+            if path.is_file():
+                async with aiofiles.open(path, "r") as f:
+                    if script := await self.check_gcsim_script(path.name, await f.read()):
+                        self.scripts[path.stem] = script
+
     async def initialize(self):
         gcsim_pypi_path = Path(gcsim_pypi.__file__).parent
 
@@ -79,14 +100,7 @@ class GCSimRunner:
             logger.error("GCSim 运行时出错: %s", stderr.decode())
 
         now = time.time()
-        for path in GCSIM_SCRIPTS_PATH.iterdir():
-            if path.is_file():
-                try:
-                    async with aiofiles.open(path, "r") as f:
-                        script = GCSimConverter.from_gcsim_script(await f.read())
-                    self.scripts[path.stem] = script
-                except ValueError as e:
-                    logger.error("无法解析 GCSim 脚本 %s: %s", path.name, e)
+        await self.refresh()
         logger.debug("加载 %d GCSim 脚本耗时 %.2f 秒", len(self.scripts), time.time() - now)
         self.initialized = True
 
