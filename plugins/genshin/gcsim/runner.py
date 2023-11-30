@@ -58,17 +58,7 @@ class GCSimRunner:
         self.player_gcsim_scripts = PlayerGCSimScripts()
         self.gcsim_version: Optional[str] = None
         self.scripts: Dict[str, GCSim] = {}
-        max_concurrent_gcsim = (
-            config.plugin_gcsim_max_concurrent
-            if isinstance(config.plugin_gcsim_max_concurrent, int)
-            else 0
-            if config.plugin_gcsim_max_concurrent == "NONE"
-            else 1
-            if config.plugin_gcsim_max_concurrent == "ONE"
-            else multiprocessing.cpu_count() / 2
-            if config.plugin_gcsim_max_concurrent == "HALF"
-            else multiprocessing.cpu_count()
-        )
+        max_concurrent_gcsim = multiprocessing.cpu_count()
         self.sema = asyncio.BoundedSemaphore(max_concurrent_gcsim)
         self.queue: Queue[None] = Queue()
 
