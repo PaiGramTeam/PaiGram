@@ -252,7 +252,7 @@ class GCSimPlugin(Plugin):
 
         render_result = await self.gcsim_renderer.render(script_key, result)
         await render_result.reply_photo(
-            message,
+            message.reply_to_message,
             filename=f"gcsim_{uid}_{script_key}.png",
             caption=f"GCSim {script_key} 运行结果",
         )
