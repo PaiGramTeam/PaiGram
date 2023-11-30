@@ -1,6 +1,5 @@
 import asyncio
 import copy
-from asyncio.subprocess import Process  # noqa
 from typing import Optional, TYPE_CHECKING, List, Union
 
 from enkanetwork import EnkaNetworkResponse

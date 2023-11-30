@@ -15,6 +15,8 @@ __all__ = [
     "weaponToId",
     "not_real_roles",
     "roleToTag",
+    "elementToName",
+    "elementsToColor",
 ]
 
 # noinspection SpellCheckingInspection

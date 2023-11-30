@@ -26,6 +26,6 @@ class Metadata:
         self.__load_assets_data()
 
     def __load_assets_data(self) -> None:
-        self.weapon_metadata = jsonlib.loads(METADATA_PATH.joinpath("weapon.json").read_text())
-        self.artifacts_metadata = jsonlib.loads(METADATA_PATH.joinpath("reliquary.json").read_text())
-        self.characters_metadata = jsonlib.loads(METADATA_PATH.joinpath("avatar.json").read_text())
+        self.weapon_metadata = jsonlib.loads(METADATA_PATH.joinpath("weapon.json").read_text(encoding="utf-8"))
+        self.artifacts_metadata = jsonlib.loads(METADATA_PATH.joinpath("reliquary.json").read_text(encoding="utf-8"))
+        self.characters_metadata = jsonlib.loads(METADATA_PATH.joinpath("avatar.json").read_text(encoding="utf-8"))

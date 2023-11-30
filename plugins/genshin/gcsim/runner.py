@@ -3,7 +3,6 @@ import multiprocessing
 import platform
 import subprocess
 import time
-from asyncio.subprocess import Process  # noqa
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from queue import Queue
