@@ -231,7 +231,7 @@ class GCSimPlugin(Plugin):
             await callback_query.answer(text="运行结果似乎在提瓦特之外，派蒙找不到了", show_alert=True)
             return
 
-        result = await self.gcsim_renderer.prepare_result(result_path, character_infos)
+        result = await self.gcsim_renderer.prepare_result(result_path, result.script)
         if not result:
             await callback_query.answer(text="在准备运行结果时派蒙出问题了", show_alert=True)
             return

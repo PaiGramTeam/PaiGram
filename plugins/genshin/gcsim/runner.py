@@ -36,6 +36,7 @@ class GCSimResult:
     user_id: str
     uid: str
     script_key: str
+    script: GCSim
 
 
 def _get_gcsim_bin_name() -> str:
@@ -117,7 +118,7 @@ class GCSimRunner:
         if stdout:
             logger.debug("GCSim 脚本 (%s|%s|%s) 输出: %s", user_id, uid, script_key, stdout.decode("utf-8"))
             return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key)
-        return GCSimResult(error="No output", user_id=user_id, uid=uid, script_key=script_key)
+        return GCSimResult(error="No output", user_id=user_id, uid=uid, script_key=script_key, script=merged_script)
 
     async def run(
         self,

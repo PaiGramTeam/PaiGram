@@ -6,7 +6,7 @@ from core.dependence.assets import AssetsService
 from gram_core.services.template.models import RenderResult
 from gram_core.services.template.services import TemplateService
 from metadata.shortname import idToName, elementToName, elementsToColor
-from plugins.genshin.model import CharacterInfo
+from plugins.genshin.model import CharacterInfo, GCSim, GCSimCharacter, GCSimCharacterInfo
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 
 
@@ -15,15 +15,15 @@ class GCSimResultRenderer:
         self.assets_service = assets_service
         self.template_service = template_service
 
-    async def prepare_result(self, result_path: Path, character_infos: list[CharacterInfo]) -> Optional[dict]:
+    async def prepare_result(self, result_path: Path, script: GCSim) -> Optional[dict]:
         result = json.loads(result_path.read_text(encoding="utf-8"))
         result["extra"] = {}
         for idx, character_details in enumerate(result["character_details"]):
             asset_id, character = GCSimConverter.to_character(character_details["name"])
-            character_info: CharacterInfo = next(
-                filter(lambda c, char=character: c.character == char, character_infos), None
+            gcsim_character: GCSimCharacterInfo = next(
+                filter(lambda gc: gc.character == character, script.characters), None
             )
-            if not character_info:
+            if not gcsim_character:
                 return None
             if character_details["name"] not in result["extra"]:
                 result["extra"][character_details["name"]] = {}
@@ -31,13 +31,13 @@ class GCSimResultRenderer:
             result["extra"][character_details["name"]]["icon"] = (
                 await self.assets_service.avatar(asset_id).icon()
             ).as_uri()
-            result["extra"][character_details["name"]]["rarity"] = character_info.rarity
-            result["extra"][character_details["name"]]["constellation"] = character_info.constellation
+            result["extra"][character_details["name"]]["rarity"] = self.assets_service.avatar(asset_id).enka.rarity
+            result["extra"][character_details["name"]]["constellation"] = gcsim_character.constellation
 
             if "character_dps" not in result["extra"]:
                 result["extra"]["character_dps"] = []
             result["extra"]["character_dps"].append(
-                {"value": result["statistics"]["character_dps"][idx]["mean"], "name": idToName(character_info.id)}
+                {"value": result["statistics"]["character_dps"][idx]["mean"], "name": idToName(asset_id)}
             )
         result["extra"]["element_dps"] = [
             {"value": data["mean"], "name": elementToName(elem), "itemStyle": {"color": elementsToColor[elem]}}
