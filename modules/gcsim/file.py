@@ -5,10 +5,10 @@ from typing import Union
 
 import aiofiles
 
-from utils.const import PROJECT_ROOT
+from utils.const import DATA_DIR
 
 
-PLAYER_SCRIPTS_PATH = PROJECT_ROOT.joinpath("plugins", "genshin", "gcsim", "scripts", "players")
+PLAYER_SCRIPTS_PATH = DATA_DIR / "gcsim"
 PLAYER_SCRIPTS_PATH.mkdir(parents=True, exist_ok=True)
 
 

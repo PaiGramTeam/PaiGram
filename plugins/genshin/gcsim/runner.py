@@ -15,10 +15,10 @@ from modules.gcsim.file import PlayerGCSimScripts
 from plugins.genshin.model.base import CharacterInfo
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 from plugins.genshin.model.gcsim import GCSim
-from utils.const import PROJECT_ROOT
+from utils.const import PLUGIN_DIR
 from utils.log import logger
 
-GCSIM_SCRIPTS_PATH = PROJECT_ROOT.joinpath("plugins", "genshin", "gcsim", "scripts")
+GCSIM_SCRIPTS_PATH = PLUGIN_DIR.joinpath("genshin", "gcsim", "scripts")
 
 
 @dataclass
