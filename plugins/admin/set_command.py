@@ -60,6 +60,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("stats", "玩家统计查询"),
             BotCommand("player_card", "查询角色卡片"),
             BotCommand("avatar_board", "角色排名"),
+            BotCommand("gcsim", "组队伤害计算"),
             # Cookie 查询类
             BotCommand("dailynote", "查询实时便笺"),
             BotCommand("ledger", "查询当月旅行札记"),
