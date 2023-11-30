@@ -22,7 +22,9 @@ from plugins.genshin.model import (
     ArtifactAttribute,
     ArtifactAttributeType,
 )
-from plugins.genshin.model.metadata import ARTIFACTS_METADATA, WEAPON_METADATA, CHARACTERS_METADATA
+from plugins.genshin.model.metadata import Metadata
+
+metadata = Metadata()
 
 
 class EnkaConverter:
@@ -47,7 +49,7 @@ class EnkaConverter:
         if equipment.type != EquipmentsType.WEAPON:
             raise ValueError(f"Not weapon equipment type: {equipment.type}")
 
-        weapon_data = WEAPON_METADATA.get(str(equipment.id))
+        weapon_data = metadata.weapon_metadata.get(str(equipment.id))
         if not weapon_data:
             raise ValueError(f"Unknown weapon id: {equipment.id}")
 
@@ -133,7 +135,12 @@ class EnkaConverter:
             raise ValueError(f"Not artifact equipment type: {equipment.type}")
 
         artifact_data = next(
-            (data for data in ARTIFACTS_METADATA.values() if data["name"] == equipment.detail.artifact_name_set), None
+            (
+                data
+                for data in metadata.artifacts_metadata.values()
+                if data["name"] == equipment.detail.artifact_name_set
+            ),
+            None,
         )
         if not artifact_data:
             raise ValueError(f"Unknown artifact: {equipment}")
@@ -165,7 +172,7 @@ class EnkaConverter:
         character_id = str(character_info.id)
         if character_id in ("10000005", "10000007"):
             character_id += f"-{character_info.element.name.lower()}"
-        character_data = CHARACTERS_METADATA.get(character_id)
+        character_data = metadata.characters_metadata.get(character_id)
         if not character_data:
             raise ValueError(f"Unknown character: {character_info.name}\n{character_info}")
         return character_data["route"]
