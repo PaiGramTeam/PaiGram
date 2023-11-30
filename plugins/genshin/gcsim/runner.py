@@ -36,7 +36,7 @@ class GCSimResult:
     user_id: str
     uid: str
     script_key: str
-    script: GCSim
+    script: Optional[GCSim] = None
 
 
 def _get_gcsim_bin_name() -> str:
@@ -67,13 +67,14 @@ class GCSimRunner:
         self.bin_path = gcsim_pypi_path.joinpath("bin").joinpath(_get_gcsim_bin_name())
 
         process = await asyncio.create_subprocess_exec(
-            self.bin_path, "-version", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, text=True
+            self.bin_path, "-version", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
 
         stdout, stderr = await process.communicate()
 
         if process.returncode == 0:
             self.gcsim_version = stdout.decode().splitlines()[0]
+            logger.debug("GCSim version: %s", self.gcsim_version)
         else:
             logger.error("GCSim 运行时出错: %s", stderr.decode())
 
@@ -113,12 +114,20 @@ class GCSimRunner:
         stdout, stderr = await process.communicate()
         logger.debug("GCSim 脚本 (%s|%s|%s) 用时 %.2fs", user_id, uid, script_key, time.time() - added_time)
         if stderr:
-            logger.error("GCSim 脚本 (%s|%s|%s) 错误: %s", user_id, uid, script_key, stderr.decode("utf-8"))
-            return GCSimResult(error=stderr.decode("utf-8"), user_id=user_id, uid=uid, script_key=script_key)
+            logger.error("GCSim 脚本 (%s|%s|%s) 错误: %s", user_id, uid, script_key, stderr.decode())
+            return GCSimResult(
+                error=stderr.decode(), user_id=user_id, uid=uid, script_key=script_key, script=merged_script
+            )
         if stdout:
-            logger.debug("GCSim 脚本 (%s|%s|%s) 输出: %s", user_id, uid, script_key, stdout.decode("utf-8"))
-            return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key)
-        return GCSimResult(error="No output", user_id=user_id, uid=uid, script_key=script_key, script=merged_script)
+            logger.debug("GCSim 脚本 (%s|%s|%s) 输出: %s", user_id, uid, script_key, stdout.decode())
+            return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key, script=merged_script)
+        return GCSimResult(
+            error="No output",
+            user_id=user_id,
+            uid=uid,
+            script_key=script_key,
+            script=merged_script,
+        )
 
     async def run(
         self,

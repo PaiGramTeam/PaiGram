@@ -1,5 +1,5 @@
 import copy
-from typing import Optional, TYPE_CHECKING, List, Union
+from typing import Optional, TYPE_CHECKING, List, Union, Dict
 
 from enkanetwork import EnkaNetworkResponse
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Message
@@ -124,11 +124,22 @@ class GCSimPlugin(Plugin):
                     uid = player_info.player_id
         return uid
 
+    @staticmethod
+    def _fix_skill_level(data: Dict) -> Dict:
+        for i in data["avatarInfoList"]:
+            if "proudSkillExtraLevelMap" in i:
+                del i["proudSkillExtraLevelMap"]
+        return data
+
     async def _load_characters(self, uid: Union[int, str]) -> List[CharacterInfo]:
         original_data = await self.player_cards_file.load_history_info(uid)
-        if original_data is None or len(original_data.get("avatarInfoList", [])) == 0:
+        if original_data is None:
             return []
-        enka_response = EnkaNetworkResponse.parse_obj(copy.deepcopy(original_data))
+        if original_data.get("avatarInfoList") is None:
+            original_data["avatarInfoList"] = []
+        if len(original_data["avatarInfoList"]) == 0:
+            return []
+        enka_response = EnkaNetworkResponse.parse_obj(self._fix_skill_level(copy.deepcopy(original_data)))
         character_infos = []
         for avatar_info in enka_response.characters:
             try:
@@ -229,6 +240,9 @@ class GCSimPlugin(Plugin):
         result_path = self.player_gcsim_scripts.get_result_path(uid, script_key)
         if not result_path.exists():
             await callback_query.answer(text="运行结果似乎在提瓦特之外，派蒙找不到了", show_alert=True)
+            return
+        if result.script is None:
+            await callback_query.answer(text="脚本似乎在提瓦特之外，派蒙找不到了", show_alert=True)
             return
 
         result = await self.gcsim_renderer.prepare_result(result_path, result.script)

@@ -19,9 +19,9 @@ class GCSimResultRenderer:
         result = json.loads(result_path.read_text(encoding="utf-8"))
         result["extra"] = {}
         for idx, character_details in enumerate(result["character_details"]):
-            asset_id, character = GCSimConverter.to_character(character_details["name"])
+            asset_id, _ = GCSimConverter.to_character(character_details["name"])
             gcsim_character: GCSimCharacterInfo = next(
-                filter(lambda gc: gc.character == character, script.characters), None
+                filter(lambda gc: gc.character == character_details["name"], script.characters), None
             )
             if not gcsim_character:
                 return None
