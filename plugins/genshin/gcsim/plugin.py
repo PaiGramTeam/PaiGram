@@ -8,6 +8,7 @@ from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.dependence.assets import AssetsService
+from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from gram_core.services.template.services import TemplateService
@@ -56,12 +57,16 @@ async def _no_character_return(user_id: int, uid: int, message: Message):
 
 class GCSimPlugin(Plugin):
     def __init__(
-        self, assets_service: AssetsService, player_service: PlayersService, template_service: TemplateService
+        self,
+        assets_service: AssetsService,
+        player_service: PlayersService,
+        template_service: TemplateService,
+        redis: RedisDB = None,
     ):
         self.player_service = player_service
         self.player_cards_file = PlayerCardsFile()
         self.player_gcsim_scripts = PlayerGCSimScripts()
-        self.gcsim_runner = GCSimRunner()
+        self.gcsim_runner = GCSimRunner(redis)
         self.gcsim_renderer = GCSimResultRenderer(assets_service, template_service)
         self.scripts_per_page = 8
 
@@ -245,6 +250,9 @@ class GCSimPlugin(Plugin):
         user = callback_query.from_user
         message = callback_query.message
         user_id, uid, script_key = callback_query.data.split("|")[1:]
+        msg_to_reply = message
+        if message.reply_to_message:
+            msg_to_reply = message.reply_to_message
         logger.info("用户 %s[%s] GCSim运行请求 || %s", user.full_name, user.id, callback_query.data)
         if str(user.id) != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
@@ -261,6 +269,10 @@ class GCSimPlugin(Plugin):
             await callback_query.edit_message_text(result.error)
         else:
             await callback_query.edit_message_text(f"GCSim {result.script_key} 运行完成")
+        if result.file_id:
+            await msg_to_reply.reply_photo(result.file_id, caption=f"GCSim {script_key} 运行结果")
+            self.add_delete_message_job(message, delay=1)
+            return
 
         result_path = self.player_gcsim_scripts.get_result_path(uid, script_key)
         if not result_path.exists():
@@ -270,18 +282,17 @@ class GCSimPlugin(Plugin):
             await callback_query.answer(text="脚本似乎在提瓦特之外，派蒙找不到了", show_alert=True)
             return
 
-        result = await self.gcsim_renderer.prepare_result(result_path, result.script)
-        if not result:
+        result_ = await self.gcsim_renderer.prepare_result(result_path, result.script)
+        if not result_:
             await callback_query.answer(text="在准备运行结果时派蒙出问题了", show_alert=True)
             return
 
-        render_result = await self.gcsim_renderer.render(script_key, result)
-        msg_to_reply = message
-        if message.reply_to_message:
-            msg_to_reply = message.reply_to_message
-        await render_result.reply_photo(
+        render_result = await self.gcsim_renderer.render(script_key, result_)
+        reply = await render_result.reply_photo(
             msg_to_reply,
             filename=f"gcsim_{uid}_{script_key}.png",
             caption=f"GCSim {script_key} 运行结果",
         )
         self.add_delete_message_job(message, delay=1)
+        if reply and reply.photo:
+            await self.gcsim_runner.cache.set_cache(uid, hash(str(result.script)), reply.photo[0].file_id)
