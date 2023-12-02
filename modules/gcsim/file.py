@@ -47,7 +47,7 @@ class PlayerGCSimScripts:
 
     def clear_fits(self):
         if self.player_scripts_path.exists():
-            for root, dirs, files in os.walk(self.player_scripts_path):
+            for root, _, files in os.walk(self.player_scripts_path):
                 for file in files:
                     if file == "fits.json":
                         os.remove(os.path.join(root, file))
