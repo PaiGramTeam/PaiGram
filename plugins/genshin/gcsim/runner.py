@@ -68,6 +68,7 @@ class GCSimRunner:
             return GCSimConverter.from_gcsim_script(script)
         except ValueError as e:
             logger.error("无法解析 GCSim 脚本 %s: %s", name, e)
+            return None
 
     async def refresh(self):
         self.scripts.clear()
