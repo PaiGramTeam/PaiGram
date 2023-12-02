@@ -1,14 +1,15 @@
 import json
 import asyncio
+import shutil
 from pathlib import Path
 from typing import Union
 
 import aiofiles
 
-from utils.const import DATA_DIR
+from utils.const import CACHE_DIR
 
 
-PLAYER_SCRIPTS_PATH = DATA_DIR / "gcsim"
+PLAYER_SCRIPTS_PATH = CACHE_DIR / "gcsim"
 PLAYER_SCRIPTS_PATH.mkdir(parents=True, exist_ok=True)
 
 
@@ -43,6 +44,11 @@ class PlayerGCSimScripts:
 
     def remove_fits(self, uid: Union[str, int]):
         self.get_fits_path(uid).unlink(missing_ok=True)
+
+    def clear_fits(self):
+        if self.player_scripts_path.exists():
+            shutil.rmtree(self.player_scripts_path)
+        self.player_scripts_path.mkdir(parents=True, exist_ok=True)
 
     async def write_script(
         self,

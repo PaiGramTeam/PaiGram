@@ -71,6 +71,7 @@ class GCSimRunner:
             return None
 
     async def refresh(self):
+        self.player_gcsim_scripts.clear_fits()
         self.scripts.clear()
         new_scripts = await Remote.get_gcsim_scripts()
         for name, text in new_scripts.items():
