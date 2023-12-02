@@ -184,7 +184,7 @@ class GCSimRunner:
             fit_characters: List[Tuple[CharacterInfo, GCSimCharacter]] = []
             for ch in character_infos:
                 gcsim_character = GCSimConverter.from_character(ch.character)
-                if gcsim_character in [c for c in script.characters]:
+                if gcsim_character in [c.character for c in script.characters]:
                     fit_characters.append((ch, gcsim_character))
             if fit_characters:
                 fits.append(
