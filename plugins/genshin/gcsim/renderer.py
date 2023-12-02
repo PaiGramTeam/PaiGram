@@ -1,12 +1,12 @@
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 from core.dependence.assets import AssetsService
 from gram_core.services.template.models import RenderResult
 from gram_core.services.template.services import TemplateService
 from metadata.shortname import idToName, elementToName, elementsToColor
-from plugins.genshin.model import GCSim, GCSimCharacterInfo
+from plugins.genshin.model import GCSim, GCSimCharacterInfo, CharacterInfo
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 
 
@@ -15,8 +15,11 @@ class GCSimResultRenderer:
         self.assets_service = assets_service
         self.template_service = template_service
 
-    async def prepare_result(self, result_path: Path, script: GCSim) -> Optional[dict]:
+    async def prepare_result(
+        self, result_path: Path, script: GCSim, character_infos: List[CharacterInfo]
+    ) -> Optional[dict]:
         result = json.loads(result_path.read_text(encoding="utf-8"))
+        characters = set(ch.character for ch in character_infos)
         result["extra"] = {}
         for idx, character_details in enumerate(result["character_details"]):
             asset_id, _ = GCSimConverter.to_character(character_details["name"])
@@ -27,6 +30,10 @@ class GCSimResultRenderer:
                 return None
             if character_details["name"] not in result["extra"]:
                 result["extra"][character_details["name"]] = {}
+            if GCSimConverter.to_character(gcsim_character.character)[1] in characters:
+                result["extra"][character_details["name"]]["owned"] = True
+            else:
+                result["extra"][character_details["name"]]["owned"] = False
 
             result["extra"][character_details["name"]]["icon"] = (
                 await self.assets_service.avatar(asset_id).icon()

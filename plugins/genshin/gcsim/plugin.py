@@ -74,7 +74,7 @@ class GCSimPlugin(Plugin):
         buttons = []
         for fit in fits[(page - 1) * self.scripts_per_page : page * self.scripts_per_page]:
             button = InlineKeyboardButton(
-                f"{fit.script_key} ({','.join(fit.characters)})",
+                f"{fit.script_key} ({','.join(map(str, fit.characters))})",
                 callback_data=f"enqueue_gcsim|{user_id}|{uid}|{fit.script_key}",
             )
             if not buttons or len(buttons[-1]) >= 1:
@@ -270,7 +270,7 @@ class GCSimPlugin(Plugin):
             await callback_query.answer(text="脚本似乎在提瓦特之外，派蒙找不到了", show_alert=True)
             return
 
-        result = await self.gcsim_renderer.prepare_result(result_path, result.script)
+        result = await self.gcsim_renderer.prepare_result(result_path, result.script, character_infos)
         if not result:
             await callback_query.answer(text="在准备运行结果时派蒙出问题了", show_alert=True)
             return

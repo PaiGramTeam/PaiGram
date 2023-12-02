@@ -5,16 +5,17 @@ import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from queue import Queue
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict, List, Union, Tuple
 
 import gcsim_pypi
+from pydantic import BaseModel
 
 from metadata.shortname import idToName
 from modules.apihelper.client.components.remote import Remote
 from modules.gcsim.file import PlayerGCSimScripts
-from plugins.genshin.model.base import CharacterInfo
+from plugins.genshin.model.base import CharacterInfo, Character
 from plugins.genshin.model.converters.gcsim import GCSimConverter
-from plugins.genshin.model.gcsim import GCSim
+from plugins.genshin.model.gcsim import GCSim, GCSimCharacter
 from utils.const import DATA_DIR
 from utils.log import logger
 
@@ -22,11 +23,20 @@ GCSIM_SCRIPTS_PATH = DATA_DIR / "gcsim" / "scripts"
 GCSIM_SCRIPTS_PATH.mkdir(parents=True, exist_ok=True)
 
 
-@dataclass
-class GCSimFit:
+class FitCharacter(BaseModel):
+    id: int
+    name: str
+    gcsim: GCSimCharacter
+    character: Character
+
+    def __str__(self):
+        return self.name
+
+
+class GCSimFit(BaseModel):
     script_key: str
     fit_count: int
-    characters: List[str]
+    characters: List[FitCharacter]
     total_levels: int
     total_weapon_levels: int
 
@@ -163,15 +173,21 @@ class GCSimRunner:
         fits = []
         for key, script in self.scripts.items():
             # 空和莹会被认为是两个角色
-            fit_characters = []
+            fit_characters: List[Tuple[CharacterInfo, GCSimCharacter]] = []
             for ch in character_infos:
-                if GCSimConverter.from_character(ch.character) in [c.character for c in script.characters]:
-                    fit_characters.append(ch)
+                if gcsim_character := next(
+                    filter(lambda c: GCSimConverter.from_character(ch.character) == c.character, script.characters),
+                    None,
+                ):
+                    fit_characters.append((ch, gcsim_character.character))
             if fit_characters:
                 fits.append(
                     GCSimFit(
                         script_key=key,
-                        characters=[idToName(ch.id) for ch in fit_characters],
+                        characters=[
+                            FitCharacter(id=ch[0].id, name=idToName(ch[0].id), gcsim=ch[1], character=ch[0].character)
+                            for ch in fit_characters
+                        ],
                         fit_count=len(fit_characters),
                         total_levels=sum(ch.level for ch in script.characters),
                         total_weapon_levels=sum(ch.weapon_info.level for ch in script.characters),
@@ -182,7 +198,7 @@ class GCSimRunner:
             key=lambda x: (x.fit_count, x.total_levels, x.total_weapon_levels),
             reverse=True,
         )
-        await self.player_gcsim_scripts.write_fits(uid, [asdict(fit) for fit in fits])
+        await self.player_gcsim_scripts.write_fits(uid, [fit.dict() for fit in fits])
         return fits
 
     async def get_fits(self, uid: Union[int, str]) -> List[GCSimFit]:
