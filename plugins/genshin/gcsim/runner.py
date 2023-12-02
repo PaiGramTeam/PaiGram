@@ -5,19 +5,24 @@ import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from queue import Queue
-from typing import Optional, Dict, List, Union, Tuple
+from typing import Optional, Dict, List, Union, TYPE_CHECKING, Tuple
+from typing import Optional, Dict, List, Union, TYPE_CHECKING
 
 import gcsim_pypi
 from pydantic import BaseModel
 
 from metadata.shortname import idToName
 from modules.apihelper.client.components.remote import Remote
+from modules.gcsim.cache import GCSimCache
 from modules.gcsim.file import PlayerGCSimScripts
 from plugins.genshin.model.base import CharacterInfo, Character
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 from plugins.genshin.model.gcsim import GCSim, GCSimCharacter
 from utils.const import DATA_DIR
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from core.dependence.redisdb import RedisDB
 
 GCSIM_SCRIPTS_PATH = DATA_DIR / "gcsim" / "scripts"
 GCSIM_SCRIPTS_PATH.mkdir(parents=True, exist_ok=True)
@@ -48,6 +53,7 @@ class GCSimResult:
     uid: str
     script_key: str
     script: Optional[GCSim] = None
+    file_id: Optional[str] = None
 
 
 def _get_gcsim_bin_name() -> str:
@@ -62,7 +68,7 @@ def _get_gcsim_bin_name() -> str:
 
 
 class GCSimRunner:
-    def __init__(self):
+    def __init__(self, client: "RedisDB"):
         self.initialized = False
         self.bin_path = None
         self.player_gcsim_scripts = PlayerGCSimScripts()
@@ -71,6 +77,7 @@ class GCSimRunner:
         max_concurrent_gcsim = multiprocessing.cpu_count()
         self.sema = asyncio.BoundedSemaphore(max_concurrent_gcsim)
         self.queue: Queue[None] = Queue()
+        self.cache = GCSimCache(client)
 
     @staticmethod
     def check_gcsim_script(name: str, script: str) -> Optional[GCSim]:
@@ -89,7 +96,7 @@ class GCSimRunner:
                 self.scripts[name] = script
         for path in GCSIM_SCRIPTS_PATH.iterdir():
             if path.is_file():
-                with open(path, "r") as f:
+                with open(path, "r", encoding="utf-8") as f:
                     try:
                         if script := self.check_gcsim_script(path.name, f.read()):
                             self.scripts[path.stem] = script
@@ -128,6 +135,8 @@ class GCSimRunner:
             merged_script = GCSimConverter.merge_character_infos(script, character_infos)
         except ValueError:
             return GCSimResult(error="无法合并角色信息", user_id=user_id, uid=uid, script_key=script_key)
+        if file_id := await self.cache.get_cache(uid, hash(str(merged_script))):
+            return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key, file_id=file_id)
         await self.player_gcsim_scripts.write_script(uid, script_key, str(merged_script))
 
         process = await asyncio.create_subprocess_exec(
