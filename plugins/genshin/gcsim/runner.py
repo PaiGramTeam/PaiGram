@@ -83,7 +83,7 @@ class GCSimRunner:
                     try:
                         if script := self.check_gcsim_script(path.name, f.read()):
                             self.scripts[path.stem] = script
-                    except Exception as e:
+                    except UnicodeError as e:
                         logger.error("无法读取 GCSim 脚本 %s: %s", path.name, e)
 
     async def initialize(self):
