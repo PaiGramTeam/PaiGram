@@ -19,7 +19,7 @@ class GCSimResultRenderer:
         self, result_path: Path, script: GCSim, character_infos: List[CharacterInfo]
     ) -> Optional[dict]:
         result = json.loads(result_path.read_text(encoding="utf-8"))
-        characters = set(ch.character for ch in character_infos)
+        characters = {ch.character for ch in character_infos}
         result["extra"] = {}
         for idx, character_details in enumerate(result["character_details"]):
             asset_id, _ = GCSimConverter.to_character(character_details["name"])

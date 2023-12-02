@@ -2,11 +2,10 @@ import asyncio
 import multiprocessing
 import platform
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue
 from typing import Optional, Dict, List, Union, TYPE_CHECKING, Tuple
-from typing import Optional, Dict, List, Union, TYPE_CHECKING
 
 import gcsim_pypi
 from pydantic import BaseModel
@@ -184,11 +183,9 @@ class GCSimRunner:
             # 空和莹会被认为是两个角色
             fit_characters: List[Tuple[CharacterInfo, GCSimCharacter]] = []
             for ch in character_infos:
-                if gcsim_character := next(
-                    filter(lambda c: GCSimConverter.from_character(ch.character) == c.character, script.characters),
-                    None,
-                ):
-                    fit_characters.append((ch, gcsim_character.character))
+                gcsim_character = GCSimConverter.from_character(ch.character)
+                if gcsim_character in [c for c in script.characters]:
+                    fit_characters.append((ch, gcsim_character))
             if fit_characters:
                 fits.append(
                     GCSimFit(
