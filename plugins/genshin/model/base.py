@@ -74,6 +74,8 @@ class WeaponInfo(BaseModel):
 
     @validator("max_level")
     def validate_max_level(cls, v, values):
+        if v == 0:
+            return values["level"]
         if v < values["level"]:
             raise ValueError("max_level must be greater than or equal to level")
         return v
@@ -183,6 +185,8 @@ class CharacterInfo(BaseModel):
 
     @validator("max_level")
     def validate_max_level(cls, v, values):
+        if v == 0:
+            return values["level"]
         if v < values["level"]:
             raise ValueError("max_level must be greater than or equal to level")
         return v

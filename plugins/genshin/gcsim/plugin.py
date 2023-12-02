@@ -139,13 +139,15 @@ class GCSimPlugin(Plugin):
             original_data["avatarInfoList"] = []
         if len(original_data["avatarInfoList"]) == 0:
             return []
-        enka_response = EnkaNetworkResponse.parse_obj(self._fix_skill_level(copy.deepcopy(original_data)))
+        enka_response: EnkaNetworkResponse = EnkaNetworkResponse.parse_obj(
+            self._fix_skill_level(copy.deepcopy(original_data))
+        )
         character_infos = []
         for avatar_info in enka_response.characters:
             try:
                 character_infos.append(EnkaConverter.to_character_info(avatar_info))
-            except ValueError:
-                logger.error("无法解析 Enka.Network 角色信息: %s", avatar_info)
+            except ValueError as e:
+                logger.error("无法解析 Enka.Network 角色信息: %s\n%s", e, avatar_info.json())
         return character_infos
 
     @handler.command(command="gcsim", block=False)
