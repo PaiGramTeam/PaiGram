@@ -1,13 +1,13 @@
 from io import BytesIO
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from urllib.parse import urlencode
 
 from aiofiles import open as async_open
 from simnet import GenshinClient, Region
 from simnet.models.genshin.wish import BannerType
-from telegram import Document, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
 
 from core.basemodel import RegionEnum
@@ -39,11 +39,25 @@ try:
 except ImportError:
     import json as jsonlib
 
+
+if TYPE_CHECKING:
+    from telegram import Update, Message, User, Document
+    from telegram.ext import ContextTypes
+
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
 
 class WishLogPlugin(Plugin.Conversation):
     """抽卡记录导入/导出/分析"""
+
+    IMPORT_HINT = (
+        "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
+        "（非 paimon.moe 导出的文件数据）</b>\n\n"
+        "> 你还可以向派蒙发送从其他工具导出的 UIGF 标准的记录文件\n"
+        "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
+        "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
+        "<b>注意：导入的数据将会与旧数据进行合并。</b>"
+    )
 
     def __init__(
         self,
@@ -75,7 +89,7 @@ class WishLogPlugin(Plugin.Conversation):
         return player.player_id
 
     async def _refresh_user_data(
-        self, user: User, data: dict = None, authkey: str = None, verify_uid: bool = True
+        self, user: "User", data: dict = None, authkey: str = None, verify_uid: bool = True
     ) -> str:
         """刷新用户数据
         :param user: 用户
@@ -108,7 +122,7 @@ class WishLogPlugin(Plugin.Conversation):
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
 
-    async def import_from_file(self, user: User, message: Message, document: Document = None) -> None:
+    async def import_from_file(self, user: "User", message: "Message", document: "Optional[Document]" = None) -> None:
         if not document:
             document = message.document
         # TODO: 使用 mimetype 判断文件类型
@@ -119,8 +133,8 @@ class WishLogPlugin(Plugin.Conversation):
         else:
             await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
             return
-        if document.file_size > 2 * 1024 * 1024:
-            await message.reply_text("文件过大，请发送小于 2 MB 的文件")
+        if document.file_size > 5 * 1024 * 1024:
+            await message.reply_text("文件过大，请发送小于 5 MB 的文件")
             return
         try:
             out = BytesIO()
@@ -158,6 +172,19 @@ class WishLogPlugin(Plugin.Conversation):
             text = "文件解析失败，请检查文件是否符合 UIGF 标准"
         await reply.edit_text(text)
 
+    async def can_gen_authkey(self, uid: int) -> bool:
+        player_info = await self.players_service.get_player(uid, region=RegionEnum.HYPERION)
+        if player_info is not None:
+            cookies = await self.cookie_service.get(uid, account_id=player_info.account_id)
+            if (
+                cookies is not None
+                and cookies.data
+                and "stoken" in cookies.data
+                and next((value for key, value in cookies.data.items() if key in ["ltuid", "login_uid"]), None)
+            ):
+                return True
+        return False
+
     async def gen_authkey(self, uid: int) -> Optional[str]:
         player_info = await self.players_service.get_player(uid, region=RegionEnum.HYPERION)
         if player_info is not None:
@@ -174,37 +201,19 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导入抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> int:
+    async def command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
-        args = self.get_args(context)
         logger.info("用户 %s[%s] 导入抽卡记录命令请求", user.full_name, user.id)
-        authkey = from_url_get_authkey(args[0] if args else "")
-        if not args:
-            authkey = await self.gen_authkey(user.id)
-        if not authkey:
-            await message.reply_text(
-                "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
-                "（非 paimon.moe 导出的文件数据）</b>\n\n"
-                "> 你还可以向派蒙发送从其他工具导出的 UIGF 标准的记录文件\n"
-                "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
-                "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
-                "<b>注意：导入的数据将会与旧数据进行合并。</b>",
-                parse_mode="html",
-            )
-            return INPUT_URL
-        text = "小派蒙正在从服务器获取数据，请稍后"
-        if not args:
-            text += "\n\n> 由于你绑定的 Cookie 中存在 stoken ，本次通过 stoken 自动刷新数据"
-        reply = await message.reply_text(text)
-        await message.reply_chat_action(ChatAction.TYPING)
-        data = await self._refresh_user_data(user, authkey=authkey)
-        await reply.edit_text(data)
-        return ConversationHandler.END
+        keyboard = None
+        if await self.can_gen_authkey(user.id):
+            keyboard = ReplyKeyboardMarkup([["自动导入"], ["退出"]], one_time_keyboard=True)
+        await message.reply_text(self.IMPORT_HINT, parse_mode="html", reply_markup=keyboard)
+        return INPUT_URL
 
     @conversation.state(state=INPUT_URL)
     @handler.message(filters=~filters.COMMAND, block=False)
-    async def import_data_from_message(self, update: Update, _: CallbackContext) -> int:
+    async def import_data_from_message(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         if message.document:
@@ -213,7 +222,16 @@ class WishLogPlugin(Plugin.Conversation):
         if not message.text:
             await message.reply_text("请发送文件或链接")
             return INPUT_URL
-        authkey = from_url_get_authkey(message.text)
+        if message.text == "自动导入":
+            authkey = await self.gen_authkey(user.id)
+            if not authkey:
+                await message.reply_text("自动生成 authkey 失败，请尝试通过其他方式导入。")
+                return ConversationHandler.END
+        elif message.text == "退出":
+            await message.reply_text("取消导入抽卡记录")
+            return ConversationHandler.END
+        else:
+            authkey = from_url_get_authkey(message.text)
         reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后")
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
@@ -224,7 +242,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^删除抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_delete(self, update: Update, context: CallbackContext) -> int:
+    async def command_start_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 删除抽卡记录命令请求", user.full_name, user.id)
@@ -244,7 +262,7 @@ class WishLogPlugin(Plugin.Conversation):
 
     @conversation.state(state=CONFIRM_DELETE)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def command_confirm_delete(self, update: Update, context: CallbackContext) -> int:
+    async def command_confirm_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         if message.text == "确定":
@@ -256,7 +274,7 @@ class WishLogPlugin(Plugin.Conversation):
 
     @handler.command(command="wish_log_force_delete", block=False, admin=True)
     @handler.command(command="gacha_log_force_delete", block=False, admin=True)
-    async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
+    async def command_gacha_log_force_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 强制删除抽卡记录命令请求", user.full_name, user.id)
@@ -285,7 +303,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_export", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_export", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导出抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_export(self, update: Update, context: CallbackContext) -> None:
+    async def command_start_export(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 导出抽卡记录命令请求", user.full_name, user.id)
@@ -312,7 +330,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_url", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_url", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^抽卡记录链接(.*)") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_url(self, update: Update, _: CallbackContext) -> None:
+    async def command_start_url(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 生成抽卡记录链接命令请求", user.full_name, user.id)
@@ -332,7 +350,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log", block=False)
     @handler.command(command="gacha_log", block=False)
     @handler.message(filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
-    async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
+    async def command_start_analysis(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
@@ -378,7 +396,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_count", block=False)
     @handler.command(command="gacha_count", block=False)
     @handler.message(filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=False)
-    async def command_start_count(self, update: Update, context: CallbackContext) -> None:
+    async def command_start_count(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
