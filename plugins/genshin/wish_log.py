@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from aiofiles import open as async_open
 from simnet import GenshinClient, Region
 from simnet.models.genshin.wish import BannerType
-from telegram import Document, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User
+from telegram import Document, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User, ReplyKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
@@ -44,6 +44,15 @@ INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
 class WishLogPlugin(Plugin.Conversation):
     """抽卡记录导入/导出/分析"""
+
+    IMPORT_HINT = (
+        "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
+        "（非 paimon.moe 导出的文件数据）</b>\n\n"
+        "> 你还可以向派蒙发送从其他工具导出的 UIGF 标准的记录文件\n"
+        "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
+        "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
+        "<b>注意：导入的数据将会与旧数据进行合并。</b>"
+    )
 
     def __init__(
         self,
@@ -158,6 +167,15 @@ class WishLogPlugin(Plugin.Conversation):
             text = "文件解析失败，请检查文件是否符合 UIGF 标准"
         await reply.edit_text(text)
 
+    async def can_gen_authkey(self, uid: int) -> bool:
+        player_info = await self.players_service.get_player(uid, region=RegionEnum.HYPERION)
+        if player_info is not None:
+            cookies = await self.cookie_service.get(uid, account_id=player_info.account_id)
+            if cookies is not None and cookies.data and "stoken" in cookies.data:
+                if next((value for key, value in cookies.data.items() if key in ["ltuid", "login_uid"]), None):
+                    return True
+        return False
+
     async def gen_authkey(self, uid: int) -> Optional[str]:
         player_info = await self.players_service.get_player(uid, region=RegionEnum.HYPERION)
         if player_info is not None:
@@ -179,28 +197,11 @@ class WishLogPlugin(Plugin.Conversation):
         user = update.effective_user
         args = self.get_args(context)
         logger.info("用户 %s[%s] 导入抽卡记录命令请求", user.full_name, user.id)
-        authkey = from_url_get_authkey(args[0] if args else "")
-        if not args:
-            authkey = await self.gen_authkey(user.id)
-        if not authkey:
-            await message.reply_text(
-                "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
-                "（非 paimon.moe 导出的文件数据）</b>\n\n"
-                "> 你还可以向派蒙发送从其他工具导出的 UIGF 标准的记录文件\n"
-                "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
-                "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
-                "<b>注意：导入的数据将会与旧数据进行合并。</b>",
-                parse_mode="html",
-            )
-            return INPUT_URL
-        text = "小派蒙正在从服务器获取数据，请稍后"
-        if not args:
-            text += "\n\n> 由于你绑定的 Cookie 中存在 stoken ，本次通过 stoken 自动刷新数据"
-        reply = await message.reply_text(text)
-        await message.reply_chat_action(ChatAction.TYPING)
-        data = await self._refresh_user_data(user, authkey=authkey)
-        await reply.edit_text(data)
-        return ConversationHandler.END
+        keyboard = None
+        if await self.can_gen_authkey(user.id):
+            keyboard = ReplyKeyboardMarkup([["自动导入"], ["退出"]], one_time_keyboard=True)
+        await message.reply_text(self.IMPORT_HINT, parse_mode="html", reply_markup=keyboard)
+        return INPUT_URL
 
     @conversation.state(state=INPUT_URL)
     @handler.message(filters=~filters.COMMAND, block=False)
@@ -213,7 +214,16 @@ class WishLogPlugin(Plugin.Conversation):
         if not message.text:
             await message.reply_text("请发送文件或链接")
             return INPUT_URL
-        authkey = from_url_get_authkey(message.text)
+        if message.text == "自动导入":
+            authkey = await self.gen_authkey(user.id)
+            if not authkey:
+                await message.reply_text("自动生成 authkey 失败，请尝试通过其他方式导入。")
+                return ConversationHandler.END
+        elif message.text == "退出":
+            await message.reply_text("取消导入抽卡记录")
+            return ConversationHandler.END
+        else:
+            authkey = from_url_get_authkey(message.text)
         reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后")
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
