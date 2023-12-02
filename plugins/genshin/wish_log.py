@@ -45,6 +45,15 @@ INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 class WishLogPlugin(Plugin.Conversation):
     """抽卡记录导入/导出/分析"""
 
+    IMPORT_HINT = (
+        "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
+        "（非 paimon.moe 导出的文件数据）</b>\n\n"
+        "> 你还可以向派蒙发送从其他工具导出的 UIGF 标准的记录文件\n"
+        "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
+        "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
+        "<b>注意：导入的数据将会与旧数据进行合并。</b>"
+    )
+
     def __init__(
         self,
         template_service: TemplateService,
@@ -119,8 +128,8 @@ class WishLogPlugin(Plugin.Conversation):
         else:
             await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
             return
-        if document.file_size > 2 * 1024 * 1024:
-            await message.reply_text("文件过大，请发送小于 2 MB 的文件")
+        if document.file_size > 5 * 1024 * 1024:
+            await message.reply_text("文件过大，请发送小于 5 MB 的文件")
             return
         try:
             out = BytesIO()
@@ -184,12 +193,7 @@ class WishLogPlugin(Plugin.Conversation):
             authkey = await self.gen_authkey(user.id)
         if not authkey:
             await message.reply_text(
-                "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
-                "（非 paimon.moe 导出的文件数据）</b>\n\n"
-                "> 你还可以向派蒙发送从其他工具导出的 UIGF 标准的记录文件\n"
-                "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
-                "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
-                "<b>注意：导入的数据将会与旧数据进行合并。</b>",
+                self.IMPORT_HINT,
                 parse_mode="html",
             )
             return INPUT_URL
@@ -201,6 +205,20 @@ class WishLogPlugin(Plugin.Conversation):
         data = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(data)
         return ConversationHandler.END
+
+    @conversation.entry_point
+    @handler.command(command="wish_log_import_manually", filters=filters.ChatType.PRIVATE, block=False)
+    @handler.command(command="gacha_log_import_manually", filters=filters.ChatType.PRIVATE, block=False)
+    async def import_manully(self, update: Update, context: CallbackContext) -> int:
+        message = update.effective_message
+        user = update.effective_user
+        args = self.get_args(context)
+        logger.info("用户 %s[%s] 手动导入抽卡记录命令请求", user.full_name, user.id)
+        await message.reply_text(
+            self.IMPORT_HINT,
+            parse_mode="html",
+        )
+        return INPUT_URL
 
     @conversation.state(state=INPUT_URL)
     @handler.message(filters=~filters.COMMAND, block=False)

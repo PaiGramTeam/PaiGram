@@ -29,6 +29,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("wish_count", "查看抽卡统计（按卡池）"),
             BotCommand("pay_log", "查看充值记录"),
             BotCommand("pay_log_import", "导入充值记录"),
+            BotCommand("pay_log_import_manually", "导入充值记录（从文件）"),
             BotCommand("pay_log_export", "导出充值记录"),
             BotCommand("pay_log_delete", "删除充值记录"),
             # Cookie 查询类
