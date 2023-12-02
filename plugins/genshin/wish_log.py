@@ -128,8 +128,8 @@ class WishLogPlugin(Plugin.Conversation):
         else:
             await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
             return
-        if document.file_size > 2 * 1024 * 1024:
-            await message.reply_text("文件过大，请发送小于 2 MB 的文件")
+        if document.file_size > 5 * 1024 * 1024:
+            await message.reply_text("文件过大，请发送小于 5 MB 的文件")
             return
         try:
             out = BytesIO()
