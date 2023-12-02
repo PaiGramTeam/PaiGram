@@ -1,13 +1,13 @@
 from io import BytesIO
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from urllib.parse import urlencode
 
 from aiofiles import open as async_open
 from simnet import GenshinClient, Region
 from simnet.models.genshin.wish import BannerType
-from telegram import Document, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update, User, ReplyKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, ConversationHandler, filters
+from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
 
 from core.basemodel import RegionEnum
@@ -38,6 +38,11 @@ try:
 
 except ImportError:
     import json as jsonlib
+
+
+if TYPE_CHECKING:
+    from telegram import Update, Message, User, Document
+    from telegram.ext import ContextTypes
 
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
@@ -84,7 +89,7 @@ class WishLogPlugin(Plugin.Conversation):
         return player.player_id
 
     async def _refresh_user_data(
-        self, user: User, data: dict = None, authkey: str = None, verify_uid: bool = True
+        self, user: "User", data: dict = None, authkey: str = None, verify_uid: bool = True
     ) -> str:
         """刷新用户数据
         :param user: 用户
@@ -117,7 +122,7 @@ class WishLogPlugin(Plugin.Conversation):
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
 
-    async def import_from_file(self, user: User, message: Message, document: Document = None) -> None:
+    async def import_from_file(self, user: "User", message: "Message", document: "Optional[Document]" = None) -> None:
         if not document:
             document = message.document
         # TODO: 使用 mimetype 判断文件类型
@@ -196,7 +201,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导入抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> int:
+    async def command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 导入抽卡记录命令请求", user.full_name, user.id)
@@ -208,7 +213,7 @@ class WishLogPlugin(Plugin.Conversation):
 
     @conversation.state(state=INPUT_URL)
     @handler.message(filters=~filters.COMMAND, block=False)
-    async def import_data_from_message(self, update: Update, _: CallbackContext) -> int:
+    async def import_data_from_message(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         if message.document:
@@ -237,7 +242,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^删除抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_delete(self, update: Update, context: CallbackContext) -> int:
+    async def command_start_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 删除抽卡记录命令请求", user.full_name, user.id)
@@ -257,7 +262,7 @@ class WishLogPlugin(Plugin.Conversation):
 
     @conversation.state(state=CONFIRM_DELETE)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def command_confirm_delete(self, update: Update, context: CallbackContext) -> int:
+    async def command_confirm_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         if message.text == "确定":
@@ -269,7 +274,7 @@ class WishLogPlugin(Plugin.Conversation):
 
     @handler.command(command="wish_log_force_delete", block=False, admin=True)
     @handler.command(command="gacha_log_force_delete", block=False, admin=True)
-    async def command_gacha_log_force_delete(self, update: Update, context: CallbackContext):
+    async def command_gacha_log_force_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 强制删除抽卡记录命令请求", user.full_name, user.id)
@@ -298,7 +303,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_export", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_export", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导出抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_export(self, update: Update, context: CallbackContext) -> None:
+    async def command_start_export(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 导出抽卡记录命令请求", user.full_name, user.id)
@@ -325,7 +330,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_url", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_url", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^抽卡记录链接(.*)") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_url(self, update: Update, _: CallbackContext) -> None:
+    async def command_start_url(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 生成抽卡记录链接命令请求", user.full_name, user.id)
@@ -345,7 +350,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log", block=False)
     @handler.command(command="gacha_log", block=False)
     @handler.message(filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
-    async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
+    async def command_start_analysis(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
@@ -391,7 +396,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_count", block=False)
     @handler.command(command="gacha_count", block=False)
     @handler.message(filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=False)
-    async def command_start_count(self, update: Update, context: CallbackContext) -> None:
+    async def command_start_count(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         pool_type = BannerType.CHARACTER1
