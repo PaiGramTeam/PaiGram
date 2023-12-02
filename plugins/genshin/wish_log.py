@@ -199,7 +199,6 @@ class WishLogPlugin(Plugin.Conversation):
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
         user = update.effective_user
-        args = self.get_args(context)
         logger.info("用户 %s[%s] 导入抽卡记录命令请求", user.full_name, user.id)
         keyboard = None
         if await self.can_gen_authkey(user.id):
