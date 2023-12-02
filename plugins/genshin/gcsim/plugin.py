@@ -82,21 +82,18 @@ class GCSimPlugin(Plugin):
             buttons[-1].append(button)
         buttons.append(
             [
-                InlineKeyboardButton(
-                    "上一页",
-                    callback_data=f"gcsim_page|{user_id}|{uid}|{page - 1}"
-                    if page > 1
-                    else f"gcsim_unclickable|{user_id}|{uid}|first_page",
-                ),
+                InlineKeyboardButton("上一页", callback_data=f"gcsim_page|{user_id}|{uid}|{page - 1}")
+                if page > 1
+                else InlineKeyboardButton("更新配队", callback_data=f"gcsim_refresh|{user_id}|{uid}"),
                 InlineKeyboardButton(
                     f"{page}/{int(len(fits) / self.scripts_per_page) + 1}",
                     callback_data=f"gcsim_unclickable|{user_id}|{uid}|unclickable",
                 ),
-                InlineKeyboardButton(
-                    "下一页",
-                    callback_data=f"gcsim_page|{user_id}|{uid}|{page + 1}"
-                    if page < int(len(fits) / self.scripts_per_page) + 1
-                    else f"gcsim_unclickable|{user_id}|{uid}|last_page",
+                InlineKeyboardButton("下一页", callback_data=f"gcsim_page|{user_id}|{uid}|{page + 1}")
+                if page < int(len(fits) / self.scripts_per_page) + 1
+                else InlineKeyboardButton(
+                    "更新配队",
+                    callback_data=f"gcsim_refresh|{user_id}|{uid}",
                 ),
             ]
         )
@@ -177,11 +174,37 @@ class GCSimPlugin(Plugin):
         fits = await self.gcsim_runner.get_fits(uid)
         if not fits:
             fits = await self.gcsim_runner.calculate_fits(uid, character_infos)
+        if not fits:
+            await message.reply_text("好像没有找到适合旅行者的配队呢，要不更新下面板吧")
+            return
         buttons = self._gen_buttons(user.id, uid, fits)
         await message.reply_text(
             "请选择 GCSim 脚本",
             reply_markup=InlineKeyboardMarkup(buttons),
         )
+
+    @handler.callback_query(pattern=r"^gcsim_refresh\|", block=False)
+    async def gcsim_refresh(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        callback_query = update.callback_query
+        user = callback_query.from_user
+        message = callback_query.message
+
+        user_id, uid = map(int, callback_query.data.split("|")[1:])
+        if user.id != user_id:
+            await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
+            return
+
+        character_infos = await self._load_characters(uid)
+        if not character_infos:
+            return await _no_character_return(user.id, uid, message)
+
+        await self.gcsim_runner.remove_fits(uid)
+        fits = await self.gcsim_runner.calculate_fits(uid, character_infos)
+        if not fits:
+            await callback_query.edit_message_text("好像没有找到适合旅行者的配队呢，要不更新下面板吧")
+            return
+        buttons = self._gen_buttons(user.id, uid, fits)
+        await callback_query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler.callback_query(pattern=r"^gcsim_page\|", block=False)
     async def gcsim_page(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:

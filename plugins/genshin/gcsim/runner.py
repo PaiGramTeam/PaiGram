@@ -80,8 +80,11 @@ class GCSimRunner:
         for path in GCSIM_SCRIPTS_PATH.iterdir():
             if path.is_file():
                 with open(path, "r") as f:
-                    if script := self.check_gcsim_script(path.name, f.read()):
-                        self.scripts[path.stem] = script
+                    try:
+                        if script := self.check_gcsim_script(path.name, f.read()):
+                            self.scripts[path.stem] = script
+                    except Exception as e:
+                        logger.error("无法读取 GCSim 脚本 %s: %s", path.name, e)
 
     async def initialize(self):
         gcsim_pypi_path = Path(gcsim_pypi.__file__).parent
@@ -184,3 +187,6 @@ class GCSimRunner:
 
     async def get_fits(self, uid: Union[int, str]) -> List[GCSimFit]:
         return [GCSimFit(**fit) for fit in self.player_gcsim_scripts.get_fits(uid)]
+
+    async def remove_fits(self, uid: Union[int, str]) -> None:
+        self.player_gcsim_scripts.remove_fits(uid)
