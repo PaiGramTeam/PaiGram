@@ -172,7 +172,8 @@ class WishLogPlugin(Plugin.Conversation):
         if player_info is not None:
             cookies = await self.cookie_service.get(uid, account_id=player_info.account_id)
             if (
-                cookies is not None and cookies.data
+                cookies is not None
+                and cookies.data
                 and "stoken" in cookies.data
                 and next((value for key, value in cookies.data.items() if key in ["ltuid", "login_uid"]), None)
             ):
