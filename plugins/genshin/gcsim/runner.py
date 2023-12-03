@@ -66,6 +66,12 @@ def _get_gcsim_bin_name() -> str:
     return bin_name
 
 
+def _get_limit_command() -> str:
+    if platform.system() == "Linux":
+        return "ulimit -m 1000000 && ulimit -v 1000000 && timeout 120 "
+    return ""
+
+
 class GCSimRunner:
     def __init__(self, client: "RedisDB"):
         self.initialized = False
@@ -137,24 +143,33 @@ class GCSimRunner:
         if file_id := await self.cache.get_cache(uid, hash(str(merged_script))):
             return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key, file_id=file_id)
         await self.player_gcsim_scripts.write_script(uid, script_key, str(merged_script))
-
-        process = await asyncio.create_subprocess_exec(
+        limit = _get_limit_command()
+        command = [
             self.bin_path,
             "-c",
             self.player_gcsim_scripts.get_script_path(uid, script_key).absolute().as_posix(),
             "-out",
             self.player_gcsim_scripts.get_result_path(uid, script_key).absolute().as_posix(),
+        ]
+        process = await asyncio.create_subprocess_shell(
+            limit + " ".join([str(i) for i in command]),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
         logger.debug("GCSim 脚本 (%s|%s|%s) 用时 %.2fs", user_id, uid, script_key, time.time() - added_time)
+        error = None
         if stderr:
-            logger.error("GCSim 脚本 (%s|%s|%s) 错误: %s", user_id, uid, script_key, stderr.decode())
-            return GCSimResult(
-                error=stderr.decode(), user_id=user_id, uid=uid, script_key=script_key, script=merged_script
-            )
+            error = stderr.decode()[:500]
+            if "out of memory" in error:
+                error = "超出内存限制"
+        if process.returncode == 124:
+            error = "超出运行时间限制"
+        if error:
+            logger.error("GCSim 脚本 (%s|%s|%s) 错误: %s", user_id, uid, script_key, error)
+            return GCSimResult(error=error, user_id=user_id, uid=uid, script_key=script_key, script=merged_script)
         if stdout:
+            logger.info("GCSim 脚本 (%s|%s|%s) 运行完成", user_id, uid, script_key)
             logger.debug("GCSim 脚本 (%s|%s|%s) 输出: %s", user_id, uid, script_key, stdout.decode())
             return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key, script=merged_script)
         return GCSimResult(
