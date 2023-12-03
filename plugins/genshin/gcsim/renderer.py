@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 
 from core.dependence.assets import AssetsService
 from gram_core.services.template.models import RenderResult
@@ -9,11 +9,22 @@ from metadata.shortname import idToName, elementToName, elementsToColor
 from plugins.genshin.model import GCSim, GCSimCharacterInfo, CharacterInfo
 from plugins.genshin.model.converters.gcsim import GCSimConverter
 
+if TYPE_CHECKING:
+    from utils.typedefs import StrOrInt
+
 
 class GCSimResultRenderer:
     def __init__(self, assets_service: AssetsService, template_service: TemplateService):
         self.assets_service = assets_service
         self.template_service = template_service
+
+    @staticmethod
+    def fix_asset_id(asset_id: "StrOrInt") -> "StrOrInt":
+        if "-" in str(asset_id):
+            _asset_id = asset_id.split("-")[0]
+            if _asset_id.isnumeric():
+                return int(_asset_id)
+        return asset_id
 
     async def prepare_result(
         self, result_path: Path, script: GCSim, character_infos: List[CharacterInfo]
@@ -23,6 +34,7 @@ class GCSimResultRenderer:
         result["extra"] = {}
         for idx, character_details in enumerate(result["character_details"]):
             asset_id, _ = GCSimConverter.to_character(character_details["name"])
+            asset_id = self.fix_asset_id(asset_id)
             gcsim_character: GCSimCharacterInfo = next(
                 filter(lambda gc, cn=character_details["name"]: gc.character == cn, script.characters), None
             )

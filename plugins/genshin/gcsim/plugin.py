@@ -163,12 +163,12 @@ class GCSimPlugin(Plugin):
         if not self.gcsim_runner.initialized:
             await message.reply_text("GCSim 未初始化，请稍候再试或重启派蒙")
             return
-        # if context.user_data.get("overlapping", False):
-        #     reply = await message.reply_text("旅行者已经有脚本正在运行，请让派蒙稍微休息一下")
-        #     if filters.ChatType.GROUPS.filter(message):
-        #         self.add_delete_message_job(reply)
-        #         self.add_delete_message_job(message)
-        #     return
+        if context.user_data.get("overlapping", False):
+            reply = await message.reply_text("旅行者已经有脚本正在运行，请让派蒙稍微休息一下")
+            if filters.ChatType.GROUPS.filter(message):
+                self.add_delete_message_job(reply)
+                self.add_delete_message_job(message)
+            return
         logger.info("用户 %s[%s] 发出 gcsim 命令", user.full_name, user.id)
 
         uid = await self._get_uid(user.id, args, message.reply_to_message)
