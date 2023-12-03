@@ -13,6 +13,8 @@ __all__ = [
     "roleToName",
     "weaponToName",
     "weaponToId",
+    "elementToName",
+    "elementsToColor",
     "not_real_roles",
     "roleToTag",
 ]
@@ -744,6 +746,33 @@ weapons = {
     "水仙十字之剑": ["水仙", "水仙十字剑"],
     "静水流涌之辉": ["静水", "净水流涌之辉", "水神专武", "芙芙专武"],
 }
+elements = {
+    "pyro": ["火"],
+    "hydro": ["水"],
+    "anemo": ["风"],
+    "cryo": ["冰"],
+    "electro": ["雷"],
+    "geo": ["岩"],
+    "dendro": ["草"],
+    "physical": ["物理"],
+}
+elementsToColor = {
+    "anemo": "#65B89A",
+    "geo": "#F6A824",
+    "electro": "#9F79B5",
+    "dendro": "#97C12B",
+    "hydro": "#3FB6ED",
+    "pyro": "#E76429",
+    "cryo": "#8FCDDC",
+    "physical": "#15161B",
+}
+
+
+@functools.lru_cache()
+def elementToName(elem: str) -> str | None:
+    """将元素昵称转为正式名"""
+    elem = str.casefold(elem)  # 忽略大小写
+    return elements[elem][0] if elem in elements else None
 
 
 # noinspection PyPep8Naming

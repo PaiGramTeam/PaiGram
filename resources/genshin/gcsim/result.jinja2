@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <title>Title</title>
+    <script src="../../js/tailwindcss-3.1.8.js"></script>
+    <script src="../../js/echarts.min.js"></script>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+
+</head>
+<body>
+<div class="mx-auto flex w-[48rem] flex-col space-y-2 bg-gray-400 px-2 py-2">
+    <!-- START TEAM/DPS summary row -->
+    <div class="flex h-auto flex-col items-start justify-center space-y-4 rounded-lg bg-slate-600 py-6">
+        <!-- START character row -->
+        {% include "genshin/gcsim/characters.jinja2" %}
+        <!-- END character row -->
+        <!-- START summary DPS row -->
+        {% include "genshin/gcsim/summary.jinja2" %}
+        <!-- END summary DPS row -->
+    </div>
+    <!-- END TEAM/DPS summary row -->
+    <!-- START DPS distribution row -->
+    <div class="flex flex-row items-start justify-center space-x-2 rounded-lg">
+        <div class="flex h-56 w-1/2 items-center justify-center rounded-xl bg-slate-600" id="dps_by_character">
+        </div>
+        <div class="flex h-56 w-1/2 items-center justify-center rounded-xl bg-slate-600" id="dps_by_element">
+        </div>
+        <script type="text/javascript">
+            var data = JSON.parse('{{ extra | tojson }}')
+            // Initialize the echarts instance based on the prepared dom
+            var dpsByCharacter = echarts.init(document.getElementById('dps_by_character'));
+            var dpsByElement = echarts.init(document.getElementById('dps_by_element'));
+            dpsByCharacter.setOption({
+                series: [
+                    {
+                        type: 'pie',
+                        data: data["character_dps"],
+                        label: {
+                            color: 'white'
+                        }
+                    }
+                ],
+                animation: false
+            });
+            dpsByElement.setOption({
+                series: [
+                    {
+                        type: 'pie',
+                        data: data["element_dps"],
+                        label: {
+                            color: 'white'
+                        }
+                    }
+                ],
+                animation: false
+            });
+        </script>
+    </div>
+    <!-- END DPS distribution row -->
+    <!-- START Energy/Heal/Shield row -->
+    <div class="flex flex-row items-start justify-center space-x-2 rounded-lg">
+        {% include "genshin/gcsim/other_summary.jinja2" %}
+
+    </div>
+    <!-- END Energy/Heal/Shield row -->
+    <!-- START DPS line chart row -->
+    <div class="flex h-80 w-full flex-row items-start justify-center rounded-lg bg-slate-600" id="damage_overtime">
+
+    </div>
+    <script type="text/javascript">
+        var data = JSON.parse('{{ extra | tojson }}')
+        // Initialize the echarts instance based on the prepared dom
+        var damageOvertime = echarts.init(document.getElementById('damage_overtime'));
+        damageOvertime.setOption({
+            xAxis: {
+                data: data["damage"]["xAxis"],
+                axisLabel: {
+                    color: 'white',
+                }
+            },
+            yAxis: {
+                axisLabel: {
+                    color: 'white'
+                }
+            },
+            legend: {
+                textStyle: {
+                    color: 'white'
+                }
+            },
+            series: data["damage"]["series"],
+            animation: false
+        });
+    </script>
+    <!-- END DPS line chart row -->
+</div>
+
+
+</body>
+</html>

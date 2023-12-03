@@ -60,6 +60,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("stats", "玩家统计查询"),
             BotCommand("player_card", "查询角色卡片"),
             BotCommand("avatar_board", "角色排名"),
+            BotCommand("gcsim", "组队伤害计算"),
             # Cookie 查询类
             BotCommand("dailynote", "查询实时便笺"),
             BotCommand("ledger", "查询当月旅行札记"),
@@ -80,6 +81,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("sign_all", "全部账号重新签到"),
             BotCommand("send_log", "发送日志"),
             BotCommand("update", "更新"),
+            BotCommand("set_command", "重设命令"),
         ]
         await context.bot.set_my_commands(commands=group_command)  # 留空，default 为 botCommandScopeDefault, 所有聊天可见
         await context.bot.set_my_commands(commands=user_command + group_command, scope=BotCommandScopeAllPrivateChats())
