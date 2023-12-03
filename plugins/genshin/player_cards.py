@@ -32,6 +32,7 @@ from core.services.players import PlayersService
 from core.services.template.services import TemplateService
 from metadata.shortname import roleToName, idToName
 from modules.apihelper.client.components.remote import Remote
+from modules.gcsim.file import PlayerGCSimScripts
 from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
 from utils.enkanetwork import RedisCache, EnkaNetworkAPI
@@ -78,6 +79,7 @@ class PlayerCards(Plugin):
         self.client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent, cache=False)
         self.cache = RedisCache(redis.client, key="plugin:player_cards:enka_network", ex=60)
         self.player_cards_file = PlayerCardsFile()
+        self.player_gcsim_scripts = PlayerGCSimScripts()
         self.assets_service = assets_service
         self.template_service = template_service
         self.kitsune: Optional[str] = None
@@ -210,15 +212,7 @@ class PlayerCards(Plugin):
                 self.kitsune = reply_message.photo[-1].file_id
             return
         enka_response = EnkaNetworkResponse.parse_obj(copy.deepcopy(original_data))
-        if character_name is not None:
-            logger.info(
-                "用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]",
-                user.full_name,
-                user.id,
-                character_name,
-                uid,
-            )
-        else:
+        if character_name is None:
             logger.info("用户 %s[%s] 角色卡片查询命令请求", user.full_name, user.id)
             ttl = await self.cache.ttl(uid)
             if enka_response.characters is None or len(enka_response.characters) == 0:
@@ -244,6 +238,14 @@ class PlayerCards(Plugin):
             if reply_message.photo:
                 self.kitsune = reply_message.photo[-1].file_id
             return
+
+        logger.info(
+            "用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]",
+            user.full_name,
+            user.id,
+            character_name,
+            uid,
+        )
         for characters in enka_response.characters:
             if characters.name == character_name:
                 break
@@ -300,6 +302,7 @@ class PlayerCards(Plugin):
             await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
             await message.delete()
             return
+        self.player_gcsim_scripts.remove_fits(uid)
         await callback_query.answer(text="正在从 Enka.Network 获取角色列表 请不要重复点击按钮")
         buttons = self.gen_button(data, user.id, uid, update_button=False)
         render_data = await self.parse_holder_data(data)
