@@ -17,7 +17,7 @@ from metadata.shortname import roleToName, roleToId
 from modules.gcsim.file import PlayerGCSimScripts
 from modules.playercards.file import PlayerCardsFile
 from plugins.genshin.gcsim.renderer import GCSimResultRenderer
-from plugins.genshin.gcsim.runner import GCSimRunner, GCSimFit, GCSimQueueFull
+from plugins.genshin.gcsim.runner import GCSimRunner, GCSimFit, GCSimQueueFull, GCSimResult
 from plugins.genshin.model.base import CharacterInfo
 from plugins.genshin.model.converters.enka import EnkaConverter
 from utils.log import logger
@@ -285,7 +285,9 @@ class GCSimPlugin(Plugin):
             await callback_query.edit_message_text("派蒙任务过多忙碌中，请稍后再试")
             return
 
-    async def _callback(self, update: "Update", results, character_infos) -> None:
+    async def _callback(
+        self, update: "Update", results: List[GCSimResult], character_infos: List[CharacterInfo]
+    ) -> None:
         result = results[0]
         callback_query = update.callback_query
         message = callback_query.message
