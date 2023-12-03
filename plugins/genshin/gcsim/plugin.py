@@ -2,7 +2,7 @@ import copy
 from typing import Optional, TYPE_CHECKING, List, Union, Dict, Tuple
 
 from enkanetwork import EnkaNetworkResponse
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
 
@@ -23,12 +23,13 @@ from plugins.genshin.model.converters.enka import EnkaConverter
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from telegram import Update, Message
     from telegram.ext import ContextTypes
 
 __all__ = ("GCSimPlugin",)
 
 
-async def _no_account_return(message: Message, context: "ContextTypes.DEFAULT_TYPE"):
+async def _no_account_return(message: "Message", context: "ContextTypes.DEFAULT_TYPE"):
     buttons = [
         [
             InlineKeyboardButton(
@@ -40,7 +41,7 @@ async def _no_account_return(message: Message, context: "ContextTypes.DEFAULT_TY
     await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
 
-async def _no_character_return(user_id: int, uid: int, message: Message):
+async def _no_character_return(user_id: int, uid: int, message: "Message"):
     photo = open("resources/img/kitsune.png", "rb")
     buttons = [
         [
@@ -167,7 +168,7 @@ class GCSimPlugin(Plugin):
         return character_infos
 
     @handler.command(command="gcsim", block=False)
-    async def gcsim(self, update: Update, context: "ContextTypes.DEFAULT_TYPE"):
+    async def gcsim(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
         args = self.get_args(context)
