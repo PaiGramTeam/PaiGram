@@ -12,10 +12,11 @@ from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from gram_core.services.template.services import TemplateService
+from gram_core.services.users.services import UserAdminService
 from modules.gcsim.file import PlayerGCSimScripts
 from modules.playercards.file import PlayerCardsFile
 from plugins.genshin.gcsim.renderer import GCSimResultRenderer
-from plugins.genshin.gcsim.runner import GCSimRunner, GCSimFit
+from plugins.genshin.gcsim.runner import GCSimRunner, GCSimFit, GCSimQueueFull
 from plugins.genshin.model.base import CharacterInfo
 from plugins.genshin.model.converters.enka import EnkaConverter
 from utils.log import logger
@@ -62,6 +63,7 @@ class GCSimPlugin(Plugin):
         player_service: PlayersService,
         template_service: TemplateService,
         redis: RedisDB = None,
+        user_admin_service: UserAdminService = None,
     ):
         self.player_service = player_service
         self.player_cards_file = PlayerCardsFile()
@@ -69,6 +71,7 @@ class GCSimPlugin(Plugin):
         self.gcsim_runner = GCSimRunner(redis)
         self.gcsim_renderer = GCSimResultRenderer(assets_service, template_service)
         self.scripts_per_page = 8
+        self.user_admin_service = user_admin_service
 
     async def initialize(self):
         await self.gcsim_runner.initialize()
@@ -160,12 +163,12 @@ class GCSimPlugin(Plugin):
         if not self.gcsim_runner.initialized:
             await message.reply_text("GCSim 未初始化，请稍候再试或重启派蒙")
             return
-        if context.user_data.get("overlapping", False):
-            reply = await message.reply_text("旅行者已经有脚本正在运行，请让派蒙稍微休息一下")
-            if filters.ChatType.GROUPS.filter(message):
-                self.add_delete_message_job(reply)
-                self.add_delete_message_job(message)
-            return
+        # if context.user_data.get("overlapping", False):
+        #     reply = await message.reply_text("旅行者已经有脚本正在运行，请让派蒙稍微休息一下")
+        #     if filters.ChatType.GROUPS.filter(message):
+        #         self.add_delete_message_job(reply)
+        #         self.add_delete_message_job(message)
+        #     return
         logger.info("用户 %s[%s] 发出 gcsim 命令", user.full_name, user.id)
 
         uid = await self._get_uid(user.id, args, message.reply_to_message)
@@ -250,9 +253,6 @@ class GCSimPlugin(Plugin):
         user = callback_query.from_user
         message = callback_query.message
         user_id, uid, script_key = callback_query.data.split("|")[1:]
-        msg_to_reply = message
-        if message.reply_to_message:
-            msg_to_reply = message.reply_to_message
         logger.info("用户 %s[%s] GCSim运行请求 || %s", user.full_name, user.id, callback_query.data)
         if str(user.id) != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
@@ -263,8 +263,24 @@ class GCSimPlugin(Plugin):
         if not character_infos:
             return await _no_character_return(user.id, uid, message)
 
-        await callback_query.edit_message_text("GCSim 运行中...", reply_markup=InlineKeyboardMarkup([]))
-        result = await self.gcsim_runner.run(user_id, uid, script_key, character_infos)
+        await callback_query.edit_message_text(f"GCSim {script_key} 运行中...", reply_markup=InlineKeyboardMarkup([]))
+        results = []
+        callback_task = self._callback(update, results, character_infos)
+        priority = 1 if await self.user_admin_service.is_admin(user.id) else 2
+        try:
+            await self.gcsim_runner.run(user_id, uid, script_key, character_infos, results, callback_task, priority)
+        except GCSimQueueFull:
+            await callback_query.edit_message_text("派蒙任务过多忙碌中，请稍后再试")
+            return
+
+    async def _callback(self, update: "Update", results, character_infos) -> None:
+        result = results[0]
+        callback_query = update.callback_query
+        message = callback_query.message
+        _, uid, script_key = callback_query.data.split("|")[1:]
+        msg_to_reply = message
+        if message.reply_to_message:
+            msg_to_reply = message.reply_to_message
         if result.error:
             await callback_query.edit_message_text(result.error)
         else:

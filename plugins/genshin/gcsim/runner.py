@@ -4,8 +4,8 @@ import platform
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from queue import Queue
-from typing import Optional, Dict, List, Union, TYPE_CHECKING, Tuple
+from queue import PriorityQueue
+from typing import Optional, Dict, List, Union, TYPE_CHECKING, Tuple, Coroutine, Any
 
 import gcsim_pypi
 from pydantic import BaseModel
@@ -72,6 +72,21 @@ def _get_limit_command() -> str:
     return ""
 
 
+class GCSimRunnerTask:
+    def __init__(self, task: Coroutine[Any, Any, None]):
+        self.task = task
+
+    def __lt__(self, other: "GCSimRunnerTask") -> bool:
+        return False
+
+    async def run(self) -> None:
+        await self.task
+
+
+class GCSimQueueFull(Exception):
+    pass
+
+
 class GCSimRunner:
     def __init__(self, client: "RedisDB"):
         self.initialized = False
@@ -81,7 +96,8 @@ class GCSimRunner:
         self.scripts: Dict[str, GCSim] = {}
         max_concurrent_gcsim = multiprocessing.cpu_count()
         self.sema = asyncio.BoundedSemaphore(max_concurrent_gcsim)
-        self.queue: Queue[None] = Queue()
+        self.queue_size = 21
+        self.queue: PriorityQueue[List[int, GCSimRunnerTask]] = PriorityQueue(maxsize=self.queue_size)
         self.cache = GCSimCache(client)
 
     @staticmethod
@@ -130,8 +146,23 @@ class GCSimRunner:
         logger.debug("加载 %d GCSim 脚本耗时 %.2f 秒", len(self.scripts), time.time() - now)
         self.initialized = True
 
+    @staticmethod
+    async def _execute_queue(
+        gcsim_task: Coroutine[Any, Any, GCSimResult],
+        results: List[GCSimResult],
+        callback_task: Coroutine[Any, Any, None],
+    ) -> None:
+        data = await gcsim_task
+        results.append(data)
+        await callback_task
+
     async def _execute_gcsim(
-        self, user_id: str, uid: str, script_key: str, added_time: float, character_infos: List[CharacterInfo]
+        self,
+        user_id: str,
+        uid: str,
+        script_key: str,
+        added_time: float,
+        character_infos: List[CharacterInfo],
     ) -> GCSimResult:
         script = self.scripts.get(script_key)
         if script is None:
@@ -186,11 +217,22 @@ class GCSimRunner:
         uid: str,
         script_key: str,
         character_infos: List[CharacterInfo],
-    ) -> GCSimResult:
+        results: List[GCSimResult],
+        callback_task: Coroutine[Any, Any, None],
+        priority: int = 2,
+    ) -> None:
         start_time = time.time()
+        gcsim_task = self._execute_gcsim(user_id, uid, script_key, start_time, character_infos)
+        queue_task = GCSimRunnerTask(self._execute_queue(gcsim_task, results, callback_task))
+        if priority == 2 and self.queue.qsize() >= (self.queue_size - 1):
+            raise GCSimQueueFull()
+        if self.queue.full():
+            raise GCSimQueueFull()
+        self.queue.put([priority, queue_task])
         async with self.sema:
-            result = await self._execute_gcsim(user_id, uid, script_key, start_time, character_infos)
-            return result
+            if not self.queue.empty():
+                _, task = self.queue.get()
+                await task.run()
 
     async def calculate_fits(self, uid: Union[int, str], character_infos: List[CharacterInfo]) -> List[GCSimFit]:
         fits = []
