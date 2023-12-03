@@ -1,5 +1,5 @@
 import copy
-from typing import Optional, TYPE_CHECKING, List, Union, Dict
+from typing import Optional, TYPE_CHECKING, List, Union, Dict, Tuple
 
 from enkanetwork import EnkaNetworkResponse
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Message
@@ -13,6 +13,7 @@ from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from gram_core.services.template.services import TemplateService
 from gram_core.services.users.services import UserAdminService
+from metadata.shortname import roleToName, roleToId
 from modules.gcsim.file import PlayerGCSimScripts
 from modules.playercards.file import PlayerCardsFile
 from plugins.genshin.gcsim.renderer import GCSimResultRenderer
@@ -107,13 +108,23 @@ class GCSimPlugin(Plugin):
         )
         return buttons
 
-    async def _get_uid(self, user_id: int, args: List[str], reply: Optional["Message"]) -> Optional[int]:
+    @staticmethod
+    def _filter_fits_by_names(names: List[str], fits: List[GCSimFit]) -> List[GCSimFit]:
+        if not names:
+            return fits
+        return [fit for fit in fits if all(name in [str(i) for i in fit.characters] for name in names)]
+
+    async def _get_uid_names(
+        self, user_id: int, args: List[str], reply: Optional["Message"]
+    ) -> Tuple[Optional[int], List[str]]:
         """通过消息获取 uid，优先级：args > reply > self"""
-        uid, user_id_ = None, user_id
+        uid, user_id_, names = None, user_id, []
         if args:
             for i in args:
                 if i is not None and i.isdigit() and len(i) == 9:
                     uid = int(i)
+                if i is not None and roleToId(i) is not None:
+                    names.append(roleToName(i))
         if reply:
             try:
                 user_id_ = reply.from_user.id
@@ -127,7 +138,7 @@ class GCSimPlugin(Plugin):
                 player_info = await self.player_service.get_player(user_id)
                 if player_info is not None:
                     uid = player_info.player_id
-        return uid
+        return uid, names
 
     @staticmethod
     def _fix_skill_level(data: Dict) -> Dict:
@@ -169,9 +180,9 @@ class GCSimPlugin(Plugin):
                 self.add_delete_message_job(reply)
                 self.add_delete_message_job(message)
             return
-        logger.info("用户 %s[%s] 发出 gcsim 命令", user.full_name, user.id)
 
-        uid = await self._get_uid(user.id, args, message.reply_to_message)
+        uid, names = await self._get_uid_names(user.id, args, message.reply_to_message)
+        logger.info("用户 %s[%s] 发出 gcsim 命令 UID[%s] NAMES[%s]", user.full_name, user.id, uid, " ".join(names))
         if uid is None:
             return await _no_account_return(message, context)
 
@@ -182,6 +193,7 @@ class GCSimPlugin(Plugin):
         fits = await self.gcsim_runner.get_fits(uid)
         if not fits:
             fits = await self.gcsim_runner.calculate_fits(uid, character_infos)
+        fits = self._filter_fits_by_names(names, fits)
         if not fits:
             await message.reply_text("好像没有找到适合旅行者的配队呢，要不更新下面板吧")
             return
