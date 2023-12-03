@@ -8,7 +8,7 @@ __all__ = [
 
 
 class GCSimCache:
-    qname: str = "gcsim:"
+    qname: str = "gcsim"
 
     def __init__(self, redis: RedisDB, ttl: int = 24 * 60 * 60):
         self.client = redis.client
