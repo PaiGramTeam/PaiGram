@@ -71,7 +71,6 @@
             animation: false
         });
         var damageOvertime = echarts.init(document.getElementById('damage_overtime'));
-        console.log(data["damage"]["data"]["mean"].map((mean, idx) => [mean, mean - data["damage"]["data"]["sd"][idx], mean + data["damage"]["data"]["sd"][idx]]))
         damageOvertime.setOption({
             xAxis: {
                 data: data["damage"]["xAxis"],
