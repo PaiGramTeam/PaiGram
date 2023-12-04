@@ -130,7 +130,7 @@
                 },
                 {
                     type: "line",
-                    data: data["damage"]["data"]["mean"].map((mean, idx) => mean + data["damage"]["data"]["sd"][idx] - (mean - data["damage"]["data"]["sd"][idx] < 0 ? 0 : mean - data["damage"]["data"]["sd"][idx])),
+                    data: data["damage"]["data"]["mean"].map((mean, idx) => mean - data["damage"]["data"]["sd"][idx] < 0 ? mean + data["damage"]["data"]["sd"][idx] : 2 * data["damage"]["data"]["sd"][idx]),
                     stack: 'confidence-band',
                     stackStrategy: 'positive',
                     lineStyle: {
