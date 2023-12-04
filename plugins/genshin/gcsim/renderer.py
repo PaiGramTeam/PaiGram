@@ -64,33 +64,12 @@ class GCSimResultRenderer:
         ]
         result["extra"]["damage"] = {
             "xAxis": [i * 0.5 for i in range(len(result["statistics"]["damage_buckets"]["buckets"]))],
-            "series": [
-                {
-                    "data": [bucket["mean"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
-                    "type": "line",
-                    "stack": "x",
-                    "areaStyle": {},
-                    "name": "平均伤害",
-                },
-                {
-                    "data": [bucket["min"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
-                    "type": "line",
-                    "stack": "x",
-                    "name": "最小伤害",
-                },
-                {
-                    "data": [bucket["max"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
-                    "type": "line",
-                    "stack": "x",
-                    "name": "最大伤害",
-                },
-                {
-                    "data": [bucket["sd"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
-                    "type": "line",
-                    "stack": "x",
-                    "name": "标准差",
-                },
-            ],
+            "data": {
+                "mean": [bucket["mean"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                "min": [bucket["min"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                "max": [bucket["max"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                "sd": [bucket["sd"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+            },
         }
 
         return result
