@@ -13,7 +13,7 @@ from core.plugin import Plugin, handler
 from core.services.players import PlayersService
 from gram_core.services.template.services import TemplateService
 from gram_core.services.users.services import UserAdminService
-from metadata.shortname import roles, roleToName, roleToId
+from metadata.shortname import roleToName, roleToId
 from modules.gcsim.file import PlayerGCSimScripts
 from modules.playercards.file import PlayerCardsFile
 from plugins.genshin.gcsim.renderer import GCSimResultRenderer
@@ -113,14 +113,7 @@ class GCSimPlugin(Plugin):
     def _filter_fits_by_names(names: List[str], fits: List[GCSimFit]) -> List[GCSimFit]:
         if not names:
             return fits
-        return [
-            fit
-            for fit in fits
-            if all(
-                name in [alternative_names for gc in fit.characters for alternative_names in roles[gc.id]]
-                for name in names
-            )
-        ]
+        return [fit for fit in fits if all(name in [str(i) for i in fit.characters] for name in names)]
 
     async def _get_uid_names(
         self, user_id: int, args: List[str], reply: Optional["Message"]
