@@ -64,12 +64,63 @@ class GCSimResultRenderer:
         ]
         result["extra"]["damage"] = {
             "xAxis": [i * 0.5 for i in range(len(result["statistics"]["damage_buckets"]["buckets"]))],
-            "data": {
-                "mean": [bucket["mean"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
-                "min": [bucket["min"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
-                "max": [bucket["max"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
-                "sd": [bucket["sd"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
-            },
+            "series": [
+                {
+                    "data": [bucket["mean"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                    "type": "line",
+                    "symbol": "none",
+                    "color": "#66ccff",
+                    "name": "平均伤害",
+                },
+                {
+                    "data": [bucket["min"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                    "type": "line",
+                    "lineStyle": {
+                        "opacity": 0,
+                    },
+                    "stack": "area",
+                    "symbol": "none",
+                },
+                {
+                    "data": [max(0, bucket["mean"] - bucket["sd"]) for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                    "type": "line",
+                    "lineStyle": {
+                        "opacity": 0
+                    },
+                    "stack": "cofidence-band",
+                    "symbol": "none",
+                },
+                {
+                    "data": [min(bucket["mean"], bucket["sd"]) + bucket["sd"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                    "type": "line",
+                    "lineStyle": {
+                        "opacity": 0,
+                    },
+                    "areaStyle": {
+                        "opacity": 0.5,
+                        "color": "#4c9bd4",
+                    },
+                    "stack": "cofidence-band",
+                    "symbol": "none",
+                    "color": "#4c9bd4",
+                    "name": "标准差",
+                },
+                {
+                    "data": [bucket["max"] - bucket["min"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                    "type": "line",
+                    "lineStyle": {
+                        "opacity": 0,
+                    },
+                    "areaStyle": {
+                        "opacity": 0.25,
+                        "color": "#a5cde9",
+                    },
+                    "stack": "area",
+                    "symbol": "none",
+                    "color": "#a5cde9",
+                    "name": "极值",
+                },
+            ],
         }
 
         return result

@@ -101,58 +101,7 @@
                     color: 'white'
                 },
             },
-            series: [
-                {
-                    data: data["damage"]["data"]["mean"],
-                    type: "line",
-                    lineStyle: {
-                    },
-                    showSymbol: false,
-                    name: "平均伤害",
-                },
-                {
-                    data: data["damage"]["data"]["min"],
-                    type: "line",
-                    lineStyle: {
-                        opacity: 0.5,
-                    },
-                    showSymbol: false,
-                    name: "最小伤害",
-                },
-                {
-                    data: data["damage"]["data"]["max"],
-                    type: "line",
-                    lineStyle: {
-                        opacity: 0.5,
-                    },
-                    showSymbol: false,
-                    name: "最大伤害",
-                },
-                {
-                    type: "line",
-                    data: data["damage"]["data"]["mean"].map((mean, idx) => mean - data["damage"]["data"]["sd"][idx] < 0 ? mean + data["damage"]["data"]["sd"][idx] : 2 * data["damage"]["data"]["sd"][idx]),
-                    stack: 'confidence-band',
-                    stackStrategy: 'positive',
-                    lineStyle: {
-                        opacity: 0
-                    },
-                    symbol: 'none',
-                },
-                {
-                    type: "line",
-                    data: data["damage"]["data"]["mean"].map((mean, idx) => mean - data["damage"]["data"]["sd"][idx] < 0 ? 0 : mean - data["damage"]["data"]["sd"][idx]),
-                    stack: 'confidence-band',
-                    stackStrategy: 'positive',
-                    lineStyle: {
-                        opacity: 0
-                    },
-                    areaStyle: {
-                        opacity: 0.18,
-                        color: '#4c9bd4'
-                    },
-                    symbol: 'none',
-                },
-            ],
+            series: data["damage"]["series"],
             animation: false
         });
     </script>
