@@ -82,16 +82,20 @@ class GCSimResultRenderer:
                     "symbol": "none",
                 },
                 {
-                    "data": [max(0, bucket["mean"] - bucket["sd"]) for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                    "data": [
+                        max(0, bucket["mean"] - bucket["sd"])
+                        for bucket in result["statistics"]["damage_buckets"]["buckets"]
+                    ],
                     "type": "line",
-                    "lineStyle": {
-                        "opacity": 0
-                    },
+                    "lineStyle": {"opacity": 0},
                     "stack": "cofidence-band",
                     "symbol": "none",
                 },
                 {
-                    "data": [min(bucket["mean"], bucket["sd"]) + bucket["sd"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                    "data": [
+                        min(bucket["mean"], bucket["sd"]) + bucket["sd"]
+                        for bucket in result["statistics"]["damage_buckets"]["buckets"]
+                    ],
                     "type": "line",
                     "lineStyle": {
                         "opacity": 0,
@@ -106,7 +110,9 @@ class GCSimResultRenderer:
                     "name": "标准差",
                 },
                 {
-                    "data": [bucket["max"] - bucket["min"] for bucket in result["statistics"]["damage_buckets"]["buckets"]],
+                    "data": [
+                        bucket["max"] - bucket["min"] for bucket in result["statistics"]["damage_buckets"]["buckets"]
+                    ],
                     "type": "line",
                     "lineStyle": {
                         "opacity": 0,
