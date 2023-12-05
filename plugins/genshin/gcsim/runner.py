@@ -10,6 +10,7 @@ from typing import Optional, Dict, List, Union, TYPE_CHECKING, Tuple, Coroutine,
 import gcsim_pypi
 from pydantic import BaseModel
 
+from gram_core.config import config
 from metadata.shortname import idToName
 from modules.apihelper.client.components.remote import Remote
 from modules.gcsim.cache import GCSimCache
@@ -171,8 +172,9 @@ class GCSimRunner:
             merged_script = GCSimConverter.merge_character_infos(script, character_infos)
         except ValueError:
             return GCSimResult(error="无法合并角色信息", user_id=user_id, uid=uid, script_key=script_key)
-        if file_id := await self.cache.get_cache(uid, hash(str(merged_script))):
-            return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key, file_id=file_id)
+        if not config.debug:
+            if file_id := await self.cache.get_cache(uid, hash(str(merged_script))):
+                return GCSimResult(error=None, user_id=user_id, uid=uid, script_key=script_key, file_id=file_id)
         await self.player_gcsim_scripts.write_script(uid, script_key, str(merged_script))
         limit = _get_limit_command()
         command = [
