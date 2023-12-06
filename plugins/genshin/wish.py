@@ -48,6 +48,7 @@ class GachaRedis:
     def __init__(self, redis: RedisDB):
         self.client = redis.client
         self.qname = "plugin:gacha:"
+        self.ex = 60 * 60 * 24
 
     async def get(self, user_id: int) -> PlayerGachaInfo:
         data = await self.client.get(f"{self.qname}{user_id}")
@@ -57,7 +58,7 @@ class GachaRedis:
 
     async def set(self, user_id: int, player_gacha_info: PlayerGachaInfo):
         value = player_gacha_info.json()
-        await self.client.set(f"{self.qname}{user_id}", value)
+        await self.client.set(f"{self.qname}{user_id}", value, ex=self.ex)
 
 
 class WishSimulatorHandle:
