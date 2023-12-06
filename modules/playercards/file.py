@@ -51,7 +51,10 @@ class PlayerCardsFile:
         if not file_path.exists():
             return None
         try:
-            return await self.load_json(file_path)
+            data = await self.load_json(file_path)
+            if data:
+                data["avatarInfoList"] = data.get("avatarInfoList") or []
+            return data
         except jsonlib.JSONDecodeError:
             return None
 
@@ -65,10 +68,9 @@ class PlayerCardsFile:
             if old_data is None:
                 await self.save_json(self.get_file_path(uid), data)
                 return data
-            if data.get("avatarInfoList") is None:
-                data["avatarInfoList"] = []
+            data["avatarInfoList"] = data.get("avatars") or []
             characters = [i.get("avatarId", 0) for i in data["avatarInfoList"]]
-            for i in old_data.get("avatarInfoList", []):
+            for i in old_data["avatarInfoList"]:
                 if i.get("avatarId", 0) not in characters:
                     data["avatarInfoList"].append(i)
             await self.save_json(self.get_file_path(uid), data)
