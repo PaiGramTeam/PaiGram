@@ -81,7 +81,7 @@ class CharacterDetails(Plugin):
 
     @staticmethod
     def get_qname(uid: int, character: int):
-        return f"plugins:character_details:{uid}:{character}"
+        return f"plugin:character_details:{uid}:{character}"
 
     async def get_character_details_for_redis(
         self,
