@@ -47,7 +47,7 @@ class GachaDataFound(Exception):
 class GachaRedis:
     def __init__(self, redis: RedisDB):
         self.client = redis.client
-        self.qname = "plugin:gacha:"
+        self.qname = "plugin:wish_simulator:"
         self.ex = 60 * 60 * 24
 
     async def get(self, user_id: int) -> PlayerGachaInfo:
