@@ -8,8 +8,8 @@ __all__ = ("Gacha",)
 
 
 class Gacha:
-    GACHA_LIST_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/gacha/list.json"
-    GACHA_INFO_URL = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/%s/zh-cn.json"
+    GACHA_LIST_URL = "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/cn_gf01/gacha/list.json"
+    GACHA_INFO_URL = "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/cn_gf01/%s/zh-cn.json"
 
     USER_AGENT = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -40,7 +40,7 @@ class Gacha:
         cache = self.cache.get(gacha_id)
         if cache is not None:
             return cache
-        req = await self.client.get(self.GACHA_INFO_URL % gacha_id)
+        req = await self.client.get(self.GACHA_INFO_URL % gacha_id, params={"ts": int(time.time())})
         self.cache[gacha_id] = req
         return req
 
