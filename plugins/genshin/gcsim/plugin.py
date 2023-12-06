@@ -152,8 +152,6 @@ class GCSimPlugin(Plugin):
         original_data = await self.player_cards_file.load_history_info(uid)
         if original_data is None:
             return []
-        if original_data.get("avatarInfoList") is None:
-            original_data["avatarInfoList"] = []
         if len(original_data["avatarInfoList"]) == 0:
             return []
         enka_response: EnkaNetworkResponse = EnkaNetworkResponse.parse_obj(
