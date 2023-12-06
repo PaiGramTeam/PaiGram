@@ -3,8 +3,8 @@ from typing import List, Tuple
 
 from pydantic import BaseModel
 
-from modules.gacha.error import GachaIllegalArgument
-from modules.gacha.utils import lerp
+from modules.wish.error import GachaIllegalArgument
+from modules.wish.utils import lerp
 
 
 class GenshinBannerType(Enum):

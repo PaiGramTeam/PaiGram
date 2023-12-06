@@ -16,9 +16,9 @@ from metadata.genshin import AVATAR_DATA, WEAPON_DATA, avatar_to_game_id, weapon
 from metadata.shortname import weaponToName
 from modules.apihelper.client.components.gacha import Gacha as GachaClient
 from modules.apihelper.models.genshin.gacha import GachaInfo
-from modules.gacha.banner import GenshinBannerType, GachaBanner
-from modules.gacha.player.info import PlayerGachaInfo
-from modules.gacha.system import BannerSystem
+from modules.wish.banner import GenshinBannerType, GachaBanner
+from modules.wish.player.info import PlayerGachaInfo
+from modules.wish.system import BannerSystem
 from utils.log import logger
 
 try:

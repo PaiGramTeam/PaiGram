@@ -1,7 +1,7 @@
 from typing import List
 
-from modules.gacha.banner import GachaBanner
-from modules.gacha.utils import set_subtract
+from modules.wish.banner import GachaBanner
+from modules.wish.utils import set_subtract
 
 
 class BannerPool:

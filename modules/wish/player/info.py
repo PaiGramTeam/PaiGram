@@ -2,8 +2,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from modules.gacha.banner import GenshinBannerType, GachaBanner
-from modules.gacha.player.banner import PlayerGachaBannerInfo
+from modules.wish.banner import GenshinBannerType, GachaBanner
+from modules.wish.player.banner import PlayerGachaBannerInfo
 
 
 class PlayerGachaInfo(BaseModel):
