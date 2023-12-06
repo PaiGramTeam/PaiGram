@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from modules.gacha.error import GachaIllegalArgument
+from modules.wish.error import GachaIllegalArgument
 
 
 class PlayerGachaBannerInfo(BaseModel):
