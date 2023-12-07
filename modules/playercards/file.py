@@ -68,7 +68,7 @@ class PlayerCardsFile:
             if old_data is None:
                 await self.save_json(self.get_file_path(uid), data)
                 return data
-            data["avatarInfoList"] = data.get("avatars") or []
+            data["avatarInfoList"] = data.get("avatarInfoList") or []
             characters = [i.get("avatarId", 0) for i in data["avatarInfoList"]]
             for i in old_data["avatarInfoList"]:
                 if i.get("avatarId", 0) not in characters:
