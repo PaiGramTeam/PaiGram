@@ -1,7 +1,9 @@
+from typing import TYPE_CHECKING
+
 from simnet import GenshinClient, Region
-from telegram import Update, User, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler
+from telegram.ext import CommandHandler, MessageHandler, filters, ConversationHandler
 from telegram.helpers import create_deep_linked_url
 
 from core.basemodel import RegionEnum
@@ -12,9 +14,14 @@ from core.services.template.services import TemplateService
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
-from plugins.tools.genshin import PlayerNotFoundError
+from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from telegram import Update, User
+    from telegram.ext import ContextTypes
+
 
 INPUT_URL, CONFIRM_DELETE = range(10100, 10102)
 
@@ -43,7 +50,7 @@ class PayLogPlugin(Plugin.Conversation):
             raise PlayerNotFoundError(uid)
         return player.player_id
 
-    async def _refresh_user_data(self, user: User, authkey: str = None) -> str:
+    async def _refresh_user_data(self, user: "User", authkey: str = None) -> str:
         """刷新用户数据
         :param user: 用户
         :param authkey: 认证密钥
@@ -68,17 +75,15 @@ class PayLogPlugin(Plugin.Conversation):
     @conversation.entry_point
     @handler(CommandHandler, command="pay_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler(MessageHandler, filters=filters.Regex("^导入充值记录$") & filters.ChatType.PRIVATE, block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> int:
+    async def command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
-        args = self.get_args(context)
         logger.info("用户 %s[%s] 导入充值记录命令请求", user.full_name, user.id)
-        authkey = from_url_get_authkey(args[0] if args else "")
-        if not args:
-            player_info = await self.players_service.get_player(user.id, region=RegionEnum.HYPERION)
-            if player_info is not None:
-                cookies = await self.cookie_service.get(user.id, account_id=player_info.account_id)
-                if cookies is not None and cookies.data and "stoken" in cookies.data:
+        player_info = await self.players_service.get_player(user.id, region=RegionEnum.HYPERION)
+        if player_info is not None:
+            cookies = await self.cookie_service.get(user.id, account_id=player_info.account_id)
+            if cookies is not None:
+                if "stoken" in cookies.data:
                     if stuid := next(
                         (value for key, value in cookies.data.items() if key in ["ltuid", "login_uid"]), None
                     ):
@@ -87,18 +92,14 @@ class PayLogPlugin(Plugin.Conversation):
                             cookies=cookies.data, region=Region.CHINESE, lang="zh-cn", player_id=player_info.player_id
                         ) as client:
                             authkey = await client.get_authkey_by_stoken("csc")
-        if not authkey:
-            await message.reply_text(
-                "<b>开始导入充值历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
-                "（非 paimon.moe 导出的文件数据）</b>\n\n"
-                "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
-                "<b>注意：导入的数据将会与旧数据进行合并。</b>",
-                parse_mode="html",
-            )
-            return INPUT_URL
+                else:
+                    await message.reply_text("该功能需要绑定 stoken 才能使用")
+                    return ConversationHandler.END
+            else:
+                raise CookiesNotFoundError
+        else:
+            raise CookiesNotFoundError
         text = "小派蒙正在从服务器获取数据，请稍后"
-        if not args:
-            text += "\n\n> 由于你绑定的 Cookie 中存在 stoken ，本次通过 stoken 自动刷新数据"
         reply = await message.reply_text(text)
         await message.reply_chat_action(ChatAction.TYPING)
         data = await self._refresh_user_data(user, authkey=authkey)
@@ -107,7 +108,7 @@ class PayLogPlugin(Plugin.Conversation):
 
     @conversation.state(state=INPUT_URL)
     @handler.message(filters=~filters.COMMAND, block=False)
-    async def import_data_from_message(self, update: Update, _: CallbackContext) -> int:
+    async def import_data_from_message(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         if message.document:
@@ -126,7 +127,7 @@ class PayLogPlugin(Plugin.Conversation):
     @conversation.entry_point
     @handler(CommandHandler, command="pay_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler(MessageHandler, filters=filters.Regex("^删除充值记录$") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_delete(self, update: Update, context: CallbackContext) -> int:
+    async def command_start_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 删除充值记录命令请求", user.full_name, user.id)
@@ -145,7 +146,7 @@ class PayLogPlugin(Plugin.Conversation):
 
     @conversation.state(state=CONFIRM_DELETE)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def command_confirm_delete(self, update: Update, context: CallbackContext) -> int:
+    async def command_confirm_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
         if message.text == "确定":
@@ -156,7 +157,7 @@ class PayLogPlugin(Plugin.Conversation):
         return ConversationHandler.END
 
     @handler(CommandHandler, command="pay_log_force_delete", block=False, admin=True)
-    async def command_pay_log_force_delete(self, update: Update, context: CallbackContext):
+    async def command_pay_log_force_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         message = update.effective_message
         args = self.get_args(context)
         if not args:
@@ -183,7 +184,7 @@ class PayLogPlugin(Plugin.Conversation):
 
     @handler(CommandHandler, command="pay_log_export", filters=filters.ChatType.PRIVATE, block=False)
     @handler(MessageHandler, filters=filters.Regex("^导出充值记录$") & filters.ChatType.PRIVATE, block=False)
-    async def command_start_export(self, update: Update, context: CallbackContext) -> None:
+    async def command_start_export(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 导出充值记录命令请求", user.full_name, user.id)
@@ -208,7 +209,7 @@ class PayLogPlugin(Plugin.Conversation):
 
     @handler(CommandHandler, command="pay_log", block=False)
     @handler(MessageHandler, filters=filters.Regex("^充值记录$"), block=False)
-    async def command_start_analysis(self, update: Update, context: CallbackContext) -> None:
+    async def command_start_analysis(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 充值记录统计命令请求", user.full_name, user.id)
