@@ -107,6 +107,23 @@ class GachaLog:
             return True
         return False
 
+    async def move_history_info(self, user_id: str, uid: str, new_user_id: str) -> bool:
+        """移动历史抽卡记录数据
+        :param user_id: 用户id
+        :param uid: 原神uid
+        :param new_user_id: 新用户id
+        :return: 是否移动成功
+        """
+        old_file_path = self.gacha_log_path / f"{user_id}-{uid}.json"
+        new_file_path = self.gacha_log_path / f"{new_user_id}-{uid}.json"
+        if (not old_file_path.exists()) or new_file_path.exists():
+            return False
+        try:
+            old_file_path.rename(new_file_path)
+            return True
+        except PermissionError:
+            return False
+
     async def save_gacha_log_info(self, user_id: str, uid: str, info: GachaLogInfo):
         """保存抽卡记录数据
         :param user_id: 用户id
