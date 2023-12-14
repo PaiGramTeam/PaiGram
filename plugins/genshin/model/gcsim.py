@@ -168,8 +168,8 @@ class GCSimTarget(BaseModel):
     radius: Optional[float] = None
     hp: Optional[int] = None
     amount: Optional[int] = None
-    particle_threshold: Optional[int] = None
-    particle_drop_count: Optional[int] = None
+    particle_threshold: Optional[float] = None
+    particle_drop_count: Optional[float] = None
     others: Dict[str, Any] = {}
 
     def __str__(self) -> str:

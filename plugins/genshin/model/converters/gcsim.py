@@ -281,9 +281,9 @@ class GCSimConverter:
             elif key == "radius":
                 target.radius = float(value)
             elif key == "particle_threshold":
-                target.particle_threshold = int(value)
+                target.particle_threshold = float(value)
             elif key == "particle_drop_count":
-                target.particle_drop_count = int(value)
+                target.particle_drop_count = float(value)
             elif key in ("pyro", "hydro", "dendro", "electro", "anemo", "cryo", "geo", "physical"):
                 target.others[key] = float(value)
             else:
