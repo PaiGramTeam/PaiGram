@@ -44,12 +44,14 @@ playwright = "^1.39.0"
 aiosqlite = { extras = ["sqlite"], version = "^0.19.0" }
 simnet = { git = "https://github.com/PaiGramTeam/SIMNet" }
 gcsim-pypi = "^2.8.2.10"
+python-genshin-artifact = { version = "^1.0.4", optional = true }
 
 [tool.poetry.extras]
+genshin-artifact = ["python-genshin-artifact"]
 pyro = ["Pyrogram", "TgCrypto"]
 test = ["pytest", "pytest-asyncio", "flaky"]
 sqlite = ["aiosqlite"]
-all = ["pytest", "pytest-asyncio", "flaky", "Pyrogram", "TgCrypto", "aiosqlite"]
+all = ["pytest", "pytest-asyncio", "flaky", "Pyrogram", "TgCrypto", "aiosqlite", "python-genshin-artifact"]
 
 [build-system]
 requires = ["poetry-core"]
