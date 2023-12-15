@@ -19,7 +19,6 @@ from core.services.cookies.error import TooManyRequestPublicCookies, CookiesCach
 from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
 from core.services.players.services import PlayersService, PlayerInfoService
-from gram_core.plugin.methods.migrate_data import IMigrateData
 from plugins.account.migrate import AccountMigrate
 from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
@@ -295,7 +294,7 @@ class BindAccountPlugin(Plugin.Conversation):
         await message.reply_text("回复错误，请重新输入")
         return COMMAND_RESULT
 
-    async def get_migrate_data(self, old_user_id: int, new_user_id: int) -> Optional[IMigrateData]:
+    async def get_migrate_data(self, old_user_id: int, new_user_id: int) -> Optional[AccountMigrate]:
         return await AccountMigrate.create(
             old_user_id, new_user_id, self.players_service, self.player_info_service, self.cookies_service
         )

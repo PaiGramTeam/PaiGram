@@ -17,7 +17,6 @@ from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
-from gram_core.plugin.methods.migrate_data import IMigrateData
 from metadata.scripts.paimon_moe import GACHA_LOG_PAIMON_MOE_PATH, update_paimon_moe_zh
 from modules.gacha_log.error import (
     GachaLogAccountNotFound,
@@ -450,5 +449,5 @@ class WishLogPlugin(Plugin.Conversation):
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
 
-    async def get_migrate_data(self, old_user_id: int, new_user_id: int) -> Optional[IMigrateData]:
+    async def get_migrate_data(self, old_user_id: int, new_user_id: int) -> Optional[GachaLogMigrate]:
         return await GachaLogMigrate.create(old_user_id, new_user_id, self.players_service)

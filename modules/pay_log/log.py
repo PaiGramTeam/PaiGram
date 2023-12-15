@@ -97,7 +97,7 @@ class PayLog:
         return False
 
     async def move_history_info(self, user_id: str, uid: str, new_user_id: str) -> bool:
-        """移动历史抽卡记录数据
+        """移动历史充值记录数据
         :param user_id: 用户id
         :param uid: 原神uid
         :param new_user_id: 新用户id
