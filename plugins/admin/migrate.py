@@ -26,5 +26,5 @@ class MigrateTest(Plugin):
             return
         text = "确定迁移以下数据？\n\n"
         for d in data:
-            text += f"{await d.migrate_data_msg()}\n"
+            text += f"- {await d.migrate_data_msg()}\n"
         await message.reply_text(text)

@@ -151,3 +151,9 @@ class PlayerInfoService(BaseService):
 
     async def delete(self, player_info: PlayerInfoSQLModel):
         await self._players_info_repository.delete(player_info)
+
+    async def update(self, player_info: PlayerInfoSQLModel):
+        await self._players_info_repository.update(player_info)
+
+    async def get_all_by_user_id(self, user_id: int):
+        return await self._players_info_repository.get_all_by_user_id(user_id)
