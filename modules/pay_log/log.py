@@ -96,6 +96,23 @@ class PayLog:
             return True
         return False
 
+    async def move_history_info(self, user_id: str, uid: str, new_user_id: str) -> bool:
+        """移动历史抽卡记录数据
+        :param user_id: 用户id
+        :param uid: 原神uid
+        :param new_user_id: 新用户id
+        :return: 是否移动成功
+        """
+        old_file_path = self.get_file_path(user_id, uid)
+        new_file_path = self.get_file_path(new_user_id, uid)
+        if (not old_file_path.exists()) or new_file_path.exists():
+            return False
+        try:
+            old_file_path.rename(new_file_path)
+            return True
+        except PermissionError:
+            return False
+
     async def save_pay_log_info(self, user_id: str, uid: str, info: PayLogModel) -> None:
         """保存日志记录数据
         :param user_id: 用户id

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from simnet import GenshinClient, Region
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -11,9 +11,11 @@ from core.plugin import Plugin, handler, conversation
 from core.services.cookies import CookiesService
 from core.services.players.services import PlayersService
 from core.services.template.services import TemplateService
+from gram_core.plugin.methods.migrate_data import IMigrateData
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
+from modules.pay_log.migrate import PayLogMigrate
 from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
@@ -229,3 +231,6 @@ class PayLogPlugin(Plugin.Conversation):
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的充值记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+
+    async def get_migrate_data(self, old_user_id: int, new_user_id: int) -> Optional[IMigrateData]:
+        return await PayLogMigrate.create(old_user_id, new_user_id, self.players_service)
