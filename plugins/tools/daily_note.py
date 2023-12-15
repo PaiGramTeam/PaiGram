@@ -399,17 +399,13 @@ class TaskMigrate(IMigrateData):
         new_user_id: int,
         task_services: "TaskServices",
     ) -> List[TaskUser]:
-        tasks = await task_services.get_all_by_user_id(old_user_id)
-        if not tasks:
-            return []
-        new_tasks = await task_services.get_all_by_user_id(new_user_id)
-        new_tasks_index = [(c.user_id, c.type) for c in new_tasks]
-        need_migrate = []
-        for task in tasks:
-            if (task.user_id, task.type) not in new_tasks_index:
-                need_migrate.append(task)
-        if not need_migrate:
-            return []
+        need_migrate = await TaskMigrate.filter_sql_data(
+            TaskUser,
+            task_services.get_all_by_user_id,
+            old_user_id,
+            new_user_id,
+            (TaskUser.user_id, TaskUser.type),
+        )
         for i in need_migrate:
             i.user_id = new_user_id
         return need_migrate

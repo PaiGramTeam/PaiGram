@@ -43,17 +43,13 @@ class AccountMigrate(IMigrateData):
         new_user_id: int,
         players_service: PlayersService,
     ) -> List[Player]:
-        players = await players_service.get_all_by_user_id(old_user_id)
-        if not players:
-            return []
-        new_players = await players_service.get_all_by_user_id(new_user_id)
-        new_players_index = [(p.account_id, p.player_id, p.region) for p in new_players]
-        need_migrate = []
-        for player in players:
-            if (player.account_id, player.player_id, player.region) not in new_players_index:
-                need_migrate.append(player)
-        if not need_migrate:
-            return []
+        need_migrate = await AccountMigrate.filter_sql_data(
+            Player,
+            players_service.get_all_by_user_id,
+            old_user_id,
+            new_user_id,
+            (Player.account_id, Player.player_id, Player.region),
+        )
         for i in need_migrate:
             i.user_id = new_user_id
             i.is_chosen = False
@@ -65,17 +61,13 @@ class AccountMigrate(IMigrateData):
         new_user_id: int,
         player_info_service: PlayerInfoService,
     ) -> List[PlayerInfo]:
-        players_info = await player_info_service.get_all_by_user_id(old_user_id)
-        if not players_info:
-            return []
-        new_players_info = await player_info_service.get_all_by_user_id(new_user_id)
-        new_players_info_index = [(p.user_id, p.player_id) for p in new_players_info]
-        need_migrate = []
-        for player in players_info:
-            if (player.user_id, player.player_id) not in new_players_info_index:
-                need_migrate.append(player)
-        if not need_migrate:
-            return []
+        need_migrate = await AccountMigrate.filter_sql_data(
+            PlayerInfo,
+            player_info_service.get_all_by_user_id,
+            old_user_id,
+            new_user_id,
+            (PlayerInfo.user_id, PlayerInfo.player_id),
+        )
         for i in need_migrate:
             i.user_id = new_user_id
         return need_migrate
@@ -86,17 +78,13 @@ class AccountMigrate(IMigrateData):
         new_user_id: int,
         cookies_service: CookiesService,
     ) -> List[Cookies]:
-        cookies = await cookies_service.get_all(old_user_id)
-        if not cookies:
-            return []
-        new_cookies = await cookies_service.get_all(new_user_id)
-        new_cookies_index = [(c.user_id, c.account_id, c.region) for c in new_cookies]
-        need_migrate = []
-        for cookie in cookies:
-            if (cookie.user_id, cookie.account_id, cookie.region) not in new_cookies_index:
-                need_migrate.append(cookie)
-        if not need_migrate:
-            return []
+        need_migrate = await AccountMigrate.filter_sql_data(
+            Cookies,
+            cookies_service.get_all,
+            old_user_id,
+            new_user_id,
+            (Cookies.user_id, Cookies.account_id, Cookies.region),
+        )
         for i in need_migrate:
             i.user_id = new_user_id
         return need_migrate
