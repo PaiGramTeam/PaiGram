@@ -26,12 +26,13 @@ class Status(Plugin):
         logger.info("用户 %s[%s] status 命令请求", user.full_name, user.id)
         message = update.effective_message
         current_process = psutil.Process(self.pid)
-        psutil.cpu_percent()
-        await asyncio.sleep(0.1)
-        cpu_percent = psutil.cpu_percent()
         memory = psutil.virtual_memory()
         total_memory = memory.total
         used_memory = memory.used
+        psutil.cpu_percent()
+        current_process.cpu_percent()
+        await asyncio.sleep(1)
+        cpu_percent = psutil.cpu_percent()
         process_cpu_use = current_process.cpu_percent()
         process_use = current_process.memory_info()
         start_time = current_process.create_time()
