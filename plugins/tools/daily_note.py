@@ -11,12 +11,14 @@ from telegram.error import BadRequest, Forbidden
 from core.plugin import Plugin
 from core.services.task.models import Task as TaskUser, TaskStatusEnum
 from core.services.task.services import TaskResinServices, TaskRealmServices, TaskExpeditionServices
+from gram_core.plugin.methods.migrate_data import IMigrateData, MigrateDataException
 from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
 from utils.log import logger
 
 if TYPE_CHECKING:
     from simnet import GenshinClient
     from telegram.ext import ContextTypes
+    from gram_core.services.task.services import TaskServices
 
 
 class TaskDataBase(BaseModel):
@@ -368,3 +370,65 @@ class DailyNoteSystem(Plugin):
                 else:
                     task_user_db.status = TaskStatusEnum.STATUS_SUCCESS
             await self.update_task_user(task_db)
+
+    async def get_migrate_data(self, old_user_id: int, new_user_id: int, _) -> Optional["TaskMigrate"]:
+        return await TaskMigrate.create(
+            old_user_id,
+            new_user_id,
+            self.resin_service,
+        )
+
+
+class TaskMigrate(IMigrateData):
+    old_user_id: int
+    new_user_id: int
+    task_services: "TaskServices"
+    need_migrate_tasks: List[TaskUser]
+
+    async def migrate_data_msg(self) -> str:
+        return f"定时任务数据 {len(self.need_migrate_tasks)} 条"
+
+    async def migrate_data(self) -> bool:
+        id_list = []
+        for task in self.need_migrate_tasks:
+            try:
+                await self.task_services.update(task)
+            except StaleDataError:
+                id_list.append(str(task.id))
+        if id_list:
+            raise MigrateDataException(f"任务数据迁移失败：id {','.join(id_list)}")
+        return True
+
+    @staticmethod
+    async def create_tasks(
+        old_user_id: int,
+        new_user_id: int,
+        task_services: "TaskServices",
+    ) -> List[TaskUser]:
+        need_migrate, _ = await TaskMigrate.filter_sql_data(
+            TaskUser,
+            task_services.get_all_by_user_id,
+            old_user_id,
+            new_user_id,
+            (TaskUser.user_id, TaskUser.type),
+        )
+        for i in need_migrate:
+            i.user_id = new_user_id
+        return need_migrate
+
+    @classmethod
+    async def create(
+        cls,
+        old_user_id: int,
+        new_user_id: int,
+        task_services: "TaskServices",
+    ) -> Optional["TaskMigrate"]:
+        need_migrate_tasks = await cls.create_tasks(old_user_id, new_user_id, task_services)
+        if not need_migrate_tasks:
+            return None
+        self = cls()
+        self.old_user_id = old_user_id
+        self.new_user_id = new_user_id
+        self.task_services = task_services
+        self.need_migrate_tasks = need_migrate_tasks
+        return self

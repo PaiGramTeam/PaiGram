@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 from urllib.parse import urlencode
 
 from aiofiles import open as async_open
@@ -29,6 +29,7 @@ from modules.gacha_log.error import (
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
+from modules.gacha_log.migrate import GachaLogMigrate
 from plugins.tools.genshin import PlayerNotFoundError
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
@@ -43,6 +44,7 @@ except ImportError:
 if TYPE_CHECKING:
     from telegram import Update, Message, User, Document
     from telegram.ext import ContextTypes
+    from gram_core.services.players.models import Player
 
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
@@ -447,3 +449,9 @@ class WishLogPlugin(Plugin.Conversation):
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+
+    @staticmethod
+    async def get_migrate_data(
+        old_user_id: int, new_user_id: int, old_players: List["Player"]
+    ) -> Optional[GachaLogMigrate]:
+        return await GachaLogMigrate.create(old_user_id, new_user_id, old_players)
