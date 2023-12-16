@@ -1,6 +1,6 @@
 from typing import Optional, List, TYPE_CHECKING
 
-from gram_core.plugin.methods.migrate_data import IMigrateData
+from gram_core.plugin.methods.migrate_data import IMigrateData, MigrateDataException
 from modules.pay_log.log import PayLog
 
 if TYPE_CHECKING:
@@ -16,9 +16,12 @@ class PayLogMigrate(IMigrateData, PayLog):
         return f"{len(self.old_uid_list)} 个账号的充值记录数据"
 
     async def migrate_data(self) -> bool:
+        uid_list = []
         for uid in self.old_uid_list:
             if not await self.move_history_info(str(self.old_user_id), str(uid), str(self.new_user_id)):
-                return False
+                uid_list.append(str(uid))
+        if uid_list:
+            raise MigrateDataException(f"充值记录数据迁移失败：uid {','.join(uid_list)}")
         return True
 
     @classmethod

@@ -1,7 +1,9 @@
 from typing import Optional, List
 
+from sqlalchemy.orm.exc import StaleDataError
+
 from core.services.players.services import PlayerInfoService
-from gram_core.plugin.methods.migrate_data import IMigrateData
+from gram_core.plugin.methods.migrate_data import IMigrateData, MigrateDataException
 from gram_core.services.cookies import CookiesService
 from gram_core.services.cookies.models import CookiesDataBase as Cookies
 from gram_core.services.players import PlayersService
@@ -29,12 +31,31 @@ class AccountMigrate(IMigrateData):
         return "、".join(text)
 
     async def migrate_data(self) -> bool:
+        players, players_info, cookies = [], [], []
         for player in self.need_migrate_player:
-            await self.players_service.update(player)
+            try:
+                await self.players_service.update(player)
+            except StaleDataError:
+                players.append(str(player.player_id))
         for player_info in self.need_migrate_player_info:
-            await self.player_info_service.update(player_info)
+            try:
+                await self.player_info_service.update(player_info)
+            except StaleDataError:
+                players_info.append(str(player_info.player_id))
         for cookie in self.need_migrate_cookies:
-            await self.cookies_service.update(cookie)
+            try:
+                await self.cookies_service.update(cookie)
+            except StaleDataError:
+                cookies.append(str(cookie.account_id))
+        if any([players, players_info, cookies]):
+            text = []
+            if players:
+                text.append(f"player 数据迁移失败 player_id {','.join(players)}")
+            if players_info:
+                text.append(f"player_info 数据迁移失败 player_id {','.join(players_info)}")
+            if cookies:
+                text.append(f"cookies 数据迁移失败 account_id {','.join(cookies)}")
+            raise MigrateDataException("、".join(text))
         return True
 
     @staticmethod

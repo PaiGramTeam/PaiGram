@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from telegram.ext import CallbackContext, ContextTypes
 
 
-class MigrateTest(Plugin):
+class MigrateAdmin(Plugin):
     def __init__(self, players_service: PlayersService):
         self.players_service = players_service
         self.cache_data: Dict[int, List[IMigrateData]] = {}
@@ -75,19 +75,22 @@ class MigrateTest(Plugin):
             ],
         ]
         reply = await message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
-        self.add_delete_message_job(message, delay=self.wait_time)
-        self.add_delete_message_job(reply, delay=self.wait_time)
         self.add_pop_cache_job(old_user_id)
 
     async def try_migrate_data(self, user_id: int) -> str:
         text = []
         for d in self.cache_data[user_id]:
             try:
+                logger.info("开始迁移数据 class[%s]", d.__class__.__name__)
                 await d.migrate_data()
+                logger.info("迁移数据成功 class[%s]", d.__class__.__name__)
             except MigrateDataException as e:
                 text.append(e.msg)
+            except Exception as e:
+                logger.exception("迁移数据失败，未知错误！ class[%s]", d.__class__.__name__, exc_info=e)
+                text.append("迁移部分数据出现未知错误，请联系管理员！")
         if text:
-            return "\n".join(text)
+            return "- " + "\n- ".join(text)
 
     @handler.callback_query(pattern=r"^migrate_admin\|", block=False)
     async def callback_query_migrate_admin(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -108,12 +111,12 @@ class MigrateTest(Plugin):
             self.add_delete_message_job(message, delay=5)
             return
         self.cancel_pop_cache_job(old_user_id)
-        reply = await message.reply_text("正在迁移数据，请稍后...")
+        await message.edit_text("正在迁移数据，请稍后...", reply_markup=None)
         try:
             text = await self.try_migrate_data(old_user_id)
         finally:
             await self._add_pop_cache_job(old_user_id)
         if text:
-            await reply.edit_text(f"迁移部分数据失败！\n\n{text}")
+            await message.edit_text(f"迁移部分数据失败！\n\n{text}")
             return
-        await reply.edit_text("迁移数据成功！")
+        await message.edit_text("迁移数据成功！")

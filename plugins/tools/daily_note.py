@@ -11,7 +11,7 @@ from telegram.error import BadRequest, Forbidden
 from core.plugin import Plugin
 from core.services.task.models import Task as TaskUser, TaskStatusEnum
 from core.services.task.services import TaskResinServices, TaskRealmServices, TaskExpeditionServices
-from gram_core.plugin.methods.migrate_data import IMigrateData
+from gram_core.plugin.methods.migrate_data import IMigrateData, MigrateDataException
 from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
 from utils.log import logger
 
@@ -389,8 +389,14 @@ class TaskMigrate(IMigrateData):
         return f"定时任务数据 {len(self.need_migrate_tasks)} 条"
 
     async def migrate_data(self) -> bool:
+        id_list = []
         for task in self.need_migrate_tasks:
-            await self.task_services.update(task)
+            try:
+                await self.task_services.update(task)
+            except StaleDataError:
+                id_list.append(str(task.id))
+        if id_list:
+            raise MigrateDataException(f"任务数据迁移失败：id {','.join(id_list)}")
         return True
 
     @staticmethod
