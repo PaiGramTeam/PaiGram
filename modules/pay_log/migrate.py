@@ -1,8 +1,10 @@
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 
 from gram_core.plugin.methods.migrate_data import IMigrateData
-from gram_core.services.players import PlayersService
 from modules.pay_log.log import PayLog
+
+if TYPE_CHECKING:
+    from gram_core.services.players.models import Player
 
 
 class PayLogMigrate(IMigrateData, PayLog):
@@ -24,9 +26,8 @@ class PayLogMigrate(IMigrateData, PayLog):
         cls,
         old_user_id: int,
         new_user_id: int,
-        players_service: PlayersService,
+        players: List["Player"],
     ) -> Optional["PayLogMigrate"]:
-        players = await players_service.get_all_by_user_id(old_user_id)
         if not players:
             return None
         _uid_list = [player.player_id for player in players if player and player.player_id]

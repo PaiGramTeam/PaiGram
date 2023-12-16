@@ -2,9 +2,13 @@ from telegram import Update
 from telegram.ext import CallbackContext
 
 from core.plugin import Plugin, handler
+from gram_core.services.players import PlayersService
 
 
 class MigrateTest(Plugin):
+    def __init__(self, players_service: PlayersService):
+        self.players_service = players_service
+
     @handler.command(command="migrate", block=False, admin=True)
     async def get_chat_command(self, update: Update, context: CallbackContext):
         message = update.effective_message
@@ -18,8 +22,9 @@ class MigrateTest(Plugin):
             await message.reply_text("参数错误，请指定新旧用户 id ！")
             return
         data = []
+        players = await self.players_service.get_all_by_user_id(old_user_id)
         for k, instance in self.application.managers.plugins_map.items():
-            if _data := await instance.get_migrate_data(old_user_id, new_user_id):
+            if _data := await instance.get_migrate_data(old_user_id, new_user_id, players):
                 data.append(_data)
         if not data:
             await message.reply_text("没有需要迁移的数据！")

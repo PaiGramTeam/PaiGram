@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 from urllib.parse import urlencode
 
 from aiofiles import open as async_open
@@ -44,6 +44,7 @@ except ImportError:
 if TYPE_CHECKING:
     from telegram import Update, Message, User, Document
     from telegram.ext import ContextTypes
+    from gram_core.services.players.models import Player
 
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
@@ -449,5 +450,7 @@ class WishLogPlugin(Plugin.Conversation):
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
 
-    async def get_migrate_data(self, old_user_id: int, new_user_id: int) -> Optional[GachaLogMigrate]:
-        return await GachaLogMigrate.create(old_user_id, new_user_id, self.players_service)
+    async def get_migrate_data(
+        self, old_user_id: int, new_user_id: int, old_players: List["Player"]
+    ) -> Optional[GachaLogMigrate]:
+        return await GachaLogMigrate.create(old_user_id, new_user_id, old_players)

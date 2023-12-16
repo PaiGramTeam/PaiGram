@@ -294,7 +294,7 @@ class BindAccountPlugin(Plugin.Conversation):
         await message.reply_text("回复错误，请重新输入")
         return COMMAND_RESULT
 
-    async def get_migrate_data(self, old_user_id: int, new_user_id: int) -> Optional[AccountMigrate]:
+    async def get_migrate_data(self, old_user_id: int, new_user_id: int, _) -> Optional[AccountMigrate]:
         return await AccountMigrate.create(
             old_user_id, new_user_id, self.players_service, self.player_info_service, self.cookies_service
         )

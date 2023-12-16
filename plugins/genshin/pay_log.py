@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 
 from simnet import GenshinClient, Region
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -22,6 +22,7 @@ from utils.log import logger
 if TYPE_CHECKING:
     from telegram import Update, User
     from telegram.ext import ContextTypes
+    from gram_core.services.players.models import Player
 
 
 INPUT_URL, CONFIRM_DELETE = range(10100, 10102)
@@ -231,5 +232,7 @@ class PayLogPlugin(Plugin.Conversation):
             ]
             await message.reply_text("派蒙没有找到你的充值记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
 
-    async def get_migrate_data(self, old_user_id: int, new_user_id: int) -> Optional[PayLogMigrate]:
-        return await PayLogMigrate.create(old_user_id, new_user_id, self.players_service)
+    async def get_migrate_data(
+        self, old_user_id: int, new_user_id: int, old_players: List["Player"]
+    ) -> Optional[PayLogMigrate]:
+        return await PayLogMigrate.create(old_user_id, new_user_id, old_players)

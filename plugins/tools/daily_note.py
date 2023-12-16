@@ -371,7 +371,7 @@ class DailyNoteSystem(Plugin):
                     task_user_db.status = TaskStatusEnum.STATUS_SUCCESS
             await self.update_task_user(task_db)
 
-    async def get_migrate_data(self, old_user_id: int, new_user_id: int) -> Optional["TaskMigrate"]:
+    async def get_migrate_data(self, old_user_id: int, new_user_id: int, _) -> Optional["TaskMigrate"]:
         return await TaskMigrate.create(
             old_user_id,
             new_user_id,
