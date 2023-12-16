@@ -43,7 +43,7 @@ class Status(Plugin):
         )
 
         text = (
-            "PaiGram 运行状态"
+            "PaiGram 运行状态\n"
             f"Python 版本: `{python_version()}` \n"
             f"Telegram 版本: `{__version__}` \n"
             f"CPU使用率: `{cpu_percent}%/{process_cpu_use}%` \n"
