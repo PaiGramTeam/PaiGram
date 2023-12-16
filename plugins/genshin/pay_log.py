@@ -97,9 +97,9 @@ class PayLogPlugin(Plugin.Conversation):
                     await message.reply_text("该功能需要绑定 stoken 才能使用")
                     return ConversationHandler.END
             else:
-                raise CookiesNotFoundError
+                raise CookiesNotFoundError(user.id)
         else:
-            raise CookiesNotFoundError
+            raise CookiesNotFoundError(user.id)
         text = "小派蒙正在从服务器获取数据，请稍后"
         reply = await message.reply_text(text)
         await message.reply_chat_action(ChatAction.TYPING)
