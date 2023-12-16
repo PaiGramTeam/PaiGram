@@ -56,7 +56,7 @@ class MigrateAdmin(Plugin):
             return
         data = []
         players = await self.players_service.get_all_by_user_id(old_user_id)
-        for k, instance in self.application.managers.plugins_map.items():
+        for _, instance in self.application.managers.plugins_map.items():
             if _data := await instance.get_migrate_data(old_user_id, new_user_id, players):
                 data.append(_data)
         if not data:

@@ -450,7 +450,8 @@ class WishLogPlugin(Plugin.Conversation):
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
 
+    @staticmethod
     async def get_migrate_data(
-        self, old_user_id: int, new_user_id: int, old_players: List["Player"]
+        old_user_id: int, new_user_id: int, old_players: List["Player"]
     ) -> Optional[GachaLogMigrate]:
         return await GachaLogMigrate.create(old_user_id, new_user_id, old_players)

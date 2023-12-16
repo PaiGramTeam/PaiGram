@@ -232,7 +232,8 @@ class PayLogPlugin(Plugin.Conversation):
             ]
             await message.reply_text("派蒙没有找到你的充值记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
 
+    @staticmethod
     async def get_migrate_data(
-        self, old_user_id: int, new_user_id: int, old_players: List["Player"]
+        old_user_id: int, new_user_id: int, old_players: List["Player"]
     ) -> Optional[PayLogMigrate]:
         return await PayLogMigrate.create(old_user_id, new_user_id, old_players)
