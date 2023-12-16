@@ -106,6 +106,9 @@ class AccountMigrate(IMigrateData):
         self = cls()
         self.old_user_id = old_user_id
         self.new_user_id = new_user_id
+        self.players_service = players_service
+        self.player_info_service = player_info_service
+        self.cookies_service = cookies_service
         self.need_migrate_player = need_migrate_player
         self.need_migrate_player_info = need_migrate_player_info
         self.need_migrate_cookies = need_migrate_cookies
