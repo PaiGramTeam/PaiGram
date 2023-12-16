@@ -10,7 +10,7 @@ from utils.log import logger
 
 if TYPE_CHECKING:
     from telegram import Update
-    from telegram.ext import CallbackContext, ContextTypes
+    from telegram.ext import ContextTypes
 
 
 class MigrateAdmin(Plugin):
@@ -39,7 +39,7 @@ class MigrateAdmin(Plugin):
             job[0].schedule_removal()
 
     @handler.command(command="migrate_admin", block=False, admin=True)
-    async def migrate_admin_command(self, update: "Update", context: "CallbackContext"):
+    async def migrate_admin_command(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         message = update.effective_message
         args = self.get_args(context)
         logger.info("管理员 %s[%s] migrate_admin 命令请求", message.from_user.full_name, message.from_user.id)
