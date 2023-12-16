@@ -74,7 +74,7 @@ class MigrateAdmin(Plugin):
                 )
             ],
         ]
-        reply = await message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+        await message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
         self.add_pop_cache_job(old_user_id)
 
     async def try_migrate_data(self, user_id: int) -> str:

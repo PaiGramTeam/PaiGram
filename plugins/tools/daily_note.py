@@ -405,7 +405,7 @@ class TaskMigrate(IMigrateData):
         new_user_id: int,
         task_services: "TaskServices",
     ) -> List[TaskUser]:
-        need_migrate = await TaskMigrate.filter_sql_data(
+        need_migrate, _ = await TaskMigrate.filter_sql_data(
             TaskUser,
             task_services.get_all_by_user_id,
             old_user_id,

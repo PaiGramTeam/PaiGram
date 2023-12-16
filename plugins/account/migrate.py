@@ -64,7 +64,7 @@ class AccountMigrate(IMigrateData):
         new_user_id: int,
         players_service: PlayersService,
     ) -> List[Player]:
-        need_migrate = await AccountMigrate.filter_sql_data(
+        need_migrate, new_data = await AccountMigrate.filter_sql_data(
             Player,
             players_service.get_all_by_user_id,
             old_user_id,
@@ -73,7 +73,8 @@ class AccountMigrate(IMigrateData):
         )
         for i in need_migrate:
             i.user_id = new_user_id
-            i.is_chosen = False
+            if new_data:
+                i.is_chosen = False
         return need_migrate
 
     @staticmethod
@@ -82,7 +83,7 @@ class AccountMigrate(IMigrateData):
         new_user_id: int,
         player_info_service: PlayerInfoService,
     ) -> List[PlayerInfo]:
-        need_migrate = await AccountMigrate.filter_sql_data(
+        need_migrate, _ = await AccountMigrate.filter_sql_data(
             PlayerInfo,
             player_info_service.get_all_by_user_id,
             old_user_id,
@@ -99,7 +100,7 @@ class AccountMigrate(IMigrateData):
         new_user_id: int,
         cookies_service: CookiesService,
     ) -> List[Cookies]:
-        need_migrate = await AccountMigrate.filter_sql_data(
+        need_migrate, _ = await AccountMigrate.filter_sql_data(
             Cookies,
             cookies_service.get_all,
             old_user_id,
