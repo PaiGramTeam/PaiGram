@@ -149,7 +149,7 @@ class ErrorHandler(Plugin):
                 logger.error("未知Cookie错误", exc_info=exc)
                 notice = self.ERROR_MSG_PREFIX + f"Cookie 无效 错误信息为 {exc.original} 请尝试重新绑定"
         elif isinstance(exc, InvalidDevice):
-            notice = self.ERROR_MSG_PREFIX + "设备信息无效，请尝试重新设备绑定"
+            notice = self.ERROR_MSG_PREFIX + "设备信息无效，请尝试重新绑定"
         elif isinstance(exc, DataNotPublic):
             notice = self.ERROR_MSG_PREFIX + "查询的用户数据未公开"
         elif isinstance(exc, NeedChallenge):
