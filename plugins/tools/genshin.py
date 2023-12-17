@@ -256,6 +256,8 @@ class GenshinHelper(Plugin):
             try:
                 yield client
             except InvalidCookies as exc:
+                if exc.retcode == 10103:
+                    raise exc
                 refresh = False
                 cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
                 stoken = client.cookies.get("stoken")
