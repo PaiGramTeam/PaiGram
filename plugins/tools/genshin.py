@@ -270,8 +270,8 @@ class GenshinHelper(Plugin):
                         logger.success("用户 %s 刷新 ltoken 成功", user_id)
                         cookie_model.data = new_cookies
                         cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
-                    except ValueError as exc:
-                        logger.info("用户 user_id[%s] Cookies 不完整 [%s]", cookie_model.user_id, str(exc))
+                    except ValueError as _exc:
+                        logger.info("用户 user_id[%s] Cookies 不完整 [%s]", cookie_model.user_id, str(_exc))
                     except InvalidCookies:
                         logger.info("用户 user_id[%s] Cookies 已经过期", cookie_model.user_id)
                     except SimnetBadRequest as _exc:
