@@ -7,7 +7,6 @@ from telegram import (
     InlineKeyboardButton,
     SwitchInlineQueryChosenChat,
     InlineKeyboardMarkup,
-    InlineQuery,
     InlineQueryResultArticle,
     InputTextMessageContent,
     InlineQueryResultsButton,
@@ -29,7 +28,7 @@ except ImportError:
     import json as jsonlib
 
 if TYPE_CHECKING:
-    from telegram import Update
+    from telegram import Update, InlineQuery
     from telegram.ext import ContextTypes
 
 
