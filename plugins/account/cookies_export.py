@@ -106,11 +106,11 @@ class CookiesExport(Plugin):
         if not data:
             await message.reply_text("没有查询到任何账号信息")
             return
-        text = "请点击下方按钮导出账号信息到指定对话"
+        text = "请点击下方按钮导出账号信息到指定 BOT"
         buttons = [
             [
                 InlineKeyboardButton(
-                    "选择对话",
+                    "选择需要导入账号的 BOT",
                     switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(
                         query="cookies_export", allow_bot_chats=True
                     ),
