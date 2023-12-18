@@ -69,6 +69,8 @@ class SetCommandPlugin(Plugin):
             BotCommand("avatars", "查询角色练度"),
             BotCommand("reg_time", "账号注册时间"),
             BotCommand("daily_material", "今日素材表"),
+            BotCommand("cookies_import", "从其他 BOT 导入账号信息"),
+            BotCommand("cookies_export", "导出账号信息给其他 BOT"),
         ]
         admin_command = [
             BotCommand("add_admin", "添加管理员"),

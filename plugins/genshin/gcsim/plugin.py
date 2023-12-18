@@ -4,7 +4,6 @@ from typing import Optional, TYPE_CHECKING, List, Union, Dict, Tuple
 from enkanetwork import EnkaNetworkResponse
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import filters
-from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.dependence.assets import AssetsService
@@ -20,6 +19,7 @@ from plugins.genshin.gcsim.renderer import GCSimResultRenderer
 from plugins.genshin.gcsim.runner import GCSimRunner, GCSimFit, GCSimQueueFull, GCSimResult
 from plugins.genshin.model.base import CharacterInfo
 from plugins.genshin.model.converters.enka import EnkaConverter
+from plugins.tools.genshin import PlayerNotFoundError
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -27,18 +27,6 @@ if TYPE_CHECKING:
     from telegram.ext import ContextTypes
 
 __all__ = ("GCSimPlugin",)
-
-
-async def _no_account_return(message: "Message", context: "ContextTypes.DEFAULT_TYPE"):
-    buttons = [
-        [
-            InlineKeyboardButton(
-                "点我绑定账号",
-                url=create_deep_linked_url(context.bot.username, "set_uid"),
-            )
-        ]
-    ]
-    await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
 
 
 async def _no_character_return(user_id: int, uid: int, message: "Message"):
@@ -183,7 +171,7 @@ class GCSimPlugin(Plugin):
         uid, names = await self._get_uid_names(user.id, args, message.reply_to_message)
         logger.info("用户 %s[%s] 发出 gcsim 命令 UID[%s] NAMES[%s]", user.full_name, user.id, uid, " ".join(names))
         if uid is None:
-            return await _no_account_return(message, context)
+            raise PlayerNotFoundError(user.id)
 
         character_infos = await self._load_characters(uid)
         if not character_infos:

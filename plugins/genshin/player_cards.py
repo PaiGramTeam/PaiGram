@@ -22,7 +22,6 @@ from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import filters
-from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.dependence.assets import DEFAULT_EnkaAssets, AssetsService
@@ -35,6 +34,7 @@ from modules.apihelper.client.components.remote import Remote
 from modules.gcsim.file import PlayerGCSimScripts
 from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
+from plugins.tools.genshin import PlayerNotFoundError
 from utils.enkanetwork import RedisCache, EnkaNetworkAPI
 from utils.helpers import download_resource
 from utils.log import logger
@@ -168,25 +168,7 @@ class PlayerCards(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
         uid, character_name = await self.get_uid_and_ch(user.id, args, message.reply_to_message)
         if uid is None:
-            buttons = [
-                [
-                    InlineKeyboardButton(
-                        "点我绑定账号",
-                        url=create_deep_linked_url(context.bot.username, "set_uid"),
-                    )
-                ]
-            ]
-            if filters.ChatType.GROUPS.filter(message):
-                reply_message = await message.reply_text(
-                    "未查询到您所绑定的账号信息，请先私聊派蒙绑定账号",
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                )
-                self.add_delete_message_job(reply_message, delay=30)
-
-                self.add_delete_message_job(message, delay=30)
-            else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号", reply_markup=InlineKeyboardMarkup(buttons))
-            return
+            raise PlayerNotFoundError(user.id)
         original_data = await self._load_history(uid)
         if original_data is None or len(original_data["avatarInfoList"]) == 0:
             if isinstance(self.kitsune, str):

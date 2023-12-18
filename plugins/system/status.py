@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 import psutil
 from telegram import __version__
 
+from git import Repo
+from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
+
 from core.plugin import Plugin, handler
 from utils.log import logger
 
@@ -19,6 +22,14 @@ class Status(Plugin):
     def __init__(self):
         self.pid = os.getpid()
         self.time_form = "%m/%d %H:%M"
+
+    @staticmethod
+    def get_git_hash() -> str:
+        try:
+            repo = Repo()
+        except (InvalidGitRepositoryError, NoSuchPathError, GitCommandError):
+            return "非 Git 仓库"
+        return repo.head.commit.hexsha[:8]
 
     @handler.command(command="status", block=False, admin=True)
     async def send_log(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
@@ -47,6 +58,7 @@ class Status(Plugin):
             "PaiGram 运行状态\n"
             f"Python 版本: `{python_version()}` \n"
             f"Telegram 版本: `{__version__}` \n"
+            f"GramBot 版本: `{self.get_git_hash()}` \n"
             f"CPU使用率: `{cpu_percent}%/{process_cpu_use}%` \n"
             f"当前使用的内存: `{memory_text}` \n"
             f"运行时间: `{self.get_bot_uptime(start_time)}` \n"
