@@ -169,7 +169,7 @@ class GCSimRunner:
         if script is None:
             return GCSimResult(error="未找到脚本", user_id=user_id, uid=uid, script_key=script_key)
         try:
-            merged_script = GCSimConverter.merge_character_infos(script, character_infos)
+            merged_script = GCSimConverter.merge_character_infos(script.copy(), character_infos)
         except ValueError:
             return GCSimResult(error="无法合并角色信息", user_id=user_id, uid=uid, script_key=script_key)
         if not config.debug:
