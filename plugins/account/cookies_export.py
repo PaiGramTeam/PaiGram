@@ -15,8 +15,10 @@ from telegram import (
 )
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
+from telegram.helpers import create_deep_linked_url
 
 from gram_core.basemodel import RegionEnum
+from gram_core.config import config
 from gram_core.dependence.redisdb import RedisDB
 from gram_core.plugin import Plugin, handler
 from gram_core.services.cookies import CookiesService
@@ -115,6 +117,34 @@ class CookiesExport(Plugin):
                 )
             ]
         ]
+        await message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
+    def gen_cookies_import_buttons(self):
+        official_bots = config.bot_official.copy()
+        lower_official_bots = [i.lower() for i in official_bots]
+        bot_username_lower = self.application.bot.username.lower()
+        if bot_username_lower in lower_official_bots:
+            official_bots.pop(lower_official_bots.index(bot_username_lower))
+        return [
+            [
+                InlineKeyboardButton(
+                    text=name,
+                    url=create_deep_linked_url(name, "cookies_export"),
+                )
+            ]
+            for name in official_bots
+        ]
+
+    @handler.command("cookies_import", block=False)
+    async def cookies_import(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
+        message = update.effective_message
+        user = update.effective_user
+        logger.info("用户 %s[%s] cookies_import 命令请求", user.full_name, user.id)
+        text = "请点击下方按钮选择您已经绑定了账号的 BOT"
+        buttons = self.gen_cookies_import_buttons()
+        if not buttons:
+            await message.reply_text("没有可用的BOT")
+            return
         await message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler.inline_query(pattern="^cookies_export$", block=False)
