@@ -110,6 +110,20 @@ class AccountCookiesPlugin(Plugin.Conversation):
         data.device_name = headers.get("x-rpc-device_name")
         return data
 
+    async def _parse_args(self, update: Update, context: CallbackContext) -> Optional[int]:
+        args = self.get_args(context)
+        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
+        if len(args) < 2:
+            return None
+        regions = {"米游社": RegionEnum.HYPERION, "HoYoLab": RegionEnum.HOYOLAB}
+        if args[0] not in regions:
+            return None
+        cookies = " ".join(args[1:])
+        account_cookies_plugin_data.region = regions[args[0]]
+        if ret := await self.parse_cookies(update, context, cookies):
+            return ret
+        return await self.check_cookies(update, context)
+
     @conversation.entry_point
     @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=False)
@@ -123,6 +137,9 @@ class AccountCookiesPlugin(Plugin.Conversation):
             context.chat_data["account_cookies_plugin_data"] = account_cookies_plugin_data
         else:
             account_cookies_plugin_data.reset()
+
+        if ret := await self._parse_args(update, context):
+            return ret
 
         text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！请选择要绑定的服务器！或回复退出取消操作")}'
         reply_keyboard = [["米游社", "HoYoLab"], ["退出"]]
@@ -155,15 +172,21 @@ class AccountCookiesPlugin(Plugin.Conversation):
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
     async def input_cookies(self, update: Update, context: CallbackContext) -> int:
         message = update.effective_message
-        user = update.effective_user
-        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
+        if ret := await self.parse_cookies(update, context, message.text):
+            return ret
+        return await self.check_cookies(update, context)
+
+    async def parse_cookies(self, update: Update, context: CallbackContext, text: str) -> Optional[int]:
+        user = update.effective_user
+        message = update.effective_message
+        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
         try:
             # cookie str to dict
             wrapped = (
-                ArkoWrapper(message.text.split(";"))
+                ArkoWrapper(text.split(";"))
                 .filter(lambda x: x != "")
                 .map(lambda x: x.strip())
                 .map(lambda x: ((y := x.split("=", 1))[0], y[1]))
@@ -186,7 +209,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await message.reply_text("Cookies格式有误，请检查后重新尝试绑定", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         account_cookies_plugin_data.cookies = cookies
-        return await self.check_cookies(update, context)
 
     async def check_cookies(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
