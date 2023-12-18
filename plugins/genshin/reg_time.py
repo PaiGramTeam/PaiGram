@@ -69,7 +69,7 @@ class RegTimePlugin(Plugin):
 
     @handler.command("reg_time", block=False)
     @handler.message(filters.Regex(r"^原神账号注册时间$"), block=False)
-    async def reg_time(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
+    async def reg_time(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 原神注册时间命令请求", user.full_name, user.id)

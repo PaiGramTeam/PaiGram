@@ -1,10 +1,9 @@
 from http.cookies import SimpleCookie
-from typing import List
+from typing import List, TYPE_CHECKING
 from uuid import uuid4
 
 from pydantic import BaseModel
 from telegram import (
-    Update,
     InlineKeyboardButton,
     SwitchInlineQueryChosenChat,
     InlineKeyboardMarkup,
@@ -14,7 +13,6 @@ from telegram import (
     InlineQueryResultsButton,
 )
 from telegram.error import BadRequest
-from telegram.ext import ContextTypes
 from telegram.helpers import create_deep_linked_url
 
 from gram_core.basemodel import RegionEnum
@@ -29,6 +27,10 @@ try:
     import ujson as jsonlib
 except ImportError:
     import json as jsonlib
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext import ContextTypes
 
 
 class InlineCookies(BaseModel):
@@ -98,7 +100,7 @@ class CookiesExport(Plugin):
         return cookies_list
 
     @handler.command("cookies_export", block=False)
-    async def cookies_export(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
+    async def cookies_export(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] cookies_export 命令请求", message.from_user.full_name, message.from_user.id)
@@ -136,7 +138,7 @@ class CookiesExport(Plugin):
         ]
 
     @handler.command("cookies_import", block=False)
-    async def cookies_import(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
+    async def cookies_import(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] cookies_import 命令请求", user.full_name, user.id)
@@ -148,7 +150,7 @@ class CookiesExport(Plugin):
         await message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler.inline_query(pattern="^cookies_export$", block=False)
-    async def inline_query(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def inline_query(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         user = update.effective_user
         ilq: "InlineQuery" = update.inline_query
         cache_data = await self.get_cache(user.id)
