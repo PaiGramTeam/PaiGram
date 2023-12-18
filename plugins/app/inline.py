@@ -98,6 +98,8 @@ class Inline(Plugin):
                     input_message_content=InputTextMessageContent("角色攻略查询"),
                 )
             )
+        elif args[0] == "cookies_export":
+            return
         else:
             if args[0] == "查看武器列表并查询":
                 for weapon in self.weapons_list:
