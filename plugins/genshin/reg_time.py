@@ -4,16 +4,13 @@ from typing import TYPE_CHECKING
 from simnet.client.routes import InternationalRoute
 from simnet.errors import BadRequest as SIMNetBadRequest
 from simnet.utils.player import recognize_genshin_server, recognize_genshin_game_biz
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.constants import ParseMode
 from telegram.ext import filters
-from telegram.helpers import create_deep_linked_url
 
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.users.services import UserService
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -81,22 +78,6 @@ class RegTimePlugin(Plugin):
                 game_uid = client.player_id
                 reg_time = await self.get_reg_time_from_cache(client)
             await message.reply_text(f"你的原神账号 [{game_uid}] 注册时间为：{reg_time}")
-        except (PlayerNotFoundError, CookiesNotFoundError):
-            buttons = [[InlineKeyboardButton("点我绑定账号", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
-            if filters.ChatType.GROUPS.filter(message):
-                reply_msg = await message.reply_text(
-                    "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙绑定账号",
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                    parse_mode=ParseMode.HTML,
-                )
-                self.add_delete_message_job(reply_msg, delay=30)
-                self.add_delete_message_job(message, delay=30)
-            else:
-                await message.reply_text(
-                    "此功能需要绑定<code>cookie</code>后使用，请先私聊派蒙进行绑定",
-                    parse_mode=ParseMode.HTML,
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                )
         except SIMNetBadRequest as exc:
             if exc.ret_code == -501101:
                 await message.reply_text("当前角色冒险等阶未达到10级，暂时无法获取信息")
