@@ -67,9 +67,15 @@ class ErrorHandler(Plugin):
         if update.inline_query is not None:  # 忽略 inline_query
             return None
 
+        _import_button = [
+            InlineKeyboardButton("从其他 BOT 导入", url=create_deep_linked_url(context.bot.username, "cookies_import"))
+        ]
         if "重新绑定" in content:
             buttons = InlineKeyboardMarkup(
-                [[InlineKeyboardButton("点我重新绑定", url=create_deep_linked_url(context.bot.username, "set_cookie"))]]
+                [
+                    [InlineKeyboardButton("点我重新绑定", url=create_deep_linked_url(context.bot.username, "set_cookie"))],
+                    _import_button,
+                ]
             )
         elif "通过验证" in content:
             buttons = InlineKeyboardMarkup(
@@ -88,7 +94,8 @@ class ErrorHandler(Plugin):
                         InlineKeyboardButton(
                             "点我绑定账号", url=create_deep_linked_url(self.application.bot.username, "set_cookie")
                         )
-                    ]
+                    ],
+                    _import_button,
                 ]
             )
         else:
