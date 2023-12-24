@@ -63,6 +63,7 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.entry_point
     @handler.command(command="setuid", filters=filters.ChatType.PRIVATE, block=False)
+    @handler.command(command="start", filters=filters.Regex("set_uid$"), block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         user = update.effective_user
         message = update.effective_message

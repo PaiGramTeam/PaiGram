@@ -2,8 +2,8 @@ from typing import Optional, Tuple
 
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CommandHandler, CallbackContext
-from telegram.ext import MessageHandler, filters
+from telegram.ext import CallbackContext
+from telegram.ext import filters
 from telegram.helpers import create_deep_linked_url
 
 from core.config import config
@@ -66,8 +66,9 @@ class Sign(Plugin):
             await self.sign_service.add(user)
             return "开启自动签到成功"
 
-    @handler(CommandHandler, command="sign", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^每日签到(.*)"), block=False)
+    @handler.command(command="sign", block=False)
+    @handler.message(filters=filters.Regex("^每日签到(.*)"), block=False)
+    @handler.command(command="start", filters=filters.Regex("sign$"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
         message = update.effective_message
@@ -126,6 +127,26 @@ class Sign(Plugin):
             )
             if filters.ChatType.GROUPS.filter(reply_message):
                 self.add_delete_message_job(reply_message)
+
+    @handler.command(command="start", filters=filters.Regex(r" challenge_sign_(.*)"), block=False)
+    async def command_challenge(self, update: Update, context: CallbackContext) -> None:
+        user = update.effective_user
+        message = update.effective_message
+        args = context.args
+        _data = args[0].split("_")
+        validate = _data[2]
+        logger.info("用户 %s[%s] 通过start命令 进入签到流程", user.full_name, user.id)
+        try:
+            async with self.genshin_helper.genshin(user.id) as client:
+                await message.reply_chat_action(ChatAction.TYPING)
+                _, challenge = await self.sign_system.get_challenge(client.player_id)
+                if not challenge:
+                    await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
+                    return
+                sign_text = await self.sign_system.start_sign(client, challenge=challenge, validate=validate)
+                await message.reply_text(sign_text, allow_sending_without_reply=True)
+        except NeedChallenge:
+            await message.reply_text("回调错误，请重新签到", allow_sending_without_reply=True)
 
     @handler(CallbackQueryHandler, pattern=r"^sign\|", block=False)
     async def sign_gen_link(self, update: Update, context: CallbackContext) -> None:

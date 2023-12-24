@@ -127,6 +127,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
     @conversation.entry_point
     @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="setcookies", filters=filters.ChatType.PRIVATE, block=False)
+    @handler.command(command="start", filters=filters.Regex("set_cookie$"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> int:
         user = update.effective_user
         message = update.effective_message

@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, filters
 
 from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
@@ -16,6 +16,7 @@ class HelpPlugin(Plugin):
         self.template_service = template_service
 
     @handler.command(command="help", block=False)
+    @handler.command(command="start", filters=filters.Regex("inline_message$"), block=False)
     async def start(self, update: Update, _: CallbackContext):
         message = update.effective_message
         user = update.effective_user
