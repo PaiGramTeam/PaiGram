@@ -75,8 +75,9 @@ class PayLogPlugin(Plugin.Conversation):
             return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
 
     @conversation.entry_point
-    @handler(CommandHandler, command="pay_log_import", filters=filters.ChatType.PRIVATE, block=False)
-    @handler(MessageHandler, filters=filters.Regex("^导入充值记录$") & filters.ChatType.PRIVATE, block=False)
+    @handler.command(command="pay_log_import", filters=filters.ChatType.PRIVATE, block=False)
+    @handler.message(filters=filters.Regex("^导入充值记录$") & filters.ChatType.PRIVATE, block=False)
+    @handler.command(command="start", filters=filters.Regex("pay_log_import$"), block=False)
     async def command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user

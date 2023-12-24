@@ -11,6 +11,7 @@ from telegram import (
     InputTextMessageContent,
     InlineQueryResultsButton,
 )
+from telegram.ext import filters
 from telegram.error import BadRequest
 from telegram.helpers import create_deep_linked_url
 
@@ -99,6 +100,7 @@ class CookiesExport(Plugin):
         return cookies_list
 
     @handler.command("cookies_export", block=False)
+    @handler.command("start", filters=filters.Regex("cookies_export$"), block=False)
     async def cookies_export(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         message = update.effective_message
         user = update.effective_user
@@ -137,6 +139,7 @@ class CookiesExport(Plugin):
         ]
 
     @handler.command("cookies_import", block=False)
+    @handler.command("start", filters=filters.Regex("cookies_import$"), block=False)
     async def cookies_import(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         message = update.effective_message
         user = update.effective_user

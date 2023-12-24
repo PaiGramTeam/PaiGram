@@ -203,6 +203,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导入抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
+    @handler.command(command="start", filters=filters.Regex("gacha_log_import$"), block=False)
     async def command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
