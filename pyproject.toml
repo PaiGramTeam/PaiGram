@@ -1,64 +1,66 @@
-[tool.poetry]
+[project]
 name = "PaiGram"
 version = "0.4.0"
 description = "Telegarm robot, query the official genshin information."
-authors = ["洛水居室", "zhxy-CN", "Chuangbo Li", "kotoriのねこ", "omg-xtao", "艾迪", "Karako", "SiHuaN"]
-license = "AGPL-3.0"
+authors = [
+    { name = "洛水居室" },
+    { name = "zhxy-CN" },
+    { name = "Chuangbo Li" },
+    { name = "kotoriのねこ" },
+    { name = "omg-xtao" },
+    { name = "艾迪" },
+    { name = "Karako", email = "karakohear@gmail.com" },
+    { name = "SiHuaN" },
+]
+dependencies = [
+    "httpx<1.0.0,>=0.25.0",
+    "ujson<6.0.0,>=5.9.0",
+    "Jinja2<4.0.0,>=3.1.2",
+    "python-telegram-bot[ext,rate-limiter]<21.0,>=20.7",
+    "sqlmodel<1.0.0,>=0.0.14",
+    "colorlog<7.0.0,>=6.8.0",
+    "fakeredis<3.0.0,>=2.19.0",
+    "redis<6.0.0,>=5.0.1",
+    "beautifulsoup4<5.0.0,>=4.12.1",
+    "asyncmy<1.0.0,>=0.2.9",
+    "aiofiles<24.0.0,>=23.2.1",
+    "python-dotenv<2.0.0,>=1.0.0",
+    "alembic<2.0.0,>=1.13.0",
+    "black<24.0.0,>=23.9.1",
+    "rich<14.0.0,>=13.6.0",
+    "enkanetwork-py @ git+https://github.com/mrwan200/EnkaNetwork.py",
+    "lxml<5.0.0,>=4.9.2",
+    "arko-wrapper<1.0.0,>=0.2.8",
+    "fastapi<1.0.0,>=0.105.0",
+    "uvicorn[standard]<1.0.0,>=0.24.0",
+    "sentry-sdk<2.0.0,>=1.31.0",
+    "GitPython<4.0.0,>=3.1.30",
+    "openpyxl<4.0.0,>=3.1.1",
+    "async-lru<3.0.0,>=2.0.4",
+    "thefuzz<1.0.0,>=0.20.0",
+    "cryptography<42.0.0,>=41.0.4",
+    "pillow<11.0.0,>=10.0.1",
+    "playwright==1.39.0",
+    "aiosqlite[sqlite]<1.0.0,>=0.19.0",
+    "simnet @ git+https://github.com/PaiGramTeam/SIMNet",
+    "gcsim-pypi<3.0.0.0,>=2.8.2.10",
+    "psutil<6.0.0,>=5.9.6",
+]
+requires-python = ">=3.8,<4.0"
 readme = "README.md"
+license = { text = "AGPL-3.0" }
 
-[tool.poetry.dependencies]
-python = "^3.8"
-httpx = "^0.25.0"
-ujson = "^5.9.0"
-Jinja2 = "^3.1.2"
-python-telegram-bot = { version = "^20.7", extras = ["ext", "rate-limiter"] }
-sqlmodel = "^0.0.14"
-colorlog = "^6.8.0"
-fakeredis = "^2.19.0"
-redis = "^5.0.1"
-beautifulsoup4 = "^4.12.1"
-asyncmy = "^0.2.9"
-aiofiles = "^23.2.1"
-python-dotenv = "^1.0.0"
-alembic = "^1.13.0"
-black = "^23.9.1"
-rich = "^13.6.0"
-enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
-TgCrypto = { version = "^1.2.5", optional = true }
-Pyrogram = { version = "^2.0.102", optional = true }
-pytest = { version = "^7.3.0", optional = true }
-pytest-asyncio = { version = "^0.23.2", optional = true }
-flaky = { version = "^3.7.0", optional = true }
-lxml = "^4.9.2"
-arko-wrapper = "^0.2.8"
-fastapi = "^0.105.0"
-uvicorn = { extras = ["standard"], version = "^0.24.0" }
-sentry-sdk = "^1.31.0"
-GitPython = "^3.1.30"
-openpyxl = "^3.1.1"
-async-lru = "^2.0.4"
-thefuzz = "^0.20.0"
-cryptography = "^41.0.4"
-pillow = "^10.0.1"
-playwright = "1.39.0"
-aiosqlite = { extras = ["sqlite"], version = "^0.19.0" }
-simnet = { git = "https://github.com/PaiGramTeam/SIMNet" }
-gcsim-pypi = "^2.8.2.10"
-python-genshin-artifact = { version = "^1.0.4", optional = true }
-psutil = "^5.9.6"
+[project.optional-dependencies]
+pyro = ["TgCrypto<2.0.0,>=1.2.5", "Pyrogram<3.0.0,>=2.0.102"]
+test = ["pytest<8.0.0,>=7.3.0", "pytest-asyncio<1.0.0,>=0.23.2", "flaky<4.0.0,>=3.7.0"]
+genshin-artifact = ["python-genshin-artifact<2.0.0,>=1.0.4"]
 
-[tool.poetry.extras]
-genshin-artifact = ["python-genshin-artifact"]
-pyro = ["Pyrogram", "TgCrypto"]
-test = ["pytest", "pytest-asyncio", "flaky"]
-sqlite = ["aiosqlite"]
-all = ["pytest", "pytest-asyncio", "flaky", "Pyrogram", "TgCrypto", "aiosqlite", "python-genshin-artifact"]
+[tool.pdm]
+package-type = "application"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.pdm.build]
+includes = []
 
-# pytest配置
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 log_cli = true

@@ -156,3 +156,6 @@ paigram.session-journal
 
 ### Docker ###
 docker-compose.yml
+
+### pdm ###
+.pdm-python
