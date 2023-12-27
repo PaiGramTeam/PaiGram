@@ -72,7 +72,7 @@ if sqlalchemy_url is None:
         port=application_config.database.port,
         database=application_config.database.database,
     )
-    alembic_cfg.set_main_option("sqlalchemy.url", str(new_url))
+    alembic_cfg.set_main_option("sqlalchemy.url", new_url.render_as_string(hide_password=False))
 
 
 def run_migrations_offline() -> None:
