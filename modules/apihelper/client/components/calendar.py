@@ -4,12 +4,13 @@ from typing import List, Tuple, Optional, Dict, Union, TYPE_CHECKING
 
 from httpx import AsyncClient
 
+from core.dependence.assets import AssetsCouldNotFound
 from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.remote import Remote
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
 from modules.wiki.character import Character
-
+from utils.log import logger
 
 if TYPE_CHECKING:
     from core.dependence.assets import AssetsService
@@ -110,10 +111,6 @@ class Calendar:
                 new_list_data[idx].append(ActDetail(**item))
         time_map = {}
         time_map.update(await self.parse_official_content_date())
-        req = await self.client.get(self.MIAO_API)
-        if req.status_code == 200:
-            miao_data = req.json()
-            time_map.update({key: ActTime(**value) for key, value in miao_data.get("data", {}).items()})
         remote_data = await Remote.get_remote_calendar()
         if remote_data:
             time_map.update({key: ActTime(**value) for key, value in remote_data.get("data", {}).items()})
@@ -318,13 +315,16 @@ class Calendar:
                     birthday_chars[str(date.month)][str(d)] = []
                     for c in char:
                         character = await Character.get_by_name(c)
-                        birthday_chars[str(date.month)][str(d)].append(
-                            BirthChar(
-                                name=c,
-                                star=character.rarity,
-                                icon=(await assets.avatar(roleToId(c)).icon()).as_uri(),
+                        try:
+                            birthday_chars[str(date.month)][str(d)].append(
+                                BirthChar(
+                                    name=c,
+                                    star=character.rarity,
+                                    icon=(await assets.avatar(roleToId(c)).icon()).as_uri(),
+                                )
                             )
-                        )
+                        except AssetsCouldNotFound:
+                            logger.warning("角色 %s 图片素材未找到", c)
         return birthday_char_line, birthday_chars
 
     @staticmethod
