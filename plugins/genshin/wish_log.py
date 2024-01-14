@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from aiofiles import open as async_open
 from simnet import GenshinClient, Region
 from simnet.models.genshin.wish import BannerType
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.constants import ChatAction
 from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
@@ -228,14 +228,14 @@ class WishLogPlugin(Plugin.Conversation):
         if message.text == "自动导入":
             authkey = await self.gen_authkey(user.id)
             if not authkey:
-                await message.reply_text("自动生成 authkey 失败，请尝试通过其他方式导入。")
+                await message.reply_text("自动生成 authkey 失败，请尝试通过其他方式导入。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
         elif message.text == "退出":
-            await message.reply_text("取消导入抽卡记录")
+            await message.reply_text("取消导入抽卡记录", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         else:
             authkey = from_url_get_authkey(message.text)
-        reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后")
+        reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后", reply_markup=ReplyKeyboardRemove())
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(text)
