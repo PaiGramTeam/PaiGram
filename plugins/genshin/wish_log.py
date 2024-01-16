@@ -18,6 +18,7 @@ from core.services.players import PlayersService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from metadata.scripts.paimon_moe import GACHA_LOG_PAIMON_MOE_PATH, update_paimon_moe_zh
+from modules.gacha_log.const import UIGF_VERSION
 from modules.gacha_log.error import (
     GachaLogAccountNotFound,
     GachaLogAuthkeyTimeout,
@@ -55,7 +56,7 @@ class WishLogPlugin(Plugin.Conversation):
     IMPORT_HINT = (
         "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
         "（非 paimon.moe 导出的文件数据）</b>\n\n"
-        "> 你还可以向派蒙发送从其他工具导出的 UIGF 标准的记录文件\n"
+        f"> 你还可以向派蒙发送从其他工具导出的 UIGF {UIGF_VERSION} 标准的记录文件\n"
         "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
         "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
         "<b>注意：导入的数据将会与旧数据进行合并。</b>"
@@ -155,14 +156,14 @@ class WishLogPlugin(Plugin.Conversation):
             )
             return
         except GachaLogFileError:
-            await message.reply_text("文件解析失败，请检查文件是否符合 UIGF 标准")
+            await message.reply_text(f"文件解析失败，请检查文件是否符合 UIGF {UIGF_VERSION} 标准")
             return
         except (KeyError, IndexError, ValueError):
-            await message.reply_text("文件解析失败，请检查文件编码是否正确或符合 UIGF 标准")
+            await message.reply_text(f"文件解析失败，请检查文件编码是否正确或符合 UIGF {UIGF_VERSION} 标准")
             return
         except Exception as exc:
             logger.error("文件解析失败 %s", repr(exc))
-            await message.reply_text("文件解析失败，请检查文件是否符合 UIGF 标准")
+            await message.reply_text(f"文件解析失败，请检查文件是否符合 UIGF {UIGF_VERSION} 标准")
             return
         await message.reply_chat_action(ChatAction.TYPING)
         reply = await message.reply_text("文件解析成功，正在导入数据")
@@ -171,7 +172,7 @@ class WishLogPlugin(Plugin.Conversation):
             text = await self._refresh_user_data(user, data=data, verify_uid=file_type == "json")
         except Exception as exc:  # pylint: disable=W0703
             logger.error("文件解析失败 %s", repr(exc))
-            text = "文件解析失败，请检查文件是否符合 UIGF 标准"
+            text = f"文件解析失败，请检查文件是否符合 UIGF {UIGF_VERSION} 标准"
         await reply.edit_text(text)
 
     async def can_gen_authkey(self, uid: int) -> bool:

@@ -1,7 +1,7 @@
 from simnet.models.genshin.wish import BannerType
 
 PAIMONMOE_VERSION = 3
-UIGF_VERSION = "v2.3"
+UIGF_VERSION = "v2.4"
 
 
 GACHA_TYPE_LIST = {

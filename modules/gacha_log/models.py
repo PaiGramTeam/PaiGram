@@ -162,12 +162,22 @@ class UIGFInfo(BaseModel):
     export_app: str = ""
     export_app_version: str = ""
     uigf_version: str = UIGF_VERSION
+    region_time_zone: int = 8
 
     def __init__(self, **data: Any):
+        data["region_time_zone"] = data.get("region_time_zone", UIGFInfo.get_region_time_zone(data.get("uid", "0")))
         super().__init__(**data)
         if not self.export_time:
             self.export_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.export_timestamp = int(datetime.datetime.now().timestamp())
+
+    @staticmethod
+    def get_region_time_zone(uid: str) -> int:
+        if uid.startswith("6"):
+            return -5
+        if uid.startswith("7"):
+            return 1
+        return 8
 
 
 class UIGFModel(BaseModel):
