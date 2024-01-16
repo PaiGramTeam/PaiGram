@@ -1,3 +1,6 @@
-from gram_core.services.users.cache import UserAdminCache
+from gram_core.services.users.cache import UserAdminCache, UserBanCache
 
-__all__ = ("UserAdminCache",)
+__all__ = (
+    "UserAdminCache",
+    "UserBanCache",
+)
