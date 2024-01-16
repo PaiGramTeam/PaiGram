@@ -85,6 +85,10 @@ class SetCommandPlugin(Plugin):
             BotCommand("update", "更新"),
             BotCommand("set_command", "重设命令"),
             BotCommand("status", "当前Bot运行状态"),
+            BotCommand("leave_chat", "退出群组"),
+            BotCommand("get_chat", "获取会话信息"),
+            BotCommand("add_block", "添加黑名单"),
+            BotCommand("del_block", "移除黑名单"),
         ]
         await context.bot.set_my_commands(commands=group_command)  # 留空，default 为 botCommandScopeDefault, 所有聊天可见
         await context.bot.set_my_commands(commands=user_command + group_command, scope=BotCommandScopeAllPrivateChats())
