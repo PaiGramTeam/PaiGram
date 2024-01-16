@@ -1,3 +1,4 @@
+import contextlib
 import html
 from typing import Tuple, Optional, TYPE_CHECKING
 
@@ -131,3 +132,22 @@ class GetChat(Plugin):
             text = f"会话 ID：<code>{chat_id}</code>\n"
             text += f"黑名单：<code>{'是' if is_banned else '否'}</code>\n"
             await message.reply_text(text, parse_mode="HTML", reply_markup=self.gen_button(chat_id))
+
+    @handler.command(command="leave_chat", block=False, admin=True)
+    async def leave_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user = update.effective_user
+        message = update.effective_message
+        chat_id = self.get_chat_id(context)
+        logger.info("用户 %s[%s] leave_chat 命令请求 chat_id[%s]", user.full_name, user.id, chat_id)
+        if not chat_id:
+            await message.reply_text("参数错误，请指定群 id ！")
+            return
+        try:
+            with contextlib.suppress(BadRequest, Forbidden):
+                chat = await context.bot.get_chat(chat_id)
+                await message.reply_text(f"正在尝试退出群 {chat.title}[{chat.id}]")
+            await context.bot.leave_chat(chat_id)
+        except (BadRequest, Forbidden) as exc:
+            await message.reply_text(f"退出 chat_id[{chat_id}] 发生错误！ 错误信息为 {str(exc)}")
+            return
+        await message.reply_text(f"退出 chat_id[{chat_id}] 成功！")
