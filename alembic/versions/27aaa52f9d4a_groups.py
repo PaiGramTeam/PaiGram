@@ -40,15 +40,9 @@ def upgrade() -> None:
         sa.Column("is_left", sa.Integer(), nullable=True),
         sa.Column("is_banned", sa.Integer(), nullable=True),
         sa.Column("title", sqlmodel.AutoString(), nullable=False),
-        sa.Column(
-            "username", sqlmodel.AutoString(), nullable=True
-        ),
-        sa.Column(
-            "big_photo_id", sqlmodel.AutoString(), nullable=True
-        ),
-        sa.Column(
-            "small_photo_id", sqlmodel.AutoString(), nullable=True
-        ),
+        sa.Column("username", sqlmodel.AutoString(), nullable=True),
+        sa.Column("big_photo_id", sqlmodel.AutoString(), nullable=True),
+        sa.Column("small_photo_id", sqlmodel.AutoString(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("chat_id"),
         mysql_charset="utf8mb4",

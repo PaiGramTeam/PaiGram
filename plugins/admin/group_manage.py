@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from telegram.ext import ContextTypes
 
 
-
 class GroupManage(Plugin):
     def __init__(
         self,
@@ -41,7 +40,7 @@ class GroupManage(Plugin):
             return
         if not was_member and is_member:
             if await self.group_service.is_banned(chat.id):
-                logger.info("会话 %s[%s] 存黑名单中，尝试退出", chat.title, chat.id)
+                logger.info("会话 %s[%s] 在黑名单中，尝试退出", chat.title, chat.id)
                 await GroupHandler.leave_chat(context.bot, chat.id)
                 return
             if await self.group_service.is_need_update(chat.id):
