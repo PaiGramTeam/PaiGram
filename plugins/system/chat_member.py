@@ -7,6 +7,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.users.services import UserAdminService
+from core.services.groups.services import GroupService
 from utils.chatmember import extract_status_change
 from utils.log import logger
 
@@ -17,10 +18,12 @@ class ChatMember(Plugin):
         user_admin_service: UserAdminService = None,
         players_service: PlayersService = None,
         cookies_service: CookiesService = None,
+        group_service: GroupService = None,
     ):
         self.cookies_service = cookies_service
         self.players_service = players_service
         self.user_admin_service = user_admin_service
+        self.group_service = group_service
 
     @handler.chat_member(chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER, block=False)
     async def track_chats(self, update: Update, context: CallbackContext) -> None:
@@ -48,6 +51,8 @@ class ChatMember(Plugin):
                 logger.info("用户 %s[%s] 从 %s[%s] 频道移除Bot", user.full_name, user.id, chat.title, chat.id)
 
     async def greet(self, user: User, chat: Chat, context: CallbackContext) -> None:
+        if await self.group_service.is_banned(chat.id):
+            return
         quit_status = True
         if config.join_groups == JoinGroups.NO_ALLOW:
             try:

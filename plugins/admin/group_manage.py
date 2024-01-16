@@ -45,3 +45,7 @@ class GroupManage(Plugin):
                 return
             if await self.group_service.is_need_update(chat.id):
                 await GroupHandler.update_group(context.bot, self.group_service, chat)
+            else:
+                await self.group_service.join(chat.id)
+        if was_member and not is_member:
+            await self.group_service.leave(chat.id)
