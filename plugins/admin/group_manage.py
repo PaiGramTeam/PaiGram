@@ -83,59 +83,81 @@ class GroupManage(Plugin):
             await self.group_service.update_group(group)
 
     @handler.command(command="add_block", block=False, admin=True)
+    @handler.callback_query(pattern=r"^block\|add\|", block=False, admin=True)
     async def add_block(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+        callback_query = update.callback_query
         user = update.effective_user
         message = update.effective_message
-        chat_id = self.get_chat_id(context)
-        logger.info("用户 %s[%s] add_block 命令请求 chat_id[%s]", user.full_name, user.id, chat_id)
+        chat_id = self.get_chat_id(context) if not callback_query else int(callback_query.data.split("|")[2])
+        logger.info(
+            "用户 %s[%s] add_block 命令请求 chat_id[%s] callback[%s]", user.full_name, user.id, chat_id, bool(callback_query)
+        )
         if not chat_id:
             await message.reply_text("参数错误，请指定群 id ！")
             return
+
+        async def reply(text: str):
+            if callback_query:
+                await callback_query.answer(text, show_alert=True)
+            else:
+                await message.reply_text(text)
+
         if chat_id < 0:
             if await self.group_service.is_banned(chat_id):
-                await message.reply_text("该群已在黑名单中！")
+                await reply("该群已在黑名单中！")
                 return
             await self.add_block_group(chat_id)
-            await message.reply_text("已将该群加入黑名单！")
+            await reply("已将该群加入黑名单！")
         else:
             if await self.user_ban_service.is_banned(chat_id):
-                await message.reply_text("该用户已在黑名单中！")
+                await reply("该用户已在黑名单中！")
                 return
             try:
                 await self.user_ban_service.add_ban(chat_id)
             except PermissionError:
-                await message.reply_text("无法操作管理员！")
+                await reply("无法操作管理员！")
                 return
-            await message.reply_text("已将该用户加入黑名单！")
+            await reply("已将该用户加入黑名单！")
 
     @handler.command(command="del_block", block=False, admin=True)
+    @handler.callback_query(pattern=r"^block\|del\|", block=False, admin=True)
     async def del_block(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+        callback_query = update.callback_query
         user = update.effective_user
         message = update.effective_message
-        chat_id = self.get_chat_id(context)
-        logger.info("用户 %s[%s] del_block 命令请求 chat_id[%s]", user.full_name, user.id, chat_id)
+        chat_id = self.get_chat_id(context) if not callback_query else int(callback_query.data.split("|")[2])
+        logger.info(
+            "用户 %s[%s] del_block 命令请求 chat_id[%s] callback[%s]", user.full_name, user.id, chat_id, bool(callback_query)
+        )
         if not chat_id:
             await message.reply_text("参数错误，请指定群 id ！")
             return
+
+        async def reply(text: str):
+            if callback_query:
+                await callback_query.answer(text, show_alert=True)
+            else:
+                await message.reply_text(text)
+
         if chat_id < 0:
             if not await self.group_service.is_banned(chat_id):
-                await message.reply_text("该群不在黑名单中！")
+                await reply("该群不在黑名单中！")
                 return
             success = await self.group_service.del_ban(chat_id)
             if not success:
-                await message.reply_text("该群不在黑名单中！")
+                await reply("该群不在黑名单中！")
                 return
-            await message.reply_text("已将该群移出黑名单！")
+            await reply("已将该群移出黑名单！")
         else:
             if not await self.user_ban_service.is_banned(chat_id):
-                await message.reply_text("该用户不在黑名单中！")
+                await reply("该用户不在黑名单中！")
                 return
             try:
                 success = await self.user_ban_service.del_ban(chat_id)
                 if not success:
-                    await message.reply_text("该用户不在黑名单中！")
+                    await reply("该用户不在黑名单中！")
                     return
             except PermissionError:
-                await message.reply_text("无法操作管理员！")
+                await reply("无法操作管理员！")
                 return
-            await message.reply_text("已将该用户移出黑名单！")
+            await reply("已将该用户移出黑名单！")
