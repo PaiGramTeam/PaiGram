@@ -128,7 +128,7 @@ class GetChat(Plugin):
                 text = await self.parse_private_chat(chat, is_banned)
             await message.reply_text(text, parse_mode="HTML", reply_markup=self.gen_button(chat_id))
         except (BadRequest, Forbidden) as exc:
-            logger.warning(f"通过 id 获取会话信息失败，API 返回：{exc.message}")
+            logger.warning("通过 id 获取会话信息失败，API 返回：%s", str(exc))
             text = f"会话 ID：<code>{chat_id}</code>\n"
             text += f"黑名单：<code>{'是' if is_banned else '否'}</code>\n"
             await message.reply_text(text, parse_mode="HTML", reply_markup=self.gen_button(chat_id))

@@ -74,7 +74,7 @@ class GroupManage(Plugin):
             try:
                 chat = await self.get_chat(chat_id)
             except (BadRequest, Forbidden) as exc:
-                logger.warning(f"通过 id 获取会话信息失败，API 返回：{exc.message}")
+                logger.warning("通过 id 获取会话信息失败，API 返回：%s", str(exc))
             if chat:
                 group = Group.from_chat(chat)
             else:
