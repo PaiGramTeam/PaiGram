@@ -134,7 +134,7 @@ class GetChat(Plugin):
             await message.reply_text(text, parse_mode="HTML", reply_markup=self.gen_button(chat_id))
 
     @handler.command(command="leave_chat", block=False, admin=True)
-    async def leave_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def leave_chat(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
         chat_id = self.get_chat_id(context)
