@@ -82,12 +82,8 @@ class GetChat(Plugin):
 
     def get_chat_id(self, context: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
         args = self.get_args(context)
-        if not args:
-            return
-        try:
+        if args and len(args) > 1 and args[0].isnumeric():
             return int(args[0])
-        except ValueError:
-            return
 
     @staticmethod
     def gen_button(chat_id: int) -> "InlineKeyboardMarkup":
