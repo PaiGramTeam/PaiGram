@@ -175,7 +175,7 @@ class UIGFInfo(BaseModel):
     def get_region_time_zone(uid: str) -> int:
         if uid.startswith("6"):
             return -5
-        elif uid.startswith("7"):
+        if uid.startswith("7"):
             return 1
         return 8
 
