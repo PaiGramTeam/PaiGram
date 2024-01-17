@@ -30,6 +30,10 @@ REG_TIME_URL = InternationalRoute(
 )
 
 
+class NotFoundRegTimeError(Exception):
+    """未找到注册时间"""
+
+
 class RegTimePlugin(Plugin):
     """查询原神注册时间"""
 
@@ -57,7 +61,7 @@ class RegTimePlugin(Plugin):
         data = await client.request_lab(url, method="GET", params=params)
         if time := jsonlib.loads(data.get("data", "{}")).get("1", 0):
             return datetime.fromtimestamp(time).strftime("%Y-%m-%d %H:%M:%S")
-        raise RegTimePlugin.NotFoundRegTimeError
+        raise NotFoundRegTimeError
 
     async def get_reg_time_from_cache(self, client: "GenshinClient") -> str:
         """从缓存中获取原神注册时间"""
@@ -75,16 +79,17 @@ class RegTimePlugin(Plugin):
         logger.info("用户 %s[%s] 原神注册时间命令请求", user.full_name, user.id)
         try:
             async with self.helper.genshin(user.id) as client:
-                game_uid = client.player_id
                 reg_time = await self.get_reg_time_from_cache(client)
-            await message.reply_text(f"你的原神账号 [{game_uid}] 注册时间为：{reg_time}")
+            await message.reply_text(f"你的原神账号注册时间为：{reg_time}")
         except SIMNetBadRequest as exc:
             if exc.ret_code == -501101:
                 await message.reply_text("当前角色冒险等阶未达到10级，暂时无法获取信息")
             else:
                 raise exc
-        except RegTimePlugin.NotFoundRegTimeError:
-            await message.reply_text("未找到你的原神账号 [{game_uid}] 注册时间，仅限 2022 年 10 月 之前注册的账号")
-
-    class NotFoundRegTimeError(Exception):
-        """未找到注册时间"""
+        except ValueError as exc:
+            if "cookie_token" in str(exc):
+                await message.reply_text("呜呜呜出错了请重新绑定账号")
+            else:
+                raise exc
+        except NotFoundRegTimeError:
+            await message.reply_text("未找到你的原神账号注册时间，仅限 2022 年 10 月 之前注册的账号")
