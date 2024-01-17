@@ -204,7 +204,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 account_cookies_plugin_data.device = self.parse_headers(cookie)
             except ValueError:
                 account_cookies_plugin_data.device = None
-                await message.reply_text("解析 Devices 出现错误，可能无法绕过风控，查询操作将需要通过验证。")
         if not cookies:
             logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
             await message.reply_text("Cookies格式有误，请检查后重新尝试绑定", reply_markup=ReplyKeyboardRemove())
@@ -318,6 +317,16 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 logger.debug("用户 %s[%s] Cookies错误", user.full_name, user.id, exc_info=exc)
                 await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
+            try:
+                if account_cookies_plugin_data.device is None:
+                    device_fp = await client.get_fp()
+                    device_data = AccountCookiesPluginDeviceData()
+                    device_data.device_fp = device_fp
+                    device_data.device_id = client.get_device_id()
+            except SimnetBadRequest as exc:
+                logger.info("用户 %s[%s] 获取设备指纹发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
+        if account_cookies_plugin_data.device is None:
+            await message.reply_text("解析 Devices 信息出现错误，可能无法绕过风控，查询操作将需要通过验证。")
         if account_cookies_plugin_data.account_id is None:
             await message.reply_text("无法获取账号ID，请检查Cookie是否正确或请稍后重试")
             return ConversationHandler.END
