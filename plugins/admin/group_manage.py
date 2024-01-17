@@ -57,8 +57,11 @@ class GroupManage(Plugin):
 
     def get_chat_id(self, context: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
         args = self.get_args(context)
-        if args and len(args) > 1 and args[0].isnumeric():
-            return int(args[0])
+        if args:
+            try:
+                return int(args[0])
+            except ValueError:
+                return None
 
     async def add_block_group(self, chat_id: int):
         group = await self.group_service.get_group_by_id(chat_id)
