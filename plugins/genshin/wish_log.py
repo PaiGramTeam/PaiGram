@@ -7,6 +7,7 @@ from simnet import GenshinClient, Region
 from simnet.models.genshin.wish import BannerType
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.constants import ChatAction
+from telegram.error import BadRequest
 from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
 
@@ -239,7 +240,11 @@ class WishLogPlugin(Plugin.Conversation):
         reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后", reply_markup=ReplyKeyboardRemove())
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
-        await reply.edit_text(text)
+        try:
+            await reply.delete()
+        except BadRequest:
+            pass
+        await message.reply_text(text)
         return ConversationHandler.END
 
     @conversation.entry_point
