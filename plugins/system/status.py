@@ -2,10 +2,11 @@ import asyncio
 import os
 from platform import python_version
 from time import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
 
 import psutil
-from telegram import __version__
+from telegram import __version__, Update
+from telegram.ext import BaseHandler
 
 from git import Repo
 from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
@@ -14,14 +15,47 @@ from core.plugin import Plugin, handler
 from utils.log import logger
 
 if TYPE_CHECKING:
-    from telegram import Update
     from telegram.ext import ContextTypes
+
+
+class StatisticsHandler(BaseHandler):
+    def __init__(self, plugin: "Status"):
+        self._plugin = plugin
+        super().__init__(self.recv_callback)
+
+    def check_update(self, update: object) -> Optional[Union[bool, object]]:
+        if isinstance(update, Update):
+            return True
+        return False
+
+    async def recv_callback(self, _: "Update", __: "ContextTypes.DEFAULT_TYPE"):
+        self._plugin.recv_num += 1
+
+    async def send_callback(self, endpoint: str, _, __):
+        if not endpoint:
+            return
+        if isinstance(endpoint, str) and endpoint.startswith("send"):
+            self._plugin.send_num += 1
 
 
 class Status(Plugin):
     def __init__(self):
         self.pid = os.getpid()
         self.time_form = "%m/%d %H:%M"
+        self.type_handler = None
+        self.recv_num = 0
+        self.send_num = 0
+
+    async def initialize(self) -> None:
+        self.type_handler = StatisticsHandler(self)
+        self.application.telegram.add_handler(self.type_handler, group=-10)
+
+        @self.application.on_called_api
+        async def call(endpoint: str, _, __):
+            await self.type_handler.send_callback(endpoint, _, __)
+
+    async def shutdown(self) -> None:
+        self.application.telegram.remove_handler(self.type_handler, group=-10)
 
     @staticmethod
     def get_git_hash() -> str:
@@ -62,6 +96,7 @@ class Status(Plugin):
             f"CPU使用率: `{cpu_percent}%/{process_cpu_use}%` \n"
             f"当前使用的内存: `{memory_text}` \n"
             f"运行时间: `{self.get_bot_uptime(start_time)}` \n"
+            f"收发消息: ⬇️ {self.recv_num} ⬆️ {self.send_num} \n"
         )
         await message.reply_markdown_v2(text)
 
