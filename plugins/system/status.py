@@ -2,11 +2,11 @@ import asyncio
 import os
 from platform import python_version
 from time import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
 
 import psutil
 from telegram import __version__, Update
-from telegram.ext import TypeHandler
+from telegram.ext import BaseHandler
 
 from git import Repo
 from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
@@ -18,10 +18,15 @@ if TYPE_CHECKING:
     from telegram.ext import ContextTypes
 
 
-class StatisticsHandler(TypeHandler):
+class StatisticsHandler(BaseHandler):
     def __init__(self, plugin: "Status"):
         self._plugin = plugin
-        super().__init__(Update, self.recv_callback)
+        super().__init__(self.recv_callback)
+
+    def check_update(self, update: object) -> Optional[Union[bool, object]]:
+        if isinstance(update, Update):
+            return True
+        return False
 
     async def recv_callback(self, _: "Update", __: "ContextTypes.DEFAULT_TYPE"):
         self._plugin.recv_num += 1
