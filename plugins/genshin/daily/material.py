@@ -520,7 +520,10 @@ class DailyMaterial(Plugin):
         honey_item = HONEY_DATA[item_type].get(item_id)
         if honey_item is None:
             return None
-        icon = await getattr(self.assets_service, item_type)(item_id).icon()
+        try:
+            icon = await getattr(self.assets_service, item_type)(item_id).icon()
+        except KeyError:
+            return None
         return ItemData(
             id=item_id,
             name=typing.cast(str, honey_item[1]),
