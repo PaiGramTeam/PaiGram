@@ -266,6 +266,7 @@ class DailyNoteSystem(Plugin):
                 else:
                     user.resin.notice_num = web_config.resin.notice_num
                     user.resin.noticed = False
+                    user.resin_db.status = TaskStatusEnum.STATUS_SUCCESS
             else:
                 if user.resin_db:
                     await self.resin_service.remove(user.resin_db)
@@ -301,6 +302,7 @@ class DailyNoteSystem(Plugin):
                     await self.expedition_service.add(expedition)
                 else:
                     user.expedition.noticed = False
+                    user.expedition_db.status = TaskStatusEnum.STATUS_SUCCESS
             else:
                 if user.expedition_db:
                     await self.expedition_service.remove(user.expedition_db)
@@ -367,8 +369,6 @@ class DailyNoteSystem(Plugin):
                 except Exception as exc:
                     logger.error("执行自动便签提醒时发生错误 user_id[%s]", user_id, exc_info=exc)
                     continue
-                else:
-                    task_user_db.status = TaskStatusEnum.STATUS_SUCCESS
             await self.update_task_user(task_db)
 
     async def get_migrate_data(self, old_user_id: int, new_user_id: int, _) -> Optional["TaskMigrate"]:
