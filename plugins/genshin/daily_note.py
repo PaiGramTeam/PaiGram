@@ -2,8 +2,10 @@ from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
 from simnet.errors import DataNotPublic
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import ConversationHandler, filters
+from telegram.helpers import create_deep_linked_url
 
 from core.plugin import Plugin, handler
 from core.services.template.models import RenderResult
@@ -92,9 +94,15 @@ class DailyNotePlugin(Plugin):
         )
         return render_result
 
+    @staticmethod
+    def get_task_button(bot_username: str) -> InlineKeyboardMarkup:
+        return InlineKeyboardMarkup(
+            [[InlineKeyboardButton(">> 设置状态提醒 <<", url=create_deep_linked_url(bot_username, "daily_note_tasks"))]]
+        )
+
     @handler.command("dailynote", block=False)
     @handler.message(filters.Regex("^当前状态(.*)"), block=False)
-    async def command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
+    async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 每日便签命令请求", user.full_name, user.id)
@@ -111,4 +119,9 @@ class DailyNotePlugin(Plugin):
             return ConversationHandler.END
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await render_result.reply_photo(message, filename=f"{client.player_id}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(
+            message,
+            filename=f"{client.player_id}.png",
+            allow_sending_without_reply=True,
+            reply_markup=self.get_task_button(context.bot.username),
+        )
