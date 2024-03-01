@@ -1,10 +1,11 @@
 import asyncio
 import os
 import re
+from time import time
 from typing import List
 
 from ..base.hyperionrequest import HyperionRequest
-from ...models.genshin.hyperion import PostInfo, ArtworkImage
+from ...models.genshin.hyperion import PostInfo, ArtworkImage, LiveInfo, LiveCode, LiveCodeHoYo
 from ...typedefs import JSON_DATA
 
 __all__ = ("Hyperion",)
@@ -20,6 +21,9 @@ class Hyperion:
     POST_FULL_IN_COLLECTION_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFullInCollection"
     GET_NEW_LIST_URL = "https://bbs-api.miyoushe.com/post/wapi/getNewsList"
     GET_OFFICIAL_RECOMMENDED_POSTS_URL = "https://bbs-api.miyoushe.com/post/wapi/getOfficialRecommendedPosts"
+    LIVE_INFO_URL = "https://api-takumi.mihoyo.com/event/miyolive/index"
+    LIVE_CODE_URL = "https://api-takumi-static.mihoyo.com/event/miyolive/refreshCode"
+    LIVE_CODE_HOYO_URL = "https://bbs-api-os.hoyolab.com/community/painter/wapi/circle/channel/guide/material"
 
     USER_AGENT = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -138,6 +142,44 @@ class Hyperion:
         params = {"gids": gids, "page_size": page_size, "type": type_id}
         response = await self.client.get(url=self.GET_NEW_LIST_URL, params=params)
         return response
+
+    async def get_live_info(self, act_id: str) -> LiveInfo:
+        headers = {"x-rpc-act_id": act_id}
+        response = await self.client.get(url=self.LIVE_INFO_URL, headers=headers)
+        return LiveInfo(**response["live"])
+
+    async def get_live_code(self, act_id: str, ver_code: str) -> List[LiveCode]:
+        headers = {"x-rpc-act_id": act_id}
+        params = {
+            "version": ver_code,
+            "time": str(int(time())),
+        }
+        response = await self.client.get(url=self.LIVE_CODE_URL, headers=headers, params=params)
+        codes = []
+        for code_data in response.get("code_list", []):
+            codes.append(LiveCode(**code_data))
+        return codes
+
+    async def get_live_code_hoyo(self, gid: int) -> List[LiveCodeHoYo]:
+        headers = self.get_headers("https://www.hoyolab.com/")
+        headers.update(
+            {
+                "x-rpc-app_version": "2.50.0",
+                "x-rpc-client_type": "4",
+                "x-rpc-language": "zh-cn",
+            }
+        )
+        params = {
+            "game_id": str(gid),
+        }
+        codes = []
+        response = await self.client.get(url=self.LIVE_CODE_HOYO_URL, headers=headers, params=params)
+        for module in response.get("modules", []):
+            if exchange_group := module.get("exchange_group"):
+                for code_data in exchange_group.get("bonuses", []):
+                    codes.append(LiveCodeHoYo(**code_data))
+                break
+        return codes
 
     async def close(self):
         await self.client.shutdown()

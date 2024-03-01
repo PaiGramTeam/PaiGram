@@ -1,10 +1,11 @@
+from datetime import datetime
 from io import BytesIO
 from typing import Any, List, Optional
 
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, PrivateAttr
 
-__all__ = ("ArtworkImage", "PostInfo")
+__all__ = ("ArtworkImage", "PostInfo", "LiveInfo", "LiveCode", "LiveCodeHoYo")
 
 
 class ArtworkImage(BaseModel):
@@ -90,3 +91,33 @@ class PostInfo(BaseModel):
 
     def __getitem__(self, item):
         return self._data[item]
+
+
+class LiveInfo(BaseModel):
+    act_type: str
+    title: str
+    live_time: str
+    start: datetime
+    end: datetime
+    remain: int
+    now: datetime
+    is_end: bool
+    code_ver: str
+
+
+class LiveCode(BaseModel):
+    code: str
+    to_get_time: datetime
+
+    @property
+    def text(self) -> str:
+        return self.code if self.code else "XXXXXXXXXXXX"
+
+
+class LiveCodeHoYo(BaseModel):
+    exchange_code: str
+    offline_at: datetime
+
+    @property
+    def text(self) -> str:
+        return self.exchange_code if self.exchange_code else "XXXXXXXXXXXX"
