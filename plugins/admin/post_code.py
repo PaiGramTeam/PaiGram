@@ -55,6 +55,7 @@ class PostCodeHandlerData:
             if code.offline_at:
                 utc_8 = self.utc_8(code.offline_at)
                 return utc_8.strftime("%Y-%m-%d %H:%M:%S")
+        return "未知时间"
 
     def get_guess_last_time(self) -> datetime:
         return self.utc_8(self.mys_code[-1].to_get_time)
@@ -74,11 +75,11 @@ class PostCodeHandlerData:
     def have_changes(self, mys_code: List["LiveCode"], hoyo_code: List["LiveCodeHoYo"]) -> bool:
         if len(mys_code) != len(self.mys_code) or len(hoyo_code) != len(self.hoyo_code):
             return True
-        for i in range(len(mys_code)):
-            if mys_code[i].code != self.mys_code[i].code:
+        for i, code in enumerate(mys_code):
+            if code.code != self.mys_code[i].code:
                 return True
-        for i in range(len(hoyo_code)):
-            if hoyo_code[i].exchange_code != self.hoyo_code[i].exchange_code:
+        for i, code in enumerate(hoyo_code):
+            if code.exchange_code != self.hoyo_code[i].exchange_code:
                 return True
         return False
 
