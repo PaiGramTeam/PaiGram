@@ -1,13 +1,10 @@
 import re
 from typing import TYPE_CHECKING
 
-from simnet import Region
-from simnet.errors import RegionNotSupported
-from telegram.ext import filters, MessageHandler, CommandHandler
+from telegram.ext import filters
 
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
-from core.services.task.models import Task as TaskUser, TaskStatusEnum
 from core.services.task.services import TaskCardServices
 from core.services.users.services import UserService, UserAdminService
 from metadata.genshin import AVATAR_DATA
@@ -15,10 +12,8 @@ from metadata.shortname import roleToId, roleToName
 from plugins.tools.birthday_card import (
     BirthdayCardSystem,
     rm_starting_str,
-    BirthdayCardNoBirthdayError,
-    BirthdayCardAlreadyClaimedError,
 )
-from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
+from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -89,66 +84,3 @@ class BirthdayPlugin(Plugin):
         if filters.ChatType.GROUPS.filter(reply_message):
             self.add_delete_message_job(message)
             self.add_delete_message_job(reply_message)
-
-    async def _process_auto_birthday_card(self, user_id: int, chat_id: int, method: str) -> str:
-        try:
-            async with self.helper.genshin(user_id) as client:
-                if client.region != Region.CHINESE:
-                    return "此功能当前只支持国服账号哦~"
-        except (PlayerNotFoundError, CookiesNotFoundError):
-            return "未查询到账号信息，请先私聊派蒙绑定账号"
-        user: TaskUser = await self.card_service.get_by_user_id(user_id)
-        if user:
-            if method == "关闭":
-                await self.card_service.remove(user)
-                return "关闭自动领取生日画片成功"
-            if method == "开启":
-                if user.chat_id == chat_id:
-                    return "自动领取生日画片已经开启过了"
-                user.chat_id = chat_id
-                user.status = TaskStatusEnum.STATUS_SUCCESS
-                await self.card_service.update(user)
-                return "修改自动领取生日画片对话成功"
-        elif method == "关闭":
-            return "您还没有开启自动领取生日画片"
-        elif method == "开启":
-            user = self.card_service.create(user_id, chat_id, TaskStatusEnum.STATUS_SUCCESS)
-            await self.card_service.add(user)
-            return "开启自动领取生日画片成功"
-
-    @handler(CommandHandler, command="birthday_card", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^领取角色生日画片$"), block=False)
-    async def command_birthday_card_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
-        message = update.effective_message
-        user = update.effective_user
-        args = self.get_args(context)
-        if len(args) >= 1:
-            msg = None
-            if args[0] == "开启自动领取":
-                if await self.user_admin_service.is_admin(user.id):
-                    msg = await self._process_auto_birthday_card(user.id, message.chat_id, "开启")
-                else:
-                    msg = await self._process_auto_birthday_card(user.id, user.id, "开启")
-            elif args[0] == "关闭自动领取":
-                msg = await self._process_auto_birthday_card(user.id, message.chat_id, "关闭")
-            if msg:
-                logger.info("用户 %s[%s] 自动领取生日画片命令请求 || 参数 %s", user.full_name, user.id, args[0])
-                reply_message = await message.reply_text(msg)
-                if filters.ChatType.GROUPS.filter(message):
-                    self.add_delete_message_job(reply_message, delay=30)
-                    self.add_delete_message_job(message, delay=30)
-                return
-        logger.info("用户 %s[%s] 领取生日画片命令请求", user.full_name, user.id)
-        async with self.helper.genshin(user.id) as client:
-            try:
-                text = await self.card_system.start_get_card(client)
-            except RegionNotSupported:
-                text = "此功能当前只支持国服账号哦~"
-            except BirthdayCardNoBirthdayError:
-                text = "今天没有角色过生日哦~"
-            except BirthdayCardAlreadyClaimedError:
-                text = "没有领取到生日画片哦 ~ 可能是已经领取过了"
-            reply_message = await message.reply_text(text)
-            if filters.ChatType.GROUPS.filter(reply_message):
-                self.add_delete_message_job(message)
-                self.add_delete_message_job(reply_message)

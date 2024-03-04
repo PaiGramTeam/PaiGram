@@ -34,7 +34,6 @@ class SetCommandPlugin(Plugin):
             # Cookie 查询类
             BotCommand("sign", "米游社原神每日签到"),
             BotCommand("dailynote_tasks", "自动便笺提醒"),
-            BotCommand("birthday_card", "领取角色生日画片"),
             # 其他
             BotCommand("hilichurls", "丘丘语字典"),
             BotCommand("birthday", "查询角色生日"),
