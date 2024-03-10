@@ -10,6 +10,8 @@ from core.plugin import Plugin, handler
 from gram_core.services.channels.models import ChannelAliasDataBase as ChannelAlias
 from gram_core.services.channels.services import ChannelAliasService
 from gram_core.services.groups.services import GroupService
+from gram_core.services.players import PlayersService
+from plugins.tools.genshin import PlayerNotFoundError
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -35,9 +37,11 @@ class ChannelAliasPlugin(Plugin):
     def __init__(
             self,
             group_service: GroupService,
+            players_service: PlayersService,
             channel_alias_service: ChannelAliasService,
     ):
         self.group_service = group_service
+        self.players_service = players_service
         self.channel_alias_service = channel_alias_service
 
     @staticmethod
@@ -60,6 +64,8 @@ class ChannelAliasPlugin(Plugin):
         owner_id = await self.get_channel_owner(bot, channel_id)
         if not owner_id:
             raise ChannelAliasError("未获取到频道拥有者，请联系管理员")
+        if not self.players_service.get_player(owner_id):
+            raise PlayerNotFoundError(owner_id)
         alias_db = await self.channel_alias_service.get_by_chat_id(channel_id)
         if alias_db:
             alias_db.user_id = owner_id
@@ -90,15 +96,23 @@ class ChannelAliasPlugin(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
         channel_id = message.sender_chat.id
         uid = await self.channel_alias_service.get_uid_by_chat_id(channel_id, is_valid=True)
-        try:
-            if not uid:
+        if not uid:
+            reply = await message.reply_text("检查中，请稍候")
+            try:
                 await self.channel_alias_add(context.bot, channel_id)
-                reply = await message.reply_text(CHANNEL_ALIAS_OPEN)
-            else:
+                reply = await reply.edit_text(CHANNEL_ALIAS_OPEN)
+            except PlayerNotFoundError as exc:
+                if filters.ChatType.GROUPS.filter(message):
+                    self.add_delete_message_job(reply, delay=1)
+                raise exc
+            except ChannelAliasError as exc:
+                reply = await reply.edit_text(str(exc))
+        else:
+            try:
                 await self.channel_alias_remove(channel_id)
                 reply = await message.reply_text(CHANNEL_ALIAS_CLOSE)
-        except ChannelAliasError as exc:
-            reply = await message.reply_text(str(exc))
+            except ChannelAliasError as exc:
+                reply = await message.reply_text(str(exc))
         if filters.ChatType.GROUPS.filter(message):
             self.add_delete_message_job(message)
             self.add_delete_message_job(reply)
