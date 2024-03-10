@@ -36,10 +36,10 @@ class ChannelAliasError(Exception):
 
 class ChannelAliasPlugin(Plugin):
     def __init__(
-            self,
-            group_service: GroupService,
-            players_service: PlayersService,
-            channel_alias_service: ChannelAliasService,
+        self,
+        group_service: GroupService,
+        players_service: PlayersService,
+        channel_alias_service: ChannelAliasService,
     ):
         self.group_service = group_service
         self.players_service = players_service
