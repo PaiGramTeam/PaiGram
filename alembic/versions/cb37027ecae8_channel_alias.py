@@ -1,17 +1,15 @@
 """channel_alias
 
-Revision ID: 70683565a977
+Revision ID: cb37027ecae8
 Revises: 89dcb9109475
-Create Date: 2024-03-10 15:59:10.937250
+Create Date: 2024-03-10 17:08:14.167818
 
 """
 from alembic import op
 import sqlalchemy as sa
-import sqlmodel
-from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision = "70683565a977"
+revision = "cb37027ecae8"
 down_revision = "89dcb9109475"
 branch_labels = None
 depends_on = None
@@ -26,6 +24,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.BigInteger(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("is_valid", sa.Boolean(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("chat_id"),
         mysql_charset="utf8mb4",
