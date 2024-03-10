@@ -118,10 +118,10 @@ class Map(Plugin):
     @handler(MessageHandler, filters=filters.Regex("^(?P<name>.*)(在哪里|在哪|哪里有|哪儿有|哪有|在哪儿)$"), block=False)
     @handler(MessageHandler, filters=filters.Regex("^(哪里有|哪儿有|哪有)(?P<name>.*)$"), block=False)
     async def command_start(self, update: Update, context: CallbackContext):
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
         args = context.args
         group_dict = context.match and context.match.groupdict()
-        user = update.effective_user
         resource_name = None
         await message.reply_chat_action(ChatAction.TYPING)
         if args and len(args) >= 1:
@@ -133,7 +133,7 @@ class Map(Plugin):
                 return
             await message.reply_text("请指定要查找的资源名称。", parse_mode="Markdown")
             return
-        logger.info("用户: %s [%s] 使用 map 命令查询了 %s", user.username, user.id, resource_name)
+        self.log_user(update, logger.info, "使用 map 命令查询了 %s", resource_name)
         if resource_name not in self.map_helper.query_map:
             # 消息来源于群组中并且无法找到默认不回复即可
             if filters.ChatType.GROUPS.filter(message) and group_dict is not None:
@@ -150,7 +150,7 @@ class Map(Plugin):
             map_id = self.map_helper.MAP_ID_LIST[maps[0]]
             await self.send_media(message, map_id, resource_name)
             return
-        buttons = await self.gen_map_button(maps, user.id, resource_name)
+        buttons = await self.gen_map_button(maps, user_id, resource_name)
         if isinstance(self.temp_photo, str):
             photo = self.temp_photo
         else:

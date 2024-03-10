@@ -86,7 +86,7 @@ class AkashaPlugin(Plugin):
     @handler.command("avatar_board", block=False)
     @handler.message(filters.Regex(r"^角色排名(.*)$"), block=False)
     async def avatar_board(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
-        user = update.effective_user
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
         args = self.get_args(context)
         if len(args) == 0:
@@ -96,7 +96,7 @@ class AkashaPlugin(Plugin):
                 self.add_delete_message_job(reply_message)
             return
         avatar_name = roleToName(args[0])
-        uid = await self.get_user_uid(user.id)
+        uid = await self.get_user_uid(user_id)
         try:
             render_data = await self.get_avatar_board_render_data(avatar_name, uid)
         except NotImplementedError:

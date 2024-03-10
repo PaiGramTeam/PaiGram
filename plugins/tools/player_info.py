@@ -46,8 +46,8 @@ class PlayerInfoSystem(Plugin):
             name_card = (await self.assets_service.namecard(210001).navbar()).as_uri()
         return name_card, avatar, nickname, rarity
 
-    async def get_name_card(self, player_id: int, user: "User"):
-        player = await self.player_service.get(user.id, player_id)
+    async def get_name_card(self, player_id: int, user_id: int):
+        player = await self.player_service.get(user_id, player_id)
         player_info = await self.player_info_service.get(player)
         name_card: Optional[str] = None
         try:

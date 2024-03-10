@@ -25,12 +25,11 @@ class QuizPlugin(Plugin):
     @handler.command(command="quiz", block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> None:
         message = update.effective_message
-        user = update.effective_user
         chat = update.effective_chat
         await message.reply_chat_action(ChatAction.TYPING)
         question_id_list = await self.quiz_service.get_question_id_list()
         if filters.ChatType.GROUPS.filter(message):
-            logger.info("用户 %s[%s] 在群 %s[%s] 发送挑战问题命令请求", user.full_name, user.id, chat.title, chat.id)
+            self.log_user(update, logger.info, "在群 %s[%s] 发送挑战问题命令请求", chat.title, chat.id)
             if len(question_id_list) == 0:
                 return None
         if len(question_id_list) == 0:

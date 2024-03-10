@@ -5,7 +5,6 @@ from simnet import GenshinClient
 from simnet.errors import BadRequest as SimnetBadRequest
 from simnet.models.genshin.calculator import CalculatorTalent, CalculatorCharacterDetails
 from simnet.models.genshin.chronicle.characters import Character
-from telegram import User
 from telegram.constants import ChatAction
 from telegram.ext import filters
 
@@ -130,10 +129,10 @@ class AvatarListPlugin(Plugin):
             reverse=True,
         )[:max_length]
 
-    async def get_final_data(self, player_id: int, user: "User"):
-        player = await self.player_service.get(user.id, player_id)
+    async def get_final_data(self, player_id: int, user_id: int, user_name: str):
+        player = await self.player_service.get(user_id, player_id)
         player_info = await self.player_info_service.get(player)
-        nickname = user.full_name
+        nickname = user_name
         name_card: Optional[str] = None
         avatar: Optional[str] = None
         rarity: int = 5
@@ -158,14 +157,15 @@ class AvatarListPlugin(Plugin):
     @handler.command("avatars", block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
     async def avatar_list(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
-        user = update.effective_user
+        user_id = await self.get_real_user_id(update)
+        user_name = self.get_real_user_name(update)
         message = update.effective_message
         all_avatars = "全部" in message.text or "all" in message.text  # 是否发送全部角色
 
-        logger.info("用户 %s[%s] [bold]练度统计[/bold]: all=%s", user.full_name, user.id, all_avatars, extra={"markup": True})
+        self.log_user(update, logger.info, "[bold]练度统计[/bold]: all=%s", all_avatars, extra={"markup": True})
         notice = None
         try:
-            async with self.helper.genshin(user.id) as client:
+            async with self.helper.genshin(user_id) as client:
                 notice = await message.reply_text("派蒙需要收集整理数据，还请耐心等待哦~")
                 await message.reply_chat_action(ChatAction.TYPING)
                 characters = await client.get_genshin_characters(client.player_id)
@@ -181,7 +181,7 @@ class AvatarListPlugin(Plugin):
                 return
             raise e
 
-        name_card, avatar, nickname, rarity = await self.get_final_data(client.player_id, user)
+        name_card, avatar, nickname, rarity = await self.get_final_data(client.player_id, user_id, user_name)
 
         render_data = {
             "uid": mask_number(client.player_id),  # 玩家uid
@@ -212,10 +212,10 @@ class AvatarListPlugin(Plugin):
         else:
             await image.reply_photo(message)
 
-        logger.info(
-            "用户 %s[%s] [bold]练度统计[/bold]发送%s成功",
-            user.full_name,
-            user.id,
+        self.log_user(
+            update,
+            logger.info,
+            "[bold]练度统计[/bold]发送%s成功",
             "文件" if all_avatars else "图片",
             extra={"markup": True},
         )

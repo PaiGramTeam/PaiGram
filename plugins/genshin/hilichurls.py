@@ -30,7 +30,6 @@ class HilichurlsPlugin(Plugin):
     @handler.command(command="hilichurls", block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
-        user = update.effective_user
         args = self.get_args(context)
         if len(args) >= 1:
             msg = args[0]
@@ -47,6 +46,6 @@ class HilichurlsPlugin(Plugin):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)
             return
-        logger.info("用户 %s[%s] 查询今日角色生日列表  查询丘丘语字典命令请求 || 参数 %s", user.full_name, user.id, msg)
+        self.log_user(update, logger.info, "查询今日角色生日列表  查询丘丘语字典命令请求 || 参数 %s", msg)
         result = self.hilichurls_dictionary[f"{search}"]
         await message.reply_markdown_v2(f"丘丘语: `{search}`\n\n`{result}`")

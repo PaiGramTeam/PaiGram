@@ -67,6 +67,10 @@ class ErrorHandler(Plugin):
         if update.inline_query is not None:  # 忽略 inline_query
             return None
 
+        user = update.effective_user
+        message = update.effective_message
+        chat = update.effective_chat
+
         _import_button = InlineKeyboardButton(
             "从其他 BOT 导入", url=create_deep_linked_url(context.bot.username, "cookies_import")
         )
@@ -100,17 +104,16 @@ class ErrorHandler(Plugin):
                     ],
                 ]
             )
+            # recommend: channel alias
+            if message and message.sender_chat:
+                content += "\n\n推荐使用 /channel_alias 开启频道透视模式，派蒙将会把你当做普通用户运行命令。"
         else:
             buttons = ReplyKeyboardRemove()
 
-        user = update.effective_user
-        message = update.effective_message
-        chat = update.effective_chat
-
         if chat.id == user.id:
-            logger.info("尝试通知用户 %s[%s] 错误信息[%s]", user.full_name, user.id, content)
+            logger.info("用户 %s[%s] 尝试通知错误信息[%s]", user.full_name, user.id, content)
         else:
-            logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id, content)
+            self.log_user(update, logger.info, "尝试通知在 %s[%s] 的错误信息[%s]", chat.title, chat.id, content)
         try:
             if update.callback_query:
                 await update.callback_query.answer(content, show_alert=True)

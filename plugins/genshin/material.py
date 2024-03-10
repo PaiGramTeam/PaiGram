@@ -204,7 +204,6 @@ class MaterialPlugin(Plugin):
     @handler(MessageHandler, filters=filters.Regex("^角色培养素材查询(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
-        user = update.effective_user
         args = self.get_args(context)
         if len(args) >= 1:
             character_name = args[0]
@@ -220,7 +219,7 @@ class MaterialPlugin(Plugin):
                 self.add_delete_message_job(reply_message)
             return
         character_name = roleToName(character_name)
-        logger.info("用户 %s[%s] 查询角色培养素材命令请求 || 参数 %s", user.full_name, user.id, character_name)
+        self.log_user(update, logger.info, "查询角色培养素材命令请求 || 参数 %s", character_name)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         result = await self.render(character_name, material_count)
         if not result:

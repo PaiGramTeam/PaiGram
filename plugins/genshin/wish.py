@@ -200,8 +200,8 @@ class WishSimulatorPlugin(Plugin):
     @handler(CommandHandler, command="wish", block=False)
     @handler(MessageHandler, filters=filters.Regex("^抽卡模拟器(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
-        user = update.effective_user
         args = self.get_args(context)
         gacha_name = "角色活动"
         if len(args) >= 1:
@@ -222,11 +222,11 @@ class WishSimulatorPlugin(Plugin):
             except GachaNotFound:
                 await message.reply_text("当前卡池正在替换中，请稍后重试。")
                 return
-        logger.info("用户 %s[%s] 抽卡模拟器命令请求 || 参数 %s", user.full_name, user.id, gacha_name)
+        self.log_user(update, logger.info, "抽卡模拟器命令请求 || 参数 %s", gacha_name)
         # 用户数据储存和处理
         await message.reply_chat_action(ChatAction.TYPING)
         banner = await self.get_banner(gacha_base_info)
-        player_gacha_info = await self.gacha_db.get(user.id)
+        player_gacha_info = await self.gacha_db.get(user_id)
         # 检查 wish_item_id
         if (
             banner.banner_type == GenshinBannerType.WEAPON
@@ -246,7 +246,7 @@ class WishSimulatorPlugin(Plugin):
             return
         player_gacha_banner_info = player_gacha_info.get_banner_info(banner)
         template_data = {
-            "name": f"{user.full_name}",
+            "name": f"{self.get_real_user_name(update)}",
             "info": gacha_name,
             "banner_name": banner.html_title if banner.html_title else banner.title,
             "banner_type": banner.banner_type.name,
@@ -258,7 +258,7 @@ class WishSimulatorPlugin(Plugin):
             weapon = WEAPON_DATA.get(str(player_gacha_banner_info.wish_item_id))
             if weapon is not None:
                 template_data["wish_name"] = weapon["name"]
-        await self.gacha_db.set(user.id, player_gacha_info)
+        await self.gacha_db.set(user_id, player_gacha_info)
 
         def take_rang(elem: dict):
             return elem["rank"]

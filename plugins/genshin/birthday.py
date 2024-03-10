@@ -44,11 +44,10 @@ class BirthdayPlugin(Plugin):
     @handler.command(command="birthday", block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         message = update.effective_message
-        user = update.effective_user
         args = self.get_args(context)
         if len(args) >= 1:
             msg = args[0]
-            logger.info("用户 %s[%s] 查询角色生日命令请求 || 参数 %s", user.full_name, user.id, msg)
+            self.log_user(update, logger.info, "查询角色生日命令请求 || 参数 %s", msg)
             if re.match(r"\d{1,2}.\d{1,2}", msg):
                 try:
                     month = rm_starting_str(re.findall(r"\d+", msg)[0], "0")
@@ -76,7 +75,7 @@ class BirthdayPlugin(Plugin):
                 except KeyError:
                     reply_message = await message.reply_text("请输入正确的日期格式，如1-1，或输入正确的角色名称。")
         else:
-            logger.info("用户 %s[%s] 查询今日角色生日列表", user.full_name, user.id)
+            self.log_user(update, logger.info, "查询今日角色生日列表")
             today_list = self.card_system.get_today_birthday()
             text = f"今天是 {'、'.join(today_list)} 的生日哦~" if today_list else "今天没有角色过生日哦~"
             reply_message = await message.reply_text(text)

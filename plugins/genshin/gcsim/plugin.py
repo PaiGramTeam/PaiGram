@@ -155,7 +155,7 @@ class GCSimPlugin(Plugin):
 
     @handler.command(command="gcsim", block=False)
     async def gcsim(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
-        user = update.effective_user
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
         args = self.get_args(context)
         if not self.gcsim_runner.initialized:
@@ -168,14 +168,14 @@ class GCSimPlugin(Plugin):
                 self.add_delete_message_job(message)
             return
 
-        uid, names = await self._get_uid_names(user.id, args, message.reply_to_message)
-        logger.info("用户 %s[%s] 发出 gcsim 命令 UID[%s] NAMES[%s]", user.full_name, user.id, uid, " ".join(names))
+        uid, names = await self._get_uid_names(user_id, args, message.reply_to_message)
+        self.log_user(update, logger.info, "发出 gcsim 命令 UID[%s] NAMES[%s]", uid, " ".join(names))
         if uid is None:
-            raise PlayerNotFoundError(user.id)
+            raise PlayerNotFoundError(user_id)
 
         character_infos = await self._load_characters(uid)
         if not character_infos:
-            return await _no_character_return(user.id, uid, message)
+            return await _no_character_return(user_id, uid, message)
 
         fits = await self.gcsim_runner.get_fits(uid)
         if not fits:
@@ -184,7 +184,7 @@ class GCSimPlugin(Plugin):
         if not fits:
             await message.reply_text("好像没有找到适合旅行者的配队呢，要不更新下面板吧")
             return
-        buttons = self._gen_buttons(user.id, uid, fits)
+        buttons = self._gen_buttons(user_id, uid, fits)
         await message.reply_text(
             "请选择 GCSim 脚本",
             reply_markup=InlineKeyboardMarkup(buttons),

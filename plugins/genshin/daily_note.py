@@ -104,12 +104,12 @@ class DailyNotePlugin(Plugin):
     @handler.message(filters.Regex("^当前状态(.*)"), block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
         message = update.effective_message
-        user = update.effective_user
-        logger.info("用户 %s[%s] 每日便签命令请求", user.full_name, user.id)
+        user_id = await self.get_real_user_id(update)
+        self.log_user(update, logger.info, "每日便签命令请求")
 
         try:
             # 获取当前用户的 genshin.Client
-            async with self.helper.genshin(user.id) as client:
+            async with self.helper.genshin(user_id) as client:
                 render_result = await self._get_daily_note(client)
         except DataNotPublic:
             reply_message = await message.reply_text("查询失败惹，可能是便签功能被禁用了？请尝试通过米游社或者 hoyolab 获取一次便签信息后重试。")
