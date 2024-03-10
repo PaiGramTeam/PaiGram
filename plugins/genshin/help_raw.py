@@ -39,8 +39,7 @@ class HelpRawPlugin(Plugin):
     @handler.command(command="help_raw", block=False)
     async def start(self, update: Update, _: CallbackContext):
         message = update.effective_message
-        user = update.effective_user
-        logger.info("用户 %s[%s] 发出 help_raw 命令", user.full_name, user.id)
+        self.log_user(update, logger.info, "发出 help_raw 命令")
 
         if self.help_raw is None:
             await self.initialize()

@@ -35,7 +35,6 @@ class WeaponPlugin(Plugin):
     @handler(MessageHandler, filters=filters.Regex("^武器查询(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
-        user = update.effective_user
         args = self.get_args(context)
         if len(args) >= 1:
             weapon_name = args[0]
@@ -46,7 +45,7 @@ class WeaponPlugin(Plugin):
                 self.add_delete_message_job(reply_message)
             return
         weapon_name = weaponToName(weapon_name)
-        logger.info("用户 %s[%s] 查询角色攻略命令请求 weapon_name[%s]", user.full_name, user.id, weapon_name)
+        self.log_user(update, logger.info, "查询角色攻略命令请求 weapon_name[%s]", weapon_name)
         weapons_list = await self.wiki_service.get_weapons_list()
         for weapon in weapons_list:
             if weapon.name == weapon_name:

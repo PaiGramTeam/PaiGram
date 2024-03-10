@@ -19,8 +19,7 @@ class HelpPlugin(Plugin):
     @handler.command(command="start", filters=filters.Regex("inline_message$"), block=False)
     async def start(self, update: Update, _: CallbackContext):
         message = update.effective_message
-        user = update.effective_user
-        logger.info("用户 %s[%s] 发出help命令", user.full_name, user.id)
+        self.log_user(update, logger.info, "发出help命令")
         await message.reply_chat_action(ChatAction.TYPING)
         render_result = await self.template_service.render(
             "bot/help/help.jinja2",

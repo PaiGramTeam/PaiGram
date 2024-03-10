@@ -70,33 +70,33 @@ class Sign(Plugin):
     @handler.message(filters=filters.Regex("^每日签到(.*)"), block=False)
     @handler.command(command="start", filters=filters.Regex("sign$"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
-        user = update.effective_user
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
         args = self.get_args(context)
         validate: Optional[str] = None
         if len(args) >= 1:
             msg = None
             if args[0] == "开启自动签到":
-                if await self.user_admin_service.is_admin(user.id):
-                    msg = await self._process_auto_sign(user.id, message.chat_id, "开启")
+                if await self.user_admin_service.is_admin(user_id):
+                    msg = await self._process_auto_sign(user_id, message.chat_id, "开启")
                 else:
-                    msg = await self._process_auto_sign(user.id, user.id, "开启")
+                    msg = await self._process_auto_sign(user_id, user_id, "开启")
             elif args[0] == "关闭自动签到":
-                msg = await self._process_auto_sign(user.id, message.chat_id, "关闭")
+                msg = await self._process_auto_sign(user_id, message.chat_id, "关闭")
             else:
                 validate = args[0]
             if msg:
-                logger.info("用户 %s[%s] 自动签到命令请求 || 参数 %s", user.full_name, user.id, args[0])
+                self.log_user(update, logger.info, "自动签到命令请求 || 参数 %s", args[0])
                 reply_message = await message.reply_text(msg)
                 if filters.ChatType.GROUPS.filter(message):
                     self.add_delete_message_job(reply_message, delay=30)
                     self.add_delete_message_job(message, delay=30)
                 return
-        logger.info("用户 %s[%s] 每日签到命令请求", user.full_name, user.id)
+        self.log_user(update, logger.info, "每日签到命令请求")
         if filters.ChatType.GROUPS.filter(message):
             self.add_delete_message_job(message)
         try:
-            async with self.genshin_helper.genshin(user.id) as client:
+            async with self.genshin_helper.genshin(user_id) as client:
                 await message.reply_chat_action(ChatAction.TYPING)
                 _, challenge = await self.sign_system.get_challenge(client.player_id)
                 if validate:
@@ -117,7 +117,7 @@ class Sign(Plugin):
             button = await self.sign_system.get_challenge_button(
                 context.bot.username,
                 exc.uid,
-                user.id,
+                user_id,
                 exc.gt,
                 exc.challenge,
                 not filters.ChatType.PRIVATE.filter(message),

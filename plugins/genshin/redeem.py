@@ -43,14 +43,14 @@ class Redeem(Plugin):
     @handler.command(command="redeem", block=False)
     @handler.message(filters=filters.Regex("^兑换码兑换(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
-        user = update.effective_user
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
         args = self.get_args(context)
         code = args[0] if args else None
-        logger.info("用户 %s[%s] 兑换码兑换命令请求 code[%s]", user.full_name, user.id, code)
+        self.log_user(update, logger.info, "兑换码兑换命令请求 code[%s]", code)
         if filters.ChatType.GROUPS.filter(message):
             self.add_delete_message_job(message)
-        msg = await self.redeem_code(user.id, code)
+        msg = await self.redeem_code(user_id, code)
         reply_message = await message.reply_text(msg)
         if filters.ChatType.GROUPS.filter(reply_message):
             self.add_delete_message_job(reply_message)

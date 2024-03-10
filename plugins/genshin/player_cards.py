@@ -162,13 +162,13 @@ class PlayerCards(Plugin):
     @handler.command(command="player_cards", block=False)
     @handler.message(filters=filters.Regex("^角色卡片查询(.*)"), block=False)
     async def player_cards(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
-        user = update.effective_user
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
         args = self.get_args(context)
         await message.reply_chat_action(ChatAction.TYPING)
-        uid, character_name = await self.get_uid_and_ch(user.id, args, message.reply_to_message)
+        uid, character_name = await self.get_uid_and_ch(user_id, args, message.reply_to_message)
         if uid is None:
-            raise PlayerNotFoundError(user.id)
+            raise PlayerNotFoundError(user_id)
         original_data = await self._load_history(uid)
         if original_data is None or len(original_data["avatarInfoList"]) == 0:
             if isinstance(self.kitsune, str):
@@ -179,7 +179,7 @@ class PlayerCards(Plugin):
                 [
                     InlineKeyboardButton(
                         "更新面板",
-                        callback_data=f"update_player_card|{user.id}|{uid}",
+                        callback_data=f"update_player_card|{user_id}|{uid}",
                     )
                 ]
             ]
@@ -193,19 +193,19 @@ class PlayerCards(Plugin):
             return
         enka_response = EnkaNetworkResponse.parse_obj(copy.deepcopy(original_data))
         if character_name is None:
-            logger.info("用户 %s[%s] 角色卡片查询命令请求", user.full_name, user.id)
+            self.log_user(update, logger.info, "角色卡片查询命令请求")
             ttl = await self.cache.ttl(uid)
             if enka_response.characters is None or len(enka_response.characters) == 0:
                 buttons = [
                     [
                         InlineKeyboardButton(
                             "更新面板",
-                            callback_data=f"update_player_card|{user.id}|{uid}",
+                            callback_data=f"update_player_card|{user_id}|{uid}",
                         )
                     ]
                 ]
             else:
-                buttons = self.gen_button(enka_response, user.id, uid, update_button=ttl < 0)
+                buttons = self.gen_button(enka_response, user_id, uid, update_button=ttl < 0)
             if isinstance(self.kitsune, str):
                 photo = self.kitsune
             else:
@@ -219,10 +219,10 @@ class PlayerCards(Plugin):
                 self.kitsune = reply_message.photo[-1].file_id
             return
 
-        logger.info(
-            "用户 %s[%s] 角色卡片查询命令请求 || character_name[%s] uid[%s]",
-            user.full_name,
-            user.id,
+        self.log_user(
+            update,
+            logger.info,
+            "角色卡片查询命令请求 || character_name[%s] uid[%s]",
             character_name,
             uid,
         )

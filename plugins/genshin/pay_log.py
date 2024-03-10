@@ -213,15 +213,15 @@ class PayLogPlugin(Plugin.Conversation):
     @handler(CommandHandler, command="pay_log", block=False)
     @handler(MessageHandler, filters=filters.Regex("^充值记录$"), block=False)
     async def command_start_analysis(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
-        user = update.effective_user
-        logger.info("用户 %s[%s] 充值记录统计命令请求", user.full_name, user.id)
+        self.log_user(update, logger.info, "充值记录统计命令请求")
         try:
             await message.reply_chat_action(ChatAction.TYPING)
-            player_id = await self.get_player_id(user.id)
-            data = await self.pay_log.get_analysis(user.id, player_id)
+            player_id = await self.get_player_id(user_id)
+            data = await self.pay_log.get_analysis(user_id, player_id)
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-            name_card = await self.player_info.get_name_card(player_id, user)
+            name_card = await self.player_info.get_name_card(player_id, user_id)
             data["name_card"] = name_card
             png_data = await self.template_service.render(
                 "genshin/pay_log/pay_log.jinja2", data, full_page=True, query_selector=".container"

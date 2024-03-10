@@ -27,7 +27,6 @@ class StrategyPlugin(Plugin):
     @handler.message(filters=filters.Regex("^角色攻略查询(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
-        user = update.effective_user
         args = self.get_args(context)
         if len(args) >= 1:
             character_name = args[0]
@@ -47,7 +46,7 @@ class StrategyPlugin(Plugin):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)
             return
-        logger.info("用户 %s[%s] 查询角色攻略命令请求 || 参数 %s", user.full_name, user.id, character_name)
+        self.log_user(update, logger.info, "查询角色攻略命令请求 || 参数 %s", character_name)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         file_path = await self.download_resource(url, return_path=True)
         caption = f"From 米游社 西风驿站 查看<a href='{url}'>原图</a>"

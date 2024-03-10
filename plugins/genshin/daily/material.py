@@ -35,7 +35,7 @@ from utils.uid import mask_number
 
 if TYPE_CHECKING:
     from simnet import GenshinClient
-    from telegram import Message, Update, User
+    from telegram import Message, Update
     from telegram.ext import ContextTypes
 
 INTERVAL = 1
@@ -210,12 +210,12 @@ class DailyMaterial(Plugin):
         talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
         return [t.level for t in talents]
 
-    async def _get_items_from_user(self, user: "User") -> Tuple[Optional["GenshinClient"], "UserOwned"]:
+    async def _get_items_from_user(self, user_id: int) -> Tuple[Optional["GenshinClient"], "UserOwned"]:
         """获取已经绑定的账号的角色、武器信息"""
         user_data = UserOwned()
         try:
             logger.debug("尝试获取已绑定的原神账号")
-            client = await self.helper.get_genshin_client(user.id)
+            client = await self.helper.get_genshin_client(user_id)
             logger.debug("获取账号数据成功: UID=%s", client.player_id)
             characters = await client.get_genshin_characters(client.player_id)
             for character in characters:
@@ -256,9 +256,9 @@ class DailyMaterial(Plugin):
                     )
                 )
         except (PlayerNotFoundError, CookiesNotFoundError):
-            logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
+            self.log_user(user_id, logger.info, "未查询到绑定的账号信息")
         except InvalidCookies:
-            logger.info("用户 %s[%s] 所绑定的账号信息已失效", user.full_name, user.id)
+            self.log_user(user_id, logger.info, "所绑定的账号信息已失效")
         else:
             # 没有异常返回数据
             return client, user_data
@@ -368,7 +368,7 @@ class DailyMaterial(Plugin):
 
     @handler.command("daily_material", block=False)
     async def daily_material(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
-        user = typing.cast("User", update.effective_user)
+        user_id = await self.get_real_user_id(update)
         message = typing.cast("Message", update.effective_message)
         args = self.get_args(context)
         now = datetime.now()
@@ -384,7 +384,7 @@ class DailyMaterial(Plugin):
             time = f"星期{WEEK_MAP[weekday]}"
         full = bool(args and args[-1] == "full")  # 判定最后一个参数是不是 full
 
-        logger.info("用户 %s[%s] 每日素材命令请求 || 参数 weekday=%s full=%s", user.full_name, user.id, WEEK_MAP[weekday], full)
+        self.log_user(update, logger.info, "每日素材命令请求 || 参数 weekday=%s full=%s", WEEK_MAP[weekday], full)
 
         if weekday == 6:
             the_day = "今天" if title == "今日" else "这天"
@@ -409,7 +409,7 @@ class DailyMaterial(Plugin):
             await self._refresh_everyday_materials()
 
         # 尝试获取用户已绑定的原神账号信息
-        client, user_owned = await self._get_items_from_user(user)
+        client, user_owned = await self._get_items_from_user(user_id)
         today_materials = self.everyday_materials.weekday(weekday)
         fragile_client = FragileGenshinClient(client)
         area_avatars: List["AreaData"] = []

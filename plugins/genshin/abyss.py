@@ -78,7 +78,7 @@ class AbyssPlugin(Plugin):
     @handler.command("abyss", block=False)
     @handler.message(filters.Regex(r"^深渊数据"), block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
-        user = update.effective_user
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
 
         # 若查询帮助
@@ -92,7 +92,7 @@ class AbyssPlugin(Plugin):
                 "<code>深渊数据查询</code>\n<code>深渊数据查询上期第12层</code>\n<code>深渊数据总览上期</code>",
                 parse_mode=ParseMode.HTML,
             )
-            logger.info("用户 %s[%s] 查询[bold]深渊挑战数据[/bold]帮助", user.full_name, user.id, extra={"markup": True})
+            self.log_user(update, logger.info, "查询[bold]深渊挑战数据[/bold]帮助", extra={"markup": True})
             return
 
         # 解析参数
@@ -107,10 +107,10 @@ class AbyssPlugin(Plugin):
         if 0 < floor < 9:
             previous = False
 
-        logger.info(
-            "用户 %s[%s] [bold]深渊挑战数据[/bold]请求: floor=%s total=%s previous=%s",
-            user.full_name,
-            user.id,
+        self.log_user(
+            update,
+            logger.info,
+            "[bold]深渊挑战数据[/bold]请求: floor=%s total=%s previous=%s",
             floor,
             total,
             previous,
@@ -124,7 +124,7 @@ class AbyssPlugin(Plugin):
         if total:
             reply_text = await message.reply_text("派蒙需要时间整理深渊数据，还请耐心等待哦~")
         try:
-            async with self.helper.genshin_or_public(user.id) as client:
+            async with self.helper.genshin_or_public(user_id) as client:
                 if not client.public:
                     await client.get_record_cards()
                 images = await self.get_rendered_pic(client, client.player_id, floor, total, previous)
@@ -161,7 +161,7 @@ class AbyssPlugin(Plugin):
                 message, allow_sending_without_reply=True, write_timeout=60
             )
 
-        logger.info("用户 %s[%s] [bold]深渊挑战数据[/bold]: 成功发送图片", user.full_name, user.id, extra={"markup": True})
+        self.log_user(update, logger.info, "[bold]深渊挑战数据[/bold]: 成功发送图片", extra={"markup": True})
 
     async def get_rendered_pic(
         self, client: GenshinClient, uid: int, floor: int, total: bool, previous: bool

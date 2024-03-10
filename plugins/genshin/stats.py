@@ -30,9 +30,9 @@ class PlayerStatsPlugins(Plugin):
     @handler.command("stats", block=False)
     @handler.message(filters.Regex("^玩家统计查询(.*)"), block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
-        user = update.effective_user
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
-        logger.info("用户 %s[%s] 查询游戏用户命令请求", user.full_name, user.id)
+        self.log_user(update, logger.info, "查询游戏用户命令请求")
         uid: Optional[int] = None
         try:
             args = context.args
@@ -43,7 +43,7 @@ class PlayerStatsPlugins(Plugin):
             await message.reply_text("输入错误")
             return
         try:
-            async with self.helper.genshin_or_public(user.id) as client:
+            async with self.helper.genshin_or_public(user_id) as client:
                 if not client.public:
                     await client.get_record_cards()
                 render_result = await self.render(client, uid)

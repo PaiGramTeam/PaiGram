@@ -74,11 +74,11 @@ class RegTimePlugin(Plugin):
     @handler.command("reg_time", block=False)
     @handler.message(filters.Regex(r"^原神账号注册时间$"), block=False)
     async def reg_time(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
-        user = update.effective_user
-        logger.info("用户 %s[%s] 原神注册时间命令请求", user.full_name, user.id)
+        self.log_user(update, logger.info, "原神注册时间命令请求")
         try:
-            async with self.helper.genshin(user.id) as client:
+            async with self.helper.genshin(user_id) as client:
                 reg_time = await self.get_reg_time_from_cache(client)
             await message.reply_text(f"你的原神账号注册时间为：{reg_time}")
         except SIMNetBadRequest as exc:

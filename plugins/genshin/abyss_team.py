@@ -33,7 +33,7 @@ class AbyssTeamPlugin(Plugin):
     @handler.command("abyss_team", block=False)
     @handler.message(filters.Regex(r"^深渊配队"), block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
-        user = update.effective_user
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
 
         if "help" in message.text or "帮助" in message.text:
@@ -46,12 +46,12 @@ class AbyssTeamPlugin(Plugin):
                 "<code>深渊配队</code>\n",
                 parse_mode=ParseMode.HTML,
             )
-            logger.info("用户 %s[%s] 查询[bold]深渊配队推荐[/bold]帮助", user.full_name, user.id, extra={"markup": True})
+            self.log_user(update, logger.info, "查询[bold]深渊配队推荐[/bold]帮助", extra={"markup": True})
             return
 
-        logger.info("用户 %s[%s] [bold]深渊配队推荐[/bold]请求", user.full_name, user.id, extra={"markup": True})
+        self.log_user(update, logger.info, "[bold]深渊配队推荐[/bold]请求", extra={"markup": True})
 
-        client = await self.helper.get_genshin_client(user.id)
+        client = await self.helper.get_genshin_client(user_id)
 
         await message.reply_chat_action(ChatAction.TYPING)
         team_data = await self.team_data.get_data()
@@ -128,4 +128,4 @@ class AbyssTeamPlugin(Plugin):
             full_page=True,
             query_selector=".bg-contain",
         )
-        await render_result.reply_photo(message, filename=f"abyss_team_{user.id}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"abyss_team_{user_id}.png", allow_sending_without_reply=True)

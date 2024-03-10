@@ -44,10 +44,9 @@ class CalendarPlugin(Plugin):
     @handler.command("calendar", block=False)
     @handler(MessageHandler, filters=filters.Regex(r"^(活动)+(日历|日历列表)$"), block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> None:
-        user = update.effective_user
         message = update.effective_message
         mode = "list" if "列表" in message.text else "calendar"
-        logger.info("用户 %s[%s] 查询日历 | 模式 %s", user.full_name, user.id, mode)
+        self.log_user(update, logger.info, "查询日历 | 模式 %s", mode)
         await message.reply_chat_action(ChatAction.TYPING)
         data = await self._fetch_data()
         data["display_mode"] = mode

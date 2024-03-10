@@ -360,26 +360,26 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="gacha_log", block=False)
     @handler.message(filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
     async def command_start_analysis(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
-        user = update.effective_user
         pool_type = BannerType.CHARACTER1
         if args := self.get_args(context):
             if "武器" in args:
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
-        logger.info("用户 %s[%s] 抽卡记录命令请求 || 参数 %s", user.full_name, user.id, pool_type.name)
+        self.log_user(update, logger.info, "抽卡记录命令请求 || 参数 %s", pool_type.name)
         try:
-            player_id = await self.get_player_id(user.id)
+            player_id = await self.get_player_id(user_id)
             await message.reply_chat_action(ChatAction.TYPING)
-            data = await self.gacha_log.get_analysis(user.id, player_id, pool_type, self.assets_service)
+            data = await self.gacha_log.get_analysis(user_id, player_id, pool_type, self.assets_service)
             if isinstance(data, str):
                 reply_message = await message.reply_text(data)
                 if filters.ChatType.GROUPS.filter(message):
                     self.add_delete_message_job(reply_message, delay=300)
                     self.add_delete_message_job(message, delay=300)
             else:
-                name_card = await self.player_info.get_name_card(player_id, user)
+                name_card = await self.player_info.get_name_card(player_id, user_id)
                 await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
                 data["name_card"] = name_card
                 png_data = await self.template_service.render(
@@ -396,7 +396,7 @@ class WishLogPlugin(Plugin.Conversation):
         except PlayerNotFoundError:
             await message.reply_text("该用户暂未绑定账号")
         except GachaLogNotFound:
-            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
+            self.log_user(update, logger.info, "未找到抽卡记录")
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
@@ -406,8 +406,8 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="gacha_count", block=False)
     @handler.message(filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=False)
     async def command_start_count(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
+        user_id = await self.get_real_user_id(update)
         message = update.effective_message
-        user = update.effective_user
         pool_type = BannerType.CHARACTER1
         all_five = False
         if args := self.get_args(context):
@@ -417,22 +417,22 @@ class WishLogPlugin(Plugin.Conversation):
                 pool_type = BannerType.STANDARD
             elif "仅五星" in args:
                 all_five = True
-        logger.info("用户 %s[%s] 抽卡统计命令请求 || 参数 %s || 仅五星 %s", user.full_name, user.id, pool_type.name, all_five)
+        self.log_user(update, logger.info, "抽卡统计命令请求 || 参数 %s || 仅五星 %s", pool_type.name, all_five)
         try:
-            player_id = await self.get_player_id(user.id)
+            player_id = await self.get_player_id(user_id)
             group = filters.ChatType.GROUPS.filter(message)
             await message.reply_chat_action(ChatAction.TYPING)
             if all_five:
-                data = await self.gacha_log.get_all_five_analysis(user.id, player_id, self.assets_service)
+                data = await self.gacha_log.get_all_five_analysis(user_id, player_id, self.assets_service)
             else:
-                data = await self.gacha_log.get_pool_analysis(user.id, player_id, pool_type, self.assets_service, group)
+                data = await self.gacha_log.get_pool_analysis(user_id, player_id, pool_type, self.assets_service, group)
             if isinstance(data, str):
                 reply_message = await message.reply_text(data)
                 if filters.ChatType.GROUPS.filter(message):
                     self.add_delete_message_job(reply_message)
                     self.add_delete_message_job(message)
             else:
-                name_card = await self.player_info.get_name_card(player_id, user)
+                name_card = await self.player_info.get_name_card(player_id, user_id)
                 document = False
                 if data["hasMore"] and not group:
                     document = True
@@ -451,7 +451,7 @@ class WishLogPlugin(Plugin.Conversation):
                 else:
                     await png_data.reply_photo(message)
         except GachaLogNotFound:
-            logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
+            self.log_user(update, logger.info, "未找到抽卡记录")
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
