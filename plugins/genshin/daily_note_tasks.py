@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from pydantic import ValidationError
 from simnet import Region
 from simnet.errors import DataNotPublic, BadRequest as SimnetBadRequest
@@ -14,8 +16,10 @@ from plugins.tools.daily_note import DailyNoteSystem, WebAppData
 from plugins.tools.genshin import GenshinHelper, CookiesNotFoundError, PlayerNotFoundError
 from utils.log import logger
 
-__all__ = ("DailyNoteTasksPlugin",)
+if TYPE_CHECKING:
+    from simnet import GenshinClient
 
+__all__ = ("DailyNoteTasksPlugin",)
 
 SET_BY_WEB = 10100
 
@@ -106,7 +110,7 @@ class DailyNoteTasksPlugin(Plugin.Conversation):
                         validate = WebAppData(**result.data)
                     except ValidationError:
                         await message.reply_text(
-                            "数据错误\n" "树脂提醒数值必须在 100 ~ 160 之间\n" "洞天宝钱提醒数值必须在 100 ~ 2400 之间",
+                            "数据错误\n树脂提醒数值必须在 100 ~ 160 之间\n洞天宝钱提醒数值必须在 100 ~ 2400 之间\n每日任务提醒时间必须在 0 ~ 23 之间",
                             reply_markup=ReplyKeyboardRemove(),
                         )
                         return ConversationHandler.END
