@@ -132,7 +132,7 @@ class AvatarListPlugin(Plugin):
     async def get_final_data(self, player_id: int, user_id: int, user_name: str):
         player = await self.player_service.get(user_id, player_id)
         player_info = await self.player_info_service.get(player)
-        nickname = "Unknown"
+        nickname = user_name
         name_card: Optional[str] = None
         avatar: Optional[str] = None
         rarity: int = 5
