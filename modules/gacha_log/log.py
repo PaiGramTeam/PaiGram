@@ -336,7 +336,7 @@ class GachaLog:
         for item in data:
             count += 1
             if item.rank_type == "5":
-                if item.item_type == "角色" and pool_name in {"角色祈愿", "常驻祈愿", "集录祈愿"}:
+                if item.item_type == "角色" and pool_name in {"角色祈愿", "常驻祈愿", "新手祈愿", "集录祈愿"}:
                     data = {
                         "name": item.name,
                         "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri(),
@@ -347,7 +347,7 @@ class GachaLog:
                         "time": item.time,
                     }
                     result.append(FiveStarItem.construct(**data))
-                elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿", "集录祈愿"}:
+                elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿", "新手祈愿", "集录祈愿"}:
                     data = {
                         "name": item.name,
                         "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri(),
@@ -575,7 +575,7 @@ class GachaLog:
         all_five, no_five_star = await self.get_all_5_star_items(data, assets, pool_name)
         all_four, no_four_star = await self.get_all_4_star_items(data, assets)
         summon_data = None
-        if pool in [BannerType.CHARACTER1, BannerType.CHARACTER2]:
+        if pool in [BannerType.CHARACTER1, BannerType.CHARACTER2, BannerType.NOVICE]:
             summon_data = self.get_301_pool_data(total, all_five, no_five_star, no_four_star)
             pool_name = self.count_fortune(pool_name, summon_data)
         elif pool == BannerType.WEAPON:

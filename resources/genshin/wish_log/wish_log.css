@@ -210,7 +210,15 @@ body {
     background: #d3bc8d;
 }
 
+.label_100 {
+    background-color: #757cc8;
+}
+
 .label_301 {
+    background-color: rgb(235 106 75);
+}
+
+.label_400 {
     background-color: rgb(235 106 75);
 }
 
@@ -223,7 +231,7 @@ body {
 }
 
 .label_500 {
-    background-color: #757cc8;
+    background-color: rgb(100 200 75);
 }
 
 .label {
