@@ -325,7 +325,7 @@ class WishLogPlugin(Plugin.Conversation):
             await message.reply_chat_action(ChatAction.TYPING)
             path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(player_id))
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
-            await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.3")
+            await message.reply_document(document=open(path, "rb+"), caption=f"抽卡记录导出文件 - UIGF {UIGF_VERSION}")
         except GachaLogNotFound:
             logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
