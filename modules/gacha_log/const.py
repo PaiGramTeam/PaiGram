@@ -1,7 +1,7 @@
 from simnet.models.genshin.wish import BannerType
 
 PAIMONMOE_VERSION = 3
-UIGF_VERSION = "v2.4"
+UIGF_VERSION = "v3.0"
 
 
 GACHA_TYPE_LIST = {
@@ -10,4 +10,6 @@ GACHA_TYPE_LIST = {
     BannerType.WEAPON: "武器祈愿",
     BannerType.CHARACTER1: "角色祈愿",
     BannerType.CHARACTER2: "角色祈愿",
+    BannerType.CHRONICLED: "集录祈愿",
 }
+GACHA_TYPE_LIST_REVERSE = {v: k for k, v in GACHA_TYPE_LIST.items()}

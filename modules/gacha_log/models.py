@@ -51,8 +51,8 @@ class GachaItem(BaseModel):
 
     @validator("gacha_type")
     def check_gacha_type(cls, v):
-        if v not in {"100", "200", "301", "302", "400"}:
-            raise ValueError(f"gacha_type must be 200, 301, 302 or 400, invalid value: {v}")
+        if v not in {"100", "200", "301", "302", "400", "500"}:
+            raise ValueError(f"gacha_type must be 200, 301, 302, 400, 500, invalid value: {v}")
         return v
 
     @validator("item_type")
@@ -78,6 +78,7 @@ class GachaLogInfo(BaseModel):
         "武器祈愿": [],
         "常驻祈愿": [],
         "新手祈愿": [],
+        "集录祈愿": [],
     }
 
     @property
@@ -140,6 +141,7 @@ class UIGFGachaType(Enum):
     CHARACTER = "301"
     WEAPON = "302"
     CHARACTER2 = "400"
+    CHRONICLED = "500"
 
 
 class UIGFItem(BaseModel):

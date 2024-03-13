@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import Optional, TYPE_CHECKING, List
+from typing import Optional, TYPE_CHECKING, List, Union, Tuple
 from urllib.parse import urlencode
 
 from aiofiles import open as async_open
@@ -18,8 +18,9 @@ from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
+from gram_core.config import config
 from metadata.scripts.paimon_moe import GACHA_LOG_PAIMON_MOE_PATH, update_paimon_moe_zh
-from modules.gacha_log.const import UIGF_VERSION
+from modules.gacha_log.const import UIGF_VERSION, GACHA_TYPE_LIST_REVERSE
 from modules.gacha_log.error import (
     GachaLogAccountNotFound,
     GachaLogAuthkeyTimeout,
@@ -32,6 +33,7 @@ from modules.gacha_log.error import (
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
 from modules.gacha_log.migrate import GachaLogMigrate
+from modules.gacha_log.models import GachaLogInfo
 from plugins.tools.genshin import PlayerNotFoundError
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
@@ -47,6 +49,7 @@ if TYPE_CHECKING:
     from telegram import Update, Message, User, Document
     from telegram.ext import ContextTypes
     from gram_core.services.players.models import Player
+    from gram_core.services.template.models import RenderResult
 
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
@@ -78,6 +81,7 @@ class WishLogPlugin(Plugin.Conversation):
         self.zh_dict = None
         self.gacha_log = GachaLog()
         self.player_info = player_info
+        self.wish_photo = None
 
     async def initialize(self) -> None:
         await update_paimon_moe_zh(False)
@@ -321,7 +325,7 @@ class WishLogPlugin(Plugin.Conversation):
             await message.reply_chat_action(ChatAction.TYPING)
             path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(player_id))
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
-            await message.reply_document(document=open(path, "rb+"), caption="抽卡记录导出文件 - UIGF V2.3")
+            await message.reply_document(document=open(path, "rb+"), caption=f"抽卡记录导出文件 - UIGF {UIGF_VERSION}")
         except GachaLogNotFound:
             logger.info("未找到用户 %s[%s] 的抽卡记录", user.full_name, user.id)
             buttons = [
@@ -356,43 +360,102 @@ class WishLogPlugin(Plugin.Conversation):
             }
             await message.reply_text(f"{url}?{urlencode(params)}", disable_web_page_preview=True)
 
+    async def rander_wish_log_analysis(
+        self, user_id: int, player_id: int, pool_type: BannerType
+    ) -> Union[str, "RenderResult"]:
+        data = await self.gacha_log.get_analysis(user_id, player_id, pool_type, self.assets_service)
+        if isinstance(data, str):
+            return data
+        name_card = await self.player_info.get_name_card(player_id, user_id)
+        data["name_card"] = name_card
+        png_data = await self.template_service.render(
+            "genshin/wish_log/wish_log.jinja2",
+            data,
+            full_page=True,
+            file_type=FileType.DOCUMENT if len(data.get("fiveLog")) > 300 else FileType.PHOTO,
+            query_selector=".body_box",
+        )
+        return png_data
+
+    @staticmethod
+    def gen_button(user_id: int, uid: int, info: "GachaLogInfo") -> List[List[InlineKeyboardButton]]:
+        buttons = []
+        pools = []
+        skip_pools = ["新手祈愿"]
+        for k, v in info.item_list.items():
+            if k in skip_pools:
+                continue
+            if not v:
+                continue
+            pools.append(k)
+        # 2 个一组
+        for i in range(0, len(pools), 2):
+            row = []
+            for pool in pools[i : i + 2]:
+                row.append(
+                    InlineKeyboardButton(
+                        pool,
+                        callback_data=f"get_wish_log|{user_id}|{uid}|{pool}",
+                    )
+                )
+            buttons.append(row)
+        return buttons
+
+    async def wish_log_pool_choose(self, user_id: int, message: "Message"):
+        await message.reply_chat_action(ChatAction.TYPING)
+        player_id = await self.get_player_id(user_id)
+        gacha_log, status = await self.gacha_log.load_history_info(str(user_id), str(player_id))
+        if not status:
+            raise GachaLogNotFound
+        buttons = self.gen_button(user_id, player_id, gacha_log)
+        if isinstance(self.wish_photo, str):
+            photo = self.wish_photo
+        else:
+            photo = open("resources/img/wish.jpg", "rb")
+        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        reply_message = await message.reply_photo(
+            photo=photo,
+            caption="请选择你要查询的卡池",
+            reply_markup=InlineKeyboardMarkup(buttons),
+        )
+        if reply_message.photo:
+            self.wish_photo = reply_message.photo[-1].file_id
+
+    async def wish_log_pool_send(self, user_id: int, uid: int, pool_type: "BannerType", message: "Message"):
+        await message.reply_chat_action(ChatAction.TYPING)
+        uid = await self.get_player_id(user_id)
+        png_data = await self.rander_wish_log_analysis(user_id, uid, pool_type)
+        if isinstance(png_data, str):
+            reply = await message.reply_text(png_data)
+        else:
+            await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+            reply = await png_data.reply_photo(message)
+        if filters.ChatType.GROUPS.filter(message):
+            self.add_delete_message_job(reply)
+            self.add_delete_message_job(message)
+
     @handler.command(command="wish_log", block=False)
     @handler.command(command="gacha_log", block=False)
     @handler.message(filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
     async def command_start_analysis(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
         message = update.effective_message
-        pool_type = BannerType.CHARACTER1
+        pool_type = None
         if args := self.get_args(context):
-            if "武器" in args:
+            if "角色" in args:
+                pool_type = BannerType.CHARACTER1
+            elif "武器" in args:
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
-        self.log_user(update, logger.info, "抽卡记录命令请求 || 参数 %s", pool_type.name)
+            elif "集录" in args:
+                pool_type = BannerType.CHRONICLED
+        self.log_user(update, logger.info, "抽卡记录命令请求 || 参数 %s", pool_type.name if pool_type else None)
         try:
-            player_id = await self.get_player_id(user_id)
-            await message.reply_chat_action(ChatAction.TYPING)
-            data = await self.gacha_log.get_analysis(user_id, player_id, pool_type, self.assets_service)
-            if isinstance(data, str):
-                reply_message = await message.reply_text(data)
-                if filters.ChatType.GROUPS.filter(message):
-                    self.add_delete_message_job(reply_message, delay=300)
-                    self.add_delete_message_job(message, delay=300)
+            if pool_type is None:
+                await self.wish_log_pool_choose(user_id, message)
             else:
-                name_card = await self.player_info.get_name_card(player_id, user_id)
-                await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-                data["name_card"] = name_card
-                png_data = await self.template_service.render(
-                    "genshin/wish_log/wish_log.jinja2",
-                    data,
-                    full_page=True,
-                    file_type=FileType.DOCUMENT if len(data.get("fiveLog")) > 300 else FileType.PHOTO,
-                    query_selector=".body_box",
-                )
-                if png_data.file_type == FileType.DOCUMENT:
-                    await png_data.reply_document(message, filename="抽卡记录.png")
-                else:
-                    await png_data.reply_photo(message)
+                await self.wish_log_pool_send(user_id, user_id, pool_type, message)
         except PlayerNotFoundError:
             await message.reply_text("该用户暂未绑定账号")
         except GachaLogNotFound:
@@ -401,6 +464,45 @@ class WishLogPlugin(Plugin.Conversation):
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text("派蒙没有找到你的抽卡记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+
+    @handler.callback_query(pattern=r"^get_wish_log\|", block=False)
+    async def get_wish_log(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        callback_query = update.callback_query
+        user = callback_query.from_user
+        message = callback_query.message
+
+        async def get_wish_log_callback(
+            callback_query_data: str,
+        ) -> Tuple[str, int, int]:
+            _data = callback_query_data.split("|")
+            _user_id = int(_data[1])
+            _uid = int(_data[2])
+            _result = _data[3]
+            logger.debug(
+                "callback_query_data函数返回 result[%s] user_id[%s] uid[%s]",
+                _result,
+                _user_id,
+                _uid,
+            )
+            return _result, _user_id, _uid
+
+        pool, user_id, uid = await get_wish_log_callback(callback_query.data)
+        if user.id != user_id:
+            await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
+            return
+        pool_type = GACHA_TYPE_LIST_REVERSE.get(pool)
+        await message.reply_chat_action(ChatAction.TYPING)
+        try:
+            png_data = await self.rander_wish_log_analysis(user_id, uid, pool_type)
+        except GachaLogNotFound:
+            png_data = "未找到抽卡记录"
+        if isinstance(png_data, str):
+            await callback_query.answer(png_data, show_alert=True)
+            self.add_delete_message_job(message, delay=1)
+        else:
+            await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
+            await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+            await png_data.edit_media(message)
 
     @handler.command(command="wish_count", block=False)
     @handler.command(command="gacha_count", block=False)
@@ -415,6 +517,8 @@ class WishLogPlugin(Plugin.Conversation):
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
+            elif "集录" in args:
+                pool_type = BannerType.CHRONICLED
             elif "仅五星" in args:
                 all_five = True
         self.log_user(update, logger.info, "抽卡统计命令请求 || 参数 %s || 仅五星 %s", pool_type.name, all_five)
