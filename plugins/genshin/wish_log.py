@@ -392,13 +392,15 @@ class WishLogPlugin(Plugin.Conversation):
         for i in range(0, len(pools), 2):
             row = []
             for pool in pools[i : i + 2]:
-                row.append(
-                    InlineKeyboardButton(
-                        pool,
-                        callback_data=f"get_wish_log|{user_id}|{uid}|{pool}",
+                for k, v in {"log": "", "count": "（按卡池）"}.items():
+                    row.append(
+                        InlineKeyboardButton(
+                            f"{pool}{v}",
+                            callback_data=f"get_wish_log|{user_id}|{uid}|{k}|{pool}",
+                        )
                     )
-                )
             buttons.append(row)
+        buttons.append([InlineKeyboardButton("五星抽卡统计", callback_data=f"get_wish_log|{user_id}|{uid}|count|five")])
         return buttons
 
     async def wish_log_pool_choose(self, user_id: int, message: "Message"):
@@ -473,23 +475,39 @@ class WishLogPlugin(Plugin.Conversation):
 
         async def get_wish_log_callback(
             callback_query_data: str,
-        ) -> Tuple[str, int, int]:
+        ) -> Tuple[str, str, int, int]:
             _data = callback_query_data.split("|")
             _user_id = int(_data[1])
             _uid = int(_data[2])
-            _result = _data[3]
+            _t = _data[3]
+            _result = _data[4]
             logger.debug(
-                "callback_query_data函数返回 result[%s] user_id[%s] uid[%s]",
+                "callback_query_data函数返回 result[%s] user_id[%s] uid[%s] show_type[%s]",
                 _result,
                 _user_id,
                 _uid,
+                _t,
             )
-            return _result, _user_id, _uid
+            return _result, _t, _user_id, _uid
 
-        pool, user_id, uid = await get_wish_log_callback(callback_query.data)
+        try:
+            pool, show_type, user_id, uid = await get_wish_log_callback(callback_query.data)
+        except IndexError:
+            await callback_query.answer("按钮数据已过期，请重新获取。", show_alert=True)
+            self.add_delete_message_job(message, delay=1)
+            return
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
+        if show_type == "count":
+            await self.get_wish_log_count(update, user_id, uid, pool)
+        else:
+            await self.get_wish_log_log(update, user_id, uid, pool)
+
+    async def get_wish_log_log(self, update: "Update", user_id: int, uid: int, pool: str):
+        callback_query = update.callback_query
+        message = callback_query.message
+
         pool_type = GACHA_TYPE_LIST_REVERSE.get(pool)
         await message.reply_chat_action(ChatAction.TYPING)
         try:
@@ -504,62 +522,46 @@ class WishLogPlugin(Plugin.Conversation):
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             await png_data.edit_media(message)
 
-    @handler.command(command="wish_count", block=False)
-    @handler.command(command="gacha_count", block=False)
-    @handler.message(filters=filters.Regex("^抽卡统计?(武器|角色|常驻|仅五星|)$"), block=False)
-    async def command_start_count(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
-        user_id = await self.get_real_user_id(update)
-        message = update.effective_message
-        pool_type = BannerType.CHARACTER1
-        all_five = False
-        if args := self.get_args(context):
-            if "武器" in args:
-                pool_type = BannerType.WEAPON
-            elif "常驻" in args:
-                pool_type = BannerType.STANDARD
-            elif "集录" in args:
-                pool_type = BannerType.CHRONICLED
-            elif "仅五星" in args:
-                all_five = True
-        self.log_user(update, logger.info, "抽卡统计命令请求 || 参数 %s || 仅五星 %s", pool_type.name, all_five)
+    async def get_wish_log_count(self, update: "Update", user_id: int, uid: int, pool: str):
+        callback_query = update.callback_query
+        message = callback_query.message
+
+        all_five = pool == "five"
+        group = filters.ChatType.GROUPS.filter(message)
+        pool_type = GACHA_TYPE_LIST_REVERSE.get(pool)
+        await message.reply_chat_action(ChatAction.TYPING)
         try:
-            player_id = await self.get_player_id(user_id)
-            group = filters.ChatType.GROUPS.filter(message)
-            await message.reply_chat_action(ChatAction.TYPING)
             if all_five:
-                data = await self.gacha_log.get_all_five_analysis(user_id, player_id, self.assets_service)
+                png_data = await self.gacha_log.get_all_five_analysis(user_id, uid, self.assets_service)
             else:
-                data = await self.gacha_log.get_pool_analysis(user_id, player_id, pool_type, self.assets_service, group)
-            if isinstance(data, str):
-                reply_message = await message.reply_text(data)
-                if filters.ChatType.GROUPS.filter(message):
-                    self.add_delete_message_job(reply_message)
-                    self.add_delete_message_job(message)
-            else:
-                name_card = await self.player_info.get_name_card(player_id, user_id)
-                document = False
-                if data["hasMore"] and not group:
-                    document = True
-                    data["hasMore"] = False
-                data["name_card"] = name_card
-                await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if document else ChatAction.UPLOAD_PHOTO)
-                png_data = await self.template_service.render(
-                    "genshin/wish_count/wish_count.jinja2",
-                    data,
-                    full_page=True,
-                    query_selector=".body_box",
-                    file_type=FileType.DOCUMENT if document else FileType.PHOTO,
-                )
-                if document:
-                    await png_data.reply_document(message, filename="抽卡统计.png")
-                else:
-                    await png_data.reply_photo(message)
+                png_data = await self.gacha_log.get_pool_analysis(user_id, uid, pool_type, self.assets_service, group)
         except GachaLogNotFound:
-            self.log_user(update, logger.info, "未找到抽卡记录")
-            buttons = [
-                [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
-            ]
-            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+            png_data = "未找到抽卡记录"
+        if isinstance(png_data, str):
+            await callback_query.answer(png_data, show_alert=True)
+            self.add_delete_message_job(message, delay=1)
+        else:
+            await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
+            name_card = await self.player_info.get_name_card(uid, user_id)
+            document = False
+            if png_data["hasMore"] and not group:
+                document = True
+                png_data["hasMore"] = False
+            png_data["name_card"] = name_card
+            await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if document else ChatAction.UPLOAD_PHOTO)
+            png = await self.template_service.render(
+                "genshin/wish_count/wish_count.jinja2",
+                png_data,
+                full_page=True,
+                query_selector=".body_box",
+                file_type=FileType.DOCUMENT if document else FileType.PHOTO,
+            )
+            await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+            if document:
+                await png.reply_document(message, filename="抽卡统计.png")
+                self.add_delete_message_job(message, delay=1)
+            else:
+                await png.edit_media(message)
 
     @staticmethod
     async def get_migrate_data(
