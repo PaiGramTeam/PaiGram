@@ -51,8 +51,8 @@ class GachaItem(BaseModel):
 
     @validator("gacha_type")
     def check_gacha_type(cls, v):
-        if v not in {"100", "200", "301", "302", "400"}:
-            raise ValueError(f"gacha_type must be 200, 301, 302 or 400, invalid value: {v}")
+        if v not in {"100", "200", "301", "302", "400", "500"}:
+            raise ValueError(f"gacha_type must be 200, 301, 302, 400, 500, invalid value: {v}")
         return v
 
     @validator("item_type")

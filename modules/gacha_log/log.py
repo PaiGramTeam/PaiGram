@@ -189,6 +189,10 @@ class GachaLog:
         new_num = 0
         for item_info in all_items:
             pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
+            if pool_name not in temp_id_data:
+                temp_id_data[pool_name] = []
+            if pool_name not in gacha_log.item_list:
+                gacha_log.item_list[pool_name] = []
             if item_info.id not in temp_id_data[pool_name]:
                 gacha_log.item_list[pool_name].append(item_info)
                 temp_id_data[pool_name].append(item_info.id)
@@ -284,6 +288,8 @@ class GachaLog:
 
                     if pool_name not in temp_id_data:
                         temp_id_data[pool_name] = []
+                    if pool_name not in gacha_log.item_list:
+                        gacha_log.item_list[pool_name] = []
                     if item.id not in temp_id_data[pool_name]:
                         gacha_log.item_list[pool_name].append(item)
                         temp_id_data[pool_name].append(item.id)
