@@ -21,14 +21,14 @@
 
 body {
     font-size: 16px;
-    width: 530px;
+    width: 1286px;
     color: #1E1F20;
     transform: scale(1.5);
     transform-origin: 0 0;
 }
 
 .container {
-    width: 530px;
+    width: 1286px;
     padding: 20px 15px 10px 15px;
     background-color: #F5F6FB;
 }

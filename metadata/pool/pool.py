@@ -7,7 +7,7 @@ from metadata.pool.pool_500 import POOL_500
 def get_pool_by_id(pool_type):
     if pool_type == 200:
         return POOL_200
-    if pool_type == 301:
+    if pool_type in [301, 400]:
         return POOL_301
     if pool_type == 302:
         return POOL_302
