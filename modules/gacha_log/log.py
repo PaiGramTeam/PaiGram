@@ -336,7 +336,7 @@ class GachaLog:
         for item in data:
             count += 1
             if item.rank_type == "5":
-                if item.item_type == "角色" and pool_name in {"角色祈愿", "常驻祈愿"}:
+                if item.item_type == "角色" and pool_name in {"角色祈愿", "常驻祈愿", "集录祈愿"}:
                     data = {
                         "name": item.name,
                         "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri(),
@@ -347,7 +347,7 @@ class GachaLog:
                         "time": item.time,
                     }
                     result.append(FiveStarItem.construct(**data))
-                elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿"}:
+                elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿", "集录祈愿"}:
                     data = {
                         "name": item.name,
                         "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri(),

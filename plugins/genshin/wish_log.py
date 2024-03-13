@@ -518,6 +518,8 @@ class WishLogPlugin(Plugin.Conversation):
                 pool_type = BannerType.WEAPON
             elif "常驻" in args:
                 pool_type = BannerType.STANDARD
+            elif "集录" in args:
+                pool_type = BannerType.CHRONICLED
             elif "仅五星" in args:
                 all_five = True
         self.log_user(update, logger.info, "抽卡统计命令请求 || 参数 %s || 仅五星 %s", pool_type.name, all_five)
