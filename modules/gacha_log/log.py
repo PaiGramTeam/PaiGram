@@ -492,6 +492,37 @@ class GachaLog:
         ]
 
     @staticmethod
+    def get_500_pool_data(
+        total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
+    ):
+        # 总共五星
+        five_star = len(all_five)
+        # 五星平均
+        five_star_avg = round((total - no_five_star) / five_star, 2) if five_star != 0 else 0
+        # 四星角色
+        four_star_character = len([i for i in all_four if i.type == "角色"])
+        # 总共四星
+        four_star = len(all_four)
+        # 四星平均
+        four_star_avg = round((total - no_four_star) / four_star, 2) if four_star != 0 else 0
+        # 四星最多
+        four_star_name_list = [i.name for i in all_four]
+        four_star_max = max(four_star_name_list, key=four_star_name_list.count) if four_star_name_list else ""
+        four_star_max_count = four_star_name_list.count(four_star_max)
+        return [
+            [
+                {"num": no_five_star, "unit": "抽", "lable": "未出五星"},
+                {"num": five_star, "unit": "个", "lable": "五星"},
+                {"num": five_star_avg, "unit": "抽", "lable": "五星平均"},
+                {"num": four_star_character, "unit": "个", "lable": "四星角色"},
+                {"num": no_four_star, "unit": "抽", "lable": "未出四星"},
+                {"num": four_star, "unit": "个", "lable": "四星"},
+                {"num": four_star_avg, "unit": "抽", "lable": "四星平均"},
+                {"num": four_star_max_count, "unit": four_star_max, "lable": "四星最多"},
+            ],
+        ]
+
+    @staticmethod
     def count_fortune(pool_name: str, summon_data, weapon: bool = False):
         """
             角色  武器
@@ -544,6 +575,9 @@ class GachaLog:
             pool_name = self.count_fortune(pool_name, summon_data, True)
         elif pool == BannerType.PERMANENT:
             summon_data = self.get_200_pool_data(total, all_five, all_four, no_five_star, no_four_star)
+            pool_name = self.count_fortune(pool_name, summon_data)
+        elif pool == BannerType.CHRONICLED:
+            summon_data = self.get_500_pool_data(total, all_five, all_four, no_five_star, no_four_star)
             pool_name = self.count_fortune(pool_name, summon_data)
         last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
         first_time = data[-1].time.strftime("%Y-%m-%d %H:%M")
