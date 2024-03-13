@@ -78,6 +78,7 @@ class GachaLogInfo(BaseModel):
         "武器祈愿": [],
         "常驻祈愿": [],
         "新手祈愿": [],
+        "集录祈愿": [],
     }
 
     @property
@@ -140,6 +141,7 @@ class UIGFGachaType(Enum):
     CHARACTER = "301"
     WEAPON = "302"
     CHARACTER2 = "400"
+    CHRONICLED = "500"
 
 
 class UIGFItem(BaseModel):

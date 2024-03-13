@@ -282,6 +282,8 @@ class GachaLog:
                         ),
                     )
 
+                    if pool_name not in temp_id_data:
+                        temp_id_data[pool_name] = []
                     if item.id not in temp_id_data[pool_name]:
                         gacha_log.item_list[pool_name].append(item)
                         temp_id_data[pool_name].append(item.id)
