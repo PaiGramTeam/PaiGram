@@ -573,7 +573,7 @@ class GachaLog:
         all_five, no_five_star = await self.get_all_5_star_items(data, assets, pool_name)
         all_four, no_four_star = await self.get_all_4_star_items(data, assets)
         summon_data = None
-        if pool == BannerType.CHARACTER1:
+        if pool in [BannerType.CHARACTER1, BannerType.CHARACTER2]:
             summon_data = self.get_301_pool_data(total, all_five, no_five_star, no_four_star)
             pool_name = self.count_fortune(pool_name, summon_data)
         elif pool == BannerType.WEAPON:

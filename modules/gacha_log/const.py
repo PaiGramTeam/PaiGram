@@ -12,3 +12,4 @@ GACHA_TYPE_LIST = {
     BannerType.CHARACTER2: "角色祈愿",
     BannerType.CHRONICLED: "集录祈愿",
 }
+GACHA_TYPE_LIST_REVERSE = {v: k for k, v in GACHA_TYPE_LIST.items()}
