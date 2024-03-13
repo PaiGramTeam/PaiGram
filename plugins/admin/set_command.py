@@ -26,7 +26,6 @@ class SetCommandPlugin(Plugin):
             BotCommand("wish_log_import", "导入抽卡记录"),
             BotCommand("wish_log_export", "导出抽卡记录"),
             BotCommand("wish_log_delete", "删除抽卡记录"),
-            BotCommand("wish_count", "查看抽卡统计（按卡池）"),
             BotCommand("pay_log", "查看充值记录"),
             BotCommand("pay_log_import", "导入充值记录"),
             BotCommand("pay_log_export", "导出充值记录"),
