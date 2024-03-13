@@ -395,7 +395,7 @@ class WishLogPlugin(Plugin.Conversation):
                 for k, v in {"log": "", "count": "（按卡池）"}.items():
                     row.append(
                         InlineKeyboardButton(
-                            f"{pool}{v}",
+                            f"{pool.replace('祈愿', '')}{v}",
                             callback_data=f"get_wish_log|{user_id}|{uid}|{k}|{pool}",
                         )
                     )
