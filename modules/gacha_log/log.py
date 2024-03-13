@@ -566,6 +566,8 @@ class GachaLog:
         if not status:
             raise GachaLogNotFound
         pool_name = GACHA_TYPE_LIST[pool]
+        if pool_name not in gacha_log.item_list:
+            raise GachaLogNotFound
         data = gacha_log.item_list[pool_name]
         total = len(data)
         if total == 0:
@@ -614,6 +616,8 @@ class GachaLog:
         if not status:
             raise GachaLogNotFound
         pool_name = GACHA_TYPE_LIST[pool]
+        if pool_name not in gacha_log.item_list:
+            raise GachaLogNotFound
         data = gacha_log.item_list[pool_name]
         total = len(data)
         if total == 0:
