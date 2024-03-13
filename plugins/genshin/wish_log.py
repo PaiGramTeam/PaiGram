@@ -19,7 +19,6 @@ from core.services.players import PlayersService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from gram_core.config import config
-from gram_core.services.template.models import RenderResult
 from metadata.scripts.paimon_moe import GACHA_LOG_PAIMON_MOE_PATH, update_paimon_moe_zh
 from modules.gacha_log.const import UIGF_VERSION, GACHA_TYPE_LIST_REVERSE
 from modules.gacha_log.error import (
@@ -50,6 +49,7 @@ if TYPE_CHECKING:
     from telegram import Update, Message, User, Document
     from telegram.ext import ContextTypes
     from gram_core.services.players.models import Player
+    from gram_core.services.template.models import RenderResult
 
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
 
@@ -366,16 +366,15 @@ class WishLogPlugin(Plugin.Conversation):
         data = await self.gacha_log.get_analysis(user_id, player_id, pool_type, self.assets_service)
         if isinstance(data, str):
             return data
-        else:
-            name_card = await self.player_info.get_name_card(player_id, user_id)
-            data["name_card"] = name_card
-            png_data = await self.template_service.render(
-                "genshin/wish_log/wish_log.jinja2",
-                data,
-                full_page=True,
-                file_type=FileType.DOCUMENT if len(data.get("fiveLog")) > 300 else FileType.PHOTO,
-                query_selector=".body_box",
-            )
+        name_card = await self.player_info.get_name_card(player_id, user_id)
+        data["name_card"] = name_card
+        png_data = await self.template_service.render(
+            "genshin/wish_log/wish_log.jinja2",
+            data,
+            full_page=True,
+            file_type=FileType.DOCUMENT if len(data.get("fiveLog")) > 300 else FileType.PHOTO,
+            query_selector=".body_box",
+        )
         return png_data
 
     @staticmethod
