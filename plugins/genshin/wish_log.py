@@ -381,7 +381,7 @@ class WishLogPlugin(Plugin.Conversation):
     def gen_button(user_id: int, uid: int, info: "GachaLogInfo") -> List[List[InlineKeyboardButton]]:
         buttons = []
         pools = []
-        skip_pools = ["新手祈愿"]
+        skip_pools = []
         for k, v in info.item_list.items():
             if k in skip_pools:
                 continue
