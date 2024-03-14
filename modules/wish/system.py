@@ -89,7 +89,9 @@ class BannerSystem:
         gacha_info: PlayerGachaBannerInfo,
     ) -> int:
         # 以下是防止点炒饭
-        epitomized = (banner.has_epitomized()) and (rarity == 5) and (gacha_info.wish_item_id != 0)  # 判断定轨信息是否正确
+        epitomized = (
+            (banner.has_epitomized()) and (rarity == 5) and (gacha_info.wish_item_id != 0)
+        )  # 判断定轨信息是否正确
         pity_epitomized = gacha_info.failed_chosen_item_pulls >= banner.wish_max_progress  # 判断定轨值
         pity_featured = gacha_info.get_failed_featured_item_pulls(rarity) >= 1  # 通过UP值判断当前是否为UP
         roll_featured = self.random_range(1, 100) <= banner.get_event_chance(rarity)  # 随机判断当前是否为UP

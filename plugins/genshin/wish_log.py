@@ -139,7 +139,9 @@ class WishLogPlugin(Plugin.Conversation):
         elif document.file_name.endswith(".json"):
             file_type = "json"
         else:
-            await message.reply_text("文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件")
+            await message.reply_text(
+                "文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件"
+            )
             return
         if document.file_size > 5 * 1024 * 1024:
             await message.reply_text("文件过大，请发送小于 5 MB 的文件")
@@ -234,7 +236,9 @@ class WishLogPlugin(Plugin.Conversation):
         if message.text == "自动导入":
             authkey = await self.gen_authkey(user.id)
             if not authkey:
-                await message.reply_text("自动生成 authkey 失败，请尝试通过其他方式导入。", reply_markup=ReplyKeyboardRemove())
+                await message.reply_text(
+                    "自动生成 authkey 失败，请尝试通过其他方式导入。", reply_markup=ReplyKeyboardRemove()
+                )
                 return ConversationHandler.END
         elif message.text == "退出":
             await message.reply_text("取消导入抽卡记录", reply_markup=ReplyKeyboardRemove())
@@ -270,7 +274,9 @@ class WishLogPlugin(Plugin.Conversation):
         if not status:
             await message.reply_text("你还没有导入抽卡记录哦~")
             return ConversationHandler.END
-        await message.reply_text("你确定要删除抽卡记录吗？（此项操作无法恢复），如果确定请发送 ”确定“，发送其他内容取消")
+        await message.reply_text(
+            "你确定要删除抽卡记录吗？（此项操作无法恢复），如果确定请发送 ”确定“，发送其他内容取消"
+        )
         return CONFIRM_DELETE
 
     @conversation.state(state=CONFIRM_DELETE)
@@ -331,7 +337,9 @@ class WishLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
-            await message.reply_text("派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+            await message.reply_text(
+                "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons)
+            )
         except GachaLogAccountNotFound:
             await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
         except GachaLogFileError:
@@ -468,7 +476,9 @@ class WishLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
-            await message.reply_text("派蒙没有找到你的抽卡记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+            await message.reply_text(
+                "派蒙没有找到你的抽卡记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons)
+            )
 
     @handler.callback_query(pattern=r"^get_wish_log\|", block=False)
     async def get_wish_log(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:

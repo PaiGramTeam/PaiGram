@@ -1,4 +1,5 @@
 """深渊数据查询"""
+
 import asyncio
 import re
 from datetime import datetime

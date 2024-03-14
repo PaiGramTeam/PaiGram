@@ -115,7 +115,9 @@ class Map(Plugin):
         return f"派蒙一共找到了 {name} 的 {count} 个位置点\n* 数据来源于米游社wiki"
 
     @handler(CommandHandler, command="map", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^(?P<name>.*)(在哪里|在哪|哪里有|哪儿有|哪有|在哪儿)$"), block=False)
+    @handler(
+        MessageHandler, filters=filters.Regex("^(?P<name>.*)(在哪里|在哪|哪里有|哪儿有|哪有|在哪儿)$"), block=False
+    )
     @handler(MessageHandler, filters=filters.Regex("^(哪里有|哪儿有|哪有)(?P<name>.*)$"), block=False)
     async def command_start(self, update: Update, context: CallbackContext):
         user_id = await self.get_real_user_id(update)

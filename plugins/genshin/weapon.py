@@ -17,7 +17,9 @@ from utils.log import logger
 class WeaponPlugin(Plugin):
     """武器查询"""
 
-    KEYBOARD = [[InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")]]
+    KEYBOARD = [
+        [InlineKeyboardButton(text="查看武器列表并查询", switch_inline_query_current_chat="查看武器列表并查询")]
+    ]
 
     def __init__(
         self,
@@ -39,7 +41,9 @@ class WeaponPlugin(Plugin):
         if len(args) >= 1:
             weapon_name = args[0]
         else:
-            reply_message = await message.reply_text("请回复你要查询的武器", reply_markup=InlineKeyboardMarkup(self.KEYBOARD))
+            reply_message = await message.reply_text(
+                "请回复你要查询的武器", reply_markup=InlineKeyboardMarkup(self.KEYBOARD)
+            )
             if filters.ChatType.GROUPS.filter(reply_message):
                 self.add_delete_message_job(message)
                 self.add_delete_message_job(reply_message)

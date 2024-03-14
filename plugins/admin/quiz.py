@@ -104,7 +104,9 @@ class SetQuizPlugin(Plugin.Conversation):
             return ConversationHandler.END
         except ResponseError as exc:
             logger.error("重载问题失败", exc_info=exc)
-            await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记", reply_markup=ReplyKeyboardRemove())
+            await update.message.reply_text(
+                "重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记", reply_markup=ReplyKeyboardRemove()
+            )
             return ConversationHandler.END
         await update.message.reply_text("重载成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
@@ -116,7 +118,9 @@ class SetQuizPlugin(Plugin.Conversation):
         quiz_command_data.new_question = ""
         quiz_command_data.new_correct_answer = ""
         quiz_command_data.status = 1
-        await update.message.reply_text("请回复你要添加的问题，或发送 /cancel 取消操作", reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text(
+            "请回复你要添加的问题，或发送 /cancel 取消操作", reply_markup=ReplyKeyboardRemove()
+        )
         return GET_NEW_QUESTION
 
     @conversation.state(state=GET_NEW_QUESTION)
@@ -161,7 +165,9 @@ class SetQuizPlugin(Plugin.Conversation):
         )
         await update.message.reply_markdown_v2(reply_text)
         reply_keyboard = [["保存并重载配置", "抛弃修改并退出"]]
-        await update.message.reply_text("请核对问题，并选择下一步操作。", reply_markup=ReplyKeyboardMarkup(reply_keyboard))
+        await update.message.reply_text(
+            "请核对问题，并选择下一步操作。", reply_markup=ReplyKeyboardMarkup(reply_keyboard)
+        )
         return SAVE_QUESTION
 
     @conversation.state(state=SAVE_QUESTION)
@@ -216,7 +222,9 @@ class SetQuizPlugin(Plugin.Conversation):
             await self.quiz_service.refresh_quiz()
         except ResponseError as exc:
             logger.error("重载问题失败", exc_info=exc)
-            await update.message.reply_text("重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记", reply_markup=ReplyKeyboardRemove())
+            await update.message.reply_text(
+                "重载问题失败，异常抛出Redis请求错误异常，详情错误请看日记", reply_markup=ReplyKeyboardRemove()
+            )
             return ConversationHandler.END
         await update.message.reply_text("重载配置成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END

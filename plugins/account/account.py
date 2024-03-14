@@ -111,10 +111,14 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if message.text == "通过玩家ID":
-            await message.reply_text("请输入你的玩家ID（非通行证ID），此 ID 在 游戏客户端 左/右下角。", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text(
+                "请输入你的玩家ID（非通行证ID），此 ID 在 游戏客户端 左/右下角。", reply_markup=ReplyKeyboardRemove()
+            )
             return CHECK_PLAYER_ID
         if message.text == "通过账号ID":
-            await message.reply_text("请输入你的通行证ID（非玩家ID），此 ID 在 社区APP '我的' 页面。", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text(
+                "请输入你的通行证ID（非玩家ID），此 ID 在 社区APP '我的' 页面。", reply_markup=ReplyKeyboardRemove()
+            )
             return CHECK_ACCOUNT_ID
         await message.reply_text("选择错误，请重新选择")
         return CHECK_METHOD
@@ -140,7 +144,9 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         except CookiesCachePoolExhausted:
-            await message.reply_text("公共Cookies池已经耗尽，请稍后重试或者绑定 cookie", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text(
+                "公共Cookies池已经耗尽，请稍后重试或者绑定 cookie", reply_markup=ReplyKeyboardRemove()
+            )
             return ConversationHandler.END
         if region == RegionEnum.HYPERION:
             client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
@@ -174,7 +180,9 @@ class BindAccountPlugin(Plugin.Conversation):
         bind_account_plugin_data.account_id = account_id
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, record_card.nickname, record_card.uid)
+        logger.info(
+            "用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, record_card.nickname, record_card.uid
+        )
         text = (
             f"*角色信息*\n"
             f"角色名称：{escape_markdown(record_card.nickname, version=2)}\n"
@@ -238,7 +246,9 @@ class BindAccountPlugin(Plugin.Conversation):
             return ConversationHandler.END
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
-        logger.info("用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, player_stats.info.nickname, player_id)
+        logger.info(
+            "用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, player_stats.info.nickname, player_id
+        )
         text = (
             f"*角色信息*\n"
             f"角色名称：{escape_markdown(player_stats.info.nickname, version=2)}\n"

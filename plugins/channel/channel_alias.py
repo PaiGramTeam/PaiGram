@@ -26,7 +26,9 @@ CHANNEL_ALIAS_OPEN = """成功开启频道透视模式，派蒙将会把你当�
 - 在转让频道前，请务必关闭此功能。
 """
 CHANNEL_ALIAS_CLOSE = """成功关闭频道透视模式，派蒙将不会把你当做普通用户，现在你无法使用频道身份执行命令"""
-CHANNEL_ADMIN_HELP = "参数错误，可用命令：\n\n- disable <id> 关闭频道透视模式\n- change <cid> <uid> 强制设置频道透视对应的用户 id"
+CHANNEL_ADMIN_HELP = (
+    "参数错误，可用命令：\n\n- disable <id> 关闭频道透视模式\n- change <cid> <uid> 强制设置频道透视对应的用户 id"
+)
 
 
 class ChannelAliasError(Exception):

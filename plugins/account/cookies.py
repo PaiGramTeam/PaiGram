@@ -236,7 +236,9 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
                     check_cookie = True
                 except SimnetBadRequest as exc:
-                    logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
+                    logger.warning(
+                        "用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original
+                    )
                 except Exception as exc:
                     logger.error("绑定时获取新Cookie失败 [%s]", (str(exc)))
                 finally:
@@ -245,10 +247,14 @@ class AccountCookiesPlugin(Plugin.Conversation):
             if not check_cookie:
                 await message.reply_text("检测到Cookie不完整，可能会出现问题。", reply_markup=ReplyKeyboardRemove())
             if not cookies.stoken:
-                await message.reply_text("检测到缺少 stoken，请尝试添加 stoken 后重新绑定。", reply_markup=ReplyKeyboardRemove())
+                await message.reply_text(
+                    "检测到缺少 stoken，请尝试添加 stoken 后重新绑定。", reply_markup=ReplyKeyboardRemove()
+                )
                 return ConversationHandler.END
             if cookies.stoken and cookies.stoken.startswith("v2") and cookies.mid is None:
-                await message.reply_text("检测到缺少 mid，请尝试添加 mid 后重新绑定。", reply_markup=ReplyKeyboardRemove())
+                await message.reply_text(
+                    "检测到缺少 mid，请尝试添加 mid 后重新绑定。", reply_markup=ReplyKeyboardRemove()
+                )
                 return ConversationHandler.END
             try:
                 if region == Region.CHINESE:
@@ -266,9 +272,13 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     cookies.mid = cookies_model.mid
                     cookies.ltoken = cookies_model.ltoken
                     cookies.cookie_token = cookies_model.cookie_token
-                    logger.success("用户 %s[%s] 绑定时获取 stoken_v2, mid, ltoken, cookie_token 成功", user.full_name, user.id)
+                    logger.success(
+                        "用户 %s[%s] 绑定时获取 stoken_v2, mid, ltoken, cookie_token 成功", user.full_name, user.id
+                    )
             except SimnetBadRequest as exc:
-                logger.warning("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
+                logger.warning(
+                    "用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original
+                )
                 await message.reply_text("Stoken 无效，请重新绑定。", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
             except UnicodeEncodeError:
@@ -300,13 +310,17 @@ class AccountCookiesPlugin(Plugin.Conversation):
             except InvalidCookies:
                 logger.info("用户 %s[%s] Cookies已经过期", user.full_name, user.id)
                 await message.reply_text(
-                    "获取账号信息失败，返回Cookies已经过期，请尝试在无痕浏览器中登录获取Cookies。", reply_markup=ReplyKeyboardRemove()
+                    "获取账号信息失败，返回Cookies已经过期，请尝试在无痕浏览器中登录获取Cookies。",
+                    reply_markup=ReplyKeyboardRemove(),
                 )
                 return ConversationHandler.END
             except SimnetBadRequest as exc:
-                logger.info("用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original)
+                logger.info(
+                    "用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original
+                )
                 await message.reply_text(
-                    f"获取账号信息发生错误，错误信息为 {exc.original}，请检查Cookie或者账号是否正常", reply_markup=ReplyKeyboardRemove()
+                    f"获取账号信息发生错误，错误信息为 {exc.original}，请检查Cookie或者账号是否正常",
+                    reply_markup=ReplyKeyboardRemove(),
                 )
                 return ConversationHandler.END
             except AccountIdNotFound:
@@ -344,7 +358,11 @@ class AccountCookiesPlugin(Plugin.Conversation):
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
         logger.info(
-            "用户 %s[%s] 获取账号 %s[%s] 信息成功", user.full_name, user.id, genshin_account.nickname, genshin_account.uid
+            "用户 %s[%s] 获取账号 %s[%s] 信息成功",
+            user.full_name,
+            user.id,
+            genshin_account.nickname,
+            genshin_account.uid,
         )
         text = (
             f"*角色信息*\n"

@@ -177,9 +177,13 @@ class GachaLog:
             four_star = len([i for i in data if i.rank_type == "4"])
             if total > 50:
                 if total <= five_star * 15:
-                    raise GachaLogFileError("检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。")
+                    raise GachaLogFileError(
+                        "检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。"
+                    )
                 if four_star < five_star:
-                    raise GachaLogFileError("检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。")
+                    raise GachaLogFileError(
+                        "检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。"
+                    )
             return True
         except Exception as exc:  # pylint: disable=W0703
             raise GachaLogFileError from exc

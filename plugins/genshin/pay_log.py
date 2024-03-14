@@ -144,7 +144,9 @@ class PayLogPlugin(Plugin.Conversation):
             await message.reply_text("你还没有导入充值记录哦~")
             return ConversationHandler.END
         context.chat_data["uid"] = player_info.player_id
-        await message.reply_text("你确定要删除充值记录吗？（此项操作无法恢复），如果确定请发送 ”确定“，发送其他内容取消")
+        await message.reply_text(
+            "你确定要删除充值记录吗？（此项操作无法恢复），如果确定请发送 ”确定“，发送其他内容取消"
+        )
         return CONFIRM_DELETE
 
     @conversation.state(state=CONFIRM_DELETE)
@@ -203,7 +205,9 @@ class PayLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
             ]
-            await message.reply_text("派蒙没有找到你的充值记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+            await message.reply_text(
+                "派蒙没有找到你的充值记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons)
+            )
         except PayLogAccountNotFound:
             await message.reply_text("导出失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
         except PlayerNotFoundError:
@@ -231,7 +235,9 @@ class PayLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
             ]
-            await message.reply_text("派蒙没有找到你的充值记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons))
+            await message.reply_text(
+                "派蒙没有找到你的充值记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons)
+            )
 
     @staticmethod
     async def get_migrate_data(

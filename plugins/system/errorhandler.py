@@ -78,7 +78,9 @@ class ErrorHandler(Plugin):
             buttons = InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton("点我重新绑定", url=create_deep_linked_url(context.bot.username, "set_cookie")),
+                        InlineKeyboardButton(
+                            "点我重新绑定", url=create_deep_linked_url(context.bot.username, "set_cookie")
+                        ),
                         _import_button,
                     ],
                 ]
@@ -150,7 +152,10 @@ class ErrorHandler(Plugin):
             if exc.retcode in (10001, -100):
                 notice = self.ERROR_MSG_PREFIX + "Cookie 无效，请尝试重新绑定"
             elif exc.retcode == 10103:
-                notice = self.ERROR_MSG_PREFIX + "Cookie 有效，但没有绑定到游戏帐户，请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。"
+                notice = (
+                    self.ERROR_MSG_PREFIX
+                    + "Cookie 有效，但没有绑定到游戏帐户，请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。"
+                )
             else:
                 logger.error("未知Cookie错误", exc_info=exc)
                 notice = self.ERROR_MSG_PREFIX + f"Cookie 无效 错误信息为 {exc.original} 请尝试重新绑定"
@@ -231,9 +236,15 @@ class ErrorHandler(Plugin):
         if isinstance(exc, APIHelperTimedOut):
             notice = self.ERROR_MSG_PREFIX + " 服务器熟啦 ~ 请稍后再试"
         elif isinstance(exc, ReturnCodeError):
-            notice = self.ERROR_MSG_PREFIX + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
+            notice = (
+                self.ERROR_MSG_PREFIX
+                + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
+            )
         elif isinstance(exc, ResponseException):
-            notice = self.ERROR_MSG_PREFIX + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
+            notice = (
+                self.ERROR_MSG_PREFIX
+                + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
+            )
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop

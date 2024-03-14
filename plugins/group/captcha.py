@@ -90,7 +90,9 @@ class GroupCaptcha(Plugin):
                 chat_id=job.chat_id, user_id=job.user_id, until_date=int(time.time()) + self.kick_time
             )
         except BadRequest as exc:
-            logger.error("GroupCaptcha插件在 chat_id[%s] user_id[%s] 执行kick失败", job.chat_id, job.user_id, exc_info=exc)
+            logger.error(
+                "GroupCaptcha插件在 chat_id[%s] user_id[%s] 执行kick失败", job.chat_id, job.user_id, exc_info=exc
+            )
 
     @staticmethod
     async def clean_message_job(context: "ContextTypes.DEFAULT_TYPE"):
@@ -100,11 +102,19 @@ class GroupCaptcha(Plugin):
             await context.bot.delete_message(chat_id=job.chat_id, message_id=job.data)
         except BadRequest as exc:
             if "not found" in exc.message:
-                logger.warning("GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败 消息不存在", job.chat_id, job.data)
+                logger.warning(
+                    "GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败 消息不存在", job.chat_id, job.data
+                )
             elif "Message can't be deleted" in exc.message:
-                logger.warning("GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败 消息无法删除 可能是没有授权", job.chat_id, job.data)
+                logger.warning(
+                    "GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败 消息无法删除 可能是没有授权",
+                    job.chat_id,
+                    job.data,
+                )
             else:
-                logger.error("GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败", job.chat_id, job.data, exc_info=exc)
+                logger.error(
+                    "GroupCaptcha插件删除消息 chat_id[%s] message_id[%s]失败", job.chat_id, job.data, exc_info=exc
+                )
 
     @staticmethod
     async def restore_member(context: "ContextTypes.DEFAULT_TYPE", chat_id: int, user_id: int):
@@ -174,7 +184,9 @@ class GroupCaptcha(Plugin):
                 )
             else:
                 await message.edit_text(f"{member_info} 被本群管理员放行", parse_mode=ParseMode.MARKDOWN_V2)
-                logger.info("用户 %s 在群 %s[%s] 被 %s[%s] 管理放行", member_info, chat.title, chat.id, user.full_name, user.id)
+                logger.info(
+                    "用户 %s 在群 %s[%s] 被 %s[%s] 管理放行", member_info, chat.title, chat.id, user.full_name, user.id
+                )
         elif result == "kick":
             await callback_query.answer(text="驱离", show_alert=False)
             await context.bot.ban_chat_member(chat.id, user_id)
@@ -193,7 +205,9 @@ class GroupCaptcha(Plugin):
                 )
             else:
                 await message.edit_text(f"{member_info} 被本群管理员驱离", parse_mode=ParseMode.MARKDOWN_V2)
-                logger.info("用户 %s 在群 %s[%s] 被 %s[%s] 管理驱离", member_info, chat.title, chat.id, user.full_name, user.id)
+                logger.info(
+                    "用户 %s 在群 %s[%s] 被 %s[%s] 管理驱离", member_info, chat.title, chat.id, user.full_name, user.id
+                )
         elif result == "unban":
             await callback_query.answer(text="解除驱离", show_alert=False)
             await self.restore_member(context, chat.id, user_id)
@@ -214,7 +228,9 @@ class GroupCaptcha(Plugin):
                 )
             else:
                 await message.edit_text(f"{member_info} 被本群管理员解除封禁", parse_mode=ParseMode.MARKDOWN_V2)
-                logger.info("用户 %s 在群 %s[%s] 被 %s[%s] 管理驱离", member_info, chat.title, chat.id, user.full_name, user.id)
+                logger.info(
+                    "用户 %s 在群 %s[%s] 被 %s[%s] 管理驱离", member_info, chat.title, chat.id, user.full_name, user.id
+                )
         else:
             logger.warning("auth 模块 admin 函数 发现未知命令 result[%s]", result)
             await context.bot.send_message(chat.id, "派蒙这边收到了错误的消息！请检查详细日记！")
@@ -252,7 +268,12 @@ class GroupCaptcha(Plugin):
             await callback_query.answer(text="这不是你的验证！\n" + self.user_mismatch, show_alert=True)
             return
         logger.info(
-            "用户 %s[%s] 在群 %s[%s] 认证结果为 %s", user.full_name, user.id, chat.title, chat.id, "通过" if result else "失败"
+            "用户 %s[%s] 在群 %s[%s] 认证结果为 %s",
+            user.full_name,
+            user.id,
+            chat.title,
+            chat.id,
+            "通过" if result else "失败",
         )
         if result:
             buttons = [[InlineKeyboardButton("驱离", callback_data=f"auth_admin|kick|{user.id}")]]
@@ -437,12 +458,18 @@ class GroupCaptcha(Plugin):
                                 text = f"{user.full_name} 由于加入群组后，在验证缝隙间发送了带有 Forward 的消息，已被踢出群组，并加入了封禁列表。"
                             if text is not None:
                                 await context.bot.ban_chat_member(chat.id, user.id)
-                                button = [[InlineKeyboardButton("解除封禁", callback_data=f"auth_admin|pass|{user.id}")]]
+                                button = [
+                                    [InlineKeyboardButton("解除封禁", callback_data=f"auth_admin|pass|{user.id}")]
+                                ]
                                 await question_message.edit_text(text, reply_markup=InlineKeyboardMarkup(button))
                                 if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user.id}|auth_kick"):
                                     schedule.remove()
                             logger.info(
-                                "用户 %s[%s] 在群 %s[%s] 验证缝隙间发送消息 现已删除", user.full_name, user.id, chat.title, chat.id
+                                "用户 %s[%s] 在群 %s[%s] 验证缝隙间发送消息 现已删除",
+                                user.full_name,
+                                user.id,
+                                chat.title,
+                                chat.id,
                             )
                 except BadRequest as exc:
                     logger.error("后验证处理中发生错误 %s", exc.message)

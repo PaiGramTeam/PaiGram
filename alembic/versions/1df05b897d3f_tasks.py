@@ -5,6 +5,7 @@ Revises: a1c10da5704b
 Create Date: 2023-07-23 14:44:59.592519
 
 """
+
 import logging
 
 from alembic import op
