@@ -482,7 +482,9 @@ class DailyMaterial(Plugin):
             async with self.locks[0]:  # 锁住第一把锁
                 await self._refresh_everyday_materials()
             notice = await notice.edit_text(
-                "每日素材表" + ("摘抄<b>完成！</b>" if self.everyday_materials else "坏掉了！等会它再长好了之后我再抄。。。") + "\n正搬运每日素材的图标中。。。",
+                "每日素材表"
+                + ("摘抄<b>完成！</b>" if self.everyday_materials else "坏掉了！等会它再长好了之后我再抄。。。")
+                + "\n正搬运每日素材的图标中。。。",
                 parse_mode=ParseMode.HTML,
             )
         time = await self._download_icon(notice)

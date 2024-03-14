@@ -1,4 +1,5 @@
 """用于下载和管理角色、武器、材料等的图标"""
+
 from __future__ import annotations
 
 import asyncio
