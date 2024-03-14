@@ -187,7 +187,7 @@ class DailyMaterial(Plugin):
         if await aiofiles.os.path.exists(DATA_FILE_PATH):
             async with aiofiles.open(DATA_FILE_PATH, "rb") as cache:
                 try:
-                    self.everyday_materials.parse_raw(await cache.read())
+                    self.everyday_materials = self.everyday_materials.parse_raw(await cache.read())
                 except pydantic.ValidationError:
                     await aiofiles.os.remove(DATA_FILE_PATH)
                     asyncio.create_task(task_daily())
@@ -482,7 +482,9 @@ class DailyMaterial(Plugin):
             async with self.locks[0]:  # 锁住第一把锁
                 await self._refresh_everyday_materials()
             notice = await notice.edit_text(
-                "每日素材表" + ("摘抄<b>完成！</b>" if self.everyday_materials else "坏掉了！等会它再长好了之后我再抄。。。") + "\n正搬运每日素材的图标中。。。",
+                "每日素材表"
+                + ("摘抄<b>完成！</b>" if self.everyday_materials else "坏掉了！等会它再长好了之后我再抄。。。")
+                + "\n正搬运每日素材的图标中。。。",
                 parse_mode=ParseMode.HTML,
             )
         time = await self._download_icon(notice)
@@ -501,10 +503,12 @@ class DailyMaterial(Plugin):
         for attempts in range(1, retry + 1):
             try:
                 response = await self.client.get("https://genshin.honeyhunterworld.com/?lang=CHS")
+                response.raise_for_status()
             except (HTTPError, SSLZeroReturnError):
                 await asyncio.sleep(1)
                 if attempts == retry:
                     logger.error("每日素材刷新失败, 请稍后重试")
+                    return
                 else:
                     logger.warning("每日素材刷新失败, 正在重试第 %d 次", attempts)
                 continue
