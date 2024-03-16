@@ -76,9 +76,7 @@ class Ambr(Spider):
                 await asyncio.sleep(INTERVAL)
                 if attempts + 1 == RETRY_TIMES:
                     return None
-                else:
-                    logger.warning("每日素材刷新失败, 正在重试第 %d 次", attempts)
-                continue
+                logger.warning("每日素材刷新失败, 正在重试第 %d 次", attempts)
         if response is not None:
             return response.json()["data"]
 

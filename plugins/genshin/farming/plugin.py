@@ -226,8 +226,6 @@ class DailyFarming(Plugin):
         self.log_user(update, logger.info, "每日素材命令请求 || 参数 weekday=%s full=%s", _WEEK_MAP[weekday - 1], full)
 
         if weekday == 7:
-            from telegram.constants import ParseMode
-
             the_day = "今天" if title == "今日" else "这天"
             await message.reply_text(f"{the_day}是星期天, <b>全部素材都可以</b>刷哦~", parse_mode=ParseMode.HTML)
             return
@@ -281,7 +279,7 @@ class DailyFarming(Plugin):
         logger.debug("角色、武器培养素材图发送成功")
 
     @handler.command("refresh_farming_data", admin=True, block=False)
-    async def refresh_farming_data(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+    async def refresh_farming_data(self, update: "Update", _):
         user = update.effective_user
         message = update.effective_message
 
