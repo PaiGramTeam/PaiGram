@@ -4,19 +4,13 @@ from abc import ABC, abstractmethod
 from collections import Counter
 from multiprocessing import RLock
 from ssl import SSLZeroReturnError
-from typing import TypeVar, ParamSpec, final, Iterable
+from typing import Iterable, ParamSpec, TypeVar, final
 
 from httpx import AsyncClient, HTTPError
 
 from core.dependence.assets import AssetsService
 from plugins.genshin.farming._const import AREAS, INTERVAL, RETRY_TIMES, WEEK_MAP
-from plugins.genshin.farming._model import (
-    FarmingData,
-    MaterialData,
-    AreaData,
-    AvatarData,
-    WeaponData,
-)
+from plugins.genshin.farming._model import (AreaData, AvatarData, FarmingData, MaterialData, WeaponData)
 from utils.log import logger
 
 __all__ = ("Spider",)

@@ -2,7 +2,6 @@ import asyncio
 from asyncio import Lock
 from copy import deepcopy
 from datetime import datetime
-from functools import partial
 from typing import ParamSpec, TYPE_CHECKING, TypeVar
 
 import aiofiles
@@ -16,7 +15,7 @@ from core.dependence.assets import AssetsService
 from gram_core.plugin import Plugin, handler
 from gram_core.services.template.models import FileType, RenderGroupResult
 from gram_core.services.template.services import TemplateService
-from plugins.genshin.farming._const import AREAS, INTERVAL
+from plugins.genshin.farming._const import AREAS
 from plugins.genshin.farming._model import AreaData, AvatarData, FullFarmingData, RenderData, UserOwned, WeaponData
 from plugins.genshin.farming._spider import Spider
 from plugins.tools.genshin import CharacterDetails, CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
