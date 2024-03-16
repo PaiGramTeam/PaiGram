@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from typing import Any, List, Optional
 
@@ -121,3 +121,7 @@ class LiveCodeHoYo(BaseModel):
     @property
     def text(self) -> str:
         return self.exchange_code if self.exchange_code else "XXXXXXXXXXXX"
+
+    @staticmethod
+    def guess_offline_at() -> datetime:
+        return datetime.now().replace(hour=12, minute=0, second=0, microsecond=0) + timedelta(days=1)

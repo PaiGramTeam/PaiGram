@@ -141,9 +141,9 @@ class PostCode(Plugin.Conversation):
                 continue
             if not (subject := post.get("subject")):
                 continue
-            if not (match := self.SUBJECT_RE.match(subject)):
+            if not (match := self.SUBJECT_RE.findall(subject)):
                 continue
-            return match.group(1), post
+            return match[0], post
         return None, None
 
     def init_act_id(self, post: Dict) -> Optional[str]:
@@ -179,7 +179,7 @@ class PostCode(Plugin.Conversation):
             post_code_handler_data.ver_code = ver_code
             post_code_handler_data.mys_code = await client.get_live_code(act_id, ver_code)
             post_code_handler_data.hoyo_code = await client.get_live_code_hoyo(self.gids)
-            if len(post_code_handler_data.mys_code) != 3 or len(post_code_handler_data.hoyo_code) != 3:
+            if len(post_code_handler_data.mys_code) != 3:
                 raise ValueError("获取兑换码数据成功，但是数量不对")
             return True
         finally:
@@ -312,7 +312,7 @@ class PostCode(Plugin.Conversation):
         try:
             mys_code = await client.get_live_code(act_id, ver_code)
             hoyo_code = await client.get_live_code_hoyo(self.gids)
-            if len(post_code_handler_data.mys_code) != 3 or len(post_code_handler_data.hoyo_code) != 3:
+            if len(post_code_handler_data.mys_code) != 3:
                 raise ValueError("获取兑换码数据成功，但是数量不对")
             if post_code_handler_data.have_changes(mys_code, hoyo_code):
                 post_code_handler_data.mys_code = mys_code
