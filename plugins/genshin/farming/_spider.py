@@ -10,7 +10,7 @@ from httpx import AsyncClient, HTTPError
 
 from core.dependence.assets import AssetsService
 from plugins.genshin.farming._const import AREAS, INTERVAL, RETRY_TIMES, WEEK_MAP
-from plugins.genshin.farming._model import (AreaData, AvatarData, FarmingData, MaterialData, WeaponData)
+from plugins.genshin.farming._model import AreaData, AvatarData, FarmingData, MaterialData, WeaponData
 from utils.log import logger
 
 __all__ = ("Spider",)
