@@ -5,6 +5,7 @@ Revises:
 Create Date: 2022-09-01 16:55:20.372560
 
 """
+
 from base64 import b64decode
 
 import sqlalchemy as sa

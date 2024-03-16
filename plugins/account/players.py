@@ -41,7 +41,9 @@ class PlayersManagesPlugin(Plugin):
         _handle = _data[-3]
         _user_id = int(_data[-2])
         _player_id = int(_data[-1])
-        logger.debug("players_manager_callback函数返回 handle[%s] user_id[%s] player_id[%s]", _handle, _user_id, _player_id)
+        logger.debug(
+            "players_manager_callback函数返回 handle[%s] user_id[%s] player_id[%s]", _handle, _user_id, _player_id
+        )
         return _handle, _user_id, _player_id
 
     @handler.command(command="player", filters=filters.ChatType.PRIVATE, block=False)
@@ -71,7 +73,9 @@ class PlayersManagesPlugin(Plugin):
                 ]
             )
         if callback_query:
-            await callback_query.edit_message_text("从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons))
+            await callback_query.edit_message_text(
+                "从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons)
+            )
         else:
             await message.reply_text("从下面的列表中选择一个玩家", reply_markup=InlineKeyboardMarkup(buttons))
 
@@ -136,7 +140,8 @@ class PlayersManagesPlugin(Plugin):
                 buttons.insert(-1, temp_buttons)
 
         await callback_query.edit_message_text(
-            f"这里是 {player.player_id} {player_info.nickname}\n你想用这个账号做什么？", reply_markup=InlineKeyboardMarkup(buttons)
+            f"这里是 {player.player_id} {player_info.nickname}\n你想用这个账号做什么？",
+            reply_markup=InlineKeyboardMarkup(buttons),
         )
 
     @handler.callback_query(r"^players_manager\|update\|", block=False)
@@ -208,7 +213,8 @@ class PlayersManagesPlugin(Plugin):
         cookies_data = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookies_data is None:
             await callback_query.edit_message_text(
-                f"玩家 {player.player_id} {player_info.nickname} cookies 未找到", reply_markup=InlineKeyboardMarkup(buttons)
+                f"玩家 {player.player_id} {player_info.nickname} cookies 未找到",
+                reply_markup=InlineKeyboardMarkup(buttons),
             )
 
         cookies = CookiesModel(**cookies_data.data)
@@ -233,11 +239,13 @@ class PlayersManagesPlugin(Plugin):
             cookies_data.status = CookiesStatusEnum.STATUS_SUCCESS
             await self.cookies_service.update(cookies_data)
             await callback_query.edit_message_text(
-                f"玩家 {player.player_id} {player_info.nickname} cookies 刷新成功", reply_markup=InlineKeyboardMarkup(buttons)
+                f"玩家 {player.player_id} {player_info.nickname} cookies 刷新成功",
+                reply_markup=InlineKeyboardMarkup(buttons),
             )
         else:
             await callback_query.edit_message_text(
-                f"玩家 {player.player_id} {player_info.nickname} stoken 未找到", reply_markup=InlineKeyboardMarkup(buttons)
+                f"玩家 {player.player_id} {player_info.nickname} stoken 未找到",
+                reply_markup=InlineKeyboardMarkup(buttons),
             )
 
     @handler.callback_query(r"^players_manager\|export_cookies\|", block=False)
@@ -274,7 +282,8 @@ class PlayersManagesPlugin(Plugin):
         cookies_data = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookies_data is None:
             await callback_query.edit_message_text(
-                f"玩家 {player.player_id} {player_info.nickname} cookies 未找到", reply_markup=InlineKeyboardMarkup(buttons)
+                f"玩家 {player.player_id} {player_info.nickname} cookies 未找到",
+                reply_markup=InlineKeyboardMarkup(buttons),
             )
             return
         device = await self.devices_service.get(player.account_id)
@@ -292,7 +301,8 @@ class PlayersManagesPlugin(Plugin):
             f"<pre>{html.escape(cookie_str)}</pre>",
         )
         await message.reply_text(
-            f"玩家 {player.player_id} {player_info.nickname} cookies 导出成功", reply_markup=InlineKeyboardMarkup(buttons)
+            f"玩家 {player.player_id} {player_info.nickname} cookies 导出成功",
+            reply_markup=InlineKeyboardMarkup(buttons),
         )
         await message.delete()
 
@@ -393,7 +403,9 @@ class PlayersManagesPlugin(Plugin):
                     )
                 ],
             ]
-            await callback_query.edit_message_text("请问你真的要从Bot中删除改账号吗？", reply_markup=InlineKeyboardMarkup(buttons))
+            await callback_query.edit_message_text(
+                "请问你真的要从Bot中删除改账号吗？", reply_markup=InlineKeyboardMarkup(buttons)
+            )
         else:
             if callback_query.message:
                 await callback_query.message.delete()

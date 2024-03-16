@@ -1,4 +1,5 @@
 """目录常量"""
+
 from pathlib import Path
 
 __all__ = ["PROJECT_ROOT", "CORE_DIR", "PLUGIN_DIR", "RESOURCE_DIR", "CACHE_DIR", "METADATA_DIR", "DATA_DIR"]

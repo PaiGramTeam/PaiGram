@@ -214,7 +214,9 @@ class WishSimulatorPlugin(Plugin):
             try:
                 gacha_base_info = await self.handle.gacha_base_info(gacha_name)
             except GachaNotFound as exc:
-                await message.reply_text(f"没有找到名为 {exc.gacha_name} 的卡池，可能是卡池不存在或者卡池已经结束，请检查后重试。如果你想抽取默认卡池，请不要输入参数。")
+                await message.reply_text(
+                    f"没有找到名为 {exc.gacha_name} 的卡池，可能是卡池不存在或者卡池已经结束，请检查后重试。如果你想抽取默认卡池，请不要输入参数。"
+                )
                 return
         else:
             try:

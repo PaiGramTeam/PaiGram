@@ -135,7 +135,9 @@ class SignSystem(Plugin):
         if not daily_reward_info.signed_in:
             try:
                 if validate:
-                    logger.info("UID[%s] 正在尝试通过验证码\nchallenge[%s]\nvalidate[%s]", client.player_id, challenge, validate)
+                    logger.info(
+                        "UID[%s] 正在尝试通过验证码\nchallenge[%s]\nvalidate[%s]", client.player_id, challenge, validate
+                    )
                 request_daily_reward = await client.request_daily_reward(
                     "sign",
                     method="POST",
@@ -191,7 +193,9 @@ class SignSystem(Plugin):
                             logger.info("UID[%s] 创建验证码\ngt[%s]\nchallenge[%s]", client.player_id, _gt, _challenge)
                             _validate = await RecognizeSystem.recognize(_gt, _challenge, uid=client.player_id)
                             if _validate:
-                                logger.success("recognize 通过验证成功\nchallenge[%s]\nvalidate[%s]", _challenge, _validate)
+                                logger.success(
+                                    "recognize 通过验证成功\nchallenge[%s]\nvalidate[%s]", _challenge, _validate
+                                )
                                 request_daily_reward = await client.request_daily_reward(
                                     "sign",
                                     method="POST",
@@ -219,7 +223,9 @@ class SignSystem(Plugin):
                                 )
                                 gt = request_daily_reward.get("gt", "")
                                 challenge = request_daily_reward.get("challenge", "")
-                                logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge)
+                                logger.success(
+                                    "UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge
+                                )
                                 raise NeedChallenge(uid=client.player_id, gt=gt, challenge=challenge)
                     else:
                         request_daily_reward = await client.request_daily_reward(

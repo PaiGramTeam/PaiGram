@@ -380,7 +380,10 @@ class Post(Plugin.Conversation):
         post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
         photo_len = len(post_handler_data.post_images)
         message = update.effective_message
-        await message.reply_text("请回复你要删除的图片的序列，从1开始，如果删除多张图片回复的序列请以空格作为分隔符，" f"当前一共有 {photo_len} 张图片")
+        await message.reply_text(
+            "请回复你要删除的图片的序列，从1开始，如果删除多张图片回复的序列请以空格作为分隔符，"
+            f"当前一共有 {photo_len} 张图片"
+        )
         return GTE_DELETE_PHOTO
 
     @conversation.state(state=GTE_DELETE_PHOTO)
@@ -445,7 +448,9 @@ class Post(Plugin.Conversation):
     @staticmethod
     async def add_tags(update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
-        await message.reply_text("请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符，不用添加 # 作为开头，推送时程序会自动添加")
+        await message.reply_text(
+            "请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符，不用添加 # 作为开头，推送时程序会自动添加"
+        )
         return GET_TAGS
 
     @conversation.state(state=GET_TAGS)

@@ -55,7 +55,9 @@ class DailyNoteTasksPlugin(Plugin.Conversation):
             return ConversationHandler.END
         note_user = await self.note_system.get_single_task_user(user.id)
         url = f"{config.pass_challenge_user_web}/tasks1?command=tasks&bot_data={note_user.web_config}"
-        text = f'你好 {user.mention_markdown_v2()} {escape_markdown("！请点击下方按钮，开始设置，或者回复退出取消操作")}'
+        text = (
+            f'你好 {user.mention_markdown_v2()} {escape_markdown("！请点击下方按钮，开始设置，或者回复退出取消操作")}'
+        )
         await message.reply_markdown_v2(
             text,
             reply_markup=ReplyKeyboardMarkup.from_button(

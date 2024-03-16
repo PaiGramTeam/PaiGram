@@ -1,6 +1,7 @@
 """Test Url
 https://bbs.mihoyo.com/ys/article/29023709
 """
+
 import logging
 
 import pytest

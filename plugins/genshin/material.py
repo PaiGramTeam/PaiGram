@@ -20,7 +20,13 @@ __all__ = ("MaterialPlugin",)
 class MaterialPlugin(Plugin):
     """角色培养素材查询"""
 
-    KEYBOARD = [[InlineKeyboardButton(text="查看角色培养素材列表并查询", switch_inline_query_current_chat="查看角色培养素材列表并查询")]]
+    KEYBOARD = [
+        [
+            InlineKeyboardButton(
+                text="查看角色培养素材列表并查询", switch_inline_query_current_chat="查看角色培养素材列表并查询"
+            )
+        ]
+    ]
 
     def __init__(
         self,

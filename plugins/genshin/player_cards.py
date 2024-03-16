@@ -230,7 +230,9 @@ class PlayerCards(Plugin):
             if characters.name == character_name:
                 break
         else:
-            await message.reply_text(f"角色展柜中未找到 {character_name} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试")
+            await message.reply_text(
+                f"角色展柜中未找到 {character_name} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试"
+            )
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         original_data: Optional[Dict] = None
@@ -279,7 +281,10 @@ class PlayerCards(Plugin):
             await callback_query.answer(text=data, show_alert=True)
             return
         if data.characters is None or len(data.characters) == 0:
-            await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
+            await callback_query.answer(
+                "请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试",
+                show_alert=True,
+            )
             await message.delete()
             return
         self.player_gcsim_scripts.remove_fits(uid)
@@ -344,7 +349,10 @@ class PlayerCards(Plugin):
         original_data = await self._load_history(uid)
         enka_response = EnkaNetworkResponse.parse_obj(copy.deepcopy(original_data))
         if enka_response.characters is None or len(enka_response.characters) == 0:
-            await callback_query.answer("请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试", show_alert=True)
+            await callback_query.answer(
+                "请先将角色加入到角色展柜并允许查看角色详情后再使用此功能，如果已经添加了角色，请等待角色数据更新后重试",
+                show_alert=True,
+            )
             await message.delete()
             return
         if page:
@@ -357,7 +365,10 @@ class PlayerCards(Plugin):
                 break
         else:
             await message.delete()
-            await callback_query.answer(f"角色展柜中未找到 {result} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试", show_alert=True)
+            await callback_query.answer(
+                f"角色展柜中未找到 {result} ，请检查角色是否存在于角色展柜中，或者等待角色数据更新后重试",
+                show_alert=True,
+            )
             return
         await callback_query.answer(text="正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)

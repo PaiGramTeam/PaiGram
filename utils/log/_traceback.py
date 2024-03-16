@@ -198,17 +198,19 @@ class Traceback(BaseTraceback):
                     filename=filename or "?",
                     lineno=line_no,
                     name=frame_summary.f_code.co_name,
-                    locals={
-                        key: pretty.traverse(
-                            Traceback.filter_value(value),
-                            max_length=locals_max_length,
-                            max_string=locals_max_string,
-                            max_depth=locals_max_depth,
-                        )
-                        for key, value in frame_summary.f_locals.items()
-                    }
-                    if show_locals
-                    else None,
+                    locals=(
+                        {
+                            key: pretty.traverse(
+                                Traceback.filter_value(value),
+                                max_length=locals_max_length,
+                                max_string=locals_max_string,
+                                max_depth=locals_max_depth,
+                            )
+                            for key, value in frame_summary.f_locals.items()
+                        }
+                        if show_locals
+                        else None
+                    ),
                 )
                 append(frame)
                 if frame_summary.f_locals.get("_rich_traceback_guard", False):

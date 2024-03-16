@@ -38,26 +38,34 @@ class _AssetsService(ABC):
     @property
     def game_name(self) -> str:
         """游戏数据中的名称"""
+
     @property
     def honey_id(self) -> str:
         """当前资源在 Honey Impact 所对应的 ID"""
+
     @property
     def path(self) -> Path:
         """当前资源的文件夹"""
+
     @property
     def client(self) -> AsyncClient:
         """当前的 http client"""
+
     def __init__(self, client: AsyncClient | None = None) -> None: ...
     def __call__(self, target: int) -> Self:
         """用于生成与 target 对应的 assets"""
+
     def __getattr__(self, item: str) -> _GET_TYPE:
         """魔法"""
+
     async def get_link(self, item: str) -> str | None:
         """获取相应图标链接"""
+
     @abstractmethod
     @property
     def game_name_map(self) -> dict[str, str]:
         """游戏中的图标名"""
+
     @abstractmethod
     @property
     def honey_name_map(self) -> dict[str, str]:

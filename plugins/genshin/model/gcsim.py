@@ -146,9 +146,11 @@ class GCSimCharacterInfo(BaseModel):
             f"{self.char} add stats "
             + " ".join(
                 [
-                    f"{stat.replace('_PERCENT', '%').lower()}={value:.4f}"
-                    if stat.endswith("_PERCENT") or stat in {"CR", "CD", "ER"}
-                    else f"{stat.lower()}={value:.2f}"
+                    (
+                        f"{stat.replace('_PERCENT', '%').lower()}={value:.4f}"
+                        if stat.endswith("_PERCENT") or stat in {"CR", "CD", "ER"}
+                        else f"{stat.lower()}={value:.2f}"
+                    )
                     for stat, value in iter(self.stats)
                     if value > 0
                 ]
@@ -185,9 +187,11 @@ class GCSimTarget(BaseModel):
                         f"amount={self.amount}" if self.amount is not None else "",
                         f"interval={','.join(str(i) for i in self.interval)}" if self.interval else "",
                         f"particle_threshold={self.particle_threshold}" if self.particle_threshold is not None else "",
-                        f"particle_drop_count={self.particle_drop_count}"
-                        if self.particle_drop_count is not None
-                        else "",
+                        (
+                            f"particle_drop_count={self.particle_drop_count}"
+                            if self.particle_drop_count is not None
+                            else ""
+                        ),
                         " ".join([f"{k}={v}" for k, v in self.others.items()]),
                     ],
                 )
