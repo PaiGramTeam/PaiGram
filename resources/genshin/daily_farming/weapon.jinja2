@@ -44,7 +44,7 @@
                     </span>
                 </div>
                 <div class="area-content">
-                    {% for item in area.items %}
+                    {% for item in area.weapons %}
                         <div
                                 {% if data.uid != none and (item.level == none or item.level >= 81) %}
                                 class="item weapon item-not-owned"
@@ -52,9 +52,9 @@
                                 class="item weapon"
                                 {% endif %}
                         >
-                            {% if item.c_path != none %}
+                            {% if item.avatar_icon != none %}
                                 <div class="role">
-                                    <img src="{{ item.c_path }}" alt=""/>
+                                    <img src="{{ item.avatar_icon }}" alt=""/>
                                 </div>
                             {% endif %}
                             <div class="item-icon"
