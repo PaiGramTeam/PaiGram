@@ -220,7 +220,9 @@ class PostCode(Plugin.Conversation):
             return await self.get_channel(update, context)
         if message.text == "推送并且定时更新":
             if not post_code_handler_data.real_need_update():
-                await message.reply_text("所有兑换码已发放，无需创建更新任务，将直接推送。", reply_markup=ReplyKeyboardRemove())
+                await message.reply_text(
+                    "所有兑换码已发放，无需创建更新任务，将直接推送。", reply_markup=ReplyKeyboardRemove()
+                )
                 return await self.get_channel(update, context)
             post_code_handler_data.need_update = True
             await message.reply_text(post_code_handler_data.get_need_update_text())

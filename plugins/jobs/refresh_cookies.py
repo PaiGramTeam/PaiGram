@@ -73,7 +73,9 @@ class RefreshCookiesJob(Plugin):
                         if "UPDATE" in str(_exc):
                             logger.warning("用户 user_id[%s] 刷新 Cookies 失败，数据不存在", cookie_model.user_id)
                         else:
-                            logger.error("用户 user_id[%s] 更新 Cookies 时出现错误", cookie_model.user_id, exc_info=_exc)
+                            logger.error(
+                                "用户 user_id[%s] 更新 Cookies 时出现错误", cookie_model.user_id, exc_info=_exc
+                            )
                     except Exception as _exc:
                         logger.error("用户 user_id[%s] 更新 Cookies 状态失败", cookie_model.user_id, exc_info=_exc)
                     else:

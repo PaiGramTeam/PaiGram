@@ -123,7 +123,9 @@ class Sign(Plugin):
                 not filters.ChatType.PRIVATE.filter(message),
             )
             reply_message = await message.reply_text(
-                "签到失败，触发验证码风控，请尝试点击下方按钮重新签到", allow_sending_without_reply=True, reply_markup=button
+                "签到失败，触发验证码风控，请尝试点击下方按钮重新签到",
+                allow_sending_without_reply=True,
+                reply_markup=button,
             )
             if filters.ChatType.GROUPS.filter(reply_message):
                 self.add_delete_message_job(reply_message)

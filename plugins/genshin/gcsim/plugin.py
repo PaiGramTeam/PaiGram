@@ -80,18 +80,22 @@ class GCSimPlugin(Plugin):
             buttons[-1].append(button)
         buttons.append(
             [
-                InlineKeyboardButton("上一页", callback_data=f"gcsim_page|{user_id}|{uid}|{page - 1}")
-                if page > 1
-                else InlineKeyboardButton("更新配队", callback_data=f"gcsim_refresh|{user_id}|{uid}"),
+                (
+                    InlineKeyboardButton("上一页", callback_data=f"gcsim_page|{user_id}|{uid}|{page - 1}")
+                    if page > 1
+                    else InlineKeyboardButton("更新配队", callback_data=f"gcsim_refresh|{user_id}|{uid}")
+                ),
                 InlineKeyboardButton(
                     f"{page}/{int(len(fits) / self.scripts_per_page) + 1}",
                     callback_data=f"gcsim_unclickable|{user_id}|{uid}|unclickable",
                 ),
-                InlineKeyboardButton("下一页", callback_data=f"gcsim_page|{user_id}|{uid}|{page + 1}")
-                if page < int(len(fits) / self.scripts_per_page) + 1
-                else InlineKeyboardButton(
-                    "更新配队",
-                    callback_data=f"gcsim_refresh|{user_id}|{uid}",
+                (
+                    InlineKeyboardButton("下一页", callback_data=f"gcsim_page|{user_id}|{uid}|{page + 1}")
+                    if page < int(len(fits) / self.scripts_per_page) + 1
+                    else InlineKeyboardButton(
+                        "更新配队",
+                        callback_data=f"gcsim_refresh|{user_id}|{uid}",
+                    )
                 ),
             ]
         )
@@ -238,11 +242,15 @@ class GCSimPlugin(Plugin):
 
         _, _, _, reason = callback_query.data.split("|")
         await callback_query.answer(
-            text="已经是第一页了！\n"
-            if reason == "first_page"
-            else "已经是最后一页了！\n"
-            if reason == "last_page"
-            else "这个按钮不可用\n" + config.notice.user_mismatch,
+            text=(
+                "已经是第一页了！\n"
+                if reason == "first_page"
+                else (
+                    "已经是最后一页了！\n"
+                    if reason == "last_page"
+                    else "这个按钮不可用\n" + config.notice.user_mismatch
+                )
+            ),
             show_alert=True,
         )
 

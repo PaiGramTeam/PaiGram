@@ -1,4 +1,5 @@
 """一些常量"""
+
 from functools import WRAPPER_ASSIGNMENTS as _WRAPPER_ASSIGNMENTS
 from typing import List
 

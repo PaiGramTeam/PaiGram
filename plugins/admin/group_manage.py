@@ -89,7 +89,11 @@ class GroupManage(Plugin):
         message = update.effective_message
         chat_id = self.get_chat_id(context) if not callback_query else int(callback_query.data.split("|")[2])
         logger.info(
-            "用户 %s[%s] add_block 命令请求 chat_id[%s] callback[%s]", user.full_name, user.id, chat_id, bool(callback_query)
+            "用户 %s[%s] add_block 命令请求 chat_id[%s] callback[%s]",
+            user.full_name,
+            user.id,
+            chat_id,
+            bool(callback_query),
         )
         if not chat_id:
             await message.reply_text("参数错误，请指定群 id ！")
@@ -126,7 +130,11 @@ class GroupManage(Plugin):
         message = update.effective_message
         chat_id = self.get_chat_id(context) if not callback_query else int(callback_query.data.split("|")[2])
         logger.info(
-            "用户 %s[%s] del_block 命令请求 chat_id[%s] callback[%s]", user.full_name, user.id, chat_id, bool(callback_query)
+            "用户 %s[%s] del_block 命令请求 chat_id[%s] callback[%s]",
+            user.full_name,
+            user.id,
+            chat_id,
+            bool(callback_query),
         )
         if not chat_id:
             await message.reply_text("参数错误，请指定群 id ！")

@@ -112,7 +112,9 @@ class DailyNotePlugin(Plugin):
             async with self.helper.genshin(user_id) as client:
                 render_result = await self._get_daily_note(client)
         except DataNotPublic:
-            reply_message = await message.reply_text("查询失败惹，可能是便签功能被禁用了？请尝试通过米游社或者 hoyolab 获取一次便签信息后重试。")
+            reply_message = await message.reply_text(
+                "查询失败惹，可能是便签功能被禁用了？请尝试通过米游社或者 hoyolab 获取一次便签信息后重试。"
+            )
             if filters.ChatType.GROUPS.filter(message):
                 self.add_delete_message_job(reply_message, delay=30)
                 self.add_delete_message_job(message, delay=30)

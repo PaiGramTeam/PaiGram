@@ -153,7 +153,9 @@ class Inline(Plugin):
                             title=f"当前查询内容为 {args[0]}",
                             description="如果无查看图片描述 这是正常的 客户端问题",
                             thumbnail_url="https://www.miyoushe.com/_nuxt/img/game-ys.dfc535b.jpg",
-                            input_message_content=InputTextMessageContent(f"当前查询内容为 {args[0]}\n如果无查看图片描述 这是正常的 客户端问题"),
+                            input_message_content=InputTextMessageContent(
+                                f"当前查询内容为 {args[0]}\n如果无查看图片描述 这是正常的 客户端问题"
+                            ),
                         )
                     )
                     for simple_search_result in simple_search_results:

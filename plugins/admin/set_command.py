@@ -88,7 +88,9 @@ class SetCommandPlugin(Plugin):
             BotCommand("add_block", "添加黑名单"),
             BotCommand("del_block", "移除黑名单"),
         ]
-        await context.bot.set_my_commands(commands=group_command)  # 留空，default 为 botCommandScopeDefault, 所有聊天可见
+        await context.bot.set_my_commands(
+            commands=group_command
+        )  # 留空，default 为 botCommandScopeDefault, 所有聊天可见
         await context.bot.set_my_commands(commands=user_command + group_command, scope=BotCommandScopeAllPrivateChats())
         if config.error.notification_chat_id:
             await context.bot.set_my_commands(
