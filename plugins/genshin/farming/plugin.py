@@ -15,7 +15,7 @@ from core.dependence.assets import AssetsService
 from gram_core.plugin import Plugin, handler
 from gram_core.services.template.models import FileType, RenderGroupResult
 from gram_core.services.template.services import TemplateService
-from plugins.genshin.farming._const import AREAS
+from plugins.genshin.farming._const import AREAS, WEEK_MAP
 from plugins.genshin.farming._model import AreaData, AvatarData, FullFarmingData, RenderData, UserOwned, WeaponData
 from plugins.genshin.farming._spider import Spider
 from plugins.tools.genshin import CharacterDetails, CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
@@ -24,19 +24,18 @@ from utils.log import logger
 from utils.uid import mask_number
 
 if TYPE_CHECKING:
+    from simnet.models.genshin.chronicle.characters import Character
     from telegram import Message, Update
     from telegram.ext import ContextTypes
 
 R = TypeVar("R")
 P = ParamSpec("P")
 
-_RETRY_TIMES = 5
-_WEEK_MAP = ["一", "二", "三", "四", "五", "六", "日"]
-
 DATA_FILE_PATH = DATA_DIR.joinpath("daily_material.json").resolve()
 
 
 def sort_item(item: AvatarData | WeaponData) -> tuple:
+    """对角色/武器进行排序： 拥有 > 星级 > 等级 > 命座/精炼"""
     rarity = item.rarity
     level = item.level
     if isinstance(item, AvatarData):
@@ -66,6 +65,7 @@ class DailyFarming(Plugin):
         self.character_details = character_details
 
     async def _refresh_farming_data(self) -> bool:
+        """刷新并保存每日素材表"""
         async with self.lock:
             if (result := await Spider.execute(self.assets_service)) is not None:
                 self.full_farming_data.__root__ = result
@@ -109,9 +109,10 @@ class DailyFarming(Plugin):
                 await aiofiles.os.remove(DATA_FILE_PATH)
                 await refresh_task()
 
-    async def _get_character_skill(self, client, character) -> list[int]:
-        if getattr(client, "damaged", False):
-            return []
+    async def _get_character_skill(self, client: "GenshinClient", character: "Character") -> list[int]:
+        """获取角色的天赋等级"""
+        if getattr(client, "damaged", False):  # 检查 client 是否损坏
+            return []  # 若损坏则直接退出
         try:
             detail = await self.character_details.get_character_details(client, character)
             return [t.level for t in detail.talents if t.type in ["attack", "skill", "burst"]]
@@ -132,7 +133,7 @@ class DailyFarming(Plugin):
             logger.debug("获取账号数据成功: UID=%s", client.player_id)
 
             characters = await client.get_genshin_characters(client.player_id)
-            for character in filter(lambda x: x.name != "旅行者", characters):
+            for character in filter(lambda x: x.name != "旅行者", characters):  # 跳过旅行者
                 character_id = str(character.id)
                 character_assets = self.assets_service.avatar(character_id)
                 character_icon = await character_assets.icon(False)
@@ -179,29 +180,29 @@ class DailyFarming(Plugin):
         # 有上述异常的， client 会返回 None
         return None, user_data
 
-    async def _get_render_data(self, user_id, weekday, title, time_text):
-        # 尝试获取用户已绑定的原神账号信息
-        client, user_owned = await self._get_user_items(user_id)
+    async def _get_render_data(self, user_id: int, weekday: int, title: str, time_text: str) -> RenderData:
+        """获取模板渲染所需的数据"""
+        client, user_owned = await self._get_user_items(user_id)  # 尝试获取用户已绑定的原神账号信息
         today_farming = self.full_farming_data.weekday(weekday)
 
         area_avatars: list[AreaData] = []
         area_weapons: list[AreaData] = []
         for area_data in today_farming.areas:
             items = []
-
             new_area_data = deepcopy(area_data)
-            for avatar in area_data.avatars:
+
+            for avatar in area_data.avatars:  # 将原有角色信息替换为用户已拥有的角色信息
                 items.append(user_owned.avatars.get(str(avatar.id), avatar))
             new_area_data.avatars = list(sorted(items, key=sort_item, reverse=True))
 
-            for weapon in area_data.weapons:
+            for weapon in area_data.weapons:  # 武器同上
                 if weapons := user_owned.weapons.get(str(weapon.id), []):
                     items.extend(weapons)
                 else:
                     items.append(weapon)
             new_area_data.weapons = list(sorted(items, key=sort_item, reverse=True))
 
-            [area_weapons, area_avatars][bool(area_data.avatars)].append(new_area_data)
+            [area_weapons, area_avatars][bool(area_data.avatars)].append(new_area_data)  # 角色与武器分开存放
 
         return RenderData(
             title=title,
@@ -223,7 +224,7 @@ class DailyFarming(Plugin):
 
         weekday, title, time_text, full = _parse_time(args)
 
-        self.log_user(update, logger.info, "每日素材命令请求 || 参数 weekday=%s full=%s", _WEEK_MAP[weekday - 1], full)
+        self.log_user(update, logger.info, "每日素材命令请求 || 参数 weekday=%s full=%s", WEEK_MAP[weekday - 1], full)
 
         if weekday == 7:
             the_day = "今天" if title == "今日" else "这天"
@@ -280,6 +281,7 @@ class DailyFarming(Plugin):
 
     @handler.command("refresh_farming_data", admin=True, block=False)
     async def refresh_farming_data(self, update: "Update", _):
+        """管理员用的、用于刷新每日素材表的指令"""
         user = update.effective_user
         message = update.effective_message
 
@@ -290,7 +292,7 @@ class DailyFarming(Plugin):
             return
 
         notice = await message.reply_text("派蒙正在重新摘抄每日素材表，请稍等~", parse_mode=ParseMode.HTML)
-        async with self.lock:  # 锁住第一把锁
+        async with self.lock:
             await self._refresh_farming_data()
         await notice.edit_text(
             "每日素材表"
@@ -300,17 +302,18 @@ class DailyFarming(Plugin):
 
 
 def _parse_time(args: list[str]) -> tuple[int, str, str, bool]:
+    """用于解析`daily_farming`指令的参数"""
     now = datetime.now()
 
     try:
         weekday = (_ := int(args[0])) - (_ > 0)
         weekday = (weekday % 7 + 7) % 7
-        time_text = title = f"星期{_WEEK_MAP[weekday]}"
+        time_text = title = f"星期{WEEK_MAP[weekday]}"
     except (ValueError, IndexError):
         title = "今日"
         weekday = now.weekday() - (1 if now.hour < 4 else 0)
         weekday = 6 if weekday < 0 else weekday
-        time_text = f"星期{_WEEK_MAP[weekday]}"
+        time_text = f"星期{WEEK_MAP[weekday]}"
 
     full = bool(args and args[-1] == "full")
 
