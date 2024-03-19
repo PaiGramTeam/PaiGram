@@ -1,4 +1,5 @@
 """用于下载和管理角色、武器、材料等的图标"""
+
 import asyncio
 from abc import ABC, abstractmethod
 from functools import cached_property, lru_cache, partial
