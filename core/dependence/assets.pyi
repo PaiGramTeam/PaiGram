@@ -40,10 +40,6 @@ class _AssetsService(ABC):
         """游戏数据中的名称"""
 
     @property
-    def honey_id(self) -> str:
-        """当前资源在 Honey Impact 所对应的 ID"""
-
-    @property
     def path(self) -> Path:
         """当前资源的文件夹"""
 
@@ -66,11 +62,6 @@ class _AssetsService(ABC):
     def game_name_map(self) -> dict[str, str]:
         """游戏中的图标名"""
 
-    @abstractmethod
-    @property
-    def honey_name_map(self) -> dict[str, str]:
-        """来自honey的图标名"""
-
 class _AvatarAssets(_AssetsService):
     enka: EnkaCharacterAsset | None
 
@@ -86,8 +77,6 @@ class _AvatarAssets(_AssetsService):
     gacha_card: ICON_TYPE
     """抽卡卡片"""
 
-    @property
-    def honey_name_map(self) -> dict[str, str]: ...
     @property
     def game_name_map(self) -> dict[str, str]: ...
     @property
@@ -105,15 +94,11 @@ class _WeaponAssets(_AssetsService):
     """抽卡立绘"""
 
     @property
-    def honey_name_map(self) -> dict[str, str]: ...
-    @property
     def game_name_map(self) -> dict[str, str]: ...
     def __call__(self, target: StrOrInt) -> Self: ...
     def game_name(self) -> str: ...
 
 class _MaterialAssets(_AssetsService):
-    @property
-    def honey_name_map(self) -> dict[str, str]: ...
     @property
     def game_name_map(self) -> dict[str, str]: ...
     def __call__(self, target: StrOrInt) -> Self: ...
@@ -136,8 +121,6 @@ class _ArtifactAssets(_AssetsService):
     """理之冠"""
 
     @property
-    def honey_name_map(self) -> dict[str, str]: ...
-    @property
     def game_name_map(self) -> dict[str, str]: ...
     def game_name(self) -> str: ...
 
@@ -149,9 +132,6 @@ class _NamecardAssets(_AssetsService):
 
     profile: ICON_TYPE
     """个人资料名片背景"""
-
-    @property
-    def honey_name_map(self) -> dict[str, str]: ...
     @property
     def game_name_map(self) -> dict[str, str]: ...
     def game_name(self) -> str: ...

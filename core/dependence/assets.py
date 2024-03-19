@@ -1,9 +1,5 @@
 """用于下载和管理角色、武器、材料等的图标"""
-
-from __future__ import annotations
-
 import asyncio
-import re
 from abc import ABC, abstractmethod
 from functools import cached_property, lru_cache, partial
 from multiprocessing import RLock as Lock
@@ -26,6 +22,11 @@ from metadata.shortname import roleToId, weaponToId
 from utils.const import AMBR_HOST, ENKA_HOST, PROJECT_ROOT
 from utils.log import logger
 from utils.typedefs import StrOrInt, StrOrURL
+
+try:
+    import regex as re
+except ImportError:
+    import re
 
 if TYPE_CHECKING:
     from httpx import Response
@@ -250,6 +251,8 @@ class _AvatarAssets(_AssetsService):
         temp = target
         result = _AvatarAssets(self.client)
         if isinstance(target, str):
+            if targets := re.findall(r"^(1000000\d)-.*$", target):
+                target = targets[0]
             try:
                 target = int(target)
             except ValueError:
@@ -467,7 +470,7 @@ class AssetsService(BaseService.Dependence):
     async def initialize(self) -> None:  # pylint: disable=R0201
         """启动 AssetsService 服务，刷新元数据"""
         logger.info("正在刷新元数据")
-        # todo 这3个任务同时异步下载
+        # TODO:同时异步下载
         await update_metadata_from_github(False)
         await update_metadata_from_ambr(False)
         logger.info("刷新元数据成功")
