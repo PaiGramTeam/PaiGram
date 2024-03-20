@@ -130,7 +130,7 @@ class Post(Plugin.Conversation):
                     InlineKeyboardButton("取消", callback_data=f"post_admin|cancel|{post_info.post_id}"),
                 ]
             ]
-            url = f"https://www.miyoushe.gay/{self.short_name}/article/{post_info.post_id}"
+            url = f"https://www.miyoushe.pp.ua/{self.short_name}/article/{post_info.post_id}"
             text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理"
             try:
                 await context.bot.send_message(
