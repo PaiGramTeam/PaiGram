@@ -1,15 +1,20 @@
 """用于下载和管理角色、武器、材料等的图标"""
 
-from __future__ import annotations
-
 import asyncio
-import re
 from abc import ABC, abstractmethod
 from functools import cached_property, lru_cache, partial
 from multiprocessing import RLock as Lock
 from pathlib import Path
 from ssl import SSLZeroReturnError
-from typing import AsyncIterator, Awaitable, Callable, ClassVar, Dict, Optional, TYPE_CHECKING, TypeVar, Union
+from typing import (
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    ClassVar,
+    TYPE_CHECKING,
+    TypeVar,
+    Union,
+)
 
 from aiofiles import open as async_open
 from aiofiles.os import remove as async_remove
@@ -27,14 +32,19 @@ from utils.const import AMBR_HOST, ENKA_HOST, PROJECT_ROOT
 from utils.log import logger
 from utils.typedefs import StrOrInt, StrOrURL
 
+try:
+    import regex as re
+except ImportError:
+    import re
+
 if TYPE_CHECKING:
     from httpx import Response
     from multiprocessing.synchronize import RLock
 
 __all__ = ("AssetsServiceType", "AssetsService", "AssetsServiceError", "AssetsCouldNotFound", "DEFAULT_EnkaAssets")
 
-ICON_TYPE = Union[Callable[[bool], Awaitable[Optional[Path]]], Callable[..., Awaitable[Optional[Path]]]]
-NAME_MAP_TYPE = Dict[str, StrOrURL]
+ICON_TYPE = Union[Callable[[bool], Awaitable[Path | None]], Callable[..., Awaitable[Path | None]]]
+NAME_MAP_TYPE = dict[str, StrOrURL]
 
 ASSETS_PATH = PROJECT_ROOT.joinpath("resources/assets")
 ASSETS_PATH.mkdir(exist_ok=True, parents=True)
@@ -60,7 +70,7 @@ class _AssetsService(ABC):
     _dir: ClassVar[Path]
     icon_types: ClassVar[list[str]]
 
-    _client: Optional[AsyncClient] = None
+    _client: AsyncClient | None = None
     _links: dict[str, str] = {}
 
     id: int
@@ -88,7 +98,7 @@ class _AssetsService(ABC):
                 self._client = AsyncClient()
         return self._client
 
-    def __init__(self, client: Optional[AsyncClient] = None) -> None:
+    def __init__(self, client: AsyncClient | None = None) -> None:
         self._client = client
 
     def __call__(self, target: int) -> Self:
@@ -237,12 +247,12 @@ class _AvatarAssets(_AssetsService):
         return re.findall(r"UI_AvatarIcon_(.*)", icon)[0]
 
     @cached_property
-    def enka(self) -> Optional[EnkaCharacterAsset]:
+    def enka(self) -> EnkaCharacterAsset | None:
         api = getattr(self, "_enka_api", None)
         cid = getattr(self, "id", None)
         return None if api is None or cid is None else api.character(cid)
 
-    def __init__(self, client: Optional[AsyncClient] = None, enka: Optional[EnkaAssets] = None):
+    def __init__(self, client: AsyncClient | None = None, enka: EnkaAssets | None = None):
         super().__init__(client)
         self._enka_api = enka or DEFAULT_EnkaAssets
 
@@ -250,6 +260,8 @@ class _AvatarAssets(_AssetsService):
         temp = target
         result = _AvatarAssets(self.client)
         if isinstance(target, str):
+            if targets := re.findall(r"^(1000000\d)-.*$", target):
+                target = targets[0]
             try:
                 target = int(target)
             except ValueError:
@@ -458,16 +470,21 @@ class AssetsService(BaseService.Dependence):
     namecard: _NamecardAssets
     """名片"""
 
-    def __init__(self):
-        for attr, assets_type_name in filter(
-            lambda x: (not x[0].startswith("_")) and x[1].endswith("Assets"), self.__annotations__.items()
+    def __init__(self, client: AsyncClient | None = None) -> None:
+        for assets_type_name, assets_type in filter(
+            lambda x: (not x[0].startswith("_")) and x[1].__name__.endswith("Assets"), self.__annotations__.items()
         ):
-            setattr(self, attr, globals()[assets_type_name]())
+            setattr(self, assets_type_name, globals()[assets_type.__name__](client))
+
+    def __iter__(self):
+        for assets_type_name in self.__annotations__.keys():
+            yield getattr(self, assets_type_name)
+        return None
 
     async def initialize(self) -> None:  # pylint: disable=R0201
         """启动 AssetsService 服务，刷新元数据"""
         logger.info("正在刷新元数据")
-        # todo 这3个任务同时异步下载
+        # TODO:同时异步下载
         await update_metadata_from_github(False)
         await update_metadata_from_ambr(False)
         logger.info("刷新元数据成功")
