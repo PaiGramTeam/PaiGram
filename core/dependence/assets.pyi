@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import partial
 from pathlib import Path
-from typing import Awaitable, Callable, ClassVar, TypeVar
+from typing import Awaitable, Callable, ClassVar, Generator, TypeVar
 
 from enkanetwork import Assets as EnkaAssets
 from enkanetwork.model.assets import CharacterAsset as EnkaCharacterAsset
@@ -151,5 +151,7 @@ class AssetsService(BaseService.Dependence):
 
     namecard: _NamecardAssets
     """名片"""
+
+    def __iter__(self) -> Generator[_AssetsService, None, None]: ...
 
 AssetsServiceType = TypeVar("AssetsServiceType", bound=_AssetsService)
