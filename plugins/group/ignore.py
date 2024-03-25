@@ -5,6 +5,8 @@ from telegram.ext import ApplicationHandlerStop
 
 from gram_core.plugin import Plugin
 from gram_core.plugin._handler import HandlerData
+from gram_core.services.groups.services import GroupService
+from gram_core.services.players import PlayersService
 
 if TYPE_CHECKING:
     from telegram import Update
@@ -12,14 +14,22 @@ if TYPE_CHECKING:
 
 
 class Ignore(Plugin):
+    def __init__(
+        self,
+        players_service: PlayersService,
+        group_service: GroupService,
+    ):
+        self.players_service = players_service
+        self.group_service = group_service
+
     async def initialize(self) -> None:
         self.application.run_preprocessor(self.check_update)
 
     async def check_account(self, user_id: int) -> bool:
-        return False
+        return bool(await self.players_service.get_player(user_id))
 
     async def check_group(self, group_id: int) -> bool:
-        return True
+        return await self.group_service.is_ignore(group_id)
 
     async def check_update(self, update: "Update", _, __, context: "ContextTypes.DEFAULT_TYPE", data: "HandlerData"):
         if not isinstance(data, HandlerData):
