@@ -186,6 +186,7 @@ class PlayerCards(Plugin):
                 if item.type == EquipmentsType.WEAPON and item.detail:
                     tags.append(item.detail.name)
                     tags.append(f"武器等级{item.level}")
+                    tags.append(f"精{item.refinement}")
         tags.extend(PlayerCards.get_caption_stats(character))
         return "#" + " #".join(tags)
 
