@@ -15,6 +15,12 @@ if TYPE_CHECKING:
     from telegram import Update, Message
     from telegram.ext import ContextTypes
 
+IGNORE_UNBOUND_USER_OPEN = """成功开启 忽略未绑定用户触发部分命令 功能，派蒙将不会响应未绑定用户的部分命令
+
+- 此功能开启后，将会导致新用户无法快速绑定账号，请在群规则中注明 绑定链接 https://t.me/{}?start=setcookies 或者其他使用说明。
+"""
+IGNORE_UNBOUND_USER_CLOSE = """成功关闭 忽略未绑定用户触发部分命令 功能，派蒙将开始响应未绑定用户的部分命令"""
+
 
 class IgnoreUnboundUser(Plugin):
     def __init__(
@@ -88,4 +94,8 @@ class IgnoreUnboundUser(Plugin):
             return
         group.is_ignore = not group.is_ignore
         await self.group_service.update_group(group)
-        await message.reply_text("已" + ("开启" if group.is_ignore else "关闭") + "忽略未绑定用户触发命令功能")
+        if group.is_ignore:
+            text = IGNORE_UNBOUND_USER_OPEN.format(context.bot.username)
+        else:
+            text = IGNORE_UNBOUND_USER_CLOSE
+        await message.reply_text(text)
