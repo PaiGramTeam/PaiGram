@@ -1,5 +1,7 @@
 from typing import Union, Tuple, TYPE_CHECKING, List, Any
 
+from telegram import ChatMember
+
 try:
     import ujson as jsonlib
 except ImportError:
@@ -9,7 +11,6 @@ except ImportError:
 if TYPE_CHECKING:
     from redis import Redis
 
-    from telegram import ChatMember
     from telegram.ext import ContextTypes
 
 
