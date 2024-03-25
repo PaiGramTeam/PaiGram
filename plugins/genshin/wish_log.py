@@ -447,8 +447,8 @@ class WishLogPlugin(Plugin.Conversation):
             self.add_delete_message_job(reply)
             self.add_delete_message_job(message)
 
-    @handler.command(command="wish_log", player=True, block=False)
-    @handler.command(command="gacha_log", player=True, block=False)
+    @handler.command(command="wish_log", block=False)
+    @handler.command(command="gacha_log", block=False)
     @handler.message(filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
     async def command_start_analysis(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)

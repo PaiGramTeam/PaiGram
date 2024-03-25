@@ -71,8 +71,8 @@ class RegTimePlugin(Plugin):
         await self.cache.set(f"{self.cache_key}{client.player_id}", reg_time)
         return reg_time
 
-    @handler.command("reg_time", cookie=True, block=False)
-    @handler.message(filters.Regex(r"^原神账号注册时间$"), cookie=True, block=False)
+    @handler.command("reg_time", block=False)
+    @handler.message(filters.Regex(r"^原神账号注册时间$"), block=False)
     async def reg_time(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
         message = update.effective_message

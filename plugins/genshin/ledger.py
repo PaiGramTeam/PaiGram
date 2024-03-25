@@ -72,8 +72,8 @@ class LedgerPlugin(Plugin):
         )
         return render_result
 
-    @handler.command(command="ledger", cookie=True, block=False)
-    @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), cookie=True, block=False)
+    @handler.command(command="ledger", block=False)
+    @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
         message = update.effective_message

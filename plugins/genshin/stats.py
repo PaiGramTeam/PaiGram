@@ -27,8 +27,8 @@ class PlayerStatsPlugins(Plugin):
         self.template_service = template
         self.helper = helper
 
-    @handler.command("stats", player=True, block=False)
-    @handler.message(filters.Regex("^玩家统计查询(.*)"), player=True, block=False)
+    @handler.command("stats", block=False)
+    @handler.message(filters.Regex("^玩家统计查询(.*)"), block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
         user_id = await self.get_real_user_id(update)
         message = update.effective_message

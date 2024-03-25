@@ -214,8 +214,8 @@ class PayLogPlugin(Plugin.Conversation):
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
 
-    @handler.command(command="pay_log", player=True, block=False)
-    @handler.message(filters=filters.Regex("^充值记录$"), player=True, block=False)
+    @handler(CommandHandler, command="pay_log", block=False)
+    @handler(MessageHandler, filters=filters.Regex("^充值记录$"), block=False)
     async def command_start_analysis(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
         message = update.effective_message
