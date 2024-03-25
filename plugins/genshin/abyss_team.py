@@ -30,8 +30,8 @@ class AbyssTeamPlugin(Plugin):
         self.team_data = AbyssTeamClient()
         self.assets_service = assets_service
 
-    @handler.command("abyss_team", block=False)
-    @handler.message(filters.Regex(r"^深渊配队"), block=False)
+    @handler.command("abyss_team", cookie=True, block=False)
+    @handler.message(filters.Regex(r"^深渊配队"), cookie=True, block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user_id = await self.get_real_user_id(update)
         message = update.effective_message

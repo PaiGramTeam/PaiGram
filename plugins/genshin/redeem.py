@@ -40,8 +40,8 @@ class Redeem(Plugin):
             msg = e.message
         return msg
 
-    @handler.command(command="redeem", block=False)
-    @handler.message(filters=filters.Regex("^兑换码兑换(.*)"), block=False)
+    @handler.command(command="redeem", cookie=True, block=False)
+    @handler.message(filters=filters.Regex("^兑换码兑换(.*)"), cookie=True, block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user_id = await self.get_real_user_id(update)
         message = update.effective_message

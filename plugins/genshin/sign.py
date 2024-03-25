@@ -66,9 +66,9 @@ class Sign(Plugin):
             await self.sign_service.add(user)
             return "开启自动签到成功"
 
-    @handler.command(command="sign", block=False)
-    @handler.message(filters=filters.Regex("^每日签到(.*)"), block=False)
-    @handler.command(command="start", filters=filters.Regex("sign$"), block=False)
+    @handler.command(command="sign", cookie=True, block=False)
+    @handler.message(filters=filters.Regex("^每日签到(.*)"), cookie=True, block=False)
+    @handler.command(command="start", filters=filters.Regex("sign$"), cookie=True, block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user_id = await self.get_real_user_id(update)
         message = update.effective_message

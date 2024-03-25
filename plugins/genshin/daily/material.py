@@ -366,7 +366,7 @@ class DailyMaterial(Plugin):
             )
         return area_materials
 
-    @handler.command("daily_material", block=False)
+    @handler.command("daily_material", cookie=True, block=False)
     async def daily_material(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user_id = await self.get_real_user_id(update)
         message = typing.cast("Message", update.effective_message)

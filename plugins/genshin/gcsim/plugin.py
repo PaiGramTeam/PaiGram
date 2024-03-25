@@ -157,7 +157,7 @@ class GCSimPlugin(Plugin):
                 logger.error("无法解析 Enka.Network 角色信息: %s\n%s", e, avatar_info.json())
         return character_infos
 
-    @handler.command(command="gcsim", block=False)
+    @handler.command(command="gcsim", player=True, block=False)
     async def gcsim(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user_id = await self.get_real_user_id(update)
         message = update.effective_message
