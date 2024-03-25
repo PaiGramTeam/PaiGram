@@ -177,10 +177,7 @@ class PlayerCards(Plugin):
 
     @staticmethod
     def get_caption(character: "CharacterInfo") -> str:
-        tags = []
-        tags.append(character.name)
-        tags.append(f"等级{character.level}")
-        tags.append(f"命座{character.constellations_unlocked}")
+        tags = [character.name, f"等级{character.level}", f"命座{character.constellations_unlocked}"]
         if character.equipments:
             for item in character.equipments:
                 if item.type == EquipmentsType.WEAPON and item.detail:
