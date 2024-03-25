@@ -1,7 +1,7 @@
 import asyncio
 import random
 import time
-from typing import Tuple, Union, Optional, TYPE_CHECKING, List
+from typing import Tuple, Union, Optional, TYPE_CHECKING
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions, ChatMember, Message, User
 from telegram.constants import ParseMode
@@ -15,6 +15,7 @@ from core.dependence.redisdb import RedisDB
 from core.handler.callbackqueryhandler import CallbackQueryHandler
 from core.plugin import Plugin, handler
 from core.services.quiz.services import QuizService
+from plugins.tools.chat_administrators import ChatAdministrators
 from utils.chatmember import extract_status_change
 from utils.log import logger
 
@@ -62,25 +63,6 @@ class GroupCaptcha(Plugin):
         if version == 1:
             return f"[{user_id}]({tg_link})"
         return f"[{escape_markdown(user_id, version=version)}]({tg_link})"
-
-    async def get_chat_administrators(
-        self, context: "ContextTypes.DEFAULT_TYPE", chat_id: Union[str, int]
-    ) -> Tuple[ChatMember]:
-        qname = f"plugin:group_captcha:chat_administrators:{chat_id}"
-        result: "List[bytes]" = await self.cache.lrange(qname, 0, -1)
-        if len(result) > 0:
-            return ChatMember.de_list([jsonlib.loads(str(_data, encoding="utf-8")) for _data in result], context.bot)
-        chat_administrators = await context.bot.get_chat_administrators(chat_id)
-        async with self.cache.pipeline(transaction=True) as pipe:
-            for chat_administrator in chat_administrators:
-                await pipe.lpush(qname, chat_administrator.to_json())
-            await pipe.expire(qname, self.ttl)
-            await pipe.execute()
-        return chat_administrators
-
-    @staticmethod
-    def is_admin(chat_administrators: Tuple[ChatMember], user_id: int) -> bool:
-        return any(admin.user.id == user_id for admin in chat_administrators)
 
     async def kick_member_job(self, context: "ContextTypes.DEFAULT_TYPE"):
         job = context.job
@@ -152,8 +134,8 @@ class GroupCaptcha(Plugin):
         message = callback_query.message
         chat = message.chat
         logger.info("用户 %s[%s] 在群 %s[%s] 点击Auth管理员命令", user.full_name, user.id, chat.title, chat.id)
-        chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
-        if not self.is_admin(chat_administrators, user.id):
+        chat_administrators = await ChatAdministrators.get_chat_administrators(self.cache, context, chat_id=chat.id)
+        if not ChatAdministrators.is_admin(chat_administrators, user.id):
             logger.debug("用户 %s[%s] 在群 %s[%s] 非群管理", user.full_name, user.id, chat.title, chat.id)
             await callback_query.answer(text="你不是管理！\n" + self.user_mismatch, show_alert=True)
             return
@@ -350,8 +332,8 @@ class GroupCaptcha(Plugin):
             logger.info("用户 %s[%s] 尝试加入群 %s[%s]", user.full_name, user.id, chat.title, chat.id)
             if user.is_bot:
                 return
-            chat_administrators = await self.get_chat_administrators(context, chat_id=chat.id)
-            if self.is_admin(chat_administrators, from_user.id):
+            chat_administrators = await ChatAdministrators.get_chat_administrators(self.cache, context, chat_id=chat.id)
+            if ChatAdministrators.is_admin(chat_administrators, from_user.id):
                 await chat.send_message("派蒙检测到管理员邀请，自动放行了！")
                 return
             question_id_list = await self.quiz_service.get_question_id_list()
