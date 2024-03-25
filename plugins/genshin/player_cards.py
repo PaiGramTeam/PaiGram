@@ -158,6 +158,37 @@ class PlayerCards(Plugin):
                     uid = player_info.player_id
         return uid, ch_name
 
+    @staticmethod
+    def get_caption_stats(character: "CharacterInfo") -> List[str]:
+        tags = []
+        stats = character.stats
+
+        def num(_s) -> int:
+            return int(round(_s, 0))
+
+        tags.append(f"生命{num(stats.FIGHT_PROP_MAX_HP.to_rounded())}")
+        tags.append(f"攻击{num(stats.FIGHT_PROP_CUR_ATTACK.to_rounded())}")
+        tags.append(f"防御{num(stats.FIGHT_PROP_CUR_DEFENSE.to_rounded())}")
+        tags.append(f"暴击{num(stats.FIGHT_PROP_CRITICAL.to_percentage())}")
+        tags.append(f"暴伤{num(stats.FIGHT_PROP_CRITICAL_HURT.to_percentage())}")
+        tags.append(f"充能{num(stats.FIGHT_PROP_CHARGE_EFFICIENCY.to_percentage())}")
+        tags.append(f"精通{num(stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded())}")
+        return tags
+
+    @staticmethod
+    def get_caption(character: "CharacterInfo") -> str:
+        tags = []
+        tags.append(character.name)
+        tags.append(f"等级{character.level}")
+        tags.append(f"命座{character.constellations_unlocked}")
+        if character.equipments:
+            for item in character.equipments:
+                if item.type == EquipmentsType.WEAPON and item.detail:
+                    tags.append(item.detail.name)
+                    tags.append(f"武器等级{item.level}")
+        tags.extend(PlayerCards.get_caption_stats(character))
+        return "#" + " #".join(tags)
+
     @handler.command(command="player_card", player=True, block=False)
     @handler.command(command="player_cards", player=True, block=False)
     @handler.message(filters=filters.Regex("^角色卡片查询(.*)"), player=True, block=False)
@@ -249,6 +280,7 @@ class PlayerCards(Plugin):
         await render_result.reply_photo(
             message,
             filename=f"player_card_{uid}_{character_name}.png",
+            caption=self.get_caption(characters),
         )
 
     @handler.callback_query(pattern=r"^update_player_card\|", block=False)
@@ -376,6 +408,7 @@ class PlayerCards(Plugin):
             uid, characters, self.fight_prop_rule, self.damage_config, self.template_service, original_data
         ).render()  # pylint: disable=W0631
         render_result.filename = f"player_card_{uid}_{result}.png"
+        render_result.caption = self.get_caption(characters)
         await render_result.edit_media(message)
 
     @staticmethod
