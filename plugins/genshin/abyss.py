@@ -76,8 +76,8 @@ class AbyssPlugin(Plugin):
         self.helper = helper
         self.assets_service = assets_service
 
-    @handler.command("abyss", block=False)
-    @handler.message(filters.Regex(r"^深渊数据"), block=False)
+    @handler.command("abyss", player=True, block=False)
+    @handler.message(filters.Regex(r"^深渊数据"), player=True, block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user_id = await self.get_real_user_id(update)
         message = update.effective_message
