@@ -100,8 +100,8 @@ class DailyNotePlugin(Plugin):
             [[InlineKeyboardButton(">> 设置状态提醒 <<", url=create_deep_linked_url(bot_username, "daily_note_tasks"))]]
         )
 
-    @handler.command("dailynote", block=False)
-    @handler.message(filters.Regex("^当前状态(.*)"), block=False)
+    @handler.command("dailynote", cookie=True, block=False)
+    @handler.message(filters.Regex("^当前状态(.*)"), cookie=True, block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
         message = update.effective_message
         user_id = await self.get_real_user_id(update)

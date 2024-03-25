@@ -154,8 +154,8 @@ class AvatarListPlugin(Plugin):
             name_card = (await self.assets_service.namecard(210001).navbar()).as_uri()
         return name_card, avatar, nickname, rarity
 
-    @handler.command("avatars", block=False)
-    @handler.message(filters.Regex(r"^(全部)?练度统计$"), block=False)
+    @handler.command("avatars", cookie=True, block=False)
+    @handler.message(filters.Regex(r"^(全部)?练度统计$"), cookie=True, block=False)
     async def avatar_list(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         user_id = await self.get_real_user_id(update)
         user_name = self.get_real_user_name(update)
