@@ -437,15 +437,15 @@ class WishLogPlugin(Plugin.Conversation):
         png_data = await self.rander_wish_log_analysis(user_id, uid, pool_type)
         if isinstance(png_data, str):
             reply = await message.reply_text(png_data)
+            if filters.ChatType.GROUPS.filter(message):
+                self.add_delete_message_job(reply)
+                self.add_delete_message_job(message)
         else:
             await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
             if png_data.file_type == FileType.DOCUMENT:
-                reply = await png_data.reply_document(message, filename="抽卡统计.png")
+                await png_data.reply_document(message, filename="抽卡统计.png")
             else:
-                reply = await png_data.reply_photo(message)
-        if filters.ChatType.GROUPS.filter(message):
-            self.add_delete_message_job(reply)
-            self.add_delete_message_job(message)
+                await png_data.reply_photo(message)
 
     @handler.command(command="wish_log", block=False)
     @handler.command(command="gacha_log", block=False)
