@@ -159,23 +159,6 @@ class PlayerCards(Plugin):
         return uid, ch_name
 
     @staticmethod
-    def get_caption_stats(character: "CharacterInfo") -> List[str]:
-        tags = []
-        stats = character.stats
-
-        def num(_s) -> int:
-            return int(round(_s, 0))
-
-        tags.append(f"生命{num(stats.FIGHT_PROP_MAX_HP.to_rounded())}")
-        tags.append(f"攻击{num(stats.FIGHT_PROP_CUR_ATTACK.to_rounded())}")
-        tags.append(f"防御{num(stats.FIGHT_PROP_CUR_DEFENSE.to_rounded())}")
-        tags.append(f"暴击{num(stats.FIGHT_PROP_CRITICAL.to_percentage())}")
-        tags.append(f"暴伤{num(stats.FIGHT_PROP_CRITICAL_HURT.to_percentage())}")
-        tags.append(f"充能{num(stats.FIGHT_PROP_CHARGE_EFFICIENCY.to_percentage())}")
-        tags.append(f"精通{num(stats.FIGHT_PROP_ELEMENT_MASTERY.to_rounded())}")
-        return tags
-
-    @staticmethod
     def get_caption(character: "CharacterInfo") -> str:
         tags = [character.name, f"等级{character.level}", f"命座{character.constellations_unlocked}"]
         if character.equipments:
@@ -184,7 +167,6 @@ class PlayerCards(Plugin):
                     tags.append(item.detail.name)
                     tags.append(f"武器等级{item.level}")
                     tags.append(f"精{item.refinement}")
-        tags.extend(PlayerCards.get_caption_stats(character))
         return "#" + " #".join(tags)
 
     @handler.command(command="player_card", player=True, block=False)
