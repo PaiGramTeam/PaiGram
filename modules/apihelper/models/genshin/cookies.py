@@ -81,6 +81,11 @@ class CookiesModel(BaseModel):
         if self.ltuid is None and self.ltoken:
             self.ltuid = user_id
 
+    def set_by_dict(self, new_cookies: dict):
+        for key, value in new_cookies.items():
+            if hasattr(self, key) and value is not None:
+                setattr(self, key, value)
+
     def check(self) -> bool:
         """检查Cookies是否完整
         :return: 成功返回 True 失败返回 False

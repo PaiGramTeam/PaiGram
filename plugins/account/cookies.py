@@ -268,10 +268,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
                 else:
                     cookies_model = await client.get_all_token_by_stoken(cookies.stoken, cookies.account_id)
-                    cookies.stoken = cookies_model.stoken
-                    cookies.mid = cookies_model.mid
-                    cookies.ltoken = cookies_model.ltoken
-                    cookies.cookie_token = cookies_model.cookie_token
+                    cookies.set_by_dict(cookies_model.dict())
                     logger.success(
                         "用户 %s[%s] 绑定时获取 stoken_v2, mid, ltoken, cookie_token 成功", user.full_name, user.id
                     )
@@ -398,8 +395,9 @@ class AccountCookiesPlugin(Plugin.Conversation):
     async def update_player(self, uid: int, genshin_account: Account, region: RegionEnum, account_id: int):
         player = await self.players_service.get(uid, player_id=genshin_account.uid, region=region)
         if player:
-            player.account_id = account_id
-            await self.players_service.update(player)
+            if player.account_id != account_id:
+                player.account_id = account_id
+                await self.players_service.update(player)
         else:
             player_model = Player(
                 user_id=uid,
