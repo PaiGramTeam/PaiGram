@@ -392,6 +392,9 @@ class _NamecardAssets(_AssetsService):
     profile: ICON_TYPE
     """个人资料名片背景"""
 
+    NAME_CARD_DEFAULT: int = 210189
+    """默认名片 ID"""
+
     @cached_property
     def game_name(self) -> str:
         return NAMECARD_DATA[str(self.id)]["icon"]
@@ -410,6 +413,8 @@ class _NamecardAssets(_AssetsService):
         raise ValueError(avatar_id)
 
     def __call__(self, target: int) -> "_NamecardAssets":
+        if target == 0:
+            target = self.NAME_CARD_DEFAULT
         result = _NamecardAssets(self.client)
         target = int(target) if not isinstance(target, int) else target
         if target > 10000000:

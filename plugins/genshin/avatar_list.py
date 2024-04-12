@@ -151,7 +151,7 @@ class AvatarListPlugin(Plugin):
         except Exception as exc:  # pylint: disable=W0703
             logger.error("卡片信息请求失败 %s", str(exc))
         if name_card is None:  # 默认
-            name_card = (await self.assets_service.namecard(210001).navbar()).as_uri()
+            name_card = (await self.assets_service.namecard(0).navbar()).as_uri()
         return name_card, avatar, nickname, rarity
 
     @handler.command("avatars", cookie=True, block=False)
