@@ -36,13 +36,8 @@ class PlayerStatsPlugins(Plugin):
         uid: Optional[int] = None
         try:
             args = context.args
-            if args is not None and len(args) >= 1:
+            if args is not None and len(args) == 9:
                 uid = int(args[0])
-        except ValueError as exc:
-            logger.warning("获取 uid 发生错误！ 错误信息为 %s", str(exc))
-            await message.reply_text("输入错误")
-            return
-        try:
             async with self.helper.genshin_or_public(user_id) as client:
                 if not client.public:
                     await client.get_record_cards()
@@ -54,6 +49,10 @@ class PlayerStatsPlugins(Plugin):
             logger.error("角色数据有误")
             logger.exception(exc)
             await message.reply_text("角色数据有误 估计是派蒙晕了")
+            return
+        except ValueError as exc:
+            logger.warning("获取 uid 发生错误！ 错误信息为 %s", str(exc))
+            await message.reply_text("输入错误")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await render_result.reply_photo(message, filename=f"{client.player_id}.png", allow_sending_without_reply=True)
