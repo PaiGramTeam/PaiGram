@@ -45,13 +45,13 @@ class Redeem(Plugin):
         if filters.ChatType.GROUPS.filter(reply_message):
             self.add_delete_message_job(reply_message)
 
-    async def redeem_one_code(self, update: Update, user_id: int, code: str):
+    async def redeem_one_code(self, update: Update, user_id: int, uid: int, code: str):
         if not code:
             return
         message = update.effective_message
         reply_message = await message.reply_text("正在兑换中，请稍等")
 
-        task_data = RedeemResult(user_id=user_id, code=code, message=reply_message)
+        task_data = RedeemResult(user_id=user_id, code=code, uid=uid, message=reply_message)
         priority = 1 if await self.user_admin_service.is_admin(user_id) else 2
         try:
             await self.redeem_runner.run(task_data, self._callback, priority)
@@ -61,9 +61,11 @@ class Redeem(Plugin):
                 self.add_delete_message_job(reply_message)
 
     async def redeem_codes(self, update: Update, user_id: int, codes: List[str]):
+        async with self.genshin_helper.genshin(user_id) as client:
+            uid = client.player_id
         tasks = []
         for code in codes:
-            tasks.append(self.redeem_one_code(update, user_id, code))
+            tasks.append(self.redeem_one_code(update, user_id, uid, code))
         await asyncio.gather(*tasks)
 
     @handler.command(command="redeem", cookie=True, block=False)
