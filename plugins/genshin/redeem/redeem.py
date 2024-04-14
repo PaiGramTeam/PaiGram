@@ -3,6 +3,7 @@ import time
 from typing import List
 
 from telegram import Update
+from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 from telegram.ext import filters
 
@@ -41,8 +42,15 @@ class Redeem(Plugin):
         today = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
         text = REDEEM_TEXT.format(today, uid, code, msg)
-        reply_message = await data.message.edit_text(text)
-        if filters.ChatType.GROUPS.filter(reply_message):
+        reply_message = None
+        try:
+            reply_message = await data.message.edit_text(text)
+        except BadRequest:
+            try:
+                reply_message = await data.message.reply_text(text)
+            except BadRequest:
+                pass
+        if reply_message and filters.ChatType.GROUPS.filter(reply_message):
             self.add_delete_message_job(reply_message)
 
     async def redeem_one_code(self, update: Update, user_id: int, uid: int, code: str):
