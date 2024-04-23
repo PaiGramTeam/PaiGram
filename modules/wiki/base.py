@@ -21,7 +21,7 @@ except ImportError:
 
 __all__ = ["Model", "WikiModel", "HONEY_HOST"]
 
-HONEY_HOST = URL("https://genshin.honeyhunterworld.com/")
+HONEY_HOST = URL("https://gensh.honeyhunterworld.com/")
 
 
 class Model(PydanticBaseModel):

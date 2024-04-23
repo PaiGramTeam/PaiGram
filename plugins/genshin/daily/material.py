@@ -502,7 +502,7 @@ class DailyMaterial(Plugin):
         """刷新来自 honey impact 的每日素材表"""
         for attempts in range(1, retry + 1):
             try:
-                response = await self.client.get("https://genshin.honeyhunterworld.com/?lang=CHS")
+                response = await self.client.get("https://gensh.honeyhunterworld.com/?lang=CHS")
                 response.raise_for_status()
             except (HTTPError, SSLZeroReturnError):
                 await asyncio.sleep(1)
@@ -517,6 +517,7 @@ class DailyMaterial(Plugin):
             content = self.everyday_materials.json(ensure_ascii=False, separators=(",", ":"))
             async with aiofiles.open(DATA_FILE_PATH, "w", encoding="utf-8") as file:
                 await file.write(content)
+            logger.success("每日素材刷新成功")
             return
 
     async def _assemble_item_from_honey_data(self, item_type: str, item_id: str) -> Optional["ItemData"]:

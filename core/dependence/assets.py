@@ -20,9 +20,11 @@ from typing_extensions import Self
 
 from core.base_service import BaseService
 from core.config import config
-from metadata.genshin import AVATAR_DATA, MATERIAL_DATA, NAMECARD_DATA, WEAPON_DATA
+from metadata.genshin import AVATAR_DATA, HONEY_DATA, MATERIAL_DATA, NAMECARD_DATA, WEAPON_DATA
+from metadata.scripts.honey import update_honey_metadata
 from metadata.scripts.metadatas import update_metadata_from_ambr, update_metadata_from_github
 from metadata.shortname import roleToId, weaponToId
+from modules.wiki.base import HONEY_HOST
 from utils.const import AMBR_HOST, ENKA_HOST, PROJECT_ROOT
 from utils.log import logger
 from utils.typedefs import StrOrInt, StrOrURL
@@ -73,6 +75,11 @@ class _AssetsService(ABC):
     @cached_property
     def game_name(self) -> str:
         """游戏数据中的名称"""
+
+    @cached_property
+    def honey_id(self) -> str:
+        """当前资源在 Honey Impact 所对应的 ID"""
+        return HONEY_DATA[self.type].get(str(self.id), [""])[0]
 
     @property
     def path(self) -> Path:
@@ -156,6 +163,12 @@ class _AssetsService(ABC):
         """从 enke.network 上获取目标链接"""
         yield None
 
+    async def _get_from_honey(self, item: str) -> AsyncIterator[str | None]:
+        """从 honey 上获取目标链接"""
+        if (honey_name := self.honey_name_map.get(item, None)) is not None:
+            yield HONEY_HOST.join(f"img/{honey_name}.png")
+            yield HONEY_HOST.join(f"img/{honey_name}.webp")
+
     async def _download_url_generator(self, item: str) -> AsyncIterator[str]:
         # 获取当前 `AssetsService` 的所有爬虫
         for func in map(lambda x: getattr(self, x), sorted(filter(lambda x: x.startswith("_get_from_"), dir(self)))):
@@ -209,6 +222,11 @@ class _AssetsService(ABC):
     def game_name_map(self) -> dict[str, str]:
         """游戏中的图标名"""
 
+    @abstractmethod
+    @cached_property
+    def honey_name_map(self) -> dict[str, str]:
+        """来自honey的图标名"""
+
 
 class _AvatarAssets(_AssetsService):
     enka: EnkaCharacterAsset | None
@@ -235,6 +253,10 @@ class _AvatarAssets(_AssetsService):
                 if aid.startswith(str(self.id)):
                     icon = avatar["icon"]
         return re.findall(r"UI_AvatarIcon_(.*)", icon)[0]
+
+    @cached_property
+    def honey_id(self) -> str:
+        return HONEY_DATA["avatar"].get(str(self.id), "")[0]
 
     @cached_property
     def enka(self) -> Optional[EnkaCharacterAsset]:
@@ -269,6 +291,15 @@ class _AvatarAssets(_AssetsService):
             yield str(ENKA_HOST.join(f"ui/{item_id}.png"))
 
     @cached_property
+    def honey_name_map(self) -> dict[str, str]:
+        return {
+            "icon": f"{self.honey_id}_icon",
+            "side": f"{self.honey_id}_side_icon",
+            "gacha": f"{self.honey_id}_gacha_splash",
+            "gacha_card": f"{self.honey_id}_gacha_card",
+        }
+
+    @cached_property
     def game_name_map(self) -> dict[str, str]:
         return {
             "icon": f"UI_AvatarIcon_{self.game_name}",
@@ -297,6 +328,10 @@ class _WeaponAssets(_AssetsService):
             "gacha": f"UI_Gacha_EquipIcon_{self.game_name}",
         }
 
+    @cached_property
+    def honey_id(self) -> str:
+        return f"i_n{self.id}"
+
     def __call__(self, target: StrOrInt) -> Self:
         temp = target
         result = _WeaponAssets(self.client)
@@ -315,6 +350,14 @@ class _WeaponAssets(_AssetsService):
         if item in self.game_name_map:
             yield str(ENKA_HOST.join(f"ui/{self.game_name_map.get(item)}.png"))
 
+    @cached_property
+    def honey_name_map(self) -> dict[str, str]:
+        return {
+            "icon": f"{self.honey_id}",
+            "awaken": f"{self.honey_id}_awaken_icon",
+            "gacha": f"{self.honey_id}_gacha_icon",
+        }
+
 
 class _MaterialAssets(_AssetsService):
     @cached_property
@@ -324,6 +367,10 @@ class _MaterialAssets(_AssetsService):
     @cached_property
     def game_name_map(self) -> dict[str, str]:
         return {"icon": f"UI_ItemIcon_{self.game_name}"}
+
+    @cached_property
+    def honey_name_map(self) -> dict[str, str]:
+        return {"icon": self.honey_id}
 
     def __call__(self, target: StrOrInt) -> Self:
         temp = target
@@ -342,6 +389,10 @@ class _MaterialAssets(_AssetsService):
         if item == "icon":
             yield str(AMBR_HOST.join(f"assets/UI/{self.game_name_map.get(item)}.png"))
 
+    async def _get_from_honey(self, item: str) -> AsyncIterator[str | None]:
+        yield HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.png")
+        yield HONEY_HOST.join(f"/img/{self.honey_name_map.get(item)}.webp")
+
 
 class _ArtifactAssets(_AssetsService):
     flower: ICON_TYPE
@@ -358,6 +409,10 @@ class _ArtifactAssets(_AssetsService):
 
     circlet: ICON_TYPE
     """理之冠"""
+
+    @cached_property
+    def honey_id(self) -> str:
+        return HONEY_DATA["artifact"][str(self.id)][0]
 
     @cached_property
     def game_name(self) -> str:
@@ -382,6 +437,18 @@ class _ArtifactAssets(_AssetsService):
             "circlet": f"UI_RelicIcon_{self.id}_3",
         }
 
+    @cached_property
+    def honey_name_map(self) -> dict[str, str]:
+        first_id = int(re.findall(r"\d+", HONEY_DATA["artifact"][str(self.id)][-1])[0])
+        return {
+            "icon": f"i_n{first_id + 30}",
+            "flower": f"i_n{first_id + 30}",
+            "plume": f"i_n{first_id + 10}",
+            "sands": f"i_n{first_id + 40}",
+            "goblet": f"i_n{first_id}",
+            "circlet": f"i_n{first_id + 20}",
+        }
+
 
 class _NamecardAssets(_AssetsService):
     enka: EnkaCharacterAsset | None
@@ -394,6 +461,10 @@ class _NamecardAssets(_AssetsService):
 
     NAME_CARD_DEFAULT: int = 210189
     """默认名片 ID"""
+
+    @cached_property
+    def honey_id(self) -> str:
+        return HONEY_DATA["namecard"][str(self.id)][0]
 
     @cached_property
     def game_name(self) -> str:
@@ -439,6 +510,14 @@ class _NamecardAssets(_AssetsService):
             "profile": NAMECARD_DATA[str(self.id)]["profile"],
         }
 
+    @cached_property
+    def honey_name_map(self) -> dict[str, str]:
+        return {
+            "icon": self.honey_id,
+            "navbar": f"{self.honey_id}_back",
+            "profile": f"{self.honey_id}_profile",
+        }
+
 
 class AssetsService(BaseService.Dependence):
     """asset服务
@@ -475,6 +554,7 @@ class AssetsService(BaseService.Dependence):
         # todo 这3个任务同时异步下载
         await update_metadata_from_github(False)
         await update_metadata_from_ambr(False)
+        await update_honey_metadata(False)
         logger.info("刷新元数据成功")
 
 

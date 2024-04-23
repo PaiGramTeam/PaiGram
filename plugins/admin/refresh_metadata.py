@@ -2,6 +2,7 @@ from telegram import Update
 from telegram.ext import CallbackContext
 
 from core.plugin import Plugin, handler
+from metadata.scripts.honey import update_honey_metadata
 from metadata.scripts.metadatas import update_metadata_from_ambr, update_metadata_from_github
 from metadata.scripts.paimon_moe import update_paimon_moe_zh
 from utils.log import logger
@@ -22,4 +23,6 @@ class MetadataPlugin(Plugin):
         await update_paimon_moe_zh()
         logger.info("正在从 ambr 上获取元数据")
         await update_metadata_from_ambr()
+        logger.info("正在从 honey 上获取元数据")
+        await update_honey_metadata()
         await msg.edit_text("正在刷新元数据，请耐心等待...\n完成！")
