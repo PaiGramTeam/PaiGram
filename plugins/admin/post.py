@@ -118,11 +118,10 @@ class Post(Plugin.Conversation):
             except APIHelperException as exc:
                 logger.error("获取文章信息失败 %s", str(exc))
                 text = f"获取 post_id[{post_id}] 文章信息失败 {str(exc)}"
-                for user in config.admins:
-                    try:
-                        await context.bot.send_message(user.user_id, text)
-                    except BadRequest as _exc:
-                        logger.error("发送消息失败 %s", _exc.message)
+                try:
+                    await context.bot.send_message(config.owner, text)
+                except BadRequest as _exc:
+                    logger.error("发送消息失败 %s", _exc.message)
                 return
             buttons = [
                 [
