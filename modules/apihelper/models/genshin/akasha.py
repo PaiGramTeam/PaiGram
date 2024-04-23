@@ -149,7 +149,6 @@ class AkashaLeaderboard(BaseModel):
     uid: str
     artifactObjects: Dict[str, Any]
     artifactSets: Dict[str, AkashaLeaderboardArtifactSet]
-    calculations: Dict[str, Any]
     constellation: int
     costumeId: str
     critValue: float
