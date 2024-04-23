@@ -32,15 +32,15 @@ FULL_DATA_TYPE = Dict[str, DATA_TYPE]
 client = AsyncClient()
 
 
-async def request(url: str, retry: int = 5) -> Optional[Response]:
+async def request(url: str, retry: int = 10) -> Optional[Response]:
     for time in range(retry):
         try:
             return await client.get(url)
-        except HTTPError:
+        except HTTPError as e:
             if time != retry - 1:
                 await asyncio.sleep(1)
                 continue
-            return None
+            raise e
         except Exception as e:
             raise e
 
