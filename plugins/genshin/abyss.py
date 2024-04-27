@@ -184,7 +184,8 @@ class AbyssPlugin(Plugin):
         if not client.public:  # noqa
             avatars = await client.get_genshin_characters(uid, lang="zh-cn")
             avatar_data = {i.id: i.constellation for i in avatars}
-            await self.save_abyss_data(uid, abyss_data, avatar_data)
+            if abyss_data.unlocked and abyss_data.ranks.most_kills:
+                await self.save_abyss_data(uid, abyss_data, avatar_data)
         return abyss_data, avatar_data
 
     async def get_rendered_pic(  # skipcq: PY-R1000 #
