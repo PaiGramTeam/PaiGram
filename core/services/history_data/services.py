@@ -33,10 +33,7 @@ class HistoryDataAbyssServices(BaseService, HistoryDataBaseServices):
 
     @staticmethod
     def exists_data(data: HistoryData, old_data: List[HistoryData]) -> bool:
-        for d in old_data:
-            if d.data == data.data:
-                return True
-        return False
+        return any(d.data == data.data for d in old_data)
 
     @staticmethod
     def create(user_id: int, abyss_data: SpiralAbyss, character_data: Dict[int, int]):

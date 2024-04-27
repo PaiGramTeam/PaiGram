@@ -24,7 +24,6 @@ from core.services.template.models import RenderGroupResult, RenderResult
 from core.services.template.services import TemplateService
 from gram_core.config import config
 from gram_core.dependence.redisdb import RedisDB
-from gram_core.services.history_data.models import HistoryData
 from plugins.tools.genshin import GenshinHelper
 from utils.enkanetwork import RedisCache
 from utils.log import logger
@@ -188,7 +187,7 @@ class AbyssPlugin(Plugin):
             await self.save_abyss_data(uid, abyss_data, avatar_data)
         return abyss_data, avatar_data
 
-    async def get_rendered_pic(
+    async def get_rendered_pic(  # skipcq: PY-R1000 #
         self, abyss_data: "SpiralAbyss", avatar_data: Dict[int, int], uid: int, floor: int, total: bool
     ) -> Union[Tuple[Any], List[RenderResult], None]:
         """
