@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     from telegram import Update
     from telegram.ext import ContextTypes
 
+MAX_AVATAR_COUNT = 40
+
 
 class SkillData(Model):
     """天赋数据"""
@@ -170,7 +172,7 @@ class AvatarListPlugin(Plugin):
                 await message.reply_chat_action(ChatAction.TYPING)
                 characters = await client.get_genshin_characters(client.player_id)
                 avatar_datas: List[AvatarData] = await self.get_avatars_data(
-                    characters, client, None if all_avatars else 20
+                    characters, client, None if all_avatars else MAX_AVATAR_COUNT
                 )
         except SimnetBadRequest as e:
             if notice:
@@ -193,7 +195,7 @@ class AvatarListPlugin(Plugin):
             "has_more": len(characters) != len(avatar_datas),  # 是否显示了全部角色
         }
 
-        as_document = all_avatars and len(characters) > 20
+        as_document = all_avatars and len(characters) > MAX_AVATAR_COUNT
 
         await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT if as_document else ChatAction.UPLOAD_PHOTO)
 
