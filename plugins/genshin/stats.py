@@ -71,6 +71,7 @@ class PlayerStatsPlugins(Plugin):
             "info": user_info.info,
             "stats": user_info.stats,
             "explorations": user_info.explorations,
+            "skip_explor": [10],
             "teapot": user_info.teapot,
             "stats_labels": [
                 ("活跃天数", "days_active"),
