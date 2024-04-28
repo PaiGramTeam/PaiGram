@@ -31,3 +31,12 @@ c7b0f530f7d753ac3f1b0c09c3dfe168ac16ca9a
 #Date:   Wed Nov 23 09:11:29 2022 +0800
 #
 #    🎨 black code
+8c8fa8ea993e1f1e1912a3b1c90a4815058b6298
+# Author: kotoriのねこ <minamiktr@outlook.com>
+# Date:   Fri Mar 15 20:44:15 2024 -0500
+#
+#     :lipstick: Format with black 24.x.x
+#
+#     * :lipstick: Format with black 24.x.x
+#
+#     * :lipstick: Update black version to 24.x.x in pre-commit check
