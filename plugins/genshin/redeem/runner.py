@@ -6,6 +6,7 @@ from typing import Coroutine, Any, Optional, List, TYPE_CHECKING, Union
 from simnet.errors import RegionNotSupported, RedemptionInvalid, RedemptionClaimed, RedemptionCooldown
 from telegram import Message
 
+from gram_core.basemodel import RegionEnum
 from plugins.tools.genshin import GenshinHelper
 
 if TYPE_CHECKING:
@@ -16,9 +17,10 @@ if TYPE_CHECKING:
 class RedeemResult:
     user_id: int
     code: str
-    message: Message
+    message: Optional[Message] = None
     error: Optional[str] = None
     uid: Optional[int] = 0
+    count: Optional[List[int]] = None
 
 
 class RedeemRunnerTask:
@@ -57,8 +59,9 @@ class RedeemRunner:
         data: RedeemResult,
         callback_task: "(result: RedeemResult) -> Coroutine[Any, Any, None]",
         priority: int = 2,
+        only_region: bool = False,
     ) -> None:
-        redeem_task = self.redeem_code(data)
+        redeem_task = self.redeem_code(data, only_region)
         queue_task = RedeemRunnerTask(self._execute_queue(redeem_task, callback_task))
         if priority == 2 and self.queue.qsize() >= (self.queue_size - 1):
             raise RedeemQueueFull()
@@ -71,10 +74,12 @@ class RedeemRunner:
                 await task.run()
                 await asyncio.sleep(5)
 
-    async def redeem_code(self, result: RedeemResult) -> RedeemResult:
+    async def redeem_code(self, result: RedeemResult, only_region: bool) -> RedeemResult:
         error = None
         try:
-            async with self.genshin_helper.genshin(result.user_id) as client:
+            async with self.genshin_helper.genshin(
+                result.user_id, region=RegionEnum.HOYOLAB if only_region else None
+            ) as client:
                 client: "GenshinClient"
                 result.uid = client.player_id
                 await client.redeem_code_by_hoyolab(result.code)
