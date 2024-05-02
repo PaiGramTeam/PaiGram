@@ -469,8 +469,6 @@ class WishLogPlugin(Plugin.Conversation):
                 await self.wish_log_pool_choose(user_id, message)
             else:
                 await self.wish_log_pool_send(user_id, pool_type, message)
-        except PlayerNotFoundError:
-            await message.reply_text("该用户暂未绑定账号")
         except GachaLogNotFound:
             self.log_user(update, logger.info, "未找到抽卡记录")
             buttons = [
