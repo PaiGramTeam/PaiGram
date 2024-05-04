@@ -15,9 +15,9 @@ from core.services.players import PlayersService
 from core.services.players.services import PlayerInfoService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
-from metadata.genshin import AVATAR_DATA
 from modules.wiki.base import Model
 from plugins.tools.genshin import CharacterDetails, GenshinHelper
+from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -62,6 +62,7 @@ class AvatarListPlugin(Plugin):
         helper: GenshinHelper = None,
         character_details: CharacterDetails = None,
         player_info_service: PlayerInfoService = None,
+        player_info_system: PlayerInfoSystem = None,
     ) -> None:
         self.cookies_service = cookies_service
         self.assets_service = assets_service
@@ -70,6 +71,7 @@ class AvatarListPlugin(Plugin):
         self.character_details = character_details
         self.player_service = player_service
         self.player_info_service = player_info_service
+        self.player_info_system = player_info_system
 
     async def get_avatar_data(self, character: Character, client: "GenshinClient") -> Optional["AvatarData"]:
         detail = await self.character_details.get_character_details(client, character)
@@ -131,31 +133,6 @@ class AvatarListPlugin(Plugin):
             reverse=True,
         )[:max_length]
 
-    async def get_final_data(self, player_id: int, user_id: int, user_name: str):
-        player = await self.player_service.get(user_id, player_id)
-        player_info = await self.player_info_service.get(player)
-        nickname = user_name
-        name_card: Optional[str] = None
-        avatar: Optional[str] = None
-        rarity: int = 5
-        try:
-            if player_info is not None:
-                if player_info.nickname is not None:
-                    nickname = player_info.nickname
-                if player_info.name_card is not None:
-                    name_card = (await self.assets_service.namecard(int(player_info.name_card)).navbar()).as_uri()
-                if player_info.hand_image is not None:
-                    avatar = (await self.assets_service.avatar(player_info.hand_image).icon()).as_uri()
-                    try:
-                        rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(player_info.hand_image)]
-                    except KeyError:
-                        logger.warning("未找到角色 %s 的星级", player_info.hand_image)
-        except Exception as exc:  # pylint: disable=W0703
-            logger.error("卡片信息请求失败 %s", str(exc))
-        if name_card is None:  # 默认
-            name_card = (await self.assets_service.namecard(0).navbar()).as_uri()
-        return name_card, avatar, nickname, rarity
-
     @handler.command("avatars", cookie=True, block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), cookie=True, block=False)
     async def avatar_list(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
@@ -183,7 +160,9 @@ class AvatarListPlugin(Plugin):
                 return
             raise e
 
-        name_card, avatar, nickname, rarity = await self.get_final_data(client.player_id, user_id, user_name)
+        name_card, avatar, nickname, rarity = await self.player_info_system.get_player_info(
+            client.player_id, user_id, user_name
+        )
 
         render_data = {
             "uid": mask_number(client.player_id),  # 玩家uid

@@ -243,6 +243,9 @@ class _AvatarAssets(_AssetsService):
     gacha_card: ICON_TYPE
     """抽卡卡片"""
 
+    AVATAR_DEFAULT: int = 10000005
+    """默认角色ID"""
+
     @cached_property
     def game_name(self) -> str:
         icon = "UI_AvatarIcon_"
@@ -269,6 +272,8 @@ class _AvatarAssets(_AssetsService):
         self._enka_api = enka or DEFAULT_EnkaAssets
 
     def __call__(self, target: StrOrInt) -> "_AvatarAssets":
+        if target == 0:
+            target = self.AVATAR_DEFAULT
         temp = target
         result = _AvatarAssets(self.client)
         if isinstance(target, str):
