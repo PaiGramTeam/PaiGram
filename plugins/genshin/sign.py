@@ -83,7 +83,7 @@ class Sign(Plugin):
                     msg = await self._process_auto_sign(user_id, user_id, "开启")
             elif args[0] == "关闭自动签到":
                 msg = await self._process_auto_sign(user_id, message.chat_id, "关闭")
-            else:
+            elif args[0] != "sign":
                 validate = args[0]
             if msg:
                 self.log_user(update, logger.info, "自动签到命令请求 || 参数 %s", args[0])
