@@ -17,9 +17,30 @@ if TYPE_CHECKING:
 
 IGNORE_UNBOUND_USER_OPEN = """成功开启 忽略未绑定用户触发部分命令 功能，派蒙将不会响应未绑定用户的部分命令
 
-- 此功能开启后，将会导致新用户无法快速绑定账号，请在群规则中注明 绑定链接 https://t.me/{}?start=setcookies 或者其他使用说明。
+- 此功能开启后，将会导致新用户将只会出现一次绑定账号提醒，推荐在群置顶中注明 绑定链接 https://t.me/{}?start=setcookies 或者其他使用说明。
 """
 IGNORE_UNBOUND_USER_CLOSE = """成功关闭 忽略未绑定用户触发部分命令 功能，派蒙将开始响应未绑定用户的部分命令"""
+
+
+class IgnoreUnboundUserCache:
+    def __init__(self, redis: RedisDB):
+        self.client = redis.client
+        self.qname = "plugins:ignore:"
+
+    def get_key(self, chat_id: int) -> str:
+        return f"{self.qname}{chat_id}"
+
+    async def ismember(self, chat_id: int, user_id: int) -> bool:
+        qname = self.get_key(chat_id)
+        return await self.client.sismember(qname, user_id)
+
+    async def set(self, chat_id: int, user_id: int) -> bool:
+        qname = self.get_key(chat_id)
+        return await self.client.sadd(qname, user_id)
+
+    async def remove_all(self, chat_id: int) -> bool:
+        qname = self.get_key(chat_id)
+        return await self.client.delete(qname)
 
 
 class IgnoreUnboundUser(Plugin):
@@ -34,6 +55,7 @@ class IgnoreUnboundUser(Plugin):
         self.group_service = group_service
         self.user_admin_service = user_admin_service
         self.cache = redis.client
+        self.cache_client = IgnoreUnboundUserCache(redis)
 
     async def initialize(self) -> None:
         self.application.run_preprocessor(self.check_update)
@@ -52,7 +74,8 @@ class IgnoreUnboundUser(Plugin):
         chat = update.effective_chat
         if (not chat) or chat.type not in [ChatType.SUPERGROUP, ChatType.GROUP]:
             return
-        if not await self.check_group(chat.id):
+        chat_id = chat.id
+        if not await self.check_group(chat_id):
             # 未开启此功能
             return
         message = update.effective_message
@@ -64,6 +87,10 @@ class IgnoreUnboundUser(Plugin):
         uid = await self.get_real_user_id(update)
         if await self.check_account(uid):
             # 已绑定账号
+            return
+        if not await self.cache_client.ismember(chat_id, uid):
+            # 未拦截过
+            await self.cache_client.set(chat_id, uid)
             return
         self.log_user(update, logger.info, "群组 %s[%s] 拦截了未绑定用户触发命令", chat.title, chat.id)
         raise ApplicationHandlerStop
@@ -98,4 +125,5 @@ class IgnoreUnboundUser(Plugin):
             text = IGNORE_UNBOUND_USER_OPEN.format(context.bot.username)
         else:
             text = IGNORE_UNBOUND_USER_CLOSE
+            await self.cache_client.remove_all(chat_id)
         await message.reply_text(text)
