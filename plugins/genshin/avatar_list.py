@@ -160,12 +160,11 @@ class AvatarListPlugin(Plugin):
 
         if only_one_page:
             return [await render_task(0, avatar_datas)]
-        else:
-            avatar_datas_group = [
-                avatar_datas[i : i + MAX_AVATAR_COUNT] for i in range(0, len(avatar_datas), MAX_AVATAR_COUNT)
-            ]
-            tasks = [render_task(i * MAX_AVATAR_COUNT, c) for i, c in enumerate(avatar_datas_group)]
-            return await asyncio.gather(*tasks)
+        avatar_datas_group = [
+            avatar_datas[i : i + MAX_AVATAR_COUNT] for i in range(0, len(avatar_datas), MAX_AVATAR_COUNT)
+        ]
+        tasks = [render_task(i * MAX_AVATAR_COUNT, c) for i, c in enumerate(avatar_datas_group)]
+        return await asyncio.gather(*tasks)
 
     @handler.command("avatars", cookie=True, block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), cookie=True, block=False)
