@@ -3,6 +3,7 @@ from typing import Dict
 
 from pydantic import BaseModel
 from simnet.models.genshin.chronicle.abyss import SpiralAbyss
+from simnet.models.genshin.diary import Diary
 
 from gram_core.services.history_data.models import HistoryData
 
@@ -10,11 +11,13 @@ __all__ = (
     "HistoryData",
     "HistoryDataTypeEnum",
     "HistoryDataAbyss",
+    "HistoryDataLedger",
 )
 
 
 class HistoryDataTypeEnum(int, enum.Enum):
     ABYSS = 0  # 深境螺旋
+    LEDGER = 2  # 开拓月历
 
 
 class HistoryDataAbyss(BaseModel):
@@ -22,5 +25,13 @@ class HistoryDataAbyss(BaseModel):
     character_data: Dict[int, int]
 
     @classmethod
-    def from_data(cls, data: HistoryData):
+    def from_data(cls, data: HistoryData) -> "HistoryDataAbyss":
+        return cls.parse_obj(data.data)
+
+
+class HistoryDataLedger(BaseModel):
+    diary_data: Diary
+
+    @classmethod
+    def from_data(cls, data: HistoryData) -> "HistoryDataLedger":
         return cls.parse_obj(data.data)
