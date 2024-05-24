@@ -62,6 +62,7 @@ class SetCommandPlugin(Plugin):
             # Cookie 查询类
             BotCommand("dailynote", "查询实时便笺"),
             BotCommand("ledger", "查询当月旅行札记"),
+            BotCommand("ledger_history", "查询旅行札记历史记录"),
             BotCommand("abyss", "查询深渊战绩"),
             BotCommand("abyss_team", "查询深渊推荐配队"),
             BotCommand("abyss_history", "查询深渊历史战绩"),

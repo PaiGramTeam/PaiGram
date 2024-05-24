@@ -3,8 +3,9 @@ from typing import Dict, List
 
 from pytz import timezone
 from simnet.models.genshin.chronicle.abyss import SpiralAbyss
+from simnet.models.genshin.diary import Diary
 
-from core.services.history_data.models import HistoryData, HistoryDataTypeEnum, HistoryDataAbyss
+from core.services.history_data.models import HistoryData, HistoryDataTypeEnum, HistoryDataAbyss, HistoryDataLedger
 from gram_core.base_service import BaseService
 from gram_core.services.history_data.services import HistoryDataBaseServices
 
@@ -44,5 +45,21 @@ class HistoryDataAbyssServices(BaseService, HistoryDataBaseServices):
             data_id=abyss_data.season,
             time_created=datetime.datetime.now(),
             type=HistoryDataAbyssServices.DATA_TYPE,
+            data=jsonlib.loads(json_data),
+        )
+
+
+class HistoryDataLedgerServices(BaseService, HistoryDataBaseServices):
+    DATA_TYPE = HistoryDataTypeEnum.LEDGER.value
+
+    @staticmethod
+    def create(user_id: int, diary_data: Diary):
+        data = HistoryDataLedger(diary_data=diary_data)
+        json_data = data.json(by_alias=True, encoder=json_encoder)
+        return HistoryData(
+            user_id=user_id,
+            data_id=diary_data.data_id,
+            time_created=datetime.datetime.now(),
+            type=HistoryDataLedgerServices.DATA_TYPE,
             data=jsonlib.loads(json_data),
         )
