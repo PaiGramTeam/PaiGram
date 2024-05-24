@@ -81,6 +81,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("save_entry", "保存条目数据"),
             BotCommand("remove_all_entry", "删除全部条目数据"),
             BotCommand("sign_all", "全部账号重新签到"),
+            BotCommand("refresh_all_history", "全部账号刷新历史记录"),
             BotCommand("send_log", "发送日志"),
             BotCommand("update", "更新"),
             BotCommand("set_command", "重设命令"),

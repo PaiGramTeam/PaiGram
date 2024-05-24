@@ -13,6 +13,7 @@ from telegram.error import BadRequest, Forbidden
 from core.plugin import Plugin, job
 from core.services.history_data.services import HistoryDataAbyssServices, HistoryDataLedgerServices
 from gram_core.basemodel import RegionEnum
+from gram_core.plugin import handler
 from gram_core.services.cookies import CookiesService
 from gram_core.services.cookies.models import CookiesStatusEnum
 from plugins.genshin.abyss import AbyssPlugin
@@ -21,6 +22,7 @@ from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNot
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from telegram import Update
     from telegram.ext import ContextTypes
 
     from simnet import GenshinClient
@@ -98,6 +100,15 @@ class RefreshHistoryJob(Plugin):
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         notice_text = NOTICE_TEXT % ("旅行札记历史记录", now, uid, "旅行札记历史记录")
         await self.send_notice(context, user_id, notice_text)
+
+    @handler.command(command="refresh_all_history", block=False, admin=True)
+    async def refresh_all_history(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+        user = update.effective_user
+        logger.info("用户 %s[%s] refresh_all_history 命令请求", user.full_name, user.id)
+        message = update.effective_message
+        reply = await message.reply_text("正在执行刷新历史记录任务，请稍后...")
+        await self.daily_refresh_history(context)
+        await reply.edit_text("全部账号刷新历史记录任务完成")
 
     @job.run_daily(time=datetime.time(hour=6, minute=1, second=0), name="RefreshHistoryJob")
     async def daily_refresh_history(self, context: "ContextTypes.DEFAULT_TYPE"):
