@@ -150,7 +150,7 @@ class LedgerPlugin(Plugin):
     async def save_ledger_data(
         history_data_ledger: "HistoryDataLedgerServices", uid: int, ledger_data: "Diary"
     ) -> bool:
-        month = int(ledger_data.date.split("-")[1])
+        month = int((ledger_data.date or datetime.now().strftime("%Y-%m-%d")).split("-")[1])
         if month == ledger_data.month:
             return False
         model = history_data_ledger.create(uid, ledger_data)
