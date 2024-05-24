@@ -185,7 +185,7 @@ class AbyssPlugin(Plugin):
             avatars = await client.get_genshin_characters(uid, lang="zh-cn")
             avatar_data = {i.id: i.constellation for i in avatars}
             if abyss_data.unlocked and abyss_data.ranks.most_kills:
-                await self.save_abyss_data(uid, abyss_data, avatar_data)
+                await self.save_abyss_data(self.history_data_abyss, uid, abyss_data, avatar_data)
         return abyss_data, avatar_data
 
     async def get_rendered_pic(  # skipcq: PY-R1000 #
@@ -319,12 +319,20 @@ class AbyssPlugin(Plugin):
             )
         ]
 
-    async def save_abyss_data(self, uid: int, abyss_data: "SpiralAbyss", character_data: Dict[int, int]):
-        model = self.history_data_abyss.create(uid, abyss_data, character_data)
-        old_data = await self.history_data_abyss.get_by_user_id_data_id(uid, model.data_id)
-        exists = self.history_data_abyss.exists_data(model, old_data)
+    @staticmethod
+    async def save_abyss_data(
+        history_data_abyss: "HistoryDataAbyssServices",
+        uid: int,
+        abyss_data: "SpiralAbyss",
+        character_data: Dict[int, int],
+    ) -> bool:
+        model = history_data_abyss.create(uid, abyss_data, character_data)
+        old_data = await history_data_abyss.get_by_user_id_data_id(uid, model.data_id)
+        exists = history_data_abyss.exists_data(model, old_data)
         if not exists:
-            await self.history_data_abyss.add(model)
+            await history_data_abyss.add(model)
+            return True
+        return False
 
     async def get_abyss_data(self, uid: int):
         return await self.history_data_abyss.get_by_user_id(uid)

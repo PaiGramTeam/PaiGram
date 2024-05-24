@@ -53,7 +53,7 @@ class LedgerPlugin(Plugin):
     async def _start_get_ledger(self, client: "GenshinClient", month=None) -> RenderResult:
         diary_info = await client.get_genshin_diary(client.player_id, month=month)
         if month:
-            await self.save_ledger_data(client.player_id, diary_info)
+            await self.save_ledger_data(self.history_data_ledger, client.player_id, diary_info)
         return await self._start_get_ledger_render(client.player_id, diary_info)
 
     async def _start_get_ledger_render(self, uid: int, diary_info: "Diary") -> RenderResult:
@@ -146,14 +146,19 @@ class LedgerPlugin(Plugin):
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
         await render_result.reply_photo(message, filename=f"{client.player_id}.png", allow_sending_without_reply=True)
 
-    async def save_ledger_data(self, uid: int, ledger_data: "Diary"):
+    @staticmethod
+    async def save_ledger_data(
+        history_data_ledger: "HistoryDataLedgerServices", uid: int, ledger_data: "Diary"
+    ) -> bool:
         month = int(ledger_data.date.split("-")[1])
         if month == ledger_data.month:
-            return
-        model = self.history_data_ledger.create(uid, ledger_data)
-        old_data = await self.history_data_ledger.get_by_user_id_data_id(uid, model.data_id)
+            return False
+        model = history_data_ledger.create(uid, ledger_data)
+        old_data = await history_data_ledger.get_by_user_id_data_id(uid, model.data_id)
         if not old_data:
-            await self.history_data_ledger.add(model)
+            await history_data_ledger.add(model)
+            return True
+        return False
 
     async def get_ledger_data(self, uid: int):
         return await self.history_data_ledger.get_by_user_id(uid)

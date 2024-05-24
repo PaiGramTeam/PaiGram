@@ -18,6 +18,7 @@ except ImportError:
 __all__ = (
     "HistoryDataBaseServices",
     "HistoryDataAbyssServices",
+    "HistoryDataLedgerServices",
 )
 
 TZ = timezone("Asia/Shanghai")
