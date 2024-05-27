@@ -1,4 +1,5 @@
 import asyncio
+import math
 from typing import List, Optional, Sequence, TYPE_CHECKING, Union, Tuple, Any, Dict
 
 from arkowrapper import ArkoWrapper
@@ -160,10 +161,12 @@ class AvatarListPlugin(Plugin):
 
         if only_one_page:
             return [await render_task(0, avatar_datas)]
-        avatar_datas_group = [
-            avatar_datas[i : i + MAX_AVATAR_COUNT] for i in range(0, len(avatar_datas), MAX_AVATAR_COUNT)
-        ]
-        tasks = [render_task(i * MAX_AVATAR_COUNT, c) for i, c in enumerate(avatar_datas_group)]
+        image_count = len(avatar_datas)
+        while image_count > MAX_AVATAR_COUNT:
+            image_count /= 2
+        image_count = math.ceil(image_count)
+        avatar_datas_group = [avatar_datas[i : i + image_count] for i in range(0, len(avatar_datas), image_count)]
+        tasks = [render_task(i * image_count, c) for i, c in enumerate(avatar_datas_group)]
         return await asyncio.gather(*tasks)
 
     @handler.command("avatars", cookie=True, block=False)
