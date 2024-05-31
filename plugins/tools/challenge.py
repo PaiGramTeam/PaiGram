@@ -57,8 +57,6 @@ class ChallengeSystem(Plugin):
             raise ChallengeSystemException("用户未找到")
         except CookiesNotFoundError:
             raise ChallengeSystemException("无需验证")
-        if client.region != Region.CHINESE:
-            raise ChallengeSystemException("非法用户")
         if need_verify:
             try:
                 await client.get_genshin_notes()
@@ -70,7 +68,7 @@ class ChallengeSystem(Plugin):
                 await client.shutdown()
         else:
             await client.shutdown()
-        verify = Verify(cookies=client.cookies)
+        verify = Verify(client.account_id, cookies=client.cookies, region=client.region)
         try:
             data = await verify.create()
             challenge = data["challenge"]
@@ -95,8 +93,9 @@ class ChallengeSystem(Plugin):
         player = await self.players_service.get_player(user_id)
         if player is None:
             raise ChallengeSystemException("用户未找到")
-        if player.region != RegionEnum.HYPERION:
-            raise ChallengeSystemException("非法用户")
+        region = Region.CHINESE
+        if player.region == RegionEnum.HOYOLAB:
+            region = Region.OVERSEAS
         cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookie_model is None:
             raise ChallengeSystemException("无需验证")
@@ -104,7 +103,7 @@ class ChallengeSystem(Plugin):
             _, challenge = await self.get_challenge(player.player_id)
         if challenge is None:
             raise ChallengeSystemException("验证失效 请求已经过期")
-        verify = Verify(cookies=Cookies(cookie_model.data))
+        verify = Verify(player.account_id, cookies=Cookies(cookie_model.data), region=region)
         try:
             await verify.verify(challenge=challenge, validate=validate)
         except ResponseException as exc:

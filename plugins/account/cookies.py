@@ -18,6 +18,7 @@ from core.services.players.services import PlayersService, PlayerInfoService
 from gram_core.services.devices import DevicesService
 from gram_core.services.devices.models import DevicesDataBase as Devices
 from modules.apihelper.models.genshin.cookies import CookiesModel
+from modules.apihelper.utility.devices import devices_methods
 from utils.log import logger
 
 __all__ = ("AccountCookiesPlugin",)
@@ -66,6 +67,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
         self.players_service = players_service
         self.player_info_service = player_info_service
         self.devices_service = devices_service
+        devices_methods.service = devices_service
 
     # noinspection SpellCheckingInspection
     @staticmethod
