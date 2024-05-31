@@ -39,6 +39,7 @@ class WebApp(Plugin):
     @handler.message(filters=filters.StatusUpdate.WEB_APP_DATA, block=False)
     async def app(self, update: Update, _: CallbackContext):
         user = update.effective_user
+        user_id = user.id
         message = update.effective_message
         web_app_data = message.web_app_data
         if web_app_data:
@@ -50,9 +51,13 @@ class WebApp(Plugin):
             if result.code == 0:
                 if result.path == "verify":
                     validate = result.data.get("geetest_validate")
+                    try:
+                        user_id = int(result.data.get("user_id", user_id))
+                    except ValueError:
+                        pass
                     if validate is not None:
                         try:
-                            status = await self.challenge_system.pass_challenge(user.id, validate=validate)
+                            status = await self.challenge_system.pass_challenge(user_id, validate=validate)
                         except ChallengeSystemException as exc:
                             await message.reply_text(exc.message, reply_markup=ReplyKeyboardRemove())
                             return
