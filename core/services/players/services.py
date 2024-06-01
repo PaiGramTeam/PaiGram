@@ -96,7 +96,7 @@ class PlayerInfoService(BaseService):
                 player_info.nickname = player_info_enka.nickname
                 player_info.name_card = player_info_enka.namecard.id
                 player_info.signature = player_info_enka.signature
-                player_info.hand_image = player_info_enka.avatar.id
+                player_info.hand_image = player_info_enka.avatar.id or player_info_enka.avatar.avatar_id
                 player_info.nickname = player_info_enka.nickname
                 player_info.last_save_time = datetime.now()
                 await self._players_info_repository.update(player_info)
@@ -112,7 +112,7 @@ class PlayerInfoService(BaseService):
             player_info.nickname = player_info_enka.nickname
             player_info.name_card = player_info_enka.namecard.id
             player_info.signature = player_info_enka.signature
-            player_info.hand_image = player_info_enka.avatar.id
+            player_info.hand_image = player_info_enka.avatar.id or player_info_enka.avatar.avatar_id
             player_info.nickname = player_info_enka.nickname
             player_info.last_save_time = datetime.now()
             await self._players_info_repository.update(player_info)
