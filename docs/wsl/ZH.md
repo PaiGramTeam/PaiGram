@@ -69,10 +69,10 @@
   ```
 - 安装依赖
   ```
-  (venv) ~/PaiGram $ pip install poetry
-  Collecting poetry 
+  (venv) ~/PaiGram $ pip install pdm
+  Collecting pdm 
   ...
-  (venv) ~/PaiGram $ poetry install --extras all
+  (venv) ~/PaiGram $ pdm install
   Installing dependencies from lock file
   Package operations: 88 installs, 3 updates, 0 removals 
   ...

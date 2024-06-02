@@ -10,14 +10,13 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
     && apt install git wget curl ffmpeg -y                \
     && git clone -b main --recursive https://github.com/PaiGramTeam/PaiGram.git /app \
     # install dependencies \
-    && pip install virtualenv poetry  \
+    && pip install virtualenv pdm  \
     && python3 -m virtualenv venv/                 \
     && . venv/bin/activate                         \
-    && poetry config virtualenvs.create false      \
-    && poetry source add --default mirrors https://pypi.tuna.tsinghua.edu.cn/simple/ \
-    && poetry source add --secondary mirrors https://mirrors.aliyun.com/pypi/simple  \
-    && poetry install                              \
-    && poetry install --extras all                 \
+    && pdm config python.use_venv false            \
+    && pdm config pypi.url https://pypi.tuna.tsinghua.edu.cn/simple/ \
+    && pdm install                              \
+    && pdm install -G :all                      \
     && playwright install chromium                 \
     && playwright install-deps chromium            \
     ## set timezone
@@ -33,6 +32,7 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
         /var/tmp/*                                 \
         ~/.cache/pip                               \
         ~/.cache/pypoetry                          \
+        ~/.cache/pdm                               \
     # Add the wait script to the image
     && wget -O /wait https://github.com/ufoscout/docker-compose-wait/releases/download/2.12.1/wait \
     && chmod +x /wait
