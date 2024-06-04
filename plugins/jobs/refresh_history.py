@@ -101,6 +101,19 @@ class RefreshHistoryJob(Plugin):
         notice_text = NOTICE_TEXT % ("旅行札记历史记录", now, uid, "旅行札记历史记录")
         await self.send_notice(context, user_id, notice_text)
 
+    @handler.command(command="remove_same_history", block=False, admin=True)
+    async def remove_same_history(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
+        user = update.effective_user
+        logger.info("用户 %s[%s] remove_same_history 命令请求", user.full_name, user.id)
+        message = update.effective_message
+        reply = await message.reply_text("正在执行移除相同数据历史记录任务，请稍后...")
+        text = "移除相同数据历史记录任务完成\n"
+        num1 = await self.history_data_abyss.remove_same_data()
+        text += f"深渊数据移除数量：{num1}\n"
+        num2 = await self.history_data_ledger.remove_same_data()
+        text += f"旅行札记数据移除数量：{num2}\n"
+        await reply.edit_text(text)
+
     @handler.command(command="refresh_all_history", block=False, admin=True)
     async def refresh_all_history(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
