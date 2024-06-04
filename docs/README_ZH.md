@@ -72,15 +72,15 @@ venv\Scripts\activate.bat
 **安装依赖：**
 
 ```bash
-pip install poetry
-poetry install --extras all
+pip install pdm
+pdm install
 playwright install chromium
 ```
 
 可选依赖
 
 ```bash
-poetry install --extras all
+pdm install -G :all
 ```
 
 **编辑配置文件：**
