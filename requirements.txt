@@ -81,7 +81,7 @@ pyyaml==6.0.1
 rapidfuzz==3.9.3
 redis==5.0.4
 rich==13.7.1
-sentry-sdk==1.45.0
+sentry-sdk==2.4.0
 shellingham==1.5.4
 simnet @ git+https://github.com/PaiGramTeam/SIMNet@5c02e769820f005a9b81ca954bd454b521acca4b
 six==1.16.0
