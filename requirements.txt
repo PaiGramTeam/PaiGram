@@ -66,7 +66,7 @@ psutil==5.9.8
 pyaes==1.6.1
 pycparser==2.22; platform_python_implementation != "PyPy"
 pydantic==1.10.15
-pyee==11.0.1
+pyee==11.1.0
 pygments==2.18.0
 pyrogram==2.0.106
 pysocks==1.7.1
