@@ -37,7 +37,7 @@ frozenlist==1.4.1
 gcsim-pypi==2.22.23
 gitdb==4.0.11
 gitpython==3.1.43
-greenlet==3.0.0
+greenlet==3.0.3
 h11==0.14.0
 httpcore==1.0.5
 httptools==0.6.1
