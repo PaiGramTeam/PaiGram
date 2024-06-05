@@ -54,7 +54,7 @@ class AssetsCouldNotFound(AssetsServiceError):
     def __init__(self, message: str, target: str):
         self.message = message
         self.target = target
-        super().__init__(f"{message}: target={message}")
+        super().__init__(f"{message}: target={target}")
 
 
 class _AssetsService(ABC):
