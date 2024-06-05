@@ -23,7 +23,7 @@ cffi==1.16.0; platform_python_implementation != "PyPy"
 click==8.1.7
 colorama==0.4.6; sys_platform == "win32" or platform_system == "Windows"
 colorlog==6.8.2
-cryptography==42.0.7
+cryptography==42.0.8
 dnspython==2.6.1
 email-validator==2.1.1
 enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@71de88274d8bf11e1d91fd7782c7cdafb9bbd325
