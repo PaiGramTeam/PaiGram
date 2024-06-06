@@ -112,7 +112,7 @@ class Map(Plugin):
 
     def gen_caption(self, map_id: Union[int, str], name: str) -> str:
         count = self.map_helper.get_label_count(map_id, name)
-        return f"派蒙一共找到了 {name} 的 {count} 个位置点\n* 数据来源于米游社wiki"
+        return f"{config.notice.bot_name}一共找到了 {name} 的 {count} 个位置点\n* 数据来源于米游社wiki"
 
     @handler(CommandHandler, command="map", block=False)
     @handler(

@@ -10,6 +10,7 @@ from simnet.models.genshin.chronicle.characters import Character
 from telegram.constants import ChatAction
 from telegram.ext import filters
 
+from core.config import config
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
@@ -181,7 +182,7 @@ class AvatarListPlugin(Plugin):
         notice = None
         try:
             async with self.helper.genshin(user_id) as client:
-                notice = await message.reply_text("派蒙需要收集整理数据，还请耐心等待哦~")
+                notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
                 await message.reply_chat_action(ChatAction.TYPING)
                 characters = await client.get_genshin_characters(client.player_id)
                 avatar_datas: List[AvatarData] = await self.get_avatars_data(

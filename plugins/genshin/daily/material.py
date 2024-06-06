@@ -23,6 +23,7 @@ from simnet.models.genshin.chronicle.characters import Character
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 
+from core.config import config
 from core.dependence.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
 from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
@@ -351,7 +352,7 @@ class DailyMaterial(Plugin):
                 material = self.assets_service.material(material_id)
             except AssetsCouldNotFound as exc:
                 logger.warning("AssetsCouldNotFound message[%s] target[%s]", exc.message, exc.target)
-                await loading_prompt.edit_text("出错了呜呜呜 ~ 派蒙找不到一些素材")
+                await loading_prompt.edit_text(f"出错了呜呜呜 ~ {config.notice.bot_name}找不到一些素材")
                 raise
             [_, material_name, material_rarity] = HONEY_DATA["material"][material_id]
             material_icon = await material.icon(False)
@@ -392,15 +393,15 @@ class DailyMaterial(Plugin):
             return
 
         if self.locks[0].locked():  # 若检测到了第一个锁：正在下载每日素材表的数据
-            loading_prompt = await message.reply_text("派蒙正在摘抄每日素材表，以后再来探索吧~")
+            loading_prompt = await message.reply_text(f"{config.notice.bot_name}正在摘抄每日素材表，以后再来探索吧~")
             self.add_delete_message_job(loading_prompt, delay=5)
             return
 
         if self.locks[1].locked():  # 若检测到了第二个锁：正在下载角色、武器、材料的图标
-            await message.reply_text("派蒙正在搬运每日素材的图标，以后再来探索吧~")
+            await message.reply_text(f"{config.notice.bot_name}正在搬运每日素材的图标，以后再来探索吧~")
             return
 
-        loading_prompt = await message.reply_text("派蒙可能需要找找图标素材，还请耐心等待哦~")
+        loading_prompt = await message.reply_text(f"{config.notice.bot_name}可能需要找找图标素材，还请耐心等待哦~")
         await message.reply_chat_action(ChatAction.TYPING)
 
         # 获取已经缓存的秘境素材信息
@@ -470,15 +471,15 @@ class DailyMaterial(Plugin):
 
         logger.info("用户 {%s}[%s] 刷新[bold]每日素材[/]缓存命令", user.full_name, user.id, extra={"markup": True})
         if self.locks[0].locked():
-            notice = await message.reply_text("派蒙还在抄每日素材表呢，我有在好好工作哦~")
+            notice = await message.reply_text(f"{config.notice.bot_name}还在抄每日素材表呢，我有在好好工作哦~")
             self.add_delete_message_job(notice, delay=10)
             return
         if self.locks[1].locked():
-            notice = await message.reply_text("派蒙正在搬运每日素材图标，在努力工作呢！")
+            notice = await message.reply_text(f"{config.notice.bot_name}正在搬运每日素材图标，在努力工作呢！")
             self.add_delete_message_job(notice, delay=10)
             return
         async with self.locks[1]:  # 锁住第二把锁
-            notice = await message.reply_text("派蒙正在重新摘抄每日素材表，请稍等~", parse_mode=ParseMode.HTML)
+            notice = await message.reply_text(f"{config.notice.bot_name}正在重新摘抄每日素材表，请稍等~", parse_mode=ParseMode.HTML)
             async with self.locks[0]:  # 锁住第一把锁
                 await self._refresh_everyday_materials()
             notice = await notice.edit_text(

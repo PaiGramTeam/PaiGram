@@ -43,10 +43,10 @@ class Sign(Plugin):
     async def _process_auto_sign(self, user_id: int, chat_id: int, method: str) -> str:
         player = await self.players_service.get_player(user_id)
         if player is None:
-            return "未查询到账号信息，请先私聊派蒙绑定账号"
+            return config.notice.user_not_found
         cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookie_model is None:
-            return "未查询到账号信息，请先私聊派蒙绑定账号"
+            return config.notice.user_not_found
         user: SignUser = await self.sign_service.get_by_user_id(user_id)
         if user:
             if method == "关闭":
