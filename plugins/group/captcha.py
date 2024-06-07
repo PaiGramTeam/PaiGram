@@ -396,7 +396,9 @@ class GroupCaptcha(Plugin):
                     parse_mode=ParseMode.MARKDOWN_V2,
                 )
             except BadRequest as exc:
-                await chat.send_message(f"{config.notice.bot_name}分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
+                await chat.send_message(
+                    f"{config.notice.bot_name}分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。"
+                )
                 raise exc
             context.job_queue.run_once(
                 callback=self.kick_member_job,

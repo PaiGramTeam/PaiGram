@@ -30,6 +30,7 @@ INPUT_URL, CONFIRM_DELETE = range(10100, 10102)
 WAITING = f"小{config.notice.bot_name}正在从服务器获取数据，请稍后"
 PAYLOG_NOT_FOUND = f"{config.notice.bot_name}没有找到你的充值记录，快来私聊{config.notice.bot_name}导入吧~"
 
+
 class PayLogPlugin(Plugin.Conversation):
     """充值记录导入/导出/分析"""
 
@@ -206,9 +207,7 @@ class PayLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
             ]
-            await message.reply_text(
-                PAYLOG_NOT_FOUND, reply_markup=InlineKeyboardMarkup(buttons)
-            )
+            await message.reply_text(PAYLOG_NOT_FOUND, reply_markup=InlineKeyboardMarkup(buttons))
         except PayLogAccountNotFound:
             await message.reply_text("导出失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
         except PlayerNotFoundError:
@@ -236,9 +235,7 @@ class PayLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
             ]
-            await message.reply_text(
-                PAYLOG_NOT_FOUND, reply_markup=InlineKeyboardMarkup(buttons)
-            )
+            await message.reply_text(PAYLOG_NOT_FOUND, reply_markup=InlineKeyboardMarkup(buttons))
 
     @staticmethod
     async def get_migrate_data(

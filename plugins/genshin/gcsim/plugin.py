@@ -230,7 +230,9 @@ class GCSimPlugin(Plugin):
 
         fits = await self.gcsim_runner.get_fits(uid)
         if not fits:
-            await callback_query.answer(text=f"其他数据好像被{config.notice.bot_name}吃掉了，要不重新试试吧", show_alert=True)
+            await callback_query.answer(
+                text=f"其他数据好像被{config.notice.bot_name}吃掉了，要不重新试试吧", show_alert=True
+            )
             await message.delete()
             return
         buttons = self._gen_buttons(user_id, uid, fits, page)
@@ -301,7 +303,9 @@ class GCSimPlugin(Plugin):
 
         result_path = self.player_gcsim_scripts.get_result_path(uid, script_key)
         if not result_path.exists():
-            await callback_query.answer(text=f"运行结果似乎在提瓦特之外，{config.notice.bot_name}找不到了", show_alert=True)
+            await callback_query.answer(
+                text=f"运行结果似乎在提瓦特之外，{config.notice.bot_name}找不到了", show_alert=True
+            )
             return
         if result.script is None:
             await callback_query.answer(text=f"脚本似乎在提瓦特之外，{config.notice.bot_name}找不到了", show_alert=True)

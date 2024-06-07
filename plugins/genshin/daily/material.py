@@ -479,7 +479,9 @@ class DailyMaterial(Plugin):
             self.add_delete_message_job(notice, delay=10)
             return
         async with self.locks[1]:  # 锁住第二把锁
-            notice = await message.reply_text(f"{config.notice.bot_name}正在重新摘抄每日素材表，请稍等~", parse_mode=ParseMode.HTML)
+            notice = await message.reply_text(
+                f"{config.notice.bot_name}正在重新摘抄每日素材表，请稍等~", parse_mode=ParseMode.HTML
+            )
             async with self.locks[0]:  # 锁住第一把锁
                 await self._refresh_everyday_materials()
             notice = await notice.edit_text(
