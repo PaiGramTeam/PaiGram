@@ -46,7 +46,7 @@ class SetCommandPlugin(Plugin):
         group_command = [
             # 通用
             BotCommand("help", "帮助"),
-            BotCommand("quiz", "派蒙的十万个为什么"),
+            BotCommand("quiz", f"{config.notice.bot_name}的十万个为什么"),
             BotCommand("wish", " 非洲人模拟器（抽卡模拟器）"),
             BotCommand("set_wish", "抽卡模拟器定轨"),
             BotCommand("calendar", "活动日历"),

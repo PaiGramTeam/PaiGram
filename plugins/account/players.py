@@ -5,6 +5,7 @@ from typing import Tuple, TYPE_CHECKING
 from simnet import Region, GenshinClient
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import filters
+from core.config import config
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
@@ -56,9 +57,9 @@ class PlayersManagesPlugin(Plugin):
         players = await self.players_service.get_all_by_user_id(user.id)
         if len(players) == 0:
             if callback_query:
-                await callback_query.edit_message_text("未查询到您所绑定的账号信息，请先绑定账号")
+                await callback_query.edit_message_text(config.notice.user_not_found)
             else:
-                await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+                await message.reply_text(config.notice.user_not_found)
             return
         buttons = []
         for player in players:

@@ -52,6 +52,8 @@ if TYPE_CHECKING:
     from gram_core.services.template.models import RenderResult
 
 INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
+WAITING = f"小{config.notice.bot_name}正在从服务器获取数据，请稍后"
+WISHLOG_NOT_FOUND = f"{config.notice.bot_name}没有找到你的抽卡记录，快来私聊{config.notice.bot_name}导入吧~"
 
 
 class WishLogPlugin(Plugin.Conversation):
@@ -60,7 +62,7 @@ class WishLogPlugin(Plugin.Conversation):
     IMPORT_HINT = (
         "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
         "（非 paimon.moe 导出的文件数据）</b>\n\n"
-        f"> 你还可以向派蒙发送从其他工具导出的 UIGF {UIGF_VERSION} 标准的记录文件\n"
+        f"> 你还可以向{config.notice.bot_name}发送从其他工具导出的 UIGF {UIGF_VERSION} 标准的记录文件\n"
         "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
         "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
         "<b>注意：导入的数据将会与旧数据进行合并。</b>"
@@ -115,7 +117,7 @@ class WishLogPlugin(Plugin.Conversation):
                 new_num = await self.gacha_log.import_gacha_log_data(user.id, player_id, data, verify_uid)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
         except GachaLogNotFound:
-            return "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~"
+            return WAITING
         except GachaLogAccountNotFound:
             return "导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同"
         except GachaLogFileError:
@@ -128,7 +130,7 @@ class WishLogPlugin(Plugin.Conversation):
             return "导入失败，你已经通过其他方式导入过抽卡记录了，本次无法导入"
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
-            return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
+            return config.notice.user_not_found
 
     async def import_from_file(self, user: "User", message: "Message", document: "Optional[Document]" = None) -> None:
         if not document:
@@ -245,7 +247,7 @@ class WishLogPlugin(Plugin.Conversation):
             return ConversationHandler.END
         else:
             authkey = from_url_get_authkey(message.text)
-        reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后", reply_markup=ReplyKeyboardRemove())
+        reply = await message.reply_text(WAITING, reply_markup=ReplyKeyboardRemove())
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
         try:
@@ -268,7 +270,7 @@ class WishLogPlugin(Plugin.Conversation):
             context.chat_data["uid"] = player_id
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
-            await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+            await message.reply_text(config.notice.user_not_found)
             return ConversationHandler.END
         _, status = await self.gacha_log.load_history_info(str(user.id), str(player_id), only_status=True)
         if not status:
@@ -337,16 +339,14 @@ class WishLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
-            await message.reply_text(
-                "派蒙没有找到你的抽卡记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons)
-            )
+            await message.reply_text(WISHLOG_NOT_FOUND, reply_markup=InlineKeyboardMarkup(buttons))
         except GachaLogAccountNotFound:
             await message.reply_text("导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
         except GachaLogFileError:
             await message.reply_text("导入失败，数据格式错误")
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
-            await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+            await message.reply_text(config.notice.user_not_found)
 
     @handler.command(command="wish_log_url", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_url", filters=filters.ChatType.PRIVATE, block=False)
@@ -474,9 +474,7 @@ class WishLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
-            await message.reply_text(
-                "派蒙没有找到你的抽卡记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons)
-            )
+            await message.reply_text(WISHLOG_NOT_FOUND, reply_markup=InlineKeyboardMarkup(buttons))
 
     @handler.callback_query(pattern=r"^get_wish_log\|", block=False)
     async def get_wish_log(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:

@@ -134,7 +134,7 @@ class AbyssPlugin(Plugin):
         reply_text: Optional[Message] = None
 
         if total:
-            reply_text = await message.reply_text("派蒙需要时间整理深渊数据，还请耐心等待哦~")
+            reply_text = await message.reply_text(f"{config.notice.bot_name}需要时间整理深渊数据，还请耐心等待哦~")
         try:
             async with self.helper.genshin_or_public(user_id) as client:
                 if not client.public:

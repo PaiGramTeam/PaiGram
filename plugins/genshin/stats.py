@@ -3,6 +3,7 @@ from typing import Optional, TYPE_CHECKING
 from telegram.constants import ChatAction
 from telegram.ext import filters
 
+from core.config import config
 from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderResult
@@ -48,7 +49,7 @@ class PlayerStatsPlugins(Plugin):
         except AttributeError as exc:
             logger.error("角色数据有误")
             logger.exception(exc)
-            await message.reply_text("角色数据有误 估计是派蒙晕了")
+            await message.reply_text(f"角色数据有误 估计是{config.notice.bot_name}晕了")
             return
         except ValueError as exc:
             logger.warning("获取 uid 发生错误！ 错误信息为 %s", str(exc))

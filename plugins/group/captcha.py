@@ -215,7 +215,7 @@ class GroupCaptcha(Plugin):
                 )
         else:
             logger.warning("auth 模块 admin 函数 发现未知命令 result[%s]", result)
-            await context.bot.send_message(chat.id, "派蒙这边收到了错误的消息！请检查详细日记！")
+            await context.bot.send_message(chat.id, f"{config.notice.bot_name}这边收到了错误的消息！请检查详细日记！")
         if schedule := context.job_queue.scheduler.get_job(f"{chat.id}|{user_id}|auth_kick"):
             schedule.remove()
 
@@ -334,7 +334,7 @@ class GroupCaptcha(Plugin):
                 return
             chat_administrators = await ChatAdministrators.get_chat_administrators(self.cache, context, chat_id=chat.id)
             if ChatAdministrators.is_admin(chat_administrators, from_user.id):
-                await chat.send_message("派蒙检测到管理员邀请，自动放行了！")
+                await chat.send_message(f"{config.notice.bot_name}检测到管理员邀请，自动放行了！")
                 return
             question_id_list = await self.quiz_service.get_question_id_list()
             if len(question_id_list) == 0:
@@ -346,7 +346,7 @@ class GroupCaptcha(Plugin):
                 if "Not enough rights" in exc.message:
                     logger.warning("%s[%s] 权限不够", chat.title, chat.id)
                     await chat.send_message(
-                        f"派蒙无法修改 {user.mention_html()} 的权限！请检查是否给派蒙授权管理了",
+                        f"{config.notice.bot_name}无法修改 {user.mention_html()} 的权限！请检查是否给{config.notice.bot_name}授权管理了",
                         parse_mode=ParseMode.HTML,
                     )
                     return
@@ -396,7 +396,9 @@ class GroupCaptcha(Plugin):
                     parse_mode=ParseMode.MARKDOWN_V2,
                 )
             except BadRequest as exc:
-                await chat.send_message("派蒙分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。")
+                await chat.send_message(
+                    f"{config.notice.bot_name}分心了一下，不小心忘记你了，你只能先退出群再重新进来吧。"
+                )
                 raise exc
             context.job_queue.run_once(
                 callback=self.kick_member_job,

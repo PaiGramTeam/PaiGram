@@ -7,6 +7,7 @@ from telegram.ext import CommandHandler, MessageHandler, filters, ConversationHa
 from telegram.helpers import create_deep_linked_url
 
 from core.basemodel import RegionEnum
+from core.config import config
 from core.plugin import Plugin, handler, conversation
 from core.services.cookies import CookiesService
 from core.services.players.services import PlayersService
@@ -26,6 +27,8 @@ if TYPE_CHECKING:
 
 
 INPUT_URL, CONFIRM_DELETE = range(10100, 10102)
+WAITING = f"小{config.notice.bot_name}正在从服务器获取数据，请稍后"
+PAYLOG_NOT_FOUND = f"{config.notice.bot_name}没有找到你的充值记录，快来私聊{config.notice.bot_name}导入吧~"
 
 
 class PayLogPlugin(Plugin.Conversation):
@@ -63,7 +66,7 @@ class PayLogPlugin(Plugin.Conversation):
             new_num = await self.pay_log.get_log_data(user.id, player_id, authkey)
             return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条充值记录"
         except PayLogNotFound:
-            return "派蒙没有找到你的充值记录，快去充值吧~"
+            return f"{config.notice.bot_name}没有找到你的充值记录，快去充值吧~"
         except PayLogAccountNotFound:
             return "导入失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同"
         except PayLogInvalidAuthkey:
@@ -72,7 +75,7 @@ class PayLogPlugin(Plugin.Conversation):
             return "更新数据失败，authkey 已经过期"
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
-            return "派蒙没有找到您所绑定的账号信息，请先私聊派蒙绑定账号"
+            return config.notice.user_not_found
 
     @conversation.entry_point
     @handler.command(command="pay_log_import", filters=filters.ChatType.PRIVATE, block=False)
@@ -102,8 +105,7 @@ class PayLogPlugin(Plugin.Conversation):
                 raise CookiesNotFoundError(user.id)
         else:
             raise CookiesNotFoundError(user.id)
-        text = "小派蒙正在从服务器获取数据，请稍后"
-        reply = await message.reply_text(text)
+        reply = await message.reply_text(WAITING)
         await message.reply_chat_action(ChatAction.TYPING)
         data = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(data)
@@ -121,7 +123,7 @@ class PayLogPlugin(Plugin.Conversation):
             await message.reply_text("呜呜呜~输入错误，请尝试重新获取连接")
             return INPUT_URL
         authkey = from_url_get_authkey(message.text)
-        reply = await message.reply_text("小派蒙正在从服务器获取数据，请稍后")
+        reply = await message.reply_text(WAITING)
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(text)
@@ -137,7 +139,7 @@ class PayLogPlugin(Plugin.Conversation):
         player_info = await self.players_service.get_player(user.id)
         if player_info is None:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
-            await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+            await message.reply_text(config.notice.user_not_found)
             return ConversationHandler.END
         _, status = await self.pay_log.load_history_info(str(user.id), str(player_info.player_id), only_status=True)
         if not status:
@@ -205,14 +207,12 @@ class PayLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
             ]
-            await message.reply_text(
-                "派蒙没有找到你的充值记录，快来私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons)
-            )
+            await message.reply_text(PAYLOG_NOT_FOUND, reply_markup=InlineKeyboardMarkup(buttons))
         except PayLogAccountNotFound:
             await message.reply_text("导出失败，可能文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同")
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
-            await message.reply_text("未查询到您所绑定的账号信息，请先绑定账号")
+            await message.reply_text(config.notice.user_not_found)
 
     @handler(CommandHandler, command="pay_log", block=False)
     @handler(MessageHandler, filters=filters.Regex("^充值记录$"), block=False)
@@ -235,9 +235,7 @@ class PayLogPlugin(Plugin.Conversation):
             buttons = [
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "pay_log_import"))]
             ]
-            await message.reply_text(
-                "派蒙没有找到你的充值记录，快来点击按钮私聊派蒙导入吧~", reply_markup=InlineKeyboardMarkup(buttons)
-            )
+            await message.reply_text(PAYLOG_NOT_FOUND, reply_markup=InlineKeyboardMarkup(buttons))
 
     @staticmethod
     async def get_migrate_data(

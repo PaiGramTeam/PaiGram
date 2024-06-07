@@ -163,10 +163,10 @@ class GCSimPlugin(Plugin):
         message = update.effective_message
         args = self.get_args(context)
         if not self.gcsim_runner.initialized:
-            await message.reply_text("GCSim 未初始化，请稍候再试或重启派蒙")
+            await message.reply_text(f"GCSim 未初始化，请稍候再试或重启{config.notice.bot_name}")
             return
         if context.user_data.get("overlapping", False):
-            reply = await message.reply_text("旅行者已经有脚本正在运行，请让派蒙稍微休息一下")
+            reply = await message.reply_text(f"旅行者已经有脚本正在运行，请让{config.notice.bot_name}稍微休息一下")
             if filters.ChatType.GROUPS.filter(message):
                 self.add_delete_message_job(reply)
                 self.add_delete_message_job(message)
@@ -230,7 +230,9 @@ class GCSimPlugin(Plugin):
 
         fits = await self.gcsim_runner.get_fits(uid)
         if not fits:
-            await callback_query.answer(text="其他数据好像被派蒙吃掉了，要不重新试试吧", show_alert=True)
+            await callback_query.answer(
+                text=f"其他数据好像被{config.notice.bot_name}吃掉了，要不重新试试吧", show_alert=True
+            )
             await message.delete()
             return
         buttons = self._gen_buttons(user_id, uid, fits, page)
@@ -277,7 +279,7 @@ class GCSimPlugin(Plugin):
         try:
             await self.gcsim_runner.run(user_id, uid, script_key, character_infos, results, callback_task, priority)
         except GCSimQueueFull:
-            await callback_query.edit_message_text("派蒙任务过多忙碌中，请稍后再试")
+            await callback_query.edit_message_text(f"{config.notice.bot_name}任务过多忙碌中，请稍后再试")
             return
 
     async def _callback(
@@ -301,15 +303,17 @@ class GCSimPlugin(Plugin):
 
         result_path = self.player_gcsim_scripts.get_result_path(uid, script_key)
         if not result_path.exists():
-            await callback_query.answer(text="运行结果似乎在提瓦特之外，派蒙找不到了", show_alert=True)
+            await callback_query.answer(
+                text=f"运行结果似乎在提瓦特之外，{config.notice.bot_name}找不到了", show_alert=True
+            )
             return
         if result.script is None:
-            await callback_query.answer(text="脚本似乎在提瓦特之外，派蒙找不到了", show_alert=True)
+            await callback_query.answer(text=f"脚本似乎在提瓦特之外，{config.notice.bot_name}找不到了", show_alert=True)
             return
 
         result_ = await self.gcsim_renderer.prepare_result(result_path, result.script, character_infos)
         if not result_:
-            await callback_query.answer(text="在准备运行结果时派蒙出问题了", show_alert=True)
+            await callback_query.answer(text=f"在准备运行结果时{config.notice.bot_name}出问题了", show_alert=True)
             return
 
         render_result = await self.gcsim_renderer.render(script_key, result_)

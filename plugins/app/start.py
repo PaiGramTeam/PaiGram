@@ -2,6 +2,7 @@ from telegram import Update, ReplyKeyboardRemove
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.helpers import escape_markdown
 
+from core.config import config
 from core.plugin import handler, Plugin
 from utils.log import logger
 
@@ -16,7 +17,9 @@ class StartPlugin(Plugin):
         logger.info("用户 %s[%s] 发出start命令 args[%s]", user.full_name, user.id, args_text)
         if args is not None and len(args) >= 1:
             return
-        await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是派蒙 ！')}")
+        await message.reply_markdown_v2(
+            f"你好 {user.mention_markdown_v2()} {escape_markdown(f'！我是{config.notice.bot_name}！')}"
+        )
 
     @staticmethod
     async def unknown_command(update: Update, _: CallbackContext) -> None:

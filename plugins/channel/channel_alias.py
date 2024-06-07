@@ -5,6 +5,7 @@ from telegram.constants import ChatAction, ChatMemberStatus, ParseMode
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import filters
 
+from core.config import config
 from core.plugin import Plugin, handler
 from gram_core.services.channels.models import ChannelAliasDataBase as ChannelAlias
 from gram_core.services.channels.services import ChannelAliasService
@@ -19,13 +20,15 @@ if TYPE_CHECKING:
 
 __all__ = ("ChannelAliasPlugin",)
 
-CHANNEL_ALIAS_OPEN = """成功开启频道透视模式，派蒙将会把你当做普通用户，现在你可以使用频道身份执行命令
+CHANNEL_ALIAS_OPEN = f"""成功开启频道透视模式，{config.notice.bot_name}将会把你当做普通用户，现在你可以使用频道身份执行命令
 
 - 此功能可能使其他人能看到你的个人账号身份。
 - 此功能开启后对所有群组均有效。
 - 在转让频道前，请务必关闭此功能。
 """
-CHANNEL_ALIAS_CLOSE = """成功关闭频道透视模式，派蒙将不会把你当做普通用户，现在你无法使用频道身份执行命令"""
+CHANNEL_ALIAS_CLOSE = (
+    f"""成功关闭频道透视模式，{config.notice.bot_name}将不会把你当做普通用户，现在你无法使用频道身份执行命令"""
+)
 CHANNEL_ADMIN_HELP = (
     "参数错误，可用命令：\n\n- disable <id> 关闭频道透视模式\n- change <cid> <uid> 强制设置频道透视对应的用户 id"
 )
