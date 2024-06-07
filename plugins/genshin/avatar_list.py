@@ -183,14 +183,13 @@ class AvatarListPlugin(Plugin):
         try:
             async with self.helper.genshin(user_id) as client:
                 notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
+                self.add_delete_message_job(notice, delay=60)
                 await message.reply_chat_action(ChatAction.TYPING)
                 characters = await client.get_genshin_characters(client.player_id)
                 avatar_datas: List[AvatarData] = await self.get_avatars_data(
                     characters, client, None if all_avatars else MAX_AVATAR_COUNT
                 )
         except SimnetBadRequest as e:
-            if notice:
-                await notice.delete()
             if e.ret_code == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
                 self.add_delete_message_job(reply_message, delay=20)
@@ -212,7 +211,6 @@ class AvatarListPlugin(Plugin):
         }
 
         images = await self.avatar_list_render(base_render_data, avatar_datas, not all_avatars)
-        self.add_delete_message_job(notice, delay=5)
 
         for group in ArkoWrapper(images).group(10):  # 每 10 张图片分一个组
             await RenderGroupResult(results=group).reply_media_group(
