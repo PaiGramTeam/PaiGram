@@ -13,7 +13,7 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
     && pip install virtualenv pdm  \
     && python3 -m virtualenv venv/                 \
     && . venv/bin/activate                         \
-    && pdm config python.use_venv false            \
+    && pdm use -f venv                             \
     && pdm config pypi.url https://pypi.tuna.tsinghua.edu.cn/simple/ \
     && pdm install                              \
     && pdm install -G :all                      \
