@@ -25,6 +25,7 @@ from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.plugin import Plugin, error_handler
+from gram_core.services.cookies.error import TooManyRequestPublicCookies
 from gram_core.services.players.error import PlayerNotFoundError
 from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
 from modules.errorpush import (
@@ -267,6 +268,13 @@ class ErrorHandler(Plugin):
         if not isinstance(
             context.error, (CookiesNotFoundError, PlayerNotFoundError, GenshinPlayerNotFoundError)
         ) or not isinstance(update, Update):
+            return
+        self.create_notice_task(update, context, config.notice.user_not_found)
+        raise ApplicationHandlerStop
+
+    @error_handler()
+    async def process_public_cookies(self, update: object, context: CallbackContext):
+        if not isinstance(context.error, TooManyRequestPublicCookies) or not isinstance(update, Update):
             return
         self.create_notice_task(update, context, config.notice.user_not_found)
         raise ApplicationHandlerStop
