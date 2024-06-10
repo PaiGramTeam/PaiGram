@@ -144,7 +144,7 @@ class LedgerPlugin(Plugin):
                 return
             raise exc
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await render_result.reply_photo(message, filename=f"{client.player_id}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"{client.player_id}.png")
 
     @staticmethod
     async def save_ledger_data(

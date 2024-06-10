@@ -56,7 +56,7 @@ class PlayerStatsPlugins(Plugin):
             await message.reply_text("输入错误")
             return
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await render_result.reply_photo(message, filename=f"{client.player_id}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"{client.player_id}.png")
 
     async def render(self, client: "GenshinClient", uid: Optional[int] = None) -> RenderResult:
         if uid is None:

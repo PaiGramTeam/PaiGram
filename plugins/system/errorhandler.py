@@ -121,7 +121,7 @@ class ErrorHandler(Plugin):
                 await update.callback_query.answer(content, show_alert=True)
                 return
             if message:
-                reply_text = await message.reply_text(content, reply_markup=buttons, allow_sending_without_reply=True)
+                reply_text = await message.reply_text(content, reply_markup=buttons)
                 if filters.ChatType.GROUPS.filter(reply_text):
                     self.add_delete_message_job(reply_text, context=context)
                     self.add_delete_message_job(message, context=context)
