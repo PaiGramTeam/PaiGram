@@ -129,7 +129,6 @@ class WeaponPlugin(Plugin):
         reply_photo = await png_data.reply_photo(
             message,
             filename=f"{template_data['weapon_name']}.png",
-            allow_sending_without_reply=True,
         )
         if reply_photo.photo:
             description = weapon_data.story

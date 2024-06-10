@@ -104,13 +104,13 @@ class Sign(Plugin):
                     if challenge:
                         sign_text = await self.sign_system.start_sign(client, challenge=challenge, validate=validate)
                     else:
-                        reply_message = await message.reply_text("请求已经过期", allow_sending_without_reply=True)
+                        reply_message = await message.reply_text("请求已经过期")
                         if filters.ChatType.GROUPS.filter(reply_message):
                             self.add_delete_message_job(reply_message)
                         return
                 else:
                     sign_text = await self.sign_system.start_sign(client)
-            reply_message = await message.reply_text(sign_text, allow_sending_without_reply=True)
+            reply_message = await message.reply_text(sign_text)
             if filters.ChatType.GROUPS.filter(reply_message):
                 self.add_delete_message_job(reply_message)
         except NeedChallenge as exc:
@@ -124,7 +124,6 @@ class Sign(Plugin):
             )
             reply_message = await message.reply_text(
                 "签到失败，触发验证码风控，请尝试点击下方按钮重新签到",
-                allow_sending_without_reply=True,
                 reply_markup=button,
             )
             if filters.ChatType.GROUPS.filter(reply_message):
@@ -143,12 +142,12 @@ class Sign(Plugin):
                 await message.reply_chat_action(ChatAction.TYPING)
                 _, challenge = await self.sign_system.get_challenge(client.player_id)
                 if not challenge:
-                    await message.reply_text("验证请求已过期。", allow_sending_without_reply=True)
+                    await message.reply_text("验证请求已过期。")
                     return
                 sign_text = await self.sign_system.start_sign(client, challenge=challenge, validate=validate)
-                await message.reply_text(sign_text, allow_sending_without_reply=True)
+                await message.reply_text(sign_text)
         except NeedChallenge:
-            await message.reply_text("回调错误，请重新签到", allow_sending_without_reply=True)
+            await message.reply_text("回调错误，请重新签到")
 
     @handler(CallbackQueryHandler, pattern=r"^sign\|", block=False)
     async def sign_gen_link(self, update: Update, context: CallbackContext) -> None:

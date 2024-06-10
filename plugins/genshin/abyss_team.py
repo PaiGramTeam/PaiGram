@@ -128,4 +128,4 @@ class AbyssTeamPlugin(Plugin):
             full_page=True,
             query_selector=".bg-contain",
         )
-        await render_result.reply_photo(message, filename=f"abyss_team_{user_id}.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename=f"abyss_team_{user_id}.png")

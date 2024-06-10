@@ -47,4 +47,4 @@ class HelpRawPlugin(Plugin):
         if self.help_raw is None:
             await message.reply_text(f"出错了呜呜呜~ {config.notice.bot_name}没有找到任何帮助信息")
             return
-        await message.reply_text(self.help_raw, allow_sending_without_reply=True)
+        await message.reply_text(self.help_raw)

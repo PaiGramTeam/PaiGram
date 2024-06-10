@@ -1,4 +1,4 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyParameters
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
@@ -59,7 +59,6 @@ class StrategyPlugin(Plugin):
             caption=caption,
             filename=f"{character_name}.png",
             parse_mode=ParseMode.HTML,
-            reply_parameters=ReplyParameters(message.message_id, allow_sending_without_reply=True),
         )
         if reply_photo.photo:
             tags = roleToTag(character_name)

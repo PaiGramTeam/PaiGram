@@ -28,4 +28,4 @@ class HelpPlugin(Plugin):
             ttl=30 * 24 * 60 * 60,
         )
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await render_result.reply_photo(message, filename="help.png", allow_sending_without_reply=True)
+        await render_result.reply_photo(message, filename="help.png")
