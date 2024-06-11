@@ -91,7 +91,8 @@ class Redeem(Plugin):
                 self.add_delete_message_job(reply_message)
 
     async def redeem_codes(self, update: Update, user_id: int, codes: List[str]):
-        async with self.genshin_helper.genshin(user_id) as client:
+        uid, offset = self.get_real_uid_or_offset(update)
+        async with self.genshin_helper.genshin(user_id, player_id=uid, offset=offset) as client:
             chinese = client.region == Region.CHINESE
             uid = client.player_id
         tasks = []

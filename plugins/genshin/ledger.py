@@ -94,6 +94,7 @@ class LedgerPlugin(Plugin):
     @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
 
         now = datetime.now()
@@ -128,7 +129,7 @@ class LedgerPlugin(Plugin):
         self.log_user(update, logger.info, "查询旅行札记")
         await message.reply_chat_action(ChatAction.TYPING)
         try:
-            async with self.helper.genshin(user_id) as client:
+            async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
                 render_result = await self._start_get_ledger(client, month)
         except DataNotPublic:
             reply_message = await message.reply_text(
@@ -236,10 +237,11 @@ class LedgerPlugin(Plugin):
     @handler.message(filters.Regex(r"^旅行札记历史数据"), block=False)
     async def ledger_history_command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         self.log_user(update, logger.info, "查询旅行札记历史数据")
 
-        async with self.helper.genshin(user_id) as client:
+        async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
             await self.get_session_button_data(user_id, client.player_id, force=True)
             buttons = await self.gen_season_button(user_id, client.player_id)
             if not buttons:

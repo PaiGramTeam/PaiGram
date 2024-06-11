@@ -34,6 +34,7 @@ class AbyssTeamPlugin(Plugin):
     @handler.message(filters.Regex(r"^深渊配队"), block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
 
         if "help" in message.text or "帮助" in message.text:
@@ -51,7 +52,7 @@ class AbyssTeamPlugin(Plugin):
 
         self.log_user(update, logger.info, "[bold]深渊配队推荐[/bold]请求", extra={"markup": True})
 
-        client = await self.helper.get_genshin_client(user_id)
+        client = await self.helper.get_genshin_client(user_id, player_id=uid, offset=offset)
 
         await message.reply_chat_action(ChatAction.TYPING)
         team_data = await self.team_data.get_data()
