@@ -109,7 +109,7 @@ class Redeem(Plugin):
         if filters.ChatType.GROUPS.filter(message):
             self.add_delete_message_job(message)
             limit = self.max_code_in_pub_message
-        codes = [i for i in self.get_args(context) if i][:limit]
+        codes = [i for i in self.get_args(context) if not i.startswith("@")][:limit]
         self.log_user(update, logger.info, "兑换码兑换命令请求 codes[%s]", codes)
         if not codes:
             return
