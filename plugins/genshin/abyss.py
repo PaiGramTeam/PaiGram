@@ -89,9 +89,10 @@ class AbyssPlugin(Plugin):
 
     @handler.command("abyss", block=False)
     @handler.message(filters.Regex(r"^深渊数据"), block=False)
-    async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
+    async def command_start(self, update: Update, context: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user_id = await self.get_real_user_id(update)
         uid, offset = self.get_real_uid_or_offset(update)
+        args = self.get_args(context)
         message = update.effective_message
 
         # 若查询帮助
@@ -109,7 +110,7 @@ class AbyssPlugin(Plugin):
             return
 
         # 解析参数
-        floor, total, previous = get_args(message.text)
+        floor, total, previous = get_args(" ".join([i for i in args if not i.startswith("@")]))
 
         if floor > 12 or floor < 0:
             reply_msg = await message.reply_text("深渊层数输入错误，请重新输入。支持的参数为： 1-12 或 all")
