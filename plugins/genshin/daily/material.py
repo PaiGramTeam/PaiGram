@@ -211,12 +211,14 @@ class DailyMaterial(Plugin):
         talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
         return [t.level for t in talents]
 
-    async def _get_items_from_user(self, user_id: int) -> Tuple[Optional["GenshinClient"], "UserOwned"]:
+    async def _get_items_from_user(
+        self, user_id: int, uid: int, offset: int
+    ) -> Tuple[Optional["GenshinClient"], "UserOwned"]:
         """获取已经绑定的账号的角色、武器信息"""
         user_data = UserOwned()
         try:
             logger.debug("尝试获取已绑定的原神账号")
-            client = await self.helper.get_genshin_client(user_id)
+            client = await self.helper.get_genshin_client(user_id, player_id=uid, offset=offset)
             logger.debug("获取账号数据成功: UID=%s", client.player_id)
             characters = await client.get_genshin_characters(client.player_id)
             for character in characters:
@@ -370,6 +372,7 @@ class DailyMaterial(Plugin):
     @handler.command("daily_material", block=False)
     async def daily_material(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = typing.cast("Message", update.effective_message)
         args = self.get_args(context)
         now = datetime.now()
@@ -410,7 +413,7 @@ class DailyMaterial(Plugin):
             await self._refresh_everyday_materials()
 
         # 尝试获取用户已绑定的原神账号信息
-        client, user_owned = await self._get_items_from_user(user_id)
+        client, user_owned = await self._get_items_from_user(user_id, uid, offset)
         today_materials = self.everyday_materials.weekday(weekday)
         fragile_client = FragileGenshinClient(client)
         area_avatars: List["AreaData"] = []

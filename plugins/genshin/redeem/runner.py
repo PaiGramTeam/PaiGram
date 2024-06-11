@@ -78,7 +78,9 @@ class RedeemRunner:
         error = None
         try:
             async with self.genshin_helper.genshin(
-                result.user_id, region=RegionEnum.HOYOLAB if only_region else None
+                result.user_id,
+                region=RegionEnum.HOYOLAB if only_region else None,
+                player_id=result.uid,
             ) as client:
                 client: "GenshinClient"
                 result.uid = client.player_id

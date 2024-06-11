@@ -257,13 +257,13 @@ class LedgerPlugin(Plugin):
         if reply_message.photo:
             self.kitsune = reply_message.photo[-1].file_id
 
-    async def get_ledger_history_page(self, update: "Update", user_id: int, result: str):
+    async def get_ledger_history_page(self, update: "Update", user_id: int, uid: int, result: str):
         """翻页处理"""
         callback_query = update.callback_query
 
         self.log_user(update, logger.info, "切换旅行札记历史数据页 page[%s]", result)
         page = int(result.split("_")[1])
-        async with self.helper.genshin(user_id) as client:
+        async with self.helper.genshin(user_id, player_id=uid) as client:
             buttons = await self.gen_season_button(user_id, client.player_id, page)
             if not buttons:
                 await callback_query.answer("还没有旅行札记历史数据哦~", show_alert=True)
@@ -293,7 +293,7 @@ class LedgerPlugin(Plugin):
             )
             return _result, _user_id, _uid
 
-        result, user_id, _ = await get_ledger_history_callback(callback_query.data)
+        result, user_id, uid = await get_ledger_history_callback(callback_query.data)
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
@@ -301,7 +301,7 @@ class LedgerPlugin(Plugin):
             await callback_query.answer(text="此按钮不可用", show_alert=True)
             return
         if result.startswith("p_"):
-            await self.get_ledger_history_page(update, user_id, result)
+            await self.get_ledger_history_page(update, user_id, uid, result)
             return
         data_id = int(result)
         data = await self.history_data_ledger.get_by_id(data_id)

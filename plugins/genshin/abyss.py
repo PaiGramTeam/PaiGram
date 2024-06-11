@@ -91,6 +91,7 @@ class AbyssPlugin(Plugin):
     @handler.message(filters.Regex(r"^深渊数据"), block=False)
     async def command_start(self, update: Update, _: CallbackContext) -> None:  # skipcq: PY-R1000 #
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
 
         # 若查询帮助
@@ -136,7 +137,7 @@ class AbyssPlugin(Plugin):
         if total:
             reply_text = await message.reply_text(f"{config.notice.bot_name}需要时间整理深渊数据，还请耐心等待哦~")
         try:
-            async with self.helper.genshin_or_public(user_id) as client:
+            async with self.helper.genshin_or_public(user_id, uid=uid, offset=offset) as client:
                 if not client.public:
                     await client.get_record_cards()
                 abyss_data, avatar_data = await self.get_rendered_pic_data(client, client.player_id, previous)
@@ -458,10 +459,11 @@ class AbyssPlugin(Plugin):
     @handler.message(filters.Regex(r"^深渊历史数据"), block=False)
     async def abyss_history_command_start(self, update: Update, _: CallbackContext) -> None:
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         self.log_user(update, logger.info, "查询深渊历史数据")
 
-        async with self.helper.genshin_or_public(user_id) as client:
+        async with self.helper.genshin_or_public(user_id, uid=uid, offset=offset) as client:
             await self.get_session_button_data(user_id, client.player_id, force=True)
             buttons = await self.gen_season_button(user_id, client.player_id)
             if not buttons:
@@ -469,13 +471,13 @@ class AbyssPlugin(Plugin):
                 return
         await message.reply_text("请选择要查询的深渊历史数据", reply_markup=InlineKeyboardMarkup(buttons))
 
-    async def get_abyss_history_page(self, update: "Update", user_id: int, result: str):
+    async def get_abyss_history_page(self, update: "Update", user_id: int, uid: int, result: str):
         """翻页处理"""
         callback_query = update.callback_query
 
         self.log_user(update, logger.info, "切换深渊历史数据页 page[%s]", result)
         page = int(result.split("_")[1])
-        async with self.helper.genshin_or_public(user_id) as client:
+        async with self.helper.genshin_or_public(user_id, uid=uid) as client:
             buttons = await self.gen_season_button(user_id, client.player_id, page)
             if not buttons:
                 await callback_query.answer("还没有深渊历史数据哦~", show_alert=True)
@@ -560,7 +562,7 @@ class AbyssPlugin(Plugin):
             )
             return _detail, _result, _user_id, _uid
 
-        detail, result, user_id, _ = await get_abyss_history_callback(callback_query.data)
+        detail, result, user_id, uid = await get_abyss_history_callback(callback_query.data)
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
@@ -568,7 +570,7 @@ class AbyssPlugin(Plugin):
             await callback_query.answer(text="此按钮不可用", show_alert=True)
             return
         if result.startswith("p_"):
-            await self.get_abyss_history_page(update, user_id, result)
+            await self.get_abyss_history_page(update, user_id, uid, result)
             return
         data_id = int(result)
         if detail:

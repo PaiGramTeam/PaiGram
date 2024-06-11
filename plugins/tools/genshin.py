@@ -402,6 +402,8 @@ class GenshinHelper(Plugin):
                 yield client
         except (CookiesNotFoundError, PlayerNotFoundError):
             if uid:
+                if uid < 10:
+                    raise PlayerNotFoundError(user_id)
                 region = RegionEnum.HYPERION if uid < 600000000 else RegionEnum.HOYOLAB
             async with self.public_genshin(user_id, region, uid) as client:
                 try:
