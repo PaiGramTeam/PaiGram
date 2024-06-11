@@ -108,14 +108,17 @@ class GCSimPlugin(Plugin):
         return [fit for fit in fits if all(name in [str(i) for i in fit.characters] for name in names)]
 
     async def _get_uid_names(
-        self, user_id: int, args: List[str], reply: Optional["Message"]
+        self,
+        user_id: int,
+        args: List[str],
+        reply: Optional["Message"],
+        uid: int,
+        offset: int,
     ) -> Tuple[Optional[int], List[str]]:
         """通过消息获取 uid，优先级：args > reply > self"""
-        uid, user_id_, names = None, user_id, []
+        uid, user_id_, names = uid, user_id, []
         if args:
             for i in args:
-                if i is not None and i.isdigit() and len(i) == 9:
-                    uid = int(i)
                 if i is not None and roleToId(i) is not None:
                     names.append(roleToName(i))
         if reply:
@@ -124,11 +127,11 @@ class GCSimPlugin(Plugin):
             except AttributeError:
                 pass
         if not uid:
-            player_info = await self.player_service.get_player(user_id_)
+            player_info = await self.player_service.get_player(user_id_, offset=offset)
             if player_info is not None:
                 uid = player_info.player_id
             if (not uid) and (user_id_ != user_id):
-                player_info = await self.player_service.get_player(user_id)
+                player_info = await self.player_service.get_player(user_id, offset=offset)
                 if player_info is not None:
                     uid = player_info.player_id
         return uid, names
@@ -172,7 +175,8 @@ class GCSimPlugin(Plugin):
                 self.add_delete_message_job(message)
             return
 
-        uid, names = await self._get_uid_names(user_id, args, message.reply_to_message)
+        uid, offset = self.get_real_uid_or_offset(update)
+        uid, names = await self._get_uid_names(user_id, args, message.reply_to_message, uid, offset)
         self.log_user(update, logger.info, "发出 gcsim 命令 UID[%s] NAMES[%s]", uid, " ".join(names))
         if uid is None:
             raise PlayerNotFoundError(user_id)
