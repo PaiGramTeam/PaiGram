@@ -31,16 +31,16 @@ dependencies = [
     "enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py",
     "lxml<6.0.0,>=5.0.0",
     "arko-wrapper<1.0.0,>=0.2.8",
-    "fastapi<1.0.0,>=0.110.0",
-    "uvicorn[standard]<1.0.0,>=0.28.0",
-    "sentry-sdk<2.0.0,>=1.31.0",
+    "fastapi<1.0.0,>=0.111.0",
+    "uvicorn[standard]<1.0.0,>=0.30.1",
+    "sentry-sdk<3.0.0,>=2.5.1",
     "GitPython<4.0.0,>=3.1.30",
     "openpyxl<4.0.0,>=3.1.1",
     "async-lru<3.0.0,>=2.0.4",
     "thefuzz<1.0.0,>=0.22.1",
     "cryptography<43.0.0,>=42.0.2",
     "pillow<11.0.0,>=10.0.1",
-    "playwright==1.39.0",
+    "playwright==1.44.0",
     "aiosqlite[sqlite]<1.0.0,>=0.20.0",
     "simnet @ git+https://github.com/PaiGramTeam/SIMNet",
     "gcsim-pypi<3.0.0.0,>=2.8.2.10",
@@ -52,7 +52,7 @@ license = {text = "AGPL-3.0"}
 
 [project.optional-dependencies]
 pyro = ["TgCrypto<2.0.0,>=1.2.5", "Pyrogram<3.0.0,>=2.0.102"]
-test = ["pytest<8.0.0,>=7.3.0", "pytest-asyncio<1.0.0,>=0.23.2", "flaky<4.0.0,>=3.7.0"]
+test = ["pytest<9.0.0,>=8.2.2", "pytest-asyncio<1.0.0,>=0.23.2", "flaky<4.0.0,>=3.7.0"]
 genshin-artifact = ["python-genshin-artifact<2.0.0,>=1.0.4"]
 
 [tool.pdm]
