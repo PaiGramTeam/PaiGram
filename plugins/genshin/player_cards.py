@@ -136,11 +136,11 @@ class PlayerCards(Plugin):
         user_id: int,
         args: List[str],
         reply: Optional["Message"],
-        uid: int,
+        player_id: int,
         offset: int,
     ) -> Tuple[Optional[int], Optional[str]]:
         """通过消息获取 uid，优先级：args > reply > self"""
-        uid, ch_name, user_id_ = uid, None, user_id
+        uid, ch_name, user_id_ = player_id, None, user_id
         if args:
             for i in args:
                 if i is not None and not i.startswith("@"):

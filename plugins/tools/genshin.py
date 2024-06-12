@@ -218,9 +218,9 @@ class GenshinHelper(Plugin):
             raise ServiceNotFoundError(*filter(lambda x: x is None, temp))
 
     @asynccontextmanager
-    async def genshin(
+    async def genshin(  # skipcq: PY-R1000 #
         self, user_id: int, region: Optional[RegionEnum] = None, player_id: int = None, offset: int = 0
-    ) -> GenshinClient:  # skipcq: PY-R1000 #
+    ) -> GenshinClient:
         player = await self.players_service.get_player(user_id, region, player_id, offset)
         if player is None:
             raise PlayerNotFoundError(user_id)

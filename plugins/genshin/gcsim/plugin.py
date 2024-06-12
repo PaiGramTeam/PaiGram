@@ -112,11 +112,11 @@ class GCSimPlugin(Plugin):
         user_id: int,
         args: List[str],
         reply: Optional["Message"],
-        uid: int,
+        player_id: int,
         offset: int,
     ) -> Tuple[Optional[int], List[str]]:
         """通过消息获取 uid，优先级：args > reply > self"""
-        uid, user_id_, names = uid, user_id, []
+        uid, user_id_, names = player_id, user_id, []
         if args:
             for i in args:
                 if i is not None and roleToId(i) is not None:
