@@ -190,6 +190,10 @@ class AvatarListPlugin(Plugin):
                 avatar_datas: List[AvatarData] = await self.get_avatars_data(
                     characters, client, None if all_avatars else MAX_AVATAR_COUNT
                 )
+                if not avatar_datas:
+                    reply_message = await message.reply_html("服务器熟啦 ~ 请稍后再试")
+                    self.add_delete_message_job(reply_message, delay=20)
+                    return
         except SimnetBadRequest as e:
             if e.ret_code == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
