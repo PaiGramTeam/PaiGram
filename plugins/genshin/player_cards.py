@@ -132,28 +132,30 @@ class PlayerCards(Plugin):
         return await self.player_cards_file.load_history_info(uid)
 
     async def get_uid_and_ch(
-        self, user_id: int, args: List[str], reply: Optional["Message"]
+        self,
+        user_id: int,
+        args: List[str],
+        reply: Optional["Message"],
+        player_id: int,
+        offset: int,
     ) -> Tuple[Optional[int], Optional[str]]:
         """通过消息获取 uid，优先级：args > reply > self"""
-        uid, ch_name, user_id_ = None, None, user_id
+        uid, ch_name, user_id_ = player_id, None, user_id
         if args:
             for i in args:
-                if i is not None:
-                    if i.isdigit() and len(i) == 9:
-                        uid = int(i)
-                    else:
-                        ch_name = roleToName(i)
+                if i is not None and not i.startswith("@"):
+                    ch_name = roleToName(i)
         if reply:
             try:
                 user_id_ = reply.from_user.id
             except AttributeError:
                 pass
         if not uid:
-            player_info = await self.player_service.get_player(user_id_)
+            player_info = await self.player_service.get_player(user_id_, offset=offset)
             if player_info is not None:
                 uid = player_info.player_id
             if (not uid) and (user_id_ != user_id):
-                player_info = await self.player_service.get_player(user_id)
+                player_info = await self.player_service.get_player(user_id, offset=offset)
                 if player_info is not None:
                     uid = player_info.player_id
         return uid, ch_name
@@ -177,7 +179,8 @@ class PlayerCards(Plugin):
         message = update.effective_message
         args = self.get_args(context)
         await message.reply_chat_action(ChatAction.TYPING)
-        uid, character_name = await self.get_uid_and_ch(user_id, args, message.reply_to_message)
+        uid, offset = self.get_real_uid_or_offset(update)
+        uid, character_name = await self.get_uid_and_ch(user_id, args, message.reply_to_message, uid, offset)
         if uid is None:
             raise PlayerNotFoundError(user_id)
         original_data = await self._load_history(uid)

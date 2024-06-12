@@ -31,8 +31,8 @@ class AkashaPlugin(Plugin):
         self.template_service = template_service
         self.player_service = player_service
 
-    async def get_user_uid(self, user_id: int) -> Optional[int]:
-        player = await self.player_service.get(user_id)
+    async def get_user_uid(self, user_id: int, uid: int, offset: int) -> Optional[int]:
+        player = await self.player_service.get(user_id, player_id=uid, offset=offset)
         if player is None:
             return None
         return player.player_id
@@ -96,7 +96,8 @@ class AkashaPlugin(Plugin):
                 self.add_delete_message_job(reply_message)
             return
         avatar_name = roleToName(args[0])
-        uid = await self.get_user_uid(user_id)
+        uid, offset = self.get_real_uid_or_offset(update)
+        uid = await self.get_user_uid(user_id, uid, offset)
         try:
             render_data = await self.get_avatar_board_render_data(avatar_name, uid)
         except NotImplementedError:

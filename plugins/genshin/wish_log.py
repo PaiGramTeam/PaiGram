@@ -90,16 +90,16 @@ class WishLogPlugin(Plugin.Conversation):
         async with async_open(GACHA_LOG_PAIMON_MOE_PATH, "r", encoding="utf-8") as load_f:
             self.zh_dict = jsonlib.loads(await load_f.read())
 
-    async def get_player_id(self, uid: int) -> int:
+    async def get_player_id(self, user_id: int, player_id: int, offset: int) -> int:
         """获取绑定的游戏ID"""
         logger.debug("尝试获取已绑定的原神账号")
-        player = await self.players_service.get_player(uid)
+        player = await self.players_service.get_player(user_id, player_id=player_id, offset=offset)
         if player is None:
-            raise PlayerNotFoundError(uid)
+            raise PlayerNotFoundError(user_id)
         return player.player_id
 
     async def _refresh_user_data(
-        self, user: "User", data: dict = None, authkey: str = None, verify_uid: bool = True
+        self, user: "User", player_id: int, data: dict = None, authkey: str = None, verify_uid: bool = True
     ) -> str:
         """刷新用户数据
         :param user: 用户
@@ -109,7 +109,6 @@ class WishLogPlugin(Plugin.Conversation):
         """
         try:
             logger.debug("尝试获取已绑定的原神账号")
-            player_id = await self.get_player_id(user.id)
             if authkey:
                 new_num = await self.gacha_log.get_gacha_log_data(user.id, player_id, authkey)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
@@ -132,7 +131,9 @@ class WishLogPlugin(Plugin.Conversation):
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             return config.notice.user_not_found
 
-    async def import_from_file(self, user: "User", message: "Message", document: "Optional[Document]" = None) -> None:
+    async def import_from_file(
+        self, user: "User", player_id: int, message: "Message", document: "Optional[Document]" = None
+    ) -> None:
         if not document:
             document = message.document
         # TODO: 使用 mimetype 判断文件类型
@@ -178,16 +179,16 @@ class WishLogPlugin(Plugin.Conversation):
         reply = await message.reply_text("文件解析成功，正在导入数据")
         await message.reply_chat_action(ChatAction.TYPING)
         try:
-            text = await self._refresh_user_data(user, data=data, verify_uid=file_type == "json")
+            text = await self._refresh_user_data(user, player_id, data=data, verify_uid=file_type == "json")
         except Exception as exc:  # pylint: disable=W0703
             logger.error("文件解析失败 %s", repr(exc))
             text = f"文件解析失败，请检查文件是否符合 UIGF {UIGF_VERSION} 标准"
         await reply.edit_text(text)
 
-    async def can_gen_authkey(self, uid: int) -> bool:
-        player_info = await self.players_service.get_player(uid, region=RegionEnum.HYPERION)
+    async def can_gen_authkey(self, user_id: int, player_id: int) -> bool:
+        player_info = await self.players_service.get_player(user_id, region=RegionEnum.HYPERION, player_id=player_id)
         if player_info is not None:
-            cookies = await self.cookie_service.get(uid, account_id=player_info.account_id)
+            cookies = await self.cookie_service.get(user_id, account_id=player_info.account_id)
             if (
                 cookies is not None
                 and cookies.data
@@ -214,23 +215,27 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="gacha_log_import", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导入抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
     @handler.command(command="start", filters=filters.Regex("gacha_log_import$"), block=False)
-    async def command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
+    async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         user = update.effective_user
+        player_id = await self.get_player_id(user.id, uid, offset)
+        context.chat_data["uid"] = player_id
         logger.info("用户 %s[%s] 导入抽卡记录命令请求", user.full_name, user.id)
         keyboard = None
-        if await self.can_gen_authkey(user.id):
+        if await self.can_gen_authkey(user.id, player_id):
             keyboard = ReplyKeyboardMarkup([["自动导入"], ["退出"]], one_time_keyboard=True)
         await message.reply_text(self.IMPORT_HINT, parse_mode="html", reply_markup=keyboard)
         return INPUT_URL
 
     @conversation.state(state=INPUT_URL)
     @handler.message(filters=~filters.COMMAND, block=False)
-    async def import_data_from_message(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
+    async def import_data_from_message(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
+        player_id = context.chat_data["uid"]
         if message.document:
-            await self.import_from_file(user, message)
+            await self.import_from_file(user, player_id, message)
             return ConversationHandler.END
         if not message.text:
             await message.reply_text("请发送文件或链接")
@@ -249,7 +254,7 @@ class WishLogPlugin(Plugin.Conversation):
             authkey = from_url_get_authkey(message.text)
         reply = await message.reply_text(WAITING, reply_markup=ReplyKeyboardRemove())
         await message.reply_chat_action(ChatAction.TYPING)
-        text = await self._refresh_user_data(user, authkey=authkey)
+        text = await self._refresh_user_data(user, player_id, authkey=authkey)
         try:
             await reply.delete()
         except BadRequest:
@@ -262,11 +267,12 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="gacha_log_delete", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^删除抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
     async def command_start_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 删除抽卡记录命令请求", user.full_name, user.id)
         try:
-            player_id = await self.get_player_id(user.id)
+            player_id = await self.get_player_id(user.id, uid, offset)
             context.chat_data["uid"] = player_id
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
@@ -296,6 +302,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="wish_log_force_delete", block=False, admin=True)
     @handler.command(command="gacha_log_force_delete", block=False, admin=True)
     async def command_gacha_log_force_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 强制删除抽卡记录命令请求", user.full_name, user.id)
@@ -307,7 +314,7 @@ class WishLogPlugin(Plugin.Conversation):
             cid = int(args[0])
             if cid < 0:
                 raise ValueError("Invalid cid")
-            player_id = await self.get_player_id(cid)
+            player_id = await self.get_player_id(cid, uid, offset)
             _, status = await self.gacha_log.load_history_info(str(cid), str(player_id), only_status=True)
             if not status:
                 await message.reply_text("该用户还没有导入抽卡记录")
@@ -325,11 +332,12 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.command(command="gacha_log_export", filters=filters.ChatType.PRIVATE, block=False)
     @handler.message(filters=filters.Regex("^导出抽卡记录(.*)") & filters.ChatType.PRIVATE, block=False)
     async def command_start_export(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         user = update.effective_user
         logger.info("用户 %s[%s] 导出抽卡记录命令请求", user.full_name, user.id)
         try:
-            player_id = await self.get_player_id(user.id)
+            player_id = await self.get_player_id(user.id, uid, offset)
             await message.reply_chat_action(ChatAction.TYPING)
             path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(player_id))
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
@@ -411,9 +419,8 @@ class WishLogPlugin(Plugin.Conversation):
         buttons.append([InlineKeyboardButton("五星抽卡统计", callback_data=f"get_wish_log|{user_id}|{uid}|count|five")])
         return buttons
 
-    async def wish_log_pool_choose(self, user_id: int, message: "Message"):
+    async def wish_log_pool_choose(self, user_id: int, player_id: int, message: "Message"):
         await message.reply_chat_action(ChatAction.TYPING)
-        player_id = await self.get_player_id(user_id)
         gacha_log, status = await self.gacha_log.load_history_info(str(user_id), str(player_id))
         if not status:
             raise GachaLogNotFound
@@ -431,9 +438,8 @@ class WishLogPlugin(Plugin.Conversation):
         if reply_message.photo:
             self.wish_photo = reply_message.photo[-1].file_id
 
-    async def wish_log_pool_send(self, user_id: int, pool_type: "BannerType", message: "Message"):
+    async def wish_log_pool_send(self, user_id: int, uid: int, pool_type: "BannerType", message: "Message"):
         await message.reply_chat_action(ChatAction.TYPING)
-        uid = await self.get_player_id(user_id)
         png_data = await self.rander_wish_log_analysis(user_id, uid, pool_type)
         if isinstance(png_data, str):
             reply = await message.reply_text(png_data)
@@ -452,6 +458,7 @@ class WishLogPlugin(Plugin.Conversation):
     @handler.message(filters=filters.Regex("^抽卡记录?(武器|角色|常驻|)$"), block=False)
     async def command_start_analysis(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         pool_type = None
         if args := self.get_args(context):
@@ -465,10 +472,11 @@ class WishLogPlugin(Plugin.Conversation):
                 pool_type = BannerType.CHRONICLED
         self.log_user(update, logger.info, "抽卡记录命令请求 || 参数 %s", pool_type.name if pool_type else None)
         try:
+            player_id = await self.get_player_id(user_id, uid, offset)
             if pool_type is None:
-                await self.wish_log_pool_choose(user_id, message)
+                await self.wish_log_pool_choose(user_id, player_id, message)
             else:
-                await self.wish_log_pool_send(user_id, pool_type, message)
+                await self.wish_log_pool_send(user_id, player_id, pool_type, message)
         except GachaLogNotFound:
             self.log_user(update, logger.info, "未找到抽卡记录")
             buttons = [

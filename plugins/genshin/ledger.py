@@ -94,6 +94,7 @@ class LedgerPlugin(Plugin):
     @handler.message(filters=filters.Regex("^旅行札记查询(.*)"), block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
 
         now = datetime.now()
@@ -128,7 +129,7 @@ class LedgerPlugin(Plugin):
         self.log_user(update, logger.info, "查询旅行札记")
         await message.reply_chat_action(ChatAction.TYPING)
         try:
-            async with self.helper.genshin(user_id) as client:
+            async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
                 render_result = await self._start_get_ledger(client, month)
         except DataNotPublic:
             reply_message = await message.reply_text(
@@ -236,10 +237,11 @@ class LedgerPlugin(Plugin):
     @handler.message(filters.Regex(r"^旅行札记历史数据"), block=False)
     async def ledger_history_command_start(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         self.log_user(update, logger.info, "查询旅行札记历史数据")
 
-        async with self.helper.genshin(user_id) as client:
+        async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
             await self.get_session_button_data(user_id, client.player_id, force=True)
             buttons = await self.gen_season_button(user_id, client.player_id)
             if not buttons:
@@ -255,13 +257,13 @@ class LedgerPlugin(Plugin):
         if reply_message.photo:
             self.kitsune = reply_message.photo[-1].file_id
 
-    async def get_ledger_history_page(self, update: "Update", user_id: int, result: str):
+    async def get_ledger_history_page(self, update: "Update", user_id: int, uid: int, result: str):
         """翻页处理"""
         callback_query = update.callback_query
 
         self.log_user(update, logger.info, "切换旅行札记历史数据页 page[%s]", result)
         page = int(result.split("_")[1])
-        async with self.helper.genshin(user_id) as client:
+        async with self.helper.genshin(user_id, player_id=uid) as client:
             buttons = await self.gen_season_button(user_id, client.player_id, page)
             if not buttons:
                 await callback_query.answer("还没有旅行札记历史数据哦~", show_alert=True)
@@ -291,7 +293,7 @@ class LedgerPlugin(Plugin):
             )
             return _result, _user_id, _uid
 
-        result, user_id, _ = await get_ledger_history_callback(callback_query.data)
+        result, user_id, uid = await get_ledger_history_callback(callback_query.data)
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
@@ -299,7 +301,7 @@ class LedgerPlugin(Plugin):
             await callback_query.answer(text="此按钮不可用", show_alert=True)
             return
         if result.startswith("p_"):
-            await self.get_ledger_history_page(update, user_id, result)
+            await self.get_ledger_history_page(update, user_id, uid, result)
             return
         data_id = int(result)
         data = await self.history_data_ledger.get_by_id(data_id)
