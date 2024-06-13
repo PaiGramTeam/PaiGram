@@ -405,6 +405,8 @@ class GenshinHelper(Plugin):
                 if uid < 10:
                     raise PlayerNotFoundError(user_id)
                 region = RegionEnum.HYPERION if uid < 600000000 else RegionEnum.HOYOLAB
+            if uid is None and region is None:
+                raise PlayerNotFoundError(user_id)
             async with self.public_genshin(user_id, region, uid) as client:
                 try:
                     client.public = True
