@@ -112,7 +112,7 @@ class DailyNoteTasksPlugin(Plugin.Conversation):
                         validate = WebAppData(**result.data)
                     except ValidationError:
                         await message.reply_text(
-                            "数据错误\n树脂提醒数值必须在 100 ~ 160 之间\n洞天宝钱提醒数值必须在 100 ~ 2400 之间\n每日任务提醒时间必须在 0 ~ 23 之间",
+                            "数据错误\n树脂提醒数值必须在 60 ~ 200 之间\n洞天宝钱提醒数值必须在 100 ~ 2400 之间\n每日任务提醒时间必须在 0 ~ 23 之间",
                             reply_markup=ReplyKeyboardRemove(),
                         )
                         return ConversationHandler.END

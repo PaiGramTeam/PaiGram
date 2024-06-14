@@ -32,8 +32,8 @@ class ResinData(TaskDataBase):
 
     @validator("notice_num")
     def notice_num_validator(cls, v):
-        if v < 100 or v > 160:
-            raise ValueError("树脂提醒数值必须在 100 ~ 160 之间")
+        if v < 60 or v > 200:
+            raise ValueError("树脂提醒数值必须在 60 ~ 200 之间")
         return v
 
 
