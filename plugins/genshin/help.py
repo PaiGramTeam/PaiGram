@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from telegram import Update
 from telegram.constants import ChatAction
@@ -7,10 +7,12 @@ from telegram.ext import CallbackContext, filters
 from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
-from gram_core.services.template.models import RenderResult
 from utils.log import logger
 
 __all__ = ("HelpPlugin",)
+
+if TYPE_CHECKING:
+    from gram_core.services.template.models import RenderResult
 
 
 class HelpPlugin(Plugin):
