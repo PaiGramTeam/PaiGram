@@ -1,3 +1,4 @@
+from functools import partial
 from io import BytesIO
 from typing import Optional, TYPE_CHECKING, List, Union, Tuple
 from urllib.parse import urlencode
@@ -19,6 +20,7 @@ from core.services.players import PlayersService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from gram_core.config import config
+from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from metadata.scripts.paimon_moe import GACHA_LOG_PAIMON_MOE_PATH, update_paimon_moe_zh
 from modules.gacha_log.const import UIGF_VERSION, GACHA_TYPE_LIST_REVERSE
 from modules.gacha_log.error import (
@@ -589,3 +591,44 @@ class WishLogPlugin(Plugin.Conversation):
         old_user_id: int, new_user_id: int, old_players: List["Player"]
     ) -> Optional[GachaLogMigrate]:
         return await GachaLogMigrate.create(old_user_id, new_user_id, old_players)
+
+    async def wish_log_use_by_inline(
+        self, update: "Update", context: "ContextTypes.DEFAULT_TYPE", pool_type: "BannerType"
+    ):
+        callback_query = update.callback_query
+        user = update.effective_user
+        user_id = user.id
+        uid = IInlineUseData.get_uid_from_context(context)
+
+        self.log_user(update, logger.info, "抽卡记录命令请求 || 参数 %s", pool_type.name if pool_type else None)
+        notice = None
+        try:
+            render_result = await self.rander_wish_log_analysis(user_id, uid, pool_type)
+            if isinstance(render_result, str):
+                notice = render_result
+            else:
+                await render_result.edit_inline_media(callback_query, filename="抽卡统计.png")
+        except GachaLogNotFound:
+            self.log_user(update, logger.info, "未找到抽卡记录")
+            notice = "未找到抽卡记录"
+        if notice:
+            await callback_query.answer(notice, show_alert=True)
+
+    async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:
+        types = {
+            "角色": BannerType.CHARACTER1,
+            "武器": BannerType.WEAPON,
+            "常驻": BannerType.STANDARD,
+            "集录": BannerType.CHRONICLED,
+        }
+        data = []
+        for k, v in types.items():
+            data.append(
+                IInlineUseData(
+                    text=f"{k}祈愿",
+                    hash=f"wish_log_{v.value}",
+                    callback=partial(self.wish_log_use_by_inline, pool_type=v),
+                    player=True,
+                )
+            )
+        return data
