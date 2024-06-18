@@ -18,6 +18,7 @@ from core.services.players import PlayersService
 from core.services.players.services import PlayerInfoService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
+from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.template.models import RenderGroupResult
 from modules.wiki.base import Model
 from plugins.tools.genshin import CharacterDetails, GenshinHelper
@@ -31,6 +32,10 @@ if TYPE_CHECKING:
     from gram_core.services.template.models import RenderResult
 
 MAX_AVATAR_COUNT = 40
+
+
+class TooManyRequests(Exception):
+    """请求过多"""
 
 
 class SkillData(Model):
@@ -170,6 +175,29 @@ class AvatarListPlugin(Plugin):
         tasks = [render_task(i * image_count, c) for i, c in enumerate(avatar_datas_group)]
         return await asyncio.gather(*tasks)
 
+    async def render(
+        self, client: "GenshinClient", user_id: int, user_name: str, all_avatars: bool = False
+    ) -> List["RenderResult"]:
+        characters = await client.get_genshin_characters(client.player_id)
+        avatar_datas: List[AvatarData] = await self.get_avatars_data(
+            characters, client, None if all_avatars else MAX_AVATAR_COUNT
+        )
+        if not avatar_datas:
+            raise TooManyRequests()
+        name_card, avatar, nickname, rarity = await self.player_info_system.get_player_info(
+            client.player_id, user_id, user_name
+        )
+        base_render_data = {
+            "uid": mask_number(client.player_id),  # 玩家uid
+            "nickname": nickname,  # 玩家昵称
+            "avatar": avatar,  # 玩家头像
+            "rarity": rarity,  # 玩家头像对应的角色星级
+            "namecard": name_card,  # 玩家名片
+            "has_more": len(characters) != len(avatar_datas),  # 是否显示了全部角色
+        }
+
+        return await self.avatar_list_render(base_render_data, avatar_datas, not all_avatars)
+
     @handler.command("avatars", cookie=True, block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), cookie=True, block=False)
     async def avatar_list(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
@@ -180,20 +208,16 @@ class AvatarListPlugin(Plugin):
         all_avatars = "全部" in message.text or "all" in message.text  # 是否发送全部角色
 
         self.log_user(update, logger.info, "[bold]练度统计[/bold]: all=%s", all_avatars, extra={"markup": True})
-        notice = None
         try:
             async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
                 notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
                 self.add_delete_message_job(notice, delay=60)
                 await message.reply_chat_action(ChatAction.TYPING)
-                characters = await client.get_genshin_characters(client.player_id)
-                avatar_datas: List[AvatarData] = await self.get_avatars_data(
-                    characters, client, None if all_avatars else MAX_AVATAR_COUNT
-                )
-                if not avatar_datas:
-                    reply_message = await message.reply_html("服务器熟啦 ~ 请稍后再试")
-                    self.add_delete_message_job(reply_message, delay=20)
-                    return
+                images = await self.render(client, user_id, user_name, all_avatars)
+        except TooManyRequests:
+            reply_message = await message.reply_html("服务器熟啦 ~ 请稍后再试")
+            self.add_delete_message_job(reply_message, delay=20)
+            return
         except SimnetBadRequest as e:
             if e.ret_code == -502002:
                 reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
@@ -201,21 +225,7 @@ class AvatarListPlugin(Plugin):
                 return
             raise e
 
-        name_card, avatar, nickname, rarity = await self.player_info_system.get_player_info(
-            client.player_id, user_id, user_name
-        )
-
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        base_render_data = {
-            "uid": mask_number(client.player_id),  # 玩家uid
-            "nickname": nickname,  # 玩家昵称
-            "avatar": avatar,  # 玩家头像
-            "rarity": rarity,  # 玩家头像对应的角色星级
-            "namecard": name_card,  # 玩家名片
-            "has_more": len(characters) != len(avatar_datas),  # 是否显示了全部角色
-        }
-
-        images = await self.avatar_list_render(base_render_data, avatar_datas, not all_avatars)
 
         for group in ArkoWrapper(images).group(10):  # 每 10 张图片分一个组
             await RenderGroupResult(results=group).reply_media_group(message, write_timeout=60)
@@ -226,3 +236,35 @@ class AvatarListPlugin(Plugin):
             "[bold]练度统计[/bold]发送图片成功",
             extra={"markup": True},
         )
+
+    async def avatar_list_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
+        callback_query = update.callback_query
+        user_id = await self.get_real_user_id(update)
+        user_name = self.get_real_user_name(update)
+        uid = IInlineUseData.get_uid_from_context(context)
+        self.log_user(update, logger.info, "查询练度统计")
+
+        try:
+            async with self.helper.genshin(user_id, player_id=uid) as client:
+                images = await self.render(client, user_id, user_name)
+                render = images[0]
+        except TooManyRequests:
+            await callback_query.answer("服务器熟啦 ~ 请稍后再试", show_alert=True)
+            return
+        except SimnetBadRequest as e:
+            if e.ret_code == -502002:
+                await callback_query.answer("请先在米游社中使用一次养成计算器后再使用此功能~", show_alert=True)
+                return
+            raise e
+        await render.edit_inline_media(callback_query)
+
+    async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:
+        return [
+            IInlineUseData(
+                text="练度统计",
+                hash="avatar_list",
+                callback=self.avatar_list_use_by_inline,
+                cookie=True,
+                player=True,
+            )
+        ]

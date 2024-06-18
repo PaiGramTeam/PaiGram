@@ -112,7 +112,7 @@ class ErrorHandler(Plugin):
         else:
             buttons = ReplyKeyboardRemove()
 
-        if chat.id == user.id:
+        if (not chat) or chat.id == user.id:
             logger.info("用户 %s[%s] 尝试通知错误信息[%s]", user.full_name, user.id, content)
         else:
             self.log_user(update, logger.info, "尝试通知在 %s[%s] 的错误信息[%s]", chat.title, chat.id, content)
