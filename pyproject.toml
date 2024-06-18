@@ -45,6 +45,7 @@ dependencies = [
     "simnet @ git+https://github.com/PaiGramTeam/SIMNet",
     "gcsim-pypi<3.0.0.0,>=2.8.2.10",
     "psutil<6.0.0,>=5.9.6",
+    "influxdb-client[async,ciso]>=1.43.0",
 ]
 requires-python = "<4.0,>=3.8"
 readme = "README.md"
