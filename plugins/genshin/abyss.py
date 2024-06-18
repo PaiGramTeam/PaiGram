@@ -616,14 +616,12 @@ class AbyssPlugin(Plugin):
                 text="本期深渊挑战总览",
                 hash="abyss_current",
                 callback=partial(self.abyss_use_by_inline, previous=False),
-                cookie=True,
                 player=True,
             ),
             IInlineUseData(
                 text="上期深渊挑战总览",
                 hash="abyss_previous",
                 callback=partial(self.abyss_use_by_inline, previous=True),
-                cookie=True,
                 player=True,
             ),
         ]

@@ -1,5 +1,5 @@
 import random
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 from telegram.constants import ChatAction
 from telegram.ext import filters
 
@@ -8,6 +8,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
+from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
 from utils.uid import mask_number
@@ -110,3 +111,41 @@ class PlayerStatsPlugins(Plugin):
             item.__config__.allow_mutation = True
             item.icon = await self.download_resource(item.icon)
             item.cover = await self.download_resource(item.cover)
+
+    async def stats_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+        callback_query = update.callback_query
+        user = update.effective_user
+        user_id = user.id
+        uid = IInlineUseData.get_uid_from_context(context)
+
+        self.log_user(update, logger.info, "查询游戏用户命令请求")
+        notice = None
+        try:
+            async with self.helper.genshin_or_public(user_id, uid=uid) as client:
+                if not client.public:
+                    await client.get_record_cards()
+                render_result = await self.render(client, client.player_id)
+        except TooManyRequestPublicCookies:
+            notice = "用户查询次数过多 请稍后重试"
+        except AttributeError as exc:
+            logger.error("角色数据有误")
+            logger.exception(exc)
+            notice = f"角色数据有误 估计是{config.notice.bot_name}晕了"
+        except ValueError as exc:
+            logger.warning("获取 uid 发生错误！ 错误信息为 %s", str(exc))
+            notice = "UID 内部错误"
+
+        if notice:
+            await callback_query.answer(notice, show_alert=True)
+            return
+        await render_result.edit_inline_media(callback_query)
+
+    async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:
+        return [
+            IInlineUseData(
+                text="玩家统计",
+                hash="stats",
+                callback=self.stats_use_by_inline,
+                player=True,
+            ),
+        ]
