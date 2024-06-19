@@ -19,7 +19,7 @@ class RedeemResult:
     code: str
     message: Optional[Message] = None
     error: Optional[str] = None
-    uid: Optional[int] = 0
+    uid: Optional[int] = None
     count: Optional[List[int]] = None
 
 
