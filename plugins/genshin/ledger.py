@@ -2,7 +2,7 @@ import math
 import os
 import re
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Tuple, Optional
 
 from simnet.errors import DataNotPublic, BadRequest as SimnetBadRequest
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
@@ -17,6 +17,7 @@ from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from gram_core.config import config
 from gram_core.dependence.redisdb import RedisDB
+from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from plugins.tools.genshin import GenshinHelper
 from utils.enkanetwork import RedisCache
 from utils.log import logger
@@ -312,3 +313,41 @@ class LedgerPlugin(Plugin):
         await callback_query.answer("正在渲染图片中 请稍等 请不要重复点击按钮")
         render = await self._start_get_ledger_render(user_id, HistoryDataLedger.from_data(data).diary_data)
         await render.edit_media(message)
+
+    async def ledger_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+        callback_query = update.callback_query
+        user = update.effective_user
+        user_id = user.id
+        uid = IInlineUseData.get_uid_from_context(context)
+
+        self.log_user(update, logger.info, "查询旅行札记")
+        try:
+            async with self.helper.genshin(user_id, player_id=uid) as client:
+                render_result = await self._start_get_ledger(client)
+        except DataNotPublic:
+            await callback_query.answer(
+                "查询失败惹，可能是旅行札记功能被禁用了？请先通过米游社或者 hoyolab 获取一次旅行札记后重试。",
+                show_alert=True,
+            )
+            return
+        except SimnetBadRequest as exc:
+            if exc.ret_code == -120:
+                await callback_query.answer(
+                    "当前角色冒险等阶不足，暂时无法获取信息",
+                    show_alert=True,
+                )
+                return
+            raise exc
+
+        await render_result.edit_inline_media(callback_query)
+
+    async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:
+        return [
+            IInlineUseData(
+                text="当月旅行札记",
+                hash="ledger",
+                callback=self.ledger_use_by_inline,
+                cookie=True,
+                player=True,
+            )
+        ]

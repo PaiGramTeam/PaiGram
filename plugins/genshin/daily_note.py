@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 
 from simnet.errors import DataNotPublic
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
@@ -10,6 +10,7 @@ from telegram.helpers import create_deep_linked_url
 from core.plugin import Plugin, handler
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
+from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
 from utils.uid import mask_number
@@ -127,3 +128,33 @@ class DailyNotePlugin(Plugin):
             filename=f"{client.player_id}.png",
             reply_markup=self.get_task_button(context.bot.username),
         )
+
+    async def daily_note_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+        callback_query = update.callback_query
+        user = update.effective_user
+        user_id = user.id
+        uid = IInlineUseData.get_uid_from_context(context)
+        self.log_user(update, logger.info, "每日便签命令请求")
+
+        try:
+            async with self.helper.genshin(user_id, player_id=uid) as client:
+                render_result = await self._get_daily_note(client)
+        except DataNotPublic:
+            await callback_query.answer(
+                "查询失败惹，可能是便签功能被禁用了？请尝试通过米游社或者 hoyolab 获取一次便签信息后重试。",
+                show_alert=True,
+            )
+            return ConversationHandler.END
+
+        await render_result.edit_inline_media(callback_query)
+
+    async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:
+        return [
+            IInlineUseData(
+                text="当前状态",
+                hash="dailynote",
+                callback=self.daily_note_use_by_inline,
+                cookie=True,
+                player=True,
+            )
+        ]
