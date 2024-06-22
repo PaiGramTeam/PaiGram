@@ -350,5 +350,5 @@ class Traceback(BaseTraceback):
     @staticmethod
     def filter_value(value: Any) -> Any:
         if isinstance(value, str):
-            return value.replace(config.bot_token, "TOKEN")
+            return value.replace(config.bot.token, "TOKEN")
         return value

@@ -123,7 +123,7 @@ class CookiesExport(Plugin):
         await message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
     def gen_cookies_import_buttons(self):
-        official_bots = config.bot_official.copy()
+        official_bots = config.bot.official.copy()
         lower_official_bots = [i.lower() for i in official_bots]
         bot_username_lower = self.application.bot.username.lower()
         if bot_username_lower in lower_official_bots:

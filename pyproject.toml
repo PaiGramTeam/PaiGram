@@ -33,7 +33,7 @@ dependencies = [
     "arko-wrapper<1.0.0,>=0.2.8",
     "fastapi<1.0.0,>=0.111.0",
     "uvicorn[standard]<1.0.0,>=0.30.1",
-    "sentry-sdk<3.0.0,>=2.5.1",
+    "sentry-sdk<3.0.0,>=2.6.0",
     "GitPython<4.0.0,>=3.1.30",
     "openpyxl<4.0.0,>=3.1.1",
     "async-lru<3.0.0,>=2.0.4",
@@ -44,7 +44,7 @@ dependencies = [
     "aiosqlite[sqlite]<1.0.0,>=0.20.0",
     "simnet @ git+https://github.com/PaiGramTeam/SIMNet",
     "gcsim-pypi<3.0.0.0,>=2.8.2.10",
-    "psutil<6.0.0,>=5.9.6",
+    "psutil<7.0.0,>=6.0.0",
     "influxdb-client[async,ciso]>=1.43.0",
 ]
 requires-python = "<4.0,>=3.8"
