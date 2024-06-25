@@ -23,7 +23,7 @@ dependencies = [
     "redis<6.0.0,>=5.0.1",
     "beautifulsoup4<5.0.0,>=4.12.1",
     "asyncmy<1.0.0,>=0.2.9",
-    "aiofiles<24.0.0,>=23.2.1",
+    "aiofiles<25.0.0,>=24.1.0",
     "python-dotenv<2.0.0,>=1.0.0",
     "alembic<2.0.0,>=1.13.0",
     "black<25.0.0,>=24.1.1",
@@ -43,7 +43,7 @@ dependencies = [
     "playwright==1.44.0",
     "aiosqlite[sqlite]<1.0.0,>=0.20.0",
     "simnet @ git+https://github.com/PaiGramTeam/SIMNet",
-    "gcsim-pypi<3.0.0.0,>=2.8.2.10",
+    "gcsim-pypi<3.0.0,>=2.23.0",
     "psutil<7.0.0,>=6.0.0",
     "influxdb-client[async,ciso]>=1.43.0",
 ]

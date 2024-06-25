@@ -5,7 +5,7 @@
 groups = ["default", "genshin-artifact", "pyro", "test"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:eabf5bfb32045a4fe87339b34b3fc8b196eb9d47d55ad0ae16ba54cb9159ad9f"
+content_hash = "sha256:feb6abdecc6245225feb204fe8001405c9f32ab5e33cd70f4067eb6265734d83"
 
 [[package]]
 name = "aiocsv"
@@ -42,13 +42,13 @@ files = [
 
 [[package]]
 name = "aiofiles"
-version = "23.2.1"
-requires_python = ">=3.7"
+version = "24.1.0"
+requires_python = ">=3.8"
 summary = "File support for asyncio."
 groups = ["default"]
 files = [
-    {file = "aiofiles-23.2.1-py3-none-any.whl", hash = "sha256:19297512c647d4b27a2cf7c34caa7e405c0d60b5560618a29a9fe027b18b0107"},
-    {file = "aiofiles-23.2.1.tar.gz", hash = "sha256:84ec2218d8419404abcb9f0c02df3f34c6e0a68ed41072acfb1cef5cbc29051a"},
+    {file = "aiofiles-24.1.0-py3-none-any.whl", hash = "sha256:b4ec55f4195e3eb5d7abd1bf7e061763e864dd4954231fb8539a0ef8bb8260e5"},
+    {file = "aiofiles-24.1.0.tar.gz", hash = "sha256:22a075c9e5a3810f0c2e48f3008c94d68c65d763b9b03857924c99e57355166c"},
 ]
 
 [[package]]
@@ -867,13 +867,13 @@ files = [
 
 [[package]]
 name = "gcsim-pypi"
-version = "2.22.25"
+version = "2.23.0"
 requires_python = "<4.0,>=3.6"
 summary = "gcsim binary for pypi"
 groups = ["default"]
 files = [
-    {file = "gcsim_pypi-2.22.25-py3-none-any.whl", hash = "sha256:f46293d8c3e41bf4770a67334b1aca663dfc8ac7ec2914c71e6fd4dc1f2f11c5"},
-    {file = "gcsim_pypi-2.22.25.tar.gz", hash = "sha256:51561d4c665c7b6c51b6d82ac6d0c156fce3a4d8f765ae32354052e393b3c725"},
+    {file = "gcsim_pypi-2.23.0-py3-none-any.whl", hash = "sha256:260b0fab047adc4ac69fc3380284d6635ca390c4c9de07f1a69a477764a40e4d"},
+    {file = "gcsim_pypi-2.23.0.tar.gz", hash = "sha256:cff31d76d06ee020254ecdb3990af63108f2498547b976337036372c3310d946"},
 ]
 
 [[package]]
@@ -1063,7 +1063,7 @@ files = [
 
 [[package]]
 name = "importlib-metadata"
-version = "7.2.0"
+version = "7.2.1"
 requires_python = ">=3.8"
 summary = "Read metadata from Python packages"
 groups = ["default"]
@@ -1072,8 +1072,8 @@ dependencies = [
     "zipp>=0.5",
 ]
 files = [
-    {file = "importlib_metadata-7.2.0-py3-none-any.whl", hash = "sha256:04e4aad329b8b948a5711d394fa8759cb80f009225441b4f2a02bd4d8e5f426c"},
-    {file = "importlib_metadata-7.2.0.tar.gz", hash = "sha256:3ff4519071ed42740522d494d04819b666541b9752c43012f85afb2cc220fcc6"},
+    {file = "importlib_metadata-7.2.1-py3-none-any.whl", hash = "sha256:ffef94b0b66046dd8ea2d619b701fe978d9264d38f3998bc4c27ec3b146a87c8"},
+    {file = "importlib_metadata-7.2.1.tar.gz", hash = "sha256:509ecb2ab77071db5137c655e24ceb3eee66e7bbc6574165d0d114d9fc4bbe68"},
 ]
 
 [[package]]
@@ -1093,7 +1093,7 @@ files = [
 
 [[package]]
 name = "influxdb-client"
-version = "1.43.0"
+version = "1.44.0"
 requires_python = ">=3.7"
 summary = "InfluxDB 2.0 Python client library"
 groups = ["default"]
@@ -1105,13 +1105,13 @@ dependencies = [
     "urllib3>=1.26.0",
 ]
 files = [
-    {file = "influxdb_client-1.43.0-py3-none-any.whl", hash = "sha256:f079e63018f521024118bc0141b6403c65506711e2e6e93500f8e69f1675dc38"},
-    {file = "influxdb_client-1.43.0.tar.gz", hash = "sha256:ae2614d891baed52c0ae8f6194a04ee5b1c6422f6061318a3639fe63b7671b25"},
+    {file = "influxdb_client-1.44.0-py3-none-any.whl", hash = "sha256:e4c1ac9c9925c4693d63e988e22f65d2ddc1867f8910813b7f4721633175f2a0"},
+    {file = "influxdb_client-1.44.0.tar.gz", hash = "sha256:da9bc0cc49de4a0ac844d833c1efa65227ec5a2254e63cdbe07b5d532c0c37f8"},
 ]
 
 [[package]]
 name = "influxdb-client"
-version = "1.43.0"
+version = "1.44.0"
 extras = ["async", "ciso"]
 requires_python = ">=3.7"
 summary = "InfluxDB 2.0 Python client library"
@@ -1120,11 +1120,11 @@ dependencies = [
     "aiocsv>=1.2.2",
     "aiohttp>=3.8.1",
     "ciso8601>=2.1.1",
-    "influxdb-client==1.43.0",
+    "influxdb-client==1.44.0",
 ]
 files = [
-    {file = "influxdb_client-1.43.0-py3-none-any.whl", hash = "sha256:f079e63018f521024118bc0141b6403c65506711e2e6e93500f8e69f1675dc38"},
-    {file = "influxdb_client-1.43.0.tar.gz", hash = "sha256:ae2614d891baed52c0ae8f6194a04ee5b1c6422f6061318a3639fe63b7671b25"},
+    {file = "influxdb_client-1.44.0-py3-none-any.whl", hash = "sha256:e4c1ac9c9925c4693d63e988e22f65d2ddc1867f8910813b7f4721633175f2a0"},
+    {file = "influxdb_client-1.44.0.tar.gz", hash = "sha256:da9bc0cc49de4a0ac844d833c1efa65227ec5a2254e63cdbe07b5d532c0c37f8"},
 ]
 
 [[package]]
@@ -2182,13 +2182,13 @@ files = [
 
 [[package]]
 name = "setuptools"
-version = "70.1.0"
+version = "70.1.1"
 requires_python = ">=3.8"
 summary = "Easily download, build, install, upgrade, and uninstall Python packages"
 groups = ["default"]
 files = [
-    {file = "setuptools-70.1.0-py3-none-any.whl", hash = "sha256:d9b8b771455a97c8a9f3ab3448ebe0b29b5e105f1228bba41028be116985a267"},
-    {file = "setuptools-70.1.0.tar.gz", hash = "sha256:01a1e793faa5bd89abc851fa15d0a0db26f160890c7102cd8dce643e886b47f5"},
+    {file = "setuptools-70.1.1-py3-none-any.whl", hash = "sha256:a58a8fde0541dab0419750bcc521fbdf8585f6e5cb41909df3a472ef7b81ca95"},
+    {file = "setuptools-70.1.1.tar.gz", hash = "sha256:937a48c7cdb7a21eb53cd7f9b59e525503aa8abaf3584c730dc5f7a5bec3a650"},
 ]
 
 [[package]]
@@ -2207,7 +2207,7 @@ name = "simnet"
 version = "0.1.22"
 requires_python = "<4.0,>=3.8"
 git = "https://github.com/PaiGramTeam/SIMNet"
-revision = "6c2c41239e0bfa177dee1ab91d63e04382cb29ab"
+revision = "277a33321a20909541b46bf4ecf794fd47e19fb1"
 summary = "Modern API wrapper for Genshin Impact & Honkai: Star Rail built on asyncio and pydantic."
 groups = ["default"]
 dependencies = [
