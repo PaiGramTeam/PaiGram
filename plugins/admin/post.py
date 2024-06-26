@@ -118,10 +118,10 @@ class Post(Plugin.Conversation):
 
         last_post_id_list = self.last_post_id_list[post_type]
         # 判断是否为空
-        # if len(last_post_id_list) == 0:
-        #     for temp_list in temp_post_id_list:
-        #         last_post_id_list.append(temp_list)
-        #     return
+        if len(last_post_id_list) == 0:
+            for temp_list in temp_post_id_list:
+                last_post_id_list.append(temp_list)
+            return
 
         # 筛选出新推送的文章
         last_post_id_list = self.last_post_id_list[post_type]
@@ -303,14 +303,12 @@ class Post(Plugin.Conversation):
         if result == "cancel":
             await message.reply_text("操作已经取消")
             await message.delete()
-            return ConversationHandler.END
         elif result == "confirm":
             reply_text = await message.reply_text("正在处理")
             status = await self.send_post_info(post_handler_data, message, post_id, post_type)
             await reply_text.delete()
             return status
 
-        await message.reply_text("非法参数")
         return ConversationHandler.END
 
     @conversation.entry_point
