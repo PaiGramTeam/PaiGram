@@ -1,40 +1,31 @@
 import asyncio
 import os
 import re
+from abc import abstractmethod
 from time import time
-from typing import List
+from typing import List, Tuple
 
 from ..base.hyperionrequest import HyperionRequest
-from ...models.genshin.hyperion import PostInfo, ArtworkImage, LiveInfo, LiveCode, LiveCodeHoYo
+from ...models.genshin.hyperion import (
+    PostInfo,
+    ArtworkImage,
+    LiveInfo,
+    LiveCode,
+    LiveCodeHoYo,
+    PostRecommend,
+    PostTypeEnum,
+)
 from ...typedefs import JSON_DATA
 
-__all__ = ("Hyperion",)
+__all__ = (
+    "HyperionBase",
+    "Hyperion",
+)
 
 
-class Hyperion:
-    """米忽悠bbs相关API请求
-
-    该名称来源于米忽悠的安卓BBS包名结尾，考虑到大部分重要的功能确实是在移动端实现了
-    """
-
-    POST_FULL_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFull"
-    POST_FULL_IN_COLLECTION_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFullInCollection"
-    GET_NEW_LIST_URL = "https://bbs-api.miyoushe.com/post/wapi/getNewsList"
-    GET_OFFICIAL_RECOMMENDED_POSTS_URL = "https://bbs-api.miyoushe.com/post/wapi/getOfficialRecommendedPosts"
-    LIVE_INFO_URL = "https://api-takumi.mihoyo.com/event/miyolive/index"
-    LIVE_CODE_URL = "https://api-takumi-static.mihoyo.com/event/miyolive/refreshCode"
-    LIVE_CODE_HOYO_URL = "https://bbs-api-os.hoyolab.com/community/painter/wapi/circle/channel/guide/material"
-
-    USER_AGENT = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/90.0.4430.72 Safari/537.36"
-    )
-
-    def __init__(self, *args, **kwargs):
-        self.client = HyperionRequest(headers=self.get_headers(), *args, **kwargs)
-
+class HyperionBase:
     @staticmethod
-    def extract_post_id(text: str) -> int:
+    def extract_post_id(text: str) -> Tuple[int, PostTypeEnum]:
         """
         :param text:
             # https://bbs.mihoyo.com/ys/article/8808224
@@ -44,20 +35,19 @@ class Hyperion:
         :return: post_id
         """
         rgx = re.compile(r"(?:bbs|www\.)?(?:miyoushe|mihoyo)\.(.*)/[^.]+/article/(?P<article_id>\d+)")
-        matches = rgx.search(text)
+        rgx2 = re.compile(r"(?:bbs|www\.)?(?:hoyolab|hoyoverse)\.(.*)/article/(?P<article_id>\d+)")
+        matches = rgx.search(text) or rgx2.search(text)
         if matches is None:
-            return -1
+            return -1, PostTypeEnum.NULL
         entries = matches.groupdict()
         if entries is None:
-            return -1
+            return -1, PostTypeEnum.NULL
         try:
             art_id = int(entries.get("article_id"))
+            post_type = PostTypeEnum.CN if "miyoushe" in text or "mihoyo" in text else PostTypeEnum.OS
         except (IndexError, ValueError, TypeError):
-            return -1
-        return art_id
-
-    def get_headers(self, referer: str = "https://www.miyoushe.com/ys/"):
-        return {"User-Agent": self.USER_AGENT, "Referer": referer}
+            return -1, PostTypeEnum.NULL
+        return art_id, post_type
 
     @staticmethod
     def get_list_url_params(forum_id: int, is_good: bool = False, is_hot: bool = False, page_size: int = 20) -> dict:
@@ -89,10 +79,79 @@ class Hyperion:
         )
         return {"x-oss-process": params}
 
-    async def get_official_recommended_posts(self, gids: int) -> JSON_DATA:
+    @staticmethod
+    async def get_images_by_post_id_tasks(task_list: List) -> List[ArtworkImage]:
+        art_list = []
+        result_lists = await asyncio.gather(*task_list)
+        for result_list in result_lists:
+            for result in result_list:
+                if isinstance(result, ArtworkImage):
+                    art_list.append(result)
+
+        def take_page(elem: ArtworkImage):
+            return elem.page
+
+        art_list.sort(key=take_page)
+        return art_list
+
+    @staticmethod
+    async def download_image(client: "HyperionRequest", art_id: int, url: str, page: int = 0) -> List[ArtworkImage]:
+        filename = os.path.basename(url)
+        _, file_extension = os.path.splitext(filename)
+        is_image = bool(file_extension in ".jpg" or file_extension in ".png")
+        response = await client.get(
+            url, params=Hyperion.get_images_params(resize=2000) if is_image else None, de_json=False
+        )
+        return ArtworkImage.gen(
+            art_id=art_id, page=page, file_name=filename, file_extension=url.split(".")[-1], data=response.content
+        )
+
+    @abstractmethod
+    async def get_official_recommended_posts(self, gids: int) -> List[PostRecommend]:
+        """获取官方推荐帖子"""
+
+    @abstractmethod
+    async def get_post_info(self, gids: int, post_id: int, read: int = 1) -> PostInfo:
+        """获取帖子信息"""
+
+    @abstractmethod
+    async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
+        """获取帖子图片"""
+
+    @abstractmethod
+    async def close(self):
+        """关闭请求会话"""
+
+
+class Hyperion(HyperionBase):
+    """米忽悠bbs相关API请求
+
+    该名称来源于米忽悠的安卓BBS包名结尾，考虑到大部分重要的功能确实是在移动端实现了
+    """
+
+    POST_FULL_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFull"
+    POST_FULL_IN_COLLECTION_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFullInCollection"
+    GET_NEW_LIST_URL = "https://bbs-api.miyoushe.com/post/wapi/getNewsList"
+    GET_OFFICIAL_RECOMMENDED_POSTS_URL = "https://bbs-api.miyoushe.com/post/wapi/getOfficialRecommendedPosts"
+    LIVE_INFO_URL = "https://api-takumi.mihoyo.com/event/miyolive/index"
+    LIVE_CODE_URL = "https://api-takumi-static.mihoyo.com/event/miyolive/refreshCode"
+    LIVE_CODE_HOYO_URL = "https://bbs-api-os.hoyolab.com/community/painter/wapi/circle/channel/guide/material"
+
+    USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/90.0.4430.72 Safari/537.36"
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.client = HyperionRequest(headers=self.get_headers(), *args, **kwargs)
+
+    def get_headers(self, referer: str = "https://www.miyoushe.com/ys/"):
+        return {"User-Agent": self.USER_AGENT, "Referer": referer}
+
+    async def get_official_recommended_posts(self, gids: int) -> List[PostRecommend]:
         params = {"gids": gids}
         response = await self.client.get(url=self.GET_OFFICIAL_RECOMMENDED_POSTS_URL, params=params)
-        return response
+        return [PostRecommend(**data) for data in response["list"]]
 
     async def get_post_full_in_collection(self, collection_id: int, gids: int = 2, order_type=1) -> JSON_DATA:
         params = {"collection_id": collection_id, "gids": gids, "order_type": order_type}
@@ -106,33 +165,14 @@ class Hyperion:
 
     async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
         post_info = await self.get_post_info(gids, post_id)
-        art_list = []
         task_list = [
-            self.download_image(post_info.post_id, post_info.image_urls[page], page)
+            self._download_image(post_info.post_id, post_info.image_urls[page], page)
             for page in range(len(post_info.image_urls))
         ]
-        result_lists = await asyncio.gather(*task_list)
-        for result_list in result_lists:
-            for result in result_list:
-                if isinstance(result, ArtworkImage):
-                    art_list.append(result)
+        return await self.get_images_by_post_id_tasks(task_list)
 
-        def take_page(elem: ArtworkImage):
-            return elem.page
-
-        art_list.sort(key=take_page)
-        return art_list
-
-    async def download_image(self, art_id: int, url: str, page: int = 0) -> List[ArtworkImage]:
-        filename = os.path.basename(url)
-        _, file_extension = os.path.splitext(filename)
-        is_image = bool(file_extension in ".jpg" or file_extension in ".png")
-        response = await self.client.get(
-            url, params=self.get_images_params(resize=2000) if is_image else None, de_json=False
-        )
-        return ArtworkImage.gen(
-            art_id=art_id, page=page, file_name=filename, file_extension=url.split(".")[-1], data=response.content
-        )
+    async def _download_image(self, art_id: int, url: str, page: int = 0) -> List[ArtworkImage]:
+        return await self.download_image(self.client, art_id, url, page)
 
     async def get_new_list(self, gids: int, type_id: int, page_size: int = 20):
         """

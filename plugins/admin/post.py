@@ -1,7 +1,8 @@
 import math
 import os
 from asyncio import create_subprocess_shell, subprocess
-from typing import List, Optional, Tuple, TYPE_CHECKING, Union
+from functools import partial
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union, Dict
 
 import aiofiles
 from arkowrapper import ArkoWrapper
@@ -24,8 +25,10 @@ from telegram.helpers import escape_markdown
 from core.config import config
 from core.plugin import Plugin, conversation, handler
 from gram_core.basemodel import Settings
-from modules.apihelper.client.components.hyperion import Hyperion
+from modules.apihelper.client.components.hoyolab import Hoyolab
+from modules.apihelper.client.components.hyperion import Hyperion, HyperionBase
 from modules.apihelper.error import APIHelperException
+from modules.apihelper.models.genshin.hyperion import PostTypeEnum
 from utils.helpers import sha1
 from utils.log import logger
 
@@ -67,13 +70,14 @@ class Post(Plugin.Conversation):
     def __init__(self):
         self.gids = 2
         self.short_name = "ys"
-        self.last_post_id_list: List[int] = []
+        self.last_post_id_list: Dict[PostTypeEnum, List[int]] = {PostTypeEnum.CN: [], PostTypeEnum.OS: []}
         self.ffmpeg_enable = False
         self.cache_dir = os.path.join(os.getcwd(), "cache")
 
     @staticmethod
-    def get_bbs_client() -> Hyperion:
-        return Hyperion(
+    def get_bbs_client(bbs_type: "PostTypeEnum") -> "HyperionBase":
+        class_type = Hyperion if bbs_type == PostTypeEnum.CN else Hoyolab
+        return class_type(
             timeout=Timeout(
                 connect=config.connect_timeout,
                 read=config.read_timeout,
@@ -85,7 +89,10 @@ class Post(Plugin.Conversation):
     async def initialize(self):
         if config.channels and len(config.channels) > 0:
             logger.success("文章定时推送处理已经开启")
-            self.application.job_queue.run_repeating(self.task, 60)
+            cn_task = partial(self.task, post_type=PostTypeEnum.CN)
+            os_task = partial(self.task, post_type=PostTypeEnum.OS)
+            self.application.job_queue.run_repeating(cn_task, 30, name="post_cn_task")
+            self.application.job_queue.run_repeating(os_task, 30, name="post_os_task")
         logger.success("文章定时推送处理已经开启")
         output, _ = await self.execute("ffmpeg -version")
         if "ffmpeg version" in output:
@@ -95,8 +102,8 @@ class Post(Plugin.Conversation):
         else:
             logger.warning("ffmpeg 不可用 已经禁用编码转换")
 
-    async def task(self, context: "ContextTypes.DEFAULT_TYPE"):
-        bbs = self.get_bbs_client()
+    async def task(self, context: "ContextTypes.DEFAULT_TYPE", post_type: "PostTypeEnum"):
+        bbs = self.get_bbs_client(post_type)
         temp_post_id_list: List[int] = []
 
         # 请求推荐POST列表并处理
@@ -106,22 +113,24 @@ class Post(Plugin.Conversation):
             logger.error("获取首页推荐信息失败 %s", str(exc))
             return
 
-        for data_list in official_recommended_posts["list"]:
-            temp_post_id_list.append(data_list["post_id"])
+        for data_list in official_recommended_posts:
+            temp_post_id_list.append(data_list.post_id)
 
+        last_post_id_list = self.last_post_id_list[post_type]
         # 判断是否为空
-        if len(self.last_post_id_list) == 0:
-            for temp_list in temp_post_id_list:
-                self.last_post_id_list.append(temp_list)
-            return
+        # if len(last_post_id_list) == 0:
+        #     for temp_list in temp_post_id_list:
+        #         last_post_id_list.append(temp_list)
+        #     return
 
         # 筛选出新推送的文章
-        new_post_id_list = set(temp_post_id_list).difference(set(self.last_post_id_list))
+        last_post_id_list = self.last_post_id_list[post_type]
+        new_post_id_list = set(temp_post_id_list).difference(set(last_post_id_list))
 
         if not new_post_id_list:
             return
 
-        self.last_post_id_list = temp_post_id_list
+        self.last_post_id_list[post_type] = temp_post_id_list
         chat_id = post_config.chat_id or config.owner
 
         for post_id in new_post_id_list:
@@ -135,14 +144,16 @@ class Post(Plugin.Conversation):
                 except BadRequest as _exc:
                     logger.error("发送消息失败 %s", _exc.message)
                 return
+            type_name = post_info.type_enum.value
             buttons = [
                 [
-                    InlineKeyboardButton("确认", callback_data=f"post_admin|confirm|{post_info.post_id}"),
-                    InlineKeyboardButton("取消", callback_data=f"post_admin|cancel|{post_info.post_id}"),
+                    InlineKeyboardButton("确认", callback_data=f"post_admin|confirm|{type_name}|{post_info.post_id}"),
+                    InlineKeyboardButton("取消", callback_data=f"post_admin|cancel|{type_name}|{post_info.post_id}"),
                 ]
             ]
-            url = f"https://www.miyoushe.pp.ua/{self.short_name}/article/{post_info.post_id}"
-            text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理 #{self.short_name}"
+            url = post_info.get_fix_url(self.short_name)
+            tag = f"#{self.short_name} #{post_type.value} #{self.short_name}_{post_type.value}"
+            text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理 {tag}"
             try:
                 await context.bot.send_message(
                     chat_id,
@@ -277,21 +288,25 @@ class Post(Plugin.Conversation):
         message = callback_query.message
         logger.info("用户 %s[%s] POST命令请求", user.full_name, user.id)
 
-        async def get_post_admin_callback(callback_query_data: str) -> Tuple[str, int]:
+        async def get_post_admin_callback(callback_query_data: str) -> Tuple[str, PostTypeEnum, int]:
             _data = callback_query_data.split("|")
             _result = _data[1]
-            _post_id = int(_data[2])
-            logger.debug("callback_query_data函数返回 result[%s] post_id[%s]", _result, _post_id)
-            return _result, _post_id
+            _post_type = PostTypeEnum(_data[2])
+            _post_id = int(_data[3])
+            logger.debug(
+                "callback_query_data函数返回 result[%s] _post_type[%s] post_id[%s]", _result, _post_type, _post_id
+            )
+            return _result, _post_type, _post_id
 
-        result, post_id = await get_post_admin_callback(callback_query.data)
+        result, post_type, post_id = await get_post_admin_callback(callback_query.data)
 
         if result == "cancel":
             await message.reply_text("操作已经取消")
             await message.delete()
+            return ConversationHandler.END
         elif result == "confirm":
             reply_text = await message.reply_text("正在处理")
-            status = await self.send_post_info(post_handler_data, message, post_id)
+            status = await self.send_post_info(post_handler_data, message, post_id, post_type)
             await reply_text.delete()
             return status
 
@@ -322,14 +337,16 @@ class Post(Plugin.Conversation):
             await message.reply_text("退出投稿", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
 
-        post_id = Hyperion.extract_post_id(update.message.text)
+        post_id, post_type = Hyperion.extract_post_id(update.message.text)
         if post_id == -1:
             await message.reply_text("获取作品ID错误，请检查连接是否合法", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        return await self.send_post_info(post_handler_data, message, post_id)
+        return await self.send_post_info(post_handler_data, message, post_id, post_type)
 
-    async def send_post_info(self, post_handler_data: PostHandlerData, message: "Message", post_id: int) -> int:
-        bbs = self.get_bbs_client()
+    async def send_post_info(
+        self, post_handler_data: PostHandlerData, message: "Message", post_id: int, post_type: "PostTypeEnum"
+    ) -> int:
+        bbs = self.get_bbs_client(post_type)
         post_info = await bbs.get_post_info(self.gids, post_id)
         post_images = await bbs.get_images_by_post_id(self.gids, post_id)
         await bbs.close()
@@ -338,7 +355,8 @@ class Post(Plugin.Conversation):
         post_subject = post_data["subject"]
         post_soup = BeautifulSoup(post_data["content"], features="html.parser")
         post_text, too_long = self.parse_post_text(post_soup, post_subject)
-        post_text += f"\n[source](https://www.miyoushe.com/{self.short_name}/article/{post_id})"
+        url = post_info.get_url(self.short_name)
+        post_text += f"\n[source]({url})"
         if too_long or len(post_text) >= MessageLimit.CAPTION_LENGTH:
             post_text = post_text[: MessageLimit.CAPTION_LENGTH]
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割")
