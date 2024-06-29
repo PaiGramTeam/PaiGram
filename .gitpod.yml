@@ -1,0 +1,18 @@
+tasks:
+  - init: |
+      cp .gitpod/docker-compose.gen.yml ./docker-compose.yml
+      cp .gitpod/env.env ./.env
+      docker-compose pull
+      docker-compose up -d
+  - command: |
+      pip install virtualenv pdm
+      virtualenv venv
+      pdm use venv
+      pdm install -G :all
+      sudo venv/bin/playwright install-deps
+      venv/bin/playwright install chromium
+      venv/bin/alembic upgrade head
+
+ports:
+  - port: 8080
+    onOpen: open-browser
