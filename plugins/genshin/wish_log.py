@@ -257,11 +257,8 @@ class WishLogPlugin(Plugin.Conversation):
         reply = await message.reply_text(WAITING, reply_markup=ReplyKeyboardRemove())
         await message.reply_chat_action(ChatAction.TYPING)
         text = await self._refresh_user_data(user, player_id, authkey=authkey)
-        try:
-            await reply.delete()
-        except BadRequest:
-            pass
-        await message.reply_text(text)
+        self.add_delete_message_job(reply, delay=1)
+        await message.reply_text(text, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
     @conversation.entry_point
