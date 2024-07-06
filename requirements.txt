@@ -19,7 +19,7 @@ backports-zoneinfo==0.2.1; python_version < "3.9"
 beautifulsoup4==4.12.3
 black==24.4.2
 cachetools==5.3.3
-certifi==2024.6.2
+certifi==2024.7.4
 cffi==1.16.0; platform_python_implementation != "PyPy"
 ciso8601==2.3.1
 click==8.1.7
