@@ -21,6 +21,7 @@ from core.services.template.services import TemplateService
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.template.models import RenderGroupResult
 from modules.wiki.base import Model
+from modules.wiki.other import Element, WeaponType
 from plugins.tools.genshin import CharacterDetails, GenshinHelper
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
@@ -33,6 +34,19 @@ if TYPE_CHECKING:
 
 MAX_AVATAR_COUNT = 40
 
+def parse_element(msg: str) -> set[Element]:
+    elements = set()
+    for element in Element:
+        if element.value in msg:
+            elements.add(element)
+    return elements
+
+def parse_weapon_type(msg: str) -> set[WeaponType]:
+    weapon_types = set()
+    for weapon_type in WeaponType:
+        if weapon_type.value in msg:
+            weapon_types.add(weapon_type)
+    return weapon_types
 
 class TooManyRequests(Exception):
     """请求过多"""
@@ -176,9 +190,13 @@ class AvatarListPlugin(Plugin):
         return await asyncio.gather(*tasks)
 
     async def render(
-        self, client: "GenshinClient", user_id: int, user_name: str, all_avatars: bool = False
+        self, client: "GenshinClient", user_id: int, user_name: str, all_avatars: bool = False, filter_elements: set[Element] = None, filter_weapon_types: set[WeaponType] = None
     ) -> List["RenderResult"]:
         characters = await client.get_genshin_characters(client.player_id)
+        if filter_elements:
+            characters = [c for c in characters if c.element in {element.name for element in filter_elements}]
+        if filter_weapon_types:
+            characters = [c for c in characters if WeaponType(c.weapon.type) in filter_weapon_types]
         avatar_datas: List[AvatarData] = await self.get_avatars_data(
             characters, client, None if all_avatars else MAX_AVATAR_COUNT
         )
@@ -206,14 +224,25 @@ class AvatarListPlugin(Plugin):
         uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         all_avatars = "全部" in message.text or "all" in message.text  # 是否发送全部角色
+        filter_elements = parse_element(message.text)
+        filter_weapon_types = parse_weapon_type(message.text)
 
-        self.log_user(update, logger.info, "[bold]练度统计[/bold]: all=%s", all_avatars, extra={"markup": True})
+        self.log_user(
+            update,
+            logger.info,
+            "[bold]练度统计[/bold]: all=%s, filter_elements=%s, filter_weapon_types=%s",
+            all_avatars,
+            filter_elements,
+            filter_weapon_types,
+            extra={"markup": True}
+        )
+        
         try:
             async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
                 notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
                 self.add_delete_message_job(notice, delay=60)
                 await message.reply_chat_action(ChatAction.TYPING)
-                images = await self.render(client, user_id, user_name, all_avatars)
+                images = await self.render(client, user_id, user_name, all_avatars, filter_elements, filter_weapon_types)
         except TooManyRequests:
             reply_message = await message.reply_html("服务器熟啦 ~ 请稍后再试")
             self.add_delete_message_job(reply_message, delay=20)
