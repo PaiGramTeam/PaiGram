@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 MAX_AVATAR_COUNT = 40
 
+
 def parse_element(msg: str) -> set[Element]:
     elements = set()
     for element in Element:
@@ -41,12 +42,14 @@ def parse_element(msg: str) -> set[Element]:
             elements.add(element)
     return elements
 
+
 def parse_weapon_type(msg: str) -> set[WeaponType]:
     weapon_types = set()
     for weapon_type in WeaponType:
         if weapon_type.value in msg:
             weapon_types.add(weapon_type)
     return weapon_types
+
 
 class TooManyRequests(Exception):
     """请求过多"""
@@ -190,7 +193,13 @@ class AvatarListPlugin(Plugin):
         return await asyncio.gather(*tasks)
 
     async def render(
-        self, client: "GenshinClient", user_id: int, user_name: str, all_avatars: bool = False, filter_elements: set[Element] = None, filter_weapon_types: set[WeaponType] = None
+        self,
+        client: "GenshinClient",
+        user_id: int,
+        user_name: str,
+        all_avatars: bool = False,
+        filter_elements: set[Element] = None,
+        filter_weapon_types: set[WeaponType] = None,
     ) -> List["RenderResult"]:
         characters = await client.get_genshin_characters(client.player_id)
         if filter_elements:
@@ -234,15 +243,17 @@ class AvatarListPlugin(Plugin):
             all_avatars,
             filter_elements,
             filter_weapon_types,
-            extra={"markup": True}
+            extra={"markup": True},
         )
-        
+
         try:
             async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
                 notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
                 self.add_delete_message_job(notice, delay=60)
                 await message.reply_chat_action(ChatAction.TYPING)
-                images = await self.render(client, user_id, user_name, all_avatars, filter_elements, filter_weapon_types)
+                images = await self.render(
+                    client, user_id, user_name, all_avatars, filter_elements, filter_weapon_types
+                )
         except TooManyRequests:
             reply_message = await message.reply_html("服务器熟啦 ~ 请稍后再试")
             self.add_delete_message_job(reply_message, delay=20)
