@@ -1,7 +1,8 @@
+import ujson
 from datetime import datetime, timedelta
 from enum import Enum
 from io import BytesIO
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, PrivateAttr
@@ -72,10 +73,29 @@ class PostInfo(BaseModel):
     image_urls: List[str]
     created_at: int
     video_urls: List[str]
+    content: str
 
     def __init__(self, _data: dict, **data: Any):
         super().__init__(**data)
         self._data = _data
+
+    @staticmethod
+    def parse_structured_content(data: List[Dict]) -> str:
+        content = []
+        for item in data:
+            if not item or item.get("insert") is None:
+                continue
+            insert = item["insert"]
+            if isinstance(insert, str):
+                if attr := item.get("attributes"):
+                    if link := attr.get("link"):
+                        content.append(f'<p><a href="{link}">{insert}</a></p>')
+                        continue
+                content.append(f"<p>{insert}</p>")
+            elif isinstance(insert, dict):
+                if image := insert.get("image"):
+                    content.append(f'<img src="{image}" />')
+        return "\n".join(content)
 
     @classmethod
     def paste_data(cls, data: dict, hoyolab: bool = False) -> "PostInfo":
@@ -83,13 +103,25 @@ class PostInfo(BaseModel):
         post = _data_post["post"]
         post_id = post["post_id"]
         subject = post["subject"]
-        image_list = _data_post["image_list"]
+        image_list = []
+        image_keys = {"cover_list", "image_list"}
+        for key in image_keys:
+            image_list.extend(_data_post.get(key, []))
         image_urls = [image["url"] for image in image_list]
-        vod_list = _data_post.get("vod_list", [])
-        video_urls = [vod["resolutions"][-1]["url"] for vod in vod_list]
+        key1, key2 = ("video", "resolution") if hoyolab else ("vod_list", "resolutions")
+        vod_list = _data_post.get(key1, [])
+        if not isinstance(vod_list, list):
+            vod_list = [vod_list]
+        video_urls = [vod[key2][-1]["url"] for vod in vod_list if vod]
         created_at = post["created_at"]
         user = _data_post["user"]  # 用户数据
         user_uid = user["uid"]  # 用户ID
+        content = post["content"]
+        if hoyolab and ("<" not in content) and (structured_content := post.get("structured_content")):
+            content = PostInfo.parse_structured_content(ujson.loads(structured_content))
+        if hoyolab and post["view_type"] == 5:
+            # video
+            content = ujson.loads(content).get("describe", "")
         return PostInfo(
             _data=data,
             hoyolab=hoyolab,
@@ -99,6 +131,7 @@ class PostInfo(BaseModel):
             image_urls=image_urls,
             video_urls=video_urls,
             created_at=created_at,
+            content=content,
         )
 
     def __getitem__(self, item):

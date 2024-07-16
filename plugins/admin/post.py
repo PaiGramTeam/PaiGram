@@ -196,7 +196,7 @@ class Post(Plugin.Conversation):
                 too_long = True
         else:
             post_text += f"{escape_markdown(soup.get_text(), version=2)}\n"
-        return post_text, too_long
+        return post_text.strip(), too_long
 
     @staticmethod
     def input_media(
@@ -351,10 +351,10 @@ class Post(Plugin.Conversation):
         post_images = await self.gif_to_mp4(post_images)
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
-        post_soup = BeautifulSoup(post_data["content"], features="html.parser")
+        post_soup = BeautifulSoup(post_info.content, features="html.parser")
         post_text, too_long = self.parse_post_text(post_soup, post_subject)
         url = post_info.get_url(self.short_name)
-        post_text += f"\n[source]({url})"
+        post_text += f"\n\n[source]({url})"
         if too_long or len(post_text) >= MessageLimit.CAPTION_LENGTH:
             post_text = post_text[: MessageLimit.CAPTION_LENGTH]
             await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割")
