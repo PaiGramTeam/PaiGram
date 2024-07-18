@@ -427,7 +427,7 @@ class DailyNoteSystem(Plugin):
             if task_db.status not in include_status:
                 continue
             user_id = task_db.user_id
-            logger.info("自动便签提醒 - 请求便签信息 user_id[%s]", user_id)
+            logger.debug("自动便签提醒 - 请求便签信息 user_id[%s]", user_id)
             try:
                 async with self.genshin_helper.genshin(user_id) as client:
                     text = await self.start_get_notes(client, task_db)
