@@ -3,7 +3,7 @@ import os
 import re
 from abc import abstractmethod
 from time import time
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from ..base.hyperionrequest import HyperionRequest
 from ...models.genshin.hyperion import (
@@ -107,6 +107,14 @@ class HyperionBase:
         )
 
     @abstractmethod
+    async def get_new_list(self, gids: int, type_id: int, page_size: int = 20) -> Dict:
+        """获取最新帖子"""
+
+    @abstractmethod
+    async def get_new_list_recommended_posts(self, gids: int, type_id: int, page_size: int = 20) -> List[PostRecommend]:
+        """获取最新帖子"""
+
+    @abstractmethod
     async def get_official_recommended_posts(self, gids: int) -> List[PostRecommend]:
         """获取官方推荐帖子"""
 
@@ -149,9 +157,12 @@ class Hyperion(HyperionBase):
         return {"User-Agent": self.USER_AGENT, "Referer": referer}
 
     async def get_official_recommended_posts(self, gids: int) -> List[PostRecommend]:
-        params = {"gids": gids}
-        response = await self.client.get(url=self.GET_OFFICIAL_RECOMMENDED_POSTS_URL, params=params)
-        return [PostRecommend(**data) for data in response["list"]]
+        results = []
+        tasks = [self.get_new_list_recommended_posts(gids, i, 5) for i in range(1, 4)]
+        asyncio_results = await asyncio.gather(*tasks)
+        for result in asyncio_results:
+            results.extend(result)
+        return results
 
     async def get_post_full_in_collection(self, collection_id: int, gids: int = 2, order_type=1) -> JSON_DATA:
         params = {"collection_id": collection_id, "gids": gids, "order_type": order_type}
@@ -174,14 +185,14 @@ class Hyperion(HyperionBase):
     async def _download_image(self, art_id: int, url: str, page: int = 0) -> List[ArtworkImage]:
         return await self.download_image(self.client, art_id, url, page)
 
-    async def get_new_list(self, gids: int, type_id: int, page_size: int = 20):
-        """
-        ?gids=2&page_size=20&type=3
-        :return:
-        """
+    async def get_new_list(self, gids: int, type_id: int, page_size: int = 20) -> Dict:
         params = {"gids": gids, "page_size": page_size, "type": type_id}
-        response = await self.client.get(url=self.GET_NEW_LIST_URL, params=params)
-        return response
+        return await self.client.get(url=self.GET_NEW_LIST_URL, params=params)
+
+    async def get_new_list_recommended_posts(self, gids: int, type_id: int, page_size: int = 20) -> List[PostRecommend]:
+        resp = await self.get_new_list(gids, type_id, page_size)
+        data = resp["list"]
+        return [PostRecommend.parse(i) for i in data]
 
     async def get_live_info(self, act_id: str) -> LiveInfo:
         headers = {"x-rpc-act_id": act_id}
