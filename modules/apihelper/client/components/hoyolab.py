@@ -1,4 +1,5 @@
-from typing import List
+import asyncio
+from typing import List, Dict
 
 from .hyperion import HyperionBase
 from ..base.hyperionrequest import HyperionRequest
@@ -9,7 +10,7 @@ __all__ = ("Hoyolab",)
 
 class Hoyolab(HyperionBase):
     POST_FULL_URL = "https://bbs-api-os.hoyolab.com/community/post/wapi/getPostFull"
-    NEW_LIST_URL = "https://bbs-api-os.hoyolab.com/community/post/wapi/getNewsList"
+    GET_NEW_LIST_URL = "https://bbs-api-os.hoyolab.com/community/post/wapi/getNewsList"
     NEW_BG_URL = "https://bbs-api-os.hoyolab.com/community/painter/wapi/circle/info"
     LANG = "zh-cn"
     USER_AGENT = (
@@ -30,17 +31,12 @@ class Hoyolab(HyperionBase):
     async def get_official_recommended_posts(
         self, gids: int, page_size: int = 3, type_: int = 1
     ) -> List[PostRecommend]:
-        params = {"gids": gids, "page_size": page_size, "type": type_}
-        response = await self.client.get(url=self.NEW_LIST_URL, params=params)
-        return [
-            PostRecommend(
-                hoyolab=True,
-                post_id=data["post"]["post_id"],
-                subject=data["post"]["subject"],
-                multi_language_info=HoYoPostMultiLang(**data["post"]["multi_language_info"]),
-            )
-            for data in response["list"]
-        ]
+        results = []
+        tasks = [self.get_new_list_recommended_posts(gids, i, 5) for i in range(1, 4)]
+        asyncio_results = await asyncio.gather(*tasks)
+        for result in asyncio_results:
+            results.extend(result)
+        return results
 
     async def get_post_info(self, gids: int, post_id: int, read: int = 1, scene: int = 1, lang: str = LANG) -> PostInfo:
         params = {"post_id": post_id, "read": read, "scene": scene}
@@ -57,6 +53,15 @@ class Hoyolab(HyperionBase):
 
     async def _download_image(self, art_id: int, url: str, page: int = 0) -> List[ArtworkImage]:
         return await self.download_image(self.client, art_id, url, page)
+
+    async def get_new_list(self, gids: int, type_id: int, page_size: int = 20) -> Dict:
+        params = {"gids": gids, "page_size": page_size, "type": type_id}
+        return await self.client.get(url=self.GET_NEW_LIST_URL, params=params)
+
+    async def get_new_list_recommended_posts(self, gids: int, type_id: int, page_size: int = 20) -> List[PostRecommend]:
+        resp = await self.get_new_list(gids, type_id, page_size)
+        data = resp["list"]
+        return [PostRecommend.parse(i) for i in data]
 
     async def close(self):
         await self.client.shutdown()

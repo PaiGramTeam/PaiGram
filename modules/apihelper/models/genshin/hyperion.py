@@ -200,7 +200,9 @@ class HoYoPostMultiLang(BaseModel):
 class PostRecommend(BaseModel):
     hoyolab: bool = False
     post_id: int
-    subject: str
-    banner: Optional[str] = None
-    official_type: Optional[int] = None
-    multi_language_info: Optional[HoYoPostMultiLang] = None
+
+    @staticmethod
+    def parse(data: Dict, hoyolab: bool = False):
+        _post = data.get("post")
+        post_id = _post.get("post_id")
+        return PostRecommend(hoyolab=hoyolab, post_id=post_id)
