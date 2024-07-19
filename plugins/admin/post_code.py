@@ -21,7 +21,7 @@ from utils.log import logger
 if TYPE_CHECKING:
     from telegram import Update, Message
     from telegram.ext import ContextTypes, Job
-    from modules.apihelper.models.genshin.hyperion import LiveCode, LiveCodeHoYo
+    from modules.apihelper.models.genshin.hyperion import LiveCode, LiveCodeHoYo, PostInfo
 
 
 class PostCodeHandlerData:
@@ -146,8 +146,8 @@ class PostCode(Plugin.Conversation):
             return match[0], post
         return None, None
 
-    def init_act_id(self, post: Dict) -> Optional[str]:
-        structured_content = post.get("structured_content")
+    def init_act_id(self, post: "PostInfo") -> Optional[str]:
+        structured_content = post["post"]["post"]["structured_content"]
         if not structured_content:
             return None
         structured_data = json.loads(structured_content)
@@ -169,7 +169,8 @@ class PostCode(Plugin.Conversation):
             version, final_post = self.init_version(news.get("list", []))
             if not final_post:
                 raise ValueError("未找到版本前瞻特别节目文章")
-            act_id = self.init_act_id(final_post)
+            final_post_info = await client.get_post_info(self.gids, final_post.get("post_id"))
+            act_id = self.init_act_id(final_post_info)
             if not act_id:
                 raise ValueError("未找到文章中的 act_id")
             live_info = await client.get_live_info(act_id)
