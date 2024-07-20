@@ -107,7 +107,7 @@ class PostInfo(BaseModel):
         image_keys = {"cover_list", "image_list"}
         for key in image_keys:
             image_list.extend(_data_post.get(key, []))
-        image_urls = [image["url"] for image in image_list]
+        image_urls = list({image["url"] for image in image_list})
         key1, key2 = ("video", "resolution") if hoyolab else ("vod_list", "resolutions")
         vod_list = _data_post.get(key1, [])
         if not isinstance(vod_list, list):
