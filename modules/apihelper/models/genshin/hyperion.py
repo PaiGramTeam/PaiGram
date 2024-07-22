@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import ujson
 from datetime import datetime, timedelta
 from enum import Enum
@@ -26,6 +28,7 @@ class ArtworkImage(BaseModel):
     file_name: Optional[str] = None
     file_extension: Optional[str] = None
     is_error: bool = False
+    url: str = ""
 
     @property
     def format(self) -> Optional[str]:
@@ -107,7 +110,7 @@ class PostInfo(BaseModel):
         image_keys = {"cover_list", "image_list"}
         for key in image_keys:
             image_list.extend(_data_post.get(key, []))
-        image_urls = list({image["url"] for image in image_list})
+        image_urls = list(OrderedDict.fromkeys([image["url"] for image in image_list]))
         key1, key2 = ("video", "resolution") if hoyolab else ("vod_list", "resolutions")
         vod_list = _data_post.get(key1, [])
         if not isinstance(vod_list, list):

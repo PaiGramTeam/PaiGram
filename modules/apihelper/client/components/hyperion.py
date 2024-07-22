@@ -104,7 +104,12 @@ class HyperionBase:
             url, params=Hyperion.get_images_params(resize=2000) if is_image else None, de_json=False
         )
         return ArtworkImage.gen(
-            art_id=art_id, page=page, file_name=filename, file_extension=url.split(".")[-1], data=response.content
+            art_id=art_id,
+            page=page,
+            file_name=filename,
+            file_extension=url.split(".")[-1],
+            data=response.content,
+            url=url,
         )
 
     @abstractmethod
