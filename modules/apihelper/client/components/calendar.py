@@ -41,7 +41,7 @@ class Calendar:
         762,  # 《原神》公平运营声明
     ]
     IGNORE_RE = re.compile(
-        r"(内容专题页|版本更新说明|调研|防沉迷|米游社|专项意见|更新修复与优化|问卷调查|版本更新通知|更新时间说明|预下载功能|周边限时|周边上新|角色演示)"
+        r"(内容专题页|版本更新说明|调研|防沉迷|米游社|专项意见|更新修复与优化|问卷调查|版本更新通知|更新时间说明|预下载功能|周边限时|周边上新|角色演示|攻略征集)"
     )
     FULL_TIME_RE = re.compile(r"(魔神任务)")
 
@@ -242,6 +242,8 @@ class Calendar:
             act.type = ActEnum.no_display
         elif act.title == "深渊":
             act.type = ActEnum.abyss
+        elif act.title == "幻想真境剧诗":
+            act.type = ActEnum.img_theater
 
     async def get_list(
         self,
@@ -275,26 +277,25 @@ class Calendar:
             return act
 
     @staticmethod
-    def get_abyss_cal(start_time: datetime, end_time: datetime) -> List[List[Union[datetime, str]]]:
-        """获取深渊日历"""
+    def _get_abyss_cal(start_time: datetime, end_time: datetime, day: int) -> List[List[Union[datetime, str]]]:
         last = datetime.now().replace(day=1) - timedelta(days=2)
         last_month = last.month
         curr = datetime.now()
         curr_month = curr.month
         next_date = last + timedelta(days=40)
         next_month = next_date.month
+        next_next_date = next_date + timedelta(days=40)
 
-        def start(date: datetime, up: bool = False):
-            return date.replace(day=1 if up else 16, hour=4, minute=0, second=0, microsecond=0)
+        def start(date: datetime):
+            return date.replace(day=day, hour=4, minute=0, second=0, microsecond=0)
 
-        def end(date: datetime, up: bool = False):
-            return date.replace(day=1 if up else 16, hour=3, minute=59, second=59, microsecond=999999)
+        def end(date: datetime):
+            return date.replace(day=day, hour=3, minute=59, second=59, microsecond=999999)
 
         check = [
-            [start(last, False), end(last, True), f"{last_month}月下半"],
-            [start(curr, True), end(curr, False), f"{curr_month}月上半"],
-            [start(curr, False), end(next_date, True), f"{curr_month}月下半"],
-            [start(next_date, True), end(next_date, False), f"{next_month}月上半"],
+            [start(last), end(curr), f"{last_month}月"],
+            [start(curr), end(next_date), f"{curr_month}月"],
+            [start(next_date), end(next_next_date), f"{next_month}月"],
         ]
         ret = []
         for ds in check:
@@ -302,6 +303,16 @@ class Calendar:
             if (s <= start_time <= e) or (s <= end_time <= e):
                 ret.append(ds)
         return ret
+
+    @staticmethod
+    def get_abyss_cal(start_time: datetime, end_time: datetime) -> List[List[Union[datetime, str]]]:
+        """获取深渊日历"""
+        return Calendar._get_abyss_cal(start_time, end_time, 16)
+
+    @staticmethod
+    def get_img_theater_cal(start_time: datetime, end_time: datetime) -> List[List[Union[datetime, str]]]:
+        """获取幻想真境剧诗日历"""
+        return Calendar._get_abyss_cal(start_time, end_time, 1)
 
     async def get_birthday_char(
         self, date_list: List[Date], assets: "AssetsService"
@@ -374,6 +385,7 @@ class Calendar:
         birthday_char_line, birthday_chars = await self.get_birthday_char(date_list, assets)
         target: List[FinalAct] = []
         abyss: List[FinalAct] = []
+        img_theater: List[FinalAct] = []
 
         for ds in list_data[1]:
             if act := await self.get_list(ds, start_time, end_time, total_range, time_map, True, assets):
@@ -381,6 +393,7 @@ class Calendar:
         for ds in list_data[0]:
             if act := await self.get_list(ds, start_time, end_time, total_range, time_map, False, assets):
                 target.append(act)
+        # 深渊
         abyss_cal = self.get_abyss_cal(start_time, end_time)
         for t in abyss_cal:
             ds = ActDetail(
@@ -390,6 +403,16 @@ class Calendar:
             )
             if act := await self.get_list(ds, start_time, end_time, total_range, {}, True, assets):
                 abyss.append(act)
+        # 幻想真境剧
+        img_theater_cal = self.get_img_theater_cal(start_time, end_time)
+        for t in img_theater_cal:
+            ds = ActDetail(
+                title=f"「幻想真境剧诗」· {t[2]}",
+                start_time=t[0].strftime("%Y-%m-%d %H:%M:%S"),
+                end_time=t[1].strftime("%Y-%m-%d %H:%M:%S"),
+            )
+            if act := await self.get_list(ds, start_time, end_time, total_range, {}, True, assets):
+                img_theater.append(act)
         target.sort(key=lambda x: (x.sort, x.start, x.duration))
         target, char_count, char_old = self.merge_list(target)
         return {
@@ -397,6 +420,7 @@ class Calendar:
             "now_left": now_left,
             "list": target,
             "abyss": abyss,
+            "img_theater": img_theater,
             "char_mode": f"char-{char_count}-{char_old}",
             "now_time": now.strftime("%Y-%m-%d %H 时"),
             "birthday_char_line": birthday_char_line,

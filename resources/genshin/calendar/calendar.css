@@ -295,6 +295,14 @@ body {
   background: url("img/abyss.jpg") #333465 top right no-repeat;
   position: absolute;
 }
+.cal-item-img {
+  background: url("../role_combat/background/lookback-bg.jpg") #3d2a35 top right no-repeat!important;
+}
+.cal-item-img .info {
+    background: none;
+    color: #d3bc8d;
+    background-image: linear-gradient(to right, #3d2a35, #3d2a35 80%, rgba(51, 52, 101, 0) 100%)!important;
+}
 .cal-abyss-cont .cal-item .info {
   background: none;
   color: #d3bc8d;

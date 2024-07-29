@@ -22,6 +22,7 @@ class ActEnum(str, Enum):
     normal = "normal"
     no_display = "pass"
     abyss = "abyss"
+    img_theater = "img_theater"
 
     def __str__(self) -> str:
         return self.value
