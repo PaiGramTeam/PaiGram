@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>floor</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+
+        .floors, .floor {
+            border-radius: unset;
+            margin: 0;
+        }
+
+        .floor-num > div:last-child {
+            display: flex;
+            flex-flow: column;
+            justify-content: center;
+            align-content: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="floors">
+        <div
+                class="floor"
+                style="
+                        background-image: url('./background/lookback-bg.jpg');
+                        background-color: {{ floor_colors[floor.round_id] }};"
+        >
+            <div class="head">
+                <div class="floor-name">
+                    <div class="floor-num"></div>
+                    <div>
+                        <div>UID: {{ uid }}</div>
+                        <div>第 {{ floor.round_id }} 幕</div>
+                    </div>
+                </div>
+                {% if floor.is_get_medal %}
+                <div class="star"></div>
+                {% endif %}
+            </div>
+            <div class="hr"></div>
+            <div class="chamber">
+                    <div class="chamber-info">
+                        <div>
+                            <span style="color: navajowhite">{{ floor_time }}</span>
+                        </div>
+                    </div>
+                    <div class="battles">
+                            <div class="battle">
+                                {% for character in floor.avatars %}
+                                    <div class="character">
+                                        {% if character.avatar_type == 1 %}
+                                            {% if avatar_data[character.id] > 0 %}
+                                                {% set constellation = avatar_data[character.id] %}
+                                                {% set bg = ['blue','blue', 'green','green', 'red', 'red'][constellation - 1] %}
+                                                <div style="background-color: var(--{{ bg }})">
+                                                    {{ constellation }} 命
+                                                </div>
+                                            {% endif %}
+                                        {% elif character.avatar_type == 2 %}
+                                            <div style="background-color: var(--red)">
+                                                试用
+                                            </div>
+                                        {% elif character.avatar_type == 3 %}
+                                            <div style="background-color: var(--green)">
+                                                支援
+                                            </div>
+                                        {% endif %}
+                                        <div class="element"
+                                             style="background-image: url('../../img/element/{{ character.element }}.png')"></div>
+                                        <div class="icon"
+                                             style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
+                                            <img src="{{ character.icon }}" alt=""/>
+                                        </div>
+                                        <div class="caption">Lv.{{ character.level }}</div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                    </div>
+            </div>
+            <div class="hr"></div>
+            <div class="chamber">
+                <h2>奇妙助益 * {{ floor.buffs | length }}</h2>
+                {% for buff in floor.buffs %}
+                    <div class="buff">
+                        <div class="name">{{ buff.name }}</div>
+                        <div class="icon"
+                             style="background-image: url({{ buff.icon }})"></div>
+                        <div class="caption">{{ buff.desc_html | safe }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="hr"></div>
+            <div class="chamber">
+                <h2>神秘收获 * {{ floor.choice_cards | length }}</h2>
+                {% for buff in floor.choice_cards %}
+                    <div class="buff">
+                        <div class="name">{{ buff.name }}</div>
+                        <div class="icon"
+                             style="background-image: url({{ buff.icon }})"></div>
+                        <div class="caption">{{ buff.desc_html | safe }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
