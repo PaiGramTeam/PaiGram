@@ -31,8 +31,8 @@
         <div
                 class="floor"
                 style="
-                        background-image: url('./background/lookback-bg.jpg');
-                        background-color: {{ floor_colors[floor.round_id] }};"
+                        background-image: url('./background/floor.png');
+                        background-color: #4d2250;"
         >
             <div class="head">
                 <div class="floor-name">
@@ -91,10 +91,8 @@
                 <h2>奇妙助益 * {{ floor.buffs | length }}</h2>
                 {% for buff in floor.buffs %}
                     <div class="buff">
-                        <div class="name">{{ buff.name }}</div>
-                        <div class="icon"
-                             style="background-image: url({{ buff.icon }})"></div>
-                        <div class="caption">{{ buff.desc_html | safe }}</div>
+                        <img class="icon" src="{{ buff.icon }}" alt=""/>
+                        <div class="caption">{{ buff.name }}：{{ buff.desc_html | safe }}</div>
                     </div>
                 {% endfor %}
             </div>
@@ -103,10 +101,8 @@
                 <h2>神秘收获 * {{ floor.choice_cards | length }}</h2>
                 {% for buff in floor.choice_cards %}
                     <div class="buff">
-                        <div class="name">{{ buff.name }}</div>
-                        <div class="icon"
-                             style="background-image: url({{ buff.icon }})"></div>
-                        <div class="caption">{{ buff.desc_html | safe }}</div>
+                        <img class="icon" src="{{ buff.icon }}" alt=""/>
+                        <div class="caption">{{ buff.name }}：{{ buff.desc_html | safe }}</div>
                     </div>
                 {% endfor %}
             </div>

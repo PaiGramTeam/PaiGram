@@ -1,6 +1,6 @@
 import datetime
 from asyncio import sleep
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Dict
 
 from simnet.errors import (
     TimedOut as SimnetTimedOut,
@@ -11,13 +11,18 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
 
 from core.plugin import Plugin, job
-from core.services.history_data.services import HistoryDataAbyssServices, HistoryDataLedgerServices
+from core.services.history_data.services import (
+    HistoryDataAbyssServices,
+    HistoryDataLedgerServices,
+    HistoryDataImgTheaterServices,
+)
 from gram_core.basemodel import RegionEnum
 from gram_core.plugin import handler
 from gram_core.services.cookies import CookiesService
 from gram_core.services.cookies.models import CookiesStatusEnum
 from plugins.genshin.abyss import AbyssPlugin
 from plugins.genshin.ledger import LedgerPlugin
+from plugins.genshin.role_combat import RoleCombatPlugin
 from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
 from utils.log import logger
 
@@ -43,11 +48,13 @@ class RefreshHistoryJob(Plugin):
         genshin_helper: GenshinHelper,
         history_abyss: HistoryDataAbyssServices,
         history_ledger: HistoryDataLedgerServices,
+        history_img_theater: HistoryDataImgTheaterServices,
     ):
         self.cookies = cookies
         self.genshin_helper = genshin_helper
         self.history_data_abyss = history_abyss
         self.history_data_ledger = history_ledger
+        self.history_data_img_theater = history_img_theater
 
     @staticmethod
     async def send_notice(context: "ContextTypes.DEFAULT_TYPE", user_id: int, notice_text: str):
@@ -58,11 +65,14 @@ class RefreshHistoryJob(Plugin):
         except Exception as exc:
             logger.error("执行自动刷新历史记录时发生错误 user_id[%s]", user_id, exc_info=exc)
 
-    async def save_abyss_data(self, client: "GenshinClient") -> bool:
+    @staticmethod
+    async def get_genshin_characters(client: "GenshinClient"):
+        uid = client.player_id
+        return await client.get_genshin_characters(uid, lang="zh-cn")
+
+    async def save_abyss_data(self, client: "GenshinClient", avatar_data: Dict[int, int]) -> bool:
         uid = client.player_id
         abyss_data = await client.get_genshin_spiral_abyss(uid, previous=False, lang="zh-cn")
-        avatars = await client.get_genshin_characters(uid, lang="zh-cn")
-        avatar_data = {i.id: i.constellation for i in avatars}
         if abyss_data.unlocked and abyss_data.ranks and abyss_data.ranks.most_kills:
             return await AbyssPlugin.save_abyss_data(self.history_data_abyss, uid, abyss_data, avatar_data)
         return False
@@ -101,6 +111,20 @@ class RefreshHistoryJob(Plugin):
         notice_text = NOTICE_TEXT % ("旅行札记历史记录", now, uid, "旅行札记历史记录")
         await self.send_notice(context, user_id, notice_text)
 
+    async def save_img_theater_data(self, client: "GenshinClient", avatar_data: Dict[int, int]) -> bool:
+        uid = client.player_id
+        abyss_data = await client.get_genshin_imaginarium_theater(uid, previous=False, lang="zh-cn")
+        if abyss_data.unlocked and abyss_data.data:
+            data = abyss_data.data[0]
+            if data.has_data and data.has_detail_data and data.detail:
+                return await RoleCombatPlugin.save_abyss_data(self.history_data_img_theater, uid, data, avatar_data)
+        return False
+
+    async def send_img_theater_notice(self, context: "ContextTypes.DEFAULT_TYPE", user_id: int, uid: int):
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        notice_text = NOTICE_TEXT % ("幻想真境剧诗历史记录", now, uid, "挑战记录")
+        await self.send_notice(context, user_id, notice_text)
+
     @handler.command(command="remove_same_history", block=False, admin=True)
     async def remove_same_history(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
@@ -112,6 +136,8 @@ class RefreshHistoryJob(Plugin):
         text += f"深渊数据移除数量：{num1}\n"
         num2 = await self.history_data_ledger.remove_same_data()
         text += f"旅行札记数据移除数量：{num2}\n"
+        num3 = await self.history_data_img_theater.remove_same_data()
+        text += f"幻想真境剧诗数据移除数量：{num3}\n"
         await reply.edit_text(text)
 
     @handler.command(command="refresh_all_history", block=False, admin=True)
@@ -133,8 +159,12 @@ class RefreshHistoryJob(Plugin):
                 user_id = cookie_model.user_id
                 try:
                     async with self.genshin_helper.genshin(user_id) as client:
-                        if await self.save_abyss_data(client):
-                            await self.send_abyss_notice(context, user_id, client.player_id)
+                        if avatars := await self.get_genshin_characters(client):
+                            avatar_data = {i.id: i.constellation for i in avatars}
+                            if await self.save_abyss_data(client, avatar_data):
+                                await self.send_abyss_notice(context, user_id, client.player_id)
+                            if await self.save_img_theater_data(client, avatar_data):
+                                await self.send_img_theater_notice(context, user_id, client.player_id)
                         if await self.save_ledger_data(client):
                             await self.send_ledger_notice(context, user_id, client.player_id)
                 except (InvalidCookies, PlayerNotFoundError, CookiesNotFoundError):
