@@ -1,0 +1,376 @@
+:root {
+    --white: rgb(246 248 249);
+    --bg-color: rgb(233 229 220);
+    --h-color: rgb(203 189 162);
+    --red: rgb(255 86 33/ 80%);
+    --blue: rgb(98 168 233/ 80%);
+    --green: rgb(67 185 124/ 80%);
+}
+
+body {
+    margin: 0;
+    padding: 10px;
+}
+
+.hr {
+    width: 100%;
+    height: 3px;
+    background-color: rgb(246 248 249 / 50%);
+}
+
+.container {
+    width: 750px;
+    position: relative;
+    filter: drop-shadow(2px 2px 5px rgb(0 0 0 /70%));
+}
+
+.title {
+    text-align: center;
+    font-size: 27px;
+    font-weight: bold;
+    color: var(--h-color);
+}
+
+.caption {
+    margin: 10px 0;
+    color: var(--h-color);
+    font-size: 20px;
+}
+
+/* 概览 */
+
+.overview {
+    height: 320px;
+    padding: 20px 40px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-image: linear-gradient(to top, rgb(0 0 0 / 10%), rgb(0 0 0 / 10%)), url("./background/lookback-bg.jpg");
+    background-attachment: local;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.summarize {
+    font-size: 20px;
+    width: calc(100% - 90px);
+    height: 200px;
+    margin: 20px 0;
+    padding: 10px 0 10px 80px;
+    border-radius: 5px;
+    border: 2px solid rgb(118 121 120 / 80%);
+    outline: 4px solid rgb(74, 82, 101);
+    background-color: rgb(74 82 101 / 60%);
+    background-image: url("./background/banner 01.png"), url("./background/banner 02.png");
+    background-repeat: no-repeat, no-repeat;
+    background-position: right, left;
+    background-size: auto 100%, auto 100%;
+    backdrop-filter: blur(5px);
+}
+
+.summarize > div {
+    width: 100%;
+    height: 25%;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+}
+
+.summarize > div > div {
+    flex: 1;
+}
+
+.star {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+}
+
+.star::before {
+    content: "";
+    width: 40px;
+    height: 40px;
+    background-size: cover;
+    background-image: url("./background/star.png");
+}
+
+.star > span {
+    margin-left: 10px;
+}
+
+.flower::before {
+    background-image: url("./background/flower.png");
+}
+
+.most-played {
+    width: 100%;
+    margin: 30px 0;
+}
+
+.characters {
+    width: calc(100% - 60px);
+    padding: 0 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.character {
+    width: 100px;
+    height: 125px;
+    margin: 0 20px;
+    background-color: rgb(233 229 220);
+    overflow: hidden;
+    border-radius: 10px;
+    position: relative;
+}
+
+.characters > .character > .element {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 25px;
+    height: 25px;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.icon {
+    width: 100%;
+    height: 100px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    overflow: hidden;
+    border-radius: 0 0 20px 0;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.icon > img {
+    width: inherit;
+    height: inherit;
+}
+
+.character > .caption {
+    font-size: 18px;
+    margin: 4px 0 0;
+    padding: 0;
+    height: min-content;
+    text-align: center;
+    color: black;
+}
+
+.four-star {
+    width: 15px;
+    height: 15px;
+    position: relative;
+}
+
+.four-star::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    width: inherit;
+    height: inherit;
+    background-position: center;
+    background-image: url("./background/four-star.png");
+    background-blend-mode: lighten;
+    background-size: contain;
+}
+
+.ranks {
+    width: calc(100% + 80px);
+    transform: translateX(-40px);
+    color: var(--white);
+    position: relative;
+    display: flex;
+    flex-flow: column;
+    flex-wrap: wrap;
+}
+
+.ranks > div {
+    font-size: 18px;
+    width: 100%;
+    height: 43px;
+    display: flex;
+    align-items: center;
+}
+
+.rank {
+    flex: 1;
+    position: relative;
+    display: flex;
+    margin-left: 80px;
+    margin-right: 60px;
+}
+
+.ranks > div > .rank:first-child {
+    margin-right: 10px;
+}
+
+.rank > img {
+    width: 50px;
+    position: absolute;
+    right: 0;
+    bottom: -5px;
+}
+
+/* 层数 */
+
+.floors {
+    margin-top: 20px;
+}
+
+.floor {
+    margin: 20px 0;
+    padding: 0 30px;
+    width: calc(100% - 60px);
+    border-radius: 20px;
+    overflow: hidden;
+    outline: rgb(233 229 220 / 30%) solid 3px;
+    outline-offset: -7px;
+    background-position: top center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.head {
+    width: 100%;
+    height: 160px;
+    display: flex;
+}
+
+.floor-name {
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    color: var(--white);
+}
+
+.floor-name > div:not(.floor-num) {
+    margin-left: 20px;
+    text-shadow: 1px 1px 5px rgb(0 0 0/50%);
+}
+
+.floor-num {
+    color: black;
+    width: 100px;
+    height: 100px;
+    background-image: url("./background/abyss.png");
+    background-size: contain;
+    filter: drop-shadow(0 0 5px rgb(0 0 0/80%)) grayscale(10%);
+    position: relative;
+}
+
+.head > .star {
+    margin-left: auto;
+    float: right;
+    color: var(--white);
+    font-size: 25px;
+    text-shadow: 1px 1px 5px rgb(0 0 0/50%);
+}
+
+.head > .star::before {
+    width: 50px;
+    height: 50px;
+}
+
+.chamber {
+    margin: 10px 0;
+    display: flex;
+    flex-flow: column;
+}
+
+.chamber-info {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    color: var(--white);
+    font-size: 22px;
+}
+
+.stars {
+    margin-left: auto;
+}
+
+.dim-star::before {
+    filter: brightness(50%);
+}
+
+.battle {
+    margin: 10px 0 20px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.battle > .character {
+    flex: 2;
+    max-width: 120px;
+    height: 145px;
+}
+
+.battle > .battle-info {
+    flex: 1;
+    color: var(--white);
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.battle > .character > div:first-child:not(.icon, .element) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 5px;
+    min-width: 27px;
+    text-align: center;
+    border-radius: 0 0 0 10px;
+    filter: drop-shadow(1px 1px 5px rgb(0 0 0/50%));
+    font-weight: 500;
+    color: var(--white);
+}
+
+.battle > .character > .element {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 30px;
+    height: 30px;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.battle > .character > .icon {
+    width: 100%;
+    height: fit-content;
+    border-radius: 0 0 28px 0;
+}
+
+.battle > .character > .caption {
+    font-size: 20px;
+    margin-top: 2px;
+}
+
+.chamber h2 {
+    color: white;
+}
+
+.buff {
+    display: flex;
+    align-items: center; /* 垂直居中对齐 */
+}
+
+.buff img {
+    width: 100px;
+    height: auto;
+    margin-right: 10px; /* 图片与文本之间的间距 */
+}

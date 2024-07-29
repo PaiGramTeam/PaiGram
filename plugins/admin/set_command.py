@@ -66,6 +66,8 @@ class SetCommandPlugin(Plugin):
             BotCommand("abyss", "查询深渊战绩"),
             BotCommand("abyss_team", "查询深渊推荐配队"),
             BotCommand("abyss_history", "查询深渊历史战绩"),
+            BotCommand("role_combat", "查询幻想真境剧诗战绩"),
+            BotCommand("role_combat_history", "查询幻想真境剧诗历史战绩"),
             BotCommand("avatars", "查询角色练度"),
             BotCommand("reg_time", "账号注册时间"),
             BotCommand("daily_material", "今日素材表"),

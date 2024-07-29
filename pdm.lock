@@ -2168,7 +2168,7 @@ name = "simnet"
 version = "0.1.22"
 requires_python = "<4.0,>=3.8"
 git = "https://github.com/PaiGramTeam/SIMNet"
-revision = "d27e6e9e46e48e32ce70abb19a4030a1a93c940c"
+revision = "0ddc9dabd1543450a7c3f513f177882ed04425fd"
 summary = "Modern API wrapper for Genshin Impact & Honkai: Star Rail built on asyncio and pydantic."
 groups = ["default"]
 dependencies = [

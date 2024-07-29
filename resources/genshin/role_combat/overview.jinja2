@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-ch">
+<head>
+    <meta charset="UTF-8">
+    <title>overview</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .overview {
+            border-radius: unset;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="overview">
+        <div class="title">演出回顾</div>
+        <div class="summarize">
+            <div>
+                <div>UID: {{ uid }}</div>
+                <div>时间: {{ time }}</div>
+            </div>
+            <div>
+                <div class="star">
+                    <span>明星挑战星章 {{ stat.medal_num }} / {{ stat.max_round_id }}</span>
+                </div>
+                <div class="star flower">
+                    <span>消耗幻剧之花 {{ stat.coin_num }}</span>
+                </div>
+            </div>
+            <div>
+                {% set diff = stat.difficulty %}
+                {% set diff_str = "未知" %}
+                {% if diff == 1 %}
+                {% set diff_str = "简单" %}
+                {% elif diff == 2 %}
+                {% set diff_str = "普通" %}
+                {% elif diff == 3 %}
+                {% set diff_str = "困难" %}
+                {% endif %}
+                <div>挑战难度：{{ diff_str }}</div>
+                <div>最佳记录: 第 {{ stat.max_round_id }} 幕</div>
+            </div>
+            <div>
+                <div>触发场外观众声援: {{ stat.audience_support_trigger_num }}</div>
+                <div>助演角色支援其他玩家：{{ stat.rent_cnt }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
