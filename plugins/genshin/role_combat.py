@@ -212,23 +212,24 @@ class RoleCombatPlugin(Plugin):
         start_time = abyss_data.schedule.start_time.astimezone(TZ)
         time = start_time.strftime("%Y年%m月")
 
-        render_data = {}
-        render_data["time"] = time
-        render_data["stat"] = abyss_data.stat
-        render_data["uid"] = mask_number(uid)
-        render_data["floor_colors"] = {
-            1: "#374952",
-            2: "#374952",
-            3: "#55464B",
-            4: "#55464B",
-            5: "#55464B",
-            6: "#1D2A5D",
-            7: "#1D2A5D",
-            8: "#1D2A5D",
-            9: "#292B58",
-            10: "#382024",
-            11: "#252550",
-            12: "#1D2A4A",
+        render_data = {
+            "time": time,
+            "stat": abyss_data.stat,
+            "uid": mask_number(uid),
+            "floor_colors": {
+                1: "#374952",
+                2: "#374952",
+                3: "#55464B",
+                4: "#55464B",
+                5: "#55464B",
+                6: "#1D2A5D",
+                7: "#1D2A5D",
+                8: "#1D2A5D",
+                9: "#292B58",
+                10: "#382024",
+                11: "#252550",
+                12: "#1D2A4A",
+            },
         }
 
         if total:
@@ -312,9 +313,8 @@ class RoleCombatPlugin(Plugin):
             diff = "普通"
         else:
             diff = "困难"
-        if data.abyss_data.stat.medal_num == 8:
-            if data.abyss_data.stat.difficulty == TheaterDifficulty.HARD:
-                honor = "👑"
+        if data.abyss_data.stat.medal_num == 8 and data.abyss_data.stat.difficulty == TheaterDifficulty.HARD:
+            honor = "👑"
 
         return f"{time} {data.abyss_data.stat.medal_num} ★ {diff} {honor}"
 
