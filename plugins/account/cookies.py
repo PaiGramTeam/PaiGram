@@ -1,11 +1,12 @@
+import contextlib
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from arkowrapper import ArkoWrapper
 from simnet import GenshinClient, Region
 from simnet.errors import DataNotPublic, InvalidCookies, BadRequest as SimnetBadRequest
 from simnet.models.lab.record import Account
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update, Message
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
@@ -40,6 +41,7 @@ class AccountCookiesPluginData(TelegramObject):
     account_id: int = 0
     # player_id: int = 0
     genshin_account: Optional[Account] = None
+    genshin_accounts: List[Account] = []
     device: Optional[AccountCookiesPluginDeviceData] = None
 
     def reset(self):
@@ -47,10 +49,11 @@ class AccountCookiesPluginData(TelegramObject):
         self.cookies = {}
         self.account_id = 0
         self.genshin_account = None
+        self.genshin_accounts = []
         self.device = None
 
 
-CHECK_SERVER, INPUT_COOKIES, COMMAND_RESULT = range(10100, 10103)
+CHECK_SERVER, INPUT_COOKIES, INPUT_PLAYERS, COMMAND_RESULT = range(10100, 10104)
 
 
 class AccountCookiesPlugin(Plugin.Conversation):
@@ -334,17 +337,20 @@ class AccountCookiesPlugin(Plugin.Conversation):
         if account_cookies_plugin_data.account_id is None:
             await message.reply_text("无法获取账号ID，请检查Cookie是否正确或请稍后重试")
             return ConversationHandler.END
-        genshin_account: Optional[Account] = None
-        level: int = 0
-        # todo : 多账号绑定
-        for temp in genshin_accounts:
-            if temp.level >= level:  # 获取账号等级最高的
-                level = temp.level
-                genshin_account = temp
-        if genshin_account is None:
-            await message.reply_text("未找到原神账号，请确认账号信息无误。")
+        if not genshin_accounts:
+            await message.reply_text("未找到游戏账号，请确认账号信息无误。")
             return ConversationHandler.END
-        account_cookies_plugin_data.genshin_account = genshin_account
+        account_cookies_plugin_data.cookies = cookies.to_dict()
+        account_cookies_plugin_data.genshin_accounts = genshin_accounts
+        await self.send_choose_players_message(message, genshin_accounts)
+        return INPUT_PLAYERS
+
+    async def choose_to_save_player(
+        self, update: "Update", account_cookies_plugin_data: AccountCookiesPluginData
+    ) -> int:
+        user = update.effective_user
+        message = update.effective_message
+        genshin_account = account_cookies_plugin_data.genshin_account
         player_info = await self.players_service.get(
             user.id, player_id=genshin_account.uid, region=account_cookies_plugin_data.region
         )
@@ -371,8 +377,35 @@ class AccountCookiesPlugin(Plugin.Conversation):
             f"服务器名称：`{genshin_account.server_name}`\n"
         )
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-        account_cookies_plugin_data.cookies = cookies.to_dict()
         return COMMAND_RESULT
+
+    @staticmethod
+    async def send_choose_players_message(message: "Message", genshin_accounts: List["Account"]):
+        text = "请选择要绑定的角色！"
+        reply_keyboard = [[f"{escape_markdown(x.nickname, version=2)} - {x.uid}"] for x in genshin_accounts]
+        reply_keyboard.append(["退出"])
+        await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+
+    @conversation.state(state=INPUT_PLAYERS)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
+    async def input_players(self, update: Update, context: CallbackContext) -> int:
+        message = update.effective_message
+        account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
+        if message.text == "退出":
+            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        uid = None
+        with contextlib.suppress(ValueError, IndexError):
+            uid = int(message.text.split("-")[-1].strip())
+        if not uid:
+            await message.reply_text("选择错误，请重新选择")
+            return INPUT_PLAYERS
+        genshin_account = next((x for x in account_cookies_plugin_data.genshin_accounts if x.uid == uid), None)
+        if not genshin_account:
+            await message.reply_text("选择错误，请重新选择")
+            return INPUT_PLAYERS
+        account_cookies_plugin_data.genshin_account = genshin_account
+        return await self.choose_to_save_player(update, account_cookies_plugin_data)
 
     async def update_devices(self, account_id: int, device: AccountCookiesPluginDeviceData):
         if not device:

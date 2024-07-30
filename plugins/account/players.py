@@ -328,13 +328,7 @@ class PlayersManagesPlugin(Plugin):
             await callback_query.edit_message_text(f"账号 {player_id} 信息未找到")
             return
 
-        main_player = await self.players_service.get(user.id, is_chosen=True)
-        if main_player and player.id != main_player.id:
-            main_player.is_chosen = False
-            await self.players_service.update(main_player)
-
-        player.is_chosen = True
-        await self.players_service.update(player)
+        await self.players_service.set_player_to_main(user_id, player_id)
 
         buttons = [
             [
@@ -382,7 +376,9 @@ class PlayersManagesPlugin(Plugin):
             await self.players_service.delete(player)
             cookies = await self.cookies_service.get(player.user_id, player.account_id, player.region)
             if cookies:
-                await self.cookies_service.delete(cookies)
+                players = await self.players_service.get_all_by_account_id(cookies.account_id, cookies.region)
+                if len(players) == 0:
+                    await self.cookies_service.delete(cookies)
             player_info = await self.player_info_service.get_form_sql(player)
             if player_info is not None:
                 await self.player_info_service.delete(player_info)
