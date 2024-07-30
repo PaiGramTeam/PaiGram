@@ -6,7 +6,7 @@ from arkowrapper import ArkoWrapper
 from simnet import GenshinClient, Region
 from simnet.errors import DataNotPublic, InvalidCookies, BadRequest as SimnetBadRequest
 from simnet.models.lab.record import Account
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update, Message
 from telegram.ext import CallbackContext, ConversationHandler, filters
 from telegram.helpers import escape_markdown
 
@@ -338,7 +338,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await message.reply_text("无法获取账号ID，请检查Cookie是否正确或请稍后重试")
             return ConversationHandler.END
         if not genshin_accounts:
-            await message.reply_text("未找到原神账号，请确认账号信息无误。")
+            await message.reply_text("未找到游戏账号，请确认账号信息无误。")
             return ConversationHandler.END
         account_cookies_plugin_data.cookies = cookies.to_dict()
         account_cookies_plugin_data.genshin_accounts = genshin_accounts
