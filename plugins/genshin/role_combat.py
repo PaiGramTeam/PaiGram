@@ -174,16 +174,21 @@ class RoleCombatPlugin(Plugin):
         self, client: GenshinClient, uid: int, previous: bool
     ) -> Tuple["ImgTheaterData", Dict[int, int]]:
         abyss_data = await client.get_genshin_imaginarium_theater(
-            uid, need_detail=not client.public, previous=previous, lang="zh-cn"
+            uid, need_detail=not client.public, lang="zh-cn"
         )  # noqa
         avatar_data = {}
         if (not abyss_data.unlocked) or (not abyss_data.data):
             raise AbyssUnlocked
-        abyss_data = abyss_data.data[0]
+        index = 1 if previous else 0
+        if len(abyss_data.data) <= index:
+            raise AbyssUnlocked
+        abyss_data = abyss_data.data[index]
+        if not abyss_data.has_data:
+            raise AbyssUnlocked
         if not client.public:  # noqa
             avatars = await client.get_genshin_characters(uid, lang="zh-cn")
             avatar_data = {i.id: i.constellation for i in avatars}
-            if abyss_data.has_data and abyss_data.has_detail_data and abyss_data.detail:
+            if abyss_data.has_detail_data and abyss_data.detail:
                 await self.save_abyss_data(self.history_data_abyss, uid, abyss_data, avatar_data)
         return abyss_data, avatar_data
 

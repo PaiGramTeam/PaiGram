@@ -113,7 +113,7 @@ class RefreshHistoryJob(Plugin):
 
     async def save_img_theater_data(self, client: "GenshinClient", avatar_data: Dict[int, int]) -> bool:
         uid = client.player_id
-        abyss_data = await client.get_genshin_imaginarium_theater(uid, previous=False, lang="zh-cn")
+        abyss_data = await client.get_genshin_imaginarium_theater(uid, lang="zh-cn")
         if abyss_data.unlocked and abyss_data.data:
             data = abyss_data.data[0]
             if data.has_data and data.has_detail_data and data.detail:
