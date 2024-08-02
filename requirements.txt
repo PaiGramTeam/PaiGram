@@ -3,7 +3,8 @@
 
 aiocsv==1.3.2
 aiofiles==24.1.0
-aiohttp==3.9.5
+aiohappyeyeballs==2.3.4
+aiohttp==3.10.0
 aiolimiter==1.1.0
 aiosignal==1.3.1
 aiosqlite==0.20.0
@@ -27,14 +28,11 @@ click==8.1.7
 colorama==0.4.6; sys_platform == "win32" or platform_system == "Windows"
 colorlog==6.8.2
 cryptography==43.0.0
-dnspython==2.6.1
-email-validator==2.2.0
 enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@b4692c2096ebbd6020cb312e2a872e69f94ea5eb
 et-xmlfile==1.1.0
 exceptiongroup==1.2.2; python_version < "3.11"
-fakeredis==2.23.3
-fastapi==0.111.1
-fastapi-cli==0.0.4
+fakeredis==2.23.4
+fastapi==0.112.0
 flaky==3.8.1
 frozenlist==1.4.1
 gcsim-pypi==2.23.1
@@ -79,19 +77,17 @@ pytest-asyncio==0.23.8
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-genshin-artifact==1.0.7
-python-multipart==0.0.9
 python-telegram-bot==21.4
 python-telegram-bot[ext,rate-limiter]==21.4
 pytz==2024.1
 pyyaml==6.0.1
-rapidfuzz==3.9.4
+rapidfuzz==3.9.5
 reactivex==4.0.4
-redis==5.0.7
+redis==5.0.8
 rich==13.7.1
-sentry-sdk==2.11.0
-setuptools==71.1.0
-shellingham==1.5.4
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@0ddc9dabd1543450a7c3f513f177882ed04425fd
+sentry-sdk==2.12.0
+setuptools==72.1.0
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@7d567a3fdbd35887806ad111b448c5d63998bb44
 six==1.16.0
 smmap==5.0.1
 sniffio==1.3.1
@@ -104,14 +100,13 @@ tgcrypto==1.2.5
 thefuzz==0.22.1
 tomli==2.0.1; python_version < "3.11"
 tornado==6.4.1
-typer==0.12.3
 typing-extensions==4.12.2
 tzdata==2024.1; platform_system == "Windows"
 tzlocal==5.2
 ujson==5.10.0
 urllib3==2.2.2
-uvicorn==0.30.3
-uvicorn[standard]==0.30.3
+uvicorn==0.30.5
+uvicorn[standard]==0.30.5
 uvloop==0.19.0; (sys_platform != "cygwin" and sys_platform != "win32") and platform_python_implementation != "PyPy"
 watchfiles==0.22.0
 websockets==12.0

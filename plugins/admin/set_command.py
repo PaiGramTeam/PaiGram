@@ -42,6 +42,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("player", "管理用户绑定玩家"),
             BotCommand("verify", "手动验证"),
             BotCommand("redeem", "（国际服）兑换 Key"),
+            BotCommand("privacy", "隐私政策"),
         ]
         group_command = [
             # 通用

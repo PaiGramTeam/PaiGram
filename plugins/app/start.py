@@ -1,4 +1,5 @@
 from telegram import Update, ReplyKeyboardRemove
+from telegram.constants import ParseMode
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.helpers import escape_markdown
 
@@ -36,3 +37,11 @@ class StartPlugin(Plugin):
     @handler(CommandHandler, command="reply_keyboard_remove", block=False)
     async def reply_keyboard_remove(self, update: Update, _: CallbackContext) -> None:
         await update.message.reply_text("移除远程键盘成功", reply_markup=ReplyKeyboardRemove())
+
+    @handler.command(command="privacy", block=False)
+    async def reply_privacy_policy(self, update: "Update", _: "CallbackContext"):
+        message = update.effective_message
+        await message.reply_text(
+            "请查看[PaiGramTeam Bot 用户个人信息及隐私保护政策](https://telegra.ph/paigramteam-bot-privacy-08-02)",
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )
