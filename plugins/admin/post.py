@@ -1,5 +1,6 @@
 import math
 import os
+import re
 from asyncio import create_subprocess_shell, subprocess
 from functools import partial
 from typing import List, Optional, Tuple, TYPE_CHECKING, Union, Dict
@@ -199,6 +200,18 @@ class Post(Plugin.Conversation):
         return post_text.strip(), too_long
 
     @staticmethod
+    def safe_cut(text: str, length: int) -> str:
+        text = text[:length]
+        right_pattern = r"\[.*?\]\(.*?\)"
+        error_pattern = r"\[.*?\]"
+        right_length = re.findall(right_pattern, text)
+        error_length = re.findall(error_pattern, text)
+        if right_length == error_length:
+            return text
+        error_index = text.rindex(error_length[-1])
+        return text[:error_index]
+
+    @staticmethod
     def input_media(
         media: "ArtworkImage", *args, **kwargs
     ) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
@@ -354,10 +367,11 @@ class Post(Plugin.Conversation):
         post_soup = BeautifulSoup(post_info.content, features="html.parser")
         post_text, too_long = self.parse_post_text(post_soup, post_subject)
         url = post_info.get_url(self.short_name)
+        max_len = MessageLimit.CAPTION_LENGTH - 100
+        if too_long or len(post_text) >= max_len:
+            post_text = self.safe_cut(post_text, max_len)
+            await message.reply_text(f"警告！图片字符描述已经超过 {max_len} 个字，已经切割")
         post_text += f"\n\n[source]({url})"
-        if too_long or len(post_text) >= MessageLimit.CAPTION_LENGTH:
-            post_text = post_text[: MessageLimit.CAPTION_LENGTH]
-            await message.reply_text(f"警告！图片字符描述已经超过 {MessageLimit.CAPTION_LENGTH} 个字，已经切割")
         try:
             if len(post_images) > 1:
                 media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
