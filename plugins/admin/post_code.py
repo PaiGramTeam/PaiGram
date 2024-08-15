@@ -121,7 +121,7 @@ class PostCode(Plugin.Conversation):
 
     def __init__(self):
         self.gids = 2
-        self.type_id = 3
+        self.type_id = 2
 
     @staticmethod
     def get_bbs_client() -> Hyperion:
