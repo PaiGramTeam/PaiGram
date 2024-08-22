@@ -62,10 +62,13 @@ class PlayerCardsFile:
         self,
         uid: Union[str, int],
         data: Dict,
+        use_old: bool = False,
     ) -> Dict:
         async with self._lock:
             old_data = await self.load_history_info(uid)
             if old_data is None:
+                if use_old:
+                    raise FileNotFoundError
                 await self.save_json(self.get_file_path(uid), data)
                 return data
             data["avatarInfoList"] = data.get("avatarInfoList") or []
@@ -73,5 +76,8 @@ class PlayerCardsFile:
             for i in old_data["avatarInfoList"]:
                 if i.get("avatarId", 0) not in characters:
                     data["avatarInfoList"].append(i)
+            if use_old:
+                old_data["avatarInfoList"] = data["avatarInfoList"]
+                data = old_data
             await self.save_json(self.get_file_path(uid), data)
             return data
