@@ -127,6 +127,7 @@ class PlayerCards(Plugin):
         return error
 
     async def _update_mihoyo_data(self, user_id: int, uid: int) -> Union[EnkaNetworkResponse, str]:
+        error = "发生未知错误"
         try:
             data = await self.cache.get(str(uid))
             if data is not None:

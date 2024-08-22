@@ -24,7 +24,7 @@ class HashMapRev:
         for key in cls.HASH_MAP_REV:
             if name in cls.HASH_MAP_REV[key]:
                 return cls.HASH_MAP_REV[key][name]
-        return
+        return ""
 
     @classmethod
     def get_artifacts_data(cls, artifact_id: int) -> Dict:
@@ -49,6 +49,7 @@ def get_prop_name_from_id(prop_id: int) -> str:
     for k, v in CharacterStats.__fields__.items():
         if v.default.id == prop_id:
             return k
+    return ""
 
 
 def get_equip_list_single_artifact_stats(data: "DetailArtifact") -> Dict:
@@ -211,11 +212,11 @@ def from_simnet_to_enka_single(index: int, data: "GenshinDetailCharacters") -> D
 
 def from_simnet_to_enka_loop(data: "GenshinDetailCharacters") -> List[Dict]:
     d = []
-    for index in range(len(data.characters)):
+    for index, ch in enumerate(data.characters):
         try:
             d.append(from_simnet_to_enka_single(index, data))
         except Exception as e:
-            cid = data.characters[index].base.id
+            cid = ch.base.id
             logger.error("从 simnet 模型转换为 enka 模型时出现错误 cid[%s]", cid, exc_info=e)
     return d
 
