@@ -34,7 +34,8 @@ from modules.apihelper.client.components.remote import Remote
 from modules.gcsim.file import PlayerGCSimScripts
 from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
-from plugins.tools.genshin import PlayerNotFoundError
+from modules.playercards.to_enka import from_simnet_to_enka
+from plugins.tools.genshin import PlayerNotFoundError, GenshinHelper, CookiesNotFoundError
 from utils.enkanetwork import RedisCache, EnkaNetworkAPI
 from utils.helpers import download_resource
 from utils.log import logger
@@ -60,6 +61,7 @@ if TYPE_CHECKING:
     from enkanetwork import CharacterInfo, EquipmentsStats
     from telegram.ext import ContextTypes
     from telegram import Update, Message
+    from simnet import GenshinClient
 
 try:
     import ujson as jsonlib
@@ -74,6 +76,7 @@ class PlayerCards(Plugin):
         template_service: TemplateService,
         assets_service: AssetsService,
         redis: RedisDB,
+        helper: GenshinHelper,
     ):
         self.player_service = player_service
         self.client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent, cache=False)
@@ -85,6 +88,7 @@ class PlayerCards(Plugin):
         self.kitsune: Optional[str] = None
         self.fight_prop_rule: Dict[str, Dict[str, float]] = {}
         self.damage_config: Dict = {}
+        self.helper = helper
 
     async def initialize(self):
         await self._refresh()
@@ -120,6 +124,26 @@ class PlayerCards(Plugin):
             error = "未找到玩家，请检查您的UID/用户名"
         except HTTPException:
             error = "Enka.Network HTTP 服务请求错误，请稍后重试"
+        return error
+
+    async def _update_mihoyo_data(self, user_id: int, uid: int) -> Union[EnkaNetworkResponse, str]:
+        error = "发生未知错误"
+        try:
+            data = await self.cache.get(str(uid))
+            if data is not None:
+                return EnkaNetworkResponse.parse_obj(data)
+            async with self.helper.genshin(user_id=user_id, player_id=uid) as client:
+                client: "GenshinClient"
+                ids = await client.get_genshin_character_list()
+                raw_details = await client.get_genshin_character_detail([c.id for c in ids])
+                data = from_simnet_to_enka(raw_details)
+                data = await self.player_cards_file.merge_info(uid, data, use_old=True)
+                await self.cache.set(str(uid), data)
+                return EnkaNetworkResponse.parse_obj(data)
+        except FileNotFoundError:
+            error = "请先通过 Enka.Network 更新一次角色列表"
+        except (PlayerNotFoundError, CookiesNotFoundError):
+            error = "请先通过 cookie 绑定账号"
         return error
 
     async def _load_data_as_enka_response(self, uid) -> Optional[EnkaNetworkResponse]:
@@ -192,8 +216,8 @@ class PlayerCards(Plugin):
             buttons = [
                 [
                     InlineKeyboardButton(
-                        "更新面板",
-                        callback_data=f"update_player_card|{user_id}|{uid}",
+                        "更新",
+                        callback_data=f"update_player_card|{user_id}|{uid}|enka",
                     )
                 ]
             ]
@@ -213,8 +237,8 @@ class PlayerCards(Plugin):
                 buttons = [
                     [
                         InlineKeyboardButton(
-                            "更新面板",
-                            callback_data=f"update_player_card|{user_id}|{uid}",
+                            "更新",
+                            callback_data=f"update_player_card|{user_id}|{uid}|enka",
                         )
                     ]
                 ]
@@ -272,14 +296,15 @@ class PlayerCards(Plugin):
         message = update.effective_message
         callback_query = update.callback_query
 
-        async def get_player_card_callback(callback_query_data: str) -> Tuple[int, int]:
+        async def get_player_card_callback(callback_query_data: str) -> Tuple[int, int, str]:
             _data = callback_query_data.split("|")
             _user_id = int(_data[1])
             _uid = int(_data[2])
-            logger.debug("callback_query_data函数返回 user_id[%s] uid[%s]", _user_id, _uid)
-            return _user_id, _uid
+            _type = _data[3] if len(_data) > 3 else "enka"
+            logger.debug("callback_query_data函数返回 user_id[%s] uid[%s] type[%s]", _user_id, _uid, _type)
+            return _user_id, _uid, _type
 
-        user_id, uid = await get_player_card_callback(callback_query.data)
+        user_id, uid, update_type = await get_player_card_callback(callback_query.data)
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
@@ -291,7 +316,12 @@ class PlayerCards(Plugin):
             return
 
         await message.reply_chat_action(ChatAction.TYPING)
-        data = await self._update_enka_data(uid)
+        if update_type == "enka":
+            data = await self._update_enka_data(uid)
+            text = "正在从 Enka.Network 获取角色列表 请不要重复点击按钮"
+        else:
+            data = await self._update_mihoyo_data(user_id, uid)
+            text = "正在从米忽悠获取角色列表 请不要重复点击按钮"
         if isinstance(data, str):
             await callback_query.answer(text=data, show_alert=True)
             return
@@ -303,7 +333,7 @@ class PlayerCards(Plugin):
             await message.delete()
             return
         self.player_gcsim_scripts.remove_fits(uid)
-        await callback_query.answer(text="正在从 Enka.Network 获取角色列表 请不要重复点击按钮")
+        await callback_query.answer(text=text)
         buttons = self.gen_button(data, user.id, uid, update_button=False)
         render_data = await self.parse_holder_data(data)
         holder = await self.template_service.render(
@@ -436,8 +466,14 @@ class PlayerCards(Plugin):
         if update_button:
             last_button.append(
                 InlineKeyboardButton(
-                    "更新面板",
-                    callback_data=f"update_player_card|{user_id}|{uid}",
+                    "更新",
+                    callback_data=f"update_player_card|{user_id}|{uid}|enka",
+                )
+            )
+            last_button.append(
+                InlineKeyboardButton(
+                    "更新全部",
+                    callback_data=f"update_player_card|{user_id}|{uid}|mihoyo",
                 )
             )
         if next_page:
@@ -526,6 +562,25 @@ class Artifact(BaseModel):
         return mapping.get(label, "text-neutral-400")
 
 
+class DamageResultNew(BaseModel):
+
+    critical: float
+    non_critical: float
+    expectation: float
+    is_heal: bool
+    is_shield: bool
+
+    @classmethod
+    def parse_from(cls, value) -> "DamageResultNew":
+        return cls(
+            critical=value.critical,
+            non_critical=value.non_critical,
+            expectation=value.expectation,
+            is_heal=value.is_heal,
+            is_shield=value.is_shield,
+        )
+
+
 class RenderTemplate:
     def __init__(
         self,
@@ -592,6 +647,9 @@ class RenderTemplate:
             if damage_config is not None:
                 try:
                     data["damage_info"] = self.render_damage(damage_config)
+                    for damage in data["damage_info"]:
+                        if damage["damage"] is not None:
+                            damage["damage"] = DamageResultNew.parse_from(damage["damage"])
                 except JsonParseException as _exc:
                     logger.error(str(_exc))
                 except EnkaParseException as _exc:
@@ -689,7 +747,7 @@ class RenderTemplate:
             elif stat[1].id != 26:  # 治疗加成
                 continue
             value = stat[1].to_rounded() if isinstance(stat[1], Stats) else stat[1].to_percentage_symbol()
-            if value in ("0%", 0):
+            if value in ("0%", "0.0%", 0):
                 continue
             name = DEFAULT_EnkaAssets.get_hash_map(stat[0])
             if name is None:
