@@ -562,25 +562,6 @@ class Artifact(BaseModel):
         return mapping.get(label, "text-neutral-400")
 
 
-class DamageResultNew(BaseModel):
-
-    critical: float
-    non_critical: float
-    expectation: float
-    is_heal: bool
-    is_shield: bool
-
-    @classmethod
-    def parse_from(cls, value) -> "DamageResultNew":
-        return cls(
-            critical=value.critical,
-            non_critical=value.non_critical,
-            expectation=value.expectation,
-            is_heal=value.is_heal,
-            is_shield=value.is_shield,
-        )
-
-
 class RenderTemplate:
     def __init__(
         self,
@@ -647,9 +628,6 @@ class RenderTemplate:
             if damage_config is not None:
                 try:
                     data["damage_info"] = self.render_damage(damage_config)
-                    for damage in data["damage_info"]:
-                        if damage["damage"] is not None:
-                            damage["damage"] = DamageResultNew.parse_from(damage["damage"])
                 except JsonParseException as _exc:
                     logger.error(str(_exc))
                 except EnkaParseException as _exc:

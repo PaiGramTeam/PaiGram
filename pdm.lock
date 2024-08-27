@@ -5,7 +5,7 @@
 groups = ["default", "genshin-artifact", "pyro", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:3e62351adc681b824af6ca0ac6c491aea8b16ef00a17e1439d4f6592fd22efb4"
+content_hash = "sha256:c0907b6fd6045504c749e63c157e63691cac53dc5a9578aaac095d8cfd47b971"
 
 [[metadata.targets]]
 requires_python = "~=3.8"
@@ -704,7 +704,7 @@ name = "enkanetwork-py"
 version = "1.4.4"
 requires_python = ">=3.6"
 git = "https://github.com/PaiGramTeam/EnkaNetwork.py"
-revision = "b4692c2096ebbd6020cb312e2a872e69f94ea5eb"
+revision = "77265cfdee0c0767d08791f28b54d9c105868a93"
 summary = "Library for fetching JSON data from site https://enka.network/"
 groups = ["default"]
 dependencies = [
@@ -738,7 +738,7 @@ files = [
 
 [[package]]
 name = "fakeredis"
-version = "2.23.5"
+version = "2.24.1"
 requires_python = "<4.0,>=3.7"
 summary = "Python implementation of redis API, can be used for testing purposes."
 groups = ["default"]
@@ -748,13 +748,13 @@ dependencies = [
     "typing-extensions<5.0,>=4.7; python_version < \"3.11\"",
 ]
 files = [
-    {file = "fakeredis-2.23.5-py3-none-any.whl", hash = "sha256:4d85b1b6b3a80cbbb3a8967f8686f7bf6ddf5bd7cd5ac7ac90b3561d8c3a7ddb"},
-    {file = "fakeredis-2.23.5.tar.gz", hash = "sha256:edffc79fdce0f1d83cbb20b52694a9cba4a5fe5beb627c11722a42aa0fa44f52"},
+    {file = "fakeredis-2.24.1-py3-none-any.whl", hash = "sha256:09d3049a29910f80c0ef5789c31bef3dbb9727bd43a67ee8598217f4efd12f35"},
+    {file = "fakeredis-2.24.1.tar.gz", hash = "sha256:4a52ab0edad53543ac5e3a41d761f91012613ed583344da54ae6473e05b0f6d0"},
 ]
 
 [[package]]
 name = "fastapi"
-version = "0.112.1"
+version = "0.112.2"
 requires_python = ">=3.8"
 summary = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 groups = ["default"]
@@ -764,8 +764,8 @@ dependencies = [
     "typing-extensions>=4.8.0",
 ]
 files = [
-    {file = "fastapi-0.112.1-py3-none-any.whl", hash = "sha256:bcbd45817fc2a1cd5da09af66815b84ec0d3d634eb173d1ab468ae3103e183e4"},
-    {file = "fastapi-0.112.1.tar.gz", hash = "sha256:b2537146f8c23389a7faa8b03d0bd38d4986e6983874557d95eed2acc46448ef"},
+    {file = "fastapi-0.112.2-py3-none-any.whl", hash = "sha256:db84b470bd0e2b1075942231e90e3577e12a903c4dc8696f0d206a7904a7af1c"},
+    {file = "fastapi-0.112.2.tar.gz", hash = "sha256:3d4729c038414d5193840706907a41839d839523da6ed0c2811f1168cac1798c"},
 ]
 
 [[package]]
@@ -867,13 +867,13 @@ files = [
 
 [[package]]
 name = "gcsim-pypi"
-version = "2.23.1"
+version = "2.25.5"
 requires_python = "<4.0,>=3.6"
 summary = "gcsim binary for pypi"
 groups = ["default"]
 files = [
-    {file = "gcsim_pypi-2.23.1-py3-none-any.whl", hash = "sha256:b51ed17285c6022b8f9238113cb20b54dde8da443f9f4f9dda5cc9fab1733c30"},
-    {file = "gcsim_pypi-2.23.1.tar.gz", hash = "sha256:c59a722a4f2dfba52f14633b4eb24c9c92cd6d72b65c06dc5010fdd5f59c6cbf"},
+    {file = "gcsim_pypi-2.25.5-py3-none-any.whl", hash = "sha256:8a263e27ccfd60007540477f8fb50ab908f7c60d49bcb20831539ca2b0bf3331"},
+    {file = "gcsim_pypi-2.25.5.tar.gz", hash = "sha256:31089084e4101796f1102014c44a0e8433cdf6921dcb5797a971ea28007fc3fd"},
 ]
 
 [[package]]
@@ -1841,32 +1841,32 @@ files = [
 
 [[package]]
 name = "python-genshin-artifact"
-version = "1.0.7"
+version = "1.0.9"
 requires_python = ">=3.8"
 summary = ""
 groups = ["genshin-artifact"]
 files = [
-    {file = "python_genshin_artifact-1.0.7-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:b0459a27c98894d0a5f3b6314e38e339e8b6d6bf3c2240ac7c9089dd79cac381"},
-    {file = "python_genshin_artifact-1.0.7-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:be9ef64e18ccfe76553e31fa3d3e31912c231a9131129d773efd608e818b1830"},
-    {file = "python_genshin_artifact-1.0.7-cp310-cp310-manylinux_2_34_x86_64.whl", hash = "sha256:9c2e8faaa4c0b7fa7f36f548f56c8caa0f91822e0ada7ee62c7f0f002a03f969"},
-    {file = "python_genshin_artifact-1.0.7-cp310-none-win_amd64.whl", hash = "sha256:027c4cf716e52404320c9a401867568e9fbf5e14ad787bb698c1446c6aac7dbc"},
-    {file = "python_genshin_artifact-1.0.7-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:350ae25a87e8b8f1a1ad17b6e58b13c705a618b5b77608a1abf3169fe3822d30"},
-    {file = "python_genshin_artifact-1.0.7-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:71e647984634ad0650032d0a915a8c332bfda56cbf2e10ddd8dc12a23dc8ebf1"},
-    {file = "python_genshin_artifact-1.0.7-cp311-cp311-manylinux_2_34_x86_64.whl", hash = "sha256:1e51295e9f024b416addd3cafb319ff5c38a696030183c982fbf63b54ce1ccff"},
-    {file = "python_genshin_artifact-1.0.7-cp311-none-win_amd64.whl", hash = "sha256:5ef7b592af1f25c6f917443235fa43b862707b8804839feff5e82d2e7b207d88"},
-    {file = "python_genshin_artifact-1.0.7-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:01676547a7bfe148356e8768bda26ea4b3eb67b59449835f33b0b9bf619e9ccc"},
-    {file = "python_genshin_artifact-1.0.7-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8b4bacdb4c47740c74e0b00d2ff5a034cdbcb31b1efcecc0d6df658474666b36"},
-    {file = "python_genshin_artifact-1.0.7-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:917da0112e9df8aacfd8c0765929484372d54ee5a1422be12c4666f9a42e1e33"},
-    {file = "python_genshin_artifact-1.0.7-cp312-none-win_amd64.whl", hash = "sha256:728bffcf60c1e226ee2dcee1484b7f636e931fcf2aa74090440bbd4fb4fdd76f"},
-    {file = "python_genshin_artifact-1.0.7-cp38-cp38-macosx_10_12_x86_64.whl", hash = "sha256:b4a057f6839f8136282776309ee6b941a45fb53311aaeb0c4c1cb881d654a8c6"},
-    {file = "python_genshin_artifact-1.0.7-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:340c834cf20b46b24eb1749d136ba3023e24f64e7815cb70a23548bf8010f09d"},
-    {file = "python_genshin_artifact-1.0.7-cp38-cp38-manylinux_2_34_x86_64.whl", hash = "sha256:6bd10d55b491464139a2a34e5a324ed1cb368dfaf4078ca6a07f586596cbe989"},
-    {file = "python_genshin_artifact-1.0.7-cp38-none-win_amd64.whl", hash = "sha256:bfe6d71ffdb7cf364e158e0b40411021901ffc28bc511ad8fca5719c7c813c28"},
-    {file = "python_genshin_artifact-1.0.7-cp39-cp39-macosx_10_12_x86_64.whl", hash = "sha256:2e9d80d59390ab65a0ad6f2c534524fa69a1312c357e14c9a491505b2c649be3"},
-    {file = "python_genshin_artifact-1.0.7-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1181ea4dbdb6cc8fe74d7e135566ff6054fb2dfc4764359c495d9ee585a8c12c"},
-    {file = "python_genshin_artifact-1.0.7-cp39-cp39-manylinux_2_34_x86_64.whl", hash = "sha256:ecaa572cf32aa616b5d7fb423caaca1b5a61fb5821ae4b9dcd74ffcb5be71b7d"},
-    {file = "python_genshin_artifact-1.0.7-cp39-none-win_amd64.whl", hash = "sha256:16b23670b0c5ce049220fa6dd6385c1f0694598d3756a5eefce35c0b757f3ee3"},
-    {file = "python_genshin_artifact-1.0.7.tar.gz", hash = "sha256:f37416ed1564f108eaedf6146fc0528a93cc1bdcef730a3fc42f3001b5c42d51"},
+    {file = "python_genshin_artifact-1.0.9-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:ed3b0bcb9140b1fb3f758efcb68c27c6cb75928b00345908d09a7aa4c585edd6"},
+    {file = "python_genshin_artifact-1.0.9-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:98a59e7561a3b86bbace6cdc8b841817f16ad8ec510188aa4671a380baa2c10b"},
+    {file = "python_genshin_artifact-1.0.9-cp310-cp310-manylinux_2_34_x86_64.whl", hash = "sha256:a7d45b5439b5f6b61616b23ef8edecffad25d892939988016722ecb3504c0c09"},
+    {file = "python_genshin_artifact-1.0.9-cp310-none-win_amd64.whl", hash = "sha256:3f3d4effdfde0566f808dc2a3137a9935b811bba7ae3c790f16742bb3687e2d9"},
+    {file = "python_genshin_artifact-1.0.9-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:cad0f129bf1b63aae4cdf59e3b24f55458a8fcab1e6a0ceb4b0858be51519a84"},
+    {file = "python_genshin_artifact-1.0.9-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:04012b8bbd2d5a5258133bf9fd2bdaef9ce8cba7ea9b5f4ba4d951d079b55ef2"},
+    {file = "python_genshin_artifact-1.0.9-cp311-cp311-manylinux_2_34_x86_64.whl", hash = "sha256:1e04f0be122ddf864542b4678c3ac28e9583c9b8ed620d6ace8cccbce5dffc37"},
+    {file = "python_genshin_artifact-1.0.9-cp311-none-win_amd64.whl", hash = "sha256:e85355959fb2b336559fece0e1a155c63e30e11a227301d8e59891e97f26bdd7"},
+    {file = "python_genshin_artifact-1.0.9-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:c1a63ab4f0312cc55f12de1b037792ddac985a75235f1a5944237e54d3581a6a"},
+    {file = "python_genshin_artifact-1.0.9-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:154248f23b219161b37532a1385967ea3c810511c4495bb2927893d2cb3ba96f"},
+    {file = "python_genshin_artifact-1.0.9-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:9dd206f47269654b5e18444b5bd826e77674d8d7e53641fb953a1960c2eff0b6"},
+    {file = "python_genshin_artifact-1.0.9-cp312-none-win_amd64.whl", hash = "sha256:3fcf89e020a3d0dd45ccd974d27c30ff78c10f48d0e2500ca157c633f88e04b1"},
+    {file = "python_genshin_artifact-1.0.9-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:b6e52dce892e0ca6abfd7164b51398c27375569efeaecbfe60aca39e193e0bd3"},
+    {file = "python_genshin_artifact-1.0.9-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e38d5bb477a51a7b7909898014f25477ba9ca3f367aec99fccbd30c309c688d3"},
+    {file = "python_genshin_artifact-1.0.9-cp38-cp38-manylinux_2_34_x86_64.whl", hash = "sha256:c352dc6c1f4bf8030a45750f3e83fa2af684b97bed216435193eaafb9b3ee8c5"},
+    {file = "python_genshin_artifact-1.0.9-cp38-none-win_amd64.whl", hash = "sha256:c933a3a73c7b3622a3cd84b314153c950bd97e047a9348f8e3ecbd9cacec5eea"},
+    {file = "python_genshin_artifact-1.0.9-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:3c5d260043bc9031091130b6bac5dd41e6b96cb8ce3c617e74078a2698540c19"},
+    {file = "python_genshin_artifact-1.0.9-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0ed2afed747463de3e91c344d86c7a6b668bf1844cba922c0c04577d152c64d3"},
+    {file = "python_genshin_artifact-1.0.9-cp39-cp39-manylinux_2_34_x86_64.whl", hash = "sha256:fcfa5f64ce40a496dabe001f34d724f751b54c80ce91b931f6a82a1c0bd7d0eb"},
+    {file = "python_genshin_artifact-1.0.9-cp39-none-win_amd64.whl", hash = "sha256:b7a24533864ebf44dc1e508bc0c52a16b808a5dd2fb7deab284ec11aac30eb17"},
+    {file = "python_genshin_artifact-1.0.9.tar.gz", hash = "sha256:ae3e477c09b7bafc9bd9aa3318ed079b79e4ef05d81ef717958ebe8b6a9480cb"},
 ]
 
 [[package]]
@@ -2125,7 +2125,7 @@ files = [
 
 [[package]]
 name = "rich"
-version = "13.7.1"
+version = "13.8.0"
 requires_python = ">=3.7.0"
 summary = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
 groups = ["default"]
@@ -2135,8 +2135,8 @@ dependencies = [
     "typing-extensions<5.0,>=4.0.0; python_version < \"3.9\"",
 ]
 files = [
-    {file = "rich-13.7.1-py3-none-any.whl", hash = "sha256:4edbae314f59eb482f54e9e30bf00d33350aaa94f4bfcd4e9e3110e64d0d7222"},
-    {file = "rich-13.7.1.tar.gz", hash = "sha256:9be308cb1fe2f1f57d67ce99e95af38a1e2bc71ad9813b0e247cf7ffbcc3a432"},
+    {file = "rich-13.8.0-py3-none-any.whl", hash = "sha256:2e85306a063b9492dffc86278197a60cbece75bcb766022f3436f567cae11bdc"},
+    {file = "rich-13.8.0.tar.gz", hash = "sha256:a5ac1f1cd448ade0d59cc3356f7db7a7ccda2c8cbae9c7a90c28ff463d3e91f4"},
 ]
 
 [[package]]
@@ -2170,7 +2170,7 @@ name = "simnet"
 version = "0.1.23"
 requires_python = "<4.0,>=3.8"
 git = "https://github.com/PaiGramTeam/SIMNet"
-revision = "0a707db98219c0c2fc79ca05c7408646022af371"
+revision = "10aa45ddbbadec40769c01206a1266a3e8b9addc"
 summary = "Modern API wrapper for Genshin Impact & Honkai: Star Rail built on asyncio and pydantic."
 groups = ["default"]
 dependencies = [

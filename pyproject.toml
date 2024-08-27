@@ -54,7 +54,7 @@ license = {text = "AGPL-3.0"}
 [project.optional-dependencies]
 pyro = ["TgCrypto<2.0.0,>=1.2.5", "Pyrogram<3.0.0,>=2.0.102"]
 test = ["pytest<9.0.0,>=8.2.2", "pytest-asyncio<1.0.0,>=0.24.0", "flaky<4.0.0,>=3.7.0"]
-genshin-artifact = ["python-genshin-artifact<2.0.0,>=1.0.4"]
+genshin-artifact = ["python-genshin-artifact<2.0.0,>=1.0.9"]
 
 [tool.pdm]
 distribution = false
