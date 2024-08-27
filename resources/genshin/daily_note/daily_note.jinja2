@@ -67,9 +67,26 @@
             </div>
         </div>
         <div class="right">
-            <span>{{ completed_commissions }}/{{ max_commissions }}</span>
+            <span class="{% if completed_commissions != max_commissions %}red{% endif %}">
+                {{ completed_commissions }}/{{ max_commissions }}
+            </span>
         </div>
     </div>
+    {% if daily_task.attendance_visible %}
+    <div class="item">
+        <div class="main">
+            <div class="bg"></div>
+            <img class="icon" src="items/历练点.png" alt=""/>
+            <div class="info">
+                <div class="name">长效历练点</div>
+                <div class="time">重置倒计时： {{ attendance_countdown }}</div>
+            </div>
+        </div>
+        <div class="right">
+            <span>{{ daily_task.stored_attendance }}</span>
+        </div>
+    </div>
+    {% endif %}
     <div class="item">
         <div class="main">
             <div class="bg"></div>

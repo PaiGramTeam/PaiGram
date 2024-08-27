@@ -34,6 +34,15 @@ class DailyNotePlugin(Plugin):
         self.template_service = template
         self.helper = helper
 
+    @staticmethod
+    def _format_seconds(seconds: int) -> str:
+        days, remainder = divmod(seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if days:
+            return f"{days} 天 {hours} 时"
+        return f"{hours} 时" if hours else f"{minutes} 分"
+
     async def _get_daily_note(self, client: "GenshinClient") -> RenderResult:
         daily_info = await client.get_genshin_notes(client.player_id)
 
@@ -64,6 +73,12 @@ class DailyNotePlugin(Plugin):
             transformer_ready = daily_info.remaining_transformer_recovery_time.total_seconds() == 0
             transformer_recovery_time = daily_info.transformer_recovery_time.strftime("%m-%d %H:%M")
 
+        daily_task, attendance_countdown = daily_info.daily_task, ""
+        if daily_info.daily_task.attendance_visible:
+            attendance_countdown = self._format_seconds(
+                int(daily_task.stored_attendance_refresh_countdown.total_seconds())
+            )
+
         render_data = {
             "uid": mask_number(client.player_id),
             "day": day,
@@ -76,6 +91,8 @@ class DailyNotePlugin(Plugin):
             "claimed_commission_reward": daily_info.claimed_commission_reward,
             "completed_commissions": daily_info.completed_commissions,
             "max_commissions": daily_info.max_commissions,
+            "daily_task": daily_info.daily_task,
+            "attendance_countdown": attendance_countdown,
             "expeditions": bool(daily_info.expeditions),
             "remained_time": remained_time,
             "current_expeditions": len(daily_info.expeditions),
@@ -89,7 +106,7 @@ class DailyNotePlugin(Plugin):
         render_result = await self.template_service.render(
             "genshin/daily_note/daily_note.jinja2",
             render_data,
-            {"width": 600, "height": 548},
+            {"width": 600, "height": 645},
             full_page=False,
             ttl=8 * 60,
         )
