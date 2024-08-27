@@ -111,6 +111,8 @@ class Character(WikiModel):
 
         id_ = re.findall(r"img/(.*?_\d+)_.*", table_rows[0].find("img").attrs["src"])[0]
         name = get_table_text(0)
+        if "测试" in name:
+            raise NotImplementedError(f"测试服数据 {name} 暂不支持")
         if name != "旅行者":  # 如果角色名不是 旅行者
             title = get_table_text(1)
             occupation = get_table_text(2)

@@ -161,6 +161,8 @@ class WikiModel(Model):
             # 包装的爬虫任务
             try:
                 await queue.put(await cls._scrape(u))  # 爬取一条数据，并将其放入队列中
+            except NotImplementedError as exc:
+                logger.warning("爬取数据出现测试服数据 %s", str(exc))
             except Exception as exc:  # pylint: disable=W0703
                 logger.error("爬取数据出现异常 %s", str(exc))
                 logger.debug("异常信息", exc_info=exc)

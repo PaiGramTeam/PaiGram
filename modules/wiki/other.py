@@ -112,6 +112,8 @@ _ASSOCIATION_MAP = {
     "Inazuma": [],
     "Liyue": [],
     "Mondstadt": [],
+    "Fontaine": [],
+    "Natlan": [],
 }
 
 
@@ -125,6 +127,7 @@ class Association(Enum):
     Liyue = "璃月"
     Mondstadt = "蒙德"
     Fontaine = "枫丹"
+    Natlan = "纳塔"
 
     @classmethod
     def convert(cls, string: str) -> Optional[Self]:
