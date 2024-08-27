@@ -704,7 +704,7 @@ name = "enkanetwork-py"
 version = "1.4.4"
 requires_python = ">=3.6"
 git = "https://github.com/PaiGramTeam/EnkaNetwork.py"
-revision = "77265cfdee0c0767d08791f28b54d9c105868a93"
+revision = "0924cbce3b8b61cee1db33d7bc7a89f34572a048"
 summary = "Library for fetching JSON data from site https://enka.network/"
 groups = ["default"]
 dependencies = [
@@ -1038,7 +1038,7 @@ files = [
 
 [[package]]
 name = "httpx"
-version = "0.27.0"
+version = "0.27.2"
 requires_python = ">=3.8"
 summary = "The next generation HTTP client."
 groups = ["default"]
@@ -1050,8 +1050,8 @@ dependencies = [
     "sniffio",
 ]
 files = [
-    {file = "httpx-0.27.0-py3-none-any.whl", hash = "sha256:71d5465162c13681bff01ad59b2cc68dd838ea1f10e51574bac27103f00c91a5"},
-    {file = "httpx-0.27.0.tar.gz", hash = "sha256:a0cb88a46f32dc874e04ee956e4c2764aba2aa228f650b06788ba6bda2962ab5"},
+    {file = "httpx-0.27.2-py3-none-any.whl", hash = "sha256:7bb2708e112d8fdd7829cd4243970f0c223274051cb35ee80c03301ee29a3df0"},
+    {file = "httpx-0.27.2.tar.gz", hash = "sha256:f7c2be1d2f3c3c3160d441802406b206c2b76f5947b11115e6df10c6c65e66c2"},
 ]
 
 [[package]]

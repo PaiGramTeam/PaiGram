@@ -178,12 +178,37 @@ def get_skill_depot_id(data: "GenshinDetailCharacter") -> int:
     return skill_id_pre + skill_id
 
 
-def get_skill_level_map(data: "GenshinDetailCharacter") -> Dict:
-    return {str(skill.id): skill.level for skill in data.skills if skill.skill_type == 1}
+def get_skill_level_map(data: "GenshinDetailCharacter", proud_skill_extra_level_map: Dict[str, int]) -> Dict:
+    _data = {}
+    for skill in data.skills:
+        if skill.skill_type != 1:
+            continue
+
+        _skill = Assets.skills(skill.id)
+        if not _skill:
+            continue
+
+        level = skill.level
+        if proud_skill_extra_level_map:
+            boost_level = proud_skill_extra_level_map.get(str(_skill.pround_map), None)
+            if boost_level is not None:
+                level -= boost_level
+        _data[str(skill.id)] = level
+    return _data
 
 
 def get_talent_id_list(data: "GenshinDetailCharacter") -> List[int]:
     return [constellation.id for constellation in data.constellations if constellation.activated]
+
+
+def get_proud_skill_extra_level_map(avatar_id: int, talent_count: int) -> Dict[str, int]:
+    level_map = Assets.DATA["talents"].get(str(avatar_id), {})
+    data = {}
+    for k, v in level_map.items():
+        if talent_count >= int(k):
+            if talent_data := level_map.get(k):
+                data[str(talent_data["proud_skill_group_id"])] = talent_data["extra_level"]
+    return data
 
 
 def from_simnet_to_enka_single(index: int, data: "GenshinDetailCharacters") -> Dict:
@@ -195,8 +220,9 @@ def from_simnet_to_enka_single(index: int, data: "GenshinDetailCharacters") -> D
     inherent_proud_skill_list = get_inherent_proud_skill_list(character)
     prop_map = get_prop_map(character)
     skill_depot_id = get_skill_depot_id(character)
-    skill_level_map = get_skill_level_map(character)
     talent_id_list = get_talent_id_list(character)
+    proud_skill_extra_level_map = get_proud_skill_extra_level_map(avatar_id, len(talent_id_list))
+    skill_level_map = get_skill_level_map(character, proud_skill_extra_level_map)
     return {
         "avatarId": avatar_id,
         "equipList": equip_list,
@@ -207,6 +233,7 @@ def from_simnet_to_enka_single(index: int, data: "GenshinDetailCharacters") -> D
         "inherentProudSkillList": inherent_proud_skill_list,
         "fightPropMap": fight_prop_map,
         "skillLevelMap": skill_level_map,
+        "proudSkillExtraLevelMap": proud_skill_extra_level_map,
     }
 
 
