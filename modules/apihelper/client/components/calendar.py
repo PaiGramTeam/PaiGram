@@ -189,7 +189,10 @@ class Calendar:
 
         def get_date(d1: str, d2: str) -> datetime:
             if d1 and len(d1) > 6:
-                return datetime.strptime(d1, "%Y-%m-%d %H:%M:%S")
+                try:
+                    return datetime.strptime(d1, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    return datetime.strptime(d1, "%Y-%m-%d %H:%M")
             return datetime.strptime(d2, "%Y-%m-%d %H:%M:%S")
 
         s_date = get_date(detail and detail.start, ds.start_time)

@@ -1,4 +1,5 @@
 import random
+from pathlib import Path
 from typing import Optional, TYPE_CHECKING, List
 from telegram.constants import ChatAction
 from telegram.ext import filters
@@ -10,6 +11,8 @@ from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from plugins.tools.genshin import GenshinHelper
+from utils.const import RESOURCE_DIR
+from utils.error import UrlResourcesNotFoundError
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -76,6 +79,7 @@ class PlayerStatsPlugins(Plugin):
                 ("活跃天数", "days_active"),
                 ("成就达成数", "achievements"),
                 ("获取角色数", "characters"),
+                ("满好感角色数", "full_fetter_avatar_num"),
                 ("深境螺旋", "spiral_abyss"),
                 ("解锁传送点", "unlocked_waypoints"),
                 ("解锁秘境", "unlocked_domains"),
@@ -89,6 +93,7 @@ class PlayerStatsPlugins(Plugin):
                 ("雷神瞳", "electroculi"),
                 ("草神瞳", "dendroculi"),
                 ("水神瞳", "hydroculi"),
+                ("火神瞳", "pyroculi"),
             ],
             "style": random.choice(["mondstadt", "liyue"]),  # nosec
         }
@@ -102,6 +107,16 @@ class PlayerStatsPlugins(Plugin):
             full_page=True,
         )
 
+    async def _download_resource(self, url: str) -> str:
+        try:
+            return await self.download_resource(url)
+        except UrlResourcesNotFoundError:
+            path = Path(url)
+            file_path = RESOURCE_DIR / "img" / "city" / path.name
+            if file_path.exists():
+                return file_path.as_uri()
+            logger.warning("缓存地区图片资源失败 %s", url)
+
     async def cache_images(self, data: "GenshinUserStats") -> None:
         """缓存所有图片到本地"""
         # TODO: 并发下载所有资源
@@ -109,8 +124,8 @@ class PlayerStatsPlugins(Plugin):
         # 探索地区
         for item in data.explorations:
             item.__config__.allow_mutation = True
-            item.icon = await self.download_resource(item.icon)
-            item.cover = await self.download_resource(item.cover)
+            item.icon = await self._download_resource(item.icon)
+            item.cover = await self._download_resource(item.cover)
 
     async def stats_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         callback_query = update.callback_query
