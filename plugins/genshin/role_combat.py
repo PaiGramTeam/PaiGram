@@ -316,10 +316,14 @@ class RoleCombatPlugin(Plugin):
             diff = "简单"
         elif data.abyss_data.stat.difficulty == TheaterDifficulty.NORMAL:
             diff = "普通"
-        else:
+        elif data.abyss_data.stat.difficulty == TheaterDifficulty.HARD:
             diff = "困难"
-        if data.abyss_data.stat.medal_num == 8 and data.abyss_data.stat.difficulty == TheaterDifficulty.HARD:
-            honor = "👑"
+            if data.abyss_data.stat.medal_num >= 8:
+                honor = "👑"
+        else:
+            diff = "卓越"
+            if data.abyss_data.stat.medal_num >= 10:
+                honor = "👑"
 
         return f"{time} {data.abyss_data.stat.medal_num} ★ {diff} {honor}"
 

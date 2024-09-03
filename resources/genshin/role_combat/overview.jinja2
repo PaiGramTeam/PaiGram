@@ -42,6 +42,8 @@
                 {% set diff_str = "普通" %}
                 {% elif diff == 3 %}
                 {% set diff_str = "困难" %}
+                {% elif diff == 4 %}
+                {% set diff_str = "卓越" %}
                 {% endif %}
                 <div>挑战难度：{{ diff_str }}</div>
                 <div>最佳记录: 第 {{ stat.max_round_id }} 幕</div>
