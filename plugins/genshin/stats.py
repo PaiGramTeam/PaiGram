@@ -110,7 +110,7 @@ class PlayerStatsPlugins(Plugin):
     async def _download_resource(self, url: str) -> str:
         try:
             return await self.download_resource(url)
-        except UrlResourcesNotFoundError:
+        except Exception:
             path = Path(url)
             file_path = RESOURCE_DIR / "img" / "city" / path.name
             if file_path.exists():
