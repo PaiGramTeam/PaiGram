@@ -673,10 +673,10 @@ def _parse_honey_impact_source(source: bytes) -> MaterialsData:
             item_name_span = calendar_pic_wrap.select_one("span")
             if item_name_span is None or item_name_span.text.strip() == "旅行者":
                 continue  # 因为旅行者的天赋计算比较复杂，不做旅行者的天赋计算
-            href = element.attrs["href"]  # Item ID 在 href 中
-            item_is_weapon = href.startswith("/i_n")
-            # 角色 ID 前缀固定 10000，但是 honey impact 替换成了角色名，剩余部分的数字是真正的 Item ID 组成部分
-            item_id = f"{'' if item_is_weapon else '10000'}{''.join(filter(str.isdigit, href))}"
+            # data-assign 的数字就是 Item ID
+            data_assign = calendar_pic_wrap.attrs["data-assign"]
+            item_is_weapon = data_assign.startswith("weapon_")
+            item_id = "".join(filter(str.isdigit, data_assign))
             for weekday in map(int, calendar_pic_wrap.attrs["data-days"]):  # data-days 中存的是星期几可以刷素材
                 ascendable_items = everyday_materials[weekday][current_country]
                 ascendable_items = ascendable_items.weapon if item_is_weapon else ascendable_items.avatar
