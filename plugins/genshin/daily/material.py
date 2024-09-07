@@ -50,7 +50,7 @@ DOMAINS = [
     "菫色之庭",      # 稻妻精通秘境
     "昏识塔",        # 须弥精通秘境
     "苍白的遗荣",    # 枫丹精通秘境
-    "",              # 纳塔精通秘境
+    "蕴火的幽墟",    # 纳塔精通秘境
     "",              # 至东精通秘境
     "",              # 坎瑞亚精通秘境
     "塞西莉亚苗圃",  # 蒙德炼武秘境
@@ -58,7 +58,7 @@ DOMAINS = [
     "砂流之庭",      # 稻妻炼武秘境
     "有顶塔",        # 须弥炼武秘境
     "深潮的余响",    # 枫丹炼武秘境
-    "",              # 纳塔炼武秘境
+    "深古瞭望所",    # 纳塔炼武秘境
     "",              # 至东炼武秘境
     "",              # 坎瑞亚炼武秘境
 ]
@@ -444,14 +444,14 @@ class DailyMaterial(Plugin):
             self.template_service.render(  # 渲染角色素材页
                 "genshin/daily_material/character.jinja2",
                 {"data": render_data},
-                {"width": 1338, "height": 500},
+                {"width": 2060, "height": 500},
                 file_type=file_type,
                 ttl=30 * 24 * 60 * 60,
             ),
             self.template_service.render(  # 渲染武器素材页
                 "genshin/daily_material/weapon.jinja2",
                 {"data": render_data},
-                {"width": 1338, "height": 500},
+                {"width": 2060, "height": 500},
                 file_type=file_type,
                 ttl=30 * 24 * 60 * 60,
             ),
