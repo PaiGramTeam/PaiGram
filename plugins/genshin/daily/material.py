@@ -444,14 +444,14 @@ class DailyMaterial(Plugin):
             self.template_service.render(  # 渲染角色素材页
                 "genshin/daily_material/character.jinja2",
                 {"data": render_data},
-                {"width": 1338, "height": 500},
+                {"width": 2060, "height": 500},
                 file_type=file_type,
                 ttl=30 * 24 * 60 * 60,
             ),
             self.template_service.render(  # 渲染武器素材页
                 "genshin/daily_material/weapon.jinja2",
                 {"data": render_data},
-                {"width": 1338, "height": 500},
+                {"width": 2060, "height": 500},
                 file_type=file_type,
                 ttl=30 * 24 * 60 * 60,
             ),
