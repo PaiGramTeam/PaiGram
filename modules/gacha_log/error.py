@@ -35,3 +35,15 @@ class PaimonMoeGachaLogFileError(GachaLogFileError):
         super().__init__("Paimon.Moe version not supported")
         self.support_version = support_version
         self.file_version = file_version
+
+
+class GachaLogWebError(GachaLogException):
+    pass
+
+
+class GachaLogWebNotConfigError(GachaLogWebError):
+    pass
+
+
+class GachaLogWebUploadError(GachaLogWebError):
+    pass
