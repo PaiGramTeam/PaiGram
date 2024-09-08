@@ -55,6 +55,8 @@ async def get_avatar_data() -> DATA_TYPE:
         cid = int("10000" + re.findall(r"\d+", data[1])[0])
         honey_id = re.findall(r"/(.*?)/", data[1])[0]
         name = re.findall(r">(.*)<", data[1])[0]
+        if "测试" in name:
+            continue
         rarity = int(re.findall(r">(\d)<", data[2])[0])
         result[cid] = [honey_id, name, rarity]
     return result
