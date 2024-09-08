@@ -33,7 +33,7 @@ class GachaLogOnlineView:
     @staticmethod
     def get_web_upload_button(bot_username: str):
         if not gacha_log_web_config.url:
-            return
+            return None
         return InlineKeyboardMarkup(
             [
                 [
