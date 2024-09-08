@@ -40,6 +40,7 @@ from modules.gacha_log.models import (
     UIGFItem,
     UIGFModel,
 )
+from modules.gacha_log.online_view import GachaLogOnlineView
 from utils.const import PROJECT_ROOT
 from utils.uid import mask_number
 
@@ -51,7 +52,7 @@ GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 
 
-class GachaLog:
+class GachaLog(GachaLogOnlineView):
     def __init__(self, gacha_log_path: Path = GACHA_LOG_PATH):
         self.gacha_log_path = gacha_log_path
 
