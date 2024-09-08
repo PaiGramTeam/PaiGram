@@ -8,7 +8,6 @@ from simnet import GenshinClient, Region
 from simnet.models.genshin.wish import BannerType
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.constants import ChatAction
-from telegram.error import BadRequest
 from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
 
@@ -31,7 +30,7 @@ from modules.gacha_log.error import (
     GachaLogMixedProvider,
     GachaLogNotFound,
     PaimonMoeGachaLogFileError,
-    GachaLogWebUploadError,
+    GachaLogWebError,
 )
 from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
@@ -631,7 +630,7 @@ class WishLogPlugin(Plugin.Conversation):
                 [InlineKeyboardButton("点我导入", url=create_deep_linked_url(context.bot.username, "gacha_log_import"))]
             ]
             await message.reply_text(WISHLOG_NOT_FOUND, reply_markup=InlineKeyboardMarkup(buttons))
-        except GachaLogWebUploadError as e:
+        except GachaLogWebError as e:
             logger.error("申请在线查看抽卡记录失败", exc_info=e)
             await message.reply_text("申请在线查看抽卡记录失败，请联系管理员")
 
