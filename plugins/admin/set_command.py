@@ -27,6 +27,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("wish_log_export", "导出抽卡记录"),
             BotCommand("wish_log_delete", "删除抽卡记录"),
             BotCommand("wish_log_online_view", "抽卡记录在线浏览"),
+            BotCommand("wish_log_rank", "抽卡排行榜"),
             BotCommand("pay_log", "查看充值记录"),
             BotCommand("pay_log_import", "导入充值记录"),
             BotCommand("pay_log_export", "导出充值记录"),
@@ -94,6 +95,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("get_chat", "获取会话信息"),
             BotCommand("add_block", "添加黑名单"),
             BotCommand("del_block", "移除黑名单"),
+            BotCommand("wish_log_rank_recount", "重新统计抽卡排行榜"),
         ]
         await context.bot.set_my_commands(
             commands=group_command

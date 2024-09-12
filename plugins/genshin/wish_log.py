@@ -20,6 +20,7 @@ from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from gram_core.config import config
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
+from gram_core.services.gacha_log_rank.services import GachaLogRankService
 from metadata.scripts.paimon_moe import GACHA_LOG_PAIMON_MOE_PATH, update_paimon_moe_zh
 from modules.gacha_log.const import UIGF_VERSION, GACHA_TYPE_LIST_REVERSE
 from modules.gacha_log.error import (
@@ -82,13 +83,14 @@ class WishLogPlugin(Plugin.Conversation):
         assets: AssetsService,
         cookie_service: CookiesService,
         player_info: PlayerInfoSystem,
+        gacha_log_rank: GachaLogRankService,
     ):
         self.template_service = template_service
         self.players_service = players_service
         self.assets_service = assets
         self.cookie_service = cookie_service
         self.zh_dict = None
-        self.gacha_log = GachaLog()
+        self.gacha_log = GachaLog(gacha_log_rank_service=gacha_log_rank)
         self.player_info = player_info
         self.wish_photo = None
 
@@ -633,6 +635,15 @@ class WishLogPlugin(Plugin.Conversation):
         except GachaLogWebError as e:
             logger.error("申请在线查看抽卡记录失败", exc_info=e)
             await message.reply_text("申请在线查看抽卡记录失败，请联系管理员")
+
+    @handler.command(command="wish_log_rank_recount", block=False, admin=True)
+    async def wish_log_rank_recount(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        user = update.effective_user
+        logger.info("用户 %s[%s] wish_log_rank_recount 命令请求", user.full_name, user.id)
+        message = update.effective_message
+        reply = await message.reply_text("正在重新统计抽卡记录排行榜")
+        await self.gacha_log.recount_all_data(reply)
+        await reply.edit_text("重新统计完成")
 
     @staticmethod
     async def get_migrate_data(

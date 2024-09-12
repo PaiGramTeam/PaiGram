@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Avatar List</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../avatar_list/style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="container">
+    <div class="head" style="background-image: url('{{ namecard }}')">
+        <div class="player">
+            <div>
+                <div class="nickname">抽卡排行榜 - {{ pool_name }}</div>
+                {% if desc %}
+                {% set rank_name = "非酋榜" %}
+                {% else %}
+                {% set rank_name = "欧皇榜" %}
+                {% endif %}
+                <div class="uid">{{ rank_name }} - 共 {{ count }} 条数据</div>
+            </div>
+        </div>
+        <div class="logo"></div>
+    </div>
+    {% for my_data in data_list %}
+    <div class="content">
+        <div class="row">
+            <div>#</div>
+            <div style="flex: 3">UID</div>
+            <div style="flex: 3">昵称</div>
+            {% for key in data_key_map.keys() %}
+            <div style="flex: 3">{{ key }}</div>
+            {% endfor %}
+        </div>
+        {% for data in my_data.players %}
+            <div
+                    {% if loop.index is even %}
+                        class="row second-row"
+                    {% else %}
+                        class="row"
+                    {% endif %}
+            >
+                <div>{{ data.num }}</div>
+                <div style="flex: 3">{{ data.mask_uid }}</div>
+                <div style="flex: 3" class="username">{{ data.nickname }}</div>
+                {% for value in data_key_map.values() %}
+                    {% if value == main_key %}
+                    {% set style = "background-color: rgb(229 171 229/70%);" %}
+                    {% else %}
+                    {% set style = "" %}
+                    {% endif %}
+                    <div style="flex: 3; {{ style }}">{{ data[value] }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    {% if loop.index == 1 %}
+    <div style="height: 50px"></div>
+    {% endif %}
+    {% endfor %}
+</div>
+</body>
+</html>
