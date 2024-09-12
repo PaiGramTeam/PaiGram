@@ -1,0 +1,8 @@
+.username {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player {
+  margin-left: 50px;
+}

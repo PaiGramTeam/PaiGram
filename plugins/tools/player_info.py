@@ -20,7 +20,7 @@ class PlayerInfoSystem(Plugin):
         self.player_info_service = player_info_service
         self.player_service = player_service
 
-    async def get_player_info(self, player_id: int, user_id: int, user_name: str):
+    async def get_player_info(self, player_id: int, user_id: Optional[int], user_name: str):
         player = await self.player_service.get(user_id, player_id)
         player_info = await self.player_info_service.get(player)
         nickname = user_name

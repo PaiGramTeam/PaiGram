@@ -14,6 +14,7 @@ from simnet.errors import AuthkeyTimeout, InvalidAuthkey
 from simnet.models.genshin.wish import BannerType
 from simnet.utils.player import recognize_genshin_server
 
+from gram_core.services.gacha_log_rank.services import GachaLogRankService
 from metadata.pool.pool import get_pool_by_id
 from metadata.shortname import roleToId, weaponToId
 from modules.gacha_log.const import GACHA_TYPE_LIST, PAIMONMOE_VERSION
@@ -41,6 +42,7 @@ from modules.gacha_log.models import (
     UIGFModel,
 )
 from modules.gacha_log.online_view import GachaLogOnlineView
+from modules.gacha_log.ranks import GachaLogRanks
 from utils.const import PROJECT_ROOT
 from utils.uid import mask_number
 
@@ -52,8 +54,14 @@ GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 
 
-class GachaLog(GachaLogOnlineView):
-    def __init__(self, gacha_log_path: Path = GACHA_LOG_PATH):
+class GachaLog(GachaLogOnlineView, GachaLogRanks):
+    def __init__(
+        self,
+        gacha_log_path: Path = GACHA_LOG_PATH,
+        gacha_log_rank_service: GachaLogRankService = None,
+    ):
+        GachaLogOnlineView.__init__(self)
+        GachaLogRanks.__init__(self, gacha_log_rank_service)
         self.gacha_log_path = gacha_log_path
 
     @staticmethod
@@ -310,6 +318,7 @@ class GachaLog(GachaLogOnlineView):
         gacha_log.update_time = datetime.datetime.now()
         gacha_log.import_type = ImportType.UIGF.value
         await self.save_gacha_log_info(str(user_id), str(player_id), gacha_log)
+        await self.recount_one_from_uid(user_id, player_id)
         return new_num
 
     @staticmethod
@@ -344,7 +353,7 @@ class GachaLog(GachaLogOnlineView):
                 if item.item_type == "角色" and pool_name in {"角色祈愿", "常驻祈愿", "新手祈愿", "集录祈愿"}:
                     data = {
                         "name": item.name,
-                        "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri(),
+                        "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri() if assets else "",
                         "count": count,
                         "type": "角色",
                         "isUp": self.check_avatar_up(item.name, item.time) if pool_name == "角色祈愿" else False,
@@ -355,7 +364,7 @@ class GachaLog(GachaLogOnlineView):
                 elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿", "新手祈愿", "集录祈愿"}:
                     data = {
                         "name": item.name,
-                        "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri(),
+                        "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri() if assets else "",
                         "count": count,
                         "type": "武器",
                         "isUp": False,
@@ -383,7 +392,7 @@ class GachaLog(GachaLogOnlineView):
                 if item.item_type == "角色":
                     data = {
                         "name": item.name,
-                        "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri(),
+                        "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri() if assets else "",
                         "count": count,
                         "type": "角色",
                         "time": item.time,
@@ -392,7 +401,7 @@ class GachaLog(GachaLogOnlineView):
                 elif item.item_type == "武器":
                     data = {
                         "name": item.name,
-                        "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri(),
+                        "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri() if assets else "",
                         "count": count,
                         "type": "武器",
                         "time": item.time,
@@ -570,6 +579,17 @@ class GachaLog(GachaLogOnlineView):
         gacha_log, status = await self.load_history_info(str(user_id), str(player_id))
         if not status:
             raise GachaLogNotFound
+        return await self.get_analysis_data(gacha_log, pool, assets)
+
+    async def get_analysis_data(self, gacha_log: "GachaLogInfo", pool: BannerType, assets: Optional["AssetsService"]):
+        """
+        获取抽卡记录分析数据
+        :param gacha_log: 抽卡记录
+        :param pool: 池子类型
+        :param assets: 资源服务
+        :return: 分析数据
+        """
+        player_id = gacha_log.uid
         pool_name = GACHA_TYPE_LIST[pool]
         if pool_name not in gacha_log.item_list:
             raise GachaLogNotFound
