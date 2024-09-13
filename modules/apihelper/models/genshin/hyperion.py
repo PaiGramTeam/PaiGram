@@ -50,7 +50,7 @@ class ArtworkImage(BaseModel):
                 width, height = image.size
                 crop_height = height
                 crop_num = 1
-                max_height = 10000 - width
+                max_height = 8000 - width
                 while crop_height > max_height:
                     crop_num += 1
                     crop_height = height / crop_num
@@ -58,9 +58,9 @@ class ArtworkImage(BaseModel):
                 for i in range(crop_num):
                     slice_image = image.crop((0, crop_height * i, width, crop_height * (i + 1)))
                     bio = BytesIO()
-                    slice_image.save(bio, "png")
+                    slice_image.save(bio, "JPEG", quality=95)
                     kwargs["data"] = bio.getvalue()
-                    kwargs["file_extension"] = "png"
+                    kwargs["file_extension"] = "jpg"
                     new_data.append(ArtworkImage(*args, **kwargs))
                 return new_data
         except UnidentifiedImageError:
