@@ -223,6 +223,9 @@ def from_simnet_to_enka_single(index: int, data: "GenshinDetailCharacters") -> D
     talent_id_list = get_talent_id_list(character)
     proud_skill_extra_level_map = get_proud_skill_extra_level_map(avatar_id, len(talent_id_list))
     skill_level_map = get_skill_level_map(character, proud_skill_extra_level_map)
+    if not skill_level_map:
+        logger.warning("解析技能等级数据失败 ch_id[%s]", avatar_id)
+        return {}
     return {
         "avatarId": avatar_id,
         "equipList": equip_list,
@@ -241,10 +244,12 @@ def from_simnet_to_enka_loop(data: "GenshinDetailCharacters") -> List[Dict]:
     d = []
     for index, ch in enumerate(data.characters):
         try:
-            d.append(from_simnet_to_enka_single(index, data))
+            if parsed_data := from_simnet_to_enka_single(index, data):
+                d.append(parsed_data)
         except Exception as e:
             cid = ch.base.id
             logger.error("从 simnet 模型转换为 enka 模型时出现错误 cid[%s]", cid, exc_info=e)
+    logger.success("成功转换 %s 个角色", len(d))
     return d
 
 
