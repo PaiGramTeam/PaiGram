@@ -8,7 +8,7 @@ from aiofiles import open as async_open
 from httpx import AsyncClient, HTTPError, Response
 
 from modules.wiki.base import HONEY_HOST
-from utils.const import PROJECT_ROOT
+from utils.const import PROJECT_ROOT, AMBR_API_HOST
 from utils.log import logger
 from utils.typedefs import StrOrInt
 
@@ -90,7 +90,7 @@ async def get_material_data() -> DATA_TYPE:
     namecard = [HONEY_HOST.join("fam_nameplate/?lang=CHS")]
     urls = weapon + talent + namecard
 
-    response = await request("https://api.ambr.top/v2/chs/material")
+    response = await request(AMBR_API_HOST.join("v2/chs/material"))
     ambr_data = jsonlib.loads(response.text)["data"]["items"]
 
     for url in urls:
@@ -120,7 +120,7 @@ async def get_artifact_data() -> DATA_TYPE:
     result = {}
     url = "https://gensh.honeyhunterworld.com/fam_art_set/?lang=CHS"
 
-    response = await request("https://api.ambr.top/v2/chs/reliquary")
+    response = await request(AMBR_API_HOST.join("v2/chs/reliquary"))
     ambr_data = jsonlib.loads(response.text)["data"]["items"]
 
     response = await request(url)

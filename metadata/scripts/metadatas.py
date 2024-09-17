@@ -4,7 +4,7 @@ from typing import Iterator, Dict
 from aiofiles import open as async_open
 from httpx import URL, AsyncClient, RemoteProtocolError, Response
 
-from utils.const import AMBR_HOST, PROJECT_ROOT
+from utils.const import PROJECT_ROOT, AMBR_API_HOST
 from utils.log import logger
 
 try:
@@ -34,7 +34,7 @@ async def fix_metadata_from_ambr(json_data: Dict[str, Dict], data_type: str):
         need_append_ids = [11304]
         need_attr = ["id", "rank", "type", "name", "icon", "route"]
         for wid in need_append_ids:
-            url = AMBR_HOST.join(f"v2/chs/{data_type}/{wid}")
+            url = AMBR_API_HOST.join(f"v2/chs/{data_type}/{wid}")
             response = await client.get(url)
             json_data_ = jsonlib.loads(response.text)["data"]
             json_data[str(json_data_["id"])] = {k: json_data_[k] for k in need_attr}
@@ -47,7 +47,7 @@ async def update_metadata_from_ambr(overwrite: bool = True):
         path = PROJECT_ROOT.joinpath(f"metadata/data/{target}.json")
         if not overwrite and path.exists():
             continue
-        url = AMBR_HOST.join(f"v2/chs/{target}")
+        url = AMBR_API_HOST.join(f"v2/chs/{target}")
         path.parent.mkdir(parents=True, exist_ok=True)
         response = await client.get(url)
         json_data = jsonlib.loads(response.text)["data"]["items"]
