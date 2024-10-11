@@ -6,7 +6,6 @@ from enum import Enum
 from typing import Optional, Tuple, List, TYPE_CHECKING
 
 from httpx import TimeoutException
-from simnet import Game
 from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies, TimedOut as SimnetTimedOut
 from simnet.utils.player import recognize_genshin_server
 from sqlalchemy.orm.exc import StaleDataError
@@ -119,14 +118,14 @@ class SignSystem(Plugin):
             else:
                 await asyncio.sleep(random.randint(0, 3))  # nosec
         try:
-            rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
+            rewards = await client.get_monthly_rewards(lang="zh-cn")
         except SimnetBadRequest as error:
             logger.warning("UID[%s] 获取签到信息失败，API返回信息为 %s", client.player_id, str(error))
             if is_raise:
                 raise error
             return f"获取签到信息失败，API返回信息为 {str(error)}"
         try:
-            daily_reward_info = await client.get_reward_info(game=Game.GENSHIN, lang="zh-cn")  # 获取签到信息失败
+            daily_reward_info = await client.get_reward_info(lang="zh-cn")  # 获取签到信息失败
         except SimnetBadRequest as error:
             logger.warning("UID[%s] 获取签到状态失败，API返回信息为 %s", client.player_id, str(error))
             if is_raise:
@@ -141,7 +140,6 @@ class SignSystem(Plugin):
                 request_daily_reward = await client.request_daily_reward(
                     "sign",
                     method="POST",
-                    game=Game.GENSHIN,
                     lang="zh-cn",
                     challenge=challenge,
                     validate=validate,
@@ -163,7 +161,6 @@ class SignSystem(Plugin):
                         request_daily_reward = await client.request_daily_reward(
                             "sign",
                             method="POST",
-                            game=Game.GENSHIN,
                             lang="zh-cn",
                             challenge=challenge,
                             validate=validate,
@@ -183,7 +180,6 @@ class SignSystem(Plugin):
                         _request_daily_reward = await client.request_daily_reward(
                             "sign",
                             method="POST",
-                            game=Game.GENSHIN,
                             lang="zh-cn",
                         )
                         logger.debug("request_daily_reward 返回\n%s", _request_daily_reward)
@@ -199,7 +195,6 @@ class SignSystem(Plugin):
                                 request_daily_reward = await client.request_daily_reward(
                                     "sign",
                                     method="POST",
-                                    game=Game.GENSHIN,
                                     lang="zh-cn",
                                     challenge=_challenge,
                                     validate=_validate,
@@ -219,7 +214,7 @@ class SignSystem(Plugin):
                                 logger.success("UID[%s] 通过 recognize 签到成功", client.player_id)
                             else:
                                 request_daily_reward = await client.request_daily_reward(
-                                    "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
+                                    "sign", method="POST", lang="zh-cn"
                                 )
                                 gt = request_daily_reward.get("gt", "")
                                 challenge = request_daily_reward.get("challenge", "")
@@ -228,9 +223,7 @@ class SignSystem(Plugin):
                                 )
                                 raise NeedChallenge(uid=client.player_id, gt=gt, challenge=challenge)
                     else:
-                        request_daily_reward = await client.request_daily_reward(
-                            "sign", method="POST", game=Game.GENSHIN, lang="zh-cn"
-                        )
+                        request_daily_reward = await client.request_daily_reward("sign", method="POST", lang="zh-cn")
                         gt = request_daily_reward.get("gt", "")
                         challenge = request_daily_reward.get("challenge", "")
                         logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge)
