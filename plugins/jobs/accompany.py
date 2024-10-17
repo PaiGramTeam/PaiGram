@@ -8,7 +8,6 @@ from contextlib import asynccontextmanager
 from simnet import Region
 from simnet.client.components.lab import LabClient
 from simnet.errors import BadRequest as SimnetBadRequest, TimedOut as SimnetTimedOut, InvalidCookies
-from simnet.models.lab.accompany import AccompanyRole
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest
 
@@ -21,6 +20,7 @@ if TYPE_CHECKING:
     from gram_core.services.cookies.models import CookiesDataBase
     from telegram import Update
     from telegram.ext import ContextTypes
+    from simnet.models.lab.accompany import AccompanyRole
 
 
 class AccompanySystemError(Exception):
@@ -160,7 +160,7 @@ class AccompanySystem(Plugin):
         reply = await message.reply_text("正在角色陪伴，请稍后...")
         ck = await self.cookies_service.get_all(user_id=user_id, region=RegionEnum.HOYOLAB)
         if not ck:
-            await reply.edit_text("未绑定账号")
+            await reply.edit_text("未绑定国际服账号")
             return
         await self._do_accompany_job(context, ck, is_raise=False)
         await reply.edit_text("角色陪伴完成")
