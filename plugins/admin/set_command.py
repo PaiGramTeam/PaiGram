@@ -44,6 +44,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("player", "管理用户绑定玩家"),
             BotCommand("verify", "手动验证"),
             BotCommand("redeem", "（国际服）兑换 Key"),
+            BotCommand("accompany", "（国际服）角色陪伴"),
             BotCommand("privacy", "隐私政策"),
         ]
         group_command = [
@@ -96,6 +97,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("add_block", "添加黑名单"),
             BotCommand("del_block", "移除黑名单"),
             BotCommand("wish_log_rank_recount", "重新统计抽卡排行榜"),
+            BotCommand("accompany_all", "全部账号重新角色陪伴"),
         ]
         await context.bot.set_my_commands(
             commands=group_command
