@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <link href="./{{style}}.css" rel="stylesheet" />
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet" />
+    <script src="../../js/tailwindcss-3.1.8.js"></script>
+  </head>
+  <body class="text-neutral-600">
+    <div class="mx-auto max-w-[2000px] py-8">
+      <div class="header p-6 flex mb-8 rounded-xl bg-cover justify-between">
+        <div class="flex flex-col items-center justify-center">
+          <h1 class="text-4xl italic name mb-2 px-2">
+            {{ nickname }}
+          </h1>
+          <h1 class="italic uid px-10">UID - {{ uid }}</h1>
+        </div>
+      </div>
+      <div class="box pt-4 rounded-xl overflow-hidden">
+        <div>
+          <h2 class="box-title text-center text-xl ring text-neutral-100 p-1">
+            成就统计 - 已达成 {{ data.achievement_num }} 个
+          </h2>
+          <div class="p-6 grid grid-cols-8 gap-4 text-center text-neutral-100">
+            {% for e in data.list %}
+                    <div
+                            class="w-full flex flex-col items-center rounded-lg p-2 space-y-1 bg-cover"
+                    >
+                        <img class="w-3/5" src="{{ e.icon }}" />
+                        <div class="text-2xl w-full truncate">{{ e.name }}</div>
+                        {% if e.show_percent %}
+                            <div class="text-base">{{ e.finish_num }} / {{ e.max }} ( {{ e.percentage }}% )</div>
+                            <div class="pointer-bar">
+                                <div
+                                    class="pointer-progress-bar"
+                                    style="width: {{ e.percentage }}%"
+                                ></div>
+                            </div>
+                        {% else %}
+                            <div class="text-base">{{ e.finish_num }} / {{ e.max }}</div>
+                        {% endif %}
+                    </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="about text-center leading-8 text-xs opacity-50">
+          所有数据会有一小时延迟 以游戏内为准 此处仅供参考
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

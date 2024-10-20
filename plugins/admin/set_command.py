@@ -60,6 +60,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("material", "角色培养素材查询"),
             # UID 查询类
             BotCommand("stats", "玩家统计查询"),
+            BotCommand("achievement", "玩家成就统计查询"),
             BotCommand("player_card", "查询角色卡片"),
             BotCommand("avatar_board", "角色排名"),
             BotCommand("gcsim", "组队伤害计算"),
