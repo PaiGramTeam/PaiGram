@@ -145,7 +145,7 @@ class Hyperion(HyperionBase):
 
     POST_FULL_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFull"
     POST_FULL_IN_COLLECTION_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFullInCollection"
-    GET_NEW_LIST_URL = "https://bbs-api.miyoushe.com/post/wapi/getNewsList"
+    GET_NEW_LIST_URL = "https://bbs-api-static.miyoushe.com/painter/wapi/getNewsList"
     GET_OFFICIAL_RECOMMENDED_POSTS_URL = "https://bbs-api.miyoushe.com/post/wapi/getOfficialRecommendedPosts"
     LIVE_INFO_URL = "https://api-takumi.mihoyo.com/event/miyolive/index"
     LIVE_CODE_URL = "https://api-takumi-static.mihoyo.com/event/miyolive/refreshCode"
