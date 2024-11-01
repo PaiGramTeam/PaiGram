@@ -133,7 +133,7 @@ class Post(Plugin.Conversation):
         temp_post_id_list = [post.post_id for post in official_recommended_posts]
 
         # 判断是否为空
-        if self.is_posted_empty(post_type):
+        if await self.is_posted_empty(post_type):
             for temp_list in temp_post_id_list:
                 await self.set_posted(post_type, temp_list)
             return
