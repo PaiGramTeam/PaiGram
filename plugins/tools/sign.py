@@ -177,6 +177,11 @@ class SignSystem(Plugin):
                         try:
                             await self.sign_with_recognize(client)
                             break
+                        except TimeoutException as e:
+                            if ret == retry - 1:
+                                raise e
+                            await asyncio.sleep(random.randint(0, 3))  # nosec
+                            continue
                         except NeedChallenge as e:
                             if ret == retry - 1:
                                 # 重试次数用完，抛出异常
