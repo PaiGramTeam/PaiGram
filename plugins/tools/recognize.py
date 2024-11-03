@@ -17,6 +17,8 @@ class RecognizeSystem:
     async def recognize(gt: str, challenge: str, referer: str = None, uid: int = None) -> Optional[str]:
         if not referer:
             referer = RecognizeSystem.REFERER
+        if not config.pass_challenge_api:
+            return None
         if not gt or not challenge or not uid:
             return None
         pass_challenge_params = {
@@ -40,11 +42,8 @@ class RecognizeSystem:
                 )
             logger.debug("recognize 请求返回：%s", resp.text)
             data = resp.json()
-            status = data.get("status")
-            if status != 0:
-                logger.error("recognize 解析错误：[%s]%s", data.get("code"), data.get("msg"))
             if data.get("code", 0) != 0:
-                raise RuntimeError
+                logger.error("recognize 解析错误：[%s]%s", data.get("code"), data.get("msg"))
             logger.info("recognize 解析成功")
             return data["data"]["validate"]
         except JSONDecodeError:

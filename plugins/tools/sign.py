@@ -103,6 +103,37 @@ class SignSystem(Plugin):
         )
         return InlineKeyboardMarkup([[InlineKeyboardButton("请尽快点我进行手动验证", url=url)]])
 
+    @staticmethod
+    async def sign_with_recognize(
+        client: "GenshinClient",
+        use_recognize: bool = True,
+        _challenge: str = None,
+        _validate: str = None,
+    ):
+        _request_daily_reward = await client.request_daily_reward(
+            "sign",
+            method="POST",
+            lang="zh-cn",
+            challenge=_challenge,
+            validate=_validate,
+        )
+        logger.debug("request_daily_reward 返回\n%s", _request_daily_reward)
+        if _request_daily_reward and _request_daily_reward.get("success", 0) == 1:
+            _gt = _request_daily_reward.get("gt", "")
+            _challenge = _request_daily_reward.get("challenge", "")
+            logger.info("UID[%s] 创建验证码  gt[%s] challenge[%s]", client.player_id, _gt, _challenge)
+            _validate = (
+                await RecognizeSystem.recognize(_gt, _challenge, uid=client.player_id) if use_recognize else None
+            )
+            if _validate:
+                logger.success("recognize 通过验证成功  challenge[%s] validate[%s]", _challenge, _validate)
+                return await SignSystem.sign_with_recognize(client, False, _challenge, _validate)
+            else:
+                raise NeedChallenge(uid=client.player_id, gt=_gt, challenge=_challenge)
+        else:
+            logger.success("UID[%s] 签到成功", client.player_id)
+            return _request_daily_reward
+
     async def start_sign(
         self,
         client: "GenshinClient",
@@ -114,7 +145,7 @@ class SignSystem(Plugin):
     ) -> str:
         if is_sleep:
             if recognize_genshin_server(client.player_id) in ("cn_gf01", "cn_qd01"):
-                await asyncio.sleep(random.randint(10, 300))  # nosec
+                await asyncio.sleep(random.randint(5, 15))  # nosec
             else:
                 await asyncio.sleep(random.randint(0, 3))  # nosec
         try:
@@ -133,103 +164,25 @@ class SignSystem(Plugin):
             return f"获取签到状态失败，API返回信息为 {str(error)}"
         if not daily_reward_info.signed_in:
             try:
-                if validate:
+                if challenge and validate:
                     logger.info(
-                        "UID[%s] 正在尝试通过验证码\nchallenge[%s]\nvalidate[%s]", client.player_id, challenge, validate
+                        "UID[%s] 正在尝试通过验证码  challenge[%s] validate[%s]", client.player_id, challenge, validate
                     )
-                request_daily_reward = await client.request_daily_reward(
-                    "sign",
-                    method="POST",
-                    lang="zh-cn",
-                    challenge=challenge,
-                    validate=validate,
-                )
-                logger.debug("request_daily_reward 返回 %s", request_daily_reward)
-                if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                    # 尝试通过 ajax 请求绕过签到
-                    gt = request_daily_reward.get("gt", "")
-                    challenge = request_daily_reward.get("challenge", "")
-                    logger.warning("UID[%s] 触发验证码\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge)
-                    self.verify.account_id = client.account_id
-                    validate = await self.verify.ajax(
-                        referer=RecognizeSystem.REFERER,
-                        gt=gt,
-                        challenge=challenge,
+                    await self.sign_with_recognize(
+                        client, use_recognize=False, _challenge=challenge, _validate=validate
                     )
-                    if validate:
-                        logger.success("ajax 通过验证成功\nchallenge[%s]\nvalidate[%s]", challenge, validate)
-                        request_daily_reward = await client.request_daily_reward(
-                            "sign",
-                            method="POST",
-                            lang="zh-cn",
-                            challenge=challenge,
-                            validate=validate,
-                        )
-                        logger.debug("request_daily_reward 返回 %s", request_daily_reward)
-                        if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                            logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.player_id, challenge)
-                            raise NeedChallenge(
-                                uid=client.player_id,
-                                gt=request_daily_reward.get("gt", ""),
-                                challenge=request_daily_reward.get("challenge", ""),
-                            )
-                    elif config.pass_challenge_app_key:
-                        # 如果无法绕过 检查配置文件是否配置识别 API 尝试请求绕过
-                        # 注意 需要重新获取没有进行任何请求的 Challenge
-                        logger.info("UID[%s] 正在使用 recognize 重新请求签到", client.player_id)
-                        _request_daily_reward = await client.request_daily_reward(
-                            "sign",
-                            method="POST",
-                            lang="zh-cn",
-                        )
-                        logger.debug("request_daily_reward 返回\n%s", _request_daily_reward)
-                        if _request_daily_reward and _request_daily_reward.get("success", 0) == 1:
-                            _gt = _request_daily_reward.get("gt", "")
-                            _challenge = _request_daily_reward.get("challenge", "")
-                            logger.info("UID[%s] 创建验证码\ngt[%s]\nchallenge[%s]", client.player_id, _gt, _challenge)
-                            _validate = await RecognizeSystem.recognize(_gt, _challenge, uid=client.player_id)
-                            if _validate:
-                                logger.success(
-                                    "recognize 通过验证成功\nchallenge[%s]\nvalidate[%s]", _challenge, _validate
-                                )
-                                request_daily_reward = await client.request_daily_reward(
-                                    "sign",
-                                    method="POST",
-                                    lang="zh-cn",
-                                    challenge=_challenge,
-                                    validate=_validate,
-                                )
-                                if request_daily_reward and request_daily_reward.get("success", 0) == 1:
-                                    logger.warning("UID[%s] 触发验证码\nchallenge[%s]", client.player_id, _challenge)
-                                    gt = request_daily_reward.get("gt", "")
-                                    challenge = request_daily_reward.get("challenge", "")
-                                    logger.success(
-                                        "UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge
-                                    )
-                                    raise NeedChallenge(
-                                        uid=client.player_id,
-                                        gt=gt,
-                                        challenge=challenge,
-                                    )
-                                logger.success("UID[%s] 通过 recognize 签到成功", client.player_id)
-                            else:
-                                request_daily_reward = await client.request_daily_reward(
-                                    "sign", method="POST", lang="zh-cn"
-                                )
-                                gt = request_daily_reward.get("gt", "")
-                                challenge = request_daily_reward.get("challenge", "")
-                                logger.success(
-                                    "UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge
-                                )
-                                raise NeedChallenge(uid=client.player_id, gt=gt, challenge=challenge)
-                    else:
-                        request_daily_reward = await client.request_daily_reward("sign", method="POST", lang="zh-cn")
-                        gt = request_daily_reward.get("gt", "")
-                        challenge = request_daily_reward.get("challenge", "")
-                        logger.success("UID[%s] 创建验证成功\ngt[%s]\nchallenge[%s]", client.player_id, gt, challenge)
-                        raise NeedChallenge(uid=client.player_id, gt=gt, challenge=challenge)
                 else:
-                    logger.success("UID[%s] 签到成功", client.player_id)
+                    retry = 3 if config.pass_challenge_api else 1
+                    for ret in range(3):
+                        try:
+                            await self.sign_with_recognize(client)
+                            break
+                        except NeedChallenge as e:
+                            if ret == retry - 1:
+                                # 重试次数用完，抛出异常
+                                if not config.pass_challenge_api:
+                                    raise e
+                                await self.sign_with_recognize(client, False)
             except TimeoutException as error:
                 logger.warning("UID[%s] 签到请求超时", client.player_id)
                 if is_raise:
