@@ -229,6 +229,7 @@ class SignSystem(Plugin):
     async def do_sign_job(self, context: "ContextTypes.DEFAULT_TYPE", job_type: SignJobType):
         include_status: List[TaskStatusEnum] = [
             TaskStatusEnum.STATUS_SUCCESS,
+            TaskStatusEnum.ALREADY_CLAIMED,
             TaskStatusEnum.TIMEOUT_ERROR,
             TaskStatusEnum.NEED_CHALLENGE,
         ]
@@ -289,7 +290,8 @@ class SignSystem(Plugin):
                 logger.error("执行自动签到时发生错误 user_id[%s]", user_id, exc_info=exc)
                 continue
             else:
-                sign_db.status = TaskStatusEnum.STATUS_SUCCESS
+                if sign_db.status not in include_status:
+                    sign_db.status = TaskStatusEnum.STATUS_SUCCESS
             try:
                 await self.sign_service.update(sign_db)
             except StaleDataError:
