@@ -44,6 +44,7 @@ class RecognizeSystem:
             data = resp.json()
             if data.get("code", 0) != 0:
                 logger.error("recognize 解析错误：[%s]%s", data.get("code"), data.get("msg"))
+                return None
             logger.info("recognize 解析成功")
             return data["data"]["validate"]
         except JSONDecodeError:
