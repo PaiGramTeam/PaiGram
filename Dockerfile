@@ -10,13 +10,10 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
     && apt install git wget curl ffmpeg -y                \
     && git clone -b main --recursive https://github.com/PaiGramTeam/PaiGram.git /app \
     # install dependencies \
-    && pip install virtualenv pdm  \
-    && python3 -m virtualenv venv/                 \
-    && . venv/bin/activate                         \
-    && pdm use -f venv                             \
-    && pdm config pypi.url https://pypi.tuna.tsinghua.edu.cn/simple/ \
-    && pdm install                              \
-    && pdm install -G :all                      \
+    && pip install virtualenv uv  \
+    && python3 -m uv venv .venv                 \
+    && . .venv/bin/activate                         \
+    && uv sync --all-extras                       \
     && playwright install chromium                 \
     && playwright install-deps chromium            \
     ## set timezone
@@ -31,9 +28,8 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
         /var/lib/apt/lists/*                       \
         /var/tmp/*                                 \
         ~/.cache/pip                               \
-        ~/.cache/pypoetry                          \
-        ~/.cache/pdm                               \
+        ~/.cache/uv                               \
     # Add the wait script to the image
     && wget -O /wait https://github.com/ufoscout/docker-compose-wait/releases/download/2.12.1/wait \
     && chmod +x /wait
-ENTRYPOINT /wait && venv/bin/alembic upgrade head && venv/bin/python run.py
+ENTRYPOINT /wait && .venv/bin/alembic upgrade head && .venv/bin/python run.py

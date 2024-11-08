@@ -59,7 +59,7 @@ class UpdatePlugin(Plugin):
             await execute("git pull --all")
             await execute("git submodule update")
             if len(args) > 1:
-                await execute(f"{executable} -m pdm install")
+                await execute("uv sync --all-extras")
             logger.info("更新成功 正在重启")
             await reply_text.edit_text("更新成功 正在重启")
             async with async_open(UPDATE_DATA, mode="w", encoding="utf-8") as file:
