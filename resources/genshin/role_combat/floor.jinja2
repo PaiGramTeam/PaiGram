@@ -86,6 +86,7 @@
                             </div>
                     </div>
             </div>
+            {% if floor.buffs %}
             <div class="hr"></div>
             <div class="chamber">
                 <h2>奇妙助益 * {{ floor.buffs | length }}</h2>
@@ -96,6 +97,25 @@
                     </div>
                 {% endfor %}
             </div>
+            {% endif %}
+            {% if floor.splendour_buff %}
+            <div class="hr"></div>
+            <div class="chamber">
+                <h2>辉彩祝福</h2>
+                <div class="buff">
+                    <div class="caption">{{ floor.splendour_buff.summary.desc_html | safe }}</div>
+                </div>
+                <div style="display: flex">
+                {% for buff in floor.splendour_buff.buffs %}
+                    <div class="buff">
+                        <img class="icon" src="{{ buff.icon }}" alt=""/>
+                        <div class="caption">{{ buff.name }}：Lv.{{ buff.level }}</div>
+                    </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% if floor.choice_cards %}
             <div class="hr"></div>
             <div class="chamber">
                 <h2>神秘收获 * {{ floor.choice_cards | length }}</h2>
@@ -106,6 +126,7 @@
                     </div>
                 {% endfor %}
             </div>
+            {% endif %}
         </div>
     </div>
 </div>

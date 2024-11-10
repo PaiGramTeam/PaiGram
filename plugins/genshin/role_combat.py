@@ -106,8 +106,8 @@ class RoleCombatPlugin(Plugin):
         # 解析参数
         floor, total, previous = get_args(" ".join([i for i in args if not i.startswith("@")]))
 
-        if floor > 8 or floor < 0:
-            reply_msg = await message.reply_text("幻想真境剧诗幕数输入错误，请重新输入。支持的参数为： 1-8 或 all")
+        if floor > 10 or floor < 0:
+            reply_msg = await message.reply_text("幻想真境剧诗幕数输入错误，请重新输入。支持的参数为： 1-10 或 all")
             if filters.ChatType.GROUPS.filter(message):
                 self.add_delete_message_job(reply_msg)
                 self.add_delete_message_job(message)

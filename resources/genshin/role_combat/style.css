@@ -142,7 +142,7 @@ body {
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
-    overflow: hidden;
+    /*overflow: hidden;*/
     border-radius: 0 0 20px 0;
     display: flex;
     flex-direction: column;
@@ -371,6 +371,7 @@ body {
 
 .buff img {
     width: 100px;
-    height: auto;
+    height: 100px;
     margin-right: 10px; /* 图片与文本之间的间距 */
+    object-fit: cover;
 }
