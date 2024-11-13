@@ -26,7 +26,7 @@ from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.plugin import Plugin, error_handler
-from gram_core.services.cookies.error import TooManyRequestPublicCookies
+from gram_core.services.cookies.error import CookieServiceError as TooManyRequestPublicCookies
 from gram_core.services.players.error import PlayerNotFoundError
 from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
 from modules.errorpush import (
