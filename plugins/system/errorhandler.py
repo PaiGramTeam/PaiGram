@@ -6,6 +6,7 @@ from typing import Optional
 
 import aiofiles
 from httpx import HTTPError, TimeoutException
+from playwright.async_api import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 from simnet.errors import (
     DataNotPublic,
     BadRequest as SIMNetBadRequest,
@@ -278,6 +279,15 @@ class ErrorHandler(Plugin):
             return
         self.create_notice_task(update, context, config.notice.user_not_found)
         raise ApplicationHandlerStop
+
+    @error_handler()
+    async def process_playwright_exception(self, update: object, context: CallbackContext):
+        if not isinstance(context.error, PlaywrightError) or not isinstance(update, Update):
+            return
+        if isinstance(context.error, PlaywrightTimeoutError):
+            notice = self.ERROR_MSG_PREFIX + " 渲染超时 ~ 请稍后再试"
+            self.create_notice_task(update, context, notice)
+            raise ApplicationHandlerStop
 
     @error_handler(block=False)
     async def process_z_error(self, update: object, context: CallbackContext) -> None:
