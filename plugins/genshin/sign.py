@@ -40,37 +40,38 @@ class Sign(Plugin):
         self.players_service = player
         self.cookies_service = cookies
 
-    async def _process_auto_sign(self, user_id: int, chat_id: int, method: str) -> str:
-        player = await self.players_service.get_player(user_id)
+    async def _process_auto_sign(self, user_id: int, player_id: int, offset: int, chat_id: int, method: str) -> str:
+        player = await self.players_service.get_player(user_id, player_id=player_id, offset=offset)
         if player is None:
             return config.notice.user_not_found
         cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
         if cookie_model is None:
             return config.notice.user_not_found
-        user: SignUser = await self.sign_service.get_by_user_id(user_id)
+        user: SignUser = await self.sign_service.get_by_user_id(user_id, player.player_id)
         if user:
             if method == "关闭":
                 await self.sign_service.remove(user)
-                return "关闭自动签到成功"
+                return f"UID {player.player_id} 关闭自动签到成功"
             if method == "开启":
                 if user.chat_id == chat_id:
-                    return "自动签到已经开启过了"
+                    return f"UID {player.player_id} 自动签到已经开启过了"
                 user.chat_id = chat_id
                 user.status = TaskStatusEnum.STATUS_SUCCESS
                 await self.sign_service.update(user)
-                return "修改自动签到通知对话成功"
+                return f"UID {player.player_id} 修改自动签到通知对话成功"
         elif method == "关闭":
-            return "您还没有开启自动签到"
+            return f"UID {player.player_id} 您还没有开启自动签到"
         elif method == "开启":
-            user = self.sign_service.create(user_id, chat_id, TaskStatusEnum.STATUS_SUCCESS)
+            user = self.sign_service.create(user_id, player.player_id, chat_id, TaskStatusEnum.STATUS_SUCCESS)
             await self.sign_service.add(user)
-            return "开启自动签到成功"
+            return f"UID {player.player_id} 开启自动签到成功"
 
     @handler.command(command="sign", cookie=True, block=False)
     @handler.message(filters=filters.Regex("^每日签到(.*)"), cookie=True, block=False)
     @handler.command(command="start", filters=filters.Regex("sign$"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         user_id = await self.get_real_user_id(update)
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         args = self.get_args(context)
         validate: Optional[str] = None
@@ -78,12 +79,12 @@ class Sign(Plugin):
             msg = None
             if args[0] == "开启自动签到":
                 if await self.user_admin_service.is_admin(user_id):
-                    msg = await self._process_auto_sign(user_id, message.chat_id, "开启")
+                    msg = await self._process_auto_sign(user_id, uid, offset, message.chat_id, "开启")
                 else:
-                    msg = await self._process_auto_sign(user_id, user_id, "开启")
+                    msg = await self._process_auto_sign(user_id, uid, offset, user_id, "开启")
             elif args[0] == "关闭自动签到":
-                msg = await self._process_auto_sign(user_id, message.chat_id, "关闭")
-            elif args[0] != "sign":
+                msg = await self._process_auto_sign(user_id, uid, offset, message.chat_id, "关闭")
+            elif args[0] != "sign" and not args[0].startswith("@"):
                 validate = args[0]
             if msg:
                 self.log_user(update, logger.info, "自动签到命令请求 || 参数 %s", args[0])
@@ -96,7 +97,7 @@ class Sign(Plugin):
         if filters.ChatType.GROUPS.filter(message):
             self.add_delete_message_job(message)
         try:
-            async with self.genshin_helper.genshin(user_id) as client:
+            async with self.genshin_helper.genshin(user_id, player_id=uid, offset=offset) as client:
                 await message.reply_chat_action(ChatAction.TYPING)
                 _, challenge = await self.sign_system.get_challenge(client.player_id)
                 if validate:
@@ -132,13 +133,14 @@ class Sign(Plugin):
     @handler.command(command="start", filters=filters.Regex(r" challenge_sign_(.*)"), block=False)
     async def command_challenge(self, update: Update, context: CallbackContext) -> None:
         user = update.effective_user
+        uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         args = context.args
         _data = args[0].split("_")
         validate = _data[2]
         logger.info("用户 %s[%s] 通过start命令 进入签到流程", user.full_name, user.id)
         try:
-            async with self.genshin_helper.genshin(user.id) as client:
+            async with self.genshin_helper.genshin(user.id, player_id=uid, offset=offset) as client:
                 await message.reply_chat_action(ChatAction.TYPING)
                 _, challenge = await self.sign_system.get_challenge(client.player_id)
                 if not challenge:
