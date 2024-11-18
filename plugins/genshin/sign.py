@@ -9,12 +9,10 @@ from telegram.helpers import create_deep_linked_url
 from core.config import config
 from core.handler.callbackqueryhandler import CallbackQueryHandler
 from core.plugin import Plugin, handler
-from core.services.cookies import CookiesService
-from core.services.players import PlayersService
 from core.services.task.models import Task as SignUser, TaskStatusEnum
 from core.services.task.services import SignServices
 from core.services.users.services import UserAdminService
-from plugins.tools.genshin import GenshinHelper
+from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
 from plugins.tools.sign import SignSystem, NeedChallenge
 from utils.log import logger
 
@@ -30,41 +28,36 @@ class Sign(Plugin):
         sign_service: SignServices,
         user_admin_service: UserAdminService,
         sign_system: SignSystem,
-        player: PlayersService,
-        cookies: CookiesService,
     ):
         self.user_admin_service = user_admin_service
         self.sign_service = sign_service
         self.sign_system = sign_system
         self.genshin_helper = genshin_helper
-        self.players_service = player
-        self.cookies_service = cookies
 
     async def _process_auto_sign(self, user_id: int, player_id: int, offset: int, chat_id: int, method: str) -> str:
-        player = await self.players_service.get_player(user_id, player_id=player_id, offset=offset)
-        if player is None:
+        try:
+            c = await self.genshin_helper.get_genshin_client(user_id, player_id=player_id, offset=offset)
+            player_id = c.player_id
+        except (PlayerNotFoundError, CookiesNotFoundError):
             return config.notice.user_not_found
-        cookie_model = await self.cookies_service.get(player.user_id, player.account_id, player.region)
-        if cookie_model is None:
-            return config.notice.user_not_found
-        user: SignUser = await self.sign_service.get_by_user_id(user_id, player.player_id)
+        user: SignUser = await self.sign_service.get_by_user_id(user_id, player_id)
         if user:
             if method == "关闭":
                 await self.sign_service.remove(user)
-                return f"UID {player.player_id} 关闭自动签到成功"
+                return f"UID {player_id} 关闭自动签到成功"
             if method == "开启":
                 if user.chat_id == chat_id:
-                    return f"UID {player.player_id} 自动签到已经开启过了"
+                    return f"UID {player_id} 自动签到已经开启过了"
                 user.chat_id = chat_id
                 user.status = TaskStatusEnum.STATUS_SUCCESS
                 await self.sign_service.update(user)
-                return f"UID {player.player_id} 修改自动签到通知对话成功"
+                return f"UID {player_id} 修改自动签到通知对话成功"
         elif method == "关闭":
-            return f"UID {player.player_id} 您还没有开启自动签到"
+            return f"UID {player_id} 您还没有开启自动签到"
         elif method == "开启":
-            user = self.sign_service.create(user_id, player.player_id, chat_id, TaskStatusEnum.STATUS_SUCCESS)
+            user = self.sign_service.create(user_id, player_id, chat_id, TaskStatusEnum.STATUS_SUCCESS)
             await self.sign_service.add(user)
-            return f"UID {player.player_id} 开启自动签到成功"
+            return f"UID {player_id} 开启自动签到成功"
 
     @handler.command(command="sign", cookie=True, block=False)
     @handler.message(filters=filters.Regex("^每日签到(.*)"), cookie=True, block=False)
