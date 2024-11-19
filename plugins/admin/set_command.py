@@ -28,6 +28,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("wish_log_delete", "删除抽卡记录"),
             BotCommand("wish_log_online_view", "抽卡记录在线浏览"),
             BotCommand("wish_log_rank", "抽卡排行榜"),
+            BotCommand("wish_waiting_list", "未复刻列表"),
             BotCommand("pay_log", "查看充值记录"),
             BotCommand("pay_log_import", "导入充值记录"),
             BotCommand("pay_log_export", "导出充值记录"),
