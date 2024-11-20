@@ -739,24 +739,31 @@ class RenderTemplate:
 
         return items
 
+    async def _download_resource(self, url: str) -> str:
+        try:
+            return await download_resource(url)
+        except Exception:
+            logger.warning("缓存角色图片资源失败 %s", url)
+            return url
+
     async def cache_images(self) -> None:
         """缓存所有图片到本地"""
         # TODO: 并发下载所有资源
         c = self.character
         # 角色
-        c.image.banner.url = await download_resource(c.image.banner.url)
+        c.image.banner.url = await self._download_resource(c.image.banner.url)
 
         # 技能
         for item in c.skills:
-            item.icon.url = await download_resource(item.icon.url)
+            item.icon.url = await self._download_resource(item.icon.url)
 
         # 命座
         for item in c.constellations:
-            item.icon.url = await download_resource(item.icon.url)
+            item.icon.url = await self._download_resource(item.icon.url)
 
         # 装备，包括圣遗物和武器
         for item in c.equipments:
-            item.detail.icon.url = await download_resource(item.detail.icon.url)
+            item.detail.icon.url = await self._download_resource(item.detail.icon.url)
 
     def find_weapon(self) -> Optional[Equipments]:
         """在 equipments 数组中找到武器，equipments 数组包含圣遗物和武器"""
