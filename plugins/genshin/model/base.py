@@ -2,7 +2,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional, List, NewType
 
-from pydantic import BaseModel, Field, validator
+from pydantic import field_validator, BaseModel, Field, ValidationInfo
 
 # TODO: 考虑自动生成Enum
 Character = NewType("Character", str)
@@ -72,15 +72,17 @@ class WeaponInfo(BaseModel):
     refinement: int = 0
     ascension: int = 0
 
-    @validator("max_level")
-    def validate_max_level(cls, v, values):
+    @field_validator("max_level")
+    @classmethod
+    def validate_max_level(cls, v, info: ValidationInfo):
         if v == 0:
-            return values["level"]
-        if v < values["level"]:
+            return info.data["level"]
+        if v < info.data["level"]:
             raise ValueError("max_level must be greater than or equal to level")
         return v
 
-    @validator("refinement")
+    @field_validator("refinement")
+    @classmethod
     def validate_refinement(cls, v):
         if v < 0 or v > 5:
             raise ValueError("refinement must be between 1 and 5")
@@ -96,19 +98,22 @@ class Artifact(BaseModel):
     main_attribute: ArtifactAttribute
     sub_attributes: List[ArtifactAttribute] = []
 
-    @validator("level")
+    @field_validator("level")
+    @classmethod
     def validate_level(cls, v):
         if v < 0 or v > 20:
             raise ValueError("level must be between 0 and 20")
         return v
 
-    @validator("rarity")
+    @field_validator("rarity")
+    @classmethod
     def validate_rarity(cls, v):
         if v < 0 or v > 5:
             raise ValueError("rarity must be between 0 and 5")
         return v
 
-    @validator("sub_attributes")
+    @field_validator("sub_attributes")
+    @classmethod
     def validate_sub_attributes(cls, v):
         if len(v) > 4:
             raise ValueError("sub_attributes must not be greater than 4")
@@ -183,15 +188,17 @@ class CharacterInfo(BaseModel):
     rarity: int = 0
     stats: CharacterStats = CharacterStats()
 
-    @validator("max_level")
-    def validate_max_level(cls, v, values):
+    @field_validator("max_level")
+    @classmethod
+    def validate_max_level(cls, v, info: ValidationInfo):
         if v == 0:
-            return values["level"]
-        if v < values["level"]:
+            return info.data["level"]
+        if v < info.data["level"]:
             raise ValueError("max_level must be greater than or equal to level")
         return v
 
-    @validator("skills")
+    @field_validator("skills")
+    @classmethod
     def validate_skills(cls, v):
         if len(v) > 3:
             raise ValueError("skills must not be greater than 3")

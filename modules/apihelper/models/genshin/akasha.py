@@ -2,7 +2,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+from simnet.models.base import APIModel as BaseModel
 
 
 class AkashaSubStat(str, Enum):
@@ -38,7 +39,7 @@ class AkashaRankCal(BaseModel):
 class AkashaRank(BaseModel):
     _id: str
     characterId: int
-    uid = int
+    uid: int
     constellation: int
     icon: str
 
@@ -90,7 +91,7 @@ class AkashaLeaderboardArtifactSet(BaseModel):
 class AkashaLeaderboardOwner(BaseModel):
     nickname: str
     adventureRank: float
-    profilePicture: Any
+    profilePicture: Any = None
     nameCard: str
     patreon: Dict[str, Any]
     region: str
@@ -121,7 +122,7 @@ class AkashaLeaderboardStats(BaseModel):
     healingBonus: AkashaLeaderboardStatsValue
     critRate: AkashaLeaderboardStatsValue
     critDamage: AkashaLeaderboardStatsValue
-    electroDamageBonus: Optional[AkashaLeaderboardStatsValue]
+    electroDamageBonus: Optional[AkashaLeaderboardStatsValue] = None
 
 
 class AkashaLeaderboardWeaponInfo(BaseModel):

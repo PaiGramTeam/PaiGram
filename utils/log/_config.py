@@ -1,8 +1,8 @@
 from multiprocessing import RLock as Lock
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union, ClassVar
 
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 from utils.const import PROJECT_ROOT
 
@@ -10,13 +10,13 @@ __all__ = ("LoggerConfig",)
 
 
 class LoggerConfig(BaseSettings):
-    _lock = Lock()
-    _instance: Optional["LoggerConfig"] = None
+    _lock: ClassVar[Lock] = Lock()
+    _instance: ClassVar[Optional["LoggerConfig"]] = None
 
     def __new__(cls, *args, **kwargs) -> "LoggerConfig":
         with cls._lock:
             if cls._instance is None:
-                cls.update_forward_refs()
+                cls.model_rebuild()
                 result = super(LoggerConfig, cls).__new__(cls)  # pylint: disable=E1120
                 result.__init__(*args, **kwargs)
                 cls._instance = result

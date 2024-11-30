@@ -1,23 +1,11 @@
 import datetime
 from typing import Any, List
 
-from pydantic import BaseModel, BaseConfig
+from pydantic import BaseModel
 from simnet.models.genshin.transaction import BaseTransaction
-
-try:
-    import ujson as jsonlib
-
-except ImportError:
-    import json as jsonlib
-
-
-class _ModelConfig(BaseConfig):
-    json_dumps = jsonlib.dumps
-    json_loads = jsonlib.loads
 
 
 class BaseInfo(BaseModel):
-    Config = _ModelConfig
     uid: str = "0"
     lang: str = "zh-cn"
     export_time: str = ""
@@ -35,6 +23,5 @@ class BaseInfo(BaseModel):
 
 
 class PayLog(BaseModel):
-    Config = _ModelConfig
     info: BaseInfo
     list: List[BaseTransaction]

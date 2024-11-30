@@ -2,7 +2,7 @@ import base64
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Union
 
-from pydantic import BaseModel, validator
+from pydantic import field_validator, BaseModel
 from simnet import Region
 from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, TimedOut as SimnetTimedOut
 from sqlalchemy.orm.exc import StaleDataError
@@ -30,7 +30,8 @@ class TaskDataBase(BaseModel):
 class ResinData(TaskDataBase):
     notice_num: Optional[int] = 140
 
-    @validator("notice_num")
+    @field_validator("notice_num")
+    @classmethod
     def notice_num_validator(cls, v):
         if v < 60 or v > 200:
             raise ValueError("树脂提醒数值必须在 60 ~ 200 之间")
@@ -40,7 +41,8 @@ class ResinData(TaskDataBase):
 class RealmData(TaskDataBase):
     notice_num: Optional[int] = 2000
 
-    @validator("notice_num")
+    @field_validator("notice_num")
+    @classmethod
     def notice_num_validator(cls, v):
         if v < 100 or v > 2400:
             raise ValueError("洞天宝钱提醒数值必须在 100 ~ 2400 之间")
@@ -54,7 +56,8 @@ class ExpeditionData(TaskDataBase):
 class DailyData(TaskDataBase):
     notice_hour: Optional[int] = 22
 
-    @validator("notice_hour")
+    @field_validator("notice_hour")
+    @classmethod
     def notice_hour_validator(cls, v):
         if v < 0 or v > 23:
             raise ValueError("每日任务提醒时间必须在 0 ~ 23 之间")
@@ -65,10 +68,10 @@ class WebAppData(BaseModel):
     user_id: int
     player_id: int
 
-    resin: Optional[ResinData]
-    realm: Optional[RealmData]
-    expedition: Optional[ExpeditionData]
-    daily: Optional[DailyData]
+    resin: Optional[ResinData] = None
+    realm: Optional[RealmData] = None
+    expedition: Optional[ExpeditionData] = None
+    daily: Optional[DailyData] = None
 
 
 class DailyNoteTaskUser:
