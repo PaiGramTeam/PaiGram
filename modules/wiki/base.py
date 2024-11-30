@@ -9,7 +9,6 @@ from typing import AsyncIterator, ClassVar, List, Optional, Tuple, Union
 import anyio
 from bs4 import BeautifulSoup
 from httpx import URL, AsyncClient, HTTPError, Response
-from pydantic import BaseConfig as PydanticBaseConfig
 from pydantic import BaseModel as PydanticBaseModel
 
 from utils.log import logger
@@ -29,13 +28,8 @@ class Model(PydanticBaseModel):
 
     def __new__(cls, *args, **kwargs):
         # 让每次new的时候都解析
-        cls.update_forward_refs()
+        cls.model_rebuild()
         return super(Model, cls).__new__(cls)  # pylint: disable=E1120
-
-    class Config(PydanticBaseConfig):
-        # 使用 ujson 作为解析库
-        json_dumps = jsonlib.dumps
-        json_loads = jsonlib.loads
 
 
 class WikiModel(Model):

@@ -57,7 +57,7 @@ class CharacterIcon(Model):
     icon: str
     side: str
     gacha: str
-    splash: Optional[str]
+    splash: Optional[str] = None
 
 
 class Character(WikiModel):
@@ -83,7 +83,7 @@ class Character(WikiModel):
     association: Association
     weapon_type: WeaponType
     element: Element
-    birth: Optional[Birth]
+    birth: Optional[Birth] = None
     constellation: str
     cn_cv: str
     jp_cv: str

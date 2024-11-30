@@ -3,7 +3,7 @@ from typing import Any, NewType, List, Optional, Tuple, Dict
 
 from gcsim_pypi.aliases import ARTIFACT_ALIASES, CHARACTER_ALIASES, WEAPON_ALIASES
 from gcsim_pypi.availability import AVAILABLE_ARTIFACTS, AVAILABLE_CHARACTERS, AVAILABLE_WEAPONS
-from pydantic import BaseModel, validator
+from pydantic import field_validator, BaseModel
 
 GCSimCharacter = NewType("GCSimCharacter", str)
 GCSimWeapon = NewType("GCSimWeapon", str)
@@ -17,7 +17,8 @@ class GCSimWeaponInfo(BaseModel):
     max_level: int = 20
     params: List[str] = []
 
-    @validator("weapon")
+    @field_validator("weapon")
+    @classmethod
     def validate_weapon(cls, v):
         if v not in AVAILABLE_WEAPONS or v not in WEAPON_ALIASES:
             raise ValueError(f"Not supported weapon: {v}")
@@ -29,7 +30,8 @@ class GCSimSetInfo(BaseModel):
     count: int = 2
     params: List[str] = []
 
-    @validator("set")
+    @field_validator("set")
+    @classmethod
     def validate_set(cls, v):
         if v not in AVAILABLE_ARTIFACTS or v not in ARTIFACT_ALIASES:
             raise ValueError(f"Not supported set: {v}")
@@ -70,7 +72,8 @@ class GCSimCharacterInfo(BaseModel):
     stats: GCSimCharacterStats = GCSimCharacterStats()
     params: List[str] = []
 
-    @validator("character")
+    @field_validator("character")
+    @classmethod
     def validate_character(cls, v):
         if v not in AVAILABLE_CHARACTERS or v not in CHARACTER_ALIASES:
             raise ValueError(f"Not supported character: {v}")

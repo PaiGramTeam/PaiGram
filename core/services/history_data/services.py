@@ -1,7 +1,6 @@
 import datetime
 from typing import Dict, List
 
-from pytz import timezone
 from simnet.models.genshin.chronicle.abyss import SpiralAbyss
 from simnet.models.genshin.chronicle.img_theater import ImgTheaterData
 from simnet.models.genshin.diary import Diary
@@ -29,14 +28,6 @@ __all__ = (
     "HistoryDataImgTheaterServices",
 )
 
-TZ = timezone("Asia/Shanghai")
-
-
-def json_encoder(value):
-    if isinstance(value, datetime.datetime):
-        return value.astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S")
-    return value
-
 
 class HistoryDataAbyssServices(BaseService, HistoryDataBaseServices):
     DATA_TYPE = HistoryDataTypeEnum.ABYSS.value
@@ -49,7 +40,7 @@ class HistoryDataAbyssServices(BaseService, HistoryDataBaseServices):
     @staticmethod
     def create(user_id: int, abyss_data: SpiralAbyss, character_data: Dict[int, int]):
         data = HistoryDataAbyss(abyss_data=abyss_data, character_data=character_data)
-        json_data = data.json(by_alias=True, encoder=json_encoder)
+        json_data = data.model_dump_json(by_alias=True)
         return HistoryData(
             user_id=user_id,
             data_id=abyss_data.season,
@@ -65,7 +56,7 @@ class HistoryDataLedgerServices(BaseService, HistoryDataBaseServices):
     @staticmethod
     def create(user_id: int, diary_data: Diary):
         data = HistoryDataLedger(diary_data=diary_data)
-        json_data = data.json(by_alias=True, encoder=json_encoder)
+        json_data = data.model_dump_json(by_alias=True)
         return HistoryData(
             user_id=user_id,
             data_id=diary_data.data_id,
@@ -86,7 +77,7 @@ class HistoryDataImgTheaterServices(BaseService, HistoryDataBaseServices):
     @staticmethod
     def create(user_id: int, abyss_data: ImgTheaterData, character_data: Dict[int, int]):
         data = HistoryDataImgTheater(abyss_data=abyss_data, character_data=character_data)
-        json_data = data.json(by_alias=True, encoder=json_encoder)
+        json_data = data.model_dump_json(by_alias=True)
         return HistoryData(
             user_id=user_id,
             data_id=abyss_data.schedule.id,

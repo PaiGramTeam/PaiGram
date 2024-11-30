@@ -38,7 +38,7 @@ class AkashaRankCal(BaseModel):
 class AkashaRank(BaseModel):
     _id: str
     characterId: int
-    uid = int
+    uid: int
     constellation: int
     icon: str
 
@@ -90,7 +90,7 @@ class AkashaLeaderboardArtifactSet(BaseModel):
 class AkashaLeaderboardOwner(BaseModel):
     nickname: str
     adventureRank: float
-    profilePicture: Any
+    profilePicture: Any = None
     nameCard: str
     patreon: Dict[str, Any]
     region: str
@@ -121,7 +121,7 @@ class AkashaLeaderboardStats(BaseModel):
     healingBonus: AkashaLeaderboardStatsValue
     critRate: AkashaLeaderboardStatsValue
     critDamage: AkashaLeaderboardStatsValue
-    electroDamageBonus: Optional[AkashaLeaderboardStatsValue]
+    electroDamageBonus: Optional[AkashaLeaderboardStatsValue] = None
 
 
 class AkashaLeaderboardWeaponInfo(BaseModel):

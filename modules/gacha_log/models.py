@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import Any, Dict, List, Union
 
-from pydantic import BaseModel, validator
+from pydantic import field_validator, BaseModel
 
 from metadata.shortname import not_real_roles, roleToId, weaponToId
 from modules.gacha_log.const import UIGF_VERSION
@@ -42,26 +42,30 @@ class GachaItem(BaseModel):
     rank_type: str
     time: datetime.datetime
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def name_validator(cls, v):
         if item_id := (roleToId(v) or weaponToId(v)):
             if item_id not in not_real_roles:
                 return v
         raise ValueError(f"Invalid name {v}")
 
-    @validator("gacha_type")
+    @field_validator("gacha_type")
+    @classmethod
     def check_gacha_type(cls, v):
         if v not in {"100", "200", "301", "302", "400", "500"}:
             raise ValueError(f"gacha_type must be 200, 301, 302, 400, 500, invalid value: {v}")
         return v
 
-    @validator("item_type")
+    @field_validator("item_type")
+    @classmethod
     def check_item_type(cls, item):
         if item not in {"角色", "武器"}:
             raise ValueError(f"error item type {item}")
         return item
 
-    @validator("rank_type")
+    @field_validator("rank_type")
+    @classmethod
     def check_rank_type(cls, rank):
         if rank not in {"5", "4", "3"}:
             raise ValueError(f"error rank type {rank}")

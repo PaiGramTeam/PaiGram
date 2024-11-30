@@ -25,7 +25,7 @@ from telegram.helpers import escape_markdown
 
 from core.config import config
 from core.plugin import Plugin, conversation, handler
-from gram_core.basemodel import Settings
+from gram_core.basemodel import Settings, SettingsConfigDict
 from gram_core.dependence.redisdb import RedisDB
 from modules.apihelper.client.components.hoyolab import Hoyolab
 from modules.apihelper.client.components.hyperion import Hyperion, HyperionBase
@@ -55,8 +55,7 @@ class PostConfig(Settings):
 
     chat_id: Optional[int] = 0
 
-    class Config(Settings.Config):
-        env_prefix = "post_"
+    model_config = SettingsConfigDict(env_prefix="post_")
 
 
 CHECK_POST, SEND_POST, CHECK_COMMAND, GTE_DELETE_PHOTO = range(10900, 10904)

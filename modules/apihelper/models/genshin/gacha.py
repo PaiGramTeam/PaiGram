@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, validator
+from pydantic import field_validator, BaseModel
 
 __all__ = ("GachaInfo",)
 
@@ -12,6 +12,7 @@ class GachaInfo(BaseModel):
     gacha_name: str
     gacha_type: int
 
-    @validator("begin_time", "end_time", pre=True, allow_reuse=True)
+    @field_validator("begin_time", "end_time", mode="before")
+    @classmethod
     def validate_time(cls, v):
         return datetime.strptime(v, "%Y-%m-%d %H:%M:%S")

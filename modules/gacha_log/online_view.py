@@ -7,7 +7,7 @@ from httpx import HTTPError
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.helpers import create_deep_linked_url
 
-from gram_core.basemodel import Settings
+from gram_core.basemodel import Settings, SettingsConfigDict
 from modules.gacha_log.error import GachaLogWebNotConfigError, GachaLogWebUploadError, GachaLogNotFound
 
 
@@ -17,8 +17,7 @@ class GachaLogWebConfig(Settings):
     url: Optional[str] = ""
     token: Optional[str] = ""
 
-    class Config(Settings.Config):
-        env_prefix = "gacha_log_web_"
+    model_config = SettingsConfigDict(env_prefix="gacha_log_web_")
 
 
 gacha_log_web_config = GachaLogWebConfig()

@@ -14,8 +14,8 @@ class GenshinBannerType(Enum):
 
 
 class GachaBanner(BaseModel):
-    weight4 = ((1, 510), (8, 510), (10, 10000))
-    weight5 = ((1, 60), (73, 60), (90, 10000))
+    weight4: tuple[tuple[int, int]] = ((1, 510), (8, 510), (10, 10000))
+    weight5: tuple[tuple[int, int]] = ((1, 60), (73, 60), (90, 10000))
     fallback_items3: List[int] = [
         11301,
         11302,

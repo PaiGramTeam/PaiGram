@@ -34,7 +34,7 @@ class WeaponAffix(Model):
 class WeaponState(Model):
     level: str
     ATK: float
-    bonus: Optional[str]
+    bonus: Optional[str] = None
 
 
 class WeaponIcon(Model):
@@ -58,11 +58,11 @@ class Weapon(WikiModel):
 
     weapon_type: WeaponType
     attack: float
-    attribute: Optional[WeaponAttribute]
-    affix: Optional[WeaponAffix]
+    attribute: Optional[WeaponAttribute] = None
+    affix: Optional[WeaponAffix] = None
     description: str
     ascension: List[str]
-    story: Optional[str]
+    story: Optional[str] = None
 
     stats: List[WeaponState]
 

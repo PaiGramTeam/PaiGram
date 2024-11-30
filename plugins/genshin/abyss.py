@@ -3,12 +3,10 @@
 import asyncio
 import math
 import re
-from datetime import datetime
 from functools import lru_cache, partial
 from typing import Any, Coroutine, List, Optional, Tuple, Union, Dict
 
 from arkowrapper import ArkoWrapper
-from pytz import timezone
 from simnet import GenshinClient
 from simnet.models.genshin.chronicle.abyss import SpiralAbyss
 from telegram import Message, Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -35,8 +33,6 @@ try:
 
 except ImportError:
     import json as jsonlib
-
-TZ = timezone("Asia/Shanghai")
 
 get_args_pattern = re.compile(r"\d+")
 
@@ -206,11 +202,6 @@ class AbyssPlugin(Plugin):
             bytes格式的图片
         """
 
-        def json_encoder(value):
-            if isinstance(value, datetime):
-                return value.astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S")
-            return value
-
         if not abyss_data.unlocked:
             raise AbyssUnlocked
         if not abyss_data.ranks.most_kills:
@@ -220,13 +211,13 @@ class AbyssPlugin(Plugin):
         if (total or (floor > 0)) and len(abyss_data.floors[0].chambers[0].battles) == 0:
             raise AbyssNotFoundError
 
-        start_time = abyss_data.start_time.astimezone(TZ)
+        start_time = abyss_data.start_time
         time = start_time.strftime("%Y年%m月") + ("上" if start_time.day <= 15 else "下")
         stars = [i.stars for i in filter(lambda x: x.floor > 8, abyss_data.floors)]
         total_stars = f"{sum(stars)} ({'-'.join(map(str, stars))})"
 
         render_data = {}
-        result = abyss_data.json(encoder=json_encoder)
+        result = abyss_data.model_dump_json()
 
         render_data["time"] = time
         render_data["stars"] = total_stars
@@ -340,7 +331,7 @@ class AbyssPlugin(Plugin):
 
     @staticmethod
     def get_season_data_name(data: "HistoryDataAbyss"):
-        start_time = data.abyss_data.start_time.astimezone(TZ)
+        start_time = data.abyss_data.start_time
         time = start_time.strftime("%Y.%m ")[2:] + ("上" if start_time.day <= 15 else "下")
         honor = ""
         if data.abyss_data.total_stars == 36:

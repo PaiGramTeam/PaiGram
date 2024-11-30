@@ -11,7 +11,7 @@ from utils.log import logger
 
 class WebAppData(BaseModel):
     path: str
-    data: Optional[dict]
+    data: Optional[dict] = None
     code: int
     message: str
 
