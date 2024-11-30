@@ -555,7 +555,7 @@ wheels = [
 [[package]]
 name = "enkanetwork-py"
 version = "1.4.4"
-source = { git = "https://github.com/PaiGramTeam/EnkaNetwork.py#468a04c45ef2631d1081335f1db03c5a3a836b9b" }
+source = { git = "https://github.com/PaiGramTeam/EnkaNetwork.py#28ca9bc889589699b543782a82c17584b33e537d" }
 dependencies = [
     { name = "aiohttp" },
     { name = "cachetools" },

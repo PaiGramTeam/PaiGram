@@ -26,7 +26,7 @@ click==8.1.7
 colorama==0.4.6 ; sys_platform == 'win32' or platform_system == 'Windows'
 colorlog==6.9.0
 cryptography==43.0.3
-enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@468a04c45ef2631d1081335f1db03c5a3a836b9b
+enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@28ca9bc889589699b543782a82c17584b33e537d
 et-xmlfile==2.0.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
 fakeredis==2.26.1
