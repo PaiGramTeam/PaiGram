@@ -13,7 +13,7 @@ authors = [
     {name = "SiHuaN"},
 ]
 dependencies = [
-    "httpx<1.0.0,>=0.25.0",
+    "httpx<1.0.0,>=0.28.0",
     "ujson<6.0.0,>=5.9.0",
     "Jinja2<4.0.0,>=3.1.2",
     "python-telegram-bot[ext,rate-limiter]<22.0,>=21.7",
@@ -43,9 +43,11 @@ dependencies = [
     "playwright==1.48.0",
     "aiosqlite<1.0.0,>=0.20.0",
     "simnet @ git+https://github.com/PaiGramTeam/SIMNet",
-    "gcsim-pypi<3.0.0,>=2.23.0",
+    "gcsim-pypi<3.0.0,>=2.29.0",
     "psutil<7.0.0,>=6.0.0",
-    "influxdb-client[async,ciso]>=1.43.0",
+    "influxdb-client[async,ciso]>=1.48.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "pydantic-settings>=2.6.1",
 ]
 requires-python = "<4.0,>=3.9"
 readme = "README.md"
