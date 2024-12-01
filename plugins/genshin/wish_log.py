@@ -4,7 +4,8 @@ from typing import Optional, TYPE_CHECKING, List, Union, Tuple
 from urllib.parse import urlencode
 
 from aiofiles import open as async_open
-from simnet import GenshinClient, Region
+from simnet import GenshinClient, Region, Game
+from simnet.client.routes import GACHA_INFO_URL
 from simnet.models.genshin.wish import BannerType
 from telegram import (
     InlineKeyboardButton,
@@ -431,7 +432,7 @@ class WishLogPlugin(Plugin.Conversation):
         if not authkey:
             await message.reply_text("生成失败，仅国服且绑定 stoken 的用户才能生成抽卡记录链接")
         else:
-            url = "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
+            url = str(GACHA_INFO_URL.get_url(Region.CHINESE, Game.GENSHIN) / "getGachaLog")
             params = {
                 "authkey_ver": 1,
                 "lang": "zh-cn",
