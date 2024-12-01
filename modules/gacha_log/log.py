@@ -41,6 +41,7 @@ from modules.gacha_log.models import (
     UIGFInfo,
     UIGFItem,
     UIGFModel,
+    UIGFListInfo,
 )
 from modules.gacha_log.online_view import GachaLogOnlineView
 from modules.gacha_log.ranks import GachaLogRanks
@@ -784,7 +785,8 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
             UIGFGachaType.CHARACTER: "角色活动祈愿",
             UIGFGachaType.WEAPON: "武器活动祈愿",
         }
-        data = UIGFModel(info=UIGFInfo(export_app=import_type.value), list=[])
+        data = UIGFListInfo(list=[])
+        info = UIGFModel(info=UIGFInfo(export_app=import_type.value), hk4e=[data], hkrpg=[], nap=[])
         if import_type == ImportType.PAIMONMOE:
             ws = wb["Information"]
             if ws["B2"].value != PAIMONMOE_VERSION:
@@ -828,4 +830,4 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                         break
                     data.list.append(from_fxq(gacha_type, row[2], row[1], row[0], row[3], row[6]))
 
-        return json.loads(data.json())
+        return json.loads(info.model_dump_json())
