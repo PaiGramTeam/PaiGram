@@ -2,7 +2,9 @@ import datetime
 from enum import Enum
 from typing import Any, Dict, List, Union
 
-from pydantic import field_validator, BaseModel
+from pydantic import field_validator
+
+from simnet.models.base import APIModel as BaseModel, DateTimeField, add_timezone
 
 from metadata.shortname import not_real_roles, roleToId, weaponToId
 from modules.gacha_log.const import UIGF_VERSION
@@ -23,7 +25,7 @@ class FiveStarItem(BaseModel):
     type: str
     isUp: bool
     isBig: bool
-    time: datetime.datetime
+    time: DateTimeField
 
 
 class FourStarItem(BaseModel):
@@ -31,7 +33,7 @@ class FourStarItem(BaseModel):
     icon: str
     count: int
     type: str
-    time: datetime.datetime
+    time: DateTimeField
 
 
 class GachaItem(BaseModel):
@@ -40,7 +42,7 @@ class GachaItem(BaseModel):
     gacha_type: str
     item_type: str
     rank_type: str
-    time: datetime.datetime
+    time: DateTimeField
 
     @field_validator("name")
     @classmethod
@@ -75,7 +77,7 @@ class GachaItem(BaseModel):
 class GachaLogInfo(BaseModel):
     user_id: str
     uid: str
-    update_time: datetime.datetime
+    update_time: DateTimeField
     import_type: str = ""
     item_list: Dict[str, List[GachaItem]] = {
         "角色祈愿": [],
@@ -101,8 +103,8 @@ class Pool:
         self.four = four
         self.from_ = kwargs.get("from")
         self.to = to
-        self.from_time = datetime.datetime.strptime(self.from_, "%Y-%m-%d %H:%M:%S")
-        self.to_time = datetime.datetime.strptime(self.to, "%Y-%m-%d %H:%M:%S")
+        self.from_time = add_timezone(datetime.datetime.strptime(self.from_, "%Y-%m-%d %H:%M:%S"))
+        self.to_time = add_timezone(datetime.datetime.strptime(self.to, "%Y-%m-%d %H:%M:%S"))
         self.start = self.from_time
         self.start_init = False
         self.end = self.to_time
