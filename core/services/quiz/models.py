@@ -12,10 +12,10 @@ class AnswerDB(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
     question_id: Optional[int] = Field(
-        sa_column=Column(Integer, ForeignKey("question.id", ondelete="RESTRICT", onupdate="RESTRICT"))
+        default=None, sa_column=Column(Integer, ForeignKey("question.id", ondelete="RESTRICT", onupdate="RESTRICT"))
     )
-    is_correct: Optional[bool] = Field()
-    text: Optional[str] = Field()
+    is_correct: Optional[bool] = Field(default=None)
+    text: Optional[str] = Field(default=None)
 
 
 class QuestionDB(SQLModel, table=True):
@@ -23,7 +23,7 @@ class QuestionDB(SQLModel, table=True):
     __table_args__ = dict(mysql_charset="utf8mb4", mysql_collate="utf8mb4_general_ci")
 
     id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
-    text: Optional[str] = Field()
+    text: Optional[str] = Field(default=None)
 
 
 class Answer(BaseModel):
