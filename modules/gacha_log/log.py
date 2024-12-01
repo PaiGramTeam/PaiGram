@@ -41,9 +41,11 @@ from modules.gacha_log.models import (
     UIGFInfo,
     UIGFItem,
     UIGFModel,
+    UIGFListInfo,
 )
 from modules.gacha_log.online_view import GachaLogOnlineView
 from modules.gacha_log.ranks import GachaLogRanks
+from modules.gacha_log.uigf import GachaLogUigfConverter
 from utils.const import PROJECT_ROOT
 from utils.uid import mask_number
 
@@ -55,7 +57,7 @@ GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 
 
-class GachaLog(GachaLogOnlineView, GachaLogRanks):
+class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
     def __init__(
         self,
         gacha_log_path: Path = GACHA_LOG_PATH,
@@ -151,34 +153,6 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks):
         # 写入数据
         await self.save_json(save_path, info.json())
 
-    async def gacha_log_to_uigf(self, user_id: str, uid: str) -> Optional[Path]:
-        """抽卡日记转换为 UIGF 格式
-        :param user_id: 用户ID
-        :param uid: 游戏UID
-        :return: 转换是否成功、转换信息、UIGF文件目录
-        """
-        data, state = await self.load_history_info(user_id, uid)
-        if not state:
-            raise GachaLogNotFound
-        save_path = self.gacha_log_path / f"{user_id}-{uid}-uigf.json"
-        info = UIGFModel(info=UIGFInfo(uid=uid, export_app=ImportType.PaiGram.value, export_app_version="v3"), list=[])
-        for items in data.item_list.values():
-            for item in items:
-                info.list.append(
-                    UIGFItem(
-                        id=item.id,
-                        name=item.name,
-                        gacha_type=item.gacha_type,
-                        item_id=roleToId(item.name) if item.item_type == "角色" else weaponToId(item.name),
-                        item_type=item.item_type,
-                        rank_type=item.rank_type,
-                        time=item.time.strftime("%Y-%m-%d %H:%M:%S"),
-                        uigf_gacha_type=item.gacha_type if item.gacha_type != "400" else "301",
-                    )
-                )
-        await self.save_json(save_path, json.loads(info.json()))
-        return save_path
-
     @staticmethod
     async def verify_data(data: List[GachaItem]) -> bool:
         try:
@@ -216,17 +190,20 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks):
     async def import_gacha_log_data(self, user_id: int, player_id: int, data: dict, verify_uid: bool = True) -> int:
         new_num = 0
         try:
-            uid = data["info"]["uid"]
-            if not verify_uid:
-                uid = player_id
-            elif int(uid) != player_id:
+            _data, uid = None, None
+            for _i in data.get("hk4e", []):
+                uid = _i.get("uid", "0")
+                if (not verify_uid) or int(uid) == player_id:
+                    _data = _i
+                    break
+            if not _data or not uid:
                 raise GachaLogAccountNotFound
             try:
                 import_type = ImportType(data["info"]["export_app"])
             except ValueError:
                 import_type = ImportType.UNKNOWN
             # 检查导入数据是否合法
-            all_items = [GachaItem(**i) for i in data["list"]]
+            all_items = [GachaItem(**i) for i in _data["list"]]
             await self.verify_data(all_items)
             gacha_log, status = await self.load_history_info(str(user_id), uid)
             if import_type == ImportType.PAIMONMOE:
@@ -808,7 +785,8 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks):
             UIGFGachaType.CHARACTER: "角色活动祈愿",
             UIGFGachaType.WEAPON: "武器活动祈愿",
         }
-        data = UIGFModel(info=UIGFInfo(export_app=import_type.value), list=[])
+        data = UIGFListInfo(list=[])
+        info = UIGFModel(info=UIGFInfo(export_app=import_type.value), hk4e=[data], hkrpg=[], nap=[])
         if import_type == ImportType.PAIMONMOE:
             ws = wb["Information"]
             if ws["B2"].value != PAIMONMOE_VERSION:
@@ -852,4 +830,4 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks):
                         break
                     data.list.append(from_fxq(gacha_type, row[2], row[1], row[0], row[3], row[6]))
 
-        return json.loads(data.json())
+        return json.loads(info.model_dump_json())

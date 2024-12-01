@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 
 from pydantic import field_validator
 
@@ -160,34 +160,32 @@ class UIGFItem(BaseModel):
     rank_type: str
     time: str
     uigf_gacha_type: UIGFGachaType
+    gacha_id: Optional[str] = ""
 
 
 class UIGFInfo(BaseModel):
-    uid: str = "0"
-    lang: str = "zh-cn"
     export_time: str = ""
     export_timestamp: int = 0
     export_app: str = ""
     export_app_version: str = ""
-    uigf_version: str = UIGF_VERSION
-    region_time_zone: int = 8
+    version: str = UIGF_VERSION
 
     def __init__(self, **data: Any):
-        data["region_time_zone"] = data.get("region_time_zone", UIGFInfo.get_region_time_zone(data.get("uid", "0")))
         super().__init__(**data)
         if not self.export_time:
             self.export_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.export_timestamp = int(datetime.datetime.now().timestamp())
 
-    @staticmethod
-    def get_region_time_zone(uid: str) -> int:
-        if uid.startswith("6"):
-            return -5
-        if uid.startswith("7"):
-            return 1
-        return 8
+
+class UIGFListInfo(BaseModel):
+    uid: int = 0
+    timezone: int = 8
+    lang: str = "zh-cn"
+    list: List[UIGFItem]
 
 
 class UIGFModel(BaseModel):
     info: UIGFInfo
-    list: List[UIGFItem]
+    hk4e: List[UIGFListInfo]
+    hkrpg: List[UIGFListInfo]
+    nap: List[UIGFListInfo]

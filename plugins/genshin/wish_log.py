@@ -62,7 +62,7 @@ if TYPE_CHECKING:
     from gram_core.services.template.models import RenderResult
 
 INPUT_URL, INPUT_LAZY, CONFIRM_DELETE = range(10100, 10103)
-WAITING = f"小{config.notice.bot_name}正在从服务器获取数据，请稍后"
+WAITING = f"小{config.notice.bot_name}正在从服务器获取数据，请稍候"
 WISHLOG_NOT_FOUND = f"{config.notice.bot_name}没有找到你的抽卡记录，快来私聊{config.notice.bot_name}导入吧~"
 WISHLOG_WEB = """<b>抽卡记录详细信息查询</b>
 
@@ -174,11 +174,12 @@ class WishLogPlugin(Plugin.Conversation):
             file_type = "json"
         else:
             await message.reply_text(
-                "文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件"
+                "文件格式错误，请发送符合 UIGF 标准的抽卡记录文件或者 paimon.moe、非小酋导出的 xlsx 格式的抽卡记录文件",
+                reply_markup=ReplyKeyboardRemove(),
             )
             return
         if document.file_size > 5 * 1024 * 1024:
-            await message.reply_text("文件过大，请发送小于 5 MB 的文件")
+            await message.reply_text("文件过大，请发送小于 5 MB 的文件", reply_markup=ReplyKeyboardRemove())
             return
         try:
             out = BytesIO()
@@ -189,32 +190,41 @@ class WishLogPlugin(Plugin.Conversation):
             elif file_type == "xlsx":
                 data = self.gacha_log.convert_xlsx_to_uigf(out, self.zh_dict)
             else:
-                await message.reply_text("文件解析失败，请检查文件")
+                await message.reply_text("文件解析失败，请检查文件", reply_markup=ReplyKeyboardRemove())
                 return
         except PaimonMoeGachaLogFileError as exc:
             await message.reply_text(
-                f"导入失败，PaimonMoe的抽卡记录当前版本不支持\n支持抽卡记录的版本为 {exc.support_version}，你的抽卡记录版本为 {exc.file_version}"
+                f"导入失败，PaimonMoe的抽卡记录当前版本不支持\n支持抽卡记录的版本为 {exc.support_version}，你的抽卡记录版本为 {exc.file_version}",
+                reply_markup=ReplyKeyboardRemove(),
             )
             return
         except GachaLogFileError:
-            await message.reply_text(f"文件解析失败，请检查文件是否符合 UIGF {UIGF_VERSION} 标准")
+            await message.reply_text(
+                f"文件解析失败，请检查文件是否符合 UIGF {UIGF_VERSION} 标准", reply_markup=ReplyKeyboardRemove()
+            )
             return
         except (KeyError, IndexError, ValueError):
-            await message.reply_text(f"文件解析失败，请检查文件编码是否正确或符合 UIGF {UIGF_VERSION} 标准")
+            await message.reply_text(
+                f"文件解析失败，请检查文件编码是否正确或符合 UIGF {UIGF_VERSION} 标准",
+                reply_markup=ReplyKeyboardRemove(),
+            )
             return
         except Exception as exc:
             logger.error("文件解析失败 %s", repr(exc))
-            await message.reply_text(f"文件解析失败，请检查文件是否符合 UIGF {UIGF_VERSION} 标准")
+            await message.reply_text(
+                f"文件解析失败，请检查文件是否符合 UIGF {UIGF_VERSION} 标准", reply_markup=ReplyKeyboardRemove()
+            )
             return
         await message.reply_chat_action(ChatAction.TYPING)
-        reply = await message.reply_text("文件解析成功，正在导入数据")
+        reply = await message.reply_text("文件解析成功，正在导入数据", reply_markup=ReplyKeyboardRemove())
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             text = await self._refresh_user_data(user, player_id, data=data, verify_uid=file_type == "json")
         except Exception as exc:  # pylint: disable=W0703
             logger.error("文件解析失败 %s", repr(exc))
             text = f"文件解析失败，请检查文件是否符合 UIGF {UIGF_VERSION} 标准"
-        await reply.edit_text(text)
+        self.add_delete_message_job(reply, delay=1)
+        await message.reply_text(text, reply_markup=ReplyKeyboardRemove())
 
     async def can_gen_authkey(self, user_id: int, player_id: int) -> bool:
         player_info = await self.players_service.get_player(user_id, region=RegionEnum.HYPERION, player_id=player_id)
