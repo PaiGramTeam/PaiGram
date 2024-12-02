@@ -108,8 +108,6 @@ class AvatarListPlugin(Plugin):
             talents = []
             for talent in detail.talents:
                 if "普通攻击" in talent.name:
-                    talent.Config.allow_mutation = True
-                    # noinspection Pydantic
                     talent.group_id = 1131
                 if talent.type in ["attack", "skill", "burst"]:
                     talents.append(talent)
