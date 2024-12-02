@@ -2,8 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Any, Optional
 
-from pydantic import Field
-from simnet.models.base import APIModel as BaseModel
+from pydantic import BaseModel, Field
 
 
 class AkashaSubStat(str, Enum):

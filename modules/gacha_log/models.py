@@ -2,9 +2,9 @@ import datetime
 from enum import Enum
 from typing import Any, Dict, List, Union, Optional
 
-from pydantic import field_validator
+from pydantic import field_validator, BaseModel
 
-from simnet.models.base import APIModel as BaseModel, DateTimeField, add_timezone
+from simnet.models.base import DateTimeField, add_timezone
 
 from metadata.shortname import not_real_roles, roleToId, weaponToId
 from modules.gacha_log.const import UIGF_VERSION
