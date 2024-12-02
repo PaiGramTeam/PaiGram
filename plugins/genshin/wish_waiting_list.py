@@ -226,10 +226,11 @@ class WishWaitingListPlugin(Plugin):
         user_id = user.id
 
         image = await self.render(user_id, is_avatar)
-        await image.edit_inline_media(
-            callback_query,
-            reply_markup=await self.get_wish_waiting_list_button(user_id, is_avatar),
-        )
+        reply_markup = await self.get_wish_waiting_list_button(user_id, is_avatar)
+        if callback_query.message:
+            await image.edit_media(callback_query.message, reply_markup=reply_markup)
+        else:
+            await image.edit_inline_media(callback_query, reply_markup=reply_markup)
 
     async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:
         types = {"角色": "avatar", "武器": "weapon"}
