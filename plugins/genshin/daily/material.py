@@ -570,7 +570,7 @@ class DailyMaterial(Plugin):
                 continue
             self.everyday_materials = _parse_honey_impact_source(response.content)
             # 当场缓存到文件
-            content = self.everyday_materials.json(ensure_ascii=False, separators=(",", ":"))
+            content = self.everyday_materials.model_dump_json()
             async with aiofiles.open(DATA_FILE_PATH, "w", encoding="utf-8") as file:
                 await file.write(content)
             logger.success("每日素材刷新成功")

@@ -36,7 +36,7 @@ class PayLog:
     @staticmethod
     async def save_json(path, data: PayLogModel):
         async with aiofiles.open(path, "w", encoding="utf-8") as f:
-            return await f.write(data.json(ensure_ascii=False, indent=4, by_alias=True))
+            return await f.write(data.model_dump_json(indent=4, by_alias=True))
 
     def get_file_path(
         self,
