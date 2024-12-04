@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Tuple, Dict
+from typing import TYPE_CHECKING, List, Tuple, Dict, Optional
 
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 class RankPlayerModel(BaseModel):
     player_id: int
     num: int
-    nickname: str
+    nickname: Optional[str]
     score_1: int
     score_2: float
     score_3: float
