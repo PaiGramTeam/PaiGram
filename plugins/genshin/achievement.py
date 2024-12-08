@@ -101,7 +101,6 @@ class AchievementPlugins(Plugin):
         # TODO: 并发下载所有资源
 
         for item in data.list:
-            item.__config__.allow_mutation = True
             if icon := await self._download_resource(item.icon):
                 item.icon = icon
 

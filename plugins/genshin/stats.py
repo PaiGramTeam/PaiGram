@@ -123,7 +123,6 @@ class PlayerStatsPlugins(Plugin):
 
         # 探索地区
         for item in data.explorations:
-            item.__config__.allow_mutation = True
             item.icon = await self._download_resource(item.icon)
             item.cover = await self._download_resource(item.cover)
 
