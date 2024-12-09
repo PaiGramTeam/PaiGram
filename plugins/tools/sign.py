@@ -238,6 +238,7 @@ class SignSystem(Plugin):
         elif job_type == SignJobType.REDO:
             title = "自动重新签到"
             include_status.remove(TaskStatusEnum.STATUS_SUCCESS)
+            include_status.remove(TaskStatusEnum.ALREADY_CLAIMED)
         else:
             raise ValueError
         sign_list = await self.sign_service.get_all()
