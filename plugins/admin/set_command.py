@@ -35,6 +35,8 @@ class SetCommandPlugin(Plugin):
             BotCommand("pay_log_delete", "删除充值记录"),
             # Cookie 查询类
             BotCommand("sign", "米游社原神每日签到"),
+            BotCommand("cloud_game_sign", "（国服）云游戏每日签到"),
+            BotCommand("cloud_game_wallet", "（国服）云游戏钱包查询"),
             BotCommand("dailynote_tasks", "自动便笺提醒"),
             # 其他
             BotCommand("hilichurls", "丘丘语字典"),

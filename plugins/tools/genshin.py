@@ -2,7 +2,7 @@ import asyncio
 import random
 from contextlib import asynccontextmanager
 from datetime import datetime, time, timedelta
-from typing import Optional
+from typing import Optional, Any
 from typing import TYPE_CHECKING, Union
 
 from pydantic import ValidationError
@@ -32,7 +32,13 @@ from utils.log import logger
 if TYPE_CHECKING:
     from sqlalchemy import Table
 
-__all__ = ("GenshinHelper", "PlayerNotFoundError", "CookiesNotFoundError", "CharacterDetails")
+__all__ = (
+    "GenshinHelper",
+    "PlayerNotFoundError",
+    "CookiesNotFoundError",
+    "CookiesUpdateRequestError",
+    "CharacterDetails",
+)
 
 
 class CharacterDetailsSQLModel(SQLModel, table=True):
@@ -200,6 +206,12 @@ class CookiesNotFoundError(Exception):
         super().__init__(f"{user_id} cookies not found")
 
 
+class CookiesUpdateRequestError(Exception):
+    def __init__(self, new_cookies: dict[str, Any]):
+        self.new_cookies = new_cookies
+        super().__init__("cookies need update")
+
+
 class GenshinHelper(Plugin):
     def __init__(
         self,
@@ -246,6 +258,17 @@ class GenshinHelper(Plugin):
             device_id = devices.device_id
             device_fp = devices.device_fp
 
+        async def _update_cookie_model():
+            try:
+                await self.cookies_service.update(cookie_model)
+            except StaleDataError as __exc:
+                if "UPDATE" in str(__exc):
+                    logger.warning("用户 user_id[%s] 刷新 Cookies 失败，数据不存在", cookie_model.user_id)
+                else:
+                    logger.error("用户 user_id[%s] 更新 Cookies 时出现错误", cookie_model.user_id, exc_info=__exc)
+            except Exception as __exc:
+                logger.error("用户 user_id[%s] 更新 Cookies 失败", cookie_model.user_id, exc_info=__exc)
+
         async with GenshinClient(
             cookies,
             region=region,
@@ -257,6 +280,13 @@ class GenshinHelper(Plugin):
         ) as client:
             try:
                 yield client
+            except CookiesUpdateRequestError as exc:
+                new_cookies = cookie_model.data.copy()
+                new_cookies.update(exc.new_cookies)
+                cookie_model.data = new_cookies
+                cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
+                await _update_cookie_model()
+                raise CookieException(message="The cookie has been refreshed.") from exc
             except InvalidCookies as exc:
                 if exc.retcode == 10103:
                     raise exc
@@ -288,15 +318,7 @@ class GenshinHelper(Plugin):
                         logger.error("用户 %s 刷新 Cookies 失败", user_id, exc_info=_exc)
                     else:
                         refresh = True
-                try:
-                    await self.cookies_service.update(cookie_model)
-                except StaleDataError as _exc:
-                    if "UPDATE" in str(_exc):
-                        logger.warning("用户 user_id[%s] 刷新 Cookies 失败，数据不存在", cookie_model.user_id)
-                    else:
-                        logger.error("用户 user_id[%s] 更新 Cookies 时出现错误", cookie_model.user_id, exc_info=_exc)
-                except Exception as _exc:
-                    logger.error("用户 user_id[%s] 更新 Cookies 失败", cookie_model.user_id, exc_info=_exc)
+                await _update_cookie_model()
                 if refresh:
                     raise CookieException(message="The cookie has been refreshed.") from exc
                 raise exc
