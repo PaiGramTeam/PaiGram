@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, Optional, List
 
 from arkowrapper import ArkoWrapper
-from simnet import GenshinClient, Region
+from simnet import GenshinClient, Game, Region
 from simnet.errors import DataNotPublic, InvalidCookies, BadRequest as SimnetBadRequest
 from simnet.models.lab.record import Account
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update, Message
@@ -89,8 +89,14 @@ class AccountCookiesPlugin(Plugin.Conversation):
             "mid",
         ]
         v2_keys = ["ltoken_v2", "ltmid_v2", "ltuid_v2", "account_mid_v2", "cookie_token_v2", "account_id_v2"]
+        combo_token_keys = []
+        for g in Game:
+            g: "Game"
+            for r in Region:
+                r: "Region"
+                combo_token_keys.append(f"cg_combo_token_{g.value}_{r.value}")
 
-        for k in v1_keys + v2_keys:
+        for k in v1_keys + v2_keys + combo_token_keys:
             cookies[k] = cookie.get(k)
 
         return {k: v for k, v in cookies.items() if v is not None}
