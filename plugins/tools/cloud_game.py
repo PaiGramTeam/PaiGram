@@ -75,6 +75,9 @@ class CloudGameHelper(Plugin):
     ) -> str:
         try:
             wallet = await self.get_wallet(client)
+        except InvalidCookies as error:
+            logger.warning("UID[%s] 获取云游戏钱包信息失败，API返回信息为 %s", client.player_id, str(error))
+            raise error
         except SimnetBadRequest as error:
             logger.warning("UID[%s] 获取云游戏钱包信息失败，API返回信息为 %s", client.player_id, str(error))
             if is_raise:
