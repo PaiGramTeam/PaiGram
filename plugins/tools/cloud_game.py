@@ -87,16 +87,14 @@ class CloudGameHelper(Plugin):
             await self.clear_notification(client)
         except Exception:
             logger.warning("UID[%s] 清空云游戏通知失败", client.player_id)
-        send_free_time = wallet.free_time.send_freetime
         have_free_time = wallet.free_time.free_time
-        if send_free_time:
-            logger.success("UID[%s] 云游戏签到成功", client.player_id)
-            result = f"获得 {send_free_time} 分钟免费时长"
+        limit_time = wallet.free_time.free_time_limit
+        if have_free_time == limit_time:
+            logger.success("UID[%s] 云游戏签到超出免费时长上限", client.player_id)
+            result = "超出免费时长上限"
         else:
-            logger.info("UID[%s] 云游戏已经签到", client.player_id)
-            result = "今天旅行者云游戏已经签到过了~"
-            if is_raise:
-                raise AlreadyClaimed
+            logger.success("UID[%s] 云游戏签到成功", client.player_id)
+            result = "OK"
         today = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         message = (
             f"#### {title} ####\n"
