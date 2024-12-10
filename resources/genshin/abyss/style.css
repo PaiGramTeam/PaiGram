@@ -19,7 +19,7 @@ body {
 }
 
 .container {
-    width: 750px;
+    /*width: 750px;*/
     position: relative;
     filter: drop-shadow(2px 2px 5px rgb(0 0 0 /70%));
 }
@@ -41,7 +41,7 @@ body {
 
 .overview {
     height: 540px;
-    padding: 20px 40px;
+    padding: 20px 540px;
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -251,12 +251,12 @@ body {
     color: var(--white);
 }
 
-.floor-name > div:not(.floor-num) {
+.floor-name > div:not(.floor_num) {
     margin-left: 20px;
     text-shadow: 1px 1px 5px rgb(0 0 0/50%);
 }
 
-.floor-num {
+.floor_num {
     color: black;
     width: 100px;
     height: 100px;
