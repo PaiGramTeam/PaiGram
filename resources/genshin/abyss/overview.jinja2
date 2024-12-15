@@ -26,8 +26,6 @@
                 <div class="star">
                     <span>{{ stars }}</span>
                 </div>
-            </div>
-            <div>
                 <div>时间: {{ time }}</div>
                 <div>最深抵达: {{ data.max_floor }}</div>
             </div>
@@ -56,18 +54,19 @@
         <div>
             <div class="caption">战斗数据</div>
             <div class="ranks">
+                <div style="background-color: rgb(61 76 86 / 60%);"></div>
                 <div style="background-color: rgb(61 76 86 / 60%);">
                     <div class="rank">战斗次数: {{ data.total_battles }}</div>
                     <div class="rank">
                         <span>最多击破：{{ data.ranks.most_kills[0].value }}</span>
                         <img src="{{ data.ranks.most_kills[0].icon }}" alt=""/>
                     </div>
-                </div>
-                <div>
                     <div class="rank">
                         <span>最强一击: {{ data.ranks.strongest_strike[0].value }}</span>
                         <img src="{{ data.ranks.strongest_strike[0].icon }}" alt=""/>
                     </div>
+                </div>
+                <div style="background-color: rgb(61 76 86 / 60%);">
                     <div class="rank">
                         {% if data.ranks.most_damage_taken is defined and data.ranks.most_damage_taken|length > 0 %}
                             <span>最多承伤: {{ data.ranks.most_damage_taken[0].value }}</span>
@@ -76,8 +75,6 @@
                             <span>最多承伤: </span>
                         {% endif %}
                     </div>
-                </div>
-                <div style="background-color: rgb(61 76 86 / 60%);">
                     <div class="rank">
                         {% if data.ranks.most_bursts_used is defined and data.ranks.most_bursts_used|length > 0 %}
                             <span>元素爆发: {{ data.ranks.most_bursts_used[0].value }}</span>
@@ -95,9 +92,21 @@
                         {% endif %}
                     </div>
                 </div>
+                <div style="background-color: rgb(61 76 86 / 60%);"></div>
             </div>
         </div>
     </div>
+        {% for floor in data.floors %}
+        {% if loop.index % 4 == 1 %}
+            <div class="floors_row">
+        {% endif %}
+        {% set floor_num = floor.floor_num %}
+        {% set total_stars = floor.total_stars %}
+        {% include "genshin/abyss/floor.jinja2" %}
+        {% if loop.index % 4 == 0 or loop.index == loop.length %}
+            </div>
+        {% endif %}
+        {% endfor %}
 </div>
 </body>
 </html>

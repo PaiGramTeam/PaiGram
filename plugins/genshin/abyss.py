@@ -1,12 +1,10 @@
 """深渊数据查询"""
 
-import asyncio
 import math
 import re
 from functools import lru_cache, partial
-from typing import Any, Coroutine, List, Optional, Tuple, Union, Dict
+from typing import List, Optional, Tuple, Dict
 
-from arkowrapper import ArkoWrapper
 from simnet import GenshinClient
 from simnet.models.genshin.chronicle.abyss import SpiralAbyss
 from telegram import Message, Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -18,7 +16,7 @@ from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.history_data.models import HistoryDataAbyss
 from core.services.history_data.services import HistoryDataAbyssServices
-from core.services.template.models import RenderGroupResult, RenderResult
+from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from gram_core.config import config
 from gram_core.dependence.redisdb import RedisDB
@@ -38,17 +36,9 @@ get_args_pattern = re.compile(r"\d+")
 
 
 @lru_cache
-def get_args(text: str) -> Tuple[int, bool, bool]:
-    total = "all" in text or "总览" in text
+def get_args(text: str) -> bool:
     prev = "pre" in text or "上期" in text
-    floor = 0
-
-    if not total:
-        m = get_args_pattern.search(text)
-        if m is not None:
-            floor = int(m.group(0))
-
-    return floor, total, prev
+    return prev
 
 
 class AbyssUnlocked(Exception):
@@ -107,23 +97,12 @@ class AbyssPlugin(Plugin):
             return
 
         # 解析参数
-        floor, total, previous = get_args(" ".join([i for i in args if not i.startswith("@")]))
-
-        if floor > 12 or floor < 0:
-            reply_msg = await message.reply_text("深渊层数输入错误，请重新输入。支持的参数为： 1-12 或 all")
-            if filters.ChatType.GROUPS.filter(message):
-                self.add_delete_message_job(reply_msg)
-                self.add_delete_message_job(message)
-            return
-        if 0 < floor < 9:
-            previous = False
+        previous = get_args(" ".join([i for i in args if not i.startswith("@")]))
 
         self.log_user(
             update,
             logger.info,
-            "[bold]深渊挑战数据[/bold]请求: floor=%s total=%s previous=%s",
-            floor,
-            total,
+            "[bold]深渊挑战数据[/bold]请求: previous=%s",
             previous,
             extra={"markup": True},
         )
@@ -132,14 +111,12 @@ class AbyssPlugin(Plugin):
 
         reply_text: Optional[Message] = None
 
-        if total:
-            reply_text = await message.reply_text(f"{config.notice.bot_name}需要时间整理深渊数据，还请耐心等待哦~")
         try:
             async with self.helper.genshin_or_public(user_id, uid=uid, offset=offset) as client:
                 if not client.public:
                     await client.get_record_cards()
                 abyss_data, avatar_data = await self.get_rendered_pic_data(client, client.player_id, previous)
-                images = await self.get_rendered_pic(abyss_data, avatar_data, client.player_id, floor, total)
+                images = await self.get_rendered_pic(abyss_data, avatar_data, client.player_id)
         except AbyssUnlocked:  # 若深渊未解锁
             await message.reply_text("还未解锁深渊哦~")
             return
@@ -162,14 +139,8 @@ class AbyssPlugin(Plugin):
             if reply_text is not None:
                 await reply_text.delete()
 
-        if images is None:
-            await message.reply_text(f"还没有第 {floor} 层的挑战数据")
-            return
-
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-
-        for group in ArkoWrapper(images).group(10):  # 每 10 张图片分一个组
-            await RenderGroupResult(results=group).reply_media_group(message, write_timeout=60)
+        await images.reply_photo(message)
 
         self.log_user(update, logger.info, "[bold]深渊挑战数据[/bold]: 成功发送图片", extra={"markup": True})
 
@@ -186,8 +157,11 @@ class AbyssPlugin(Plugin):
         return abyss_data, avatar_data
 
     async def get_rendered_pic(  # skipcq: PY-R1000 #
-        self, abyss_data: "SpiralAbyss", avatar_data: Dict[int, int], uid: int, floor: int, total: bool
-    ) -> Union[Tuple[Any], List[RenderResult], None]:
+        self,
+        abyss_data: "SpiralAbyss",
+        avatar_data: Dict[int, int],
+        uid: int,
+    ) -> RenderResult:
         """
         获取渲染后的图片
 
@@ -195,8 +169,6 @@ class AbyssPlugin(Plugin):
             abyss_data (SpiralAbyss): 深渊数据
             avatar_data (Dict[int, int]): 角色数据
             uid (int): 需要查询的 uid
-            floor (int): 层数
-            total (bool): 是否为总览
 
         Returns:
             bytes格式的图片
@@ -206,9 +178,9 @@ class AbyssPlugin(Plugin):
             raise AbyssUnlocked
         if not abyss_data.ranks.most_kills:
             raise NoMostKills
-        if (total or (floor > 0)) and len(abyss_data.floors) == 0:
+        if len(abyss_data.floors) == 0:
             raise FloorNotFoundError
-        if (total or (floor > 0)) and len(abyss_data.floors[0].chambers[0].battles) == 0:
+        if len(abyss_data.floors[0].chambers[0].battles) == 0:
             raise AbyssNotFoundError
 
         start_time = abyss_data.start_time
@@ -236,53 +208,8 @@ class AbyssPlugin(Plugin):
             11: "#252550",
             12: "#1D2A4A",
         }
+        data = jsonlib.loads(result)
 
-        if total:
-            render_data["avatar_data"] = avatar_data
-            data = jsonlib.loads(result)
-            render_data["data"] = data
-
-            render_inputs: List[Tuple[int, Coroutine[Any, Any, RenderResult]]] = []
-
-            def overview_task():
-                return -1, self.template_service.render(
-                    "genshin/abyss/overview.jinja2", render_data, viewport={"width": 750, "height": 580}
-                )
-
-            def floor_task(floor_index: int):
-                floor_d = data["floors"][floor_index]
-                return (
-                    floor_d["floor"],
-                    self.template_service.render(
-                        "genshin/abyss/floor.jinja2",
-                        {
-                            **render_data,
-                            "floor": floor_d,
-                            "total_stars": f"{floor_d['stars']}/{floor_d['max_stars']}",
-                        },
-                        viewport={"width": 690, "height": 500},
-                        full_page=True,
-                        ttl=15 * 24 * 60 * 60,
-                    ),
-                )
-
-            render_inputs.append(overview_task())
-
-            for i, f in enumerate(data["floors"]):
-                if f["floor"] >= 9:
-                    render_inputs.append(floor_task(i))
-
-            render_group_inputs = list(map(lambda x: x[1], sorted(render_inputs, key=lambda x: x[0])))
-
-            return await asyncio.gather(*render_group_inputs)
-
-        if floor < 1:
-            render_data["data"] = jsonlib.loads(result)
-            return [
-                await self.template_service.render(
-                    "genshin/abyss/overview.jinja2", render_data, viewport={"width": 750, "height": 580}
-                )
-            ]
         num_dic = {
             "0": "",
             "1": "一",
@@ -295,21 +222,21 @@ class AbyssPlugin(Plugin):
             "8": "八",
             "9": "九",
         }
-        if num := num_dic.get(str(floor)):
-            render_data["floor-num"] = num
-        else:
-            render_data["floor-num"] = f"十{num_dic.get(str(floor % 10))}"
-        floors = jsonlib.loads(result)["floors"]
-        if not (floor_data := list(filter(lambda x: x["floor"] == floor, floors))):
-            return None
+        for _i in data.get("floors", []):
+            floor = int(_i["floor"])
+            if num := num_dic.get(str(floor)):
+                _i["floor_num"] = num
+            else:
+                _i["floor_num"] = f"十{num_dic.get(str(floor % 10))}"
+            _i["total_stars"] = f"{_i['stars']}/{_i['max_stars']}"
         render_data["avatar_data"] = avatar_data
-        render_data["floor"] = floor_data[0]
-        render_data["total_stars"] = f"{floor_data[0]['stars']}/{floor_data[0]['max_stars']}"
-        return [
-            await self.template_service.render(
-                "genshin/abyss/floor.jinja2", render_data, viewport={"width": 690, "height": 500}
-            )
-        ]
+        render_data["data"] = data
+        return await self.template_service.render(
+            "genshin/abyss/overview.jinja2",
+            render_data,
+            viewport={"width": 2745, "height": 4000},
+            query_selector=".container",
+        )
 
     @staticmethod
     async def save_abyss_data(
@@ -414,40 +341,6 @@ class AbyssPlugin(Plugin):
             send_buttons.append(last_button)
         return send_buttons
 
-    @staticmethod
-    async def gen_floor_button(
-        data_id: int,
-        abyss_data: "HistoryDataAbyss",
-        user_id: int,
-        uid: int,
-    ) -> List[List[InlineKeyboardButton]]:
-        floors = [i.floor for i in abyss_data.abyss_data.floors if i.floor]
-        floors.sort()
-        buttons = [
-            InlineKeyboardButton(
-                f"第 {i} 层",
-                callback_data=f"get_abyss_history|{user_id}|{uid}|{data_id}|{i}",
-            )
-            for i in floors
-        ]
-        send_buttons = [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
-        all_buttons = [
-            InlineKeyboardButton(
-                "<< 返回",
-                callback_data=f"get_abyss_history|{user_id}|{uid}|p_1",
-            ),
-            InlineKeyboardButton(
-                "总览",
-                callback_data=f"get_abyss_history|{user_id}|{uid}|{data_id}|total",
-            ),
-            InlineKeyboardButton(
-                "所有",
-                callback_data=f"get_abyss_history|{user_id}|{uid}|{data_id}|all",
-            ),
-        ]
-        send_buttons.append(all_buttons)
-        return send_buttons
-
     @handler.command("abyss_history", block=False)
     @handler.message(filters.Regex(r"^深渊历史数据"), block=False)
     async def abyss_history_command_start(self, update: Update, _: CallbackContext) -> None:
@@ -479,23 +372,7 @@ class AbyssPlugin(Plugin):
         await callback_query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
         await callback_query.answer(f"已切换到第 {page} 页", show_alert=False)
 
-    async def get_abyss_history_season(self, update: "Update", data_id: int):
-        """进入选择层数"""
-        callback_query = update.callback_query
-        user = callback_query.from_user
-
-        self.log_user(update, logger.info, "切换深渊历史数据到层数页 data_id[%s]", data_id)
-        data = await self.history_data_abyss.get_by_id(data_id)
-        if not data:
-            await callback_query.answer("数据不存在，请尝试重新发送命令~", show_alert=True)
-            await callback_query.edit_message_text("数据不存在，请尝试重新发送命令~")
-            return
-        abyss_data = HistoryDataAbyss.from_data(data)
-        buttons = await self.gen_floor_button(data_id, abyss_data, user.id, data.user_id)
-        await callback_query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
-        await callback_query.answer("已切换到层数页", show_alert=False)
-
-    async def get_abyss_history_floor(self, update: "Update", data_id: int, detail: str):
+    async def get_abyss_history_floor(self, update: "Update", data_id: int):
         """渲染层数数据"""
         callback_query = update.callback_query
         message = callback_query.message
@@ -503,14 +380,6 @@ class AbyssPlugin(Plugin):
         if message.reply_to_message:
             reply = message.reply_to_message
 
-        floor = 0
-        total = False
-        if detail == "total":
-            floor = 0
-        elif detail == "all":
-            total = True
-        else:
-            floor = int(detail)
         data = await self.history_data_abyss.get_by_id(data_id)
         if not data:
             await callback_query.answer("数据不存在，请尝试重新发送命令", show_alert=True)
@@ -518,18 +387,16 @@ class AbyssPlugin(Plugin):
             return
         abyss_data = HistoryDataAbyss.from_data(data)
 
-        images = await self.get_rendered_pic(
-            abyss_data.abyss_data, abyss_data.character_data, data.user_id, floor, total
-        )
-        if images is None:
-            await callback_query.answer(f"还没有第 {floor} 层的挑战数据", show_alert=True)
-            return
         await callback_query.answer("正在渲染图片中 请稍等 请不要重复点击按钮", show_alert=False)
 
-        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        images = await self.get_rendered_pic(
+            abyss_data.abyss_data,
+            abyss_data.character_data,
+            data.user_id,
+        )
 
-        for group in ArkoWrapper(images).group(10):  # 每 10 张图片分一个组
-            await RenderGroupResult(results=group).reply_media_group(reply or message, write_timeout=60)
+        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
+        await images.reply_photo(reply or message)
         self.log_user(update, logger.info, "[bold]深渊挑战数据[/bold]: 成功发送图片", extra={"markup": True})
         self.add_delete_message_job(message, delay=1)
 
@@ -540,22 +407,20 @@ class AbyssPlugin(Plugin):
 
         async def get_abyss_history_callback(
             callback_query_data: str,
-        ) -> Tuple[str, str, int, int]:
+        ) -> Tuple[str, int, int]:
             _data = callback_query_data.split("|")
             _user_id = int(_data[1])
             _uid = int(_data[2])
             _result = _data[3]
-            _detail = _data[4] if len(_data) > 4 else None
             logger.debug(
-                "callback_query_data函数返回 detail[%s] result[%s] user_id[%s] uid[%s]",
-                _detail,
+                "callback_query_data函数返回 result[%s] user_id[%s] uid[%s]",
                 _result,
                 _user_id,
                 _uid,
             )
-            return _detail, _result, _user_id, _uid
+            return _result, _user_id, _uid
 
-        detail, result, user_id, uid = await get_abyss_history_callback(callback_query.data)
+        result, user_id, uid = await get_abyss_history_callback(callback_query.data)
         if user.id != user_id:
             await callback_query.answer(text="这不是你的按钮！\n" + config.notice.user_mismatch, show_alert=True)
             return
@@ -566,10 +431,7 @@ class AbyssPlugin(Plugin):
             await self.get_abyss_history_page(update, user_id, uid, result)
             return
         data_id = int(result)
-        if detail:
-            await self.get_abyss_history_floor(update, data_id, detail)
-            return
-        await self.get_abyss_history_season(update, data_id)
+        await self.get_abyss_history_floor(update, data_id)
 
     async def abyss_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE", previous: bool):
         callback_query = update.callback_query
@@ -584,8 +446,7 @@ class AbyssPlugin(Plugin):
                 if not client.public:
                     await client.get_record_cards()
                 abyss_data, avatar_data = await self.get_rendered_pic_data(client, client.player_id, previous)
-                images = await self.get_rendered_pic(abyss_data, avatar_data, client.player_id, 0, False)
-                image = images[0]
+                image = await self.get_rendered_pic(abyss_data, avatar_data, client.player_id)
         except AbyssUnlocked:  # 若深渊未解锁
             notice = "还未解锁深渊哦~"
         except NoMostKills:  # 若深渊还未挑战
