@@ -1,33 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-cn">
-<head>
-    <meta charset="UTF-8">
-    <title>floor</title>
-    <link type="text/css" href="./style.css" rel="stylesheet"/>
-    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-
-
-        .floors, .floor {
-            border-radius: unset;
-            margin: 0;
-        }
-
-        .floor-num > div:last-child {
-            display: flex;
-            flex-flow: column;
-            justify-content: center;
-            align-content: center;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="floors">
+ <div class="floors">
         <div
                 class="floor"
                 style="
@@ -36,7 +7,7 @@
         >
             <div class="head">
                 <div class="floor-name">
-                    <div class="floor-num"></div>
+                    <div class="floor_num"></div>
                     <div>
                         <div>UID: {{ uid }}</div>
                         <div>深境螺旋第 {{ floor.floor }} 层</div>
@@ -94,6 +65,3 @@
             {% endfor %}
         </div>
     </div>
-</div>
-</body>
-</html>
