@@ -144,6 +144,23 @@ class AbyssPlugin(Plugin):
 
         self.log_user(update, logger.info, "[bold]深渊挑战数据[/bold]: 成功发送图片", extra={"markup": True})
 
+    @staticmethod
+    def check_abyss_data(abyss_data: "SpiralAbyss", is_raise: bool = True) -> bool:
+        try:
+            if not abyss_data.unlocked:
+                raise AbyssUnlocked
+            if not abyss_data.ranks.most_kills:
+                raise NoMostKills
+            if len(abyss_data.floors) == 0:
+                raise FloorNotFoundError
+            if len(abyss_data.floors[0].chambers[0].battles) == 0:
+                raise AbyssNotFoundError
+            return True
+        except (AbyssUnlocked, NoMostKills, FloorNotFoundError, AbyssNotFoundError) as e:
+            if is_raise:
+                raise e
+            return False
+
     async def get_rendered_pic_data(
         self, client: GenshinClient, uid: int, previous: bool
     ) -> Tuple["SpiralAbyss", Dict[int, int]]:
@@ -152,7 +169,7 @@ class AbyssPlugin(Plugin):
         if not client.public:  # noqa
             avatars = await client.get_genshin_characters(uid, lang="zh-cn")
             avatar_data = {i.id: i.constellation for i in avatars}
-            if abyss_data.unlocked and abyss_data.ranks.most_kills:
+            if self.check_abyss_data(abyss_data, is_raise=False):
                 await self.save_abyss_data(self.history_data_abyss, uid, abyss_data, avatar_data)
         return abyss_data, avatar_data
 
@@ -174,14 +191,7 @@ class AbyssPlugin(Plugin):
             bytes格式的图片
         """
 
-        if not abyss_data.unlocked:
-            raise AbyssUnlocked
-        if not abyss_data.ranks.most_kills:
-            raise NoMostKills
-        if len(abyss_data.floors) == 0:
-            raise FloorNotFoundError
-        if len(abyss_data.floors[0].chambers[0].battles) == 0:
-            raise AbyssNotFoundError
+        self.check_abyss_data(abyss_data)
 
         start_time = abyss_data.start_time
         time = start_time.strftime("%Y年%m月") + ("上" if start_time.day <= 15 else "下")
