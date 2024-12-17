@@ -125,8 +125,9 @@ class CloudGameHelper(Plugin):
             if sign_db.status not in include_status:
                 continue
             user_id = sign_db.user_id
+            player_id = sign_db.player_id
             try:
-                async with self.client(user_id) as client:
+                async with self.client(user_id, player_id=player_id) as client:
                     text = await self.start_sign(client, is_raise=True, title=title)
             except InvalidCookies:
                 text = "云游戏自动签到执行失败，Cookie无效"
