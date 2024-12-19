@@ -97,13 +97,13 @@
         </div>
     </div>
         {% for floor in data.floors %}
-        {% if loop.index % 4 == 1 %}
+        {% if loop.index % 2 == 1 %}
             <div class="floors_row">
         {% endif %}
         {% set floor_num = floor.floor_num %}
         {% set total_stars = floor.total_stars %}
         {% include "genshin/abyss/floor.jinja2" %}
-        {% if loop.index % 4 == 0 or loop.index == loop.length %}
+        {% if loop.index % 2 == 0 or loop.index == loop.length %}
             </div>
         {% endif %}
         {% endfor %}
