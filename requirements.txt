@@ -11,8 +11,7 @@ alembic==1.14.0
 annotated-types==0.7.0
 anyio==4.7.0
 apscheduler==3.10.4
-arko-wrapper==0.3.0 ; python_full_version < '3.12'
-arko-wrapper==0.4.2 ; python_full_version >= '3.12'
+arko-wrapper==0.3.0
 async-lru==2.0.4
 async-timeout==5.0.1 ; python_full_version < '3.11.3'
 asyncmy==0.2.10

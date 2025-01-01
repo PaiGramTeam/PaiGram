@@ -232,30 +232,12 @@ wheels = [
 name = "arko-wrapper"
 version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.12'",
-]
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/00/1f/eb4541b9815b9c6361db8999bdf1292c5747e1d4a9e22e9a30899c65d8f7/arko_wrapper-0.3.0.tar.gz", hash = "sha256:6e37ab1f2dbdd961f07313c3267c5864f5e71b39de730e384003aa2af1f68357", size = 13378 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/d5/fc83ed45f41b949f731ceef1e2c04009d5b1147d1e2c5845ec3dfd027e2f/arko_wrapper-0.3.0-py3-none-any.whl", hash = "sha256:9230d479c5bbdb4b6add8d75def69a8aa5aad4e7057dc92aebe7d0146a4b95d7", size = 12925 },
-]
-
-[[package]]
-name = "arko-wrapper"
-version = "0.4.2"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.12'",
-]
-dependencies = [
-    { name = "typing-extensions", marker = "python_full_version >= '3.12'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f7/cc/a9227f4e4cfbc8c4d796ef2c1f7f2337a4d07a50454e91c0170a1304c172/arko_wrapper-0.4.2.tar.gz", hash = "sha256:6c99994b6c82647abd56ee756c9e8b5fc97e28cbac876d8230bd0edd1bd2fe01", size = 16557 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/e8/7a36bb9e7667c9da3c603b702cc617e5d6271862aea06fbfc102e3686f30/arko_wrapper-0.4.2-py3-none-any.whl", hash = "sha256:7e6eb8b68f9ad5f8694a96fc392082c91829c4ecc8fe43d84258cbefac1219eb", size = 14092 },
 ]
 
 [[package]]
@@ -1298,8 +1280,7 @@ dependencies = [
     { name = "aiofiles" },
     { name = "aiosqlite" },
     { name = "alembic" },
-    { name = "arko-wrapper", version = "0.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "arko-wrapper", version = "0.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "arko-wrapper" },
     { name = "async-lru" },
     { name = "asyncmy" },
     { name = "beautifulsoup4" },
@@ -1352,7 +1333,7 @@ requires-dist = [
     { name = "aiofiles", specifier = ">=24.1.0,<25.0.0" },
     { name = "aiosqlite", specifier = ">=0.20.0,<1.0.0" },
     { name = "alembic", specifier = ">=1.13.0,<2.0.0" },
-    { name = "arko-wrapper", specifier = ">=0.3.0,<1.0.0" },
+    { name = "arko-wrapper", specifier = "==0.3.0" },
     { name = "async-lru", specifier = ">=2.0.4,<3.0.0" },
     { name = "asyncmy", specifier = ">=0.2.9,<1.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.1,<5.0.0" },
