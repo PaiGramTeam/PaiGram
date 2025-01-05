@@ -9,8 +9,8 @@ aiosignal==1.3.2
 aiosqlite==0.20.0
 alembic==1.14.0
 annotated-types==0.7.0
-anyio==4.7.0
-apscheduler==3.10.4
+anyio==4.8.0
+apscheduler==3.11.0
 arko-wrapper==0.3.0
 async-lru==2.0.4
 async-timeout==5.0.1 ; python_full_version < '3.11.3'
@@ -26,16 +26,16 @@ click==8.1.8
 colorama==0.4.6 ; sys_platform == 'win32'
 colorlog==6.9.0
 cryptography==43.0.3
-enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@28ca9bc889589699b543782a82c17584b33e537d
+enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@1a6efece678e1cedc41598a53e86dccba63a40af
 et-xmlfile==2.0.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
 fakeredis==2.26.2
 fastapi==0.115.6
 flaky==3.8.1
 frozenlist==1.5.0
-gcsim-pypi==2.29.2
-gitdb==4.0.11
-gitpython==3.1.43
+gcsim-pypi==2.30.1
+gitdb==4.0.12
+gitpython==3.1.44
 greenlet==3.1.1
 h11==0.14.0
 httpcore==1.0.7
@@ -65,18 +65,18 @@ pyaes==1.6.1
 pycparser==2.22 ; platform_python_implementation != 'PyPy'
 pydantic==2.10.4
 pydantic-core==2.27.2
-pydantic-settings==2.7.0
+pydantic-settings==2.7.1
 pyee==12.0.0
-pygments==2.18.0
-pyrogram==2.0.106
+pygments==2.19.0
+pyrogram @ git+https://github.com/TeamPGM/pyrogram@233b3b80f50f50553598fde7959d7d4f664e7f8c
+pyrotgcrypto==1.2.7
 pysocks==1.7.1
 pytest==8.3.4
-pytest-asyncio==0.25.0
+pytest-asyncio==0.25.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-genshin-artifact==1.0.12
-python-telegram-bot==21.9
-pytz==2024.2
+python-telegram-bot==21.10
 pyyaml==6.0.2
 rapidfuzz==3.11.0
 reactivex==4.0.4
@@ -84,16 +84,15 @@ redis==5.2.1
 rich==13.9.4
 sentry-sdk==2.19.2
 setuptools==75.6.0
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@7f4f6c79d34700db5811ddeb386dc084b461156b
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@fa37bc072e647c46171c3572a75a12c9ce985ff9
 six==1.17.0
-smmap==5.0.1
+smmap==5.0.2
 sniffio==1.3.1
 sortedcontainers==2.4.0
 soupsieve==2.6
 sqlalchemy==2.0.36
 sqlmodel==0.0.22
 starlette==0.41.3
-tgcrypto==1.2.5
 thefuzz==0.22.1
 tomli==2.2.1 ; python_full_version < '3.11'
 tornado==6.4.2

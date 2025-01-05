@@ -7,7 +7,7 @@ from functools import lru_cache, partial
 from typing import Any, Coroutine, List, Optional, Tuple, Union, Dict
 
 from arkowrapper import ArkoWrapper
-from pytz import timezone
+from zoneinfo import ZoneInfo
 from simnet import GenshinClient
 from simnet.models.genshin.chronicle.img_theater import ImgTheaterData, TheaterDifficulty
 from telegram import Message, Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -29,7 +29,7 @@ from utils.enkanetwork import RedisCache
 from utils.log import logger
 from utils.uid import mask_number
 
-TZ = timezone("Asia/Shanghai")
+TZ = ZoneInfo("Asia/Shanghai")
 
 get_args_pattern = re.compile(r"\d+")
 

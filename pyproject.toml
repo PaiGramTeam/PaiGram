@@ -16,7 +16,7 @@ dependencies = [
     "httpx<1.0.0,>=0.28.0",
     "ujson<6.0.0,>=5.9.0",
     "Jinja2<4.0.0,>=3.1.2",
-    "python-telegram-bot[ext,rate-limiter]<22.0,>=21.7",
+    "python-telegram-bot[ext,rate-limiter]<22.0,>=21.10",
     "sqlmodel<1.0.0,>=0.0.22",
     "colorlog<7.0.0,>=6.8.0",
     "fakeredis<3.0.0,>=2.19.0",
@@ -32,7 +32,7 @@ dependencies = [
     "lxml<6.0.0,>=5.0.0",
     "arko-wrapper==0.3.0",
     "fastapi<1.0.0,>=0.115.0",
-    "uvicorn[standard]<1.0.0,>=0.32.0",
+    "uvicorn[standard]<1.0.0,>=0.33.0",
     "sentry-sdk<3.0.0,>=2.7.0",
     "GitPython<4.0.0,>=3.1.30",
     "openpyxl<4.0.0,>=3.1.1",
@@ -43,7 +43,7 @@ dependencies = [
     "playwright==1.48.0",
     "aiosqlite<1.0.0,>=0.20.0",
     "simnet @ git+https://github.com/PaiGramTeam/SIMNet",
-    "gcsim-pypi<3.0.0,>=2.29.0",
+    "gcsim-pypi<3.0.0,>=2.30.1",
     "psutil<7.0.0,>=6.0.0",
     "influxdb-client[async,ciso]>=1.48.0",
     "pydantic>=2.0.0,<3.0.0",
@@ -54,7 +54,7 @@ readme = "README.md"
 license = {text = "AGPL-3.0"}
 
 [project.optional-dependencies]
-pyro = ["TgCrypto<2.0.0,>=1.2.5", "Pyrogram<3.0.0,>=2.0.102"]
+pyro = ["PyroTgCrypto<2.0.0,>=1.2.7", "Pyrogram @ git+https://github.com/TeamPGM/pyrogram"]
 test = ["pytest<9.0.0,>=8.2.2", "pytest-asyncio<1.0.0,>=0.24.0", "flaky<4.0.0,>=3.7.0"]
 genshin-artifact = ["python-genshin-artifact<2.0.0,>=1.0.9"]
 
