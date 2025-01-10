@@ -205,6 +205,8 @@ class AccountCookiesPlugin(Plugin.Conversation):
             )
             cookie = {x[0]: x[1] for x in wrapped}
             cookies = self.parse_cookie(cookie)
+            if cookies:
+                CookiesModel.model_validate(cookies)
         except (AttributeError, ValueError, IndexError) as exc:
             logger.info("用户 %s[%s] Cookies解析出现错误\ntext:%s", user.full_name, user.id, message.text)
             logger.debug("解析Cookies出现错误", exc_info=exc)

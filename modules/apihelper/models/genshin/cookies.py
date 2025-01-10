@@ -1,8 +1,15 @@
-from typing import Optional, TypeVar
+from typing import Optional, Annotated, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator
 
-IntStr = TypeVar("IntStr", int, str)
+
+def int_str_check(value: Union[int, str]) -> Union[int, str]:
+    if value is not None:
+        int(value)
+    return value
+
+
+IntStr = Annotated[Union[int, str], BeforeValidator(int_str_check)]
 
 __all__ = ("CookiesModel",)
 
