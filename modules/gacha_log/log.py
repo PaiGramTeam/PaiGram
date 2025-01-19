@@ -229,6 +229,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
             gacha_log.update_time = add_timezone(datetime.datetime.now())
             gacha_log.import_type = import_type.value
             await self.save_gacha_log_info(str(user_id), uid, gacha_log)
+            await self.recount_one_from_uid(user_id, player_id)
             return new_num
         except GachaLogAccountNotFound as e:
             raise GachaLogAccountNotFound("导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同") from e
