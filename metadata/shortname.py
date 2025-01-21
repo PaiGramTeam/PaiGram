@@ -785,7 +785,7 @@ roles = {
     10000107: ["茜特菈莉", "citlali", "奶奶"],
     10000108: ["蓝砚", "lanyan"],
 }
-not_real_roles = [10000108]
+not_real_roles = []
 weapons = {
     # 1.x
     "决斗之枪": ["决斗枪", "决斗", "月卡枪"],
