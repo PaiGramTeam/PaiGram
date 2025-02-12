@@ -38,7 +38,7 @@ dependencies = [
     "openpyxl<4.0.0,>=3.1.1",
     "async-lru<3.0.0,>=2.0.4",
     "thefuzz<1.0.0,>=0.22.1",
-    "cryptography<44.0.0,>=43.0.1",
+    "cryptography<45.0.0,>=44.0.1",
     "pillow<11.0.0,>=10.0.1",
     "playwright==1.48.0",
     "aiosqlite<1.0.0,>=0.20.0",
