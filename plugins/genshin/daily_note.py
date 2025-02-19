@@ -115,7 +115,12 @@ class DailyNotePlugin(Plugin):
     @staticmethod
     def get_task_button(bot_username: str) -> InlineKeyboardMarkup:
         return InlineKeyboardMarkup(
-            [[InlineKeyboardButton(">> 设置状态提醒 <<", url=create_deep_linked_url(bot_username, "daily_note_tasks"))]]
+            [
+                [
+                    InlineKeyboardButton("设置状态提醒", url=create_deep_linked_url(bot_username, "daily_note_tasks")),
+                    InlineKeyboardButton("在其他对话使用", switch_inline_query="功能"),
+                ]
+            ]
         )
 
     @handler.command("dailynote", cookie=True, block=False)
