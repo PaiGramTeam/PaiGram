@@ -1,19 +1,38 @@
 import asyncio
-import random
+import collections.abc
 from contextlib import asynccontextmanager
 from datetime import datetime, time, timedelta
-from typing import Optional, Any
+import random
+from typing import Any, Optional
 from typing import TYPE_CHECKING, Union
 
 from pydantic import ValidationError
 from simnet import GenshinClient, Region
-from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, NetworkError, CookieException, NeedChallenge
+from simnet.errors import (
+    BadRequest as SimnetBadRequest,
+    CookieException,
+    InvalidCookies,
+    NeedChallenge,
+    NetworkError,
+)
 from simnet.models.genshin.calculator import CalculatorCharacterDetails
 from simnet.models.genshin.chronicle.characters import Character
 from simnet.utils.player import recognize_game_biz
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import StaleDataError
-from sqlmodel import BigInteger, Column, DateTime, Field, Index, Integer, SQLModel, String, delete, func, select
+from sqlmodel import (
+    BigInteger,
+    Column,
+    DateTime,
+    Field,
+    Index,
+    Integer,
+    SQLModel,
+    String,
+    delete,
+    func,
+    select,
+)
 from sqlmodel.ext.asyncio.session import AsyncSession
 from telegram.ext import ContextTypes
 
@@ -232,7 +251,7 @@ class GenshinHelper(Plugin):
     @asynccontextmanager
     async def genshin(  # skipcq: PY-R1000 #
         self, user_id: int, region: Optional[RegionEnum] = None, player_id: int = None, offset: int = 0
-    ) -> GenshinClient:
+    ) -> collections.abc.AsyncGenerator[GenshinClient]:
         player = await self.players_service.get_player(user_id, region, player_id, offset)
         if player is None:
             raise PlayerNotFoundError(user_id)
