@@ -202,9 +202,6 @@ class AvatarListPlugin(Plugin):
         user_name = self.get_real_user_name(update)
         uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
-        assert message is not None
-        assert message.text is not None
-
         show_all = "全部" in message.text or "all" in message.text  # 是否发送全部角色
         filter_elements = parse_element(message.text)
         filter_weapon_types = parse_weapon_type(message.text)
@@ -218,12 +215,11 @@ class AvatarListPlugin(Plugin):
             "、".join(weapon.value for weapon in filter_weapon_types),
             extra={"markup": True},
         )
-        notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
-        self.add_delete_message_job(notice, delay=60)
-        await message.reply_chat_action(ChatAction.TYPING)
-
         # 获取角色和武器详情数据
         async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
+            notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
+            self.add_delete_message_job(notice, delay=60)
+            await message.reply_chat_action(ChatAction.TYPING)
             characters = await client.get_genshin_characters()
             if filter_elements:
                 filter_element_names = {element.name for element in filter_elements}
