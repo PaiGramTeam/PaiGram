@@ -1,13 +1,13 @@
 import asyncio
+from collections.abc import Sequence
 import math
-from typing import Any, Dict, List, Optional, Sequence, TYPE_CHECKING, Tuple, Union
+import typing
 
 from arkowrapper import ArkoWrapper
 from simnet import GenshinClient
-from simnet.errors import BadRequest as SimnetBadRequest
-from simnet.models.genshin.calculator import (
-    CalculatorCharacterDetails,
-    CalculatorTalent,
+from simnet.models.genshin.chronicle.character_detail import (
+    CharacterSkill,
+    GenshinDetailCharacter,
 )
 from simnet.models.genshin.chronicle.characters import Character
 from telegram.constants import ChatAction
@@ -21,7 +21,6 @@ from core.services.players import PlayersService
 from core.services.players.services import PlayerInfoService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
-from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.template.models import RenderGroupResult
 from modules.wiki.base import Model
 from modules.wiki.other import Element, WeaponType
@@ -30,7 +29,7 @@ from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 from utils.uid import mask_number
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from telegram import Update
     from telegram.ext import ContextTypes
     from gram_core.services.template.models import RenderResult
@@ -39,45 +38,43 @@ MAX_AVATAR_COUNT = 40
 
 
 def parse_element(msg: str) -> set[Element]:
-    elements = set()
-    for element in Element:
-        if element.value in msg:
-            elements.add(element)
-    return elements
+    return {element for element in Element if element.value in msg}
 
 
 def parse_weapon_type(msg: str) -> set[WeaponType]:
-    weapon_types = set()
-    for weapon_type in WeaponType:
-        if weapon_type.value in msg:
-            weapon_types.add(weapon_type)
-    return weapon_types
+    return {weapon_type for weapon_type in WeaponType if weapon_type.value in msg}
 
 
 class TooManyRequests(Exception):
     """请求过多"""
 
 
+class PlayerData(Model):
+    """角色信息，如头像、名片等"""
+
+    player_id: int
+    name_card: str
+    avatar: str
+    nickname: str
+    rarity: int
+
+
 class SkillData(Model):
     """天赋数据"""
 
-    skill: CalculatorTalent
+    skill: CharacterSkill
     buffed: bool = False
     """是否得到了命座加成"""
 
 
 class AvatarData(Model):
-    avatar: Character
-    detail: CalculatorCharacterDetails
+    avatar: GenshinDetailCharacter
     icon: str
-    weapon: Optional[str]
-    skills: List[SkillData]
+    weapon: str | None
+    skills: list[SkillData]
 
     def sum_of_skills(self) -> int:
-        total_level = 0
-        for skill_data in self.skills:
-            total_level += skill_data.skill.level
-        return total_level
+        return sum(skill.skill.level for skill in self.skills)
 
 
 class AvatarListPlugin(Plugin):
@@ -85,95 +82,87 @@ class AvatarListPlugin(Plugin):
 
     def __init__(
         self,
-        player_service: PlayersService = None,
-        cookies_service: CookiesService = None,
-        assets_service: AssetsService = None,
-        template_service: TemplateService = None,
-        helper: GenshinHelper = None,
-        character_details: CharacterDetails = None,
-        player_info_service: PlayerInfoService = None,
-        player_info_system: PlayerInfoSystem = None,
+        player_service: PlayersService,
+        cookies_service: CookiesService,
+        assets_service: AssetsService,
+        template_service: TemplateService,
+        helper: GenshinHelper,
+        character_details: CharacterDetails,
+        player_info_service: PlayerInfoService,
+        player_info_system: PlayerInfoSystem,
     ) -> None:
-        self.cookies_service = cookies_service
-        self.assets_service = assets_service
-        self.template_service = template_service
-        self.helper = helper
-        self.character_details = character_details
-        self.player_service = player_service
-        self.player_info_service = player_info_service
-        self.player_info_system = player_info_system
+        self.cookies_service: CookiesService = cookies_service
+        self.assets_service: AssetsService = assets_service
+        self.template_service: TemplateService = template_service
+        self.helper: GenshinHelper = helper
+        self.character_details: CharacterDetails = character_details
+        self.player_service: PlayersService = player_service
+        self.player_info_service: PlayerInfoService = player_info_service
+        self.player_info_system: PlayerInfoSystem = player_info_system
 
-    async def get_avatar_data(self, character: Character, client: "GenshinClient") -> Optional["AvatarData"]:
-        detail = await self.character_details.get_character_details(client, character)
-        if detail is None:
-            return None
-        if character.id == 10000005:  # 针对男草主
-            talents = []
-            for talent in detail.talents:
-                if "普通攻击" in talent.name:
-                    talent.group_id = 1131
-                if talent.type in ["attack", "skill", "burst"]:
-                    talents.append(talent)
-        else:
-            talents = [t for t in detail.talents if t.type in ["attack", "skill", "burst"]]
-        buffed_talents = []
-        for constellation in filter(lambda x: x.pos in [3, 5], character.constellations[: character.constellation]):
-            if result := list(
-                filter(lambda x: all([x.name in constellation.effect]), talents)  # pylint: disable=W0640
-            ):
-                buffed_talents.append(result[0].type)
-        return AvatarData(
-            avatar=character,
-            detail=detail,
-            icon=(await self.assets_service.avatar(character.id).side()).as_uri(),
-            weapon=(
-                await self.assets_service.weapon(character.weapon.id).__getattr__(
-                    "icon" if character.weapon.ascension < 2 else "awaken"
-                )()
-            ).as_uri(),
-            skills=[
-                SkillData(skill=s, buffed=s.type in buffed_talents)
-                for s in sorted(talents, key=lambda x: ["attack", "skill", "burst"].index(x.type))
-            ],
-        )
+    async def get_avatar_data(self, chara: GenshinDetailCharacter) -> AvatarData:
+        """
+        将角色、技能、武器详情打包为 AvatarData
+        主要在获取图标
+        """
+        # 获取普攻、战技、爆发天赋等级以及确认是否带有三命、五命带来的等级提升
+        active_constellations = [
+            constellation.effect
+            for constellation in chara.constellations
+            if constellation.activated and constellation.pos in [3, 5]
+        ]
+        skills = [
+            SkillData(skill=skill, buffed=any(skill.name in effect for effect in active_constellations))
+            for skill in chara.skills
+            # skill_type == 1 表示该技能为普攻、战技、爆发或者替代冲刺的一种
+            # 排除的两个是绫华和莫娜的替代冲刺技能，它们的 skill_type 也是 1，缺少技能类型字段，只好特判一下
+            # 不能直接判断效果文案中是否存在「替代冲刺」，因为流浪者的元素战技效果文案中也有「替代冲刺」
+            if skill.skill_type == 1 and skill.id not in [10013, 10413]
+        ]
+        for skill in skills:  # 返回的技能等级是已经被命座效果强化过的，为了统一处理，这里将增益去除（等级 -3）
+            if skill.buffed:
+                skill.skill.level -= 3
+        # 获取角色头像图标和武器图标
+        avatar_path = await self.assets_service.avatar(chara.base.id).side()
+        avatar_uri = avatar_path.as_uri() if avatar_path else ""
+        weapon_assets = self.assets_service.weapon(chara.weapon.id)
+        weapon_path = await (weapon_assets.icon() if chara.weapon.ascension < 2 else weapon_assets.awaken())
+        weapon_uri = weapon_path.as_uri() if weapon_path else ""
+        return AvatarData(avatar=chara, skills=skills, icon=avatar_uri, weapon=weapon_uri)
 
-    async def get_avatars_data(
-        self, characters: Sequence[Character], client: "GenshinClient", max_length: int = None
-    ) -> List["AvatarData"]:
-        async def _task(c):
-            return await self.get_avatar_data(c, client)
-
-        task_results = await asyncio.gather(*[_task(character) for character in characters])
-
-        return sorted(
-            list(filter(lambda x: x, task_results)),
-            key=lambda x: (
-                x.avatar.level,
-                x.avatar.rarity,
-                x.sum_of_skills(),
-                x.avatar.constellation,
-                # TODO 如果加入武器排序条件，需要把武器转化为图片url的处理后置
-                # x.weapon.level,
-                # x.weapon.rarity,
-                # x.weapon.refinement,
-                x.avatar.friendship,
-            ),
+    async def get_avatar_datas(self, characters: Sequence[Character], client: GenshinClient) -> list["AvatarData"]:
+        character_ids = [character.id for character in characters]
+        details = await client.get_genshin_character_detail(character_ids)
+        avatar_tasks = [self.get_avatar_data(chara) for chara in details.characters]
+        avatars = await asyncio.gather(*avatar_tasks)
+        avatars.sort(
             reverse=True,
-        )[:max_length]
+            key=lambda avatar: (
+                avatar.avatar.base.level,  # 角色等级
+                avatar.avatar.base.rarity,  # 角色星级
+                avatar.sum_of_skills(),  # 角色技能等级之和
+                avatar.avatar.base.constellation,  # 角色命座
+                avatar.avatar.weapon.level,  # 角色武器等级
+                avatar.avatar.weapon.rarity,  # 角色武器星级
+                avatar.avatar.weapon.refinement,  # 角色武器精炼
+                avatar.avatar.base.friendship,  # 角色好感等级
+            ),
+        )
+        return avatars
 
     async def avatar_list_render(
         self,
-        base_render_data: Dict,
-        avatar_datas: List[AvatarData],
+        base_render_data: dict[str, str | int | bool],
+        avatar_datas: list[AvatarData],
         only_one_page: bool,
-    ) -> Union[Tuple[Any], List["RenderResult"], None]:
-        def render_task(start_id: int, c: List[AvatarData]):
-            _render_data = {
+    ) -> list["RenderResult"]:
+        async def render_task(start_id: int, c: list[AvatarData]):
+            _render_data: dict[str, str | int | bool | list[AvatarData]] = {
                 "avatar_datas": c,  # 角色数据
                 "start_id": start_id,  # 开始序号
             }
             _render_data.update(base_render_data)
-            return self.template_service.render(
+            return await self.template_service.render(
                 "genshin/avatar_list/main.jinja2",
                 _render_data,
                 viewport={"width": 1040, "height": 500},
@@ -184,7 +173,7 @@ class AvatarListPlugin(Plugin):
             )
 
         if only_one_page:
-            return [await render_task(0, avatar_datas)]
+            return [await render_task(0, avatar_datas[:MAX_AVATAR_COUNT])]
         image_count = len(avatar_datas)
         while image_count > MAX_AVATAR_COUNT:
             image_count /= 2
@@ -194,37 +183,17 @@ class AvatarListPlugin(Plugin):
         return await asyncio.gather(*tasks)
 
     async def render(
-        self,
-        client: "GenshinClient",
-        user_id: int,
-        user_name: str,
-        all_avatars: bool = False,
-        filter_elements: set[Element] = None,
-        filter_weapon_types: set[WeaponType] = None,
-    ) -> List["RenderResult"]:
-        characters = await client.get_genshin_characters(client.player_id)
-        if filter_elements:
-            characters = [c for c in characters if c.element in {element.name for element in filter_elements}]
-        if filter_weapon_types:
-            characters = [c for c in characters if WeaponType(c.weapon.type) in filter_weapon_types]
-        avatar_datas: List[AvatarData] = await self.get_avatars_data(
-            characters, client, None if all_avatars else MAX_AVATAR_COUNT
-        )
-        if not avatar_datas:
-            raise TooManyRequests()
-        name_card, avatar, nickname, rarity = await self.player_info_system.get_player_info(
-            client.player_id, user_id, user_name
-        )
+        self, avatar_datas: list[AvatarData], player_data: PlayerData, show_all: bool = False
+    ) -> list["RenderResult"]:
         base_render_data = {
-            "uid": mask_number(client.player_id),  # 玩家uid
-            "nickname": nickname,  # 玩家昵称
-            "avatar": avatar,  # 玩家头像
-            "rarity": rarity,  # 玩家头像对应的角色星级
-            "namecard": name_card,  # 玩家名片
-            "has_more": len(characters) != len(avatar_datas),  # 是否显示了全部角色
+            "uid": mask_number(player_data.player_id),  # 玩家uid
+            "nickname": player_data.nickname,  # 玩家昵称
+            "avatar": player_data.avatar,  # 玩家头像
+            "rarity": player_data.rarity,  # 玩家头像对应的角色星级
+            "namecard": player_data.name_card,  # 玩家名片
+            "has_more": not show_all and len(avatar_datas) > MAX_AVATAR_COUNT,  # 是否显示了全部角色
         }
-
-        return await self.avatar_list_render(base_render_data, avatar_datas, not all_avatars)
+        return await self.avatar_list_render(base_render_data, avatar_datas, not show_all)
 
     @handler.command("avatars", cookie=True, block=False)
     @handler.message(filters.Regex(r"^(全部)?练度统计$"), cookie=True, block=False)
@@ -233,7 +202,10 @@ class AvatarListPlugin(Plugin):
         user_name = self.get_real_user_name(update)
         uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
-        all_avatars = "全部" in message.text or "all" in message.text  # 是否发送全部角色
+        assert message is not None
+        assert message.text is not None
+
+        show_all = "全部" in message.text or "all" in message.text  # 是否发送全部角色
         filter_elements = parse_element(message.text)
         filter_weapon_types = parse_weapon_type(message.text)
 
@@ -241,30 +213,36 @@ class AvatarListPlugin(Plugin):
             update,
             logger.info,
             "[bold]练度统计[/bold]: all=%s, filter_elements=%s, filter_weapon_types=%s",
-            all_avatars,
-            filter_elements,
-            filter_weapon_types,
+            show_all,
+            "".join(element.value for element in filter_elements),
+            "、".join(weapon.value for weapon in filter_weapon_types),
             extra={"markup": True},
         )
+        notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
+        self.add_delete_message_job(notice, delay=60)
+        await message.reply_chat_action(ChatAction.TYPING)
 
-        try:
-            async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
-                notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
-                self.add_delete_message_job(notice, delay=60)
-                await message.reply_chat_action(ChatAction.TYPING)
-                images = await self.render(
-                    client, user_id, user_name, all_avatars, filter_elements, filter_weapon_types
-                )
-        except TooManyRequests:
+        # 获取角色和武器详情数据
+        async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
+            characters = await client.get_genshin_characters()
+            if filter_elements:
+                filter_element_names = {element.name for element in filter_elements}
+                characters = [c for c in characters if c.element in filter_element_names]
+            if filter_weapon_types:
+                filter_weapon_type_names = {weapon_types.name for weapon_types in filter_weapon_types}
+                characters = [c for c in characters if c.weapon.type in filter_weapon_type_names]
+            avatar_datas: list[AvatarData] = await self.get_avatar_datas(characters, client)
+        if not avatar_datas:
             reply_message = await message.reply_html("服务器熟啦 ~ 请稍后再试")
             self.add_delete_message_job(reply_message, delay=20)
             return
-        except SimnetBadRequest as e:
-            if e.ret_code == -502002:
-                reply_message = await message.reply_html("请先在米游社中使用一次<b>养成计算器</b>后再使用此功能~")
-                self.add_delete_message_job(reply_message, delay=20)
-                return
-            raise e
+        (name_card, avatar, nickname, rarity) = await self.player_info_system.get_player_info(
+            client.player_id, user_id, user_name
+        )
+        player_data = PlayerData(
+            player_id=client.player_id, name_card=name_card, avatar=avatar, nickname=nickname, rarity=rarity
+        )
+        images = await self.render(avatar_datas, player_data, show_all)
 
         await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
 
@@ -277,35 +255,3 @@ class AvatarListPlugin(Plugin):
             "[bold]练度统计[/bold]发送图片成功",
             extra={"markup": True},
         )
-
-    async def avatar_list_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
-        callback_query = update.callback_query
-        user_id = await self.get_real_user_id(update)
-        user_name = self.get_real_user_name(update)
-        uid = IInlineUseData.get_uid_from_context(context)
-        self.log_user(update, logger.info, "查询练度统计")
-
-        try:
-            async with self.helper.genshin(user_id, player_id=uid) as client:
-                images = await self.render(client, user_id, user_name)
-                render = images[0]
-        except TooManyRequests:
-            await callback_query.answer("服务器熟啦 ~ 请稍后再试", show_alert=True)
-            return
-        except SimnetBadRequest as e:
-            if e.ret_code == -502002:
-                await callback_query.answer("请先在米游社中使用一次养成计算器后再使用此功能~", show_alert=True)
-                return
-            raise e
-        await render.edit_inline_media(callback_query)
-
-    async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:
-        return [
-            IInlineUseData(
-                text="练度统计",
-                hash="avatar_list",
-                callback=self.avatar_list_use_by_inline,
-                cookie=True,
-                player=True,
-            )
-        ]

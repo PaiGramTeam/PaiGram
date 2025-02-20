@@ -40,8 +40,8 @@
             <div style="flex: 6">武器</div>
         </div>
         {% for avatar_data in avatar_datas %}
-            {% set avatar = avatar_data.avatar %}
-            {% set weapon = avatar.weapon %}
+            {% set avatar = avatar_data.avatar.base %}
+            {% set weapon = avatar_data.avatar.weapon %}
             {% set skill_datas = avatar_data.skills %}
             {% set is_traveler = avatar.name == '旅行者' %}
             {% if avatar.rarity == 5 %}
@@ -105,7 +105,7 @@
                         {% set talent_style = talent_style + ' talent-level-first' %}
                     {% endif %}
 
-                    {% if skill.max_level == skill.level %}
+                    {% if skill.level == 10 %}
                         {% set talent_style = talent_style + ' talent-level-max' %}
                     {% endif %}
 
@@ -113,7 +113,7 @@
                         {% set talent_style = talent_style + ' talent-buffed' %}
                         {% set skill_level = skill_level + 3 %}
                     {% endif %}
-                    {% if skill.max_level != skill.level %}
+                    {% if skill.level != 10 %}
                         {% if skill_level < 4 %}
                             {% set talent_style = talent_style + ' talent-level-1' %}
                         {% elif skill_level < 6 %}
