@@ -64,10 +64,13 @@ class SkillData(Model):
     """天赋数据"""
 
     skill: CharacterSkill
-    max_level: int = 10
-    """不含命座增益的技能满级等级"""
     buffed: bool = False
     """是否得到了命座加成"""
+
+    @property
+    def max_level(self) -> int:
+        """不含命座增益的技能满级等级"""
+        return 13 if self.buffed else 10
 
 
 class AvatarData(Model):
@@ -122,9 +125,6 @@ class AvatarListPlugin(Plugin):
             # 不能直接判断效果文案中是否存在「替代冲刺」，因为流浪者的元素战技效果文案中也有「替代冲刺」
             if skill.skill_type == 1 and skill.id not in [10013, 10413]
         ]
-        for skill in skills:  # 返回的技能等级是已经被命座效果强化过的，为了统一处理，这里将增益去除（等级 -3）
-            if skill.buffed:
-                skill.skill.level -= 3
         # 获取角色头像图标和武器图标
         avatar_path = await self.assets_service.avatar(chara.base.id).side()
         avatar_uri = avatar_path.as_uri() if avatar_path else ""
@@ -145,10 +145,10 @@ class AvatarListPlugin(Plugin):
                 avatar.avatar.base.rarity,  # 角色星级
                 avatar.sum_of_skills(),  # 角色技能等级之和
                 avatar.avatar.base.constellation,  # 角色命座
+                avatar.avatar.base.friendship,  # 角色好感等级
                 avatar.avatar.weapon.level,  # 角色武器等级
                 avatar.avatar.weapon.rarity,  # 角色武器星级
                 avatar.avatar.weapon.refinement,  # 角色武器精炼
-                avatar.avatar.base.friendship,  # 角色好感等级
             ),
         )
         return avatars
