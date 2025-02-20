@@ -21,6 +21,7 @@ from core.services.players import PlayersService
 from core.services.players.services import PlayerInfoService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
+from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.template.models import RenderGroupResult
 from modules.wiki.base import Model
 from modules.wiki.other import Element, WeaponType
@@ -63,6 +64,8 @@ class SkillData(Model):
     """天赋数据"""
 
     skill: CharacterSkill
+    max_level: int = 10
+    """不含命座增益的技能满级等级"""
     buffed: bool = False
     """是否得到了命座加成"""
 
@@ -227,6 +230,10 @@ class AvatarListPlugin(Plugin):
             if filter_weapon_types:
                 filter_weapon_type_names = {weapon_types.name for weapon_types in filter_weapon_types}
                 characters = [c for c in characters if c.weapon.type in filter_weapon_type_names]
+            if not characters:
+                reply_message = await message.reply_text("没有符合条件的角色")
+                self.add_delete_message_job(reply_message, delay=20)
+                return
             avatar_datas: list[AvatarData] = await self.get_avatar_datas(characters, client)
         if not avatar_datas:
             reply_message = await message.reply_html("服务器熟啦 ~ 请稍后再试")
@@ -251,3 +258,33 @@ class AvatarListPlugin(Plugin):
             "[bold]练度统计[/bold]发送图片成功",
             extra={"markup": True},
         )
+
+    async def avatar_list_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
+        callback_query = update.callback_query
+        user_id = await self.get_real_user_id(update)
+        user_name = self.get_real_user_name(update)
+        uid = IInlineUseData.get_uid_from_context(context)
+        self.log_user(update, logger.info, "查询练度统计")
+        async with self.helper.genshin(user_id, player_id=uid) as client:
+            characters = await client.get_genshin_characters()
+            avatar_datas: list[AvatarData] = await self.get_avatar_datas(characters, client)
+            (name_card, avatar, nickname, rarity) = await self.player_info_system.get_player_info(
+                client.player_id, user_id, user_name
+            )
+            player_data = PlayerData(
+                player_id=client.player_id, name_card=name_card, avatar=avatar, nickname=nickname, rarity=rarity
+            )
+        images = await self.render(avatar_datas, player_data)
+        render = images[0]
+        await render.edit_inline_media(callback_query)
+
+    async def get_inline_use_data(self) -> list[IInlineUseData | None]:
+        return [
+            IInlineUseData(
+                text="练度统计",
+                hash="avatar_list",
+                callback=self.avatar_list_use_by_inline,
+                cookie=True,
+                player=True,
+            )
+        ]
