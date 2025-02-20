@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import partial
 from pathlib import Path
-from typing import Awaitable, Callable, ClassVar, TypeVar
+from typing import ClassVar, Protocol, TypeVar
 
 from enkanetwork import Assets as EnkaAssets
 from enkanetwork.model.assets import CharacterAsset as EnkaCharacterAsset
@@ -14,7 +14,9 @@ from utils.typedefs import StrOrInt
 
 __all__ = ("AssetsServiceType", "AssetsService", "AssetsServiceError", "AssetsCouldNotFound", "DEFAULT_EnkaAssets")
 
-ICON_TYPE = Callable[[bool], Awaitable[Path | None]] | Callable[..., Awaitable[Path | None]]
+class ICON_TYPE(Protocol):
+    async def __call__(self, overwrite: bool = False) -> Path | None: ...
+
 DEFAULT_EnkaAssets: EnkaAssets
 _GET_TYPE = partial | list[str] | int | str | ICON_TYPE | Path | AsyncClient | None | Self | dict[str, str]
 

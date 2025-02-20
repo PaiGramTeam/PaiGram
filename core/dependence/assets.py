@@ -10,11 +10,10 @@ import re
 from ssl import SSLZeroReturnError
 from typing import (
     AsyncIterator,
-    Awaitable,
-    Callable,
     ClassVar,
     Dict,
     Optional,
+    Protocol,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -53,7 +52,11 @@ if TYPE_CHECKING:
 
 __all__ = ("AssetsServiceType", "AssetsService", "AssetsServiceError", "AssetsCouldNotFound", "DEFAULT_EnkaAssets")
 
-ICON_TYPE = Union[Callable[[bool], Awaitable[Optional[Path]]], Callable[..., Awaitable[Optional[Path]]]]
+
+class ICON_TYPE(Protocol):
+    async def __call__(self, overwrite: bool = False) -> Path | None: ...
+
+
 NAME_MAP_TYPE = Dict[str, StrOrURL]
 
 ASSETS_PATH = PROJECT_ROOT.joinpath("resources/assets")
