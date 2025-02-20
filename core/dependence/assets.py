@@ -1,15 +1,23 @@
 """用于下载和管理角色、武器、材料等的图标"""
 
 from __future__ import annotations
-
-import asyncio
-import re
 from abc import ABC, abstractmethod
+import asyncio
 from functools import cached_property, lru_cache, partial
 from multiprocessing import RLock as Lock
 from pathlib import Path
+import re
 from ssl import SSLZeroReturnError
-from typing import AsyncIterator, Awaitable, Callable, ClassVar, Dict, Optional, TYPE_CHECKING, TypeVar, Union
+from typing import (
+    AsyncIterator,
+    ClassVar,
+    Dict,
+    Optional,
+    Protocol,
+    TYPE_CHECKING,
+    TypeVar,
+    Union,
+)
 
 from aiofiles import open as async_open
 from aiofiles.os import remove as async_remove
@@ -20,9 +28,18 @@ from typing_extensions import Self
 
 from core.base_service import BaseService
 from core.config import config
-from metadata.genshin import AVATAR_DATA, HONEY_DATA, MATERIAL_DATA, NAMECARD_DATA, WEAPON_DATA
+from metadata.genshin import (
+    AVATAR_DATA,
+    HONEY_DATA,
+    MATERIAL_DATA,
+    NAMECARD_DATA,
+    WEAPON_DATA,
+)
 from metadata.scripts.honey import update_honey_metadata
-from metadata.scripts.metadatas import update_metadata_from_ambr, update_metadata_from_github
+from metadata.scripts.metadatas import (
+    update_metadata_from_ambr,
+    update_metadata_from_github,
+)
 from metadata.shortname import roleToId, weaponToId
 from modules.wiki.base import HONEY_HOST
 from utils.const import AMBR_HOST, ENKA_HOST, PROJECT_ROOT
@@ -35,7 +52,11 @@ if TYPE_CHECKING:
 
 __all__ = ("AssetsServiceType", "AssetsService", "AssetsServiceError", "AssetsCouldNotFound", "DEFAULT_EnkaAssets")
 
-ICON_TYPE = Union[Callable[[bool], Awaitable[Optional[Path]]], Callable[..., Awaitable[Optional[Path]]]]
+
+class ICON_TYPE(Protocol):
+    async def __call__(self, overwrite: bool = False) -> Path | None: ...
+
+
 NAME_MAP_TYPE = Dict[str, StrOrURL]
 
 ASSETS_PATH = PROJECT_ROOT.joinpath("resources/assets")
