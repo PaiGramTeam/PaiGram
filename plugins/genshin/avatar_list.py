@@ -1,11 +1,14 @@
 import asyncio
 import math
-from typing import List, Optional, Sequence, TYPE_CHECKING, Union, Tuple, Any, Dict
+from typing import Any, Dict, List, Optional, Sequence, TYPE_CHECKING, Tuple, Union
 
 from arkowrapper import ArkoWrapper
 from simnet import GenshinClient
 from simnet.errors import BadRequest as SimnetBadRequest
-from simnet.models.genshin.calculator import CalculatorTalent, CalculatorCharacterDetails
+from simnet.models.genshin.calculator import (
+    CalculatorCharacterDetails,
+    CalculatorTalent,
+)
 from simnet.models.genshin.chronicle.characters import Character
 from telegram.constants import ChatAction
 from telegram.ext import filters
