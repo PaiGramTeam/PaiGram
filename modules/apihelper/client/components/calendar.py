@@ -41,7 +41,7 @@ class Calendar:
         762,  # 《原神》公平运营声明
     ]
     IGNORE_RE = re.compile(
-        r"(内容专题页|版本更新说明|调研|防沉迷|米游社|专项意见|更新修复与优化|问卷调查|版本更新通知|更新时间说明|预下载功能|周边限时|周边上新|角色演示|攻略征集)"
+        r"(内容专题页|版本更新说明|调研|防沉迷|米游社|专项意见|更新修复与优化|问卷调查|版本更新通知|更新时间说明|预下载功能|周边限时|周边上新|角色演示|攻略征集|FAQ合集)"
     )
     FULL_TIME_RE = re.compile(r"(魔神任务)")
 
@@ -237,9 +237,13 @@ class Calendar:
             act.type = ActEnum.character
             if reg_ret := re.search(r"·(.*)\(", act.title):
                 char_name = reg_ret[1]
-                char = assets.avatar(roleToId(char_name))
-                act.banner = (await assets.namecard(char.id).navbar()).as_uri()
-                act.face = (await char.icon()).as_uri()
+                try:
+                    char = assets.avatar(roleToId(char_name))
+                    act.banner = (await assets.namecard(char.id).navbar()).as_uri()
+                    act.face = (await char.icon()).as_uri()
+                except (AssetsCouldNotFound, KeyError):
+                    act.banner = (await assets.namecard(0).navbar()).as_uri()
+                    logger.warning("角色 %s 图片素材未找到", char_name)
                 act.sort = 1
         elif "纪行" in act.title:
             act.type = ActEnum.no_display
