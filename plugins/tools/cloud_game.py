@@ -112,6 +112,7 @@ class CloudGameHelper(Plugin):
             TaskStatusEnum.TIMEOUT_ERROR,
             TaskStatusEnum.NEED_CHALLENGE,
             TaskStatusEnum.GENSHIN_EXCEPTION,
+            TaskStatusEnum.BAD_REQUEST,
         ]
         if job_type == SignJobType.START:
             title = "自动签到"

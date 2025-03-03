@@ -432,6 +432,7 @@ class DailyNoteSystem(Plugin):
         include_status: List[TaskStatusEnum] = [
             TaskStatusEnum.STATUS_SUCCESS,
             TaskStatusEnum.TIMEOUT_ERROR,
+            TaskStatusEnum.BAD_REQUEST,
         ]
         task_list = await self.get_all_task_users()
         for task_db in task_list:
