@@ -273,7 +273,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                 wish_history = await client.wish_history(pool_id.value, authkey=authkey, min_id=min_id)
 
                 if not is_lazy:
-                    min_id = wish_history[0].id if wish_history else min_id
+                    min_id = min([i.id for i in wish_history[:20]]) if wish_history else min_id
                     if min_id:
                         gacha_log.item_list[pool_name][:] = filter(
                             lambda i: int(i.id) < min_id, gacha_log.item_list[pool_name]
