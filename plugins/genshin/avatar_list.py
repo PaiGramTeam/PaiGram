@@ -66,11 +66,18 @@ class SkillData(Model):
     skill: CharacterSkill
     buffed: bool = False
     """是否得到了命座加成"""
+    tartaglia_buffed: bool = False
+    """是否得到了达达利亚加成"""
 
     @property
     def max_level(self) -> int:
         """不含命座增益的技能满级等级"""
-        return 13 if self.buffed else 10
+        max_level = 10
+        if self.buffed:
+            max_level += 3
+        if self.tartaglia_buffed:
+            max_level += 1
+        return max_level
 
 
 class AvatarData(Model):
@@ -115,15 +122,21 @@ class AvatarListPlugin(Plugin):
         active_constellations = [
             constellation.effect
             for constellation in chara.constellations
-            if constellation.activated and constellation.pos in [3, 5]
+            if constellation.activated and constellation.pos in (3, 5)
         ]
         skills = [
-            SkillData(skill=skill, buffed=any(skill.name in effect for effect in active_constellations))
+            SkillData(
+                skill=skill,
+                buffed=any(skill.name in effect for effect in active_constellations),
+                # 达达利亚天赋「诸武精通」会导致 API 返回的达达利亚「普通攻击·断雨」技能等级 +1
+                # 目前只有 1.1 角色达达利亚有这种效果，让我们祈祷未来不会有新的这种天赋技能
+                tartaglia_buffed=(skill.id == 10331),
+            )
             for skill in chara.skills
             # skill_type == 1 表示该技能为普攻、战技、爆发或者替代冲刺的一种
             # 排除的两个是绫华和莫娜的替代冲刺技能，它们的 skill_type 也是 1，缺少技能类型字段，只好特判一下
             # 不能直接判断效果文案中是否存在「替代冲刺」，因为流浪者的元素战技效果文案中也有「替代冲刺」
-            if skill.skill_type == 1 and skill.id not in [10013, 10413]
+            if skill.skill_type == 1 and skill.id not in (10013, 10413)
         ]
         # 获取角色头像图标和武器图标
         avatar_path = await self.assets_service.avatar(chara.base.id).side()
