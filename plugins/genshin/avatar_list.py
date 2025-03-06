@@ -228,7 +228,7 @@ class AvatarListPlugin(Plugin):
                 filter_element_names = {element.name for element in filter_elements}
                 characters = [c for c in characters if c.element in filter_element_names]
             if filter_weapon_types:
-                filter_weapon_type_names = {weapon_types.name for weapon_types in filter_weapon_types}
+                filter_weapon_type_names = {weapon_types.value for weapon_types in filter_weapon_types}
                 characters = [c for c in characters if c.weapon.type in filter_weapon_type_names]
             if not characters:
                 reply_message = await message.reply_text("没有符合条件的角色")
