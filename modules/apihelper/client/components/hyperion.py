@@ -147,6 +147,7 @@ class Hyperion(HyperionBase):
     POST_FULL_IN_COLLECTION_URL = "https://bbs-api.miyoushe.com/post/wapi/getPostFullInCollection"
     GET_NEW_LIST_URL = "https://bbs-api-static.miyoushe.com/painter/wapi/getNewsList"
     GET_OFFICIAL_RECOMMENDED_POSTS_URL = "https://bbs-api.miyoushe.com/post/wapi/getOfficialRecommendedPosts"
+    GET_HOME_NEWS_URL = "https://bbs-api.miyoushe.com/apihub/api/home/new"
     LIVE_INFO_URL = "https://api-takumi.mihoyo.com/event/miyolive/index"
     LIVE_CODE_URL = "https://api-takumi-static.mihoyo.com/event/miyolive/refreshCode"
     LIVE_CODE_HOYO_URL = "https://bbs-api-os.hoyolab.com/community/painter/wapi/circle/channel/guide/material"
@@ -199,6 +200,10 @@ class Hyperion(HyperionBase):
         resp = await self.get_new_list(gids, type_id, page_size)
         data = resp["list"]
         return [PostRecommend.parse(i) for i in data]
+
+    async def get_home_news(self, gids: int) -> Dict:
+        params = {"gids": gids}
+        return await self.client.get(url=self.GET_HOME_NEWS_URL, params=params)
 
     async def get_live_info(self, act_id: str) -> LiveInfo:
         headers = {"x-rpc-act_id": act_id}

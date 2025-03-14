@@ -1,4 +1,3 @@
-import json
 import re
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Tuple, TYPE_CHECKING, Dict
@@ -21,7 +20,7 @@ from utils.log import logger
 if TYPE_CHECKING:
     from telegram import Update, Message
     from telegram.ext import ContextTypes, Job
-    from modules.apihelper.models.genshin.hyperion import LiveCode, LiveCodeHoYo, PostInfo
+    from modules.apihelper.models.genshin.hyperion import LiveCode, LiveCodeHoYo
 
 
 class PostCodeHandlerData:
@@ -116,7 +115,7 @@ class PostCode(Plugin.Conversation):
     """版本前瞻特别节目兑换码推送"""
 
     MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "推送并且定时更新"], ["退出"]], True, True)
-    SUBJECT_RE = re.compile(r"看《原神》(\d+\.\d+)版本前瞻特别节目")
+    SUBJECT_RE = re.compile(r"《原神》(\d+\.\d+)版本前瞻特别节目")
     ACT_RE = re.compile(r"act_id=(.*?)&")
 
     def __init__(self):
@@ -134,45 +133,31 @@ class PostCode(Plugin.Conversation):
             ),
         )
 
-    def init_version(self, news: List[Dict]) -> Tuple[Optional[str], Optional[Dict]]:
+    def init_version(self, news: List[Dict]) -> Tuple[Optional[str], Optional[str]]:
         for new in news:
-            post = new.get("post", {})
+            post = new.get("data", {})
             if not post:
                 continue
-            if not (subject := post.get("subject")):
+            if not (subject := post.get("title")):
                 continue
             if not (match := self.SUBJECT_RE.findall(subject)):
                 continue
-            return match[0], post
+            link = post.get("live_url")
+            if not link:
+                continue
+            if not (match2 := self.ACT_RE.search(link)):
+                continue
+            return match[0], match2.group(1)
         return None, None
 
-    def init_act_id(self, post: "PostInfo") -> Optional[str]:
-        structured_content = post["post"]["post"]["structured_content"]
-        if not structured_content:
-            return None
-        structured_data = json.loads(structured_content)
-        for item in structured_data:
-            if not (attributes := item.get("attributes")):
-                continue
-            if not (link := attributes.get("link")):
-                continue
-            if not (match := self.ACT_RE.search(link)):
-                continue
-            return match.group(1)
-        return None
-
-    async def init(self, post_code_handler_data: PostCodeHandlerData) -> bool:
+    async def init(self, post_code_handler_data: PostCodeHandlerData):
         """解析 act_id ver_code 以及目标游戏版本"""
         client = self.get_bbs_client()
         try:
-            news = await client.get_new_list(self.gids, self.type_id)
-            version, final_post = self.init_version(news.get("list", []))
-            if not final_post:
-                raise ValueError("未找到版本前瞻特别节目文章")
-            final_post_info = await client.get_post_info(self.gids, final_post.get("post_id"))
-            act_id = self.init_act_id(final_post_info)
-            if not act_id:
-                raise ValueError("未找到文章中的 act_id")
+            news = await client.get_home_news(self.gids)
+            version, act_id = self.init_version(news.get("lives", []))
+            if not version or not act_id:
+                raise ValueError("解析主页直播信息失败")
             live_info = await client.get_live_info(act_id)
             ver_code = live_info.code_ver
             post_code_handler_data.version = version
