@@ -26,4 +26,4 @@ class SignStatus(Plugin):
         logger.info("用户 %s[%s] sign_status 命令请求", user.full_name, user.id)
         message = update.effective_message
         text = await self.get_sign_status(self.sign_service)
-        await message.reply_text(text, parse_mode="html", quote=True)
+        await message.reply_text(text, parse_mode="html", do_quote=True)

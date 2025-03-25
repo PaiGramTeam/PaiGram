@@ -76,7 +76,7 @@ pytest-asyncio==0.26.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 python-genshin-artifact==1.0.13
-python-telegram-bot==21.11.1
+python-telegram-bot==22.0
 pyyaml==6.0.2
 rapidfuzz==3.12.2
 reactivex==4.0.4

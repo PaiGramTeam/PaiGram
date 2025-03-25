@@ -122,8 +122,8 @@ async def update_metadata_from_github(overwrite: bool = True):
             for namecard_data in material_json_data:
                 name = text_map_json_data[str(namecard_data["nameTextMapHash"])]
                 icon = namecard_data["icon"]
-                navbar = namecard_data["picPath"][0]
-                banner = namecard_data["picPath"][1]
+                navbar = namecard_data["picPath"][0] if len(namecard_data["picPath"]) > 0 else ""
+                banner = namecard_data["picPath"][1] if len(namecard_data["picPath"]) > 1 else ""
                 rank = namecard_data["rankLevel"]
                 description = text_map_json_data[str(namecard_data["descTextMapHash"])].replace("\\n", "\n")
                 data.update(
