@@ -27,7 +27,7 @@ dependencies = [
     "python-dotenv<2.0.0,>=1.0.0",
     "alembic<2.0.0,>=1.13.0",
     "black<25.0.0,>=24.10.0",
-    "rich<14.0.0,>=13.6.0",
+    "rich<15.0.0,>=14.0.0",
     "enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py",
     "lxml<6.0.0,>=5.0.0",
     "arko-wrapper==0.3.0",
