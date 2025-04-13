@@ -46,7 +46,7 @@ git submodule update --init --recursive
 **创建虚拟环境：**
 
 ```bash
-python3 -m venv venv
+python3 -m venv .venv
 ```
 
 **激活虚拟环境：**
@@ -54,33 +54,33 @@ python3 -m venv venv
 *对于 Linux:*
 
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 *对于 Windows 命令提示符:*
 
 ```bash
-venv\Scripts\activate.bat
+.venv\Scripts\activate.bat
 ```
 
 *对于 Windows PowerShell:*
 
 ```bash
-.\venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
 **安装依赖：**
 
 ```bash
-pip install pdm
-pdm install
+pip install uv
+uv sync
 playwright install chromium
 ```
 
 可选依赖
 
 ```bash
-pdm install -G :all
+uv sync --all-extras
 ```
 
 **编辑配置文件：**

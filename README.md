@@ -48,7 +48,7 @@ It's recommended to use a virtual environment. You can set it up via `venv` or `
 **Create Virtual environment:**
 
 ```bash
-python3 -m venv venv
+python3 -m venv .venv
 ```
 
 **Activate the virtual environment:**
@@ -56,19 +56,19 @@ python3 -m venv venv
 *For Linux:*
 
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 *For Windows Command Prompt:*
 
 ```bash
-venv\Scripts\activate.bat
+.venv\Scripts\activate.bat
 ```
 
 *For Windows PowerShell:*
 
 ```bash
-.\venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
 **Install Dependencies:**
