@@ -48,16 +48,23 @@ class ArtworkImage(BaseModel):
         try:
             with BytesIO(data[0].data) as stream, Image.open(stream) as image:
                 width, height = image.size
-                crop_height = height
-                crop_num = 1
-                max_height = 8000 - width
-                while crop_height > max_height:
+                min_px = min(width, height)
+                max_px = min_px * 2.2
+                need_crop = height if min_px == width else width
+                crop_num = int(need_crop / max_px)
+                u = need_crop % max_px
+                if u > 100:
                     crop_num += 1
-                    crop_height = height / crop_num
                 new_data = []
                 for i in range(crop_num):
-                    slice_image = image.crop((0, crop_height * i, width, crop_height * (i + 1)))
+                    h = max_px * i
+                    if min_px == width:
+                        box = (0, h, width, height if crop_num == i + 1 else (h + max_px))
+                    else:
+                        box = (h, 0, width if crop_num == i + 1 else (h + max_px), height)
+                    slice_image = image.crop(box)
                     bio = BytesIO()
+                    slice_image = slice_image.convert("RGB")
                     slice_image.save(bio, "JPEG", quality=95)
                     kwargs["data"] = bio.getvalue()
                     kwargs["file_extension"] = "jpg"
