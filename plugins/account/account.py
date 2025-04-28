@@ -61,13 +61,30 @@ class BindAccountPlugin(Plugin.Conversation):
         self.player_info_service = player_info_service
         self.helper = helper
 
+    @staticmethod
+    async def quit_conversation(update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        message = update.effective_message
+        context.chat_data.pop("bind_account_plugin_data", None)
+        await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
+
+    @staticmethod
+    async def has_another_conversation(update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> Optional[int]:
+        if context.chat_data.get("account_cookies_plugin_data") is not None:
+            message = update.effective_message
+            await message.reply_text("你已经有一个绑定任务在进行中，请先退出后再试")
+            return ConversationHandler.END
+        return None
+
     @conversation.entry_point
     @handler.command(command="setuid", filters=filters.ChatType.PRIVATE, block=False)
-    @handler.command(command="start", filters=filters.Regex("set_uid$"), block=False)
+    @handler.command(command="start", filters=filters.ChatType.PRIVATE & filters.Regex("set_uid$"), block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         user = update.effective_user
         message = update.effective_message
-        logger.info("用户 %s[%s] 绑定账号命令请求", user.full_name, user.id)
+        logger.info("用户 %s[%s] 绑定账号命令请求 uid", user.full_name, user.id)
+        if await self.has_another_conversation(update, context) is not None:
+            return ConversationHandler.END
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         if bind_account_plugin_data is None:
             bind_account_plugin_data = BindAccountPluginData()
@@ -88,8 +105,7 @@ class BindAccountPlugin(Plugin.Conversation):
         message = update.effective_message
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         if message.text == "退出":
-            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         if message.text == "米游社":
             bind_account_plugin_data.region = RegionEnum.HYPERION
         elif message.text == "HoYoLab":
@@ -105,11 +121,10 @@ class BindAccountPlugin(Plugin.Conversation):
 
     @conversation.state(state=CHECK_METHOD)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def check_method(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
+    async def check_method(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         if message.text == "退出":
-            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         if message.text == "通过玩家ID":
             await message.reply_text(
                 "请输入你的玩家ID（非通行证ID），此 ID 在 游戏客户端 左/右下角。", reply_markup=ReplyKeyboardRemove()
@@ -131,8 +146,7 @@ class BindAccountPlugin(Plugin.Conversation):
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         region = bind_account_plugin_data.region
         if message.text == "退出":
-            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         try:
             account_id = int(message.text)
         except ValueError:
@@ -203,8 +217,7 @@ class BindAccountPlugin(Plugin.Conversation):
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         region = bind_account_plugin_data.region
         if message.text == "退出":
-            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         try:
             player_id = int(message.text)
         except ValueError:
@@ -279,8 +292,7 @@ class BindAccountPlugin(Plugin.Conversation):
         message = update.effective_message
         bind_account_plugin_data: BindAccountPluginData = context.chat_data.get("bind_account_plugin_data")
         if message.text == "退出":
-            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         if message.text == "确认":
             player_id = bind_account_plugin_data.player_id
             nickname = bind_account_plugin_data.nickname
