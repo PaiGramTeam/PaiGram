@@ -49,6 +49,8 @@ class ArtworkImage(BaseModel):
             with BytesIO(data[0].data) as stream, Image.open(stream) as image:
                 width, height = image.size
                 min_px = min(width, height)
+                if min_px == height:
+                    return data
                 max_px = min_px * 2.2
                 need_crop = height if min_px == width else width
                 crop_num = int(need_crop / max_px)
