@@ -326,6 +326,11 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
             end_time = GachaLog.format_time("2022-09-09 17:59:59")
             if not start_time < gacha_time < end_time:
                 return False
+        elif name == "梦见月瑞希":
+            start_time = GachaLog.format_time("2025-02-12 06:00:00")
+            end_time = GachaLog.format_time("2025-03-04 17:59:59")
+            if not start_time < gacha_time < end_time:
+                return False
         return True
 
     async def get_all_5_star_items(self, data: List[GachaItem], assets: "AssetsService", pool_name: str = "角色祈愿"):
