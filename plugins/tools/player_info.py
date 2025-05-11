@@ -2,7 +2,7 @@ from typing import Optional
 
 from enkanetwork import Assets
 
-from core.dependence.assets import AssetsService
+from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin
 from core.services.players.services import PlayerInfoService, PlayersService
 from metadata.genshin import AVATAR_DATA
@@ -32,10 +32,10 @@ class PlayerInfoSystem(Plugin):
                 if player_info.nickname is not None:
                     nickname = player_info.nickname
                 if player_info.name_card is not None:
-                    name_card = (await self.assets_service.namecard(int(player_info.name_card)).navbar()).as_uri()
+                    name_card = self.assets_service.namecard.navbar(int(player_info.name_card)).as_uri()
                 if player_info.hand_image is not None:
                     if player_info.hand_image > 10000000:
-                        avatar = (await self.assets_service.avatar(player_info.hand_image).icon()).as_uri()
+                        avatar = self.assets_service.avatar.icon(player_info.hand_image).as_uri()
                         try:
                             rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(player_info.hand_image)]
                         except KeyError:
@@ -46,9 +46,9 @@ class PlayerInfoSystem(Plugin):
         except Exception as exc:  # pylint: disable=W0703
             logger.error("卡片信息请求失败 %s", str(exc))
         if name_card is None:  # 默认
-            name_card = (await self.assets_service.namecard(0).navbar()).as_uri()
+            name_card = self.assets_service.namecard.navbar(0).as_uri()
         if avatar is None:  # 默认
-            avatar = (await self.assets_service.avatar(0).icon()).as_uri()
+            avatar = self.assets_service.avatar.icon(0).as_uri()
         return name_card, avatar, nickname, rarity
 
     async def get_name_card(self, player_id: Optional[int], user_id: Optional[int]):
@@ -58,9 +58,9 @@ class PlayerInfoSystem(Plugin):
             player_info = await self.player_info_service.get(player)
             try:
                 if player_info is not None and player_info.name_card is not None:
-                    name_card = (await self.assets_service.namecard(int(player_info.name_card)).navbar()).as_uri()
+                    name_card = self.assets_service.namecard.navbar(int(player_info.name_card)).as_uri()
             except Exception as exc:  # pylint: disable=W0703
                 logger.error("卡片信息请求失败 %s", str(exc))
         if name_card is None:  # 默认
-            name_card = (await self.assets_service.namecard(0).navbar()).as_uri()
+            name_card = self.assets_service.namecard.navbar(0).as_uri()
         return name_card

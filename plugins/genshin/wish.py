@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.dependence.assets import AssetsService
+from core.dependence.assets.impl.genshin import AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
@@ -162,16 +162,14 @@ class WishSimulatorPlugin(Plugin):
                 continue
             if 10000 <= item_id <= 100000:
                 data = WEAPON_DATA.get(str(item_id))
-                avatar = self.assets_service.weapon(item_id)
-                gacha = await avatar.gacha()
+                gacha = self.assets_service.weapon.gacha(item_id)
                 if gacha is None:
                     raise GachaDataFound(item_id)
                 data.setdefault("url", gacha.as_uri())
                 gacha_item.append(data)
             elif 10000000 <= item_id <= 19999999:
                 data = AVATAR_DATA.get(str(item_id))
-                avatar = self.assets_service.avatar(item_id)
-                gacha = await avatar.gacha_card()
+                gacha = self.assets_service.avatar.gacha_card(item_id)
                 if gacha is None:
                     raise GachaDataFound(item_id)
                 data.setdefault("url", gacha.as_uri())

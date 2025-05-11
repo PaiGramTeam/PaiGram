@@ -2,7 +2,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
 
-from core.dependence.assets import AssetsCouldNotFound, AssetsService
+from core.dependence.assets.impl.genshin import AssetsCouldNotFound, AssetsService
 from core.plugin import Plugin, handler
 from core.services.search.models import WeaponEntry
 from core.services.search.services import SearchServices
@@ -79,12 +79,12 @@ class WeaponPlugin(Plugin):
                     "progression_secondary_stat_value": bonus,
                     "progression_secondary_stat_name": _weapon_data.attribute.type.value,
                     "weapon_info_source_img": (
-                        await self.assets_service.weapon(honey_id_to_game_id(_weapon_data.id, "weapon")).icon()
+                         self.assets_service.weapon.icon(honey_id_to_game_id(_weapon_data.id, "weapon"))
                     ).as_uri(),
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        (await self.assets_service.material(honey_id_to_game_id(mid, "material")).icon()).as_uri()
+                        self.assets_service.material.icon(honey_id_to_game_id(mid, "material")).as_uri()
                         for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": _weapon_data.affix.name,
@@ -99,12 +99,12 @@ class WeaponPlugin(Plugin):
                     "progression_secondary_stat_value": " ",
                     "progression_secondary_stat_name": "无其它属性加成",
                     "weapon_info_source_img": (
-                        await self.assets_service.weapon(honey_id_to_game_id(_weapon_data.id, "weapon")).icon()
+                        self.assets_service.weapon.icon(honey_id_to_game_id(_weapon_data.id, "weapon"))
                     ).as_uri(),
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        (await self.assets_service.material(honey_id_to_game_id(mid, "material")).icon()).as_uri()
+                        self.assets_service.material.icon(honey_id_to_game_id(mid, "material")).as_uri()
                         for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": "",

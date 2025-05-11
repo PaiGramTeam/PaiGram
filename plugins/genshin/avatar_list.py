@@ -14,7 +14,7 @@ from telegram.constants import ChatAction
 from telegram.ext import filters
 
 from core.config import config
-from core.dependence.assets import AssetsService
+from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
@@ -139,10 +139,9 @@ class AvatarListPlugin(Plugin):
             if skill.skill_type == 1 and skill.id not in (10013, 10413)
         ]
         # 获取角色头像图标和武器图标
-        avatar_path = await self.assets_service.avatar(chara.base.id).side()
+        avatar_path = self.assets_service.avatar.side(chara.base.id)
         avatar_uri = avatar_path.as_uri() if avatar_path else ""
-        weapon_assets = self.assets_service.weapon(chara.weapon.id)
-        weapon_path = await (weapon_assets.icon() if chara.weapon.ascension < 2 else weapon_assets.awaken())
+        weapon_path = self.assets_service.weapon.icon(chara.weapon.id) if chara.weapon.ascension < 2 else self.assets_service.weapon.awaken(chara.weapon.id)
         weapon_uri = weapon_path.as_uri() if weapon_path else ""
         return AvatarData(avatar=chara, skills=skills, icon=avatar_uri, weapon=weapon_uri)
 

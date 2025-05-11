@@ -2,3 +2,6 @@
 	path = gram_core
 	url = https://github.com/PaiGramTeam/GramCore.git
 	branch = v4
+[submodule "core/dependence/assets"]
+	path = core/dependence/assets
+	url = https://github.com/PaiGramTeam/Gram_Resources.git

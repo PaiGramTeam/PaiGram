@@ -17,12 +17,11 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ContextTypes
 
-from core.dependence.assets import AssetsCouldNotFound, AssetsService
+from core.dependence.assets.impl.genshin import AssetsCouldNotFound, AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.search.services import SearchServices
-from core.services.wiki.services import WikiService
 from gram_core.config import config
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from utils.log import logger
@@ -33,14 +32,12 @@ class Inline(Plugin):
 
     def __init__(
         self,
-        wiki_service: WikiService,
         assets_service: AssetsService,
         search_service: SearchServices,
         cookies_service: CookiesService,
         players_service: PlayersService,
     ):
         self.assets_service = assets_service
-        self.wiki_service = wiki_service
         self.weapons_list: List[Dict[str, str]] = []
         self.characters_list: List[Dict[str, str]] = []
         self.refresh_task: List[Awaitable] = []
@@ -55,10 +52,9 @@ class Inline(Plugin):
         # todo: 整合进 wiki 或者单独模块 从Redis中读取
         async def task_weapons():
             logger.info("Inline 模块正在获取武器列表")
-            weapons_list = await self.wiki_service.get_weapons_name_list()
-            for weapons_name in weapons_list:
+            for weapons_name in self.assets_service.weapon.get_name_list():
                 try:
-                    icon = await self.assets_service.weapon(weapons_name).get_link("icon")
+                    icon = self.assets_service.weapon.get_by_id(weapons_name).icon.url
                 except AssetsCouldNotFound:
                     continue
                 except Exception as exc:
@@ -70,10 +66,9 @@ class Inline(Plugin):
 
         async def task_characters():
             logger.info("Inline 模块正在获取角色列表")
-            characters_list = await self.wiki_service.get_characters_name_list()
-            for character_name in characters_list:
+            for character_name in self.assets_service.avatar.get_name_list():
                 try:
-                    icon = await self.assets_service.avatar(character_name).get_link("icon")
+                    icon = self.assets_service.avatar.get_by_id(character_name).icon.url
                 except AssetsCouldNotFound:
                     continue
                 except Exception as exc:
@@ -261,8 +256,7 @@ class Inline(Plugin):
                         )
                     )
             elif args[0] == "查看角色培养素材列表并查询":
-                characters_list = await self.wiki_service.get_characters_name_list()
-                for role_name in characters_list:
+                for role_name in self.assets_service.avatar.get_name_list():
                     results_list.append(
                         InlineQueryResultArticle(
                             id=str(uuid4()),

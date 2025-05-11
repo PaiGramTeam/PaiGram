@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 from telegram.constants import ChatAction
 from telegram.ext import filters
 
-from core.dependence.assets import AssetsService
+from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin, handler
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
@@ -62,8 +62,8 @@ class AkashaPlugin(Plugin):
         if not character_id:
             raise NotImplementedError
         try:
-            name_card = (await self.assets_service.namecard(character_id).navbar()).as_uri()
-            avatar = (await self.assets_service.avatar(character_id).icon()).as_uri()
+            name_card = self.assets_service.namecard.navbar(character_id).as_uri()
+            avatar = self.assets_service.avatar.icon(character_id).as_uri()
         except KeyError:
             logger.warning("未找到角色 %s 的角色名片/头像", character_id)
             name_card = None

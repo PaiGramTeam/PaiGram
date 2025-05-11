@@ -24,7 +24,7 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.error import RetryAfter, TimedOut
 
 from core.config import config
-from core.dependence.assets import AssetsCouldNotFound, AssetsService, AssetsServiceType
+from core.dependence.assets.impl.genshin import AssetsCouldNotFound, AssetsService
 from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
@@ -275,9 +275,8 @@ class DailyMaterial(Plugin):
                 if character.name == "旅行者":
                     continue
                 character_id = str(AVATAR_DATA[str(character.id)]["id"])
-                character_assets = self.assets_service.avatar(character_id)
-                character_icon = await character_assets.icon(False)
-                character_side = await character_assets.side(False)
+                character_icon = self.assets_service.avatar.icon(character_id)
+                character_side = self.assets_service.avatar.side(character_id)
                 user_data.avatar[character_id] = ItemData(
                     id=character_id,
                     name=typing.cast(str, character.name),
@@ -291,8 +290,7 @@ class DailyMaterial(Plugin):
                 # 判定武器的突破次数是否大于 2, 若是, 则将图标替换为 awakened (觉醒) 的图标
                 weapon = character.weapon
                 weapon_id = str(weapon.id)
-                weapon_awaken = "icon" if weapon.ascension < 2 else "awaken"
-                weapon_icon = await getattr(self.assets_service.weapon(weapon_id), weapon_awaken)()
+                weapon_icon = self.assets_service.weapon.icon(weapon_id) if weapon.ascension < 2 else self.assets_service.weapon.awaken(weapon_id)
                 if weapon_id not in user_data.weapon:
                     # 由于用户可能持有多把同一种武器
                     # 这里需要使用 List 来储存所有不同角色持有的同名武器
@@ -399,15 +397,13 @@ class DailyMaterial(Plugin):
         """
         area_materials: List[ItemData] = []
         for material_id in material_ids:  # 添加这个区域当天（weekday）的培养素材
-            material = None
             try:
-                material = self.assets_service.material(material_id)
+                material_icon = self.assets_service.material.icon(material_id)
             except AssetsCouldNotFound as exc:
                 logger.warning("AssetsCouldNotFound message[%s] target[%s]", exc.message, exc.target)
                 await loading_prompt.edit_text(f"出错了呜呜呜 ~ {config.notice.bot_name}找不到一些素材")
                 raise
             [_, material_name, material_rarity] = HONEY_DATA["material"][material_id]
-            material_icon = await material.icon(False)
             material_uri = material_icon.as_uri()
             area_materials.append(
                 ItemData(
@@ -614,7 +610,7 @@ class DailyMaterial(Plugin):
             try:
                 logger.debug("正在开始下载 %s 的图标素材", name)
                 await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。")
-                asset: AssetsServiceType = getattr(self.assets_service, item_type)(item_id)
+                asset = getattr(self.assets_service, item_type)(item_id)
                 asset_list.append(asset.honey_id)
                 # 找到该素材对象的所有图标类型
                 # 并根据图标类型找到下载对应图标的函数

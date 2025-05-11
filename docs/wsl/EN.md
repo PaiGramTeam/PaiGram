@@ -140,13 +140,13 @@ Make sure `venv` is still active. Run the following command to start PaiGram:
                       INFO     正在尝试建立与 Redis 连接                                                                                                                    core.dependence.redisdb 39   
                       INFO     连接 Redis 成功                                                                                                                              core.dependence.redisdb 29   
                       SUCCESS  基础服务 "RedisDB" 启动成功                                                                                                                             core.manager 97   
-                      INFO     正在刷新元数据                                                                                                                                core.dependence.assets 538  
+                      INFO     正在刷新元数据                                                                                                                                core.dependence.assets.impl.genshin 538  
 [2023-04-30 09:56:21] SUCCESS  Avatar data is done.                                                                                                                          metadata.scripts.honey 173  
 [2023-04-30 09:56:24] SUCCESS  Weapon data is done.                                                                                                                          metadata.scripts.honey 175  
 [2023-04-30 09:56:30] SUCCESS  Material data is done.                                                                                                                        metadata.scripts.honey 177  
 [2023-04-30 09:57:14] SUCCESS  Artifact data is done.                                                                                                                        metadata.scripts.honey 179  
 [2023-04-30 09:57:20] SUCCESS  Namecard data is done.                                                                                                                        metadata.scripts.honey 181  
-                      INFO     刷新元数据成功                                                                                                                                core.dependence.assets 543  
+                      INFO     刷新元数据成功                                                                                                                                core.dependence.assets.impl.genshin 543  
                       SUCCESS  基础服务 "AssetsService" 启动成功                                                                                                                       core.manager 97   
                       INFO     MTProto 服务需要的 api_id 未配置 本次服务 client 为 None                                                                                     core.dependence.mtproto 51   
                       SUCCESS  基础服务 "MTProto" 启动成功                                                                                                                             core.manager 97   

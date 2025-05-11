@@ -13,7 +13,7 @@ from modules.gacha_log.models import GachaLogInfo, ImportType
 from utils.log import logger
 
 if TYPE_CHECKING:
-    from core.dependence.assets import AssetsService
+    from core.dependence.assets.impl.genshin import AssetsService
     from telegram import Message
 
 
