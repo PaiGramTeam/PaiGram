@@ -57,24 +57,20 @@ class AkashaPlugin(Plugin):
         return data, count
 
     async def get_avatar_board_render_data(self, character: str, uid: int):
-        character_id = roleToId(character)
-        if not character_id:
+        character = self.assets_service.avatar.get_by_id(roleToId(character))
+        if not character:
             raise NotImplementedError
         try:
-            name_card = self.assets_service.namecard.navbar(character_id).as_uri()
-            avatar = self.assets_service.avatar.icon(character_id).as_uri()
+            name_card = self.assets_service.namecard.navbar(character.name).as_uri()
+            avatar = self.assets_service.avatar.icon(character.name).as_uri()
         except KeyError:
-            logger.warning("未找到角色 %s 的角色名片/头像", character_id)
+            logger.warning("未找到角色 %s 的角色名片/头像", character.name)
             name_card = None
             avatar = None
-        rarity = 5
-        try:
-            rarity = self.assets_service.avatar.get_by_id(character_id).rank
-        except KeyError:
-            logger.warning("未找到角色 %s 的星级", character_id)
-        akasha_data, count = await self.get_leaderboard_data(character_id, uid)
+        rarity = character.rank
+        akasha_data, count = await self.get_leaderboard_data(int(character.id), uid)
         return {
-            "character": character,  # 角色名
+            "character": character.name,  # 角色名
             "avatar": avatar,  # 角色头像
             "namecard": name_card,  # 角色名片
             "rarity": rarity,  # 角色稀有度

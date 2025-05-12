@@ -512,7 +512,7 @@ class DailyMaterial(Plugin):
         logger.debug("角色、武器培养素材图发送成功")
 
     @handler.command("refresh_daily_material", admin=True, block=False)
-    async def refresh(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
+    async def refresh(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
         message = update.effective_message
 
@@ -526,7 +526,7 @@ class DailyMaterial(Plugin):
         )
         async with self.locks[0]:  # 锁住第一把锁
             await self._refresh_everyday_materials()
-        notice = await notice.edit_text(
+        await notice.edit_text(
             "每日素材表"
             + ("摘抄<b>完成！</b>" if self.everyday_materials else "坏掉了！等会它再长好了之后我再抄。。。"),
             parse_mode=ParseMode.HTML,

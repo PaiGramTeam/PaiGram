@@ -58,7 +58,7 @@ class WeaponPlugin(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
 
         async def input_template_data(_weapon_data: Weapon):
-            if _weapon_data.rarity > 2:
+            if _weapon_data.rank > 2:
                 bonus = _weapon_data.stats[-1].bonus
                 if "%" in bonus:
                     bonus = str(round(float(bonus.rstrip("%")))) + "%"
@@ -66,7 +66,7 @@ class WeaponPlugin(Plugin):
                     bonus = str(round(float(bonus)))
                 _template_data = {
                     "weapon_name": _weapon_data.name,
-                    "weapon_rarity": _weapon_data.rarity,
+                    "weapon_rarity": _weapon_data.rank,
                     "weapon_info_type_img": _weapon_data.weapon_type.name,
                     "progression_secondary_stat_value": bonus,
                     "progression_secondary_stat_name": _weapon_data.attribute.type.value,
@@ -83,7 +83,7 @@ class WeaponPlugin(Plugin):
             else:
                 _template_data = {
                     "weapon_name": _weapon_data.name,
-                    "weapon_rarity": _weapon_data.rarity,
+                    "weapon_rarity": _weapon_data.rank,
                     "weapon_info_type_img": _weapon_data.weapon_type.name,
                     "progression_secondary_stat_value": " ",
                     "progression_secondary_stat_name": "无其它属性加成",

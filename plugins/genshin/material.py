@@ -167,8 +167,8 @@ class MaterialPlugin(Plugin):
 
         return {
             "character": {
-                "element": character.enka.element.name,
-                "image": character.enka.images.banner.url,
+                "element": character.element.value,
+                "image": self.assets_service.avatar.gacha(character_name).as_uri(),
                 "name": character_name,
                 "association": self.assets_service.avatar.get_by_name(character_name).association.name,
             },

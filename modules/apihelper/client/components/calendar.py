@@ -1,17 +1,14 @@
 import re
 from datetime import datetime, timedelta
-from typing import List, Tuple, Optional, Dict, Union, TYPE_CHECKING
+from typing import List, Tuple, Optional, Dict, Union
 
 from httpx import AsyncClient
 
-from core.dependence.assets.impl.genshin import AssetsCouldNotFound
+from core.dependence.assets.impl.genshin import AssetsService, AssetsCouldNotFound
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.remote import Remote
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
 from utils.log import logger
-
-if TYPE_CHECKING:
-    from core.dependence.assets.impl.genshin import AssetsService
 
 
 class Calendar:
@@ -237,7 +234,7 @@ class Calendar:
                 char_name = reg_ret[1]
                 try:
                     char = assets.avatar.get_by_id(roleToId(char_name))
-                    act.banner = assets.namecard.navbar(char.id).as_uri()
+                    act.banner = assets.namecard.navbar(char.name).as_uri()
                     act.face = assets.avatar.icon(char.id).as_uri()
                 except (AssetsCouldNotFound, KeyError):
                     act.banner = assets.namecard.navbar(0).as_uri()
@@ -339,8 +336,8 @@ class Calendar:
                             birthday_chars[str(date.month)][str(d)].append(
                                 BirthChar(
                                     name=c,
-                                    star=character.rarity,
-                                    icon=assets.avatar.icon(c.id).as_uri(),
+                                    star=character.rank,
+                                    icon=assets.avatar.icon(character.id).as_uri(),
                                 )
                             )
                         except AssetsCouldNotFound:

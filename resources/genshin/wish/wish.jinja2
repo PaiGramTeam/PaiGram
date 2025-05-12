@@ -32,7 +32,7 @@
             </div>
             <img class="item-shadow" src="items/shadow-{{item.rank}}.png" alt=""/>
             <img class="item-shadow2" src="items/bg2.png" alt=""/>
-            {% if item.id <= 100000 %}
+            {% if item.id|int <= 100000 %}
             <div class="item-weapon-box">
                 <img class="item-weapon-img" src="{{item.url}}" alt=""/>
             </div>
@@ -41,7 +41,7 @@
                 <img class="item-character-img" src="{{item.url}}" alt=""/>
             </div>
             {% endif %}
-            {% if item.id <= 100000 %}
+            {% if item.id|int <= 100000 %}
                 <img class="item-element"  src="items/{{item.weapon_type}}.png" alt=""/>
             {% else %}
                 <img class="item-element"  src="items/{{item.element}}.png" alt=""/>

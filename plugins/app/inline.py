@@ -54,7 +54,7 @@ class Inline(Plugin):
             logger.info("Inline 模块正在获取武器列表")
             for weapons_name in self.assets_service.weapon.get_name_list():
                 try:
-                    icon = self.assets_service.weapon.get_by_id(weapons_name).icon.url
+                    icon = self.assets_service.weapon.get_by_name(weapons_name).icon.url
                 except AssetsCouldNotFound:
                     continue
                 except Exception as exc:
@@ -68,7 +68,7 @@ class Inline(Plugin):
             logger.info("Inline 模块正在获取角色列表")
             for character_name in self.assets_service.avatar.get_name_list():
                 try:
-                    icon = self.assets_service.avatar.get_by_id(character_name).icon.url
+                    icon = self.assets_service.avatar.get_by_name(character_name).icon.url
                 except AssetsCouldNotFound:
                     continue
                 except Exception as exc:
