@@ -12,8 +12,7 @@ from core.dependence.assets.impl.genshin import AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
-from metadata.genshin import AVATAR_DATA, WEAPON_DATA, avatar_to_game_id, weapon_to_game_id
-from metadata.shortname import weaponToName
+from metadata.shortname import weaponToName, roleToId, weaponToId
 from modules.apihelper.client.components.gacha import Gacha as GachaClient
 from modules.apihelper.models.genshin.gacha import GachaInfo
 from modules.wish.banner import GenshinBannerType, GachaBanner
@@ -74,30 +73,30 @@ class WishSimulatorHandle:
         if r5_up_items is not None:
             for r5_up_item in r5_up_items:
                 if r5_up_item["item_type"] == "角色":
-                    banner.rate_up_items5.append(avatar_to_game_id(r5_up_item["item_name"]))
+                    banner.rate_up_items5.append(roleToId(r5_up_item["item_name"]))
                 elif r5_up_item["item_type"] == "武器":
-                    banner.rate_up_items5.append(weapon_to_game_id(r5_up_item["item_name"]))
+                    banner.rate_up_items5.append(weaponToId(r5_up_item["item_name"]))
         r5_prob_list = gacha_info.get("r5_prob_list")
         if r5_prob_list is not None:
             for r5_prob in gacha_info.get("r5_prob_list", []):
                 if r5_prob["item_type"] == "角色":
-                    banner.fallback_items5_pool1.append(avatar_to_game_id(r5_prob["item_name"]))
+                    banner.fallback_items5_pool1.append(roleToId(r5_prob["item_name"]))
                 elif r5_prob["item_type"] == "武器":
-                    banner.fallback_items5_pool1.append(weapon_to_game_id(r5_prob["item_name"]))
+                    banner.fallback_items5_pool1.append(weaponToId(r5_prob["item_name"]))
         r4_up_items = gacha_info.get("r4_up_items")
         if r4_up_items is not None:
             for r4_up_item in r4_up_items:
                 if r4_up_item["item_type"] == "角色":
-                    banner.rate_up_items4.append(avatar_to_game_id(r4_up_item["item_name"]))
+                    banner.rate_up_items4.append(roleToId(r4_up_item["item_name"]))
                 elif r4_up_item["item_type"] == "武器":
-                    banner.rate_up_items4.append(weapon_to_game_id(r4_up_item["item_name"]))
+                    banner.rate_up_items4.append(weaponToId(r4_up_item["item_name"]))
         r4_prob_list = gacha_info.get("r4_prob_list")
         if r4_prob_list is not None:
             for r4_prob in r4_prob_list:
                 if r4_prob["item_type"] == "角色":
-                    banner.fallback_items4_pool1.append(avatar_to_game_id(r4_prob["item_name"]))
+                    banner.fallback_items4_pool1.append(roleToId(r4_prob["item_name"]))
                 elif r4_prob["item_type"] == "武器":
-                    banner.fallback_items4_pool1.append(weapon_to_game_id(r4_prob["item_name"]))
+                    banner.fallback_items4_pool1.append(weaponToId(r4_prob["item_name"]))
         if gacha_type in {301, 400}:
             banner.wish_max_progress = 1
             banner.banner_type = GenshinBannerType.EVENT
@@ -161,14 +160,14 @@ class WishSimulatorPlugin(Plugin):
             if item_id is None:
                 continue
             if 10000 <= item_id <= 100000:
-                data = WEAPON_DATA.get(str(item_id))
+                data = self.assets_service.weapon.get_by_id(item_id).model_dump()
                 gacha = self.assets_service.weapon.gacha(item_id)
                 if gacha is None:
                     raise GachaDataFound(item_id)
                 data.setdefault("url", gacha.as_uri())
                 gacha_item.append(data)
             elif 10000000 <= item_id <= 19999999:
-                data = AVATAR_DATA.get(str(item_id))
+                data = self.assets_service.avatar.get_by_id(item_id).model_dump()
                 gacha = self.assets_service.avatar.gacha_card(item_id)
                 if gacha is None:
                     raise GachaDataFound(item_id)
@@ -255,9 +254,9 @@ class WishSimulatorPlugin(Plugin):
             "wish_name": "",
         }
         if player_gacha_banner_info.wish_item_id != 0:
-            weapon = WEAPON_DATA.get(str(player_gacha_banner_info.wish_item_id))
+            weapon = self.assets_service.weapon.get_by_id(player_gacha_banner_info.wish_item_id)
             if weapon is not None:
-                template_data["wish_name"] = weapon["name"]
+                template_data["wish_name"] = weapon.name
         await self.gacha_db.set(user_id, player_gacha_info)
 
         def take_rang(elem: dict):
@@ -292,7 +291,7 @@ class WishSimulatorPlugin(Plugin):
         banner = await self.get_banner(gacha_base_info)
         up_weapons = {}
         for rate_up_items5 in banner.rate_up_items5:
-            weapon = WEAPON_DATA.get(str(rate_up_items5))
+            weapon = self.assets_service.weapon.get_by_id(rate_up_items5)
             if weapon is None:
                 continue
             up_weapons[weapon["name"]] = rate_up_items5
