@@ -1,13 +1,9 @@
 import asyncio
 import typing
 from asyncio import Lock
-from ctypes import c_double
 from datetime import datetime
-from functools import partial
-from multiprocessing import Value
 from os import path
 from ssl import SSLZeroReturnError
-from time import time as time_
 from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Tuple
 
 import aiofiles
@@ -15,13 +11,12 @@ import aiofiles.os
 import bs4
 import pydantic
 from arkowrapper import ArkoWrapper
-from httpx import AsyncClient, HTTPError, TimeoutException
+from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel, RootModel
 from simnet.errors import BadRequest as SimnetBadRequest
 from simnet.errors import InvalidCookies
 from simnet.models.genshin.chronicle.characters import Character
 from telegram.constants import ChatAction, ParseMode
-from telegram.error import RetryAfter, TimedOut
 
 from core.config import config
 from core.dependence.assets.impl.genshin import AssetsCouldNotFound, AssetsService
@@ -406,14 +401,14 @@ class DailyMaterial(Plugin):
                 logger.warning("AssetsCouldNotFound message[%s] target[%s]", exc.message, exc.target)
                 await loading_prompt.edit_text(f"出错了呜呜呜 ~ {config.notice.bot_name}找不到一些素材")
                 raise
-            [_, material_name, material_rarity] = HONEY_DATA["material"][material_id]
+            material = self.assets_service.material.get_by_name(material_id)
             material_uri = material_icon.as_uri()
             area_materials.append(
                 ItemData(
                     id=material_id,
                     icon=material_uri,
-                    name=typing.cast(str, material_name),
-                    rarity=typing.cast(int, material_rarity),
+                    name=material.name,
+                    rarity=material.rank,
                 )
             )
         return area_materials
@@ -526,31 +521,15 @@ class DailyMaterial(Plugin):
             notice = await message.reply_text(f"{config.notice.bot_name}还在抄每日素材表呢，我有在好好工作哦~")
             self.add_delete_message_job(notice, delay=10)
             return
-        if self.locks[1].locked():
-            notice = await message.reply_text(f"{config.notice.bot_name}正在搬运每日素材图标，在努力工作呢！")
-            self.add_delete_message_job(notice, delay=10)
-            return
-        async with self.locks[1]:  # 锁住第二把锁
-            notice = await message.reply_text(
-                f"{config.notice.bot_name}正在重新摘抄每日素材表，请稍等~", parse_mode=ParseMode.HTML
-            )
-            async with self.locks[0]:  # 锁住第一把锁
-                await self._refresh_everyday_materials()
-            notice = await notice.edit_text(
-                "每日素材表"
-                + ("摘抄<b>完成！</b>" if self.everyday_materials else "坏掉了！等会它再长好了之后我再抄。。。")
-                + "\n正搬运每日素材的图标中。。。",
-                parse_mode=ParseMode.HTML,
-            )
-        time = await self._download_icon(notice)
-
-        async def job(_, n):
-            await n.edit_text(n.text_html.split("\n")[0] + "\n每日素材图标搬运<b>完成！</b>", parse_mode=ParseMode.HTML)
-            await asyncio.sleep(INTERVAL)
-            await notice.delete()
-
-        context.application.job_queue.run_once(
-            partial(job, n=notice), when=time + INTERVAL, name="notice_msg_final_job"
+        notice = await message.reply_text(
+            f"{config.notice.bot_name}正在重新摘抄每日素材表，请稍等~", parse_mode=ParseMode.HTML
+        )
+        async with self.locks[0]:  # 锁住第一把锁
+            await self._refresh_everyday_materials()
+        notice = await notice.edit_text(
+            "每日素材表"
+            + ("摘抄<b>完成！</b>" if self.everyday_materials else "坏掉了！等会它再长好了之后我再抄。。。"),
+            parse_mode=ParseMode.HTML,
         )
 
     async def _refresh_everyday_materials(self, retry: int = 5):
@@ -567,7 +546,7 @@ class DailyMaterial(Plugin):
                 else:
                     logger.warning("每日素材刷新失败, 正在重试第 %d 次", attempts)
                 continue
-            self.everyday_materials = _parse_honey_impact_source(response.content)
+            self.everyday_materials = await _parse_honey_impact_source(self.client, response.content)
             # 当场缓存到文件
             content = self.everyday_materials.model_dump_json()
             async with aiofiles.open(DATA_FILE_PATH, "w", encoding="utf-8") as file:
@@ -577,85 +556,29 @@ class DailyMaterial(Plugin):
 
     async def _assemble_item_from_honey_data(self, item_type: str, item_id: str) -> Optional["ItemData"]:
         """用户拥有的角色和武器中找不到数据时，使用 HoneyImpact 的数据组装出基本信息置灰展示"""
-        honey_item = HONEY_DATA[item_type].get(item_id)
+        honey_item = getattr(self.assets_service, item_type).get_by_id(item_id)
         if honey_item is None:
             return None
         try:
-            icon = await getattr(self.assets_service, item_type)(item_id).icon()
+            icon = getattr(self.assets_service, item_type).icon(item_id)
         except KeyError:
             return None
         return ItemData(
             id=item_id,
-            name=typing.cast(str, honey_item[1]),
-            rarity=typing.cast(int, honey_item[2]),
+            name=honey_item.name,
+            rarity=honey_item.rank,
             icon=icon.as_uri(),
         )
 
-    async def _download_icon(self, message: "Message") -> float:
-        """下载素材图标"""
-        asset_list = []
-        lock = asyncio.Lock()
-        the_time = Value(c_double, time_() - INTERVAL)
 
-        async def edit_message(text):
-            """修改提示消息"""
-            async with lock:
-                if message is not None and time_() >= (the_time.value + INTERVAL):
-                    try:
-                        await message.edit_text(
-                            "\n".join(message.text_html.split("\n")[:2] + [text]), parse_mode=ParseMode.HTML
-                        )
-                        the_time.value = time_()
-                    except (TimedOut, RetryAfter):
-                        pass
-
-        async def task(item_id, name, item_type):
-            try:
-                logger.debug("正在开始下载 %s 的图标素材", name)
-                await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。")
-                asset = getattr(self.assets_service, item_type)(item_id)
-                asset_list.append(asset.honey_id)
-                # 找到该素材对象的所有图标类型
-                # 并根据图标类型找到下载对应图标的函数
-                for icon_type in asset.icon_types:
-                    await getattr(asset, icon_type)(True)  # 执行下载函数
-                logger.debug("%s 的图标素材下载成功", name)
-                await edit_message(f"正在搬运 <b>{name}</b> 的图标素材。。。<b>成功！</b>")
-            except TimeoutException as exc:
-                logger.warning("Httpx [%s]\n%s[%s]", exc.__class__.__name__, exc.request.method, exc.request.url)
-                return exc
-            except Exception as exc:
-                logger.error("图标素材下载出现异常！", exc_info=exc)
-                return exc
-
-        notice_text = "图标素材下载完成"
-        for TYPE, ITEMS in HONEY_DATA.items():  # 遍历每个对象
-            task_list = []
-            new_items = []
-            for ID, DATA in ITEMS.items():
-                if (ITEM := [ID, DATA[1], TYPE]) not in new_items:
-                    new_items.append(ITEM)
-                    task_list.append(task(*ITEM))
-            results = await asyncio.gather(*task_list, return_exceptions=True)  # 等待所有任务执行完成
-            for result in results:
-                if isinstance(result, TimeoutException):
-                    notice_text = "图标素材下载过程中请求超时\n有关详细信息，请查看日志"
-                elif isinstance(result, Exception):
-                    notice_text = "图标素材下载过程中发生异常\n有关详细信息，请查看日志"
-                    break
-        try:
-            await message.edit_text(notice_text)
-        except RetryAfter as e:
-            await asyncio.sleep(e.retry_after + 0.1)
-            await message.edit_text(notice_text)
-        except Exception as e:
-            logger.debug(e)
-
-        logger.info("图标素材下载完成")
-        return the_time.value
+async def get_honey_impact_material_name(client: AsyncClient, material_id: str) -> str:
+    url = f"https://gensh.honeyhunterworld.com/tooltip.php?id={material_id}&lang=chs"
+    response = await client.post(url)
+    soup = bs4.BeautifulSoup(response.content, "lxml")
+    return soup.find("h2").text.strip()
 
 
-def _parse_honey_impact_source(source: bytes) -> MaterialsData:
+async def _parse_honey_impact_source(client: AsyncClient, source: bytes) -> MaterialsData:
     """
     ## honeyimpact 的源码格式:
     ```html
@@ -689,10 +612,7 @@ def _parse_honey_impact_source(source: bytes) -> MaterialsData:
     </div>
     ```
     """
-    honey_item_url_map: Dict[str, str] = {  # 这个变量可以静态化，不过考虑到这个函数三天调用一次，懒得改了
-        typing.cast(str, honey_url): typing.cast(str, honey_id)
-        for honey_id, [honey_url, _, _] in HONEY_DATA["material"].items()
-    }
+    honey_item_url_map: Dict[str, str] = {}
     calendar = bs4.BeautifulSoup(source, "lxml").select_one(".calendar_day_wrap")
     if calendar is None:
         return MaterialsData()  # 多半是格式错误或者网页数据有误
@@ -714,7 +634,12 @@ def _parse_honey_impact_source(source: bytes) -> MaterialsData:
                     a: bs4.Tag
                     href = a.attrs["href"]  # 素材 ID 在 href 中
                     honey_url = path.dirname(href).removeprefix("/")
-                    materials.append(honey_item_url_map[honey_url])
+                    if honey_url in honey_item_url_map:
+                        material_name = honey_item_url_map[honey_url]
+                    else:
+                        material_name = await get_honey_impact_material_name(client, honey_url)
+                        honey_item_url_map[honey_url] = material_name
+                    materials.append(material_name)
         if element.name == "a":
             # country_name 是从上面的 span 继承下来的，下面的 item 对应的是角色或者武器
             # element 的第一个 child，也就是 div.calendar_pic_wrap
