@@ -2,8 +2,10 @@ import asyncio
 from collections.abc import Sequence
 import math
 import typing
+from enum import Enum
 
 from arkowrapper import ArkoWrapper
+from pydantic import BaseModel
 from simnet import GenshinClient
 from simnet.models.genshin.chronicle.character_detail import (
     CharacterSkill,
@@ -23,8 +25,6 @@ from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.template.models import RenderGroupResult
-from modules.wiki.base import Model
-from modules.wiki.other import Element, WeaponType
 from plugins.tools.genshin import CharacterDetails, GenshinHelper
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
@@ -36,6 +36,29 @@ if typing.TYPE_CHECKING:
     from gram_core.services.template.models import RenderResult
 
 MAX_AVATAR_COUNT = 40
+
+
+class Element(Enum):
+    """元素"""
+
+    Pyro = "火"
+    Hydro = "水"
+    Electro = "雷"
+    Cryo = "冰"
+    Dendro = "草"
+    Anemo = "风"
+    Geo = "岩"
+    Multi = "无"  # 主角
+
+
+class WeaponType(Enum):
+    """武器类型"""
+
+    Sword = "单手剑"
+    Claymore = "双手剑"
+    Polearm = "长柄武器"
+    Catalyst = "法器"
+    Bow = "弓"
 
 
 def parse_element(msg: str) -> set[Element]:
@@ -50,7 +73,7 @@ class TooManyRequests(Exception):
     """请求过多"""
 
 
-class PlayerData(Model):
+class PlayerData(BaseModel):
     """角色信息，如头像、名片等"""
 
     player_id: int
@@ -60,7 +83,7 @@ class PlayerData(Model):
     rarity: int
 
 
-class SkillData(Model):
+class SkillData(BaseModel):
     """天赋数据"""
 
     skill: CharacterSkill
@@ -80,7 +103,7 @@ class SkillData(Model):
         return max_level
 
 
-class AvatarData(Model):
+class AvatarData(BaseModel):
     avatar: GenshinDetailCharacter
     icon: str
     weapon: str | None

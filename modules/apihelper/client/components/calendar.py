@@ -8,7 +8,6 @@ from core.dependence.assets.impl.genshin import AssetsCouldNotFound
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.remote import Remote
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
-from modules.wiki.character import Character
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -335,13 +334,13 @@ class Calendar:
                     birthday_char_line = max(len(char), birthday_char_line)
                     birthday_chars[str(date.month)][str(d)] = []
                     for c in char:
-                        character = await Character.get_by_name(c)
+                        character = AssetsService.avatar.get_instance().get_by_name(c)
                         try:
                             birthday_chars[str(date.month)][str(d)].append(
                                 BirthChar(
                                     name=c,
                                     star=character.rarity,
-                                    icon=assets.avatar.icon(roleToId(c)).as_uri(),
+                                    icon=assets.avatar.icon(c.id).as_uri(),
                                 )
                             )
                         except AssetsCouldNotFound:
