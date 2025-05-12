@@ -5,7 +5,6 @@ from typing import List, Tuple, Optional, Dict, Union, TYPE_CHECKING
 from httpx import AsyncClient
 
 from core.dependence.assets.impl.genshin import AssetsCouldNotFound
-from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId
 from modules.apihelper.client.components.remote import Remote
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
@@ -61,10 +60,10 @@ class Calendar:
     def gen_birthday_list() -> Dict[str, List[str]]:
         """生成生日列表"""
         birthday_list = {}
-        for value in AVATAR_DATA.values():
-            key = "_".join([str(i) for i in value["birthday"]])
+        for value in AssetsService.avatar.get_instance().all_items:
+            key = f"{value.birthday.month}_{value.birthday.day}"
             data = birthday_list.get(key, [])
-            data.append(value["name"])
+            data.append(value.name)
             birthday_list[key] = data
         return birthday_list
 

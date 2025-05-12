@@ -28,7 +28,6 @@ from core.dependence.assets.impl.genshin import AssetsCouldNotFound, AssetsServi
 from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
-from metadata.genshin import AVATAR_DATA, HONEY_DATA
 from plugins.tools.genshin import CharacterDetails, CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
 from utils.const import DATA_DIR
 from utils.log import logger
@@ -274,7 +273,7 @@ class DailyMaterial(Plugin):
             for character in characters:
                 if character.name == "旅行者":
                     continue
-                character_id = str(AVATAR_DATA[str(character.id)]["id"])
+                character_id = str(character.id)
                 character_icon = self.assets_service.avatar.icon(character_id)
                 character_side = self.assets_service.avatar.side(character_id)
                 user_data.avatar[character_id] = ItemData(

@@ -5,7 +5,6 @@ from enkanetwork import Assets
 from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin
 from core.services.players.services import PlayerInfoService, PlayersService
-from metadata.genshin import AVATAR_DATA
 from utils.log import logger
 
 
@@ -37,7 +36,7 @@ class PlayerInfoSystem(Plugin):
                     if player_info.hand_image > 10000000:
                         avatar = self.assets_service.avatar.icon(player_info.hand_image).as_uri()
                         try:
-                            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(player_info.hand_image)]
+                            rarity = self.assets_service.avatar.get_by_id(player_info.hand_image).rank
                         except KeyError:
                             logger.warning("未找到角色 %s 的星级", player_info.hand_image)
                     else:

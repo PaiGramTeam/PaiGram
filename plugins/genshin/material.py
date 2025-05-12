@@ -7,11 +7,9 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filter
 from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
-from metadata.genshin import MATERIAL_DATA
 from metadata.shortname import roleToName
 from modules.apihelper.client.components.remote import Remote
 from modules.material.talent import TalentMaterials
-from modules.wiki.character import Character
 from utils.log import logger
 
 __all__ = ("MaterialPlugin",)
@@ -47,123 +45,123 @@ class MaterialPlugin(Plugin):
         data = data["data"]
         if character_name not in data.keys():
             return {}
-        character = self.assets_service.avatar(character_name)
-        level_up_material = self.assets_service.material(data[character_name]["level_up_materials"])
-        ascension_material = self.assets_service.material(data[character_name]["ascension_materials"])
-        local_material = self.assets_service.material(data[character_name]["materials"][0])
-        enemy_material = self.assets_service.material(data[character_name]["materials"][1])
+        character = self.assets_service.avatar.get_by_name(character_name)
+        level_up_material = self.assets_service.material.get_by_name(data[character_name]["level_up_materials"])
+        ascension_material = self.assets_service.material.get_by_name(data[character_name]["ascension_materials"])
+        local_material = self.assets_service.material.get_by_name(data[character_name]["materials"][0])
+        enemy_material = self.assets_service.material.get_by_name(data[character_name]["materials"][1])
         level_up_materials = [
             {
                 "num": 46,
-                "rarity": MATERIAL_DATA[str(level_up_material.id)]["rank"],
-                "icon": (await level_up_material.icon()).as_uri(),
+                "rarity": level_up_material.rank,
+                "icon": self.assets_service.material.icon(level_up_material.id).as_uri(),
                 "name": data[character_name]["level_up_materials"],
             },
             {
                 "num": 419,
                 "rarity": 4,
-                "icon": (await self.assets_service.material(104003).icon()).as_uri(),
+                "icon": self.assets_service.material.icon(104003).as_uri(),
                 "name": "大英雄的经验",
             },
             {
                 "num": 1,
                 "rarity": 2,
-                "icon": (await self.assets_service.material(ascension_material.id - 3).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(ascension_material.id - 3)]["name"],
+                "icon": self.assets_service.material.icon(int(ascension_material.id) - 3).as_uri(),
+                "name": self.assets_service.material.get_by_id(int(ascension_material.id) - 3).name,
             },
             {
                 "num": 9,
                 "rarity": 3,
-                "icon": (await self.assets_service.material(ascension_material.id - 2).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(ascension_material.id - 2)]["name"],
+                "icon": self.assets_service.material.icon(int(ascension_material.id) - 2).as_uri(),
+                "name": self.assets_service.material.get_by_id(int(ascension_material.id) - 2).name,
             },
             {
                 "num": 9,
                 "rarity": 4,
-                "icon": (await self.assets_service.material(str(ascension_material.id - 1)).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(ascension_material.id - 1)]["name"],
+                "icon": self.assets_service.material.icon(int(ascension_material.id) - 1).as_uri(),
+                "name": self.assets_service.material.get_by_id(int(ascension_material.id) - 1).name,
             },
             {
                 "num": 6,
                 "rarity": 5,
-                "icon": (await ascension_material.icon()).as_uri(),
-                "name": MATERIAL_DATA[str(ascension_material.id)]["name"],
+                "icon": self.assets_service.material.icon(ascension_material.id).as_uri(),
+                "name": self.assets_service.material.get_by_id(ascension_material.id).name,
             },
             {
                 "num": 168,
-                "rarity": MATERIAL_DATA[str(local_material.id)]["rank"],
-                "icon": (await local_material.icon()).as_uri(),
-                "name": MATERIAL_DATA[str(local_material.id)]["name"],
+                "rarity": local_material.rank,
+                "icon": self.assets_service.material.icon(local_material.id).as_uri(),
+                "name": local_material.name,
             },
             {
                 "num": 18,
-                "rarity": MATERIAL_DATA[str(enemy_material.id)]["rank"],
-                "icon": (await self.assets_service.material(enemy_material.id).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(enemy_material.id)]["name"],
+                "rarity": enemy_material.rank,
+                "icon": self.assets_service.material.icon(enemy_material.id).as_uri(),
+                "name": enemy_material.name,
             },
             {
                 "num": 30,
-                "rarity": MATERIAL_DATA[str(enemy_material.id + 1)]["rank"],
-                "icon": (await self.assets_service.material(enemy_material.id + 1).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(enemy_material.id + 1)]["name"],
+                "rarity": self.assets_service.material.get_by_id(int(enemy_material.id) + 1).rank,
+                "icon": self.assets_service.material.icon(int(enemy_material.id) + 1).as_uri(),
+                "name": self.assets_service.material.get_by_id(int(enemy_material.id) + 1).name,
             },
             {
                 "num": 36,
-                "rarity": MATERIAL_DATA[str(enemy_material.id + 2)]["rank"],
-                "icon": (await self.assets_service.material(str(enemy_material.id + 2)).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(enemy_material.id + 2)]["name"],
+                "rarity": self.assets_service.material.get_by_id(int(enemy_material.id) + 2).rank,
+                "icon": self.assets_service.material.icon(int(enemy_material.id) + 2).as_uri(),
+                "name": self.assets_service.material.get_by_id(int(enemy_material.id) + 2).name,
             },
         ]
-        talent_book = self.assets_service.material(f"「{data[character_name]['talent'][0]}」的教导")
-        weekly_talent_material = self.assets_service.material(data[character_name]["talent"][1])
+        talent_book = self.assets_service.material.get_by_name(f"「{data[character_name]['talent'][0]}」的教导")
+        weekly_talent_material = self.assets_service.material.get_by_name(data[character_name]["talent"][1])
         talent_materials = [
             {
                 "num": 9,
-                "rarity": MATERIAL_DATA[str(talent_book.id)]["rank"],
-                "icon": (await self.assets_service.material(talent_book.id).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(talent_book.id)]["name"],
+                "rarity": talent_book.rank,
+                "icon": self.assets_service.material.icon(talent_book.id).as_uri(),
+                "name": talent_book.name,
             },
             {
                 "num": 63,
-                "rarity": MATERIAL_DATA[str(talent_book.id + 1)]["rank"],
-                "icon": (await self.assets_service.material(talent_book.id + 1).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(talent_book.id + 1)]["name"],
+                "rarity": self.assets_service.material.get_by_id(int(talent_book.id) + 1).rank,
+                "icon": self.assets_service.material.icon(int(talent_book.id) + 1).as_uri(),
+                "name": self.assets_service.material.get_by_id(int(talent_book.id) + 1).name,
             },
             {
                 "num": 114,
-                "rarity": MATERIAL_DATA[str(talent_book.id + 2)]["rank"],
-                "icon": (await self.assets_service.material(str(talent_book.id + 2)).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(talent_book.id + 2)]["name"],
+                "rarity": self.assets_service.material.get_by_id(int(talent_book.id) + 2).rank,
+                "icon": self.assets_service.material.icon(int(talent_book.id) + 2).as_uri(),
+                "name": self.assets_service.material.get_by_id(int(talent_book.id) + 2).name,
             },
             {
                 "num": 18,
-                "rarity": MATERIAL_DATA[str(enemy_material.id)]["rank"],
-                "icon": (await self.assets_service.material(enemy_material.id).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(enemy_material.id)]["name"],
+                "rarity": enemy_material.rank,
+                "icon": self.assets_service.material.icon(enemy_material.id).as_uri(),
+                "name": enemy_material.name,
             },
             {
                 "num": 66,
-                "rarity": MATERIAL_DATA[str(enemy_material.id + 1)]["rank"],
-                "icon": (await self.assets_service.material(enemy_material.id + 1).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(enemy_material.id + 1)]["name"],
+                "rarity": self.assets_service.material.get_by_id(int(enemy_material.id) + 1).rank,
+                "icon": self.assets_service.material.icon(int(enemy_material.id) + 1).as_uri(),
+                "name": self.assets_service.material.get_by_id(int(enemy_material.id) + 1).name,
             },
             {
                 "num": 93,
-                "rarity": MATERIAL_DATA[str(enemy_material.id + 2)]["rank"],
-                "icon": (await self.assets_service.material(str(enemy_material.id + 2)).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(enemy_material.id + 2)]["name"],
+                "rarity": self.assets_service.material.get_by_id(int(enemy_material.id) + 2).rank,
+                "icon": self.assets_service.material.icon(int(enemy_material.id) + 2).as_uri(),
+                "name": self.assets_service.material.get_by_id(int(enemy_material.id) + 2).name,
             },
             {
                 "num": 3,
                 "rarity": 5,
-                "icon": (await self.assets_service.material(104319).icon()).as_uri(),
+                "icon": self.assets_service.material.icon(104319).as_uri(),
                 "name": "智识之冕",
             },
             {
                 "num": 18,
-                "rarity": MATERIAL_DATA[str(weekly_talent_material.id)]["rank"],
-                "icon": (await self.assets_service.material(weekly_talent_material.id).icon()).as_uri(),
-                "name": MATERIAL_DATA[str(weekly_talent_material.id)]["name"],
+                "rarity": weekly_talent_material.rank,
+                "icon": self.assets_service.material.icon(weekly_talent_material.id).as_uri(),
+                "name": weekly_talent_material.name,
             },
         ]
 
@@ -172,7 +170,7 @@ class MaterialPlugin(Plugin):
                 "element": character.enka.element.name,
                 "image": character.enka.images.banner.url,
                 "name": character_name,
-                "association": (await Character.get_by_name(character_name)).association.name,
+                "association": self.assets_service.avatar.get_by_name(character_name).association.name,
             },
             "level_up_materials": level_up_materials,
             "talent_materials": talent_materials,

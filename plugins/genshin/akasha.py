@@ -8,7 +8,6 @@ from core.plugin import Plugin, handler
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from gram_core.services.players import PlayersService
-from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToName, roleToId
 from modules.apihelper.client.components.akasha import Akasha
 from utils.log import logger
@@ -70,7 +69,7 @@ class AkashaPlugin(Plugin):
             avatar = None
         rarity = 5
         try:
-            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(character_id)]
+            rarity = self.assets_service.avatar.get_by_id(character_id).rank
         except KeyError:
             logger.warning("未找到角色 %s 的星级", character_id)
         akasha_data, count = await self.get_leaderboard_data(character_id, uid)
