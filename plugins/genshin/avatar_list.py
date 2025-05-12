@@ -141,7 +141,11 @@ class AvatarListPlugin(Plugin):
         # 获取角色头像图标和武器图标
         avatar_path = self.assets_service.avatar.side(chara.base.id)
         avatar_uri = avatar_path.as_uri() if avatar_path else ""
-        weapon_path = self.assets_service.weapon.icon(chara.weapon.id) if chara.weapon.ascension < 2 else self.assets_service.weapon.awaken(chara.weapon.id)
+        weapon_path = (
+            self.assets_service.weapon.icon(chara.weapon.id)
+            if chara.weapon.ascension < 2
+            else self.assets_service.weapon.awaken(chara.weapon.id)
+        )
         weapon_uri = weapon_path.as_uri() if weapon_path else ""
         return AvatarData(avatar=chara, skills=skills, icon=avatar_uri, weapon=weapon_uri)
 

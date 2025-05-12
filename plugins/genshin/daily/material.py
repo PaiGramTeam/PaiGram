@@ -290,7 +290,11 @@ class DailyMaterial(Plugin):
                 # 判定武器的突破次数是否大于 2, 若是, 则将图标替换为 awakened (觉醒) 的图标
                 weapon = character.weapon
                 weapon_id = str(weapon.id)
-                weapon_icon = self.assets_service.weapon.icon(weapon_id) if weapon.ascension < 2 else self.assets_service.weapon.awaken(weapon_id)
+                weapon_icon = (
+                    self.assets_service.weapon.icon(weapon_id)
+                    if weapon.ascension < 2
+                    else self.assets_service.weapon.awaken(weapon_id)
+                )
                 if weapon_id not in user_data.weapon:
                     # 由于用户可能持有多把同一种武器
                     # 这里需要使用 List 来储存所有不同角色持有的同名武器

@@ -1,16 +1,14 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters
+from telegram.ext import CallbackContext, filters
 
 from core.dependence.assets.impl.genshin import AssetsCouldNotFound, AssetsService
+from core.dependence.assets.impl.models.genshin.weapon import Weapon
 from core.plugin import Plugin, handler
 from core.services.search.models import WeaponEntry
 from core.services.search.services import SearchServices
 from core.services.template.services import TemplateService
-from core.services.wiki.services import WikiService
-from metadata.genshin import honey_id_to_game_id
 from metadata.shortname import weaponToName, weapons as _weapons_data
-from modules.wiki.weapon import Weapon
 from utils.log import logger
 
 
@@ -24,17 +22,15 @@ class WeaponPlugin(Plugin):
     def __init__(
         self,
         template_service: TemplateService = None,
-        wiki_service: WikiService = None,
         assets_service: AssetsService = None,
         search_service: SearchServices = None,
     ):
-        self.wiki_service = wiki_service
         self.template_service = template_service
         self.assets_service = assets_service
         self.search_service = search_service
 
-    @handler(CommandHandler, command="weapon", block=False)
-    @handler(MessageHandler, filters=filters.Regex("^武器查询(.*)"), block=False)
+    @handler.command(command="weapon", block=False)
+    @handler.message(filters=filters.Regex("^武器查询(.*)"), block=False)
     async def command_start(self, update: Update, context: CallbackContext) -> None:
         message = update.effective_message
         args = self.get_args(context)
@@ -50,12 +46,8 @@ class WeaponPlugin(Plugin):
             return
         weapon_name = weaponToName(weapon_name)
         self.log_user(update, logger.info, "查询角色攻略命令请求 weapon_name[%s]", weapon_name)
-        weapons_list = await self.wiki_service.get_weapons_list()
-        for weapon in weapons_list:
-            if weapon.name == weapon_name:
-                weapon_data = weapon
-                break
-        else:
+        weapon_data = self.assets_service.weapon.get_by_name(weapon_name)
+        if not weapon_data:
             reply_message = await message.reply_text(
                 f"没有找到 {weapon_name}", reply_markup=InlineKeyboardMarkup(self.KEYBOARD)
             )
@@ -66,7 +58,7 @@ class WeaponPlugin(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
 
         async def input_template_data(_weapon_data: Weapon):
-            if weapon.rarity > 2:
+            if _weapon_data.rarity > 2:
                 bonus = _weapon_data.stats[-1].bonus
                 if "%" in bonus:
                     bonus = str(round(float(bonus.rstrip("%")))) + "%"
@@ -78,14 +70,11 @@ class WeaponPlugin(Plugin):
                     "weapon_info_type_img": _weapon_data.weapon_type.name,
                     "progression_secondary_stat_value": bonus,
                     "progression_secondary_stat_name": _weapon_data.attribute.type.value,
-                    "weapon_info_source_img": (
-                         self.assets_service.weapon.icon(honey_id_to_game_id(_weapon_data.id, "weapon"))
-                    ).as_uri(),
+                    "weapon_info_source_img": self.assets_service.weapon.icon(_weapon_data.id).as_uri(),
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        self.assets_service.material.icon(honey_id_to_game_id(mid, "material")).as_uri()
-                        for mid in _weapon_data.ascension[-3:]
+                        self.assets_service.material.icon(mid).as_uri() for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": _weapon_data.affix.name,
                     "special_ability_info": _weapon_data.affix.description[0],
@@ -98,14 +87,11 @@ class WeaponPlugin(Plugin):
                     "weapon_info_type_img": _weapon_data.weapon_type.name,
                     "progression_secondary_stat_value": " ",
                     "progression_secondary_stat_name": "无其它属性加成",
-                    "weapon_info_source_img": (
-                        self.assets_service.weapon.icon(honey_id_to_game_id(_weapon_data.id, "weapon"))
-                    ).as_uri(),
+                    "weapon_info_source_img": self.assets_service.weapon.icon(_weapon_data.id).as_uri(),
                     "weapon_info_max_level": _weapon_data.stats[-1].level,
                     "progression_base_atk": round(_weapon_data.stats[-1].ATK),
                     "weapon_info_source_list": [
-                        self.assets_service.material.icon(honey_id_to_game_id(mid, "material")).as_uri()
-                        for mid in _weapon_data.ascension[-3:]
+                        self.assets_service.material.icon(mid).as_uri() for mid in _weapon_data.ascension[-3:]
                     ],
                     "special_ability_name": "",
                     "special_ability_info": "",
