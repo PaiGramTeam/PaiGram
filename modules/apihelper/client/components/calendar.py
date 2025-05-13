@@ -6,7 +6,6 @@ from httpx import AsyncClient
 
 from core.dependence.assets.impl.genshin import AssetsService, AssetsCouldNotFound
 from metadata.shortname import roleToId
-from modules.apihelper.client.components.remote import Remote
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
 from utils.log import logger
 
@@ -46,11 +45,7 @@ class Calendar:
     @staticmethod
     async def async_gen_birthday_list() -> Dict[str, List[str]]:
         """生成生日列表并且合并云端生日列表"""
-        birthday_list = Calendar.gen_birthday_list()
-        remote_data = await Remote.get_remote_birthday()
-        if remote_data:
-            birthday_list.update(remote_data)
-        return birthday_list
+        return Calendar.gen_birthday_list()
 
     @staticmethod
     def gen_birthday_list() -> Dict[str, List[str]]:
@@ -110,9 +105,6 @@ class Calendar:
                 new_list_data[idx].append(ActDetail(**item))
         time_map = {}
         time_map.update(await self.parse_official_content_date())
-        remote_data = await Remote.get_remote_calendar()
-        if remote_data:
-            time_map.update({key: ActTime(**value) for key, value in remote_data.get("data", {}).items()})
         return new_list_data, time_map
 
     @staticmethod

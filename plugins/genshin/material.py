@@ -8,7 +8,6 @@ from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
 from metadata.shortname import roleToName
-from modules.apihelper.client.components.remote import Remote
 from modules.material.talent import TalentMaterials
 from utils.log import logger
 
@@ -31,15 +30,9 @@ class MaterialPlugin(Plugin):
         template_service: TemplateService,
         assets_service: AssetsService,
     ):
-        self.roles_material = {}
+        self.roles_material = assets_service.other.get_roles_material()
         self.assets_service = assets_service
         self.template_service = template_service
-
-    async def initialize(self):
-        await self._refresh()
-
-    async def _refresh(self):
-        self.roles_material = await Remote.get_remote_material()
 
     async def _parse_material(self, data: dict, character_name: str, talent_level: str) -> dict:
         data = data["data"]
@@ -179,8 +172,6 @@ class MaterialPlugin(Plugin):
         }
 
     async def render(self, character_name: str, talent_amount: str):
-        if not self.roles_material:
-            await self._refresh()
         data = await self._parse_material(self.roles_material, character_name, talent_amount)
         if not data:
             return

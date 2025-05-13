@@ -86,7 +86,6 @@ class SetCommandPlugin(Plugin):
             BotCommand("add_admin", "添加管理员"),
             BotCommand("del_admin", "删除管理员"),
             BotCommand("refresh_metadata", "刷新元数据"),
-            BotCommand("refresh_wiki", "刷新Wiki缓存"),
             BotCommand("refresh_map", "刷新地图数据"),
             BotCommand("save_entry", "保存条目数据"),
             BotCommand("remove_all_entry", "删除全部条目数据"),
