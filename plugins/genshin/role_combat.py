@@ -14,7 +14,6 @@ from telegram import Message, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters, ContextTypes
 
-from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.history_data.models import HistoryDataImgTheater
@@ -71,13 +70,11 @@ class RoleCombatPlugin(Plugin):
         self,
         template: TemplateService,
         helper: GenshinHelper,
-        assets_service: AssetsService,
         history_data_abyss: HistoryDataImgTheaterServices,
         redis: RedisDB,
     ):
         self.template_service = template
         self.helper = helper
-        self.assets_service = assets_service
         self.history_data_abyss = history_data_abyss
         self.cache = RedisCache(redis.client, key="plugin:role_combat:history")
 

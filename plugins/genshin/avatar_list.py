@@ -2,8 +2,10 @@ import asyncio
 from collections.abc import Sequence
 import math
 import typing
+from enum import Enum
 
 from arkowrapper import ArkoWrapper
+from pydantic import BaseModel
 from simnet import GenshinClient
 from simnet.models.genshin.chronicle.character_detail import (
     CharacterSkill,
@@ -14,7 +16,7 @@ from telegram.constants import ChatAction
 from telegram.ext import filters
 
 from core.config import config
-from core.dependence.assets import AssetsService
+from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
@@ -23,8 +25,6 @@ from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.template.models import RenderGroupResult
-from modules.wiki.base import Model
-from modules.wiki.other import Element, WeaponType
 from plugins.tools.genshin import CharacterDetails, GenshinHelper
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
@@ -36,6 +36,29 @@ if typing.TYPE_CHECKING:
     from gram_core.services.template.models import RenderResult
 
 MAX_AVATAR_COUNT = 40
+
+
+class Element(Enum):
+    """元素"""
+
+    Pyro = "火"
+    Hydro = "水"
+    Electro = "雷"
+    Cryo = "冰"
+    Dendro = "草"
+    Anemo = "风"
+    Geo = "岩"
+    Multi = "无"  # 主角
+
+
+class WeaponType(Enum):
+    """武器类型"""
+
+    Sword = "单手剑"
+    Claymore = "双手剑"
+    Polearm = "长柄武器"
+    Catalyst = "法器"
+    Bow = "弓"
 
 
 def parse_element(msg: str) -> set[Element]:
@@ -50,7 +73,7 @@ class TooManyRequests(Exception):
     """请求过多"""
 
 
-class PlayerData(Model):
+class PlayerData(BaseModel):
     """角色信息，如头像、名片等"""
 
     player_id: int
@@ -60,7 +83,7 @@ class PlayerData(Model):
     rarity: int
 
 
-class SkillData(Model):
+class SkillData(BaseModel):
     """天赋数据"""
 
     skill: CharacterSkill
@@ -80,7 +103,7 @@ class SkillData(Model):
         return max_level
 
 
-class AvatarData(Model):
+class AvatarData(BaseModel):
     avatar: GenshinDetailCharacter
     icon: str
     weapon: str | None
@@ -139,10 +162,13 @@ class AvatarListPlugin(Plugin):
             if skill.skill_type == 1 and skill.id not in (10013, 10413)
         ]
         # 获取角色头像图标和武器图标
-        avatar_path = await self.assets_service.avatar(chara.base.id).side()
+        avatar_path = self.assets_service.avatar.side(chara.base.id)
         avatar_uri = avatar_path.as_uri() if avatar_path else ""
-        weapon_assets = self.assets_service.weapon(chara.weapon.id)
-        weapon_path = await (weapon_assets.icon() if chara.weapon.ascension < 2 else weapon_assets.awaken())
+        weapon_path = (
+            self.assets_service.weapon.icon(chara.weapon.id)
+            if chara.weapon.ascension < 2
+            else self.assets_service.weapon.awaken(chara.weapon.id)
+        )
         weapon_uri = weapon_path.as_uri() if weapon_path else ""
         return AvatarData(avatar=chara, skills=skills, icon=avatar_uri, weapon=weapon_uri)
 

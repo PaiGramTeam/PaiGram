@@ -10,7 +10,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import filters
 
-from core.dependence.assets import AssetsService, AssetsCouldNotFound
+from core.dependence.assets.impl.genshin import AssetsService, AssetsCouldNotFound
 from gram_core.config import config
 from gram_core.plugin import Plugin, handler
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
@@ -119,7 +119,7 @@ class WishWaitingListPlugin(Plugin):
                         times[n].up_times += 1
                     else:
                         try:
-                            icon = (await assets(n).icon()).as_uri()
+                            icon = assets.icon(n).as_uri()
                         except AssetsCouldNotFound:
                             icon = ""
                         times[n] = WishWaitingListData(

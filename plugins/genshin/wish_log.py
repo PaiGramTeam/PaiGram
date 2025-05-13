@@ -19,7 +19,7 @@ from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
 
 from core.basemodel import RegionEnum
-from core.dependence.assets import AssetsService
+from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin, conversation, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService

@@ -3,8 +3,6 @@ from __future__ import annotations
 import functools
 from typing import List
 
-from metadata.genshin import WEAPON_DATA
-
 __all__ = [
     "roles",
     "weapons",
@@ -18,6 +16,8 @@ __all__ = [
     "not_real_roles",
     "roleToTag",
 ]
+
+from core.dependence.assets.impl.genshin import AssetsService
 
 # noinspection SpellCheckingInspection
 roles = {
@@ -1005,7 +1005,14 @@ def weaponToName(shortname: str) -> str:
 @functools.lru_cache()
 def weaponToId(name: str) -> int | None:
     """获取武器ID"""
-    return next((int(key) for key, value in WEAPON_DATA.items() if weaponToName(name) in value["name"]), None)
+    return next(
+        (
+            int(value.id)
+            for key, value in AssetsService.weapon.get_instance().all_items_name.items()
+            if weaponToName(name) in key
+        ),
+        None,
+    )
 
 
 # noinspection PyPep8Naming

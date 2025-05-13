@@ -1,19 +1,13 @@
 import re
 from datetime import datetime, timedelta
-from typing import List, Tuple, Optional, Dict, Union, TYPE_CHECKING
+from typing import List, Tuple, Optional, Dict, Union
 
 from httpx import AsyncClient
 
-from core.dependence.assets import AssetsCouldNotFound
-from metadata.genshin import AVATAR_DATA
+from core.dependence.assets.impl.genshin import AssetsService, AssetsCouldNotFound
 from metadata.shortname import roleToId
-from modules.apihelper.client.components.remote import Remote
 from modules.apihelper.models.genshin.calendar import Date, FinalAct, ActEnum, ActDetail, ActTime, BirthChar
-from modules.wiki.character import Character
 from utils.log import logger
-
-if TYPE_CHECKING:
-    from core.dependence.assets import AssetsService
 
 
 class Calendar:
@@ -51,20 +45,16 @@ class Calendar:
     @staticmethod
     async def async_gen_birthday_list() -> Dict[str, List[str]]:
         """生成生日列表并且合并云端生日列表"""
-        birthday_list = Calendar.gen_birthday_list()
-        remote_data = await Remote.get_remote_birthday()
-        if remote_data:
-            birthday_list.update(remote_data)
-        return birthday_list
+        return Calendar.gen_birthday_list()
 
     @staticmethod
     def gen_birthday_list() -> Dict[str, List[str]]:
         """生成生日列表"""
         birthday_list = {}
-        for value in AVATAR_DATA.values():
-            key = "_".join([str(i) for i in value["birthday"]])
+        for value in AssetsService.avatar.get_instance().all_items:
+            key = f"{value.birthday.month}_{value.birthday.day}"
             data = birthday_list.get(key, [])
-            data.append(value["name"])
+            data.append(value.name)
             birthday_list[key] = data
         return birthday_list
 
@@ -115,9 +105,6 @@ class Calendar:
                 new_list_data[idx].append(ActDetail(**item))
         time_map = {}
         time_map.update(await self.parse_official_content_date())
-        remote_data = await Remote.get_remote_calendar()
-        if remote_data:
-            time_map.update({key: ActTime(**value) for key, value in remote_data.get("data", {}).items()})
         return new_list_data, time_map
 
     @staticmethod
@@ -238,11 +225,11 @@ class Calendar:
             if reg_ret := re.search(r"·(.*)\(", act.title):
                 char_name = reg_ret[1]
                 try:
-                    char = assets.avatar(roleToId(char_name))
-                    act.banner = (await assets.namecard(char.id).navbar()).as_uri()
-                    act.face = (await char.icon()).as_uri()
+                    char = assets.avatar.get_by_id(roleToId(char_name))
+                    act.banner = assets.namecard.navbar(char.name).as_uri()
+                    act.face = assets.avatar.icon(char.id).as_uri()
                 except (AssetsCouldNotFound, KeyError):
-                    act.banner = (await assets.namecard(0).navbar()).as_uri()
+                    act.banner = assets.namecard.navbar(0).as_uri()
                     logger.warning("角色 %s 图片素材未找到", char_name)
                 act.sort = 1
         elif "纪行" in act.title:
@@ -336,13 +323,13 @@ class Calendar:
                     birthday_char_line = max(len(char), birthday_char_line)
                     birthday_chars[str(date.month)][str(d)] = []
                     for c in char:
-                        character = await Character.get_by_name(c)
+                        character = AssetsService.avatar.get_instance().get_by_name(c)
                         try:
                             birthday_chars[str(date.month)][str(d)].append(
                                 BirthChar(
                                     name=c,
-                                    star=character.rarity,
-                                    icon=(await assets.avatar(roleToId(c)).icon()).as_uri(),
+                                    star=character.rank,
+                                    icon=assets.avatar.icon(character.id).as_uri(),
                                 )
                             )
                         except AssetsCouldNotFound:

@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Optional, List, TYPE_CHECKING
 
-from core.dependence.assets import AssetsService
+from core.dependence.assets.impl.genshin import AssetsService
 from gram_core.services.template.models import RenderResult
 from gram_core.services.template.services import TemplateService
 from metadata.shortname import idToName, elementToName, elementsToColor
@@ -47,10 +47,8 @@ class GCSimResultRenderer:
             else:
                 result["extra"][character_details["name"]]["owned"] = False
 
-            result["extra"][character_details["name"]]["icon"] = (
-                await self.assets_service.avatar(asset_id).icon()
-            ).as_uri()
-            result["extra"][character_details["name"]]["rarity"] = self.assets_service.avatar(asset_id).enka.rarity
+            result["extra"][character_details["name"]]["icon"] = self.assets_service.avatar.icon(asset_id).as_uri()
+            result["extra"][character_details["name"]]["rarity"] = self.assets_service.avatar.get_by_id(asset_id).rank
             result["extra"][character_details["name"]]["constellation"] = gcsim_character.constellation
 
             if "character_dps" not in result["extra"]:

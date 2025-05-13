@@ -50,7 +50,7 @@ from utils.const import PROJECT_ROOT
 from utils.uid import mask_number
 
 if TYPE_CHECKING:
-    from core.dependence.assets import AssetsService
+    from core.dependence.assets.impl.genshin import AssetsService
 
 
 GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
@@ -349,7 +349,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                 if item.item_type == "角色" and pool_name in {"角色祈愿", "常驻祈愿", "新手祈愿", "集录祈愿"}:
                     data = {
                         "name": item.name,
-                        "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri() if assets else "",
+                        "icon": assets.avatar.icon(roleToId(item.name)).as_uri() if assets else "",
                         "count": count,
                         "type": "角色",
                         "isUp": self.check_avatar_up(item.name, item.time) if pool_name == "角色祈愿" else False,
@@ -360,7 +360,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                 elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿", "新手祈愿", "集录祈愿"}:
                     data = {
                         "name": item.name,
-                        "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri() if assets else "",
+                        "icon": assets.weapon.icon(weaponToId(item.name)).as_uri() if assets else "",
                         "count": count,
                         "type": "武器",
                         "isUp": False,
@@ -388,7 +388,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                 if item.item_type == "角色":
                     data = {
                         "name": item.name,
-                        "icon": (await assets.avatar(roleToId(item.name)).icon()).as_uri() if assets else "",
+                        "icon": assets.avatar.icon(roleToId(item.name)).as_uri() if assets else "",
                         "count": count,
                         "type": "角色",
                         "time": item.time,
@@ -397,7 +397,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                 elif item.item_type == "武器":
                     data = {
                         "name": item.name,
-                        "icon": (await assets.weapon(weaponToId(item.name)).icon()).as_uri() if assets else "",
+                        "icon": assets.weapon.icon(weaponToId(item.name)).as_uri() if assets else "",
                         "count": count,
                         "type": "武器",
                         "time": item.time,

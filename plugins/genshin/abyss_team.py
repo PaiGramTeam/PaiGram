@@ -6,10 +6,9 @@ from telegram import Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import CallbackContext, filters
 
-from core.dependence.assets import AssetsService
+from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
-from metadata.genshin import AVATAR_DATA
 from metadata.shortname import idToName
 from modules.apihelper.client.components.abyss import AbyssTeam as AbyssTeamClient
 from plugins.tools.genshin import GenshinHelper
@@ -99,9 +98,9 @@ class AbyssTeamPlugin(Plugin):
         async def _get_render_data(id_list):
             return [
                 {
-                    "icon": (await self.assets_service.avatar(cid).icon()).as_uri(),
+                    "icon": self.assets_service.avatar.icon(cid).as_uri(),
                     "name": idToName(cid),
-                    "star": AVATAR_DATA[str(cid)]["rank"] if cid not in {10000005, 10000007} else 5,
+                    "star": self.assets_service.avatar.get_by_id(cid).rank if cid not in {10000005, 10000007} else 5,
                     "hava": True,
                 }
                 for cid in id_list

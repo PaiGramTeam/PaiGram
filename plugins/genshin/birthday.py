@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING
 
 from telegram.ext import filters
 
+from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.task.services import TaskCardServices
 from core.services.users.services import UserService, UserAdminService
-from metadata.genshin import AVATAR_DATA
 from metadata.shortname import roleToId, roleToName
 from plugins.tools.birthday_card import (
     BirthdayCardSystem,
@@ -32,6 +32,7 @@ class BirthdayPlugin(Plugin):
         card_system: BirthdayCardSystem,
         user_admin_service: UserAdminService,
         card_service: TaskCardServices,
+        assets_service: AssetsService,
     ):
         """Load Data."""
         self.user_service = user_service
@@ -40,6 +41,7 @@ class BirthdayPlugin(Plugin):
         self.card_system = card_system
         self.user_admin_service = user_admin_service
         self.card_service = card_service
+        self.assets_service = assets_service
 
     @handler.command(command="birthday", block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -69,8 +71,8 @@ class BirthdayPlugin(Plugin):
                     else:
                         name = roleToName(msg)
                         aid = str(roleToId(msg))
-                        birthday = AVATAR_DATA[aid]["birthday"]
-                        text = f"{name} 的生日是 {birthday[0]}月{birthday[1]}日 哦~"
+                        birthday = self.assets_service.avatar.get_by_id(aid).birthday
+                        text = f"{name} 的生日是 {birthday.month}月{birthday.day}日 哦~"
                     reply_message = await message.reply_text(text)
                 except KeyError:
                     reply_message = await message.reply_text("请输入正确的日期格式，如1-1，或输入正确的角色名称。")

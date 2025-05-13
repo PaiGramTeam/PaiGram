@@ -24,7 +24,7 @@ from telegram.constants import ChatAction
 from telegram.ext import filters
 
 from core.config import config
-from core.dependence.assets import DEFAULT_EnkaAssets, AssetsService
+from core.dependence.assets.impl.genshin import DEFAULT_EnkaAssets, AssetsService
 from core.dependence.redisdb import RedisDB
 from core.plugin import Plugin, handler
 from core.services.players import PlayersService
@@ -499,7 +499,7 @@ class PlayerCards(Plugin):
                     "element": character.element.name,
                     "constellation": character.constellations_unlocked,
                     "rarity": character.rarity,
-                    "icon": (await self.assets_service.avatar(character.id).icon()).as_uri(),
+                    "icon": self.assets_service.avatar.icon(character.id).as_uri(),
                 }
             )
             if idx > 6:

@@ -6,7 +6,7 @@ from telegram.constants import ChatAction
 from telegram.error import BadRequest
 from telegram.ext import filters
 
-from core.dependence.assets import AssetsService
+from core.dependence.assets.impl.genshin import AssetsService
 from core.plugin import Plugin, handler
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
@@ -272,7 +272,7 @@ class WishLogRankPlugin(Plugin):
     ) -> Dict:
         my_data = await self.get_my_players_from_cache(user_id, rank_type, query_type, desc)
         list_data = await self.get_first_rank_players_from_cache(rank_type, query_type, desc)
-        name_card = (await self.assets_service.namecard(0).navbar()).as_uri()
+        name_card = self.assets_service.namecard.navbar(0).as_uri()
         return {
             "data_list": [my_data, list_data],
             "count": list_data.count,
