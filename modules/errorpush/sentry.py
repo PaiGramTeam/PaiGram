@@ -18,7 +18,7 @@ class SentryClientException(Exception):
 
 
 class SentryClient:
-    def __init__(self, sentry_dsn: Optional[str] = None):
+    def __init__(self, sentry_dsn: Optional[str] = None, sentry_environment: Optional[str] = "production"):
         self.sentry_dsn = sentry_dsn
         if sentry_dsn:
             repo = Repo(os.getcwd())
@@ -27,13 +27,16 @@ class SentryClient:
                 sentry_dsn,
                 traces_sample_rate=1.0,
                 release=sentry_sdk_git_hash,
-                environment="production",
+                environment=sentry_environment,
                 integrations=[
                     HttpxIntegration(),
                     ExcepthookIntegration(always_run=False),
                     LoggingIntegration(event_level=50),
                     SqlalchemyIntegration(),
                 ],
+                _experiments={
+                    "enable_logs": True,
+                },
             )
 
     @property

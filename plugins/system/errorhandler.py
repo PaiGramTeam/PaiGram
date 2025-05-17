@@ -59,7 +59,7 @@ class ErrorHandler(Plugin):
         if not os.path.exists(self.report_dir):
             os.mkdir(self.report_dir)
         self.pb_client = PbClient(config.error.pb_url, config.error.pb_sunset, config.error.pb_max_lines)
-        self.sentry = SentryClient(config.error.sentry_dsn)
+        self.sentry = SentryClient(config.error.sentry_dsn, config.error.sentry_environment)
         self.tb_string = ""
 
     async def notice_user(self, update: object, context: CallbackContext, content: str):
