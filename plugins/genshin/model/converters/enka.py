@@ -11,6 +11,7 @@ from enkanetwork import (
     DigitType as EnkaDigitType,
 )
 
+from core.dependence.assets.impl.genshin import AssetsService
 from plugins.genshin.model import (
     CharacterInfo,
     Digit,
@@ -23,9 +24,6 @@ from plugins.genshin.model import (
     ArtifactAttribute,
     ArtifactAttributeType,
 )
-from plugins.genshin.model.metadata import Metadata
-
-metadata = Metadata()
 
 
 class EnkaConverter:
@@ -50,14 +48,14 @@ class EnkaConverter:
         if equipment.type != EquipmentsType.WEAPON:
             raise ValueError(f"Not weapon equipment type: {equipment.type}")
 
-        weapon_data = metadata.weapon_metadata.get(str(equipment.id))
+        weapon_data = AssetsService.weapon.get_instance().get_by_id(equipment.id)
         if not weapon_data:
             raise ValueError(f"Unknown weapon id: {equipment.id}")
 
         return WeaponInfo(
             id=equipment.id,
-            weapon=weapon_data["route"],
-            type=cls.to_weapon_type(weapon_data["type"]),
+            weapon=weapon_data.en_name,
+            type=cls.to_weapon_type(weapon_data.weapon_type.value),
             level=equipment.level,
             max_level=equipment.max_level,
             refinement=equipment.refinement,
@@ -135,20 +133,13 @@ class EnkaConverter:
         if equipment.type != EquipmentsType.ARTIFACT:
             raise ValueError(f"Not artifact equipment type: {equipment.type}")
 
-        artifact_data = next(
-            (
-                data
-                for data in metadata.artifacts_metadata.values()
-                if data["name"] == equipment.detail.artifact_name_set
-            ),
-            None,
-        )
+        artifact_data = AssetsService.artifact.get_instance().get_by_name(equipment.detail.artifact_name_set)
         if not artifact_data:
             raise ValueError(f"Unknown artifact: {equipment}")
 
         return Artifact(
-            id=artifact_data["id"],
-            set=artifact_data["route"],
+            id=artifact_data.id,
+            set=artifact_data.en_name,
             position=cls.to_artifact_position(equipment.detail.artifact_type),
             level=equipment.level,
             rarity=equipment.detail.rarity,
@@ -173,10 +164,10 @@ class EnkaConverter:
         character_id = str(character_info.id)
         if character_id in ("10000005", "10000007"):
             character_id += f"-{character_info.element.name.lower()}"
-        character_data = metadata.characters_metadata.get(character_id)
+        character_data = AssetsService.avatar.get_instance().get_by_id(character_id)
         if not character_data:
             raise ValueError(f"Unknown character: {character_info.name}\n{character_info}")
-        return character_data["route"]
+        return character_data.en_name
 
     @classmethod
     def to_character_info(cls, character_info: EnkaCharacterInfo) -> CharacterInfo:

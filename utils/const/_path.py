@@ -16,6 +16,8 @@ RESOURCE_DIR = PROJECT_ROOT / "resources"
 CACHE_DIR = PROJECT_ROOT / "cache"
 # metadata 目录
 METADATA_DIR = PROJECT_ROOT / "metadata" / "data"
+if not METADATA_DIR.exists():
+    METADATA_DIR.mkdir(exist_ok=True, parents=True)
 # data 目录
 DATA_DIR = PROJECT_ROOT / "data"
 

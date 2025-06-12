@@ -7,6 +7,7 @@ from typing import List, Optional, Tuple, Dict
 from gcsim_pypi.aliases import CHARACTER_ALIASES, WEAPON_ALIASES, ARTIFACT_ALIASES
 from pydantic import ValidationError
 
+from core.dependence.assets.impl.genshin import AssetsService
 from plugins.genshin.model import (
     Set,
     Weapon,
@@ -27,10 +28,7 @@ from plugins.genshin.model import (
     GCSimCharacterInfo,
     GCSimCharacterStats,
 )
-from plugins.genshin.model.metadata import Metadata
 from utils.log import logger
-
-metadata = Metadata()
 
 
 def remove_non_words(text: str) -> str:
@@ -56,8 +54,8 @@ def from_character_gcsim_character(character: Character) -> GCSimCharacter:
 
 
 GCSIM_CHARACTER_TO_CHARACTER: Dict[GCSimCharacter, Tuple[int, Character]] = {}
-for char in metadata.characters_metadata.values():
-    GCSIM_CHARACTER_TO_CHARACTER[from_character_gcsim_character(char["route"])] = (char["id"], char["route"])
+for char in AssetsService.avatar.get_instance().all_items:
+    GCSIM_CHARACTER_TO_CHARACTER[from_character_gcsim_character(char.en_name)] = (char.id, char.en_name)
 for alias, char in CHARACTER_ALIASES.items():
     if alias not in GCSIM_CHARACTER_TO_CHARACTER:
         if char in GCSIM_CHARACTER_TO_CHARACTER:
@@ -68,8 +66,8 @@ for alias, char in CHARACTER_ALIASES.items():
             logger.warning("Character alias %s not found in GCSIM", alias)
 
 GCSIM_WEAPON_TO_WEAPON: Dict[GCSimWeapon, Tuple[int, Weapon]] = {}
-for _weapon in metadata.weapon_metadata.values():
-    GCSIM_WEAPON_TO_WEAPON[remove_non_words(_weapon["route"].lower())] = (_weapon["id"], _weapon["route"])
+for _weapon in AssetsService.weapon.get_instance().all_items:
+    GCSIM_WEAPON_TO_WEAPON[remove_non_words(_weapon.en_name.lower())] = (_weapon.id, _weapon.en_name)
 for alias, _weapon in WEAPON_ALIASES.items():
     if alias not in GCSIM_WEAPON_TO_WEAPON:
         if _weapon in GCSIM_WEAPON_TO_WEAPON:
@@ -78,8 +76,8 @@ for alias, _weapon in WEAPON_ALIASES.items():
             logger.warning("Weapon alias %s not found in GCSIM", alias)
 
 GCSIM_ARTIFACT_TO_ARTIFACT: Dict[GCSimSet, Tuple[int, Set]] = {}
-for _artifact in metadata.artifacts_metadata.values():
-    GCSIM_ARTIFACT_TO_ARTIFACT[remove_non_words(_artifact["route"].lower())] = (_artifact["id"], _artifact["route"])
+for _artifact in AssetsService.artifact.get_instance().all_items:
+    GCSIM_ARTIFACT_TO_ARTIFACT[remove_non_words(_artifact.en_name.lower())] = (_artifact.id, _artifact.en_name)
 for alias, _artifact in ARTIFACT_ALIASES.items():
     if alias not in GCSIM_ARTIFACT_TO_ARTIFACT:
         if _artifact in GCSIM_ARTIFACT_TO_ARTIFACT:
