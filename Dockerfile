@@ -7,7 +7,7 @@ WORKDIR /app
 RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/apt/sources.list.d/fonts.list \
     && apt update                                  \
     # clone
-    && apt install git wget curl ffmpeg -y                \
+    && apt install git wget curl ffmpeg unzip -y                \
     && git clone -b main --recursive https://github.com/PaiGramTeam/PaiGram.git /app \
     # install dependencies \
     && pip install virtualenv uv  \
@@ -21,6 +21,11 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
     && echo "Asia/Shanghai" > /etc/timezone        \
     # create cache folder
     && mkdir cache/                                \
+    # create assets folder \
+    && mkdir -p resources/assets                   \
+    && wget -O genshin.zip https://nb-1s.enzonix.com/bucket-1565-2162/data/raw/genshin.zip  \
+    && unzip genshin.zip -d resources/assets/      \
+    && rm genshin.zip                              \
     # clean
     && apt-get clean -y                            \
     && rm -rf                                      \
