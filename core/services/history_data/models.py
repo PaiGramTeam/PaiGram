@@ -3,6 +3,7 @@ from typing import Dict
 
 from pydantic import BaseModel
 from simnet.models.genshin.chronicle.abyss import SpiralAbyss
+from simnet.models.genshin.chronicle.hard_challenge import HardChallengeData
 from simnet.models.genshin.chronicle.img_theater import ImgTheaterData
 from simnet.models.genshin.diary import Diary
 
@@ -14,6 +15,7 @@ __all__ = (
     "HistoryDataAbyss",
     "HistoryDataLedger",
     "HistoryDataImgTheater",
+    "HistoryDataHardChallenge",
 )
 
 
@@ -21,6 +23,7 @@ class HistoryDataTypeEnum(int, enum.Enum):
     ABYSS = 0  # 深境螺旋
     LEDGER = 2  # 开拓月历
     ROLE_COMBAT = 3  # 幻想真境剧诗
+    HARD_CHALLENGE = 4  # 肃靖险乱
 
 
 class HistoryDataAbyss(BaseModel):
@@ -46,4 +49,12 @@ class HistoryDataImgTheater(BaseModel):
 
     @classmethod
     def from_data(cls, data: HistoryData) -> "HistoryDataImgTheater":
+        return cls.parse_obj(data.data)
+
+
+class HistoryDataHardChallenge(BaseModel):
+    abyss_data: HardChallengeData
+
+    @classmethod
+    def from_data(cls, data: HistoryData) -> "HistoryDataHardChallenge":
         return cls.parse_obj(data.data)

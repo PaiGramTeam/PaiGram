@@ -1,0 +1,63 @@
+{% set boss = data.monster %}
+<div class="floors">
+    <div class="floor floor-mem" style="display: flex">
+        <div class="head" style="flex: 1">
+            <div style="margin: 40px;">
+                <div>
+                    <img src="{{ boss.icon }}" style="width: 280px;">
+                </div>
+            </div>
+        </div>
+        <div class="chamber" style="flex: 2">
+            <div class="chamber-info" style="display: block; height: auto">
+                <div style="padding: 20px">
+                    <div style="display: flex; justify-content: space-between">
+                        <div class="rank">
+                            <span>{{ boss.name }}&nbsp;&nbsp;</span>
+                            <span style="color: orangered">Lv.{{ boss.level }}</span>
+                        </div>
+                        <div class="rank">
+                            <span>战斗用时：{{ data.second }} 秒</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding: 10px;">
+                    <div style="display: flex">
+                        <div class="rank">
+                            {% set best_avatar = data.best_avatar[0] %}
+                            <span>最强一击: {{ best_avatar.dps }}</span>
+                            <img src="{{ best_avatar.icon }}" alt=""/>
+                        </div>
+                        <div class="rank">
+                            {% set best_avatar = data.best_avatar[1] %}
+                            <span>最高总伤: {{ best_avatar.dps }}</span>
+                            <img src="{{ best_avatar.icon }}" alt=""/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="battles">
+                <div class="battle">
+                    {% for character in data.teams %}
+                        <div class="character">
+                            {% if character.rank > 0 %}
+                                {% set constellation = character.rank %}
+                                {% set bg = ['blue', 'blue', 'green', 'green', 'red', 'red'][constellation - 1] %}
+                                <div style="background-color: var(--{{ bg }})">
+                                    {{ constellation }} 命
+                                </div>
+                            {% endif %}
+                            <div class="element"
+                                 style="background-image: url('../../img/element/{{ character.element }}.png')"></div>
+                            <div class="icon"
+                                 style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
+                                <img src="{{ character.icon }}" alt=""/>
+                            </div>
+                            <div class="caption">Lv.{{ character.level }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

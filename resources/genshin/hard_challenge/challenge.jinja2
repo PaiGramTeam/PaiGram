@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-ch">
+<head>
+    <meta charset="UTF-8">
+    <title>overview</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .overview {
+            padding: 20px 80px;
+            border-radius: unset;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="overview overview-mem">
+        <div class="title">{{ title }}挑战回顾</div>
+        <div class="summarize">
+            <div>
+                <div>UID: {{ uid }}</div>
+                <div>
+                </div>
+            </div>
+            <div>
+                <div>本期开始: {{ start_time }}</div>
+                <div>本期结束: {{ end_time }}</div>
+            </div>
+            <div>
+                <div class="star">
+                    <span>最佳纪录：{{ abyss_data.single.best.second }} 秒</span>
+                    <div class="icon icon2 star{{ abyss_data.single.best.difficulty }}"></div>
+                </div>
+                <div></div>
+            </div>
+        </div>
+    </div>
+        {% for data in abyss_data.single.challenge %}
+        {% include "genshin/hard_challenge/floor.jinja2" %}
+        {% endfor %}
+</div>
+</body>
+</html>
