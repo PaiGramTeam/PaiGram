@@ -48,7 +48,7 @@ class GCSimResultRenderer:
                 result["extra"][character_details["name"]]["owned"] = False
 
             result["extra"][character_details["name"]]["icon"] = self.assets_service.avatar.icon(asset_id).as_uri()
-            result["extra"][character_details["name"]]["rarity"] = self.assets_service.avatar.get_by_id(asset_id).rank
+            result["extra"][character_details["name"]]["rarity"] = self.assets_service.avatar.get_target(asset_id).rank
             result["extra"][character_details["name"]]["constellation"] = gcsim_character.constellation
 
             if "character_dps" not in result["extra"]:

@@ -36,7 +36,7 @@ class PlayerInfoSystem(Plugin):
                     if player_info.hand_image > 10000000:
                         avatar = self.assets_service.avatar.icon(player_info.hand_image).as_uri()
                         try:
-                            rarity = self.assets_service.avatar.get_by_id(player_info.hand_image).rank
+                            rarity = self.assets_service.avatar.get_target(player_info.hand_image).rank
                         except KeyError:
                             logger.warning("未找到角色 %s 的星级", player_info.hand_image)
                     else:

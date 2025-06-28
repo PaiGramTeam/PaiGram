@@ -71,7 +71,7 @@ class BirthdayPlugin(Plugin):
                     else:
                         name = roleToName(msg)
                         aid = str(roleToId(msg))
-                        birthday = self.assets_service.avatar.get_by_id(aid).birthday
+                        birthday = self.assets_service.avatar.get_target(aid).birthday
                         text = f"{name} 的生日是 {birthday.month}月{birthday.day}日 哦~"
                     reply_message = await message.reply_text(text)
                 except KeyError:

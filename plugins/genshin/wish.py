@@ -167,7 +167,7 @@ class WishSimulatorPlugin(Plugin):
                 data.setdefault("url", gacha.as_uri())
                 gacha_item.append(data)
             elif 10000000 <= item_id <= 19999999:
-                data = self.assets_service.avatar.get_by_id(item_id).model_dump()
+                data = self.assets_service.avatar.get_target(item_id).model_dump()
                 gacha = self.assets_service.avatar.gacha_card(item_id)
                 if gacha is None:
                     raise GachaDataFound(item_id)

@@ -57,7 +57,7 @@ class AkashaPlugin(Plugin):
         return data, count
 
     async def get_avatar_board_render_data(self, character: str, uid: int):
-        character = self.assets_service.avatar.get_by_id(roleToId(character))
+        character = self.assets_service.avatar.get_target(roleToId(character))
         if not character:
             raise NotImplementedError
         try:

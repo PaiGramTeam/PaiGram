@@ -38,7 +38,7 @@ class MaterialPlugin(Plugin):
         data = data["data"]
         if character_name not in data.keys():
             return {}
-        character = self.assets_service.avatar.get_by_name(character_name)
+        character = self.assets_service.avatar.get_target(character_name)
         level_up_material = self.assets_service.material.get_by_name(data[character_name]["level_up_materials"])
         ascension_material = self.assets_service.material.get_by_name(data[character_name]["ascension_materials"])
         local_material = self.assets_service.material.get_by_name(data[character_name]["materials"][0])
@@ -163,7 +163,7 @@ class MaterialPlugin(Plugin):
                 "element": character.element.name,
                 "image": self.assets_service.avatar.gacha(character_name).as_uri(),
                 "name": character_name,
-                "association": self.assets_service.avatar.get_by_name(character_name).association.name,
+                "association": self.assets_service.avatar.get_target(character_name).association.name,
             },
             "level_up_materials": level_up_materials,
             "talent_materials": talent_materials,

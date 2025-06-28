@@ -225,7 +225,7 @@ class Calendar:
             if reg_ret := re.search(r"·(.*)\(", act.title):
                 char_name = reg_ret[1]
                 try:
-                    char = assets.avatar.get_by_id(roleToId(char_name))
+                    char = assets.avatar.get_target(roleToId(char_name))
                     act.banner = assets.namecard.navbar(char.name).as_uri()
                     act.face = assets.avatar.icon(char.id).as_uri()
                 except (AssetsCouldNotFound, KeyError):
