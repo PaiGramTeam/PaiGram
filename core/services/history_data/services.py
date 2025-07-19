@@ -36,8 +36,11 @@ class HistoryDataAbyssServices(BaseService, HistoryDataBaseServices):
 
     @staticmethod
     def exists_data(data: HistoryData, old_data: List[HistoryData]) -> bool:
-        floor = data.data.get("abyss_data", {}).get("floors")
-        return any(d.data.get("floors") == floor for d in old_data)
+        def _get_data(_d: dict):
+            return _d.get("abyss_data", {}).get("floors")
+
+        floor = _get_data(data.data)
+        return any(_get_data(d.data) == floor for d in old_data)
 
     @staticmethod
     def create(user_id: int, abyss_data: SpiralAbyss, character_data: Dict[int, int]):
@@ -73,8 +76,11 @@ class HistoryDataImgTheaterServices(BaseService, HistoryDataBaseServices):
 
     @staticmethod
     def exists_data(data: HistoryData, old_data: List[HistoryData]) -> bool:
-        floor = data.data.get("abyss_data", {}).get("detail", {}).get("rounds_data")
-        return any(d.data.get("abyss_data", {}).get("detail", {}).get("rounds_data") == floor for d in old_data)
+        def _get_data(_d: dict):
+            return _d.get("abyss_data", {}).get("detail", {}).get("rounds_data")
+
+        floor = _get_data(data.data)
+        return any(_get_data(d.data) == floor for d in old_data)
 
     @staticmethod
     def create(user_id: int, abyss_data: ImgTheaterData, character_data: Dict[int, int]):
