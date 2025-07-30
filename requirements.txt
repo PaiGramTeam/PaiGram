@@ -6,7 +6,7 @@ aiofiles==24.1.0
     # via paigram
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.12.14
+aiohttp==3.12.15
     # via
     #   enkanetwork-py
     #   influxdb-client
@@ -75,7 +75,7 @@ colorlog==6.9.0
     # via paigram
 cryptography==44.0.3
     # via paigram
-enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@b85094ec99138f8417ba51774688eb1c8f78bb4e
+enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@4fc2d29667879a2afd4d85e40f953d7f88189753
     # via paigram
 et-xmlfile==2.0.0
     # via openpyxl
@@ -83,7 +83,7 @@ exceptiongroup==1.3.0 ; python_full_version < '3.11'
     # via
     #   anyio
     #   pytest
-fakeredis==2.30.1
+fakeredis==2.30.3
     # via paigram
 fastapi==0.116.1
     # via paigram
@@ -93,11 +93,11 @@ frozenlist==1.7.0
     # via
     #   aiohttp
     #   aiosignal
-gcsim-pypi==2.35.1
+gcsim-pypi==2.36.0
     # via paigram
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.44
+gitpython==3.1.45
     # via paigram
 greenlet==3.1.1
     # via
@@ -189,7 +189,7 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
-pyrogram @ git+https://github.com/TeamPGM/pyrogram@ef87901bdcbc94ccc997cb5074159d1e505e04fd
+pyrogram @ git+https://github.com/TeamPGM/pyrogram@d6c55f53f869a88b7b956c803a3619f90dadde75
     # via paigram
 pyrotgcrypto==1.2.7
     # via paigram
@@ -210,7 +210,7 @@ python-dotenv==1.1.1
     #   uvicorn
 python-genshin-artifact==1.0.14
     # via paigram
-python-telegram-bot==22.2
+python-telegram-bot==22.3
     # via paigram
 pyyaml==6.0.2
     # via uvicorn
@@ -222,13 +222,13 @@ redis==6.2.0
     # via
     #   fakeredis
     #   paigram
-rich==14.0.0
+rich==14.1.0
     # via paigram
-sentry-sdk==2.33.0
+sentry-sdk==2.34.0
     # via paigram
 setuptools==80.9.0
     # via influxdb-client
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@41799b08a25c7f48a02552703b8aad4972471742
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@7ab9821e8121a04e4dad68e5c45f9d7e34374369
     # via paigram
 six==1.17.0
     # via python-dateutil
@@ -240,13 +240,13 @@ sortedcontainers==2.4.0
     # via fakeredis
 soupsieve==2.7
     # via beautifulsoup4
-sqlalchemy==2.0.41
+sqlalchemy==2.0.42
     # via
     #   alembic
     #   sqlmodel
 sqlmodel==0.0.24
     # via paigram
-starlette==0.47.1
+starlette==0.47.2
     # via fastapi
 thefuzz==0.22.1
     # via paigram
@@ -271,13 +271,13 @@ typing-extensions==4.14.1
     #   exceptiongroup
     #   fakeredis
     #   fastapi
+    #   gitpython
     #   multidict
     #   pydantic
     #   pydantic-core
     #   pyee
     #   pytest-asyncio
     #   reactivex
-    #   rich
     #   sqlalchemy
     #   starlette
     #   typing-inspection
