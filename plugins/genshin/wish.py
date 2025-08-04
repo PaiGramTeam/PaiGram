@@ -128,7 +128,7 @@ class WishSimulatorHandle:
         re_color = re.search(r"<color=#(.*?)>", title, flags=0)
         if re_color is None:
             return title_html.text, None
-        p = re.sub(r'<color=(.*?)>(.*?)</color(.*?)>', r'<span style="color:\1;">\2</span>', title)
+        p = re.sub(r"<color=(.*?)>(.*?)</color(.*?)>", r'<span style="color:\1;">\2</span>', title)
         return title_html.text, f"<p>{p}</p>"
 
 
