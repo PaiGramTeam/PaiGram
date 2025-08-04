@@ -128,10 +128,8 @@ class WishSimulatorHandle:
         re_color = re.search(r"<color=#(.*?)>", title, flags=0)
         if re_color is None:
             return title_html.text, None
-        color = re_color[1]
-        title_html.color.name = "span"
-        title_html.span["style"] = f"color:#{color};"
-        return title_html.text, title_html.p
+        p = re.sub(r"<color=(.*?)>(.*?)</color(.*?)>", r'<span style="color:\1;">\2</span>', title)
+        return title_html.text, f"<p>{p}</p>"
 
 
 class WishSimulatorPlugin(Plugin):
