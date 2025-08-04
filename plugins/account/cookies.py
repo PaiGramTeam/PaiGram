@@ -142,6 +142,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
     @staticmethod
     async def quit_conversation(update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
+        context.chat_data.pop("bind_account_plugin_data", None)
         context.chat_data.pop("account_cookies_plugin_data", None)
         await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
@@ -153,6 +154,11 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await message.reply_text("你已经有一个绑定任务在进行中，请先退出后再试")
             return ConversationHandler.END
         return None
+
+    @conversation.fallback
+    @handler.command(command="cancel", block=False)
+    async def cancel(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        return await self.quit_conversation(update, context)
 
     @conversation.entry_point
     @handler.command(command="setcookie", filters=filters.ChatType.PRIVATE, block=False)
@@ -230,7 +236,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             logger.info("用户 %s[%s] Cookies解析出现错误\ntext:%s", user.full_name, user.id, message.text)
             logger.debug("解析Cookies出现错误", exc_info=exc)
             await message.reply_text("解析Cookies出现错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         if account_cookies_plugin_data.region == RegionEnum.HYPERION:
             try:
                 account_cookies_plugin_data.device = self.parse_headers(cookie)
@@ -240,7 +246,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
         if not cookies:
             logger.info("用户 %s[%s] Cookies格式有误", user.full_name, user.id)
             await message.reply_text("Cookies格式有误，请检查后重新尝试绑定", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         account_cookies_plugin_data.cookies = cookies
 
     async def check_cookies(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
@@ -255,7 +261,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
         else:
             logger.error("用户 %s[%s] region 异常", user.full_name, user.id)
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         async with GenshinClient(cookies=cookies.to_dict(), region=region) as client:
             check_cookie = cookies.check()
             if cookies.login_ticket is not None:
@@ -282,12 +288,12 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 await message.reply_text(
                     "检测到缺少 stoken，请尝试添加 stoken 后重新绑定。", reply_markup=ReplyKeyboardRemove()
                 )
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             if cookies.stoken and cookies.stoken.startswith("v2") and cookies.mid is None:
                 await message.reply_text(
                     "检测到缺少 mid，请尝试添加 mid 后重新绑定。", reply_markup=ReplyKeyboardRemove()
                 )
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             try:
                 if region == Region.CHINESE:
                     cookies.stoken, cookies.mid = await client.get_stoken_v2_and_mid_by_by_stoken(
@@ -309,14 +315,14 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     "用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original
                 )
                 await message.reply_text("Stoken 无效，请重新绑定。", reply_markup=ReplyKeyboardRemove())
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             except UnicodeEncodeError:
                 await message.reply_text("Stoken 非法，请重新绑定。", reply_markup=ReplyKeyboardRemove())
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             except ValueError as e:
                 if "account_id" in str(e):
                     await message.reply_text("account_id 未找到，请检查输入是否有误。")
-                    return ConversationHandler.END
+                    return await self.quit_conversation(update, context)
                 raise e
             try:
                 if cookies.account_id is None:
@@ -335,14 +341,14 @@ class AccountCookiesPlugin(Plugin.Conversation):
             except DataNotPublic:
                 logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
                 await message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             except InvalidCookies:
                 logger.info("用户 %s[%s] Cookies已经过期", user.full_name, user.id)
                 await message.reply_text(
                     "获取账号信息失败，返回Cookies已经过期，请尝试在无痕浏览器中登录获取Cookies。",
                     reply_markup=ReplyKeyboardRemove(),
                 )
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             except SimnetBadRequest as exc:
                 logger.info(
                     "用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original
@@ -351,22 +357,22 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     f"获取账号信息发生错误，错误信息为 {exc.original}，请检查Cookie或者账号是否正常",
                     reply_markup=ReplyKeyboardRemove(),
                 )
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             except AccountIdNotFound:
                 logger.info("用户 %s[%s] 无法获取账号ID", user.full_name, user.id)
                 await message.reply_text("无法获取账号ID，请检查Cookie是否正常", reply_markup=ReplyKeyboardRemove())
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             except (AttributeError, ValueError) as exc:
                 logger.warning("用户 %s[%s] Cookies错误", user.full_name, user.id)
                 logger.debug("用户 %s[%s] Cookies错误", user.full_name, user.id, exc_info=exc)
                 await message.reply_text("Cookies错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
         if account_cookies_plugin_data.account_id is None:
             await message.reply_text("无法获取账号ID，请检查Cookie是否正确或请稍后重试")
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         if not genshin_accounts:
             await message.reply_text("未找到游戏账号，请确认账号信息无误。")
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         account_cookies_plugin_data.cookies = cookies.to_dict()
         account_cookies_plugin_data.genshin_accounts = genshin_accounts
         await self.send_choose_players_message(message, genshin_accounts)
@@ -521,6 +527,6 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await self.update_devices(account_cookies_plugin_data.account_id, account_cookies_plugin_data.device)
             logger.info("用户 %s[%s] 绑定账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         await message.reply_text("回复错误，请重新输入")
         return COMMAND_RESULT

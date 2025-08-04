@@ -65,6 +65,7 @@ class BindAccountPlugin(Plugin.Conversation):
     async def quit_conversation(update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         context.chat_data.pop("bind_account_plugin_data", None)
+        context.chat_data.pop("account_cookies_plugin_data", None)
         await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
@@ -75,6 +76,11 @@ class BindAccountPlugin(Plugin.Conversation):
             await message.reply_text("你已经有一个绑定任务在进行中，请先退出后再试")
             return ConversationHandler.END
         return None
+
+    @conversation.fallback
+    @handler.command(command="cancel", block=False)
+    async def cancel(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        return await self.quit_conversation(update, context)
 
     @conversation.entry_point
     @handler.command(command="setuid", filters=filters.ChatType.PRIVATE, block=False)
@@ -151,46 +157,46 @@ class BindAccountPlugin(Plugin.Conversation):
             account_id = int(message.text)
         except ValueError:
             await message.reply_text("ID 格式有误，请检查", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         try:
             cookies = await self.public_cookies_service.get_cookies(user.id, region)
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         except CookiesCachePoolExhausted:
             await message.reply_text(
                 "公共Cookies池已经耗尽，请稍后重试或者绑定 cookie", reply_markup=ReplyKeyboardRemove()
             )
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         if region == RegionEnum.HYPERION:
             client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
         elif region == RegionEnum.HOYOLAB:
             client = GenshinClient(cookies=cookies.data, region=Region.OVERSEAS, lang="zh-cn")
         else:
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         try:
             record_card = await client.get_record_card(account_id)
             if record_card is None:
                 await message.reply_text("请在设置展示主界面添加原神", reply_markup=ReplyKeyboardRemove())
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
         except DataNotPublic:
             await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())
             logger.warning("获取账号信息发生错误 %s 账户信息未公开", account_id)
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         except SimnetBadRequest as exc:
             if exc.ret_code == -10001:
                 await message.reply_text("账号所属服务器与选择服务器不符，请检查", reply_markup=ReplyKeyboardRemove())
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             await message.reply_text("获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
             logger.error("获取账号信息发生错误")
             logger.exception(exc)
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         player_info = await self.players_service.get(
             user.id, player_id=record_card.uid, region=bind_account_plugin_data.region
         )
         if player_info:
             await message.reply_text("你已经绑定该账号")
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         bind_account_plugin_data.account_id = account_id
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
@@ -222,41 +228,41 @@ class BindAccountPlugin(Plugin.Conversation):
             player_id = int(message.text)
         except ValueError:
             await message.reply_text("ID 格式有误，请检查", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         try:
             async with self.helper.public_genshin(user.id, region=region, uid=player_id) as client:
                 player_stats = await client.get_genshin_user(player_id)
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         except AccountNotFound:
             await message.reply_text("找不到用户，uid可能无效", reply_markup=ReplyKeyboardRemove())
             logger.warning("获取账号信息发生错误 %s 找不到用户 uid可能无效", player_id)
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         except DataNotPublic:
             await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())
             logger.warning("获取账号信息发生错误 %s 账户信息未公开", player_id)
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         except (InvalidCookies, NeedChallenge):
             await self.public_cookies_service.undo(user.id)
             await message.reply_text("出错了呜呜呜 ~ 请稍后重试或者绑定 cookie")
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         except SimnetBadRequest as exc:
             if exc.ret_code == -10001:
                 await message.reply_text("账号所属服务器与选择服务器不符，请检查", reply_markup=ReplyKeyboardRemove())
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             await message.reply_text("获取账号信息发生错误", reply_markup=ReplyKeyboardRemove())
             logger.error("获取账号信息发生错误", exc_info=exc)
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         except ValueError:
             await message.reply_text("ID 格式有误，请检查", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         player_info = await self.players_service.get(
             user.id, player_id=player_id, region=bind_account_plugin_data.region
         )
         if player_info:
             await message.reply_text("你已经绑定该账号")
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
         logger.info(
@@ -302,7 +308,7 @@ class BindAccountPlugin(Plugin.Conversation):
                 is_chosen = False
             if player_info is not None and player_info.player_id == player_id:
                 await message.reply_text("你已经绑定该账号")
-                return ConversationHandler.END
+                return await self.quit_conversation(update, context)
             player = Player(
                 user_id=user.id,
                 player_id=player_id,
@@ -313,7 +319,7 @@ class BindAccountPlugin(Plugin.Conversation):
             await self.update_player_info(player, nickname)
             logger.success("用户 %s[%s] 绑定UID账号成功", user.full_name, user.id)
             await message.reply_text("保存成功", reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return await self.quit_conversation(update, context)
         await message.reply_text("回复错误，请重新输入")
         return COMMAND_RESULT
 
