@@ -87,16 +87,6 @@ class ErrorHandler(Plugin):
                     ],
                 ]
             )
-        elif "通过验证" in content:
-            buttons = InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(
-                            "点我通过验证", url=create_deep_linked_url(context.bot.username, "verify_verification")
-                        )
-                    ]
-                ]
-            )
         elif "绑定账号" in content:
             buttons = InlineKeyboardMarkup(
                 [
@@ -172,7 +162,10 @@ class ErrorHandler(Plugin):
         elif isinstance(exc, DataNotPublic):
             notice = self.ERROR_MSG_PREFIX + "查询的用户数据未公开"
         elif isinstance(exc, NeedChallenge):
-            notice = self.ERROR_MSG_PREFIX + "服务器检测到该账号可能存在异常，请求被拒绝，请尝试通过验证"
+            notice = self.ERROR_MSG_PREFIX + (
+                "服务器检测到该账号可能存在异常，请求被拒绝。"
+                "请打开米游社→我的角色中尝试手动通过验证。如仍然提示错误，请尝试重新绑定"
+            )
         else:
             if exc.retcode == -130:
                 notice = self.ERROR_MSG_PREFIX + "未设置默认角色，请尝试重新绑定"

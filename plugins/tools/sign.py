@@ -20,7 +20,6 @@ from core.services.cookies import CookiesService
 from core.services.task.models import TaskStatusEnum
 from core.services.task.services import SignServices
 from core.services.users.services import UserService
-from modules.apihelper.client.components.verify import Verify
 from plugins.tools.genshin import PlayerNotFoundError, CookiesNotFoundError, GenshinHelper
 from plugins.tools.recognize import RecognizeSystem
 from utils.log import logger
@@ -64,7 +63,6 @@ class SignSystem(Plugin):
         self.genshin_helper = genshin_helper
         self.cache = redis.client
         self.qname = "plugin:sign:"
-        self.verify = Verify()
 
     async def get_challenge(self, uid: int) -> Tuple[Optional[str], Optional[str]]:
         data = await self.cache.get(f"{self.qname}{uid}")
