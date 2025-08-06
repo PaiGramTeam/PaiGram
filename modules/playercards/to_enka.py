@@ -201,13 +201,28 @@ def get_talent_id_list(data: "GenshinDetailCharacter") -> List[int]:
     return [constellation.id for constellation in data.constellations if constellation.activated]
 
 
-def get_proud_skill_extra_level_map(avatar_id: int, talent_count: int) -> Dict[str, int]:
-    level_map = Assets.DATA["talents"].get(str(avatar_id), {})
+def get_proud_skill_extra_level_map(data: "GenshinDetailCharacter") -> Dict[str, int]:
+    skill_names_map = {skill.name: skill.id for skill in data.skills if skill.skill_type == 1}
+    constellations_index = (2, 4)
+    need_level_up_skills_id = []
+    for index in constellations_index:
+        if index >= len(data.constellations):
+            continue
+        constellation = data.constellations[index]
+        if not constellation.activated:
+            continue
+        for skill_name, skill_id in skill_names_map.items():
+            if skill_name not in constellation.effect:
+                continue
+            need_level_up_skills_id.append(skill_id)
+
     data = {}
-    for k, v in level_map.items():
-        if talent_count >= int(k):
-            if talent_data := level_map.get(k):
-                data[str(talent_data["proud_skill_group_id"])] = talent_data["extra_level"]
+    for skill_id in need_level_up_skills_id:
+        _skill = Assets.skills(skill_id)
+        if not _skill:
+            continue
+        data[str(_skill.pround_map)] = 3
+
     return data
 
 
@@ -221,7 +236,7 @@ def from_simnet_to_enka_single(index: int, data: "GenshinDetailCharacters") -> D
     prop_map = get_prop_map(character)
     skill_depot_id = get_skill_depot_id(character)
     talent_id_list = get_talent_id_list(character)
-    proud_skill_extra_level_map = get_proud_skill_extra_level_map(avatar_id, len(talent_id_list))
+    proud_skill_extra_level_map = get_proud_skill_extra_level_map(character)
     skill_level_map = get_skill_level_map(character, proud_skill_extra_level_map)
     if not skill_level_map:
         logger.warning("解析技能等级数据失败 ch_id[%s]", avatar_id)
