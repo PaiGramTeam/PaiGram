@@ -15,12 +15,14 @@ from core.services.history_data.services import (
     HistoryDataAbyssServices,
     HistoryDataLedgerServices,
     HistoryDataImgTheaterServices,
+    HistoryDataHardChallengeServices,
 )
 from gram_core.basemodel import RegionEnum
 from gram_core.plugin import handler
 from gram_core.services.cookies import CookiesService
 from gram_core.services.cookies.models import CookiesStatusEnum
 from plugins.genshin.abyss import AbyssPlugin
+from plugins.genshin.hard_challenge import HardChallengePlugin
 from plugins.genshin.ledger import LedgerPlugin
 from plugins.genshin.role_combat import RoleCombatPlugin
 from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
@@ -49,12 +51,14 @@ class RefreshHistoryJob(Plugin):
         history_abyss: HistoryDataAbyssServices,
         history_ledger: HistoryDataLedgerServices,
         history_img_theater: HistoryDataImgTheaterServices,
+        history_hard_challenge: HistoryDataHardChallengeServices,
     ):
         self.cookies = cookies
         self.genshin_helper = genshin_helper
         self.history_data_abyss = history_abyss
         self.history_data_ledger = history_ledger
         self.history_data_img_theater = history_img_theater
+        self.history_data_hard_challenge = history_hard_challenge
 
     @staticmethod
     async def send_notice(context: "ContextTypes.DEFAULT_TYPE", user_id: int, notice_text: str):
@@ -125,6 +129,20 @@ class RefreshHistoryJob(Plugin):
         notice_text = NOTICE_TEXT % ("幻想真境剧诗历史记录", now, uid, "挑战记录")
         await self.send_notice(context, user_id, notice_text)
 
+    async def save_hard_challenge_data(self, client: "GenshinClient"):
+        uid = client.player_id
+        abyss_data = await client.get_genshin_hard_challenge(uid, lang="zh-cn")
+        if abyss_data.unlocked and abyss_data.data:
+            data = abyss_data.data[0]
+            if data.single.has_data and data.schedule.is_valid:
+                return await HardChallengePlugin.save_abyss_data(self.history_data_hard_challenge, uid, data)
+        return False
+
+    async def send_hard_challenge_notice(self, context: "ContextTypes.DEFAULT_TYPE", user_id: int, uid: int):
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        notice_text = NOTICE_TEXT % ("幽境危战历史记录", now, uid, "挑战记录")
+        await self.send_notice(context, user_id, notice_text)
+
     @handler.command(command="remove_same_history", block=False, admin=True)
     async def remove_same_history(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
@@ -138,6 +156,8 @@ class RefreshHistoryJob(Plugin):
         text += f"旅行札记数据移除数量：{num2}\n"
         num3 = await self.history_data_img_theater.remove_same_data()
         text += f"幻想真境剧诗数据移除数量：{num3}\n"
+        num4 = await self.history_data_hard_challenge.remove_same_data()
+        text += f"幽境危战数据移除数量：{num4}\n"
         await reply.edit_text(text)
 
     @handler.command(command="refresh_all_history", block=False, admin=True)
@@ -165,6 +185,8 @@ class RefreshHistoryJob(Plugin):
                                 await self.send_abyss_notice(context, user_id, client.player_id)
                             if await self.save_img_theater_data(client, avatar_data):
                                 await self.send_img_theater_notice(context, user_id, client.player_id)
+                        if await self.save_hard_challenge_data(client):
+                            await self.send_hard_challenge_notice(context, user_id, client.player_id)
                         if await self.save_ledger_data(client):
                             await self.send_ledger_notice(context, user_id, client.player_id)
                 except (InvalidCookies, PlayerNotFoundError, CookiesNotFoundError):

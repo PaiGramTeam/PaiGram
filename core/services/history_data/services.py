@@ -28,6 +28,7 @@ __all__ = (
     "HistoryDataAbyssServices",
     "HistoryDataLedgerServices",
     "HistoryDataImgTheaterServices",
+    "HistoryDataHardChallengeServices",
 )
 
 
