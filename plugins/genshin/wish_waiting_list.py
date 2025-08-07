@@ -83,16 +83,19 @@ class WishWaitingListPlugin(Plugin):
         now = datetime.now()
         for p in MIX_POOL:
             does = p[pool_type]
+            fives = does["five"]
+            fours = does["four"]
             last_up_time = datetime.strptime(p["to"], "%Y-%m-%d %H:%M:%S")
-            last_up_day = math.ceil((now - last_up_time).total_seconds() / 86400)
-            for do in does:
-                t: WishWaitingListData = five_times.get(do) or four_times.get(do)
-                if not t:
-                    continue
-                t.up_times += 1
-                if t.last_up_time < last_up_time:
-                    t.last_up_time = last_up_time
-                    t.last_up_day = last_up_day
+            last_up_day = max(math.ceil((now - last_up_time).total_seconds() / 86400), 0)
+            for i, times in [(fives, five_times), (fours, four_times)]:
+                for n in i:
+                    if n not in times:
+                        continue
+                    t = times[n]
+                    t.up_times += 1
+                    if t.last_up_time < last_up_time:
+                        t.last_up_time = last_up_time
+                        t.last_up_day = last_up_day
 
     async def _get_waiting_list(
         self,
