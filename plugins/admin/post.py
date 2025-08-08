@@ -27,6 +27,7 @@ from core.config import config
 from core.plugin import Plugin, conversation, handler
 from gram_core.basemodel import Settings, SettingsConfigDict
 from gram_core.dependence.redisdb import RedisDB
+from metadata.post_tags import POST_TAGS
 from modules.apihelper.client.components.hoyolab import Hoyolab
 from modules.apihelper.client.components.hyperion import Hyperion, HyperionBase
 from modules.apihelper.error import APIHelperException
@@ -365,6 +366,17 @@ class Post(Plugin.Conversation):
             return ConversationHandler.END
         return await self.send_post_info(post_handler_data, message, post_id, post_type)
 
+    @staticmethod
+    def get_tags_by_subject(post_subject: str) -> List[str]:
+        """根据文章标题预设规则设置标签"""
+        tags = []
+        for tag, patterns in POST_TAGS.items():
+            for pattern in patterns:
+                if re.search(pattern, post_subject):
+                    tags.append(tag)
+                    break
+        return tags
+
     async def send_post_info(
         self, post_handler_data: PostHandlerData, message: "Message", post_id: int, post_type: "PostTypeEnum"
     ) -> int:
@@ -375,6 +387,7 @@ class Post(Plugin.Conversation):
         post_images = await self.gif_to_mp4(post_images)
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
+        post_tags = self.get_tags_by_subject(post_subject)
         post_soup = BeautifulSoup(post_info.content, features="html.parser")
         post_text, too_long = self.parse_post_text(post_soup, post_subject)
         url = post_info.get_url(self.short_name)
@@ -383,19 +396,20 @@ class Post(Plugin.Conversation):
             post_text = self.safe_cut(post_text, max_len)
             await message.reply_text(f"警告！图片字符描述已经超过 {max_len} 个字，已经切割")
         post_text += f"\n\n[source]({url})"
+        post_text_caption = post_text + escape_markdown("".join([f" #{tag}" for tag in post_tags]), version=2)
         try:
             if len(post_images) > 1:
                 media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
                 index = (math.ceil(len(media) / 10) - 1) * 10
-                media[index].caption = post_text
+                media[index].caption = post_text_caption
                 media[index].parse_mode = ParseMode.MARKDOWN_V2
                 for group in ArkoWrapper(media).group(10):  # 每 10 张图片分一个组
                     await message.reply_media_group(list(group), write_timeout=len(group) * 5)
             elif len(post_images) == 1:
                 image = post_images[0]
-                await message.reply_photo(image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2)
+                await message.reply_photo(image.data, caption=post_text_caption, parse_mode=ParseMode.MARKDOWN_V2)
             else:
-                await message.reply_text(post_text, parse_mode=ParseMode.MARKDOWN_V2)
+                await message.reply_text(post_text_caption, parse_mode=ParseMode.MARKDOWN_V2)
         except BadRequest as exc:
             await message.reply_text(f"发送图片时发生错误 {exc.message}", reply_markup=ReplyKeyboardRemove())
             logger.error("Post模块发送图片时发生错误 %s", exc.message)
@@ -408,7 +422,7 @@ class Post(Plugin.Conversation):
         post_handler_data.post_text = post_text
         post_handler_data.post_images = post_images
         post_handler_data.delete_photo = []
-        post_handler_data.tags = []
+        post_handler_data.tags = post_tags
         post_handler_data.channel_id = -1
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
