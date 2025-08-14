@@ -70,3 +70,8 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 include = '\.pyi?$'
 line-length = 120
 target-version = ['py311']
+
+[dependency-groups]
+dev = [
+    "mwclient>=0.11.0",
+]
