@@ -109,8 +109,8 @@ class Post(Plugin.Conversation):
             logger.success("文章定时推送处理已经开启")
             cn_task = partial(self.task, post_type=PostTypeEnum.CN)
             os_task = partial(self.task, post_type=PostTypeEnum.OS)
-            self.application.job_queue.run_repeating(cn_task, 30, name="post_cn_task")
-            self.application.job_queue.run_repeating(os_task, 30, name="post_os_task")
+            self.application.job_queue.run_repeating(cn_task, 60, name="post_cn_task")
+            self.application.job_queue.run_repeating(os_task, 60, name="post_os_task")
         logger.success("文章定时推送处理已经开启")
         output, _ = await self.execute("ffmpeg -version")
         if "ffmpeg version" in output:

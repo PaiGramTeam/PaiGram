@@ -24,6 +24,8 @@ __all__ = (
 
 
 class HyperionBase:
+    LANG = "zh-cn"
+
     @staticmethod
     def extract_post_id(text: str) -> Tuple[int, PostTypeEnum]:
         """
@@ -113,11 +115,13 @@ class HyperionBase:
         )
 
     @abstractmethod
-    async def get_new_list(self, gids: int, type_id: int, page_size: int = 20) -> Dict:
+    async def get_new_list(self, gids: int, type_id: int, page_size: int = 20, lang: str = "") -> Dict:
         """获取最新帖子"""
 
     @abstractmethod
-    async def get_new_list_recommended_posts(self, gids: int, type_id: int, page_size: int = 20) -> List[PostRecommend]:
+    async def get_new_list_recommended_posts(
+        self, gids: int, type_id: int, page_size: int = 20, lang: str = ""
+    ) -> List[PostRecommend]:
         """获取最新帖子"""
 
     @abstractmethod
@@ -192,11 +196,13 @@ class Hyperion(HyperionBase):
     async def _download_image(self, art_id: int, url: str, page: int = 0) -> List[ArtworkImage]:
         return await self.download_image(self.client, art_id, url, page)
 
-    async def get_new_list(self, gids: int, type_id: int, page_size: int = 20) -> Dict:
+    async def get_new_list(self, gids: int, type_id: int, page_size: int = 20, lang: str = "") -> Dict:
         params = {"gids": gids, "page_size": page_size, "type": type_id}
         return await self.client.get(url=self.GET_NEW_LIST_URL, params=params)
 
-    async def get_new_list_recommended_posts(self, gids: int, type_id: int, page_size: int = 20) -> List[PostRecommend]:
+    async def get_new_list_recommended_posts(
+        self, gids: int, type_id: int, page_size: int = 20, lang: str = ""
+    ) -> List[PostRecommend]:
         resp = await self.get_new_list(gids, type_id, page_size)
         data = resp["list"]
         return [PostRecommend.parse(i) for i in data]
