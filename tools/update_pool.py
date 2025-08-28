@@ -57,12 +57,13 @@ class WarpData(BaseModel):
         from_time = self.start_time.strftime("%Y-%m-%d %H:%M:%S")
         to_time = self.end_time.strftime("%Y-%m-%d %H:%M:%S")
         name = "|".join([i for i in set(self.name) if i])
+        self.four.reverse()
         print("{")
         print(f'    "five": {self.five},')
         print(f'    "four": {self.four},')
+        print(f'    "name": "{name}",')
         print(f'    "from": "{from_time}",')
         print(f'    "to": "{to_time}",')
-        print(f'    "name": "{name}",')
         print("}")
 
 
