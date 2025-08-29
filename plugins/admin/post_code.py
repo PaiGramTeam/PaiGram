@@ -115,7 +115,7 @@ class PostCode(Plugin.Conversation):
     """版本前瞻特别节目兑换码推送"""
 
     MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "推送并且定时更新"], ["退出"]], True, True)
-    SUBJECT_RE = re.compile(r"《原神》(\d+\.\d+)版本前瞻特别节目")
+    SUBJECT_RE = re.compile(r"《原神》(.*?)版本前瞻特别节目")
     ACT_RE = re.compile(r"act_id=(.*?)&")
 
     def __init__(self):
