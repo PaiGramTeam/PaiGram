@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Dict, List, TYPE_CHECKING
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -19,16 +18,21 @@ class MigrateAdmin(Plugin):
         self.cache_data: Dict[int, List[IMigrateData]] = {}
         self.wait_time = 60
 
-    async def _add_pop_cache_job(self, user_id: int) -> None:
+    async def _add_pop_cache_job(self, context: "ContextTypes.DEFAULT_TYPE") -> None:
+        job = context.job
+        user_id = job.user_id
         if user_id in self.cache_data:
             del self.cache_data[user_id]
 
-    def add_pop_cache_job(self, user_id: int) -> None:
+    def add_pop_cache_job(self, user_id: int, when: int = 60) -> None:
         job_queue = self.application.job_queue
         if job_queue is None:
             raise RuntimeError
         job_queue.run_once(
-            callback=partial(self._add_pop_cache_job, user_id=user_id), when=60, name=f"{user_id}|migrate_pop_cache"
+            callback=self._add_pop_cache_job,
+            when=when,
+            name=f"{user_id}|migrate_pop_cache",
+            user_id=user_id,
         )
 
     def cancel_pop_cache_job(self, user_id: int) -> None:
@@ -115,7 +119,7 @@ class MigrateAdmin(Plugin):
         try:
             text = await self.try_migrate_data(old_user_id)
         finally:
-            await self._add_pop_cache_job(old_user_id)
+            self.add_pop_cache_job(old_user_id, when=1)
         if text:
             await message.edit_text(f"迁移部分数据失败！\n\n{text}")
             return
