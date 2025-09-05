@@ -223,7 +223,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
         try:
             # cookie str to dict
             wrapped = (
-                ArkoWrapper(text.split(";"))
+                ArkoWrapper(("".join(text.split("\n"))).split(";"))
                 .filter(lambda x: x != "")
                 .map(lambda x: x.strip())
                 .map(lambda x: ((y := x.split("=", 1))[0], y[1]))
