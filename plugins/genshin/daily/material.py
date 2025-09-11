@@ -331,11 +331,6 @@ class DailyMaterial(Plugin):
         loading_prompt = await message.reply_text(f"{config.notice.bot_name}可能需要找找图标素材，还请耐心等待哦~")
         await message.reply_chat_action(ChatAction.TYPING)
 
-        # 获取已经缓存的秘境素材信息
-        if self.everyday_materials.is_empty():  # 若没有缓存每日素材表的数据
-            logger.info("正在获取每日素材缓存")
-            await self._refresh_everyday_materials()
-
         # 尝试获取用户已绑定的原神账号信息
         client, user_owned = await self._get_items_from_user(user_id, uid, offset)
         today_materials = self.everyday_materials.weekday(weekday)

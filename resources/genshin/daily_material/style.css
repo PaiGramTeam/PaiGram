@@ -88,9 +88,9 @@ body {
 
 .area-name {
     background-image: url("bg/title/01.png");
-    background-size: contain;
+    background-size: 100% 100%;
     height: inherit;
-    width: 356px;
+    width: 256px;
     filter: drop-shadow(3px 3px 5px rgba(0, 0, 0, 0.8));
 }
 
@@ -98,13 +98,13 @@ body {
     height: inherit;
     filter: drop-shadow(3px 3px 5px black);
     position: relative;
-    left: 5px;
+    left: 25px;
 }
 
 .area-name > div {
     position: absolute;
     top: 50%;
-    left: 88px;
+    left: 110px;
     transform: translateY(-50%);
     font-size: 28px;
 }
