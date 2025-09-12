@@ -55,7 +55,7 @@ class ArtworkImage(BaseModel):
                 need_crop = height if min_px == width else width
                 crop_num = int(need_crop / max_px)
                 u = need_crop % max_px
-                if u > 100:
+                if u > (max_px / 2):
                     crop_num += 1
                 new_data = []
                 for i in range(crop_num):
