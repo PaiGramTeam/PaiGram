@@ -67,33 +67,43 @@ class PlayerStatsPlugins(Plugin):
 
         # 因为需要替换线上图片地址为本地地址，先克隆数据，避免修改原数据
         user_info = user_info.copy(deep=True)
+        stats = user_info.stats.model_dump()
+
+        role_combat = user_info.stats.role_combat
+        stats["role_combat_str"] = f"第{role_combat.max_round_id}幕" if role_combat.has_data else "-"
+        hard_challenge = user_info.stats.hard_challenge
+        int_map = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII", 8: "VIII"}
+        stats["hard_challenge_str"] = int_map.get(hard_challenge.difficulty, "-") if hard_challenge.has_data else "-"
 
         data = {
             "uid": mask_number(uid),
             "info": user_info.info,
-            "stats": user_info.stats,
+            "stats": stats,
             "explorations": user_info.explorations,
             "skip_explor": [10],
             "teapot": user_info.teapot,
             "stats_labels": [
                 ("活跃天数", "days_active"),
-                ("成就达成数", "achievements"),
+                ("深境螺旋", "spiral_abyss"),
+                ("幻想真境剧诗", "role_combat_str"),
                 ("获取角色数", "characters"),
                 ("满好感角色数", "full_fetter_avatar_num"),
-                ("深境螺旋", "spiral_abyss"),
+                ("成就达成数", "achievements"),
+                ("幽境危战", "hard_challenge_str"),
                 ("解锁传送点", "unlocked_waypoints"),
                 ("解锁秘境", "unlocked_domains"),
-                ("奇馈宝箱数", "remarkable_chests"),
-                ("华丽宝箱数", "luxurious_chests"),
-                ("珍贵宝箱数", "precious_chests"),
-                ("精致宝箱数", "exquisite_chests"),
-                ("普通宝箱数", "common_chests"),
+                ("月神瞳", "moonoculi"),
                 ("风神瞳", "anemoculi"),
                 ("岩神瞳", "geoculi"),
                 ("雷神瞳", "electroculi"),
                 ("草神瞳", "dendroculi"),
                 ("水神瞳", "hydroculi"),
                 ("火神瞳", "pyroculi"),
+                ("华丽宝箱数", "luxurious_chests"),
+                ("珍贵宝箱数", "precious_chests"),
+                ("精致宝箱数", "exquisite_chests"),
+                ("普通宝箱数", "common_chests"),
+                ("奇馈宝箱数", "remarkable_chests"),
             ],
             "style": random.choice(["mondstadt", "liyue"]),  # nosec
         }
@@ -103,7 +113,7 @@ class PlayerStatsPlugins(Plugin):
         return await self.template_service.render(
             "genshin/stats/stats.jinja2",
             data,
-            {"width": 650, "height": 800},
+            {"width": 950, "height": 800},
             full_page=True,
         )
 
@@ -123,8 +133,12 @@ class PlayerStatsPlugins(Plugin):
 
         # 探索地区
         for item in data.explorations:
-            item.icon = await self._download_resource(item.icon)
-            item.cover = await self._download_resource(item.cover)
+            if item.id in (16,):
+                item.icon = (RESOURCE_DIR / "img" / "city" / ("world-logo-" + str(item.id) + ".png")).as_uri()
+                item.cover = (RESOURCE_DIR / "img" / "city" / ("world-cover-" + str(item.id) + ".png")).as_uri()
+            else:
+                item.icon = await self._download_resource(item.icon)
+                item.cover = await self._download_resource(item.cover)
 
     async def stats_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):
         callback_query = update.callback_query

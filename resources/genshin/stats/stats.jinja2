@@ -12,7 +12,7 @@
     <script src="../../js/tailwindcss-3.1.8.js"></script>
   </head>
   <body class="text-neutral-600">
-    <div class="mx-auto max-w-[600px] py-8">
+    <div class="mx-auto max-w-[900px] py-8">
       <div class="header p-6 flex mb-8 rounded-xl bg-cover justify-between">
         <div class="flex flex-col items-center justify-center">
           <h1 class="text-4xl italic name mb-2 px-2">
@@ -27,7 +27,7 @@
           <h2 class="box-title text-center text-xl ring text-neutral-100 p-1">
             数据总览
           </h2>
-          <div class="p-6 grid grid-cols-4 gap-4 text-center">
+          <div class="p-6 grid grid-cols-6 gap-4 text-center">
             {% for label, key in stats_labels %}
             <div class="">
               <div class="text-xl box-stats">{{ stats[key] }}</div>
@@ -41,21 +41,26 @@
           <h2 class="box-title text-center text-xl ring text-neutral-100 p-1">
             世界探索
           </h2>
-          <div class="p-6 grid grid-cols-4 gap-4 text-center text-neutral-100">
+          <div class="p-6 grid grid-cols-6 gap-4 text-center text-neutral-100">
             {% for e in explorations %}
                 {% if e.id not in skip_explor %}
-                    <div
-                            class="w-full flex flex-col items-center rounded-lg p-2 space-y-1 bg-cover"
-                            style="background-image: url('{{ e.cover }}');"
-                    >
-                        <img class="w-3/5" src="{{ e.icon }}" />
-                        <div class="text-sm w-full truncate">{{ e.name }}</div>
-                        <div class="text-xs">{{ e.explored }}%</div>
-                        <div class="pointer-bar">
-                            <div
-                                class="pointer-progress-bar"
-                                style="width: {{ e.explored }}%"
-                            ></div>
+                    {% set BG = {15: '#67504B', 16: '#526181', 17: '#4B5681'}[e.id] %}
+                    <div class="w-full flex flex-col items-center p-2 space-y-1 relative">
+                        <div class="absolute w-full h-full z-10"
+                             style="background: {{ BG }}; border-radius: 8px;"
+                        >
+                            <img src="{{ e.cover }}" alt="" class="absolute w-full h-full z-20" style="border-radius: 8px;">
+                        </div>
+                        <div class="w-full flex flex-col items-center rounded-lg p-2 space-y-1 z-30">
+                            <img class="w-3/5" src="{{ e.icon }}" />
+                            <div class="text-sm w-full truncate">{{ e.name }}</div>
+                            <div class="text-xs">{{ e.explored }}%</div>
+                            <div class="pointer-bar">
+                                <div
+                                    class="pointer-progress-bar"
+                                    style="width: {{ e.explored }}%"
+                                ></div>
+                            </div>
                         </div>
                     </div>
                 {% endif %}
