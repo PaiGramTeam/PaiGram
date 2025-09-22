@@ -1,3 +1,4 @@
+import asyncio
 import math
 import os
 import re
@@ -107,11 +108,18 @@ class Post(Plugin.Conversation):
     async def initialize(self):
         if config.channels and len(config.channels) > 0:
             logger.success("文章定时推送处理已经开启")
-            cn_task = partial(self.task, post_type=PostTypeEnum.CN)
-            os_task = partial(self.task, post_type=PostTypeEnum.OS)
-            self.application.job_queue.run_repeating(cn_task, 60, name="post_cn_task")
-            self.application.job_queue.run_repeating(os_task, 60, name="post_os_task")
-        logger.success("文章定时推送处理已经开启")
+            job_kwargs = {
+                "trigger": "cron",
+                "hour": "21-23,0-5",
+                "minute": "*/30",
+            }
+            self.application.job_queue.run_custom(self.task_all, job_kwargs=job_kwargs, name="post_task.idle")
+            job_kwargs2 = {
+                "trigger": "cron",
+                "hour": "6-20",
+                "minute": "*/2",
+            }
+            self.application.job_queue.run_custom(self.task_all, job_kwargs=job_kwargs2, name="post_task.busy")
         output, _ = await self.execute("ffmpeg -version")
         if "ffmpeg version" in output:
             self.ffmpeg_enable = True
@@ -119,6 +127,10 @@ class Post(Plugin.Conversation):
             logger.debug("ffmpeg version info\n%s", output)
         else:
             logger.warning("ffmpeg 不可用 已经禁用编码转换")
+
+    async def task_all(self, context: "ContextTypes.DEFAULT_TYPE"):
+        tasks = [self.task(context, PostTypeEnum.CN), self.task(context, PostTypeEnum.OS)]
+        await asyncio.gather(*tasks)
 
     async def task(self, context: "ContextTypes.DEFAULT_TYPE", post_type: "PostTypeEnum"):
         bbs = self.get_bbs_client(post_type)
