@@ -20,6 +20,9 @@ __all__ = (
     "HoYoPostMultiLang",
 )
 
+GAME_ID_MAP = {"bh3": 1, "ys": 2, "bh2": 3, "wd": 4, "dby": 5, "sr": 6, "zzz": 8, "hna": 9, "planet": 10}
+GAME_STR_MAP = {v: k for k, v in GAME_ID_MAP.items()}
+
 
 class ArtworkImage(BaseModel):
     art_id: int
@@ -78,6 +81,7 @@ class ArtworkImage(BaseModel):
 
 class PostInfo(BaseModel):
     _data: dict = PrivateAttr()
+    gids: int
     hoyolab: bool
     post_id: int
     user_uid: int
@@ -110,7 +114,7 @@ class PostInfo(BaseModel):
         return "\n".join(content)
 
     @classmethod
-    def paste_data(cls, data: dict, hoyolab: bool = False) -> "PostInfo":
+    def paste_data(cls, data: dict, gids: int, hoyolab: bool = False) -> "PostInfo":
         _data_post = data["post"]
         post = _data_post["post"]
         post_id = post["post_id"]
@@ -136,6 +140,7 @@ class PostInfo(BaseModel):
             content = ujson.loads(content).get("describe", "")
         return PostInfo(
             _data=data,
+            gids=gids,
             hoyolab=hoyolab,
             post_id=post_id,
             user_uid=user_uid,
@@ -153,13 +158,17 @@ class PostInfo(BaseModel):
     def type_enum(self) -> "PostTypeEnum":
         return PostTypeEnum.CN if not self.hoyolab else PostTypeEnum.OS
 
-    def get_url(self, short_name: str) -> str:
+    @property
+    def short_name(self) -> str:
+        return GAME_STR_MAP.get(self.gids)
+
+    def get_url(self) -> str:
         if not self.hoyolab:
-            return f"https://www.miyoushe.com/{short_name}/article/{self.post_id}"
+            return f"https://www.miyoushe.com/{self.short_name}/article/{self.post_id}"
         return f"https://www.hoyolab.com/article/{self.post_id}"
 
-    def get_fix_url(self, short_name: str) -> str:
-        url = self.get_url(short_name)
+    def get_fix_url(self) -> str:
+        url = self.get_url()
         return url.replace(".com/", ".pp.ua/")
 
 
@@ -211,12 +220,13 @@ class HoYoPostMultiLang(BaseModel):
 
 class PostRecommend(BaseModel):
     hoyolab: bool = False
+    gids: int
     post_id: int
     subject: str = ""
 
     @staticmethod
-    def parse(data: Dict, hoyolab: bool = False):
+    def parse(data: Dict, gids: int, hoyolab: bool = False):
         _post = data.get("post")
         post_id = _post.get("post_id")
         subject = _post.get("subject", "")
-        return PostRecommend(hoyolab=hoyolab, post_id=post_id, subject=subject)
+        return PostRecommend(hoyolab=hoyolab, gids=gids, post_id=post_id, subject=subject)

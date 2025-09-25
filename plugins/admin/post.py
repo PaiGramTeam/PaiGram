@@ -3,7 +3,6 @@ import math
 import os
 import re
 from asyncio import create_subprocess_shell, subprocess
-from functools import partial
 from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 import aiofiles
@@ -71,8 +70,7 @@ class Post(Plugin.Conversation):
     MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["退出"]], True, True)
 
     def __init__(self, redis: RedisDB):
-        self.gids = 2
-        self.short_name = "ys"
+        self.gids = [2]
         self.ffmpeg_enable = False
         self.cache_dir = os.path.join(os.getcwd(), "cache")
         self.cache = redis.client
@@ -136,30 +134,33 @@ class Post(Plugin.Conversation):
         bbs = self.get_bbs_client(post_type)
 
         # 请求推荐POST列表并处理
+        official_recommended_posts = []
         try:
-            official_recommended_posts = await bbs.get_official_recommended_posts(self.gids)
+            for gid in self.gids:
+                official_recommended_posts.extend(await bbs.get_official_recommended_posts(gid))
         except APIHelperException as exc:
             logger.error("获取首页推荐信息失败 %s", str(exc))
             return
 
-        temp_post_id_list = [post.post_id for post in official_recommended_posts]
-
         # 判断是否为空
         if await self.is_posted_empty(post_type):
-            for temp_list in temp_post_id_list:
-                await self.set_posted(post_type, temp_list)
+            for post in official_recommended_posts:
+                await self.set_posted(post_type, post.post_id)
             return
 
         # 筛选出新推送的文章
-        new_post_id_list = [post_id for post_id in temp_post_id_list if not await self.is_posted(post_type, post_id)]
+        new_post_id_list = [
+            post for post in official_recommended_posts if not await self.is_posted(post_type, post.post_id)
+        ]
         if not new_post_id_list:
             return
 
         chat_id = post_config.chat_id or config.owner
 
-        for post_id in new_post_id_list:
+        for post in new_post_id_list:
+            post_id, gids = post.post_id, post.gids
             try:
-                post_info = await bbs.get_post_info(self.gids, post_id)
+                post_info = await bbs.get_post_info(gids, post_id)
             except APIHelperException as exc:
                 logger.error("获取文章信息失败 %s", str(exc))
                 text = f"获取 post_id[{post_id}] 文章信息失败 {str(exc)}"
@@ -175,8 +176,8 @@ class Post(Plugin.Conversation):
                     InlineKeyboardButton("取消", callback_data=f"post_admin|cancel|{type_name}|{post_info.post_id}"),
                 ]
             ]
-            url = post_info.get_fix_url(self.short_name)
-            tag = f"#{self.short_name} #{post_type.value} #{self.short_name}_{post_type.value}"
+            url = post_info.get_fix_url()
+            tag = f"#{post_info.short_name} #{post_type.value} #{post_info.short_name}_{post_type.value}"
             text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理 {tag}"
             try:
                 await context.bot.send_message(
@@ -393,8 +394,8 @@ class Post(Plugin.Conversation):
         self, post_handler_data: PostHandlerData, message: "Message", post_id: int, post_type: "PostTypeEnum"
     ) -> int:
         bbs = self.get_bbs_client(post_type)
-        post_info = await bbs.get_post_info(self.gids, post_id)
-        post_images = await bbs.get_images_by_post_id(self.gids, post_id)
+        post_info = await bbs.get_post_info(self.gids[0], post_id)
+        post_images = await bbs.get_images_by_post_id(self.gids[0], post_id)
         await bbs.close()
         post_images = await self.gif_to_mp4(post_images)
         post_data = post_info["post"]["post"]
@@ -402,7 +403,7 @@ class Post(Plugin.Conversation):
         post_tags = self.get_tags_by_subject(post_subject)
         post_soup = BeautifulSoup(post_info.content, features="html.parser")
         post_text, too_long = self.parse_post_text(post_soup, post_subject)
-        url = post_info.get_url(self.short_name)
+        url = post_info.get_url()
         max_len = MessageLimit.CAPTION_LENGTH - 100
         if too_long or len(post_text) >= max_len:
             post_text = self.safe_cut(post_text, max_len)

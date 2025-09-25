@@ -46,7 +46,7 @@ class Hoyolab(HyperionBase):
     async def get_post_info(self, gids: int, post_id: int, read: int = 1, scene: int = 1, lang: str = "") -> PostInfo:
         params = {"post_id": post_id, "read": read, "scene": scene}
         response = await self.client.get(self.POST_FULL_URL, params=params, headers=self.get_headers(lang=lang))
-        return PostInfo.paste_data(response, hoyolab=True)
+        return PostInfo.paste_data(response, gids=gids, hoyolab=True)
 
     async def get_images_by_post_id(self, gids: int, post_id: int) -> List[ArtworkImage]:
         post_info = await self.get_post_info(gids, post_id)
@@ -68,7 +68,7 @@ class Hoyolab(HyperionBase):
     ) -> List[PostRecommend]:
         resp = await self.get_new_list(gids, type_id, page_size, lang)
         data = resp["list"]
-        return [PostRecommend.parse(i) for i in data]
+        return [PostRecommend.parse(i, gids=gids) for i in data]
 
     async def close(self):
         await self.client.shutdown()
