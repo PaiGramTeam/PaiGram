@@ -4,6 +4,7 @@ from typing import Optional
 import sentry_sdk
 from git.repo import Repo
 from git.repo.fun import rev_parse
+from sentry_sdk.crons import monitor as sentry_monitor
 from sentry_sdk.integrations.excepthook import ExcepthookIntegration
 from sentry_sdk.integrations.httpx import HttpxIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
@@ -64,3 +65,8 @@ class SentryClient:
                 message = update.effective_message.text
         sentry_sdk.set_context("Target", {"ChatID": str(chat_id), "UserID": str(user_id), "Msg": message})
         sentry_sdk.capture_exception(exc_info)
+
+    class monitor(sentry_monitor):  # noqa: N801
+        def __init__(self, monitor_slug=None, monitor_config=None):
+            monitor_slug = f"ys_{monitor_slug.lower()}"
+            super().__init__(monitor_slug, monitor_config)

@@ -6,6 +6,7 @@ from telegram.ext import CallbackContext
 
 from core.plugin import handler, Plugin, job
 from core.services.search.services import SearchServices
+from modules.errorpush import SentryClient
 from utils.log import logger
 
 __all__ = ("SearchPlugin",)
@@ -26,6 +27,7 @@ class SearchPlugin(Plugin):
         asyncio.create_task(load_data())
 
     @job.run_repeating(interval=datetime.timedelta(hours=1), name="SaveEntryJob")
+    @SentryClient.monitor(monitor_slug="SaveEntryJob")
     async def save_entry_job(self, _: CallbackContext):
         if self.lock.locked():
             logger.warning("条目数据正在保存 跳过本次定时任务")

@@ -14,6 +14,7 @@ from telegram.error import Forbidden, BadRequest
 from gram_core.basemodel import RegionEnum
 from gram_core.plugin import Plugin, job, handler
 from gram_core.services.cookies import CookiesService
+from modules.errorpush import SentryClient
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -138,6 +139,7 @@ class AccompanySystem(Plugin):
         await self._do_accompany_job(context, accompany_list)
 
     @job.run_daily(time=datetime.time(hour=1, minute=1, second=0), name="AccompanyJob")
+    @SentryClient.monitor(monitor_slug="AccompanyJob")
     async def accompany(self, context: "ContextTypes.DEFAULT_TYPE"):
         logger.info("正在执行自动角色陪伴")
         await self.do_accompany_job(context)

@@ -32,6 +32,7 @@ from modules.apihelper.client.components.hoyolab import Hoyolab
 from modules.apihelper.client.components.hyperion import Hyperion, HyperionBase
 from modules.apihelper.error import APIHelperException
 from modules.apihelper.models.genshin.hyperion import PostTypeEnum
+from modules.errorpush import SentryClient
 from utils.helpers import sha1
 from utils.log import logger
 
@@ -126,6 +127,7 @@ class Post(Plugin.Conversation):
         else:
             logger.warning("ffmpeg 不可用 已经禁用编码转换")
 
+    @SentryClient.monitor(monitor_slug="PostTaskJob")
     async def task_all(self, context: "ContextTypes.DEFAULT_TYPE"):
         tasks = [self.task(context, PostTypeEnum.CN), self.task(context, PostTypeEnum.OS)]
         await asyncio.gather(*tasks)
