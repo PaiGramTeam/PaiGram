@@ -2,6 +2,7 @@ import datetime
 from typing import TYPE_CHECKING
 
 from core.plugin import Plugin, job
+from modules.errorpush import SentryClient
 from plugins.genshin.sign import SignSystem
 from plugins.tools.sign import SignJobType
 from utils.log import logger
@@ -15,6 +16,7 @@ class SignJob(Plugin):
         self.sign_system = sign_system
 
     @job.run_daily(time=datetime.time(hour=0, minute=1, second=0), name="SignJob")
+    @SentryClient.monitor(monitor_slug="SignJob")
     async def sign(self, context: "ContextTypes.DEFAULT_TYPE"):
         logger.info("正在执行自动签到")
         await self.sign_system.do_sign_job(context, job_type=SignJobType.START)

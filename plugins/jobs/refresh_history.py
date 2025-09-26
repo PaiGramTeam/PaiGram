@@ -21,6 +21,7 @@ from gram_core.basemodel import RegionEnum
 from gram_core.plugin import handler
 from gram_core.services.cookies import CookiesService
 from gram_core.services.cookies.models import CookiesStatusEnum
+from modules.errorpush import SentryClient
 from plugins.genshin.abyss import AbyssPlugin
 from plugins.genshin.hard_challenge import HardChallengePlugin
 from plugins.genshin.ledger import LedgerPlugin
@@ -170,6 +171,7 @@ class RefreshHistoryJob(Plugin):
         await reply.edit_text("全部账号刷新历史记录任务完成")
 
     @job.run_daily(time=datetime.time(hour=6, minute=1, second=0), name="RefreshHistoryJob")
+    @SentryClient.monitor(monitor_slug="RefreshHistoryJob")
     async def daily_refresh_history(self, context: "ContextTypes.DEFAULT_TYPE"):
         logger.info("正在执行每日刷新历史记录任务")
         for database_region in REGION:

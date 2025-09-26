@@ -15,6 +15,7 @@ from core.plugin import Plugin, job
 from gram_core.basemodel import RegionEnum
 from gram_core.services.cookies import CookiesService
 from gram_core.services.cookies.models import CookiesStatusEnum
+from modules.errorpush import SentryClient
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -31,6 +32,7 @@ class RefreshCookiesJob(Plugin):
         self.cookies = cookies
 
     @job.run_daily(time=datetime.time(hour=0, minute=1, second=0), name="RefreshCookiesJob")
+    @SentryClient.monitor(monitor_slug="RefreshCookiesJob")
     async def daily_refresh_cookies(self, _: "ContextTypes.DEFAULT_TYPE"):
         logger.info("正在执行每日刷新 Cookies 任务")
         for database_region, client_region in REGION.items():

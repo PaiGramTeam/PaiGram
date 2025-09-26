@@ -40,12 +40,13 @@ from core.basemodel import RegionEnum
 from core.dependence.database import Database
 from core.dependence.redisdb import RedisDB
 from core.error import ServiceNotFoundError
-from core.plugin import Plugin
+from core.plugin import Plugin, job
 from core.services.cookies.services import CookiesService, PublicCookiesService
 from core.services.devices import DevicesService
 from core.services.players.services import PlayersService
 from core.services.users.services import UserService
 from gram_core.services.cookies.models import CookiesStatusEnum
+from modules.errorpush import SentryClient
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -93,9 +94,10 @@ class CharacterDetails(Plugin):
 
         async with self.database.engine.begin() as conn:
             await conn.run_sync(fetch_and_update_objects)
-        self.application.job_queue.run_daily(self.del_old_data_job, time(hour=12, minute=0))
 
-    async def del_old_data_job(self, _: ContextTypes.DEFAULT_TYPE):
+    @job.run_daily(time=time(hour=12, minute=0), name="DeleteOldCharacterDetailsJob")
+    @SentryClient.monitor(monitor_slug="DeleteOldCharacterDetailsJob")
+    async def del_old_data_job(self, _: "ContextTypes.DEFAULT_TYPE"):
         await self.del_old_data(timedelta(days=7))
 
     async def del_old_data(self, expiration_time: timedelta):
