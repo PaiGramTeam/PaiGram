@@ -67,6 +67,6 @@ class SentryClient:
         sentry_sdk.capture_exception(exc_info)
 
     class monitor(sentry_monitor):  # noqa: N801
-        def __init__(self, monitor_slug=None, monitor_config=None):
+        def __init__(self, monitor_slug: str, monitor_config=None):
             monitor_slug = f"ys_{monitor_slug.lower()}"
             super().__init__(monitor_slug, monitor_config)
