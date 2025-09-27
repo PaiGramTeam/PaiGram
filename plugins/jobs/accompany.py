@@ -5,15 +5,17 @@ import time
 from typing import TYPE_CHECKING, Optional, List
 from contextlib import asynccontextmanager
 
-from simnet import Region
+from simnet import Region, Game
 from simnet.client.components.lab import LabClient
 from simnet.errors import BadRequest as SimnetBadRequest, TimedOut as SimnetTimedOut, InvalidCookies
+from simnet.utils.player import recognize_region
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest
 
 from gram_core.basemodel import RegionEnum
 from gram_core.plugin import Plugin, job, handler
 from gram_core.services.cookies import CookiesService
+from gram_core.services.task.services import SignServices
 from modules.errorpush import SentryClient
 from utils.log import logger
 
@@ -33,8 +35,10 @@ class AccompanySystem(Plugin):
     def __init__(
         self,
         cookies_service: CookiesService,
+        sign_service: SignServices,
     ):
         self.cookies_service = cookies_service
+        self.sign_service = sign_service
         self.accompany_roles = []
 
     @asynccontextmanager
@@ -135,7 +139,12 @@ class AccompanySystem(Plugin):
                     logger.error("执行自动角色陪伴时发生错误 user_id[%s]", user_id, exc_info=exc)
 
     async def do_accompany_job(self, context: "ContextTypes.DEFAULT_TYPE") -> None:
-        accompany_list = await self.cookies_service.get_all(region=RegionEnum.HOYOLAB)
+        sign_list = await self.sign_service.get_all()
+        sign_user_list = [
+            i.user_id for i in sign_list if recognize_region(i.player_id, Game.GENSHIN) is Region.OVERSEAS
+        ]
+        cookie_list = await self.cookies_service.get_all(region=RegionEnum.HOYOLAB)
+        accompany_list = [i for i in cookie_list if i.user_id in sign_user_list]
         await self._do_accompany_job(context, accompany_list)
 
     @job.run_daily(time=datetime.time(hour=1, minute=1, second=0), name="AccompanyJob")
