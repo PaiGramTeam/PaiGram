@@ -143,7 +143,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         temp_id_data = {
             pool_name: [i.id for i in pool_data] for pool_name, pool_data in new_file_data.item_list.items()
         }
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         for key in keys:
             if key not in old_file_data.item_list:
                 continue
@@ -239,7 +239,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                 pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()
             }
             # 使用新线程进行遍历，避免堵塞主线程
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             # 可以使用with语句来确保线程执行完成后及时被清理
             with ThreadPoolExecutor() as executor:
                 new_num = await loop.run_in_executor(
