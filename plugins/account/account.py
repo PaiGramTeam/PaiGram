@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 
 from simnet import GenshinClient, Region
 from simnet.errors import (
@@ -323,7 +323,14 @@ class BindAccountPlugin(Plugin.Conversation):
         await message.reply_text("回复错误，请重新输入")
         return COMMAND_RESULT
 
-    async def get_migrate_data(self, old_user_id: int, new_user_id: int, _) -> Optional[AccountMigrate]:
+    async def get_migrate_data(
+        self, old_user_id: int, new_user_id: int, old_players: List["Player"]
+    ) -> Optional[AccountMigrate]:
         return await AccountMigrate.create(
-            old_user_id, new_user_id, self.players_service, self.player_info_service, self.cookies_service
+            old_user_id,
+            new_user_id,
+            old_players,
+            self.players_service,
+            self.player_info_service,
+            self.cookies_service,
         )

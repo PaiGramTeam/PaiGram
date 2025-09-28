@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from simnet import GenshinClient
     from simnet.models.genshin.chronicle.notes import Notes, NotesWidget
     from telegram.ext import ContextTypes
+    from gram_core.services.players.models import PlayersDataBase as Player
     from gram_core.services.task.services import TaskServices
 
 
@@ -492,10 +493,13 @@ class DailyNoteSystem(Plugin):
                     continue
             await self.update_task_user(task_db)
 
-    async def get_migrate_data(self, old_user_id: int, new_user_id: int, _) -> Optional["TaskMigrate"]:
+    async def get_migrate_data(
+        self, old_user_id: int, new_user_id: int, old_players: List["Player"]
+    ) -> Optional["TaskMigrate"]:
         return await TaskMigrate.create(
             old_user_id,
             new_user_id,
+            old_players,
             self.resin_service,
         )
 
@@ -524,6 +528,7 @@ class TaskMigrate(IMigrateData):
     async def create_tasks(
         old_user_id: int,
         new_user_id: int,
+        old_player_ids: List[int],
         task_services: "TaskServices",
     ) -> List[TaskUser]:
         need_migrate, _ = await TaskMigrate.filter_sql_data(
@@ -531,8 +536,10 @@ class TaskMigrate(IMigrateData):
             task_services.get_all_by_user_id,
             old_user_id,
             new_user_id,
-            (TaskUser.user_id, TaskUser.type),
+            (TaskUser.player_id, TaskUser.type),
         )
+        if old_player_ids:
+            need_migrate = [i for i in need_migrate if i.player_id in old_player_ids]
         for i in need_migrate:
             i.user_id = new_user_id
         return need_migrate
@@ -542,9 +549,11 @@ class TaskMigrate(IMigrateData):
         cls,
         old_user_id: int,
         new_user_id: int,
+        old_players: List["Player"],
         task_services: "TaskServices",
     ) -> Optional["TaskMigrate"]:
-        need_migrate_tasks = await cls.create_tasks(old_user_id, new_user_id, task_services)
+        old_player_ids = [p.player_id for p in old_players if p and p.player_id]
+        need_migrate_tasks = await cls.create_tasks(old_user_id, new_user_id, old_player_ids, task_services)
         if not need_migrate_tasks:
             return None
         self = cls()

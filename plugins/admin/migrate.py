@@ -1,4 +1,4 @@
-from typing import Dict, List, TYPE_CHECKING
+from typing import Dict, List, TYPE_CHECKING, Optional
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -8,6 +8,9 @@ from gram_core.services.players import PlayersService
 from utils.log import logger
 
 if TYPE_CHECKING:
+    from gram_core.application import Application
+    from gram_core.services.players.models import PlayersDataBase
+
     from telegram import Update
     from telegram.ext import ContextTypes
 
@@ -41,6 +44,31 @@ class MigrateAdmin(Plugin):
             raise RuntimeError
         if job := job_queue.get_jobs_by_name(f"{user_id}|migrate_pop_cache"):
             job[0].schedule_removal()
+
+    @staticmethod
+    async def migrate_data(
+        old_player: "PlayersDataBase", new_user_id: int, application: "Application"
+    ) -> Optional[str]:
+        data = []
+        for _, instance in application.managers.plugins_map.items():
+            if _data := await instance.get_migrate_data(old_player.user_id, new_user_id, [old_player]):
+                data.append(_data)
+        text = []
+        for d in data:
+            try:
+                logger.info("开始迁移数据 class[%s]", d.__class__.__name__)
+                await d.migrate_data()
+                logger.info("迁移数据成功 class[%s]", d.__class__.__name__)
+            except MigrateDataException as e:
+                text.append(e.msg)
+            except Exception as e:
+                logger.exception("迁移数据失败，未知错误！ class[%s]", d.__class__.__name__, exc_info=e)
+                text.append(f"{d.__class__.__name__} 出现未知错误，请联系管理员！")
+        if text:
+            text = "- " + "\n- ".join(text)
+        if text:
+            return f"{new_user_id} {old_player.player_id} 迁移部分数据失败！\n\n{text}"
+        return None
 
     @handler.command(command="migrate_admin", block=False, admin=True)
     async def migrate_admin_command(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE"):

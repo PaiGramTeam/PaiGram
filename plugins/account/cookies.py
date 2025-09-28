@@ -16,10 +16,12 @@ from core.services.cookies.models import CookiesDataBase as Cookies, CookiesStat
 from core.services.cookies.services import CookiesService
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel
 from core.services.players.services import PlayersService, PlayerInfoService
+from gram_core.config import config
 from gram_core.services.devices import DevicesService
 from gram_core.services.devices.models import DevicesDataBase as Devices
 from modules.apihelper.models.genshin.cookies import CookiesModel
 from modules.apihelper.utility.devices import devices_methods
+from plugins.admin.migrate import MigrateAdmin
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -393,6 +395,10 @@ class AccountCookiesPlugin(Plugin.Conversation):
             )
             if cookies_database:
                 await message.reply_text("警告，你已经绑定Cookie，如果继续操作会覆盖当前Cookie。")
+        if await self.need_migrate(
+            user.id, genshin_account, account_cookies_plugin_data.region, account_cookies_plugin_data.account_id
+        ):
+            await message.reply_text("警告，该账号已被其他用户绑定，如果继续操作会覆盖当前绑定用户。")
         reply_keyboard = [["确认", "退出"]]
         await message.reply_text("获取角色基础信息成功，请检查是否正确！")
         logger.info(
@@ -473,16 +479,18 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 region=region,
                 is_chosen=True,  # todo 多账号
             )
-            await self.update_player_info(player_model, genshin_account.nickname)
             await self.players_service.add(player_model)
 
-    async def update_player_info(self, player: Player, nickname: str):
+    async def update_player_info(self, uid: int, genshin_account: Account, region: RegionEnum):
+        player = await self.players_service.get(uid, player_id=genshin_account.uid, region=region)
+        if not player:
+            return
         player_info = await self.player_info_service.get(player)
         if player_info is None:
             player_info = PlayerInfoSQLModel(
                 user_id=player.user_id,
                 player_id=player.player_id,
-                nickname=nickname,
+                nickname=genshin_account.nickname,
                 create_time=datetime.now(),
                 is_update=True,
             )  # 不添加更新时间
@@ -505,6 +513,14 @@ class AccountCookiesPlugin(Plugin.Conversation):
             )
             await self.cookies_service.add(cookies)
 
+    async def need_migrate(self, uid: int, genshin_account: Account, region: RegionEnum, account_id: int):
+        old_player = await self.players_service.get(player_id=genshin_account.uid, account_id=account_id, region=region)
+        if old_player:
+            if old_player.user_id == uid:
+                return False
+            return old_player
+        return False
+
     @conversation.state(state=COMMAND_RESULT)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
     async def command_result(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
@@ -515,9 +531,18 @@ class AccountCookiesPlugin(Plugin.Conversation):
             return await self.quit_conversation(update, context)
         if message.text == "确认":
             genshin_account = account_cookies_plugin_data.genshin_account
+            if old_player := await self.need_migrate(
+                user.id, genshin_account, account_cookies_plugin_data.region, account_cookies_plugin_data.account_id
+            ):
+                text = await MigrateAdmin.migrate_data(old_player, user.id, self.application)
+                if text:
+                    await message.reply_text(text, reply_markup=ReplyKeyboardRemove())
+                    if config.error.notification_chat_id:
+                        await context.bot.send_message(config.error.notification_chat_id, text)
             await self.update_player(
                 user.id, genshin_account, account_cookies_plugin_data.region, account_cookies_plugin_data.account_id
             )
+            await self.update_player_info(user.id, genshin_account, account_cookies_plugin_data.region)
             await self.update_cookies(
                 user.id,
                 account_cookies_plugin_data.account_id,

@@ -12,7 +12,6 @@ from core.plugin import Plugin, handler, conversation
 from core.services.cookies import CookiesService
 from core.services.players.services import PlayersService
 from core.services.template.services import TemplateService
-from modules.gacha_log.helpers import from_url_get_authkey
 from modules.pay_log.error import PayLogNotFound, PayLogAccountNotFound, PayLogInvalidAuthkey, PayLogAuthkeyTimeout
 from modules.pay_log.log import PayLog
 from modules.pay_log.migrate import PayLogMigrate
@@ -26,7 +25,7 @@ if TYPE_CHECKING:
     from gram_core.services.players.models import Player
 
 
-INPUT_URL, CONFIRM_DELETE = range(10100, 10102)
+CONFIRM_DELETE = 10100
 WAITING = f"小{config.notice.bot_name}正在从服务器获取数据，请稍后"
 PAYLOG_NOT_FOUND = f"{config.notice.bot_name}没有找到你的充值记录，快来私聊{config.notice.bot_name}导入吧~"
 
@@ -109,24 +108,6 @@ class PayLogPlugin(Plugin.Conversation):
         await message.reply_chat_action(ChatAction.TYPING)
         data = await self._refresh_user_data(user, authkey=authkey)
         await reply.edit_text(data)
-        return ConversationHandler.END
-
-    @conversation.state(state=INPUT_URL)
-    @handler.message(filters=~filters.COMMAND, block=False)
-    async def import_data_from_message(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
-        message = update.effective_message
-        user = update.effective_user
-        if message.document:
-            await message.reply_text("呜呜呜~本次导入不支持文件导入，请尝试获取连接")
-            return INPUT_URL
-        if not message.text:
-            await message.reply_text("呜呜呜~输入错误，请尝试重新获取连接")
-            return INPUT_URL
-        authkey = from_url_get_authkey(message.text)
-        reply = await message.reply_text(WAITING)
-        await message.reply_chat_action(ChatAction.TYPING)
-        text = await self._refresh_user_data(user, authkey=authkey)
-        await reply.edit_text(text)
         return ConversationHandler.END
 
     @conversation.entry_point
