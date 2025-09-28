@@ -154,7 +154,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         for i in new_file_data.item_list.values():
             i.sort(key=lambda x: (x.time, x.id))
         new_file_data.update_time = add_timezone(datetime.datetime.now())
-        await self.save_gacha_log_info(user_id, uid, new_file_data)
+        await self.save_gacha_log_info(new_user_id, uid, new_file_data)
         await self.remove_history_info(user_id, uid)
         await self.recount_one_from_uid(int(user_id), int(uid))
         return True
