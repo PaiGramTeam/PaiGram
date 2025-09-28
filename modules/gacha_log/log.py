@@ -119,8 +119,8 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
             return True
         return False
 
-    async def move_history_info(self, user_id: str, uid: str, new_user_id: str) -> bool:
-        """移动历史抽卡记录数据
+    async def migrate_history_info(self, user_id: str, uid: str, new_user_id: str) -> bool:
+        """合并历史抽卡记录数据
         :param user_id: 用户id
         :param uid: 原神uid
         :param new_user_id: 新用户id
@@ -128,13 +128,36 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         """
         old_file_path = self.gacha_log_path / f"{user_id}-{uid}.json"
         new_file_path = self.gacha_log_path / f"{new_user_id}-{uid}.json"
-        if (not old_file_path.exists()) or new_file_path.exists():
+        if not old_file_path.exists():
             return False
-        try:
-            old_file_path.rename(new_file_path)
-            return True
-        except PermissionError:
-            return False
+        if not new_file_path.exists():
+            try:
+                old_file_path.rename(new_file_path)
+                return True
+            except PermissionError:
+                return False
+        old_file_data, _ = await self.load_history_info(user_id, uid)
+        new_file_data, _ = await self.load_history_info(new_user_id, uid)
+        keys = set(old_file_data.item_list.keys()).union(set(new_file_data.item_list.keys()))
+        # 将唯一 id 放入临时数据中，加快查找速度
+        temp_id_data = {
+            pool_name: [i.id for i in pool_data] for pool_name, pool_data in new_file_data.item_list.items()
+        }
+        loop = asyncio.get_event_loop()
+        for key in keys:
+            if key not in old_file_data.item_list:
+                continue
+            all_items = old_file_data.item_list[key]
+            # 可以使用with语句来确保线程执行完成后及时被清理
+            with ThreadPoolExecutor() as executor:
+                await loop.run_in_executor(executor, self.import_data_backend, all_items, new_file_data, temp_id_data)
+        for i in new_file_data.item_list.values():
+            i.sort(key=lambda x: (x.time, x.id))
+        new_file_data.update_time = add_timezone(datetime.datetime.now())
+        await self.save_gacha_log_info(user_id, uid, new_file_data)
+        await self.remove_history_info(user_id, uid)
+        await self.recount_one_from_uid(int(user_id), int(uid))
+        return True
 
     async def save_gacha_log_info(self, user_id: str, uid: str, info: GachaLogInfo):
         """保存抽卡记录数据

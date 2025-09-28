@@ -18,7 +18,7 @@ class GachaLogMigrate(IMigrateData, GachaLog):
     async def migrate_data(self) -> bool:
         uid_list = []
         for uid in self.old_uid_list:
-            if not await self.move_history_info(str(self.old_user_id), str(uid), str(self.new_user_id)):
+            if not await self.migrate_history_info(str(self.old_user_id), str(uid), str(self.new_user_id)):
                 uid_list.append(str(uid))
         if uid_list:
             raise MigrateDataException(f"抽卡记录数据迁移失败：uid {','.join(uid_list)}")
