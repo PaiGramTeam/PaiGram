@@ -33,8 +33,7 @@ class AccountMigrate(IMigrateData):
             text.append(f"cookies 数据 {len(self.need_migrate_cookies)} 条")
         return "、".join(text)
 
-    async def migrate_data(self) -> bool:
-        players, players_info, cookies = [], [], []
+    async def migrate_data_sql(self, cookies: list[str], players: list[str], players_info: list[str]):
         for player in self.need_migrate_player:
             try:
                 await self.players_service.update(player)
@@ -65,6 +64,10 @@ class AccountMigrate(IMigrateData):
                 await self.cookies_service.delete(cookie)
             except StaleDataError:
                 cookies.append(str(cookie.account_id))
+
+    async def migrate_data(self) -> bool:
+        players, players_info, cookies = [], [], []
+        await self.migrate_data_sql(cookies, players, players_info)
         if any([players, players_info, cookies]):
             text = []
             if players:
