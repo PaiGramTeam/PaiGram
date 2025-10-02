@@ -308,17 +308,21 @@ class RoleCombatPlugin(Plugin):
     def get_season_data_name(data: "HistoryDataImgTheater"):
         start_time = data.abyss_data.schedule.start_time.astimezone(TZ)
         time = start_time.strftime("%Y.%m ")[2:]
+        difficulty = data.abyss_data.stat.difficulty
         honor = ""
-        if data.abyss_data.stat.difficulty == TheaterDifficulty.EASY:
+        if difficulty == TheaterDifficulty.EASY:
             diff = "简单"
-        elif data.abyss_data.stat.difficulty == TheaterDifficulty.NORMAL:
+        elif difficulty == TheaterDifficulty.NORMAL:
             diff = "普通"
-        elif data.abyss_data.stat.difficulty == TheaterDifficulty.HARD:
+        elif difficulty == TheaterDifficulty.HARD:
             diff = "困难"
             if data.abyss_data.stat.medal_num >= 8:
                 honor = "👑"
         else:
-            diff = "卓越"
+            if difficulty == TheaterDifficulty.VISIONARY:
+                diff = "卓越"
+            else:
+                diff = "月谕"
             if data.abyss_data.stat.medal_num >= 10:
                 honor = "👑"
 
