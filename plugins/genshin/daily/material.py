@@ -1,7 +1,6 @@
 import asyncio
 import typing
-from asyncio import Lock
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from arkowrapper import ArkoWrapper
@@ -9,6 +8,7 @@ from httpx import AsyncClient
 from pydantic import BaseModel
 from simnet.errors import BadRequest as SimnetBadRequest
 from simnet.errors import InvalidCookies
+from simnet.models.base import add_timezone
 from simnet.models.genshin.chronicle.characters import Character
 from telegram.constants import ChatAction, ParseMode
 
@@ -18,6 +18,8 @@ from core.dependence.assets.impl.models.genshin.daily_material import MaterialsD
 from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
+from metadata.pool.pool_301 import POOL_301 as CHARACTER_POOL
+from modules.gacha_log.models import Pool
 from plugins.tools.genshin import CharacterDetails, CookiesNotFoundError, GenshinHelper, PlayerNotFoundError
 from utils.log import logger
 from utils.uid import mask_number
@@ -78,6 +80,17 @@ def get_material_serial_name(names: Iterable[str]) -> str:
     return result
 
 
+def is_first_week_of_pool(date: Optional["datetime"] = None) -> bool:
+    target_date = date or datetime.now()
+    target_date_cn = add_timezone(target_date)
+    pool = [Pool(**i) for i in CHARACTER_POOL]
+    for p in pool:
+        start, end = p.start, p.start + timedelta(weeks=1)
+        if start <= target_date_cn < end:
+            return True
+    return False
+
+
 class DailyMaterial(Plugin):
     """每日素材表"""
 
@@ -93,11 +106,6 @@ class DailyMaterial(Plugin):
       weapon_materials=[炼武素材, 炼武素材, 炼武素材, 炼武素材],
     )
     ```
-    """
-
-    locks: Tuple[Lock, Lock] = (Lock(), Lock())
-    """
-    Tuple[每日素材缓存锁, 角色武器材料图标锁]
     """
 
     def __init__(
@@ -318,14 +326,8 @@ class DailyMaterial(Plugin):
             the_day = "今天" if title == "今日" else "这天"
             await message.reply_text(f"{the_day}是星期天, <b>全部素材都可以</b>刷哦~", parse_mode=ParseMode.HTML)
             return
-
-        if self.locks[0].locked():  # 若检测到了第一个锁：正在下载每日素材表的数据
-            loading_prompt = await message.reply_text(f"{config.notice.bot_name}正在摘抄每日素材表，以后再来探索吧~")
-            self.add_delete_message_job(loading_prompt, delay=5)
-            return
-
-        if self.locks[1].locked():  # 若检测到了第二个锁：正在下载角色、武器、材料的图标
-            await message.reply_text(f"{config.notice.bot_name}正在搬运每日素材的图标，以后再来探索吧~")
+        if title == "今日" and is_first_week_of_pool(now):
+            await message.reply_text("今天属于卡池开放第一周，<b>全部素材都可以</b>刷哦~", parse_mode=ParseMode.HTML)
             return
 
         loading_prompt = await message.reply_text(f"{config.notice.bot_name}可能需要找找图标素材，还请耐心等待哦~")
