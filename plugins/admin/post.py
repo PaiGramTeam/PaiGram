@@ -55,6 +55,7 @@ class PostConfig(Settings):
     """文章推送配置"""
 
     chat_id: Optional[int] = 0
+    chat_ids: List[int] = []
 
     model_config = SettingsConfigDict(env_prefix="post_")
 
@@ -158,7 +159,9 @@ class Post(Plugin.Conversation):
         if not new_post_id_list:
             return
 
-        chat_id = post_config.chat_id or config.owner
+        chat_ids = post_config.chat_ids or post_config.chat_id or config.owner
+        if not isinstance(chat_ids, list):
+            chat_ids = [chat_ids]
 
         for post in new_post_id_list:
             post_id, gids = post.post_id, post.gids
@@ -168,7 +171,7 @@ class Post(Plugin.Conversation):
                 logger.error("获取文章信息失败 %s", str(exc))
                 text = f"获取 post_id[{post_id}] 文章信息失败 {str(exc)}"
                 try:
-                    await context.bot.send_message(chat_id, text)
+                    await context.bot.send_message(chat_ids[0], text)
                 except BadRequest as _exc:
                     logger.error("发送消息失败 %s", _exc.message)
                 return
@@ -182,16 +185,17 @@ class Post(Plugin.Conversation):
             url = post_info.get_fix_url()
             tag = f"#{post_info.short_name} #{post_type.value} #{post_info.short_name}_{post_type.value}"
             text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理 {tag}"
-            try:
-                await context.bot.send_message(
-                    chat_id,
-                    text,
-                    parse_mode=ParseMode.HTML,
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                )
-                await self.set_posted(post_type, post_id)
-            except BadRequest as exc:
-                logger.error("发送消息失败 %s", exc.message)
+            for chat_id in chat_ids:
+                try:
+                    await context.bot.send_message(
+                        chat_id,
+                        text,
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=InlineKeyboardMarkup(buttons),
+                    )
+                    await self.set_posted(post_type, post_id)
+                except BadRequest as exc:
+                    logger.error("发送消息失败 %s", exc.message)
         await bbs.close()
 
     @staticmethod
