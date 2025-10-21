@@ -292,7 +292,7 @@ class WishSimulatorPlugin(Plugin):
             weapon = self.assets_service.weapon.get_by_id(rate_up_items5)
             if weapon is None:
                 continue
-            up_weapons[weapon["name"]] = rate_up_items5
+            up_weapons[weapon.name] = rate_up_items5
         up_weapons_text = "当前 UP 武器有：" + "、".join(up_weapons.keys())
         if len(args) >= 1:
             weapon_name = args[0]
