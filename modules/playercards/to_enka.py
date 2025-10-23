@@ -171,8 +171,13 @@ def get_prop_map(data: "GenshinDetailCharacter") -> Dict[str, Dict[str, Any]]:
 
 def get_skill_depot_id(data: "GenshinDetailCharacter") -> int:
     skill = data.skills[0]
+    if data.base.id in [10000117, 10000118]:
+        for i in data.skills:
+            if i.id > 100000:
+                skill = i
+                break
     skill_id = skill.id % 10
-    if data.base.id in [10000005, 10000007]:
+    if data.base.id in [10000005, 10000007, 10000117, 10000118]:
         skill_id += 1
     skill_id_pre = (data.base.id - 10000000) * 100
     return skill_id_pre + skill_id
