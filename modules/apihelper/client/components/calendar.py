@@ -99,7 +99,7 @@ class Calendar:
         list_data = await self.client.get(self.ANNOUNCEMENT_LIST, params=self.ANNOUNCEMENT_PARAMS)
         list_data = list_data.json()
 
-        new_list_data = [[], []]
+        new_list_data = [[], [], []]
         for idx, data in enumerate(list_data.get("data", {}).get("list", [])):
             for item in data.get("list", []):
                 new_list_data[idx].append(ActDetail(**item))
@@ -381,12 +381,10 @@ class Calendar:
         abyss: List[FinalAct] = []
         img_theater: List[FinalAct] = []
 
-        for ds in list_data[1]:
-            if act := await self.get_list(ds, start_time, end_time, total_range, time_map, True, assets):
-                target.append(act)
-        for ds in list_data[0]:
-            if act := await self.get_list(ds, start_time, end_time, total_range, time_map, False, assets):
-                target.append(act)
+        for idx, is_act in {(0, False), (1, True), (2, False)}:
+            for ds in list_data[idx]:
+                if act := await self.get_list(ds, start_time, end_time, total_range, time_map, is_act, assets):
+                    target.append(act)
         # 深渊
         abyss_cal = self.get_abyss_cal(start_time, end_time)
         for t in abyss_cal:
