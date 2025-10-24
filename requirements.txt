@@ -18,6 +18,8 @@ aiosqlite==0.21.0
     # via paigram
 alembic==1.17.0
     # via paigram
+annotated-doc==0.0.2
+    # via fastapi
 annotated-types==0.7.0
     # via pydantic
 anyio==4.11.0
@@ -74,7 +76,7 @@ colorlog==6.10.1
     # via paigram
 cryptography==44.0.3
     # via paigram
-enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@cb6ad543cf0848860e9f5ff4a11fc2ca1583c05b
+enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@0492e8f9695322a12e3b8618cdba2f4a15ba8d45
     # via paigram
 et-xmlfile==2.0.0
     # via openpyxl
@@ -84,7 +86,7 @@ exceptiongroup==1.3.0 ; python_full_version < '3.11'
     #   pytest
 fakeredis==2.32.0
     # via paigram
-fastapi==0.119.1
+fastapi==0.120.0
     # via paigram
 flaky==3.8.1
     # via paigram
@@ -235,7 +237,7 @@ sentry-sdk==2.42.1
     # via paigram
 setuptools==80.9.0
     # via influxdb-client
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@4bf91ef6491907b5d738188f0d3432aa806e986a
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@0e77bb365249a03d3ea45195ca099c0a174167a3
     # via paigram
 six==1.17.0
     # via python-dateutil

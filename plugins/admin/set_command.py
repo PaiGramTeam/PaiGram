@@ -33,6 +33,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("pay_log_import", "导入充值记录"),
             BotCommand("pay_log_export", "导出充值记录"),
             BotCommand("pay_log_delete", "删除充值记录"),
+            BotCommand("beyond_wish_log", "查看颂愿抽卡记录"),
             # Cookie 查询类
             BotCommand("sign", "米游社原神每日签到"),
             BotCommand("cloud_game_sign", "（国服）云游戏每日签到"),

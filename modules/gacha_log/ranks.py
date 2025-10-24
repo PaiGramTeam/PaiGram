@@ -129,11 +129,13 @@ class GachaLogRanks:
             else:
                 await self.gacha_log_rank_service.add(rank)
 
-    async def recount_all_data(self, message: "Message"):
-        """重新计算所有数据"""
+    async def remove_all_data(self):
         for key1 in GachaLogTypeEnum:
             for key2 in GachaLogQueryTypeEnum:
                 await self.gacha_log_rank_service.del_all_cache_by_type(key1, key2)  # noqa
+
+    async def recount_all_data(self, message: "Message"):
+        """重新计算所有数据"""
         files = [f for f in self.gacha_log_path.glob("*.json") if len(f.stem.split("-")) == 2]
         tasks = []
         for idx, f in enumerate(files):

@@ -3,49 +3,35 @@ import contextlib
 import datetime
 import json
 from concurrent.futures import ThreadPoolExecutor
-from os import PathLike
 from pathlib import Path
-from typing import Dict, IO, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import aiofiles
-from openpyxl import load_workbook
 from simnet import GenshinClient, Region
 from simnet.errors import AuthkeyTimeout, InvalidAuthkey
 from simnet.models.base import add_timezone
-from simnet.models.genshin.wish import BannerType
+from simnet.models.genshin.wish import GenshinBeyondBannerType as BannerType
 from simnet.utils.player import recognize_genshin_server
 
 from gram_core.services.gacha_log_rank.services import GachaLogRankService
 from metadata.pool.pool import get_pool_by_id
-from metadata.shortname import roleToId, weaponToId
-from modules.gacha_log.const import GACHA_TYPE_LIST, PAIMONMOE_VERSION
+from modules.beyond_gacha_log.ranks import BeyondGachaLogRanks
 from modules.gacha_log.error import (
     GachaLogAccountNotFound,
     GachaLogAuthkeyTimeout,
     GachaLogException,
-    GachaLogFileError,
     GachaLogInvalidAuthkey,
     GachaLogMixedProvider,
     GachaLogNotFound,
-    PaimonMoeGachaLogFileError,
 )
-from modules.gacha_log.models import (
-    FiveStarItem,
-    FourStarItem,
-    GachaItem,
-    GachaLogInfo,
+from modules.beyond_gacha_log.uigf import BeyondGachaLogUigfConverter
+from modules.beyond_gacha_log.const import GACHA_TYPE_LIST
+from modules.beyond_gacha_log.models import (
+    BeyondGachaItem as GachaItem,
+    BeyondGachaLogInfo as GachaLogInfo,
     ImportType,
-    ItemType,
-    Pool,
-    UIGFGachaType,
-    UIGFInfo,
-    UIGFItem,
-    UIGFModel,
-    UIGFListInfo,
 )
-from modules.gacha_log.online_view import GachaLogOnlineView
-from modules.gacha_log.ranks import GachaLogRanks
-from modules.gacha_log.uigf import GachaLogUigfConverter
+from modules.gacha_log.models import FiveStarItem, FourStarItem, Pool
 from utils.const import PROJECT_ROOT
 from utils.uid import mask_number
 
@@ -53,18 +39,17 @@ if TYPE_CHECKING:
     from core.dependence.assets.impl.genshin import AssetsService
 
 
-GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "gacha_log")
+GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "beyond_gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 
 
-class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
+class BeyondGachaLog(BeyondGachaLogRanks, BeyondGachaLogUigfConverter):
     def __init__(
         self,
         gacha_log_path: Path = GACHA_LOG_PATH,
         gacha_log_rank_service: GachaLogRankService = None,
     ):
-        GachaLogOnlineView.__init__(self)
-        GachaLogRanks.__init__(self, gacha_log_rank_service)
+        BeyondGachaLogRanks.__init__(self, gacha_log_rank_service)
         self.gacha_log_path = gacha_log_path
 
     @staticmethod
@@ -154,29 +139,10 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         await self.save_json(save_path, info.json())
 
     @staticmethod
-    async def verify_data(data: List[GachaItem]) -> bool:
-        try:
-            total = len(data)
-            five_star = len([i for i in data if i.rank_type == "5"])
-            four_star = len([i for i in data if i.rank_type == "4"])
-            if total > 50:
-                if total <= five_star * 15:
-                    raise GachaLogFileError(
-                        "检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。"
-                    )
-                if four_star < five_star:
-                    raise GachaLogFileError(
-                        "检测到您将要导入的抽卡记录中五星数量过多，可能是由于文件错误导致的，请检查后重新导入。"
-                    )
-            return True
-        except Exception as exc:  # pylint: disable=W0703
-            raise GachaLogFileError from exc
-
-    @staticmethod
     def import_data_backend(all_items: List[GachaItem], gacha_log: GachaLogInfo, temp_id_data: Dict) -> int:
         new_num = 0
         for item_info in all_items:
-            pool_name = GACHA_TYPE_LIST[BannerType(int(item_info.gacha_type))]
+            pool_name = GACHA_TYPE_LIST[item_info.banner_type]
             if pool_name not in temp_id_data:
                 temp_id_data[pool_name] = []
             if pool_name not in gacha_log.item_list:
@@ -191,7 +157,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         new_num = 0
         try:
             _data, uid = None, None
-            for _i in data.get("hk4e", []):
+            for _i in data.get("hk4e_beyond", []):
                 uid = _i.get("uid", "0")
                 if (not verify_uid) or int(uid) == player_id:
                     _data = _i
@@ -204,7 +170,6 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                 import_type = ImportType.UNKNOWN
             # 检查导入数据是否合法
             all_items = [GachaItem(**i) for i in _data["list"]]
-            await self.verify_data(all_items)
             gacha_log, status = await self.load_history_info(str(user_id), uid)
             if import_type == ImportType.PAIMONMOE:
                 if status and gacha_log.get_import_type != ImportType.PAIMONMOE:
@@ -223,8 +188,6 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                     executor, self.import_data_backend, all_items, gacha_log, temp_id_data
                 )
             for i in gacha_log.item_list.values():
-                # 检查导入后的数据是否合法
-                await self.verify_data(i)
                 i.sort(key=lambda x: (x.time, x.id))
             gacha_log.update_time = add_timezone(datetime.datetime.now())
             gacha_log.import_type = import_type.value
@@ -232,7 +195,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
             await self.recount_one_from_uid(user_id, player_id)
             return new_num
         except GachaLogAccountNotFound as e:
-            raise GachaLogAccountNotFound("导入失败，文件包含的祈愿记录所属 uid 与你当前绑定的 uid 不同") from e
+            raise GachaLogAccountNotFound("导入失败，文件包含的颂愿记录所属 uid 与你当前绑定的 uid 不同") from e
         except GachaLogMixedProvider as e:
             raise GachaLogMixedProvider from e
         except Exception as exc:
@@ -270,23 +233,16 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                     with contextlib.suppress(ValueError):
                         min_id = int(gacha_log.item_list[pool_name][-1].id)
 
-                wish_history = await client.wish_history(pool_id.value, authkey=authkey, min_id=min_id)
+                wish_history = await client.beyond_wish_history(pool_id.value, authkey=authkey, min_id=min_id)
 
                 if not is_lazy:
-                    min_id = min([i.id for i in wish_history[:20]]) if wish_history else min_id
+                    min_id = min(i.id for i in wish_history[:20]) if wish_history else min_id
                     if min_id:
                         gacha_log.item_list[pool_name][:] = filter(
                             lambda i: int(i.id) < min_id, gacha_log.item_list[pool_name]
                         )
                 for data in wish_history:
-                    item = GachaItem(
-                        id=str(data.id),
-                        name=data.name,
-                        gacha_type=str(data.banner_type.value),
-                        item_type=data.type,
-                        rank_type=str(data.rarity),
-                        time=data.time,
-                    )
+                    item = GachaItem.from_simnet(data)
 
                     if item.id not in temp_id_data[pool_name] or (not is_lazy and min_id):
                         gacha_log.item_list[pool_name].append(item)
@@ -309,31 +265,16 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         return new_num
 
     @staticmethod
-    def format_time(time: str) -> datetime.datetime:
-        return add_timezone(datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S"))
+    def get_assets(item: "GachaItem", assets: "AssetsService") -> str:
+        if not assets:
+            return ""
+        item = assets.beyond_item.icon(item.item_id)
+        if not item:
+            return ""
+        return item.as_uri()
 
     @staticmethod
-    def check_avatar_up(name: str, gacha_time: datetime.datetime) -> bool:
-        if name in {"莫娜", "七七", "迪卢克", "琴", "迪希雅"}:
-            return False
-        if name == "刻晴":
-            start_time = GachaLog.format_time("2021-02-17 18:00:00")
-            end_time = GachaLog.format_time("2021-03-02 15:59:59")
-            if not start_time < gacha_time < end_time:
-                return False
-        elif name == "提纳里":
-            start_time = GachaLog.format_time("2022-08-24 06:00:00")
-            end_time = GachaLog.format_time("2022-09-09 17:59:59")
-            if not start_time < gacha_time < end_time:
-                return False
-        elif name == "梦见月瑞希":
-            start_time = GachaLog.format_time("2025-02-12 06:00:00")
-            end_time = GachaLog.format_time("2025-03-04 17:59:59")
-            if not start_time < gacha_time < end_time:
-                return False
-        return True
-
-    async def get_all_5_star_items(self, data: List[GachaItem], assets: "AssetsService", pool_name: str = "角色祈愿"):
+    async def get_all_5_star_items(data: List[GachaItem], assets: "AssetsService", pool_name: str = "常驻颂愿"):
         """
         获取所有5星角色
         :param data: 抽卡记录
@@ -343,37 +284,26 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         """
         count = 0
         result = []
+        rank_type = 4 if pool_name == "常驻颂愿" else 5
         for item in data:
             count += 1
-            if item.rank_type == "5":
-                if item.item_type == "角色" and pool_name in {"角色祈愿", "常驻祈愿", "新手祈愿", "集录祈愿"}:
-                    data = {
-                        "name": item.name,
-                        "icon": assets.avatar.icon(roleToId(item.name)).as_uri() if assets else "",
-                        "count": count,
-                        "type": "角色",
-                        "isUp": self.check_avatar_up(item.name, item.time) if pool_name == "角色祈愿" else False,
-                        "isBig": (not result[-1].isUp) if result and pool_name == "角色祈愿" else False,
-                        "time": item.time,
-                    }
-                    result.append(FiveStarItem.construct(**data))
-                elif item.item_type == "武器" and pool_name in {"武器祈愿", "常驻祈愿", "新手祈愿", "集录祈愿"}:
-                    data = {
-                        "name": item.name,
-                        "icon": assets.weapon.icon(weaponToId(item.name)).as_uri() if assets else "",
-                        "count": count,
-                        "type": "武器",
-                        "isUp": False,
-                        "isBig": False,
-                        "time": item.time,
-                    }
-                    result.append(FiveStarItem.construct(**data))
+            if item.rank_type == rank_type:
+                data = {
+                    "name": item.item_name,
+                    "icon": BeyondGachaLog.get_assets(item, assets),
+                    "count": count,
+                    "type": item.item_type,
+                    "isUp": True,
+                    "isBig": False,
+                    "time": item.time,
+                }
+                result.append(FiveStarItem.construct(**data))
                 count = 0
         result.reverse()
         return result, count
 
     @staticmethod
-    async def get_all_4_star_items(data: List[GachaItem], assets: "AssetsService"):
+    async def get_all_4_star_items(data: List[GachaItem], assets: "AssetsService", pool_name: str = "常驻颂愿"):
         """
         获取 no_fout_star
         :param data: 抽卡记录
@@ -382,27 +312,18 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         """
         count = 0
         result = []
+        rank_type = 3 if pool_name == "常驻颂愿" else 4
         for item in data:
             count += 1
-            if item.rank_type == "4":
-                if item.item_type == "角色":
-                    data = {
-                        "name": item.name,
-                        "icon": assets.avatar.icon(roleToId(item.name)).as_uri() if assets else "",
-                        "count": count,
-                        "type": "角色",
-                        "time": item.time,
-                    }
-                    result.append(FourStarItem.construct(**data))
-                elif item.item_type == "武器":
-                    data = {
-                        "name": item.name,
-                        "icon": assets.weapon.icon(weaponToId(item.name)).as_uri() if assets else "",
-                        "count": count,
-                        "type": "武器",
-                        "time": item.time,
-                    }
-                    result.append(FourStarItem.construct(**data))
+            if item.rank_type == rank_type:
+                data = {
+                    "name": item.item_name,
+                    "icon": BeyondGachaLog.get_assets(item, assets),
+                    "count": count,
+                    "type": item.item_type,
+                    "time": item.time,
+                }
+                result.append(FourStarItem.construct(**data))
                 count = 0
         result.reverse()
         return result, count
@@ -411,24 +332,24 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
     def get_301_pool_data(total: int, all_five: List[FiveStarItem], no_five_star: int, no_four_star: int):
         # 总共五星
         five_star = len(all_five)
-        five_star_up = len([i for i in all_five if i.isUp])
-        five_star_big = len([i for i in all_five if i.isBig])
+        # five_star_up = len([i for i in all_five if i.isUp])
+        # five_star_big = len([i for i in all_five if i.isBig])
         # 五星平均
         five_star_avg = round((total - no_five_star) / five_star, 2) if five_star != 0 else 0
         # 小保底不歪
-        small_protect = (
-            round((five_star_up - five_star_big) / (five_star - five_star_big) * 100.0, 1)
-            if five_star - five_star_big != 0
-            else "0.0"
-        )
+        # small_protect = (
+        #     round((five_star_up - five_star_big) / (five_star - five_star_big) * 100.0, 1)
+        #     if five_star - five_star_big != 0
+        #     else "0.0"
+        # )
         # 五星常驻
-        five_star_const = five_star - five_star_up
+        # five_star_const = five_star - five_star_up
         # UP 平均
-        up_avg = (
-            round((total - no_five_star - (all_five[0].count if not all_five[0].isUp else 0)) / five_star_up, 2)
-            if five_star_up != 0
-            else 0
-        )
+        # up_avg = (
+        #     round((total - no_five_star - (all_five[0].count if not all_five[0].isUp else 0)) / five_star_up, 2)
+        #     if five_star_up != 0
+        #     else 0
+        # )
         # UP 花费原石
         up_cost = sum(i.count * 160 for i in all_five if i.isUp)
         up_cost = f"{round(up_cost / 10000, 2)}w" if up_cost >= 10000 else up_cost
@@ -437,11 +358,11 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                 {"num": no_five_star, "unit": "抽", "lable": "未出五星"},
                 {"num": five_star, "unit": "个", "lable": "五星"},
                 {"num": five_star_avg, "unit": "抽", "lable": "五星平均"},
-                {"num": small_protect, "unit": "%", "lable": "小保底不歪"},
+                # {"num": small_protect, "unit": "%", "lable": "小保底不歪"},
                 {"num": no_four_star, "unit": "抽", "lable": "未出四星"},
-                {"num": five_star_const, "unit": "个", "lable": "五星常驻"},
-                {"num": up_avg, "unit": "抽", "lable": "UP平均"},
-                {"num": up_cost, "unit": "", "lable": "UP花费原石"},
+                # {"num": five_star_const, "unit": "个", "lable": "五星常驻"},
+                # {"num": up_avg, "unit": "抽", "lable": "UP平均"},
+                {"num": up_cost, "unit": "", "lable": "花费绮刻之楔"},
             ],
         ]
 
@@ -453,8 +374,8 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         five_star = len(all_five)
         # 五星平均
         five_star_avg = round((total - no_five_star) / five_star, 2) if five_star != 0 else 0
-        # 五星武器
-        five_star_weapon = len([i for i in all_five if i.type == "武器"])
+        # 套装形录
+        five_star_weapon = len([i for i in all_five if i.type == "套装形录"])
         # 总共四星
         four_star = len(all_four)
         # 四星平均
@@ -465,92 +386,31 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         four_star_max_count = four_star_name_list.count(four_star_max)
         return [
             [
-                {"num": no_five_star, "unit": "抽", "lable": "未出五星"},
-                {"num": five_star, "unit": "个", "lable": "五星"},
-                {"num": five_star_avg, "unit": "抽", "lable": "五星平均"},
-                {"num": five_star_weapon, "unit": "个", "lable": "五星武器"},
-                {"num": no_four_star, "unit": "抽", "lable": "未出四星"},
-                {"num": four_star, "unit": "个", "lable": "四星"},
-                {"num": four_star_avg, "unit": "抽", "lable": "四星平均"},
-                {"num": four_star_max_count, "unit": four_star_max, "lable": "四星最多"},
-            ],
-        ]
-
-    @staticmethod
-    def get_302_pool_data(
-        total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
-    ):
-        # 总共五星
-        five_star = len(all_five)
-        # 五星平均
-        five_star_avg = round((total - no_five_star) / five_star, 2) if five_star != 0 else 0
-        # 四星武器
-        four_star_weapon = len([i for i in all_four if i.type == "武器"])
-        # 总共四星
-        four_star = len(all_four)
-        # 四星平均
-        four_star_avg = round((total - no_four_star) / four_star, 2) if four_star != 0 else 0
-        # 四星最多
-        four_star_name_list = [i.name for i in all_four]
-        four_star_max = max(four_star_name_list, key=four_star_name_list.count) if four_star_name_list else ""
-        four_star_max_count = four_star_name_list.count(four_star_max)
-        return [
-            [
-                {"num": no_five_star, "unit": "抽", "lable": "未出五星"},
-                {"num": five_star, "unit": "个", "lable": "五星"},
-                {"num": five_star_avg, "unit": "抽", "lable": "五星平均"},
-                {"num": four_star_weapon, "unit": "个", "lable": "四星武器"},
-                {"num": no_four_star, "unit": "抽", "lable": "未出四星"},
-                {"num": four_star, "unit": "个", "lable": "四星"},
-                {"num": four_star_avg, "unit": "抽", "lable": "四星平均"},
-                {"num": four_star_max_count, "unit": four_star_max, "lable": "四星最多"},
-            ],
-        ]
-
-    @staticmethod
-    def get_500_pool_data(
-        total: int, all_five: List[FiveStarItem], all_four: List[FourStarItem], no_five_star: int, no_four_star: int
-    ):
-        # 总共五星
-        five_star = len(all_five)
-        # 五星平均
-        five_star_avg = round((total - no_five_star) / five_star, 2) if five_star != 0 else 0
-        # 四星角色
-        four_star_character = len([i for i in all_four if i.type == "角色"])
-        # 总共四星
-        four_star = len(all_four)
-        # 四星平均
-        four_star_avg = round((total - no_four_star) / four_star, 2) if four_star != 0 else 0
-        # 四星最多
-        four_star_name_list = [i.name for i in all_four]
-        four_star_max = max(four_star_name_list, key=four_star_name_list.count) if four_star_name_list else ""
-        four_star_max_count = four_star_name_list.count(four_star_max)
-        return [
-            [
-                {"num": no_five_star, "unit": "抽", "lable": "未出五星"},
-                {"num": five_star, "unit": "个", "lable": "五星"},
-                {"num": five_star_avg, "unit": "抽", "lable": "五星平均"},
-                {"num": four_star_character, "unit": "个", "lable": "四星角色"},
-                {"num": no_four_star, "unit": "抽", "lable": "未出四星"},
-                {"num": four_star, "unit": "个", "lable": "四星"},
-                {"num": four_star_avg, "unit": "抽", "lable": "四星平均"},
-                {"num": four_star_max_count, "unit": four_star_max, "lable": "四星最多"},
+                {"num": no_five_star, "unit": "抽", "lable": "未出四星"},
+                {"num": five_star, "unit": "个", "lable": "四星"},
+                {"num": five_star_avg, "unit": "抽", "lable": "四星平均"},
+                {"num": five_star_weapon, "unit": "个", "lable": "套装形录"},
+                {"num": no_four_star, "unit": "抽", "lable": "未出三星"},
+                {"num": four_star, "unit": "个", "lable": "三星"},
+                {"num": four_star_avg, "unit": "抽", "lable": "三星平均"},
+                {"num": four_star_max_count, "unit": four_star_max, "lable": "三星最多"},
             ],
         ]
 
     @staticmethod
     def count_fortune(pool_name: str, summon_data, weapon: bool = False):
         """
-            角色  武器
-        欧 50以下 45以下
-        吉 50-60 45-55
-        中 60-70 55-65
-        非 70以上 65以上
+            角色
+        欧 40以下
+        吉 40-50
+        中 50-60
+        非 60以上
         """
-        data = [45, 55, 65] if weapon else [50, 60, 70]
+        data = [40, 50, 60]
+        label = "四星平均" if weapon else "五星平均"
         for i in summon_data:
             for j in i:
-                if j.get("lable") == "五星平均":
+                if j.get("lable") == label:
                     num = j.get("num", 0)
                     if num == 0:
                         return pool_name
@@ -594,20 +454,14 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         if total == 0:
             raise GachaLogNotFound
         all_five, no_five_star = await self.get_all_5_star_items(data, assets, pool_name)
-        all_four, no_four_star = await self.get_all_4_star_items(data, assets)
+        all_four, no_four_star = await self.get_all_4_star_items(data, assets, pool_name)
         summon_data = None
-        if pool in [BannerType.CHARACTER1, BannerType.CHARACTER2, BannerType.NOVICE]:
+        if pool == BannerType.EVENT:
             summon_data = self.get_301_pool_data(total, all_five, no_five_star, no_four_star)
             pool_name = self.count_fortune(pool_name, summon_data)
-        elif pool == BannerType.WEAPON:
-            summon_data = self.get_302_pool_data(total, all_five, all_four, no_five_star, no_four_star)
-            pool_name = self.count_fortune(pool_name, summon_data, True)
         elif pool == BannerType.PERMANENT:
             summon_data = self.get_200_pool_data(total, all_five, all_four, no_five_star, no_four_star)
-            pool_name = self.count_fortune(pool_name, summon_data)
-        elif pool == BannerType.CHRONICLED:
-            summon_data = self.get_500_pool_data(total, all_five, all_four, no_five_star, no_four_star)
-            pool_name = self.count_fortune(pool_name, summon_data)
+            pool_name = self.count_fortune(pool_name, summon_data, True)
         last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
         first_time = data[-1].time.strftime("%Y-%m-%d %H:%M")
         return {
@@ -644,14 +498,15 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         if total == 0:
             raise GachaLogNotFound
         all_five, _ = await self.get_all_5_star_items(data, assets, pool_name)
-        all_four, _ = await self.get_all_4_star_items(data, assets)
+        all_four, _ = await self.get_all_4_star_items(data, assets, pool_name)
         pool_data = []
         up_pool_data = [Pool(**i) for i in get_pool_by_id(pool.value)]
         for up_pool in up_pool_data:
             for item in all_five:
                 up_pool.parse(item)
-            for item in all_four:
-                up_pool.parse(item)
+            if pool is BannerType.EVENT:
+                for item in all_four:
+                    up_pool.parse(item)
             up_pool.count_item(data)
         for up_pool in up_pool_data:
             pool_data.append(
@@ -688,7 +543,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                 four=[],
                 name=pool_name,
                 to=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                **{"from": "2020-09-28 00:00:00"},
+                **{"from": "2025-10-22 06:00:00"},
             )
             all_five, _ = await self.get_all_5_star_items(items, assets, pool_name)
             for item in all_five:
@@ -707,133 +562,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         ]
         return {
             "uid": mask_number(player_id),
-            "typeName": "五星列表",
+            "typeName": "套装列表",
             "pool": pool_data,
             "hasMore": False,
         }
-
-    @staticmethod
-    def convert_xlsx_to_uigf(file: Union[str, PathLike, IO[bytes]], zh_dict: Dict) -> Dict:
-        """转换 paimone.moe 或 非小酋 导出 xlsx 数据为 UIGF 格式
-        :param file: 导出的 xlsx 文件
-        :param zh_dict:
-        :return: UIGF 格式数据
-        """
-
-        def from_paimon_moe(
-            uigf_gacha_type: UIGFGachaType, item_type: str, name: str, date_string: str, rank_type: int, _id: int
-        ) -> UIGFItem:
-            item_type = ItemType.CHARACTER if item_type == "Character" else ItemType.WEAPON
-            return UIGFItem(
-                id=str(_id),
-                name=zh_dict[name],
-                gacha_type=uigf_gacha_type,
-                item_type=item_type,
-                rank_type=str(rank_type),
-                time=date_string,
-                uigf_gacha_type=uigf_gacha_type,
-            )
-
-        def from_uigf(
-            uigf_gacha_type: str,
-            gacha__type: str,
-            item_type: str,
-            name: str,
-            date_string: str,
-            rank_type: str,
-            _id: str,
-        ) -> UIGFItem:
-            return UIGFItem(
-                id=_id,
-                name=name,
-                gacha_type=gacha__type,
-                item_type=item_type,
-                rank_type=rank_type,
-                time=date_string,
-                uigf_gacha_type=uigf_gacha_type,
-            )
-
-        def from_fxq(
-            uigf_gacha_type: UIGFGachaType, item_type: str, name: str, date_string: str, rank_type: int, _id: int
-        ) -> UIGFItem:
-            item_type = ItemType.CHARACTER if item_type == "角色" else ItemType.WEAPON
-            return UIGFItem(
-                id=str(_id),
-                name=name,
-                gacha_type=uigf_gacha_type,
-                item_type=item_type,
-                rank_type=str(rank_type),
-                time=date_string,
-                uigf_gacha_type=uigf_gacha_type,
-            )
-
-        wb = load_workbook(file)
-        wb_len = len(wb.worksheets)
-
-        if wb_len == 6:
-            import_type = ImportType.PAIMONMOE
-        elif wb_len == 5:
-            import_type = ImportType.UIGF
-        elif wb_len == 4:
-            import_type = ImportType.FXQ
-        else:
-            raise GachaLogFileError("xlsx 格式错误")
-
-        paimonmoe_sheets = {
-            UIGFGachaType.BEGINNER: "Beginners' Wish",
-            UIGFGachaType.STANDARD: "Standard",
-            UIGFGachaType.CHARACTER: "Character Event",
-            UIGFGachaType.WEAPON: "Weapon Event",
-        }
-        fxq_sheets = {
-            UIGFGachaType.BEGINNER: "新手祈愿",
-            UIGFGachaType.STANDARD: "常驻祈愿",
-            UIGFGachaType.CHARACTER: "角色活动祈愿",
-            UIGFGachaType.WEAPON: "武器活动祈愿",
-        }
-        data = UIGFListInfo(list=[])
-        info = UIGFModel(info=UIGFInfo(export_app=import_type.value), hk4e=[data], hkrpg=[], nap=[])
-        if import_type == ImportType.PAIMONMOE:
-            ws = wb["Information"]
-            if ws["B2"].value != PAIMONMOE_VERSION:
-                raise PaimonMoeGachaLogFileError(file_version=ws["B2"].value, support_version=PAIMONMOE_VERSION)
-            count = 1
-            for gacha_type in paimonmoe_sheets:
-                ws = wb[paimonmoe_sheets[gacha_type]]
-                for row in ws.iter_rows(min_row=2, values_only=True):
-                    if row[0] is None:
-                        break
-                    data.list.append(from_paimon_moe(gacha_type, row[0], row[1], row[2], row[3], count))
-                    count += 1
-        elif import_type == ImportType.UIGF:
-            ws = wb["原始数据"]
-            type_map = {}
-            count = 0
-            for row in ws["1"]:
-                if row.value is None:
-                    break
-                type_map[row.value] = count
-                count += 1
-            for row in ws.iter_rows(min_row=2, values_only=True):
-                if row[0] is None:
-                    break
-                data.list.append(
-                    from_uigf(
-                        row[type_map["uigf_gacha_type"]],
-                        row[type_map["gacha_type"]],
-                        row[type_map["item_type"]],
-                        row[type_map["name"]],
-                        row[type_map["time"]],
-                        row[type_map["rank_type"]],
-                        row[type_map["id"]],
-                    )
-                )
-        else:
-            for gacha_type in fxq_sheets:
-                ws = wb[fxq_sheets[gacha_type]]
-                for row in ws.iter_rows(min_row=2, values_only=True):
-                    if row[0] is None:
-                        break
-                    data.list.append(from_fxq(gacha_type, row[2], row[1], row[0], row[3], row[6]))
-
-        return json.loads(info.model_dump_json())
