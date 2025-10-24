@@ -13,7 +13,9 @@ from simnet.models.base import add_timezone
 from simnet.models.genshin.wish import GenshinBeyondBannerType as BannerType
 from simnet.utils.player import recognize_genshin_server
 
+from gram_core.services.gacha_log_rank.services import GachaLogRankService
 from metadata.pool.pool import get_pool_by_id
+from modules.beyond_gacha_log.ranks import BeyondGachaLogRanks
 from modules.gacha_log.error import (
     GachaLogAccountNotFound,
     GachaLogAuthkeyTimeout,
@@ -41,11 +43,13 @@ GACHA_LOG_PATH = PROJECT_ROOT.joinpath("data", "apihelper", "beyond_gacha_log")
 GACHA_LOG_PATH.mkdir(parents=True, exist_ok=True)
 
 
-class BeyondGachaLog(BeyondGachaLogUigfConverter):
+class BeyondGachaLog(BeyondGachaLogRanks, BeyondGachaLogUigfConverter):
     def __init__(
         self,
         gacha_log_path: Path = GACHA_LOG_PATH,
+        gacha_log_rank_service: GachaLogRankService = None,
     ):
+        BeyondGachaLogRanks.__init__(self, gacha_log_rank_service)
         self.gacha_log_path = gacha_log_path
 
     @staticmethod
@@ -188,6 +192,7 @@ class BeyondGachaLog(BeyondGachaLogUigfConverter):
             gacha_log.update_time = add_timezone(datetime.datetime.now())
             gacha_log.import_type = import_type.value
             await self.save_gacha_log_info(str(user_id), uid, gacha_log)
+            await self.recount_one_from_uid(user_id, player_id)
             return new_num
         except GachaLogAccountNotFound as e:
             raise GachaLogAccountNotFound("导入失败，文件包含的颂愿记录所属 uid 与你当前绑定的 uid 不同") from e
@@ -256,6 +261,7 @@ class BeyondGachaLog(BeyondGachaLogUigfConverter):
         gacha_log.update_time = add_timezone(datetime.datetime.now())
         gacha_log.import_type = ImportType.UIGF.value
         await self.save_gacha_log_info(str(user_id), str(player_id), gacha_log)
+        await self.recount_one_from_uid(user_id, player_id)
         return new_num
 
     @staticmethod

@@ -15,6 +15,7 @@ from gram_core.dependence.redisdb import RedisDB
 from gram_core.services.gacha_log_rank.models import GachaLogRank, GachaLogTypeEnum, GachaLogQueryTypeEnum
 from gram_core.services.gacha_log_rank.services import GachaLogRankService
 from gram_core.services.players import PlayersService
+from modules.beyond_gacha_log.ranks import BeyondGachaLogRanks
 from modules.gacha_log.ranks import GachaLogRanks
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
@@ -59,6 +60,8 @@ class WishLogRankPlugin(Plugin):
         ("常驻-五星平均", GachaLogTypeEnum.DEFAULT, GachaLogQueryTypeEnum.FIVE_STAR_AVG),
         ("集录-总抽数", GachaLogTypeEnum.HUN, GachaLogQueryTypeEnum.TOTAL),
         ("集录-五星平均", GachaLogTypeEnum.HUN, GachaLogQueryTypeEnum.FIVE_STAR_AVG),
+        ("活动颂愿-总抽数", GachaLogTypeEnum.PET, GachaLogQueryTypeEnum.TOTAL),
+        ("活动颂愿-五星平均", GachaLogTypeEnum.PET, GachaLogQueryTypeEnum.FIVE_STAR_AVG),
     ]
 
     def __init__(
@@ -277,7 +280,8 @@ class WishLogRankPlugin(Plugin):
             "data_list": [my_data, list_data],
             "count": list_data.count,
             "namecard": name_card,
-            "pool_name": GachaLogRanks.ITEM_LIST_MAP_REV.get(rank_type),
+            "pool_name": GachaLogRanks.ITEM_LIST_MAP_REV.get(rank_type)
+            or BeyondGachaLogRanks.ITEM_LIST_MAP_REV.get(rank_type),
             "data_key_map": self.get_data_key_map_by_type(rank_type),
             "main_key": query_type,
             "desc": desc,

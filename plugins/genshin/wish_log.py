@@ -109,7 +109,7 @@ class WishLogPlugin(Plugin.Conversation):
         self.cookie_service = cookie_service
         self.zh_dict = None
         self.gacha_log = GachaLog(gacha_log_rank_service=gacha_log_rank)
-        self.beyond_gacha_log = BeyondGachaLog()
+        self.beyond_gacha_log = BeyondGachaLog(gacha_log_rank_service=gacha_log_rank)
         self.player_info = player_info
         self.wish_photo = None
 
@@ -719,7 +719,9 @@ class WishLogPlugin(Plugin.Conversation):
         logger.info("用户 %s[%s] wish_log_rank_recount 命令请求", user.full_name, user.id)
         message = update.effective_message
         reply = await message.reply_text("正在重新统计抽卡记录排行榜")
+        await self.gacha_log.remove_all_data()
         await self.gacha_log.recount_all_data(reply)
+        await self.beyond_gacha_log.recount_all_data(reply)
         await reply.edit_text("重新统计完成")
 
     @staticmethod

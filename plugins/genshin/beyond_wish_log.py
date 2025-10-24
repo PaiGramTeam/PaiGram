@@ -17,6 +17,7 @@ from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from gram_core.config import config
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
+from gram_core.services.gacha_log_rank.services import GachaLogRankService
 from modules.beyond_gacha_log.const import GACHA_TYPE_LIST_REVERSE
 from modules.gacha_log.error import GachaLogNotFound
 from modules.beyond_gacha_log.log import BeyondGachaLog
@@ -52,12 +53,13 @@ class BeyondWishLogPlugin(Plugin.Conversation):
         assets: AssetsService,
         cookie_service: CookiesService,
         player_info: PlayerInfoSystem,
+        gacha_log_rank: GachaLogRankService,
     ):
         self.template_service = template_service
         self.players_service = players_service
         self.assets_service = assets
         self.cookie_service = cookie_service
-        self.gacha_log = BeyondGachaLog()
+        self.gacha_log = BeyondGachaLog(gacha_log_rank_service=gacha_log_rank)
         self.player_info = player_info
         self.wish_photo = None
 
