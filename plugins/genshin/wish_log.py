@@ -1,3 +1,4 @@
+import contextlib
 from functools import partial
 from io import BytesIO
 from typing import Optional, TYPE_CHECKING, List, Union, Tuple
@@ -29,8 +30,10 @@ from gram_core.config import config
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.gacha_log_rank.services import GachaLogRankService
 from metadata.scripts.paimon_moe import GACHA_LOG_PAIMON_MOE_PATH, update_paimon_moe_zh
+from modules.beyond_gacha_log.log import BeyondGachaLog
 from modules.gacha_log.const import UIGF_VERSION, GACHA_TYPE_LIST_REVERSE
 from modules.gacha_log.error import (
+    GachaLogException,
     GachaLogAccountNotFound,
     GachaLogAuthkeyTimeout,
     GachaLogFileError,
@@ -84,10 +87,9 @@ class WishLogPlugin(Plugin.Conversation):
     """抽卡记录导入/导出/分析"""
 
     IMPORT_HINT = (
-        "<b>开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
+        "<b>UID: %s\n\n开始导入祈愿历史记录：请通过 https://paimon.moe/wish/import 获取抽卡记录链接后发送给我"
         "（非 paimon.moe 导出的文件数据）</b>\n\n"
         f"> 你还可以向{config.notice.bot_name}发送从其他工具导出的 UIGF {UIGF_VERSION} 标准的记录文件\n"
-        "> 或者从 paimon.moe 、非小酋 导出的 xlsx 记录文件\n"
         "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
         "<b>注意：导入的数据将会与旧数据进行合并。</b>"
     )
@@ -107,6 +109,7 @@ class WishLogPlugin(Plugin.Conversation):
         self.cookie_service = cookie_service
         self.zh_dict = None
         self.gacha_log = GachaLog(gacha_log_rank_service=gacha_log_rank)
+        self.beyond_gacha_log = BeyondGachaLog()
         self.player_info = player_info
         self.wish_photo = None
 
@@ -140,12 +143,17 @@ class WishLogPlugin(Plugin.Conversation):
         """
         try:
             logger.debug("尝试获取已绑定的原神账号")
+            new_num, new_num2 = 0, 0
             if authkey:
                 new_num = await self.gacha_log.get_gacha_log_data(user.id, player_id, authkey, is_lazy)
-                return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
+                new_num2 = await self.beyond_gacha_log.get_gacha_log_data(user.id, player_id, authkey, is_lazy)
             if data:
                 new_num = await self.gacha_log.import_gacha_log_data(user.id, player_id, data, verify_uid)
-                return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条抽卡记录"
+                with contextlib.suppress(GachaLogException):
+                    new_num2 = await self.beyond_gacha_log.import_gacha_log_data(user.id, player_id, data, verify_uid)
+            if new_num == 0 and new_num2 == 0:
+                return "更新完成，本次没有新增数据"
+            return f"更新完成，本次共新增 {new_num} 条抽卡记录， {new_num2} 条颂愿记录。"
         except GachaLogNotFound:
             return WAITING
         except GachaLogAccountNotFound:
@@ -272,7 +280,7 @@ class WishLogPlugin(Plugin.Conversation):
         keyboard = None
         if await self.can_gen_authkey(user.id, player_id):
             keyboard = ReplyKeyboardMarkup([["自动导入"], ["退出"]], one_time_keyboard=True)
-        await message.reply_text(self.IMPORT_HINT, parse_mode="html", reply_markup=keyboard)
+        await message.reply_text(self.IMPORT_HINT % player_id, parse_mode="html", reply_markup=keyboard)
         return INPUT_URL
 
     @conversation.state(state=INPUT_URL)
@@ -413,6 +421,7 @@ class WishLogPlugin(Plugin.Conversation):
             player_id = await self.get_player_id(user.id, uid, offset)
             await message.reply_chat_action(ChatAction.TYPING)
             path = await self.gacha_log.gacha_log_to_uigf(str(user.id), str(player_id))
+            await self.beyond_gacha_log.gacha_log_to_uigf(str(user.id), str(player_id), path)
             await message.reply_chat_action(ChatAction.UPLOAD_DOCUMENT)
             await message.reply_document(document=open(path, "rb+"), caption=f"抽卡记录导出文件 - UIGF {UIGF_VERSION}")
         except GachaLogNotFound:
@@ -459,6 +468,7 @@ class WishLogPlugin(Plugin.Conversation):
             return data
         name_card = await self.player_info.get_name_card(player_id, user_id)
         data["name_card"] = name_card
+        data["pool_type"] = pool_type.value
         png_data = await self.template_service.render(
             "genshin/wish_log/wish_log.jinja2",
             data,
