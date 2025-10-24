@@ -455,7 +455,7 @@ class BeyondGachaLog(BeyondGachaLogUigfConverter):
             pool_name = self.count_fortune(pool_name, summon_data)
         elif pool == BannerType.PERMANENT:
             summon_data = self.get_200_pool_data(total, all_five, all_four, no_five_star, no_four_star)
-            pool_name = self.count_fortune(pool_name, summon_data)
+            pool_name = self.count_fortune(pool_name, summon_data, True)
         last_time = data[0].time.strftime("%Y-%m-%d %H:%M")
         first_time = data[-1].time.strftime("%Y-%m-%d %H:%M")
         return {

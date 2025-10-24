@@ -1,9 +1,5 @@
 from simnet.models.genshin.wish import GenshinBeyondBannerType
 
-PAIMONMOE_VERSION = 3
-UIGF_VERSION = "v4.0"
-
-
 GACHA_TYPE_LIST = {
     GenshinBeyondBannerType.PERMANENT: "常驻颂愿",
     GenshinBeyondBannerType.EVENT: "活动颂愿",
