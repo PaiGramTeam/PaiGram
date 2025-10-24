@@ -27,12 +27,6 @@ from plugins.tools.genshin import PlayerNotFoundError
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
-try:
-    import ujson as jsonlib
-
-except ImportError:
-    import json as jsonlib
-
 
 if TYPE_CHECKING:
     from telegram import Update, Message

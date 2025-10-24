@@ -32,7 +32,7 @@ from modules.beyond_gacha_log.models import (
     ImportType,
 )
 from modules.gacha_log.models import FiveStarItem, FourStarItem, Pool
-from utils.const import PROJECT_ROOT, RESOURCE_DIR
+from utils.const import PROJECT_ROOT
 from utils.uid import mask_number
 
 if TYPE_CHECKING:
@@ -236,7 +236,7 @@ class BeyondGachaLog(BeyondGachaLogRanks, BeyondGachaLogUigfConverter):
                 wish_history = await client.beyond_wish_history(pool_id.value, authkey=authkey, min_id=min_id)
 
                 if not is_lazy:
-                    min_id = min([i.id for i in wish_history[:20]]) if wish_history else min_id
+                    min_id = min(i.id for i in wish_history[:20]) if wish_history else min_id
                     if min_id:
                         gacha_log.item_list[pool_name][:] = filter(
                             lambda i: int(i.id) < min_id, gacha_log.item_list[pool_name]
@@ -332,24 +332,24 @@ class BeyondGachaLog(BeyondGachaLogRanks, BeyondGachaLogUigfConverter):
     def get_301_pool_data(total: int, all_five: List[FiveStarItem], no_five_star: int, no_four_star: int):
         # 总共五星
         five_star = len(all_five)
-        five_star_up = len([i for i in all_five if i.isUp])
-        five_star_big = len([i for i in all_five if i.isBig])
+        # five_star_up = len([i for i in all_five if i.isUp])
+        # five_star_big = len([i for i in all_five if i.isBig])
         # 五星平均
         five_star_avg = round((total - no_five_star) / five_star, 2) if five_star != 0 else 0
         # 小保底不歪
-        small_protect = (
-            round((five_star_up - five_star_big) / (five_star - five_star_big) * 100.0, 1)
-            if five_star - five_star_big != 0
-            else "0.0"
-        )
+        # small_protect = (
+        #     round((five_star_up - five_star_big) / (five_star - five_star_big) * 100.0, 1)
+        #     if five_star - five_star_big != 0
+        #     else "0.0"
+        # )
         # 五星常驻
-        five_star_const = five_star - five_star_up
+        # five_star_const = five_star - five_star_up
         # UP 平均
-        up_avg = (
-            round((total - no_five_star - (all_five[0].count if not all_five[0].isUp else 0)) / five_star_up, 2)
-            if five_star_up != 0
-            else 0
-        )
+        # up_avg = (
+        #     round((total - no_five_star - (all_five[0].count if not all_five[0].isUp else 0)) / five_star_up, 2)
+        #     if five_star_up != 0
+        #     else 0
+        # )
         # UP 花费原石
         up_cost = sum(i.count * 160 for i in all_five if i.isUp)
         up_cost = f"{round(up_cost / 10000, 2)}w" if up_cost >= 10000 else up_cost
@@ -498,7 +498,7 @@ class BeyondGachaLog(BeyondGachaLogRanks, BeyondGachaLogUigfConverter):
         if total == 0:
             raise GachaLogNotFound
         all_five, _ = await self.get_all_5_star_items(data, assets, pool_name)
-        all_four, _ = await self.get_all_4_star_items(data, assets)
+        all_four, _ = await self.get_all_4_star_items(data, assets, pool_name)
         pool_data = []
         up_pool_data = [Pool(**i) for i in get_pool_by_id(pool.value)]
         for up_pool in up_pool_data:

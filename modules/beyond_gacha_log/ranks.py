@@ -1,3 +1,4 @@
+from abc import ABC
 from pathlib import Path
 
 from simnet.models.genshin.wish import GenshinBeyondBannerType
@@ -10,7 +11,7 @@ from modules.gacha_log.models import ImportType
 from modules.gacha_log.ranks import GachaLogRanks, GachaLogError
 
 
-class BeyondGachaLogRanks(GachaLogRanks):
+class BeyondGachaLogRanks(GachaLogRanks, ABC):
     """抽卡记录排行榜"""
 
     ITEM_LIST_MAP = {
