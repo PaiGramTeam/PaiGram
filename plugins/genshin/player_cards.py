@@ -629,9 +629,11 @@ class RenderTemplate:
                 try:
                     data["damage_info"] = self.render_damage(damage_config)
                 except JsonParseException as _exc:
-                    logger.error(str(_exc))
+                    logger.error("mona core json parse error: %s", str(_exc))
                 except EnkaParseException as _exc:
-                    logger.error(str(_exc))
+                    logger.error("mona core enka parse error: %s", str(_exc))
+                except BaseException as _exc:
+                    logger.error("mona core panicked: %s", str(_exc))
                 else:
                     data["damage_function_available"] = True
 
