@@ -98,7 +98,7 @@ class HyperionBase(ABC):
 
     @staticmethod
     async def download_image(client: "HyperionRequest", art_id: int, url: str, page: int = 0) -> List[ArtworkImage]:
-        filename = os.path.basename(url)
+        filename = os.path.basename(url.split("?")[0])
         _, _file_extension = os.path.splitext(filename)
         file_extension = _file_extension.lower()
         is_image = file_extension in ".jpg" or file_extension in ".jpeg" or file_extension in ".png"
@@ -109,7 +109,7 @@ class HyperionBase(ABC):
             art_id=art_id,
             page=page,
             file_name=filename,
-            file_extension=url.split(".")[-1],
+            file_extension=file_extension.split(".")[-1],
             data=response.content,
             url=url,
         )
