@@ -316,12 +316,14 @@ class GenshinHelper(Plugin):
                 stoken = client.cookies.get("stoken")
                 if stoken is not None:
                     try:
-                        new_cookies = cookie_model.data.copy()
-                        new_cookies["cookie_token"] = await client.get_cookie_token_by_stoken()
-                        logger.success("用户 %s 刷新 cookie_token 成功", user_id)
-                        new_cookies["ltoken"] = await client.get_ltoken_by_stoken()
-                        logger.success("用户 %s 刷新 ltoken 成功", user_id)
-                        cookie_model.data = new_cookies
+                        old_cookies = cookie_model.data.copy()
+                        new_cookies = await client.get_all_token_by_stoken()
+                        logger.success("用户 %s 刷新所有 token 成功", user_id)
+                        new_cookies_dict = new_cookies.to_dict()
+                        # 保留云游戏相关字段
+                        cg_cookies = {k: v for k, v in old_cookies.items() if k.startswith("cg_")}
+                        new_cookies_dict.update(cg_cookies)
+                        cookie_model.data = new_cookies_dict
                         cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
                     except ValueError as _exc:
                         logger.info("用户 user_id[%s] Cookies 不完整 [%s]", cookie_model.user_id, str(_exc))

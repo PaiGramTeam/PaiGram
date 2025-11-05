@@ -295,21 +295,9 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 )
                 return await self.quit_conversation(update, context)
             try:
-                if region == Region.CHINESE:
-                    cookies.stoken, cookies.mid = await client.get_stoken_v2_and_mid_by_by_stoken(
-                        cookies.stoken, cookies.account_id
-                    )
-                    logger.success("用户 %s[%s] 绑定时获取 stoken_v2, mid 成功", user.full_name, user.id)
-                    cookies.cookie_token = await client.get_cookie_token_by_stoken(cookies.stoken, mid=cookies.mid)
-                    logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
-                    cookies.ltoken = await client.get_ltoken_by_stoken()
-                    logger.success("用户 %s[%s] 绑定时获取 ltoken 成功", user.full_name, user.id)
-                else:
-                    cookies_model = await client.get_all_token_by_stoken(cookies.stoken, cookies.account_id)
-                    cookies.set_by_dict(cookies_model.dict())
-                    logger.success(
-                        "用户 %s[%s] 绑定时获取 stoken_v2, mid, ltoken, cookie_token 成功", user.full_name, user.id
-                    )
+                new_cookies = await client.get_all_token_by_stoken()
+                logger.success("用户 %s[%s] 绑定时获取所有 token 成功", user.full_name, user.id)
+                cookies = CookiesModel(**new_cookies.to_dict())
             except SimnetBadRequest as exc:
                 logger.warning(
                     "用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original

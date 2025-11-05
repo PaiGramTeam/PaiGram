@@ -224,11 +224,14 @@ class PlayersManagesPlugin(Plugin):
             try:
                 region = Region.CHINESE if player.region.value == 1 else Region.OVERSEAS
                 async with GenshinClient(cookies=cookies.to_dict(), region=region) as client:
-                    cookies.cookie_token = await client.get_cookie_token_by_stoken()
-                    logger.success("用户 %s[%s] 刷新 cookie_token 成功", user.full_name, user.id)
-                    cookies.ltoken = await client.get_ltoken_by_stoken()
-                    logger.success("用户 %s[%s] 刷新 ltoken 成功", user.full_name, user.id)
-                    cookies.remove_v2()
+                    old_cookies = cookies.to_dict()
+                    new_cookies = await client.get_all_token_by_stoken()
+                    logger.success("用户 %s 刷新所有 token 成功", user_id)
+                    new_cookies_dict = new_cookies.to_dict()
+                    # 保留云游戏相关字段
+                    cg_cookies = {k: v for k, v in old_cookies.items() if k.startswith("cg_")}
+                    new_cookies_dict.update(cg_cookies)
+                    cookies = CookiesModel(**new_cookies_dict)
             except Exception as exc:  # pylint: disable=W0703
                 logger.error("刷新 cookie_token 失败 [%s]", (str(exc)))
                 await callback_query.edit_message_text(

@@ -2539,7 +2539,7 @@ wheels = [
 [[package]]
 name = "simnet"
 version = "0.2.0"
-source = { git = "https://github.com/PaiGramTeam/SIMNet#0e1d10aec49d82bec49943ac1cff99db61185251" }
+source = { git = "https://github.com/PaiGramTeam/SIMNet#0d6b3864665b9b30ec7afd9ef97a946f4c2532d8" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },

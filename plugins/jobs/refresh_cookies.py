@@ -41,10 +41,13 @@ class RefreshCookiesJob(Plugin):
                 if cookies.get("stoken") is not None and cookie_model.status != CookiesStatusEnum.INVALID_COOKIES:
                     try:
                         async with AuthClient(cookies=cookies, region=client_region) as client:
-                            new_cookies: Dict[str, str] = cookies.copy()
-                            new_cookies["cookie_token"] = await client.get_cookie_token_by_stoken()
-                            new_cookies["ltoken"] = await client.get_ltoken_by_stoken()
-                            cookie_model.data = new_cookies
+                            old_cookies: Dict[str, str] = cookies.copy()
+                            new_cookies = await client.get_all_token_by_stoken()
+                            new_cookies_dict = new_cookies.to_dict()
+                            # 保留云游戏相关字段
+                            cg_cookies = {k: v for k, v in old_cookies.items() if k.startswith("cg_")}
+                            new_cookies_dict.update(cg_cookies)
+                            cookie_model.data = new_cookies_dict
                             cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
                     except ValueError:
                         cookie_model.status = CookiesStatusEnum.INVALID_COOKIES
