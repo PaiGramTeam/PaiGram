@@ -1,4 +1,5 @@
 import asyncio
+import time
 from pathlib import Path
 from typing import Optional, Dict, Union
 
@@ -64,6 +65,7 @@ class PlayerCardsFile:
         data: Dict,
         use_old: bool = False,
     ) -> Dict:
+        timestamp = int(time.time())
         async with self._lock:
             old_data = await self.load_history_info(uid)
             if old_data is None:
@@ -72,6 +74,8 @@ class PlayerCardsFile:
                 await self.save_json(self.get_file_path(uid), data)
                 return data
             data["avatarInfoList"] = data.get("avatarInfoList") or []
+            for cha in data["avatarInfoList"]:
+                cha["pai_refresh_time"] = timestamp
             characters = [i.get("avatarId", 0) for i in data["avatarInfoList"]]
             for i in old_data["avatarInfoList"]:
                 if i.get("avatarId", 0) not in characters:

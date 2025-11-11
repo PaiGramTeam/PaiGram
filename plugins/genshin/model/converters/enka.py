@@ -1,7 +1,6 @@
 from decimal import Decimal
 
 from enkanetwork import (
-    CharacterInfo as EnkaCharacterInfo,
     CharacterStats as EnkaCharacterStats,
     StatsPercentage,
     Equipments,
@@ -12,6 +11,8 @@ from enkanetwork import (
 )
 
 from core.dependence.assets.impl.genshin import AssetsService
+
+from modules.playercards.models import EnkaCharacterInfo
 from plugins.genshin.model import (
     CharacterInfo,
     Digit,

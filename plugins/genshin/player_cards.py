@@ -4,7 +4,6 @@ from typing import Any, List, Tuple, Union, Optional, TYPE_CHECKING, Dict
 
 from enkanetwork import (
     DigitType,
-    EnkaNetworkResponse,
     EnkaServerError,
     Equipments,
     EquipmentsType,
@@ -34,6 +33,7 @@ from modules.apihelper.client.components.remote import Remote
 from modules.gcsim.file import PlayerGCSimScripts
 from modules.playercards.file import PlayerCardsFile
 from modules.playercards.helpers import ArtifactStatsTheory
+from modules.playercards.models import EnkaNetworkResponse
 from modules.playercards.to_enka import from_simnet_to_enka
 from plugins.tools.genshin import PlayerNotFoundError, GenshinHelper, CookiesNotFoundError
 from utils.enkanetwork import RedisCache, EnkaNetworkAPI
@@ -58,10 +58,12 @@ except ImportError:
     GENSHIN_ARTIFACT_FUNCTION_AVAILABLE = False
 
 if TYPE_CHECKING:
-    from enkanetwork import CharacterInfo, EquipmentsStats
+    from enkanetwork import EquipmentsStats
     from telegram.ext import ContextTypes
     from telegram import Update, Message
     from simnet import GenshinClient
+
+    from modules.playercards.models import EnkaCharacterInfo
 
 try:
     import ujson as jsonlib
@@ -185,7 +187,7 @@ class PlayerCards(Plugin):
         return uid, ch_name
 
     @staticmethod
-    def get_caption(character: "CharacterInfo") -> str:
+    def get_caption(character: "EnkaCharacterInfo") -> str:
         tags = [character.name, f"等级{character.level}", f"命座{character.constellations_unlocked}"]
         if character.equipments:
             for item in character.equipments:
@@ -566,7 +568,7 @@ class RenderTemplate:
     def __init__(
         self,
         uid: Union[int, str],
-        character: "CharacterInfo",
+        character: "EnkaCharacterInfo",
         fight_prop_rule: Dict[str, Dict[str, float]],
         damage_config: Dict,
         template_service: TemplateService,
@@ -738,6 +740,8 @@ class RenderTemplate:
             for item in items:
                 if "元素伤害加成" in item[0] and max_stat.to_percentage_symbol() != item[1]:
                     items.remove(item)
+
+        items.append(("数据更新时间", self.character.pai_refresh_time_str()))
 
         return items
 

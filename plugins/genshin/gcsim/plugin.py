@@ -1,7 +1,6 @@
 import copy
 from typing import Optional, TYPE_CHECKING, List, Union, Dict, Tuple
 
-from enkanetwork import EnkaNetworkResponse
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import filters
 
@@ -15,6 +14,7 @@ from gram_core.services.users.services import UserAdminService
 from metadata.shortname import roleToName, roleToId
 from modules.gcsim.file import PlayerGCSimScripts
 from modules.playercards.file import PlayerCardsFile
+from modules.playercards.models import EnkaNetworkResponse
 from plugins.genshin.gcsim.renderer import GCSimResultRenderer
 from plugins.genshin.gcsim.runner import GCSimRunner, GCSimFit, GCSimQueueFull, GCSimResult
 from plugins.genshin.model.base import CharacterInfo
