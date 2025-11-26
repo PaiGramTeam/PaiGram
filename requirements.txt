@@ -16,9 +16,9 @@ aiosignal==1.4.0
     # via aiohttp
 aiosqlite==0.21.0
     # via paigram
-alembic==1.17.1
+alembic==1.17.2
     # via paigram
-annotated-doc==0.0.3
+annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
@@ -45,11 +45,11 @@ beautifulsoup4==4.14.2
     # via paigram
 black==24.10.0
     # via paigram
-cachetools==6.2.1
+cachetools==6.2.2
     # via
     #   enkanetwork-py
     #   python-telegram-bot
-certifi==2025.10.5
+certifi==2025.11.12
     # via
     #   httpcore
     #   httpx
@@ -62,7 +62,7 @@ charset-normalizer==3.4.4
     # via requests
 ciso8601==2.3.3
     # via influxdb-client
-click==8.3.0
+click==8.3.1
     # via
     #   black
     #   uvicorn
@@ -80,13 +80,13 @@ enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@0492e8f969532
     # via paigram
 et-xmlfile==2.0.0
     # via openpyxl
-exceptiongroup==1.3.0 ; python_full_version < '3.11'
+exceptiongroup==1.3.1 ; python_full_version < '3.11'
     # via
     #   anyio
     #   pytest
-fakeredis==2.32.0
+fakeredis==2.32.1
     # via paigram
-fastapi==0.121.0
+fastapi==0.122.0
     # via paigram
 flaky==3.8.1
     # via paigram
@@ -176,7 +176,7 @@ pyaes==1.6.1
     # via pyrogram
 pycparser==2.23 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
-pydantic==2.12.3
+pydantic==2.12.4
     # via
     #   enkanetwork-py
     #   fastapi
@@ -184,9 +184,9 @@ pydantic==2.12.3
     #   pydantic-settings
     #   simnet
     #   sqlmodel
-pydantic-core==2.41.4
+pydantic-core==2.41.5
     # via pydantic
-pydantic-settings==2.11.0
+pydantic-settings==2.12.0
     # via paigram
 pyee==12.0.0
     # via playwright
@@ -194,7 +194,7 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
-pyrogram @ git+https://github.com/TeamPGM/pyrogram@db98b191c356b28f74a521ebe2e87bfc75180deb
+pyrogram @ git+https://github.com/TeamPGM/pyrogram@db4bddbad967fb89ce9cb770a86468d611502c6f
     # via paigram
 pyrotgcrypto==1.2.7
     # via paigram
@@ -221,7 +221,7 @@ pyyaml==6.0.3
     # via uvicorn
 rapidfuzz==3.14.3
     # via thefuzz
-reactivex==4.0.4
+reactivex==4.1.0
     # via influxdb-client
 redis==6.4.0
     # via
@@ -233,11 +233,11 @@ requests-oauthlib==2.0.0
     # via mwclient
 rich==14.2.0
     # via paigram
-sentry-sdk==2.43.0
+sentry-sdk==2.46.0
     # via paigram
 setuptools==80.9.0
     # via influxdb-client
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@0d6b3864665b9b30ec7afd9ef97a946f4c2532d8
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@2738a7be99eefd335c746cd9d7b3ea0768da63cc
     # via paigram
 six==1.17.0
     # via python-dateutil
@@ -255,7 +255,7 @@ sqlalchemy==2.0.44
     #   sqlmodel
 sqlmodel==0.0.27
     # via paigram
-starlette==0.49.3
+starlette==0.50.0
     # via fastapi
 thefuzz==0.22.1
     # via paigram
