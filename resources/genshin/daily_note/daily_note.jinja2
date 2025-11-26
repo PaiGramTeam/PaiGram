@@ -101,7 +101,9 @@
             </div>
         </div>
         <div class="right">
-            <span>{{ current_expeditions }}/{{ max_expeditions }}</span>
+            <span class="{% if not expeditions or not remained_time %}red{% endif %}">
+                {{ current_expeditions }}/{{ max_expeditions }}
+            </span>
         </div>
     </div>
     <div class="item">
@@ -111,13 +113,15 @@
             <div class="info">
                 <div class="name">值得铭记的强敌</div>
                 <div class="time">
-                    {% if remaining_resin_discounts<=0 %}周本已完成
+                    {% if remaining_resin_discounts <= 0 %}周本已完成
                     {% else %}周本树脂减半次数剩余{% endif %}
                 </div>
             </div>
         </div>
         <div class="right">
-            <span>{{ remaining_resin_discounts }}/{{ max_resin_discounts }}</span>
+            <span class="{% if remaining_resin_discounts > 0 %}red{% endif %}">
+                {{ remaining_resin_discounts }}/{{ max_resin_discounts }}
+            </span>
         </div>
     </div>
     <div class="item">
