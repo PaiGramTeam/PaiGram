@@ -79,13 +79,41 @@ class ArtworkImage(BaseModel):
             return data
 
 
-class PostInfo(BaseModel):
-    _data: dict = PrivateAttr()
+class PostRecommend(BaseModel):
+    hoyolab: bool = False
     gids: int
-    hoyolab: bool
     post_id: int
+    subject: str = ""
+
+    @staticmethod
+    def parse(data: Dict, gids: int, hoyolab: bool = False):
+        _post = data.get("post")
+        post_id = _post.get("post_id")
+        subject = _post.get("subject", "")
+        return PostRecommend(hoyolab=hoyolab, gids=gids, post_id=post_id, subject=subject)
+
+    @property
+    def type_enum(self) -> "PostTypeEnum":
+        return PostTypeEnum.CN if not self.hoyolab else PostTypeEnum.OS
+
+    @property
+    def short_name(self) -> str:
+        return GAME_STR_MAP.get(self.gids)
+
+    def get_url(self) -> str:
+        if not self.hoyolab:
+            return f"https://www.miyoushe.com/{self.short_name}/article/{self.post_id}"
+        return f"https://www.hoyolab.com/article/{self.post_id}"
+
+    def get_fix_url(self) -> str:
+        url = self.get_url()
+        return url.replace(".com/", ".pp.ua/")
+
+
+class PostInfo(PostRecommend):
+    _data: dict = PrivateAttr()
+
     user_uid: int
-    subject: str
     image_urls: List[str]
     created_at: int
     video_urls: List[str]
@@ -154,23 +182,6 @@ class PostInfo(BaseModel):
     def __getitem__(self, item):
         return self._data[item]
 
-    @property
-    def type_enum(self) -> "PostTypeEnum":
-        return PostTypeEnum.CN if not self.hoyolab else PostTypeEnum.OS
-
-    @property
-    def short_name(self) -> str:
-        return GAME_STR_MAP.get(self.gids)
-
-    def get_url(self) -> str:
-        if not self.hoyolab:
-            return f"https://www.miyoushe.com/{self.short_name}/article/{self.post_id}"
-        return f"https://www.hoyolab.com/article/{self.post_id}"
-
-    def get_fix_url(self) -> str:
-        url = self.get_url()
-        return url.replace(".com/", ".pp.ua/")
-
 
 class LiveInfo(BaseModel):
     act_type: str
@@ -216,17 +227,3 @@ class PostTypeEnum(str, Enum):
 
 class HoYoPostMultiLang(BaseModel):
     lang_subject: dict
-
-
-class PostRecommend(BaseModel):
-    hoyolab: bool = False
-    gids: int
-    post_id: int
-    subject: str = ""
-
-    @staticmethod
-    def parse(data: Dict, gids: int, hoyolab: bool = False):
-        _post = data.get("post")
-        post_id = _post.get("post_id")
-        subject = _post.get("subject", "")
-        return PostRecommend(hoyolab=hoyolab, gids=gids, post_id=post_id, subject=subject)

@@ -41,6 +41,8 @@ if TYPE_CHECKING:
     from telegram import Update, Message
     from telegram.ext import ContextTypes
 
+    from modules.apihelper.models.genshin.hyperion import PostRecommend
+
 
 class PostHandlerData:
     def __init__(self):
@@ -142,11 +144,14 @@ class Post(Plugin.Conversation):
         try:
             for gid in self.gids:
                 official_recommended_posts.extend(await bbs.get_official_recommended_posts(gid))
+            await bbs.close()
         except APIHelperException as exc:
             logger.error("获取首页推荐信息失败 %s", str(exc))
             return
 
         # 判断是否为空
+        if not official_recommended_posts:
+            return
         if await self.is_posted_empty(post_type):
             for post in official_recommended_posts:
                 await self.set_posted(post_type, post.post_id)
@@ -159,32 +164,27 @@ class Post(Plugin.Conversation):
         if not new_post_id_list:
             return
 
+        await self.task_send_message(context, new_post_id_list, post_type)
+
+    async def task_send_message(
+        self, context: "ContextTypes.DEFAULT_TYPE", new_post_id_list: list["PostRecommend"], post_type: "PostTypeEnum"
+    ):
         chat_ids = post_config.chat_ids or post_config.chat_id or config.owner
         if not isinstance(chat_ids, list):
             chat_ids = [chat_ids]
 
         for post in new_post_id_list:
             post_id, gids = post.post_id, post.gids
-            try:
-                post_info = await bbs.get_post_info(gids, post_id)
-            except APIHelperException as exc:
-                logger.error("获取文章信息失败 %s", str(exc))
-                text = f"获取 post_id[{post_id}] 文章信息失败 {str(exc)}"
-                try:
-                    await context.bot.send_message(chat_ids[0], text)
-                except BadRequest as _exc:
-                    logger.error("发送消息失败 %s", _exc.message)
-                return
-            type_name = post_info.type_enum.value
+            type_name = post.type_enum.value
             buttons = [
                 [
-                    InlineKeyboardButton("确认", callback_data=f"post_admin|confirm|{type_name}|{post_info.post_id}"),
-                    InlineKeyboardButton("取消", callback_data=f"post_admin|cancel|{type_name}|{post_info.post_id}"),
+                    InlineKeyboardButton("确认", callback_data=f"post_admin|confirm|{type_name}|{post_id}"),
+                    InlineKeyboardButton("取消", callback_data=f"post_admin|cancel|{type_name}|{post_id}"),
                 ]
             ]
-            url = post_info.get_fix_url()
-            tag = f"#{post_info.short_name} #{post_type.value} #{post_info.short_name}_{post_type.value}"
-            text = f"发现官网推荐文章 <a href='{url}'>{post_info.subject}</a>\n是否开始处理 {tag}"
+            url = post.get_fix_url()
+            tag = f"#{post.short_name} #{post_type.value} #{post.short_name}_{post_type.value}"
+            text = f"发现官网推荐文章 <a href='{url}'>{post.subject}</a>\n是否开始处理 {tag}"
             for chat_id in chat_ids:
                 try:
                     await context.bot.send_message(
@@ -196,7 +196,6 @@ class Post(Plugin.Conversation):
                     await self.set_posted(post_type, post_id)
                 except BadRequest as exc:
                     logger.error("发送消息失败 %s", exc.message)
-        await bbs.close()
 
     @staticmethod
     def parse_post_text(soup: BeautifulSoup, post_subject: str) -> Tuple[str, bool]:

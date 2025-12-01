@@ -30,12 +30,12 @@ class Hoyolab(HyperionBase):
 
     async def get_official_recommended_posts(self, gids: int) -> List[PostRecommend]:
         results = []
-        tasks = [self.get_new_list_recommended_posts(gids, i, 5, self.LANG) for i in range(1, 4)]
+        tasks = [self.get_new_list_recommended_posts(gids, i, 20, self.LANG) for i in range(1, 4)]
         asyncio_results = await asyncio.gather(*tasks)
         for result in asyncio_results:
             results.extend(result)
         post_ids = [post.post_id for post in results]
-        tasks = [self.get_new_list_recommended_posts(gids, i, 5, "en-us") for i in range(1, 4)]
+        tasks = [self.get_new_list_recommended_posts(gids, i, 20, "en-us") for i in range(1, 4)]
         asyncio_results = await asyncio.gather(*tasks)
         for result in asyncio_results:
             for post in result:
