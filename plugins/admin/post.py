@@ -432,7 +432,14 @@ class Post(Plugin.Conversation):
                     await message.reply_media_group(list(group), write_timeout=len(group) * 5)
             elif len(post_images) == 1:
                 image = post_images[0]
-                await message.reply_photo(image.data, caption=post_text_caption, parse_mode=ParseMode.MARKDOWN_V2)
+                if image.is_video:
+                    await message.reply_video(image.data, caption=post_text_caption, parse_mode=ParseMode.MARKDOWN_V2)
+                elif image.is_gif:
+                    await message.reply_animation(
+                        image.data, caption=post_text_caption, parse_mode=ParseMode.MARKDOWN_V2
+                    )
+                else:
+                    await message.reply_photo(image.data, caption=post_text_caption, parse_mode=ParseMode.MARKDOWN_V2)
             else:
                 await message.reply_text(post_text_caption, parse_mode=ParseMode.MARKDOWN_V2)
         except BadRequest as exc:
@@ -632,9 +639,18 @@ class Post(Plugin.Conversation):
                     await context.bot.send_media_group(channel_id, media=list(group), write_timeout=len(group) * 5)
             elif len(post_images) == 1:
                 image = post_images[0]
-                await context.bot.send_photo(
-                    channel_id, photo=image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2
-                )
+                if image.is_video:
+                    await context.bot.send_video(
+                        channel_id, image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2
+                    )
+                elif image.is_gif:
+                    await context.bot.send_animation(
+                        channel_id, image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2
+                    )
+                else:
+                    await context.bot.send_photo(
+                        channel_id, image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2
+                    )
             elif not post_images:
                 await context.bot.send_message(channel_id, post_text, parse_mode=ParseMode.MARKDOWN_V2)
             else:

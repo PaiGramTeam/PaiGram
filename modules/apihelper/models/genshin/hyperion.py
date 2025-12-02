@@ -34,6 +34,14 @@ class ArtworkImage(BaseModel):
     url: str = ""
 
     @property
+    def is_video(self) -> bool:
+        return self.file_extension == "mp4"
+
+    @property
+    def is_gif(self) -> bool:
+        return self.file_extension == "gif"
+
+    @property
     def format(self) -> Optional[str]:
         if not self.is_error:
             try:
