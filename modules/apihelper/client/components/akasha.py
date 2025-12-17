@@ -4,6 +4,7 @@ from urllib.parse import unquote
 
 import httpx
 
+from gram_core.basemodel import Settings
 from modules.apihelper.models.genshin.akasha import (
     AkashaRank,
     AkashaLeaderboardCategory,
@@ -20,6 +21,10 @@ REFRESH_API = BASE_URL + "/user/refresh/"
 LEADERBOARD_API = BASE_URL + "/leaderboards"
 LEADERBOARD_CATEGORY_API = BASE_URL + "/v2/leaderboards/categories"
 ARTIFACTS_API = BASE_URL + "/artifacts"
+
+
+class AkashaConfig(Settings):
+    akasha_api_agent: str = ""
 
 
 class Akasha:
@@ -59,7 +64,11 @@ class Akasha:
     }
 
     def __init__(self):
-        self.client = httpx.AsyncClient(timeout=60)
+        self.config = AkashaConfig()
+        headers = {
+            "User-Agent": self.config.akasha_api_agent,
+        }
+        self.client = httpx.AsyncClient(timeout=60, headers=headers)
         self.session_id = None
 
     async def get_session_id(self) -> Optional[str]:
