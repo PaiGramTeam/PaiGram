@@ -6,7 +6,7 @@ aiofiles==24.1.0
     # via paigram
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.13.2
+aiohttp==3.13.3
     # via
     #   enkanetwork-py
     #   influxdb-client
@@ -14,20 +14,20 @@ aiolimiter==1.2.1
     # via python-telegram-bot
 aiosignal==1.4.0
     # via aiohttp
-aiosqlite==0.22.0
+aiosqlite==0.22.1
     # via paigram
-alembic==1.17.2
+alembic==1.18.0
     # via paigram
 annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anyio==4.12.0
+anyio==4.12.1
     # via
     #   httpx
     #   starlette
     #   watchfiles
-apscheduler==3.11.1
+apscheduler==3.11.2
     # via python-telegram-bot
 arko-wrapper==0.3.0
     # via paigram
@@ -49,7 +49,7 @@ cachetools==6.2.4
     # via
     #   enkanetwork-py
     #   python-telegram-bot
-certifi==2025.11.12
+certifi==2026.1.4
     # via
     #   httpcore
     #   httpx
@@ -76,7 +76,7 @@ colorlog==6.10.1
     # via paigram
 cryptography==44.0.3
     # via paigram
-enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@a18ac4a202004fc01d1b247b0816847dce9ce1a5
+enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@c1aab11c4594a9c1a64e12f98ab61e02173645fe
     # via paigram
 et-xmlfile==2.0.0
     # via openpyxl
@@ -84,9 +84,9 @@ exceptiongroup==1.3.1 ; python_full_version < '3.11'
     # via
     #   anyio
     #   pytest
-fakeredis==2.32.1
+fakeredis==2.33.0
     # via paigram
-fastapi==0.124.4
+fastapi==0.128.0
     # via paigram
 flaky==3.8.1
     # via paigram
@@ -98,7 +98,7 @@ gcsim-pypi==2.40.0
     # via paigram
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.45
+gitpython==3.1.46
     # via paigram
 greenlet==3.1.1
     # via
@@ -156,7 +156,7 @@ packaging==25.0
     # via
     #   black
     #   pytest
-pathspec==0.12.1
+pathspec==1.0.3
     # via black
 pillow==10.4.0
     # via paigram
@@ -170,7 +170,7 @@ propcache==0.4.1
     # via
     #   aiohttp
     #   yarl
-psutil==7.1.3
+psutil==7.2.1
     # via paigram
 pyaes==1.6.1
     # via pyrogram
@@ -194,7 +194,7 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
-pyrogram @ git+https://github.com/TeamPGM/pyrogram@7985d6ffecc06eb004d860abc6df04ed599ce5dd
+pyrogram @ git+https://github.com/TeamPGM/pyrogram@323afd2a8a243dbbdac90b83e9bab090037f2898
     # via paigram
 pyrotgcrypto==1.2.7
     # via paigram
@@ -233,11 +233,11 @@ requests-oauthlib==2.0.0
     # via mwclient
 rich==14.2.0
     # via paigram
-sentry-sdk==2.47.0
+sentry-sdk==2.49.0
     # via paigram
 setuptools==80.9.0
     # via influxdb-client
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@cd2e276b374cee3f6edd9a07548e64732511988c
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@fc4e36a93dce34aa37760b897c66dcf6a25013a9
     # via paigram
 six==1.17.0
     # via python-dateutil
@@ -245,19 +245,19 @@ smmap==5.0.2
     # via gitdb
 sortedcontainers==2.4.0
     # via fakeredis
-soupsieve==2.8
+soupsieve==2.8.1
     # via beautifulsoup4
 sqlalchemy==2.0.45
     # via
     #   alembic
     #   sqlmodel
-sqlmodel==0.0.27
+sqlmodel==0.0.31
     # via paigram
 starlette==0.50.0
     # via fastapi
 thefuzz==0.22.1
     # via paigram
-tomli==2.3.0 ; python_full_version < '3.11'
+tomli==2.4.0 ; python_full_version < '3.11'
     # via
     #   alembic
     #   black
@@ -296,18 +296,18 @@ tzlocal==5.3.1
     # via apscheduler
 ujson==5.11.0
     # via paigram
-urllib3==2.6.2
+urllib3==2.6.3
     # via
     #   influxdb-client
     #   requests
     #   sentry-sdk
-uvicorn==0.38.0
+uvicorn==0.40.0
     # via paigram
 uvloop==0.22.1 ; platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32'
     # via uvicorn
 watchfiles==1.1.1
     # via uvicorn
-websockets==15.0.1
+websockets==16.0
     # via uvicorn
 yarl==1.22.0
     # via aiohttp
