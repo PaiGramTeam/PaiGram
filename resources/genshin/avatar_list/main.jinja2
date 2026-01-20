@@ -43,7 +43,8 @@
             {% set avatar = avatar_data.avatar.base %}
             {% set weapon = avatar_data.avatar.weapon %}
             {% set skill_datas = avatar_data.skills %}
-            {% set is_traveler = avatar.name == '旅行者' %}
+            {% set is_traveler = avatar.id in (10000005, 10000007) %}
+            {% set is_manikin = avatar.id in (10000117, 10000118) %}
             {% if avatar.rarity == 5 %}
                 {% set row_bg = 'rgb(240 226 179)' %}
             {% else %}
@@ -63,14 +64,12 @@
                         <img src="{{ avatar_data.icon }}" alt="side icon"/>
                     </div>
                     <div class="role-name">
-                        {% if is_traveler %}
-                            {% if avatar.id == 10000007 %}
-                                荧
-                            {% else %}
-                                空
-                            {% endif %}
-                        {% else %}
+                        {% if not is_traveler %}
                             {{ avatar.name }}
+                        {% elif avatar.id == 10000005 %}
+                            空
+                        {% elif avatar.id == 10000007 %}
+                            荧
                         {% endif %}
                     </div>
                 </div>
@@ -81,7 +80,7 @@
                             class="full-friendship"
                         {% endif %}
                 >
-                    {% if is_traveler %}
+                    {% if is_traveler or is_manikin %}
                         /
                     {% else %}
                         {{ avatar.friendship }}
