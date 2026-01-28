@@ -466,12 +466,19 @@ class DailyNoteSystem(Plugin):
                 text = "获取便签失败了呜呜呜 ~ 执行自动便签提醒时发生错误"
             else:
                 task_db.status = TaskStatusEnum.STATUS_SUCCESS
+            error_sent = False
             for idx, task_user_db in enumerate(
                 [task_db.resin_db, task_db.realm_db, task_db.expedition_db, task_db.daily_db]
             ):
                 if task_user_db is None:
                     continue
-                notice_text = text[idx] if isinstance(text, list) else text
+                if isinstance(text, list):
+                    notice_text = text[idx]
+                else:
+                    if error_sent:
+                        continue
+                    notice_text = text
+                    error_sent = True
                 if not notice_text:
                     continue
                 if task_user_db.chat_id < 0:
