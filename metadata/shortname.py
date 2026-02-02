@@ -805,7 +805,7 @@ roles = {
     10000127: ["叶洛亚", "illuga"],
 }
 not_real_roles = [20000000, 10000117, 10000118]
-not_real_roles.extend([10000126])
+not_real_roles.extend([])
 weapons = {
     # 1.x
     "决斗之枪": ["决斗枪", "决斗", "月卡枪"],

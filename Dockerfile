@@ -6,7 +6,7 @@ SHELL ["/bin/bash", "-c"]
 WORKDIR /app
 RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/apt/sources.list.d/fonts.list \
     && apt update                                  \
-    # clone
+    # clone \
     && apt install git wget curl ffmpeg unzip -y                \
     && git clone -b main --recursive https://github.com/PaiGramTeam/PaiGram.git /app \
     # install dependencies \
@@ -16,17 +16,17 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
     && uv sync --all-extras                       \
     && playwright install chromium                 \
     && playwright install-deps chromium            \
-    ## set timezone
+    ## set timezone \
     && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone        \
-    # create cache folder
+    # create cache folder \
     && mkdir cache/                                \
     # create assets folder \
     && mkdir -p resources/assets                   \
-    && wget -q -O genshin.zip https://pub-ea6bb7736e7e401092b0dbcf2778c285.r2.dev/genshin.zip  \
+    && wget -q -O genshin.zip https://ys-res.paimon.vip/genshin.zip  \
     && unzip genshin.zip -d resources/assets/      \
     && rm genshin.zip                              \
-    # clean
+    # clean \
     && apt-get clean -y                            \
     && rm -rf                                      \
         /tmp/*                                     \
@@ -34,7 +34,7 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
         /var/tmp/*                                 \
         ~/.cache/pip                               \
         ~/.cache/uv                               \
-    # Add the wait script to the image
+    # Add the wait script to the image \
     && wget -O /wait https://github.com/ufoscout/docker-compose-wait/releases/download/2.12.1/wait \
     && chmod +x /wait
 ENTRYPOINT /wait && .venv/bin/alembic upgrade head && .venv/bin/python run.py
