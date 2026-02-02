@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import time
 from asyncio import sleep
-from typing import List, Tuple
+from typing import List, Tuple, TYPE_CHECKING
 
 from simnet import Region
 from telegram import Update, Message
@@ -14,10 +14,14 @@ from core.plugin import Plugin, handler
 from gram_core.basemodel import RegionEnum
 from gram_core.services.cookies import CookiesService
 from gram_core.services.cookies.models import CookiesStatusEnum
+from gram_core.services.players.services import PlayersService
 from gram_core.services.users.services import UserAdminService
 from plugins.genshin.redeem.runner import RedeemRunner, RedeemResult, RedeemQueueFull
 from plugins.tools.genshin import GenshinHelper
 from utils.log import logger
+
+if TYPE_CHECKING:
+    from gram_core.services.cookies.models import Cookies
 
 
 REDEEM_TEXT = """#### 兑换结果 ####
@@ -45,13 +49,26 @@ class Redeem(Plugin):
         genshin_helper: GenshinHelper,
         user_admin_service: UserAdminService,
         cookies_service: CookiesService,
+        players_service: PlayersService,
     ):
         self.genshin_helper = genshin_helper
         self.user_admin_service = user_admin_service
+        self.cookies_service = cookies_service
+        self.players_service = players_service
         self.max_code_in_pri_message = 5
         self.max_code_in_pub_message = 3
         self.redeem_runner = RedeemRunner(genshin_helper)
-        self.cookies_service = cookies_service
+        # 内存缓存
+        self._players_cache = {}  # 账号关联的玩家缓存
+        self._cache_timestamp = time.time()  # 缓存创建时间
+        self._cache_expiry = 3600  # 缓存过期时间（秒）
+
+    def _clear_cache(self):
+        """清理过期缓存，确保数据一致性"""
+        current_time = time.time()
+        if current_time - self._cache_timestamp > self._cache_expiry:
+            self._players_cache.clear()
+            self._cache_timestamp = current_time
 
     async def _callback(self, data: "RedeemResult") -> None:
         code = data.code
@@ -72,6 +89,7 @@ class Redeem(Plugin):
             self.add_delete_message_job(reply_message)
 
     async def redeem_one_code(self, update: Update, user_id: int, uid: int, code: str, chinese: bool):
+        self._clear_cache()
         if not code:
             return
         message = update.effective_message
@@ -145,31 +163,62 @@ class Redeem(Plugin):
         except Exception as exc:
             logger.warning("执行自动兑换兑换码时发生错误 user_id[%s]", user_id, exc_info=exc)
 
-    async def job_redeem_one_code(self, user_id: int, code: str, count: List[int]):
-        task_data = RedeemResult(user_id=user_id, code=code, count=count)
+    async def job_redeem_one_code(self, user_id: int, code: str, count: List[int], uid: int = None):
+        task_data = RedeemResult(user_id=user_id, code=code, uid=uid, count=count)
         priority = 1 if await self.user_admin_service.is_admin(user_id) else 2
         try:
             await self.redeem_runner.run(task_data, self._job_callback, priority, True)
         except RedeemQueueFull:
             await sleep(5)
-            await self.job_redeem_one_code(user_id, code, count)
+            await self.job_redeem_one_code(user_id, code, count, uid)
+
+    async def get_players_by_cookies(self, cookies: "Cookies") -> list:
+        """获取账号关联的玩家，使用缓存减少数据库查询"""
+        self._clear_cache()
+        user_id = cookies.user_id
+        account_id = cookies.account_id
+        region = cookies.region
+        cache_key = f"{user_id}:{account_id}:{region.value}"
+        if cache_key not in self._players_cache:
+            all_users = await self.players_service.get_all_by_user_id(user_id)
+            all_users_a = [i for i in all_users if i.account_id == account_id and i.region == region]
+            self._players_cache[cache_key] = all_users_a
+        return self._players_cache[cache_key]
 
     async def do_redeem_job(self, message: "Message", code: str) -> Tuple[int, int]:
+        self._clear_cache()
         count = [0, 0]
         task_list = await self.cookies_service.get_all(
             region=RegionEnum.HOYOLAB, status=CookiesStatusEnum.STATUS_SUCCESS
         )
-        task_len = len(task_list)
+        total_accounts = 0
+        processed_accounts = 0
+
+        # 首先计算总账号数并缓存玩家信息
+        for task_db in task_list:
+            players = await self.get_players_by_cookies(task_db)
+            total_accounts += len(players)
+
         for idx, task_db in enumerate(task_list):
             user_id = task_db.user_id
             try:
-                await self.job_redeem_one_code(user_id, code, count)
+                # 从缓存中获取玩家信息
+                players = await self.get_players_by_cookies(task_db)
+                for player in players:
+                    try:
+                        await self.job_redeem_one_code(user_id, code, count, player.player_id)
+                        processed_accounts += 1
+                        # 更新进度信息
+                        if processed_accounts % 10 == 0:
+                            text = REDEEM_ALL_TEXT.format(code, processed_accounts, total_accounts)
+                            with contextlib.suppress(Exception):
+                                await message.edit_text(text)
+                    except Exception as exc:
+                        logger.warning(
+                            "执行自动兑换兑换码时发生错误 user_id[%s] uid[%s]", user_id, player.player_id, exc_info=exc
+                        )
             except Exception as exc:
                 logger.warning("执行自动兑换兑换码时发生错误 user_id[%s]", user_id, exc_info=exc)
-            if idx % 10 == 0:
-                text = REDEEM_ALL_TEXT.format(code, idx, task_len)
-                with contextlib.suppress(Exception):
-                    await message.edit_text(text)
         return count[0], count[1]
 
     @handler.command(command="redeem_all", admin=True, block=False)

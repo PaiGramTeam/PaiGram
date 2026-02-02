@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from queue import PriorityQueue
-from typing import Coroutine, Any, Optional, List, TYPE_CHECKING, Union
+from typing import Coroutine, Any, Optional, List, TYPE_CHECKING, Union, Callable
 
 from simnet.errors import RegionNotSupported, RedemptionInvalid, RedemptionClaimed, RedemptionCooldown
 from telegram import Message
@@ -49,7 +49,7 @@ class RedeemRunner:
     @staticmethod
     async def _execute_queue(
         redeem_task: Coroutine[Any, Any, RedeemResult],
-        callback_task: "(result: RedeemResult) -> Coroutine[Any, Any, None]",
+        callback_task: Callable[[RedeemResult], Coroutine[Any, Any, None]],
     ) -> None:
         data = await redeem_task
         await callback_task(data)
@@ -57,7 +57,7 @@ class RedeemRunner:
     async def run(
         self,
         data: RedeemResult,
-        callback_task: "(result: RedeemResult) -> Coroutine[Any, Any, None]",
+        callback_task: Callable[[RedeemResult], Coroutine[Any, Any, None]],
         priority: int = 2,
         only_region: bool = False,
     ) -> None:
