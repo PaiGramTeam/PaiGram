@@ -27,6 +27,7 @@ from core.config import config
 from core.plugin import Plugin, conversation, handler
 from gram_core.basemodel import Settings, SettingsConfigDict
 from gram_core.dependence.redisdb import RedisDB
+from gram_core.services.groups.services import GroupService
 from metadata.post_tags import POST_TAGS
 from modules.apihelper.client.components.hoyolab import Hoyolab
 from modules.apihelper.client.components.hyperion import Hyperion, HyperionBase
@@ -58,6 +59,7 @@ class PostConfig(Settings):
 
     chat_id: Optional[int] = 0
     chat_ids: List[int] = []
+    auto: Optional[bool] = False
 
     model_config = SettingsConfigDict(env_prefix="post_")
 
@@ -74,12 +76,14 @@ class Post(Plugin.Conversation):
         [["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["添加视频", "退出"]], True, True
     )
 
-    def __init__(self, redis: RedisDB):
+    def __init__(self, redis: RedisDB, group_service: GroupService):
         self.gids = [2]
         self.ffmpeg_enable = False
         self.cache_dir = os.path.join(os.getcwd(), "cache")
         self.cache = redis.client
         self.cache_key = "plugin:post:pushed"
+        self.group_service = group_service
+        self.send_lock = asyncio.Lock()  # 添加锁对象，确保 send_post_images 函数无法并发执行
 
     def get_cache_key(self, bbs_type: "PostTypeEnum") -> str:
         return f"{self.cache_key}:{bbs_type.value}"
@@ -120,7 +124,7 @@ class Post(Plugin.Conversation):
             job_kwargs2 = {
                 "trigger": "cron",
                 "hour": "6-20",
-                "minute": "*/2",
+                "minute": "*/1",
             }
             self.application.job_queue.run_custom(self.task_all, job_kwargs=job_kwargs2, name="post_task.busy")
         output, _ = await self.execute("ffmpeg -version")
@@ -185,6 +189,8 @@ class Post(Plugin.Conversation):
             url = post.get_fix_url()
             tag = f"#{post.short_name} #{post_type.value} #{post.short_name}_{post_type.value}"
             text = f"发现官网推荐文章 <a href='{url}'>{post.subject}</a>\n是否开始处理 {tag}"
+
+            # 1. 发送通知给管理员（手动推送选项）
             for chat_id in chat_ids:
                 try:
                     await context.bot.send_message(
@@ -193,9 +199,26 @@ class Post(Plugin.Conversation):
                         parse_mode=ParseMode.HTML,
                         reply_markup=InlineKeyboardMarkup(buttons),
                     )
-                    await self.set_posted(post_type, post_id)
                 except BadRequest as exc:
                     logger.error("发送消息失败 %s", exc.message)
+
+            if post_type is PostTypeEnum.CN and post_config.auto:
+                # 2. 自动推送逻辑
+                logger.info("检测到新文章，准备执行自动推送 post_id[%s] post_type[%s]", post_id, post_type)
+                auto_push_success = await self.auto_send_post(post_id, post_type)
+
+                # 3. 标记为已推送
+                await self.set_posted(post_type, post_id)
+                if not auto_push_success:
+                    logger.warning("自动推送失败，但仍标记为已推送 post_id[%s]", post_id)
+                    # 发送错误通知给管理员
+                    error_text = f"自动推送失败\n文章ID: {post_id}\n文章类型: {post_type.value}\n文章标题: {post.subject}\n请检查日志获取详细错误信息 #error"
+                    for chat_id in chat_ids:
+                        try:
+                            await context.bot.send_message(chat_id, error_text)
+                            logger.info("已向管理员发送自动推送失败通知 post_id[%s]", post_id)
+                        except BadRequest as exc:
+                            logger.error("发送自动推送失败通知失败 %s", exc.message)
 
     @staticmethod
     def parse_post_text(soup: BeautifulSoup, post_subject: str) -> Tuple[str, bool]:
@@ -400,9 +423,8 @@ class Post(Plugin.Conversation):
                     break
         return tags
 
-    async def send_post_info(
-        self, post_handler_data: PostHandlerData, message: "Message", post_id: int, post_type: "PostTypeEnum"
-    ) -> int:
+    async def fetch_post_data(self, post_id: int, post_type: "PostTypeEnum") -> tuple:
+        """获取文章数据的核心函数，可被自动推送和手动推送共用"""
         bbs = self.get_bbs_client(post_type)
         post_info = await bbs.get_post_info(self.gids[0], post_id)
         post_images = await bbs.get_images_by_post_id(self.gids[0], post_id)
@@ -417,31 +439,26 @@ class Post(Plugin.Conversation):
         max_len = MessageLimit.CAPTION_LENGTH - 100
         if too_long or len(post_text) >= max_len:
             post_text = self.safe_cut(post_text, max_len)
-            await message.reply_text(f"警告！图片字符描述已经超过 {max_len} 个字，已经切割")
         post_text += f"\n\n[source]({url})"
+        post_text_caption = post_text + escape_markdown("".join([f" #{tag}" for tag in post_tags]), version=2)
+        return post_info, post_images, post_text, post_tags, post_text_caption, url
+
+    async def send_post_info(
+        self, post_handler_data: PostHandlerData, message: "Message", post_id: int, post_type: "PostTypeEnum"
+    ) -> int:
+        """手动推送流程"""
+        post_info, post_images, post_text, post_tags, post_text_caption, url = await self.fetch_post_data(
+            post_id, post_type
+        )
         if post_info.video_urls:
             await message.reply_text("检测到视频，需要单独下载，视频链接：" + "\n".join(post_info.video_urls))
-        post_text_caption = post_text + escape_markdown("".join([f" #{tag}" for tag in post_tags]), version=2)
         try:
-            if len(post_images) > 1:
-                media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
-                index = (math.ceil(len(media) / 10) - 1) * 10
-                media[index].caption = post_text_caption
-                media[index].parse_mode = ParseMode.MARKDOWN_V2
-                for group in ArkoWrapper(media).group(10):  # 每 10 张图片分一个组
-                    await message.reply_media_group(list(group), write_timeout=len(group) * 5)
-            elif len(post_images) == 1:
-                image = post_images[0]
-                if image.is_video:
-                    await message.reply_video(image.data, caption=post_text_caption, parse_mode=ParseMode.MARKDOWN_V2)
-                elif image.is_gif:
-                    await message.reply_animation(
-                        image.data, caption=post_text_caption, parse_mode=ParseMode.MARKDOWN_V2
-                    )
-                else:
-                    await message.reply_photo(image.data, caption=post_text_caption, parse_mode=ParseMode.MARKDOWN_V2)
-            else:
-                await message.reply_text(post_text_caption, parse_mode=ParseMode.MARKDOWN_V2)
+            await self.send_post_images(
+                message.chat_id,
+                message.message_id,
+                post_images,
+                post_text_caption,
+            )
         except BadRequest as exc:
             await message.reply_text(f"发送图片时发生错误 {exc.message}", reply_markup=ReplyKeyboardRemove())
             logger.error("Post模块发送图片时发生错误 %s", exc.message)
@@ -449,7 +466,6 @@ class Post(Plugin.Conversation):
         except TypeError as exc:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
             logger.error("Post模块发送图片时发生错误", exc_info=exc)
-
             return ConversationHandler.END
         post_handler_data.post_text = post_text
         post_handler_data.post_images = post_images
@@ -458,6 +474,109 @@ class Post(Plugin.Conversation):
         post_handler_data.channel_id = -1
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
+
+    async def send_post_images(
+        self,
+        chat_id: int,
+        reply_id: Optional[int],
+        post_images: list,
+        post_text_caption: str,
+    ):
+        bot = self.application.bot
+        async with self.send_lock:  # 使用锁确保函数无法并发执行
+            if len(post_images) > 1:
+                media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
+                index = (math.ceil(len(media) / 10) - 1) * 10
+                media[index].caption = post_text_caption
+                media[index].parse_mode = ParseMode.MARKDOWN_V2
+                for group in ArkoWrapper(media).group(10):  # 每 10 张图片分一个组
+                    await bot.send_media_group(
+                        chat_id,
+                        list(group),
+                        write_timeout=len(group) * 10,
+                        reply_to_message_id=reply_id,
+                    )
+            elif len(post_images) == 1:
+                image = post_images[0]
+                if image.is_video:
+                    await bot.send_video(
+                        chat_id,
+                        image.data,
+                        caption=post_text_caption,
+                        parse_mode=ParseMode.MARKDOWN_V2,
+                        reply_to_message_id=reply_id,
+                    )
+                elif image.is_gif:
+                    await bot.send_animation(
+                        chat_id,
+                        image.data,
+                        caption=post_text_caption,
+                        parse_mode=ParseMode.MARKDOWN_V2,
+                        reply_to_message_id=reply_id,
+                    )
+                else:
+                    await bot.send_photo(
+                        chat_id,
+                        image.data,
+                        caption=post_text_caption,
+                        parse_mode=ParseMode.MARKDOWN_V2,
+                        reply_to_message_id=reply_id,
+                    )
+            else:
+                await bot.send_message(
+                    chat_id,
+                    post_text_caption,
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                    reply_to_message_id=reply_id,
+                )
+
+    @staticmethod
+    def get_channel_id_by_post_text(post_text: str) -> int:
+        if not config.channels:
+            return 0
+        channel_id = config.channels[0]
+        if "千星奇域" in post_text and len(config.channels) > 1:
+            channel_id = config.channels[1]
+        return channel_id
+
+    async def get_chat_username(self, chat_id: int) -> str:
+        group = await self.group_service.get_group_by_id(chat_id)
+        if group and group.username:
+            return group.username
+        try:
+            chat = await self.application.bot.get_chat(chat_id)
+        except Exception as exc:
+            logger.error("获取频道信息失败 %s", str(exc))
+            return ""
+        return chat.username
+
+    async def auto_send_post(self, post_id: int, post_type: "PostTypeEnum") -> bool:
+        """自动推送流程"""
+        try:
+            # 1. 获取文章数据
+            post_info, post_images, post_text, post_tags, post_text_caption, url = await self.fetch_post_data(
+                post_id, post_type
+            )
+
+            # 2. 自动选择频道
+            channel_id = self.get_channel_id_by_post_text(post_text)
+            channel_name = await self.get_chat_username(channel_id)
+
+            # 3. 准备推送内容
+            post_text_final = post_text + f" @{escape_markdown(channel_name, version=2)}"
+            for tag in post_tags:
+                post_text_final += f" \#{tag}"
+
+            # 4. 执行推送
+            await self.send_post_images(channel_id, None, post_images, post_text_final)
+            logger.info("自动推送文章成功 post_id[%s]", post_id)
+            return True
+        except BadRequest as exc:
+            logger.error("自动推送时发送图片发生错误 %s", exc.message)
+            return False
+        except Exception as exc:
+            logger.error("自动推送文章时发生错误", exc_info=exc)
+            return False
 
     @conversation.state(state=CHECK_COMMAND)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
@@ -515,8 +634,8 @@ class Post(Plugin.Conversation):
         reply_keyboard = []
         try:
             for channel_id in config.channels:
-                chat = await self.get_chat(chat_id=channel_id)
-                reply_keyboard.append([f"{chat.username}"])
+                username = await self.get_chat_username(chat_id=channel_id)
+                reply_keyboard.append([f"{username}"])
         except KeyError as error:
             logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=error)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
@@ -532,8 +651,8 @@ class Post(Plugin.Conversation):
         channel_id = -1
         try:
             for channel_chat_id in config.channels:
-                chat = await self.get_chat(chat_id=channel_chat_id)
-                if message.text == chat.username:
+                username = await self.get_chat_username(chat_id=channel_chat_id)
+                if message.text == username:
                     channel_id = channel_chat_id
         except KeyError as exc:
             logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=exc)
@@ -614,8 +733,7 @@ class Post(Plugin.Conversation):
         try:
             for channel_info in config.channels:
                 if post_handler_data.channel_id == channel_info:
-                    chat = await self.get_chat(chat_id=channel_id)
-                    channel_name = chat.username
+                    channel_name = await self.get_chat_username(chat_id=channel_id)
         except KeyError as exc:
             logger.error("从配置文件获取频道信息发生错误，退出任务")
             logger.exception(exc)
