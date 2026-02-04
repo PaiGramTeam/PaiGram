@@ -219,6 +219,8 @@ class Post(Plugin.Conversation):
                             logger.info("已向管理员发送自动推送失败通知 post_id[%s]", post_id)
                         except BadRequest as exc:
                             logger.error("发送自动推送失败通知失败 %s", exc.message)
+            else:
+                await self.set_posted(post_type, post_id)
 
     @staticmethod
     def parse_post_text(soup: BeautifulSoup, post_subject: str) -> Tuple[str, bool]:
