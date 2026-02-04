@@ -41,6 +41,8 @@ class ChatMember(Plugin):
         elif chat.type in [Chat.GROUP, Chat.SUPERGROUP]:
             if not was_member and is_member:
                 logger.info("用户 %s[%s] 邀请BOT进入群 %s[%s]", user.full_name, user.id, chat.title, chat.id)
+                if user.id == context.bot.id:
+                    return
                 await self.greet(user, chat, context)
             elif was_member and not is_member:
                 logger.info("用户 %s[%s] 从 %s[%s] 群移除Bot", user.full_name, user.id, chat.title, chat.id)
