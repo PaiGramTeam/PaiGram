@@ -27,6 +27,7 @@ from core.config import config
 from core.plugin import Plugin, conversation, handler
 from gram_core.basemodel import Settings, SettingsConfigDict
 from gram_core.dependence.redisdb import RedisDB
+from gram_core.plugin import job
 from gram_core.services.groups.services import GroupService
 from metadata.post_tags import POST_TAGS
 from modules.apihelper.client.components.hoyolab import Hoyolab
@@ -115,18 +116,6 @@ class Post(Plugin.Conversation):
     async def initialize(self):
         if config.channels and len(config.channels) > 0:
             logger.success("文章定时推送处理已经开启")
-            job_kwargs = {
-                "trigger": "cron",
-                "hour": "21-23,0-5",
-                "minute": "*/30",
-            }
-            self.application.job_queue.run_custom(self.task_all, job_kwargs=job_kwargs, name="post_task.idle")
-            job_kwargs2 = {
-                "trigger": "cron",
-                "hour": "6-20",
-                "minute": "*/2",
-            }
-            self.application.job_queue.run_custom(self.task_all, job_kwargs=job_kwargs2, name="post_task.busy")
         output, _ = await self.execute("ffmpeg -version")
         if "ffmpeg version" in output:
             self.ffmpeg_enable = True
@@ -135,8 +124,12 @@ class Post(Plugin.Conversation):
         else:
             logger.warning("ffmpeg 不可用 已经禁用编码转换")
 
+    @job.run_cron(cron="*/2 6-20 * * *", name="post_task.busy")
+    @job.run_cron(cron="*/30 21-23,0-5 * * *", name="post_task.idle")
     @SentryClient.monitor(monitor_slug="PostTaskJob")
     async def task_all(self, context: "ContextTypes.DEFAULT_TYPE"):
+        if not config.channels or len(config.channels) <= 0:
+            return
         tasks = [self.task(context, PostTypeEnum.CN), self.task(context, PostTypeEnum.OS)]
         await asyncio.gather(*tasks)
 
