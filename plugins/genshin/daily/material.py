@@ -14,7 +14,7 @@ from telegram.constants import ChatAction, ParseMode
 
 from core.config import config
 from core.dependence.assets.impl.genshin import AssetsCouldNotFound, AssetsService
-from core.dependence.assets.impl.models.genshin.daily_material import MaterialsData, AreaDailyMaterialsData
+from core.dependence.assets.impl.models.genshin.daily_material import AreaDailyMaterialsData, MaterialsData
 from core.plugin import Plugin, handler
 from core.services.template.models import FileType, RenderGroupResult
 from core.services.template.services import TemplateService
@@ -166,7 +166,7 @@ class DailyMaterial(Plugin):
                     level=character.level,
                     constellation=character.constellation,
                     gid=character.id,
-                    icon=character_icon.as_uri(),
+                    icon=character_icon.as_uri() if character_icon else "",
                     origin=character,
                 )
                 # 判定武器的突破次数是否大于 2, 若是, 则将图标替换为 awakened (觉醒) 的图标
@@ -188,8 +188,8 @@ class DailyMaterial(Plugin):
                         level=weapon.level,
                         rarity=weapon.rarity,
                         refinement=weapon.refinement,
-                        icon=weapon_icon.as_uri(),
-                        c_path=character_side.as_uri(),
+                        icon=weapon_icon.as_uri() if weapon_icon else "",
+                        c_path=character_side.as_uri() if character_side else "",
                     )
                 )
         except (PlayerNotFoundError, CookiesNotFoundError):
