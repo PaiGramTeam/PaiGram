@@ -16,7 +16,7 @@ aiosignal==1.4.0
     # via aiohttp
 aiosqlite==0.22.1
     # via paigram
-alembic==1.18.0
+alembic==1.18.4
     # via paigram
 annotated-doc==0.0.4
     # via fastapi
@@ -31,13 +31,13 @@ apscheduler==3.11.2
     # via python-telegram-bot
 arko-wrapper==0.3.0
     # via paigram
-async-lru==2.0.5
+async-lru==2.2.0
     # via paigram
 async-timeout==5.0.1 ; python_full_version < '3.11.3'
     # via
     #   aiohttp
     #   redis
-asyncmy==0.2.10
+asyncmy==0.2.11
     # via paigram
 attrs==25.4.0
     # via aiohttp
@@ -45,7 +45,7 @@ beautifulsoup4==4.14.3
     # via paigram
 black==24.10.0
     # via paigram
-cachetools==6.2.4
+cachetools==6.2.6
     # via
     #   enkanetwork-py
     #   python-telegram-bot
@@ -84,9 +84,9 @@ exceptiongroup==1.3.1 ; python_full_version < '3.11'
     # via
     #   anyio
     #   pytest
-fakeredis==2.33.0
+fakeredis==2.34.0
     # via paigram
-fastapi==0.128.0
+fastapi==0.133.0
     # via paigram
 flaky==3.8.1
     # via paigram
@@ -94,7 +94,7 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-gcsim-pypi==2.40.0
+gcsim-pypi==2.41.1
     # via paigram
 gitdb==4.0.12
     # via gitpython
@@ -109,7 +109,9 @@ h11==0.16.0
     #   httpcore
     #   uvicorn
 httpcore==1.0.9
-    # via httpx
+    # via
+    #   httpx
+    #   python-telegram-bot
 httptools==0.7.1
     # via uvicorn
 httpx==0.28.1
@@ -123,7 +125,7 @@ idna==3.11
     #   httpx
     #   requests
     #   yarl
-influxdb-client==1.49.0
+influxdb-client==1.50.0
     # via paigram
 iniconfig==2.3.0
     # via pytest
@@ -141,7 +143,7 @@ markupsafe==3.0.3
     #   mako
 mdurl==0.1.2
     # via markdown-it-py
-multidict==6.7.0
+multidict==6.7.1
     # via
     #   aiohttp
     #   yarl
@@ -152,15 +154,15 @@ oauthlib==3.3.1
     # via requests-oauthlib
 openpyxl==3.1.5
     # via paigram
-packaging==25.0
+packaging==26.0
     # via
     #   black
     #   pytest
-pathspec==1.0.3
+pathspec==1.0.4
     # via black
 pillow==10.4.0
     # via paigram
-platformdirs==4.5.1
+platformdirs==4.9.2
     # via black
 playwright==1.48.0
     # via paigram
@@ -170,11 +172,11 @@ propcache==0.4.1
     # via
     #   aiohttp
     #   yarl
-psutil==7.2.1
+psutil==7.2.2
     # via paigram
 pyaes==1.6.1
     # via pyrogram
-pycparser==2.23 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
+pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
 pydantic==2.12.5
     # via
@@ -186,7 +188,7 @@ pydantic==2.12.5
     #   sqlmodel
 pydantic-core==2.41.5
     # via pydantic
-pydantic-settings==2.12.0
+pydantic-settings==2.13.1
     # via paigram
 pyee==12.0.0
     # via playwright
@@ -194,7 +196,7 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
-pyrogram @ git+https://github.com/TeamPGM/pyrogram@323afd2a8a243dbbdac90b83e9bab090037f2898
+pyrogram @ git+https://github.com/TeamPGM/pyrogram@fbf9582b933fd1a500d81bb0868007e74564dfde
     # via paigram
 pyrotgcrypto==1.2.7
     # via paigram
@@ -215,7 +217,7 @@ python-dotenv==1.2.1
     #   uvicorn
 python-genshin-artifact==1.0.14
     # via paigram
-python-telegram-bot==22.5
+python-telegram-bot==22.6
     # via paigram
 pyyaml==6.0.3
     # via uvicorn
@@ -231,13 +233,11 @@ requests==2.32.5
     # via requests-oauthlib
 requests-oauthlib==2.0.0
     # via mwclient
-rich==14.2.0
+rich==14.3.3
     # via paigram
-sentry-sdk==2.49.0
+sentry-sdk==2.53.0
     # via paigram
-setuptools==80.9.0
-    # via influxdb-client
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@fc4e36a93dce34aa37760b897c66dcf6a25013a9
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@c148e5089cd5b291665fcfcb4078c62d38625e21
     # via paigram
 six==1.17.0
     # via python-dateutil
@@ -245,15 +245,15 @@ smmap==5.0.2
     # via gitdb
 sortedcontainers==2.4.0
     # via fakeredis
-soupsieve==2.8.1
+soupsieve==2.8.3
     # via beautifulsoup4
-sqlalchemy==2.0.45
+sqlalchemy==2.0.46
     # via
     #   alembic
     #   sqlmodel
-sqlmodel==0.0.31
+sqlmodel==0.0.37
     # via paigram
-starlette==0.50.0
+starlette==0.52.1
     # via fastapi
 thefuzz==0.22.1
     # via paigram
@@ -288,6 +288,7 @@ typing-extensions==4.15.0
     #   uvicorn
 typing-inspection==0.4.2
     # via
+    #   fastapi
     #   pydantic
     #   pydantic-settings
 tzdata==2025.3 ; sys_platform == 'win32'
@@ -301,7 +302,7 @@ urllib3==2.6.3
     #   influxdb-client
     #   requests
     #   sentry-sdk
-uvicorn==0.40.0
+uvicorn==0.41.0
     # via paigram
 uvloop==0.22.1 ; platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32'
     # via uvicorn
