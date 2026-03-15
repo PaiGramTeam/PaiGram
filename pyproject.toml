@@ -55,7 +55,7 @@ license = {text = "AGPL-3.0"}
 
 [project.optional-dependencies]
 pyro = ["PyroTgCrypto<2.0.0,>=1.2.7", "Pyrogram @ git+https://github.com/TeamPGM/pyrogram"]
-test = ["pytest<9.0.0,>=8.2.2", "pytest-asyncio<1.0.0,>=0.24.0", "flaky<4.0.0,>=3.7.0"]
+test = ["pytest<9.0.0,>=8.2.2", "pytest-asyncio<1.0.0,>=0.24.0", "pytest-benchmark<6.0.0,>=5.2.3", "flaky<4.0.0,>=3.7.0"]
 genshin-artifact = ["python-genshin-artifact<2.0.0,>=1.0.9"]
 
 [tool.pytest.ini_options]

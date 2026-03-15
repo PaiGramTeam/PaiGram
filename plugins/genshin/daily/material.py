@@ -1,9 +1,9 @@
 import asyncio
+import functools
 import typing
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple
 
-from arkowrapper import ArkoWrapper
 from httpx import AsyncClient
 from pydantic import BaseModel
 from simnet.errors import BadRequest as SimnetBadRequest
@@ -53,31 +53,46 @@ def sort_item(items: List["ItemData"]) -> Iterable["ItemData"]:
     return sorted(items, key=key, reverse=True)
 
 
+# 因为直接贪心了，所以结果是错误的（别笑，之前的实现也是错的，甚至更慢）
+# 虽然是错的，但是在这个场景下是对的，因为目前原神的材料名里没有多个长度大于 1 的子串
+# 正确的实现是后缀树
+#
+# 旧代码错误样例: get_material_serial_name(["abc.xyz", "abc.xyz", "x", "x"]) -> "abc.xyz"，正确答案是 "x"
+#
+# 错误样例: longest_common_substring("abc.wxyz", "abc@wxyz", "abc#yz") -> "yz", 正确答案是 "abc"
+def longest_common_substring(*name: str) -> str:
+    """
+    求第一个最长公共子序列
+
+    最差时间复杂度是 O(字符串长度² * 字符串数量)
+    空间复杂度固定是 O(最短字符串的长度)
+    """
+
+    def lcs_two(lstr: str, rstr: str) -> str:
+        memo = [[0 for _ in lstr] for _ in range(2)]
+        lcs = ""
+        for i, rchar in enumerate(rstr):
+            for j, lchar in enumerate(lstr):
+                if lchar != rchar:
+                    memo[i & 1][j] = 0
+                    continue
+                memo[i & 1][j] = memo[i & 1 ^ 1][j - 1] + 1 if i != 0 and j != 0 else 1
+                if memo[i & 1][j] > len(lcs):
+                    lcs_len = memo[i & 1][j]
+                    lcs = lstr[j - lcs_len + 1 : j + 1]
+        return lcs
+
+    # 先求短的最长公共子序列的，复杂度会稍微低一点
+    return functools.reduce(lcs_two, sorted(name, key=len))
+
+
 def get_material_serial_name(names: Iterable[str]) -> str:
     """
-    获取材料的系列名，本质上是求字符串列表的最长子串
+    获取材料的系列名，求最长公共子串后删除前后缀的「的」和「之」
     如：「自由」的教导、「自由」的指引、「自由」的哲学，三者系列名为「『自由』」
     如：高塔孤王的破瓦、高塔孤王的残垣、高塔孤王的断片、高塔孤王的碎梦，四者系列名为「高塔孤王」
-    TODO(xr1s): 感觉可以优化
     """
-
-    def all_substrings(string: str) -> Iterator[str]:
-        """获取字符串的所有连续字串"""
-        length = len(string)
-        for i in range(length):
-            for j in range(i + 1, length + 1):
-                yield string[i:j]
-
-    result = []
-    for name_a, name_b in ArkoWrapper(names).repeat(1).group(2).unique(list):
-        for sub_string in all_substrings(name_a):
-            if sub_string in ArkoWrapper(all_substrings(name_b)):
-                result.append(sub_string)
-    result = ArkoWrapper(result).sort(len, reverse=True)[0]
-    chars = {"的": 0, "之": 0}
-    for char, k in chars.items():
-        result = result.split(char)[k]
-    return result
+    return longest_common_substring(*names).strip("的之")
 
 
 def is_first_week_of_pool(date: Optional["datetime"] = None) -> bool:
