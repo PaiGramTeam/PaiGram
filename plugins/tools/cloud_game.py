@@ -4,6 +4,7 @@ from typing import Optional, List, TYPE_CHECKING
 
 from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, AlreadyClaimed, TimedOut as SimnetTimedOut
 from simnet.models.cloud_game.base import CloudGameWallet
+from simnet.utils.constants import APP_IDS
 from sqlalchemy.orm.exc import StaleDataError
 from telegram.constants import ParseMode
 from telegram.error import BadRequest, Forbidden
@@ -38,17 +39,22 @@ class CloudGameHelper(Plugin):
                 stoken = client.cookies.get("stoken")
                 combo_token = None
                 if stoken is not None:
+                    app_id = APP_IDS[client.game][client.region]
                     try:
-                        game_token = await client.get_game_token_by_stoken()
-                        logger.success("用户 %s 获取 game_token 成功", user_id)
-                        login_cookie = await client.login_game_by_game_token(game_token)
-                        logger.success("用户 %s 刷新 combo_token 成功", user_id)
-                        combo_token = login_cookie.combo_token
+                        qr = await client.gen_login_qrcode_v2(app_id)
+                        logger.success("用户 %s 尝试登录 成功", user_id)
+                        await client.accept_login_qrcode(qr[0])
+                        logger.success("用户 %s 同意登录 成功", user_id)
+                        _, ck = await client.check_login_qrcode_v2(qr[1], app_id)
+                        logger.success("用户 %s 获取 cookie_token_v2 成功", user_id)
+                        token = await client.login_web_game_by_cookie_token_v2(cookie_token=ck.get("cookie_token_v2"))
+                        logger.success("用户 %s 获取 combo_token 成功", user_id)
+                        combo_token = token.combo_token
                     except Exception as _exc:
                         logger.error("用户 %s 刷新 combo_token 失败", user_id, exc_info=_exc)
                 if combo_token:
                     raise CookiesUpdateRequestError({client.cloud_game_combo_token_key: combo_token})
-                raise exc
+                raise CookiesUpdateRequestError(None) from exc
 
     @staticmethod
     async def clear_notification(client: "GenshinClient"):

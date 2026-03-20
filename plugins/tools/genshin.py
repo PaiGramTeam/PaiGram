@@ -228,7 +228,7 @@ class CookiesNotFoundError(Exception):
 
 
 class CookiesUpdateRequestError(Exception):
-    def __init__(self, new_cookies: dict[str, Any]):
+    def __init__(self, new_cookies: Optional[dict[str, Any]]):
         self.new_cookies = new_cookies
         super().__init__("cookies need update")
 
@@ -303,6 +303,8 @@ class GenshinHelper(Plugin):
                 yield client
             except CookiesUpdateRequestError as exc:
                 new_cookies = cookie_model.data.copy()
+                if exc.new_cookies is None:
+                    raise InvalidCookies()
                 new_cookies.update(exc.new_cookies)
                 cookie_model.data = new_cookies
                 cookie_model.status = CookiesStatusEnum.STATUS_SUCCESS
