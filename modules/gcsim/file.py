@@ -8,7 +8,6 @@ import aiofiles
 
 from utils.const import DATA_DIR
 
-
 PLAYER_SCRIPTS_PATH = DATA_DIR / "gcsim"
 PLAYER_SCRIPTS_PATH.mkdir(parents=True, exist_ok=True)
 

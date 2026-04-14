@@ -27,7 +27,6 @@ from plugins.tools.genshin import PlayerNotFoundError
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
-
 if TYPE_CHECKING:
     from telegram import Update, Message
     from telegram.ext import ContextTypes

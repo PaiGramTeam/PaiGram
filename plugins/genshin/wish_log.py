@@ -146,7 +146,9 @@ class WishLogPlugin(Plugin.Conversation):
             new_num, new_num2 = 0, 0
             if authkey:
                 new_num = await self.gacha_log.get_gacha_log_data(user.id, player_id, authkey, is_lazy)
-                new_num2 = await self.beyond_gacha_log.get_gacha_log_data(user.id, player_id, authkey, is_lazy)
+                new_num2 = await self.beyond_gacha_log.get_gacha_log_data(
+                    user.id, player_id, authkey, is_lazy, self.assets_service
+                )
             if data:
                 new_num = await self.gacha_log.import_gacha_log_data(user.id, player_id, data, verify_uid)
                 with contextlib.suppress(GachaLogException):

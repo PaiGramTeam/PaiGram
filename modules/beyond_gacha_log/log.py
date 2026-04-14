@@ -207,12 +207,15 @@ class BeyondGachaLog(BeyondGachaLogRanks, BeyondGachaLogUigfConverter):
             return GenshinClient(player_id=player_id, region=Region.CHINESE, lang="zh-cn")
         return GenshinClient(player_id=player_id, region=Region.OVERSEAS, lang="zh-cn")
 
-    async def get_gacha_log_data(self, user_id: int, player_id: int, authkey: str, is_lazy: bool) -> int:
+    async def get_gacha_log_data(
+        self, user_id: int, player_id: int, authkey: str, is_lazy: bool, assets: "AssetsService"
+    ) -> int:
         """使用authkey获取抽卡记录数据，并合并旧数据
         :param user_id: 用户id
         :param player_id: 玩家id
         :param authkey: authkey
         :param is_lazy: 是否快速导入
+        :param assets: 资源服务
         :return: 更新结果
         """
         new_num = 0
@@ -242,6 +245,10 @@ class BeyondGachaLog(BeyondGachaLogRanks, BeyondGachaLogUigfConverter):
                             lambda i: int(i.id) < min_id, gacha_log.item_list[pool_name]
                         )
                 for data in wish_history:
+                    if not data.name or not data.rarity:
+                        i = assets.beyond_item.get_by_id(data.item_id)
+                        data.name = i.name if i else ""
+                        data.rarity = i.rank if i else 3
                     item = GachaItem.from_simnet(data)
 
                     if item.id not in temp_id_data[pool_name] or (not is_lazy and min_id):

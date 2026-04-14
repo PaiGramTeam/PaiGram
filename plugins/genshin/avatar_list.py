@@ -278,7 +278,7 @@ class AvatarListPlugin(Plugin):
             reply_message = await message.reply_html("服务器熟啦 ~ 请稍后再试")
             self.add_delete_message_job(reply_message, delay=20)
             return
-        (name_card, avatar, nickname, rarity) = await self.player_info_system.get_player_info(
+        name_card, avatar, nickname, rarity = await self.player_info_system.get_player_info(
             client.player_id, user_id, user_name
         )
         player_data = PlayerData(
@@ -307,7 +307,7 @@ class AvatarListPlugin(Plugin):
         async with self.helper.genshin(user_id, player_id=uid) as client:
             characters = await client.get_genshin_characters()
             avatar_datas: list[AvatarData] = await self.get_avatar_datas(characters, client)
-            (name_card, avatar, nickname, rarity) = await self.player_info_system.get_player_info(
+            name_card, avatar, nickname, rarity = await self.player_info_system.get_player_info(
                 client.player_id, user_id, user_name
             )
             player_data = PlayerData(
