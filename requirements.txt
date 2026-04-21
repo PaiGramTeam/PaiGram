@@ -42,11 +42,13 @@ asyncmy==0.2.11
     # via paigram
 attrs==26.1.0
     # via aiohttp
+backports-asyncio-runner==1.2.0 ; python_full_version < '3.11'
+    # via pytest-asyncio
 beautifulsoup4==4.14.3
     # via paigram
 black==26.3.1
     # via paigram
-cachetools==7.0.5
+cachetools==7.0.6
     # via
     #   enkanetwork-py
     #   python-telegram-bot
@@ -85,9 +87,9 @@ exceptiongroup==1.3.1 ; python_full_version < '3.11'
     # via
     #   anyio
     #   pytest
-fakeredis==2.34.1
+fakeredis==2.35.1
     # via paigram
-fastapi==0.135.3
+fastapi==0.136.0
     # via paigram
 flaky==3.8.1
     # via paigram
@@ -101,7 +103,7 @@ gitdb==4.0.12
     # via gitpython
 gitpython==3.1.46
     # via paigram
-greenlet==3.3.2
+greenlet==3.4.0
     # via
     #   playwright
     #   sqlalchemy
@@ -120,7 +122,7 @@ httpx==0.28.1
     #   paigram
     #   python-telegram-bot
     #   simnet
-idna==3.11
+idna==3.12
     # via
     #   anyio
     #   httpx
@@ -132,9 +134,9 @@ iniconfig==2.3.0
     # via pytest
 jinja2==3.1.6
     # via paigram
-lxml==6.0.2
+lxml==6.1.0
     # via paigram
-mako==1.3.10
+mako==1.3.11
     # via alembic
 markdown-it-py==4.0.0
     # via rich
@@ -155,7 +157,7 @@ oauthlib==3.3.1
     # via requests-oauthlib
 openpyxl==3.1.5
     # via paigram
-packaging==26.0
+packaging==26.1
     # via
     #   black
     #   pytest
@@ -163,7 +165,7 @@ pathspec==1.0.4
     # via black
 pillow==12.2.0
     # via paigram
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via black
 playwright==1.58.0
     # via paigram
@@ -181,7 +183,7 @@ pyaes==1.6.1
     # via pyrogram
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
-pydantic==2.12.5
+pydantic==2.13.3
     # via
     #   enkanetwork-py
     #   fastapi
@@ -189,9 +191,9 @@ pydantic==2.12.5
     #   pydantic-settings
     #   simnet
     #   sqlmodel
-pydantic-core==2.41.5
+pydantic-core==2.46.3
     # via pydantic
-pydantic-settings==2.13.1
+pydantic-settings==2.14.0
     # via paigram
 pyee==13.0.1
     # via playwright
@@ -199,16 +201,16 @@ pygments==2.20.0
     # via
     #   pytest
     #   rich
-pyrogram @ git+https://github.com/TeamPGM/pyrogram@e1cc739bb82d596442715c3b8cb8ebc6544fff48
+pyrogram @ git+https://github.com/TeamPGM/pyrogram@192735fc0b0a80d7c935e6cb5366290b5610bb4e
     # via paigram
 pyrotgcrypto==1.2.7
     # via paigram
-pytest==8.4.2
+pytest==9.0.3
     # via
     #   paigram
     #   pytest-asyncio
     #   pytest-benchmark
-pytest-asyncio==0.26.0
+pytest-asyncio==1.3.0
     # via paigram
 pytest-benchmark==5.2.3
     # via paigram
@@ -241,11 +243,11 @@ requests==2.33.1
     # via requests-oauthlib
 requests-oauthlib==2.0.0
     # via mwclient
-rich==14.3.3
+rich==15.0.0
     # via paigram
-sentry-sdk==2.57.0
+sentry-sdk==2.58.0
     # via paigram
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@72465d137129e87ba48996d9f073ce7ae807b2b6
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@ead1ebd12da096b04828d5a094644a60a6f25e79
     # via paigram
 six==1.17.0
     # via python-dateutil
@@ -290,6 +292,7 @@ typing-extensions==4.15.0
     #   pydantic
     #   pydantic-core
     #   pyee
+    #   pytest-asyncio
     #   reactivex
     #   sqlalchemy
     #   sqlmodel
@@ -312,7 +315,7 @@ urllib3==2.6.3
     #   influxdb-client
     #   requests
     #   sentry-sdk
-uvicorn==0.44.0
+uvicorn==0.45.0
     # via paigram
 uvloop==0.22.1 ; platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32'
     # via uvicorn
