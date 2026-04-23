@@ -75,7 +75,7 @@ body {
     background-color: rgb(236, 229, 216);
     background-repeat: no-repeat;
     background-size: auto calc(100% + 2px);
-    background-position: 0 -1px;
+    background-position: right;
     border-radius: 50px 100px 100px 50px;
     position: relative;
     display: flex;
