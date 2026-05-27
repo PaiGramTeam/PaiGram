@@ -1,8 +1,8 @@
 import contextlib
 from datetime import datetime
+from http.cookies import SimpleCookie, CookieError
 from typing import Dict, Optional, List, TYPE_CHECKING
 
-from arkowrapper import ArkoWrapper
 from simnet import GenshinClient, Game, Region
 from simnet.errors import DataNotPublic, InvalidCookies, BadRequest as SimnetBadRequest
 from simnet.models.lab.record import Account
@@ -222,17 +222,12 @@ class AccountCookiesPlugin(Plugin.Conversation):
         account_cookies_plugin_data: AccountCookiesPluginData = context.chat_data.get("account_cookies_plugin_data")
         try:
             # cookie str to dict
-            wrapped = (
-                ArkoWrapper(("".join(text.split("\n"))).split(";"))
-                .filter(lambda x: x != "")
-                .map(lambda x: x.strip())
-                .map(lambda x: ((y := x.split("=", 1))[0], y[1]))
-            )
-            cookie = {x[0]: x[1] for x in wrapped}
+            simple_cookie = SimpleCookie(text)
+            cookie = {key: morsel.value for key, morsel in simple_cookie.items()}
             cookies = self.parse_cookie(cookie)
             if cookies:
                 CookiesModel.model_validate(cookies)
-        except (AttributeError, ValueError, IndexError) as exc:
+        except (AttributeError, ValueError, IndexError, CookieError) as exc:
             logger.info("用户 %s[%s] Cookies解析出现错误\ntext:%s", user.full_name, user.id, message.text)
             logger.debug("解析Cookies出现错误", exc_info=exc)
             await message.reply_text("解析Cookies出现错误，请检查是否正确", reply_markup=ReplyKeyboardRemove())
@@ -263,37 +258,19 @@ class AccountCookiesPlugin(Plugin.Conversation):
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return await self.quit_conversation(update, context)
         async with GenshinClient(cookies=cookies.to_dict(), region=region) as client:
-            check_cookie = cookies.check()
-            if cookies.login_ticket is not None:
-                try:
-                    cookies.cookie_token = await client.get_cookie_token_by_login_ticket()
-                    cookies.account_id = client.account_id
-                    cookies.ltuid = client.account_id
-                    logger.success("用户 %s[%s] 绑定时获取 cookie_token 成功", user.full_name, user.id)
-                    cookies.stoken = await client.get_stoken_by_login_ticket()
-                    logger.success("用户 %s[%s] 绑定时获取 stoken 成功", user.full_name, user.id)
-                    check_cookie = True
-                except SimnetBadRequest as exc:
-                    logger.warning(
-                        "用户 %s[%s] 获取账号信息发生错误 [%s]%s", user.full_name, user.id, exc.ret_code, exc.original
-                    )
-                except Exception as exc:
-                    logger.error("绑定时获取新Cookie失败 [%s]", (str(exc)))
-                finally:
-                    cookies.login_ticket = None
-                    cookies.login_uid = None
-            if not check_cookie:
-                await message.reply_text("检测到Cookie不完整，可能会出现问题。", reply_markup=ReplyKeyboardRemove())
+            text = ""
             if not cookies.stoken:
-                await message.reply_text(
-                    "检测到缺少 stoken，请尝试添加 stoken 后重新绑定。", reply_markup=ReplyKeyboardRemove()
-                )
+                text += "检测到缺少 stoken，请尝试添加 stoken 后重新绑定。\n"
+            if cookies.stoken and not cookies.stoken.startswith("v2"):
+                text += "检测到 stoken 不为 v2 版本，请尝试添加 stoken v2 版本后重新绑定。\n"
+            if cookies.user_id is None:
+                text += "检测到缺少 account_id，请尝试添加 account_id 后重新绑定。\n"
+            if cookies.mid is None:
+                text += "检测到缺少 mid，请尝试添加 mid 后重新绑定。\n"
+            if text:
+                await message.reply_text(text, reply_markup=ReplyKeyboardRemove())
                 return await self.quit_conversation(update, context)
-            if cookies.stoken and cookies.stoken.startswith("v2") and cookies.mid is None:
-                await message.reply_text(
-                    "检测到缺少 mid，请尝试添加 mid 后重新绑定。", reply_markup=ReplyKeyboardRemove()
-                )
-                return await self.quit_conversation(update, context)
+            client.account_id = cookies.user_id
             try:
                 new_cookies = await client.get_all_token_by_stoken()
                 logger.success("用户 %s[%s] 绑定时获取所有 token 成功", user.full_name, user.id)
@@ -313,18 +290,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     return await self.quit_conversation(update, context)
                 raise e
             try:
-                if cookies.account_id is None:
-                    logger.info("正在尝试获取用户 %s[%s] account_id", user.full_name, user.id)
-                    account_info = await client.get_user_info()
-                    account_id = account_info.accident_id
-                    account_cookies_plugin_data.account_id = account_id
-                    if cookies.is_v2:
-                        cookies.set_v2_uid(account_id)
-                    else:
-                        cookies.set_uid(account_id)
-                    logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
-                else:
-                    account_cookies_plugin_data.account_id = client.account_id
+                account_cookies_plugin_data.account_id = client.account_id
                 genshin_accounts = await client.get_genshin_accounts()
             except DataNotPublic:
                 logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
