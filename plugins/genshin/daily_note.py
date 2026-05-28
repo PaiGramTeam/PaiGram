@@ -102,11 +102,12 @@ class DailyNotePlugin(Plugin):
             "transformer": transformer,
             "transformer_ready": transformer_ready,
             "transformer_recovery_time": transformer_recovery_time,
+            "week_active_progress": daily_info.week_active_progress,
         }
         render_result = await self.template_service.render(
             "genshin/daily_note/daily_note.jinja2",
             render_data,
-            {"width": 600, "height": 645},
+            {"width": 600, "height": 720},
             full_page=False,
             ttl=8 * 60,
         )

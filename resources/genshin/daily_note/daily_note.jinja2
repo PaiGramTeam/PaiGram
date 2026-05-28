@@ -90,6 +90,33 @@
     <div class="item">
         <div class="main">
             <div class="bg"></div>
+            <img class="icon" src="items/无主的星辉.png" alt=""/>
+            <div class="info">
+                <div class="name">砥行修远</div>
+                <div class="time">
+                    {% set week_active_progress_today = '' %}
+                    {% if week_active_progress.current_weekday not in week_active_progress.progress_current_arr %}
+                    {% set week_active_progress_today = '，今日未完成' %}
+                    {% endif %}
+                    {% if not week_active_progress.unlock %}未解锁
+                    {% elif not week_active_progress.is_active_period %}未开启
+                    {% else %}本周进度 {{ week_active_progress.progress_current }}/{{ week_active_progress.progress_total }}{{ week_active_progress_today }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="right">
+            <span class="{% if week_active_progress.current_weekday not in week_active_progress.progress_current_arr %}red{% endif %}">
+                {% if not week_active_progress.unlock %}未解锁
+                {% elif not week_active_progress.is_active_period %}未开启
+                {% else %}{{ week_active_progress.period_progress_current }}/{{ week_active_progress.period_progress_total }}
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    <div class="item">
+        <div class="main">
+            <div class="bg"></div>
             <img class="icon" src="items/派遣.png" alt=""/>
             <div class="info">
                 <div class="name">探索派遣</div>
