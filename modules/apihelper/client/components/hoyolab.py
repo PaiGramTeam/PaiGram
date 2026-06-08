@@ -25,6 +25,8 @@ class Hoyolab(HyperionBase):
         return {
             "User-Agent": self.USER_AGENT,
             "Referer": "https://www.hoyolab.com/",
+            "x-rpc-app_version": "4.13.0",
+            "x-rpc-client_type": "4",
             "X-Rpc-Language": lang,
         }
 

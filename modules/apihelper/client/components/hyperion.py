@@ -165,7 +165,13 @@ class Hyperion(HyperionBase):
         self.client = HyperionRequest(headers=self.get_headers(), *args, **kwargs)
 
     def get_headers(self, referer: str = "https://www.miyoushe.com/ys/"):
-        return {"User-Agent": self.USER_AGENT, "Referer": referer}
+        return {
+            "User-Agent": self.USER_AGENT,
+            "Referer": referer,
+            "x-rpc-app_version": "2.102.0",
+            "x-rpc-client_type": "4",
+            "x-rpc-language": "zh-cn",
+        }
 
     async def get_official_recommended_posts(self, gids: int) -> List[PostRecommend]:
         results = []
@@ -232,7 +238,7 @@ class Hyperion(HyperionBase):
         headers = self.get_headers("https://www.hoyolab.com/")
         headers.update(
             {
-                "x-rpc-app_version": "2.50.0",
+                "x-rpc-app_version": "4.13.0",
                 "x-rpc-client_type": "4",
                 "x-rpc-language": "zh-cn",
             }
