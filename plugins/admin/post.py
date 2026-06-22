@@ -555,7 +555,7 @@ class Post(Plugin.Conversation):
             )
 
             # 2. 自动选择频道
-            channel_id = self.get_channel_id_by_post_text(post_text)
+            channel_id = self.get_channel_id_by_post_text(post_text + post_info.user_nickname)
             channel_name = await self.get_chat_username(channel_id)
 
             # 3. 准备推送内容

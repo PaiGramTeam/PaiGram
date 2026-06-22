@@ -122,6 +122,7 @@ class PostInfo(PostRecommend):
     _data: dict = PrivateAttr()
 
     user_uid: int
+    user_nickname: str
     image_urls: List[str]
     created_at: int
     video_urls: List[str]
@@ -168,6 +169,7 @@ class PostInfo(PostRecommend):
         created_at = post["created_at"]
         user = _data_post["user"]  # 用户数据
         user_uid = user["uid"]  # 用户ID
+        user_nickname = user.get("nickname", "")
         content = post["content"]
         if hoyolab and ("<" not in content) and (structured_content := post.get("structured_content")):
             content = PostInfo.parse_structured_content(ujson.loads(structured_content))
@@ -180,6 +182,7 @@ class PostInfo(PostRecommend):
             hoyolab=hoyolab,
             post_id=post_id,
             user_uid=user_uid,
+            user_nickname=user_nickname,
             subject=subject,
             image_urls=image_urls,
             video_urls=video_urls,
