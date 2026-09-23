@@ -16,13 +16,13 @@ aiosignal==1.4.0
     # via aiohttp
 aiosqlite==0.22.1
     # via paigram
-alembic==1.19.1
+alembic==1.20.0
     # via paigram
 annotated-doc==0.0.5
     # via fastapi
 annotated-types==0.8.0
     # via pydantic
-anyio==4.14.2
+anyio==4.15.1
     # via
     #   httpx
     #   starlette
@@ -38,7 +38,7 @@ async-timeout==5.0.1 ; python_full_version < '3.11.3'
     #   aiohttp
     #   python-socks
     #   redis
-asyncmy==0.2.13
+asyncmy==0.2.15
     # via paigram
 attrs==26.1.0
     # via aiohttp
@@ -48,7 +48,7 @@ beautifulsoup4==4.15.0
     # via paigram
 black==26.5.1
     # via paigram
-cachetools==7.1.7
+cachetools==7.2.0
     # via
     #   enkanetwork-py
     #   python-telegram-bot
@@ -61,24 +61,23 @@ certifi==2026.7.22
     #   sentry-sdk
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
-charset-normalizer==3.4.9
+charset-normalizer==3.5.1
     # via requests
 ciso8601==2.3.3
     # via influxdb-client
-click==8.4.2
+click==8.5.0
     # via
     #   black
     #   uvicorn
 colorama==0.4.6 ; sys_platform == 'win32'
     # via
-    #   click
     #   colorlog
     #   pytest
 colorlog==6.12.0
     # via paigram
-cryptography==49.0.0
+cryptography==50.0.1
     # via paigram
-enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@c1a39bdf81da69f74a0596b378699620e346185c
+enkanetwork-py @ git+https://github.com/PaiGramTeam/EnkaNetwork.py@33ed7bc077aebbe809ed1a88fdeeeca2674bb177
     # via paigram
 et-xmlfile==2.0.0
     # via openpyxl
@@ -86,7 +85,7 @@ exceptiongroup==1.3.1 ; python_full_version < '3.11'
     # via
     #   anyio
     #   pytest
-fakeredis==2.37.0
+fakeredis==2.38.0
     # via paigram
 fastapi==0.141.1
     # via paigram
@@ -100,9 +99,9 @@ gcsim-pypi==2.42.2
     # via paigram
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.59
+gitpython==3.1.62
     # via paigram
-greenlet==3.5.5
+greenlet==3.5.6
     # via
     #   playwright
     #   sqlalchemy
@@ -121,7 +120,7 @@ httpx==0.28.1
     #   paigram
     #   python-telegram-bot
     #   simnet
-idna==3.18
+idna==3.20
     # via
     #   anyio
     #   httpx
@@ -133,9 +132,9 @@ iniconfig==2.3.0
     # via pytest
 jinja2==3.1.6
     # via paigram
-lxml==6.1.1
+lxml==6.1.3
     # via paigram
-mako==1.4.1
+mako==1.4.3
     # via alembic
 markdown-it-py==4.2.0
     # via rich
@@ -145,7 +144,7 @@ markupsafe==3.0.3
     #   mako
 mdurl==0.1.2
     # via markdown-it-py
-multidict==6.7.1
+multidict==6.9.1
     # via
     #   aiohttp
     #   yarl
@@ -164,25 +163,25 @@ pathspec==1.1.1
     # via black
 pillow==12.3.0
     # via paigram
-platformdirs==4.11.2
+platformdirs==4.11.12
     # via black
 playwright==1.58.0
     # via paigram
 pluggy==1.6.0
     # via pytest
-propcache==0.5.2
+propcache==0.5.4
     # via
     #   aiohttp
     #   yarl
 psutil==7.2.2
     # via paigram
-py-cpuinfo==9.0.0
+py-cpuinfo2==10.1.1
     # via pytest-benchmark
 pyaes==1.6.1
     # via pyrogram
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
-pydantic==2.13.4
+pydantic==2.13.5
     # via
     #   enkanetwork-py
     #   fastapi
@@ -190,17 +189,17 @@ pydantic==2.13.4
     #   pydantic-settings
     #   simnet
     #   sqlmodel
-pydantic-core==2.46.4
+pydantic-core==2.46.5
     # via pydantic
 pydantic-settings==2.15.0
     # via paigram
 pyee==13.0.1
     # via playwright
-pygments==2.20.0
+pygments==2.21.0
     # via
     #   pytest
     #   rich
-pyrogram @ git+https://github.com/TeamPGM/pyrogram@b016316bba04a1e69714848158283e6c7e10a7be
+pyrogram @ git+https://github.com/TeamPGM/pyrogram@3e7a29387f22dfd763341364cc8b4cf022045ffa
     # via paigram
 pyrotgcrypto==1.2.7
     # via paigram
@@ -211,18 +210,18 @@ pytest==9.1.1
     #   pytest-benchmark
 pytest-asyncio==1.4.0
     # via paigram
-pytest-benchmark==5.2.3
+pytest-benchmark==5.3.0
     # via paigram
 python-dateutil==2.9.0.post0
     # via influxdb-client
-python-dotenv==1.2.2
+python-dotenv==1.2.3
     # via
     #   paigram
     #   pydantic-settings
     #   uvicorn
 python-genshin-artifact==1.0.14
     # via paigram
-python-socks==2.8.1
+python-socks==3.1.1
     # via pyrogram
 python-telegram-bot==22.8
     # via paigram
@@ -230,7 +229,9 @@ pytokens==0.4.1
     # via black
 pyyaml==6.0.3
     # via uvicorn
-rapidfuzz==3.14.5
+rapidfuzz==3.14.5 ; python_full_version < '3.11'
+    # via thefuzz
+rapidfuzz==3.14.6 ; python_full_version >= '3.11'
     # via thefuzz
 reactivex==5.1.0
     # via influxdb-client
@@ -244,9 +245,9 @@ requests-oauthlib==2.0.0
     # via mwclient
 rich==15.0.0
     # via paigram
-sentry-sdk==2.67.1
+sentry-sdk==2.70.0
     # via paigram
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@9b91b9fe72711da326ce5894a5736d21ef25f4f5
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@5fb40beca24601b7f2e12f366beb85d1619921c6
     # via paigram
 six==1.17.0
     # via python-dateutil
@@ -256,11 +257,11 @@ sortedcontainers==2.4.0
     # via fakeredis
 soupsieve==2.9.2
     # via beautifulsoup4
-sqlalchemy==2.0.52
+sqlalchemy==2.0.54
     # via
     #   alembic
     #   sqlmodel
-sqlmodel==0.0.39
+sqlmodel==0.0.46
     # via paigram
 starlette==1.6.0
     # via fastapi
@@ -271,7 +272,7 @@ tomli==2.4.1 ; python_full_version < '3.11'
     #   alembic
     #   black
     #   pytest
-tornado==6.5.8
+tornado==6.5.10
     # via python-telegram-bot
 typing-extensions==4.16.0
     # via
@@ -299,31 +300,31 @@ typing-extensions==4.16.0
     #   starlette
     #   typing-inspection
     #   uvicorn
-typing-inspection==0.4.3
+typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
     #   pydantic-settings
-tzdata==2026.3 ; sys_platform == 'win32'
+tzdata==2026.4 ; sys_platform == 'win32'
     # via tzlocal
 tzlocal==5.4.4
     # via apscheduler
 ujson==5.13.0
     # via paigram
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   influxdb-client
     #   requests
     #   sentry-sdk
-uvicorn==0.52.1
+uvicorn==0.53.0
     # via paigram
 uvloop==0.22.1 ; platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32'
     # via uvicorn
-watchfiles==1.2.0
+watchfiles==1.3.0
     # via uvicorn
 websockets==16.1.1 ; python_full_version < '3.11'
     # via uvicorn
-websockets==17.0.1 ; python_full_version >= '3.11'
+websockets==17.1 ; python_full_version >= '3.11'
     # via uvicorn
-yarl==1.24.5
+yarl==1.25.1
     # via aiohttp
