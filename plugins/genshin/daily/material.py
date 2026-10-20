@@ -100,7 +100,7 @@ def is_first_week_of_pool(date: Optional["datetime"] = None) -> bool:
     target_date_cn = add_timezone(target_date)
     pool = [Pool(**i) for i in CHARACTER_POOL]
     for p in pool:
-        start, end = p.start, p.start + timedelta(weeks=1)
+        start, end = p.start, p.start + timedelta(days=6)
         if start <= target_date_cn < end:
             return True
     return False
