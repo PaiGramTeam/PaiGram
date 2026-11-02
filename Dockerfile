@@ -23,7 +23,7 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
     && mkdir cache/                                \
     # create assets folder \
     && mkdir -p resources/assets                   \
-    && wget -q -O genshin.zip https://ys-res.paimon.vip/genshin.zip  \
+    && wget -q -O genshin.zip https://r2.miyoushe.de5.net/genshin.zip  \
     && unzip genshin.zip -d resources/assets/      \
     && rm genshin.zip                              \
     # clean \
