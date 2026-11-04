@@ -14,7 +14,7 @@ authors = [
 ]
 dependencies = [
     "httpx<1.0.0,>=0.28.0",
-    "ujson<6.0.0,>=5.13.0",
+    "ujson<7.0.0,>=6.0.0",
     "Jinja2<4.0.0,>=3.1.2",
     "python-telegram-bot[ext,rate-limiter]<23.0,>=22.0",
     "sqlmodel<1.0.0,>=0.0.24",
@@ -39,7 +39,7 @@ dependencies = [
     "async-lru<3.0.0,>=2.0.4",
     "thefuzz<1.0.0,>=0.22.1",
     "cryptography<51.0.0,>=50.0.0",
-    "pillow<13.0.0,>=12.3.0",
+    "pillow<14.0.0,>=13.0.0",
     "playwright==1.58.0",
     "aiosqlite<1.0.0,>=0.20.0",
     "simnet @ git+https://github.com/PaiGramTeam/SIMNet",
@@ -49,7 +49,7 @@ dependencies = [
     "pydantic>=2.0.0,<3.0.0",
     "pydantic-settings>=2.14.2",
 ]
-requires-python = "<4.0,>=3.10"
+requires-python = "<4.0,>=3.12"
 readme = "README.md"
 license = {text = "AGPL-3.0"}
 
@@ -69,7 +69,7 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 [tool.black]
 include = '\.pyi?$'
 line-length = 120
-target-version = ['py311']
+target-version = ['py312']
 
 [dependency-groups]
 dev = [
