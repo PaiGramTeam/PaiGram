@@ -155,6 +155,7 @@ class PostInfo(PostRecommend):
         _data_post = data["post"]
         post = _data_post["post"]
         post_id = post["post_id"]
+        game_id = post.get("game_id", 0) or gids
         subject = post["subject"]
         image_list = []
         image_keys = {"cover_list", "image_list"}
@@ -178,7 +179,7 @@ class PostInfo(PostRecommend):
             content = ujson.loads(content).get("describe", "")
         return PostInfo(
             _data=data,
-            gids=gids,
+            gids=game_id,
             hoyolab=hoyolab,
             post_id=post_id,
             user_uid=user_uid,
