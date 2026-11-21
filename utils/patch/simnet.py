@@ -1,5 +1,5 @@
 import simnet
-from httpx import AsyncClient, Timeout, Limits
+from httpx2 import AsyncClient, Timeout, Limits
 
 from core.config import config
 from utils.patch.methods import patch, patchable
